@@ -7,29 +7,34 @@ namespace Intel.RealSense.Processing
 {
     public class PointCloud : ProcessingBlock
     {
-        private readonly FrameQueue queue;
+        private readonly IOption formatFilter;
+        private readonly IOption indexFilter;
+        private readonly IOption streamFilter;
 
         public PointCloud()
         {
-            queue = new FrameQueue(1);
             Instance = new HandleRef(this, NativeMethods.rs2_create_pointcloud(out var error));
             NativeMethods.rs2_start_processing_queue(Instance.Handle, queue.Instance.Handle, out error);
+
+            streamFilter = Options[Option.StreamFilter];
+            formatFilter = Options[Option.StreamFormatFilter];
+            indexFilter = Options[Option.StreamIndexFilter];
         }
 
+        [Obsolete("This method is obsolete. Use Process method instead")]
         public Points Calculate(Frame original, FramesReleaser releaser = null)
-        {
-            NativeMethods.rs2_frame_add_ref(original.Instance.Handle, out var error);
-            NativeMethods.rs2_process_frame(Instance.Handle, original.Instance.Handle, out error);
-            return FramesReleaser.ScopedReturn(releaser, queue.WaitForFrame() as Points);
-        }
+            => Process(original).DisposeWith(releaser) as Points;
 
         public void MapTexture(VideoFrame texture)
         {
-            Options[Option.StreamFilter].Value = Convert.ToSingle(texture.Profile.Stream);
-            Options[Option.StreamFormatFilter].Value = Convert.ToSingle(texture.Profile.Format);
-            Options[Option.StreamIndexFilter].Value = Convert.ToSingle(texture.Profile.Index);
-            NativeMethods.rs2_frame_add_ref(texture.Instance.Handle, out var error);
-            NativeMethods.rs2_process_frame(Instance.Handle, texture.Instance.Handle, out error);
+            using (var p = texture.Profile)
+            {
+                streamFilter.Value = (float)p.Stream;
+                formatFilter.Value = (float)p.Format;
+                indexFilter.Value = p.Index;
+            }
+
+            using (var f = Process(texture)) ;
         }
     }
 }

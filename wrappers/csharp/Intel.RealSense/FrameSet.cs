@@ -7,26 +7,55 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class FrameSet : IDisposable, IEnumerable<Frame>
+    public class FrameSet : ICompositeDisposable, IEnumerable<Frame>
     {
-        public DepthFrame DepthFrame => FirstOrDefault<DepthFrame>(Stream.Depth);
+        internal static readonly FrameSetPool Pool; //Should be reimplemented as Threadsafe Pool.
+
+        static FrameSet()
+        {
+            Pool = new FrameSetPool();
+        }
+
+        public DepthFrame DepthFrame => FirstOrDefault<DepthFrame>(Stream.Depth, Format.Z16);
+        public VideoFrame InfraredFrame => FirstOrDefault<VideoFrame>(Stream.Infrared);
         public VideoFrame ColorFrame => FirstOrDefault<VideoFrame>(Stream.Color);
 
+        public IntPtr NativePtr => Instance.Handle;
+
         internal HandleRef Instance;
-        private readonly int count;
+        internal readonly FrameEnumerator enumerator;
+        internal readonly List<IDisposable> disposables;
 
         public Frame AsFrame()
         {
             NativeMethods.rs2_frame_add_ref(Instance.Handle, out var error);
-            return CreateFrame(Instance.Handle);
+            return Frame.CreateFrame(Instance.Handle);
         }
 
         public T FirstOrDefault<T>(Stream stream, Format format = Format.Any) where T : Frame
         {
-            foreach (Frame frame in this)
+            for (int i = 0; i < Count; i++)
             {
-                if (frame.Profile.Stream == stream && (Format.Any == format || frame.Profile.Format == format))
+                var frame = this[i];
+
+                using (var fp = frame.Profile)
+                    if (fp.Stream == stream && (format == Format.Any || fp.Format == format))
+                        return frame as T;
+
+                frame.Dispose();
+            }
+
+            return null;
+        }
+        public T FirstOrDefault<T>(Predicate<Frame> predicate) where T : Frame
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                var frame = this[i];
+
+                if (predicate(frame))
                     return frame as T;
+
                 frame.Dispose();
             }
             return null;
@@ -41,43 +70,41 @@ namespace Intel.RealSense
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() 
+        IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public int Count => count;
-        
+        public int Count { get; internal set; }
+
         public Frame this[int index]
         {
             get
             {
                 var ptr = NativeMethods.rs2_extract_frame(Instance.Handle, index, out var error);
-                return CreateFrame(ptr);
+                return Frame.CreateFrame(ptr);
             }
         }
-
-        public Frame this[Stream stream, int index = 0]
+        public Frame this[Stream stream, int index = 0] => FirstOrDefault<Frame>(f =>
         {
-            get
-            {
-                foreach (Frame frame in this)
-                {
-                    var p = frame.Profile;
-                    if (p.Stream == stream && p.Index == index)
-                        return frame;
-                    frame.Dispose();
-                }
-                return null;
-            }
-        }
+            using (var p = f.Profile)
+                return p.Stream == stream && p.Index == index;
+        });
+        public Frame this[Stream stream, Format format, int index = 0] => FirstOrDefault<Frame>(f =>
+        {
+            using (var p = f.Profile)
+                return p.Stream == stream && p.Format == format && p.Index == index;
+        });
+
 
         internal FrameSet(IntPtr ptr)
         {
             Instance = new HandleRef(this, ptr);
-            count = NativeMethods.rs2_embedded_frames_count(Instance.Handle, out var error);
+            Count = NativeMethods.rs2_embedded_frames_count(Instance.Handle, out var error);
+            enumerator = new FrameEnumerator(this);
+            disposables = new List<IDisposable>();
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        internal bool disposedValue = false; // To detect redundant calls TODO: internal dispose control should never be externally influenced
 
         protected virtual void Dispose(bool disposing)
         {
@@ -90,6 +117,9 @@ namespace Intel.RealSense
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
+
+                disposables.ForEach(d => d?.Dispose());
+
                 Release();
                 disposedValue = true;
             }
@@ -116,19 +146,39 @@ namespace Intel.RealSense
         {
             if (Instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_release_frame(Instance.Handle);
+
             Instance = new HandleRef(this, IntPtr.Zero);
+
+            Pool.Realease(this); //TODO: Should be reimplemented as Threadsafe Pool.
         }
 
-        public static FrameSet FromFrame(Frame composite, FramesReleaser releaser = null)
+        public void ForEach(Action<Frame> action)
         {
-            if (NativeMethods.rs2_is_frame_extendable_to(composite.Instance.Handle,
-                Extension.CompositeFrame, out var error) > 0)
+            for (int i = 0; i < Count; i++)
             {
-                NativeMethods.rs2_frame_add_ref(composite.Instance.Handle, out error);
-                return FramesReleaser.ScopedReturn(releaser, new FrameSet(composite.Instance.Handle));
+                using (var frame = this[i])
+                    action(frame);
             }
-            throw new Exception("The frame is a not composite frame");
         }
+                
+        public void AddDisposable(IDisposable disposable)
+        {
+            disposables.Add(disposable);
+        }
+
+        public static FrameSet FromFrame(Frame composite)
+        {
+            if (composite.IsComposite)
+            {
+                NativeMethods.rs2_frame_add_ref(composite.Instance.Handle, out object error);
+                return Pool.Get(composite.Instance.Handle);
+            }
+
+            throw new ArgumentException("The frame is a not composite frame", nameof(composite));
+        }
+        [Obsolete("This method is obsolete. Use DisposeWith method instead")]
+        public static FrameSet FromFrame(Frame composite, FramesReleaser releaser)
+            => FromFrame(composite).DisposeWith(releaser);
 
         internal static Frame CreateFrame(IntPtr ptr)
         {

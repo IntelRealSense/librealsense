@@ -57,17 +57,9 @@ namespace Intel.RealSense
                 string args = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_failed_args(pNativeData));
                 string message = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_error_message(pNativeData));
 
-                //Debug.LogError("<color=orange>rs_error was raised when calling " + function + "(" + args + ")" + "</color>");
-                //Debug.LogError("<color=orange>Message: " + message + "</color>");
-
-                //NativeMethods.rs_free_error(pNativeData);
-
-                var f = string.Format("{0}({1})", function, args);
-                //StackTrace stackTrace = new StackTrace(1, true);                
-                //Debug.Log(stackTrace.GetFrame(0).GetFileName());
 
                 //!TODO: custom exception type? 
-                var e = new Exception(message + Environment.NewLine + f);
+                var e = new Exception($"{message}{Environment.NewLine}{function}({args})");
 
                 //!TODO: maybe throw only in debug? would need to change all methods to return error\null
                 throw e;
@@ -79,10 +71,8 @@ namespace Intel.RealSense
             [DebuggerStepThrough]
             [DebuggerNonUserCode]
             [Conditional("DEBUG")]
-            private void ThrowIfDebug(Exception e)
-            {
-                throw e;
-            }
+            private void ThrowIfDebug(Exception e) 
+                => throw e;
         }
     }
 }

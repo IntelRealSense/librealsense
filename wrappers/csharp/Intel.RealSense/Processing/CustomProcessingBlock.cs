@@ -7,24 +7,20 @@ namespace Intel.RealSense.Processing
 {
     public class CustomProcessingBlock : ProcessingBlock
     {
-        //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);
         public delegate void FrameCallback(Frame frame);
         public delegate void FrameProcessorCallback(Frame frame, FrameSource source);
 
-        private FrameCallbackHandler Callback;
-        private readonly FrameProcessorCallbackHandler procCallback;
-        private FrameQueue Queue;
+        private GCHandle frameCallbackHandle;
+        private readonly GCHandle frameProcessorCallbackHandle;
+        private readonly FrameCallbackHandler frameCallback;
+        private readonly FrameProcessorCallbackHandler frameProcessorCallback;
 
         public CustomProcessingBlock(FrameProcessorCallback cb)
         {
-            void cb2(IntPtr f, IntPtr src, IntPtr u)
-            {
-                using (var frame = new Frame(f))
-                    cb(frame, new FrameSource(new HandleRef(this, src)));
-            }
-
-            procCallback = cb2;
-            Instance = new HandleRef(this, NativeMethods.rs2_create_processing_block_fptr(cb2, IntPtr.Zero, out var error));
+            frameProcessorCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
+            var cbPtr = GCHandle.ToIntPtr(frameProcessorCallbackHandle);
+            var pb = NativeMethods.rs2_create_processing_block_fptr(frameProcessorCallback, cbPtr, out var error);
+            Instance = new HandleRef(this, pb);
         }
 
         public void ProcessFrame(Frame f)
@@ -39,24 +35,46 @@ namespace Intel.RealSense.Processing
                 ProcessFrame(f);
         }
 
+        /// <summary>
+        /// Start the processing block, delivering frames to external queue
+        /// </summary>
+        /// <param name="queue"></param>
         public void Start(FrameQueue queue)
-        {
-            NativeMethods.rs2_start_processing_queue(Instance.Handle, queue.Instance.Handle, out var error);
-
-            Callback = null;
-            Queue = queue;
-        }
-
+            => NativeMethods.rs2_start_processing_queue(Instance.Handle, queue.Instance.Handle, out var error);
+        /// <summary>
+        /// Start the processing block
+        /// </summary>
+        public void Start()
+            => NativeMethods.rs2_start_processing_queue(Instance.Handle, queue.Instance.Handle, out var error);
+        /// <summary>
+        /// Start the processing block, delivering frames to a callback
+        /// </summary>
+        /// <param name="cb"></param>
         public void Start(FrameCallback cb)
         {
-            void cb2(IntPtr f, IntPtr u)
+            frameCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
+            var cbPtr = GCHandle.ToIntPtr(frameCallbackHandle);
+            NativeMethods.rs2_start_processing_fptr(Instance.Handle, frameCallback, cbPtr, out var error);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                using (var frame = new Frame(f))
-                    cb(frame);
+                if (frameCallbackHandle.IsAllocated)
+                    frameCallbackHandle.Free();
+                if (frameProcessorCallbackHandle.IsAllocated)
+                    frameProcessorCallbackHandle.Free();
             }
-            NativeMethods.rs2_start_processing_fptr(Instance.Handle, cb2, IntPtr.Zero, out var error);
-            Callback = cb2;
-            Queue = null;
+
+            base.Dispose(disposing);
+        }
+
+        private static void ProcessingBlockFrameCallback(IntPtr f, IntPtr u)
+        {
+            var callback = GCHandle.FromIntPtr(u).Target as FrameCallback;
+            using (var frame = Frame.CreateFrame(f))
+                callback(frame);
         }
     }
 }

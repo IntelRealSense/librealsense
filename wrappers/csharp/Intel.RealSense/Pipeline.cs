@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Intel.RealSense.Frames;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Pipeline : IDisposable
+    public class Pipeline : IDisposable, IEnumerable<Frame>
     {
         internal HandleRef instance;
 
@@ -31,22 +34,37 @@ namespace Intel.RealSense
         public void Stop()
             => NativeMethods.rs2_pipeline_stop(instance.Handle, out var error);
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000, FramesReleaser releaser = null)
+        public FrameSet WaitForFrames(uint timeoutMs = 5000)
         {
-            var ptr = NativeMethods.rs2_pipeline_wait_for_frames(instance.Handle, timeout_ms, out var error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+            var ptr = NativeMethods.rs2_pipeline_wait_for_frames(instance.Handle, timeoutMs, out var error);
+            return FrameSet.Pool.Get(ptr);
         }
 
-        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
+        public bool PollForFrames(out FrameSet result)
         {
-            if (NativeMethods.rs2_pipeline_poll_for_frames(instance.Handle, out FrameSet fs, out var error) > 0)
+            result = null;
+
+            if (NativeMethods.rs2_pipeline_poll_for_frames(instance.Handle, out IntPtr ptr, out var error) > 0)
             {
-                result = FramesReleaser.ScopedReturn(releaser, fs);
+                result = FrameSet.Pool.Get(ptr);
                 return true;
             }
-            result = null;
+            
             return false;
         }
+
+        public IEnumerator<Frame> GetEnumerator()
+        {
+            while (PollForFrames(out FrameSet frames))
+            {
+                using (frames)
+                using (var frame = frames.AsFrame())
+                    yield return frame;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() 
+            => GetEnumerator();
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -90,5 +108,6 @@ namespace Intel.RealSense
                 NativeMethods.rs2_delete_pipeline(instance.Handle);
             instance = new HandleRef(this, IntPtr.Zero);
         }
+        
     }
 }

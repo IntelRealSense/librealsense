@@ -12,31 +12,34 @@ namespace Intel.RealSense
     {
         internal HandleRef Instance;
 
-        public FrameQueue(int capacity = 10)
+        public FrameQueue(int capacity = 1)
         {
             Instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out var error));
         }
 
-        public bool PollForFrame(out Frame frame, FramesReleaser releaser = null)
+        public bool PollForFrame(out Frame frame)
         {
-            if (NativeMethods.rs2_poll_for_frame(Instance.Handle, out frame, out var error) > 0)
+            frame = null;
+
+            if (NativeMethods.rs2_poll_for_frame(Instance.Handle, out IntPtr ptr, out var error) > 0)
             {
-                frame = FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(frame.Instance.Handle));
+                frame = Frame.CreateFrame(ptr);
                 return true;
             }
+            
             return false;
         }
 
-        public Frame WaitForFrame(FramesReleaser releaser = null)
+        public Frame WaitForFrame(uint timeoutMs = 5000)
         {
-            var ptr = NativeMethods.rs2_wait_for_frame(Instance.Handle, 5000, out var error);
-            return FramesReleaser.ScopedReturn(releaser, FrameSet.CreateFrame(ptr));
+            var ptr = NativeMethods.rs2_wait_for_frame(Instance.Handle, timeoutMs, out var error);
+            return Frame.CreateFrame(ptr);
         }
 
-        public FrameSet WaitForFrames(FramesReleaser releaser = null)
+        public FrameSet WaitForFrames(uint timeoutMs = 5000)
         {
-            var ptr = NativeMethods.rs2_wait_for_frame(Instance.Handle, 5000, out var error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+            var ptr = NativeMethods.rs2_wait_for_frame(Instance.Handle, timeoutMs, out var error);
+            return FrameSet.Pool.Get(ptr);
         }
 
         public void Enqueue(Frame f)

@@ -1,15 +1,49 @@
-﻿using System;
+﻿using Intel.RealSense.Frames;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense.Processing
 {
-    public class ProcessingBlock : IDisposable
+    public abstract class ProcessingBlock : IProcessingBlock, IDisposable
     {
-        public Sensor.SensorOptions Options => options = options ?? new Sensor.SensorOptions(Instance.Handle);
-
+        public IOptionsContainer Options => options = options ?? new Sensor.SensorOptions(Instance.Handle);
+        
         internal HandleRef Instance;
 
+        protected readonly FrameQueue queue;
+
         private Sensor.SensorOptions options;
+
+        public ProcessingBlock()
+        {
+            queue = new FrameQueue(1);            
+        }
+
+        /// <summary>
+        /// Process frame and return the result
+        /// </summary>
+        /// <param name="original"></param>
+        /// <returns></returns>
+        public Frame Process(Frame original)
+        {
+            NativeMethods.rs2_frame_add_ref(original.Instance.Handle, out var error);
+            NativeMethods.rs2_process_frame(Instance.Handle, original.Instance.Handle, out error);
+
+            if (queue.PollForFrame(out Frame f))
+                return f;
+
+            return original;
+        }
+        public FrameSet Process(FrameSet original)
+        {
+            FrameSet rv;
+
+            using (var singleOriginal = original.AsFrame())
+            using (var processed = Process(singleOriginal))
+                rv = FrameSet.FromFrame(processed);
+
+            return rv;
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

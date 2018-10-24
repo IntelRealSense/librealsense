@@ -6,16 +6,26 @@ namespace Intel.RealSense.Profiles
 {
     public class StreamProfile : IDisposable
     {
+        internal static readonly ProfilePool<StreamProfile> Pool;
+
+        static StreamProfile()
+        {
+            Pool = new ProfilePool<StreamProfile>();
+        }
+
         public IntPtr Ptr => Instance.Handle;
 
-        public readonly Stream Stream;
-        public readonly Format Format;
+        public Stream Stream => stream;
+        public Format Format => format;
+        public int Framerate => framerate;
+        public int Index => index;
+        public int UniqueID => uniqueID;
 
-        public readonly int Framerate;
-
-        public readonly int Index;
-
-        public readonly int UniqueID;
+        internal Stream stream;
+        internal Format format;
+        internal int framerate;
+        internal int index;
+        internal int uniqueID;
 
         internal HandleRef Instance;
 
@@ -23,7 +33,7 @@ namespace Intel.RealSense.Profiles
         {
             Instance = new HandleRef(this, ptr);
 
-            NativeMethods.rs2_get_stream_profile_data(Instance.Handle, out Stream, out Format, out Index, out UniqueID, out Framerate, out var e);
+            NativeMethods.rs2_get_stream_profile_data(Instance.Handle, out stream, out format, out index, out uniqueID, out framerate, out var e);
         }
 
         public Extrinsics GetExtrinsicsTo(StreamProfile other)
@@ -33,7 +43,7 @@ namespace Intel.RealSense.Profiles
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        internal bool disposedValue = false; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
@@ -73,6 +83,7 @@ namespace Intel.RealSense.Profiles
             //if(m_instance.Handle != IntPtr.Zero)
             //NativeMethods.rs2_delete_str(m_instance.Handle);
             Instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
         }
     }
 }

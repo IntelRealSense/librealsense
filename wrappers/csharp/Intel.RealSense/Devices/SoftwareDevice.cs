@@ -1,8 +1,7 @@
-﻿using Intel.RealSense.Devices;
-using Intel.RealSense.Types;
+﻿using Intel.RealSense.Types;
 using System;
 
-namespace Intel.RealSense
+namespace Intel.RealSense.Devices
 {
     public class SoftwareDevice : Device
     {

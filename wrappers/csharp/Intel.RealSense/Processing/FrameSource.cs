@@ -1,48 +1,77 @@
 ﻿using Intel.RealSense.Frames;
 using Intel.RealSense.Profiles;
 using Intel.RealSense.Types;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense.Processing
 {
-    public class FrameSource
+    public struct FrameSource
     {
-        internal HandleRef Instance;
+        internal readonly HandleRef Instance;
 
         internal FrameSource(HandleRef instance)
         {
             Instance = instance;
         }
 
-        public VideoFrame AllocateVideoFrame(StreamProfile profile, Frame original, int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame)
+        public T AllocateVideoFrame<T>(StreamProfile profile, Frame original,
+           int bpp, int width, int height, int stride, Extension extension = Extension.VideoFrame) where T : Frame
         {
             var fref = NativeMethods.rs2_allocate_synthetic_video_frame(Instance.Handle, profile.Instance.Handle, original.Instance.Handle, bpp, width, height, stride, extension, out var error);
-            return new VideoFrame(fref);
+            return Frame.CreateFrame(fref) as T;
         }
 
+        [Obsolete("This method is obsolete. Use AllocateCompositeFrame with DisposeWith method instead")]
         public FrameSet AllocateCompositeFrame(FramesReleaser releaser, params Frame[] frames)
-        {
-            object error;
-            var frameRefs = frames.Select(x => x.Instance.Handle).ToArray();
-            foreach (var fref in frameRefs) NativeMethods.rs2_frame_add_ref(fref, out error);
-            var frameRef = NativeMethods.rs2_allocate_composite_frame(Instance.Handle, frameRefs, frames.Count(), out error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(frameRef));
-        }
+            => AllocateCompositeFrame((IList<Frame>)frames).DisposeWith(releaser);
 
         public FrameSet AllocateCompositeFrame(params Frame[] frames)
-            => AllocateCompositeFrame(null, frames);
+            => AllocateCompositeFrame((IList<Frame>)frames);
 
-        public void FrameReady(Frame f)
+        public FrameSet AllocateCompositeFrame(IList<Frame> frames)
         {
-            NativeMethods.rs2_frame_add_ref(f.Instance.Handle, out var error);
-            NativeMethods.rs2_synthetic_frame_ready(Instance.Handle, f.Instance.Handle, out error);
+            if (frames == null)
+                throw new ArgumentNullException(nameof(frames));
+
+            IntPtr frameRefs = IntPtr.Zero;
+
+            try
+            {
+                object error;
+                int fl = frames.Count;
+                frameRefs = Marshal.AllocHGlobal(fl * IntPtr.Size);
+                for (int i = 0; i < fl; i++)
+                {
+                    var fr = frames[i].Instance.Handle;
+                    Marshal.WriteIntPtr(frameRefs, i * IntPtr.Size, fr);
+                    NativeMethods.rs2_frame_add_ref(fr, out error);
+                }
+
+                var frame_ref = NativeMethods.rs2_allocate_composite_frame(Instance.Handle, frameRefs, fl, out error);
+                return FrameSet.Pool.Get(frame_ref);
+            }
+            finally
+            {
+                if (frameRefs != IntPtr.Zero)
+                    Marshal.FreeHGlobal(frameRefs);
+            }
         }
 
-        public void FramesReady(FrameSet fs)
+        public void FrameReady(IntPtr ptr)
         {
-            using (var f = fs.AsFrame())
-                FrameReady(f);
+            NativeMethods.rs2_frame_add_ref(ptr, out var error);
+            NativeMethods.rs2_synthetic_frame_ready(Instance.Handle, ptr, out error);
+        }
+        public void FrameReady(Frame frame) 
+            => FrameReady(frame.Instance.Handle);
+
+        public void FramesReady(FrameSet frameSet)
+        {
+            using (frameSet)
+                FrameReady(frameSet.Instance.Handle);
         }
     }
 }

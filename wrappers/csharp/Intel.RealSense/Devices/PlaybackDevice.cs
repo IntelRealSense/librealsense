@@ -27,13 +27,13 @@ namespace Intel.RealSense.Devices
 
         }
 
-        public void Pause() 
+        public void Pause()
             => NativeMethods.rs2_playback_device_pause(Instance, out var error);
 
-        public void Resume() 
+        public void Resume()
             => NativeMethods.rs2_playback_device_resume(Instance, out var error);
-                
-        public void Seek(long time) 
+
+        public void Seek(long time)
             => NativeMethods.rs2_playback_seek(Instance, time, out var error);
 
         public static PlaybackDevice FromDevice(Device dev)
@@ -44,6 +44,11 @@ namespace Intel.RealSense.Devices
             }
 
             return new PlaybackDevice(dev.Instance);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            // Intentionally empty, does not own the native device, only wraps it.
         }
     }
 }

@@ -43,14 +43,14 @@ namespace Intel.RealSense.Devices
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() 
+        IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
-               
-       
 
-        public bool Contains(Device device) 
+
+
+        public bool Contains(Device device)
             => Convert.ToBoolean(NativeMethods.rs2_device_list_contains(instance, device.Instance, out var error));
-        
+
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -79,13 +79,13 @@ namespace Intel.RealSense.Devices
                 disposedValue = true;
             }
         }
-        
+
         ~DeviceList()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
-        }       
-        
+        }
+
         #endregion
     }
 }

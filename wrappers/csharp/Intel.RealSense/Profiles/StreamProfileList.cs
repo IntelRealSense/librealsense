@@ -6,7 +6,19 @@ using System.Collections.Generic;
 namespace Intel.RealSense.Profiles
 {
     public class StreamProfileList : IDisposable, IEnumerable<StreamProfile>
-    {
+    {        
+        public StreamProfile this[int index]
+        {
+            get
+            {
+                var ptr = NativeMethods.rs2_get_stream_profile(instance, index, out var error);
+                if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
+                    return VideoStreamProfile.Pool.Get(ptr);
+                else
+                    return StreamProfile.Pool.Get(ptr);
+            }
+        }
+
         private IntPtr instance;
 
         public StreamProfileList(IntPtr ptr)
@@ -23,9 +35,9 @@ namespace Intel.RealSense.Profiles
                 var ptr = NativeMethods.rs2_get_stream_profile(instance, i, out error);
 
                 if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
-                    yield return new VideoStreamProfile(ptr);
+                    yield return VideoStreamProfile.Pool.Get(ptr);
                 else
-                    yield return new StreamProfile(ptr);
+                    yield return StreamProfile.Pool.Get(ptr);
             }
         }
 
@@ -38,18 +50,6 @@ namespace Intel.RealSense.Profiles
             {
                 int deviceCount = NativeMethods.rs2_get_stream_profiles_count(instance, out var error);
                 return deviceCount;
-            }
-        }
-
-        public StreamProfile this[int index]
-        {
-            get
-            {
-                var ptr = NativeMethods.rs2_get_stream_profile(instance, index, out var error);
-                if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
-                    return new VideoStreamProfile(ptr);
-                else
-                    return new StreamProfile(ptr);
             }
         }
 

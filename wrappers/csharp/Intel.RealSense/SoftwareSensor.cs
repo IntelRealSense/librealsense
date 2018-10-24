@@ -11,27 +11,28 @@ namespace Intel.RealSense
         {
         }
 
-        public void AddVideoFrame(byte[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
+        public void AddVideoFrame(SoftwareVideoFrame f, IntPtr user_data) 
+            => NativeMethods.rs2_software_sensor_on_video_frame(Instance, f, user_data, out var error);
+        public void AddVideoFrame<T>(T[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
         {
-            IntPtr hglobal = Marshal.AllocHGlobal(profile.Height * stride);
-            var del = new frame_deleter(p => { Marshal.FreeHGlobal(p); });
-            Marshal.Copy(pixels, 0, hglobal, profile.Height * stride);
+            var h = GCHandle.Alloc(pixels, GCHandleType.Pinned);
 
-            var s = new NativeMethods.SoftwareVideoFrame
+            AddVideoFrame(new SoftwareVideoFrame
             {
-                pixels = hglobal,
-                deleter = del,
+                pixels = h.AddrOfPinnedObject(),
+                deleter = (f, p) => { GCHandle.FromIntPtr(p).Free(); },
                 stride = stride,
                 bpp = bpp,
                 timestamp = timestamp,
                 domain = domain,
                 frame_number = frameNumber,
-                profile = profile.Instance.Handle
-            };
-            NativeMethods.rs2_software_sensor_on_video_frame(instance, s, out var error);
+                profile = profile.m_instance.Handle
+            }, GCHandle.ToIntPtr(h));
         }
+        public void AddVideoFrame(IntPtr pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
+        {
 
-        public VideoStreamProfile AddVideoStream(VideoStream profile)
+            public VideoStreamProfile AddVideoStream(VideoStream profile)
             => new VideoStreamProfile(NativeMethods.rs2_software_sensor_add_video_stream(instance, profile, out var error));
 
         public void SetMetadata(FrameMetadataValue type, long value)

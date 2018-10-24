@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Sensor : IDisposable
+    public class Sensor : IOptions, IDisposable
     {
         /// <summary>
         /// retrieve mapping between the units of the depth image and meters
@@ -28,7 +28,7 @@ namespace Intel.RealSense
                 return info;
             }
         }
-        public SensorOptions Options => options = options ?? new SensorOptions(instance);
+        public IOptionsContainer Options => options = options ?? new SensorOptions(instance);
         public StreamProfileList StreamProfiles
            => new StreamProfileList(NativeMethods.rs2_get_stream_profiles(instance, out var error));
         public IEnumerable<VideoStreamProfile> VideoStreamProfiles
@@ -141,7 +141,7 @@ namespace Intel.RealSense
         }
         #endregion
 
-        public class SensorOptions : IEnumerable<CameraOption>
+        public class SensorOptions : IOptionsContainer
         {
             private static readonly Option[] OptionValues;
 
@@ -152,12 +152,12 @@ namespace Intel.RealSense
                 OptionValues = Enum.GetValues(typeof(Option)) as Option[];
             }
 
-            public SensorOptions(IntPtr sensor)
+            internal SensorOptions(IntPtr sensor)
             {
                 this.sensor = sensor;
             }
 
-            public CameraOption this[Option option] => new CameraOption(sensor, option);
+            public IOption this[Option option] => new CameraOption(sensor, option);
             public string OptionValueDescription(Option option, float value)
             {
                 var desc = NativeMethods.rs2_get_option_value_description(sensor, option, value, out var error);
@@ -168,7 +168,7 @@ namespace Intel.RealSense
                 return null;
             }
 
-            public IEnumerator<CameraOption> GetEnumerator()
+            public IEnumerator<IOption> GetEnumerator()
             {
 
                 foreach (var v in OptionValues)
@@ -182,7 +182,7 @@ namespace Intel.RealSense
                 => GetEnumerator();
         }
 
-        public class CameraOption
+        internal class CameraOption : IOption
         {
             public bool Supported
             {
@@ -190,7 +190,7 @@ namespace Intel.RealSense
                 {
                     try
                     {
-                        return NativeMethods.rs2_supports_option(sensor, option, out var error) > 0;
+                        return NativeMethods.rs2_supports_option(sensor, Key, out var error) > 0;
                     }
                     catch (Exception)
                     {
@@ -199,45 +199,52 @@ namespace Intel.RealSense
                 }
             }
 
-            public Option Key => option;
-            public string Description => description;
+            public Option Key { get; }
+            public string Description {
+                get
+                {
+                    if (description == null)
+                    {
+                        object error;
+                        var str = NativeMethods.rs2_get_option_description(sensor, Key, out error);
+                        description = Marshal.PtrToStringAnsi(str);
+                    }
+                    return description;
+                }
+            }
             public float Value
             {
-                get => NativeMethods.rs2_get_option(sensor, option, out var error);
-                set => NativeMethods.rs2_set_option(sensor, option, value, out var error);
+                get => NativeMethods.rs2_get_option(sensor, Key, out var error);
+                set => NativeMethods.rs2_set_option(sensor, Key, value, out var error);
             }
             public string ValueDescription => GetValueDescription(Value);
             public string GetValueDescription(float value)
             {
-                var str = NativeMethods.rs2_get_option_value_description(sensor, option, value, out var error);
+                var str = NativeMethods.rs2_get_option_value_description(sensor, Key, value, out var error);
                 return Marshal.PtrToStringAnsi(str);
             }
             public float Min => min;
             public float Max => max;
             public float Step => step;
             public float Default => @default;
-            public bool ReadOnly => NativeMethods.rs2_is_option_read_only(sensor, option, out var error) != 0;
+            public bool ReadOnly => NativeMethods.rs2_is_option_read_only(sensor, Key, out var error) != 0;
+
+            private string description;
 
             private readonly IntPtr sensor;
-            private readonly Option option;
-
             private readonly float min;
             private readonly float max;
             private readonly float step;
             private readonly float @default;
-            private readonly string description;
-
+            
             public CameraOption(IntPtr sensor, Option option)
             {
                 this.sensor = sensor;
-                this.option = option;
+                Key = option;
 
                 if (Supported)
                 {
                     NativeMethods.rs2_get_option_range(this.sensor, option, out min, out max, out step, out @default, out var error);
-
-                    var str = NativeMethods.rs2_get_option_description(this.sensor, option, out error);
-                    description = Marshal.PtrToStringAnsi(str);
                 }
             }
         }

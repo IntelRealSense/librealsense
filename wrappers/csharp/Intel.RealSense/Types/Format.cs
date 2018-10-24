@@ -20,5 +20,7 @@
         MotionRaw = 15,
         MotionXyz32f = 16,
         GpioRaw = 17,
+        SixDOF = 18,
+        Disparity32 = 19
     }
 }
