@@ -451,11 +451,16 @@ void make_factory(){
             // try/catch moved to outer framework
             outv[0] = MatlabParamParser::wrap(thiz.get_color_frame());
         });
-        frameset_factory.record("get_infrared_frame", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        frameset_factory.record("get_infrared_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
             // try/catch moved to outer framework
-            outv[0] = MatlabParamParser::wrap(thiz.get_infrared_frame());
+            if (inc == 1)
+                outv[0] = MatlabParamParser::wrap(thiz.get_infrared_frame());
+            else {
+                auto index = MatlabParamParser::parse<size_t>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.get_infrared_frame(index));
+            }
         });
         frameset_factory.record("size", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -898,10 +903,10 @@ void make_factory(){
         frame_queue_factory.record("wait_for_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
-            if (inc == 0) {
+            if (inc == 1) {
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame());
             }
-            else if (inc == 1) {
+            else if (inc == 2) {
                 auto timeout_ms = MatlabParamParser::parse<unsigned int>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame(timeout_ms));
             }
@@ -953,10 +958,10 @@ void make_factory(){
         syncer_factory.record("wait_for_frames", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::syncer>(inv[0]);
-            if (inc == 0) {
+            if (inc == 1) {
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames());
             }
-            else if (inc == 1) {
+            else if (inc == 2) {
                 auto timeout_ms = MatlabParamParser::parse<unsigned int>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
             }
