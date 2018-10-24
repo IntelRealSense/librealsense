@@ -91,7 +91,7 @@ test_script:
 
     if ($LASTEXITCODE -ne 0)
     {
-        $test_failed +=  $element
+        $test_failed +=  "software-device"
     }
 
     foreach ($element in $records) 

@@ -54,7 +54,6 @@ The Unity wrapper provides several example scenes to help you get started with R
 
 The RealSenseDevice provides an encapsulation of a single device connected to the system. The following image displays the RealSenseDevice script:
 
-
 ![image](https://user-images.githubusercontent.com/22654243/36370418-77bf062a-1567-11e8-98ee-c2489aeb1208.png)
 
 ##### Process Mode
@@ -84,31 +83,39 @@ Once the device is streaming, Unity Inspector will show the device's sensors and
 
 ##### Texture Streams
 
-Under the `RealSenseDeivce` object in Unity's Hierarchy view, you can find a number of textures that bind to the device's frame callback and allow user to bind a texture to be updated upon frame arrival.
+Under the `RsDeivce` object in Unity's Hierarchy view, you can find a number of textures that are binded to a 'RsFrameProvider' (RsDevice or RsProcessingPipe) frame callbacks and allow a texture to be updated upon frame arrival.
 
-
-![realsensedevice](https://user-images.githubusercontent.com/18511514/43199439-9e95952e-901a-11e8-9d43-b90cedb5d5d1.PNG)
+![rsdevice](https://user-images.githubusercontent.com/18511514/47161652-212cab80-d2fb-11e8-8c8b-d627ee8af2d5.PNG)
 
 Each texture stream is associated with the `RealSenseStreamTexture` script which allows user to bind their textures so that they will be updated with each new frame. The following screenshot displays the configurations available for users when using a texture stream:
 
-![realsensestreamtexture](https://user-images.githubusercontent.com/18511514/43199495-d9f80160-901a-11e8-815c-f1de8c273e84.PNG)
+![realsensestreamtexture](https://user-images.githubusercontent.com/18511514/47161651-20941500-d2fb-11e8-8293-18459c057c98.PNG)
 
-* VideoStreamFilter - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
+* Source - Select the requested RsFrameProvider
+* Stream / Format / Index - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
 * Texture Binding - Allows the user to bind textures to the script. Multiple textures can be bound to a single script.
-* Fetch Frames From Device - Toggle whether the script should fetch the frames from the device, or should wait for the user to pass frame to is using its `OnFrame` method.
 
-##### Processing Blocks
+##### Processing Pipe
 
-Processing blocks are scripts that can be attached to the RealSense device in order to create a processing pipe.
-There are two types of processing blocks:
-1. VideoProcessingBlock - processing a single frame (i.e. `HoleFillingFilter.cs`)
-2. MultiFrameVideoProcessingBlock - processing a frame set (i.e. `Aligment.cs`)
-
-The processing pipe first process all all the single frame blocks orders by the `Order` property, once all the single frame blocks are processed, the pipe creates a new frame set and push it to the multi frames blocks.
+The 'RsProcessingPipe' prefab use the 'RsProcessingProfile' asset to attach a set of processing blocks to a 'RsFrameProvider' (RsDevice or RsProcessingPipe).
 Each processing block has its own properties that can be modified on run time.
 
-An example for the usage of the processing blocks can be found in "PointCloudProcessingBlocks" scene (single frame) and "AlignmentSample" scense (multi frame)
-![processingblocks](https://user-images.githubusercontent.com/18511514/43201391-0898b93c-9021-11e8-84e8-5801394136de.PNG)
+A processing profile can be created as shown below:
+
+>Create a new processing profile
+>
+>![processingprofile](https://user-images.githubusercontent.com/18511514/47161646-1ffb7e80-d2fb-11e8-9793-4acf96191903.PNG)
+
+>Attach the processing profile to the RsProcessingPipe prefab
+>
+>![processingprofile2](https://user-images.githubusercontent.com/18511514/47161647-1ffb7e80-d2fb-11e8-948c-6ca57afe9375.PNG)
+
+>Add and configure processing blocks
+> 
+>![processingprofile3](https://user-images.githubusercontent.com/18511514/47161650-20941500-d2fb-11e8-8994-f7b8452e254a.PNG)
+ 
+An example for the usage of the processing blocks can be found in "PointCloudProcessingBlocks" scene and "AlignmentSample" scense.
+![processingblocks](https://user-images.githubusercontent.com/18511514/47161644-1ffb7e80-d2fb-11e8-9dc2-80c897aa2544.PNG)
 
 ##### Point Cloud
 
@@ -117,8 +124,9 @@ Under the `RealSenseDeivce` object in each of the point cloud sample scenes, you
 The PointCloud object uses the `PointCloudGenerator.cs` script.
 A texture for the point cloud can be provided using `RealSenseStreamTexture.cs` by binding it to PointCloudMat.
 
-![pointcloudtexture](https://user-images.githubusercontent.com/18511514/43202279-c26ff440-9023-11e8-8bee-349d0faced57.PNG)
-![pointcloudprefab](https://user-images.githubusercontent.com/18511514/43202278-c0e53c5c-9023-11e8-8fb9-a8a23f52a105.PNG)
+![pointcloudtexture](https://user-images.githubusercontent.com/18511514/47161642-1ffb7e80-d2fb-11e8-957f-7d34e3f88532.PNG)
+
+![pointcloudprefab](https://user-images.githubusercontent.com/18511514/47161641-1f62e800-d2fb-11e8-9318-b96b0e7cc020.PNG)
 
 ### Images
 
@@ -127,5 +135,3 @@ The Unity wrapper comes with a set of Unity Materials alongside matching Shaders
 To get a texture, we provide several Image objects under the `Images` prefab:
 
 ![image](https://user-images.githubusercontent.com/22654243/35591778-cc043fce-0613-11e8-8138-3aa440e54513.png)
-
-> The above image shows the `ColorizedDepthImage`

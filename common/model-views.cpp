@@ -1397,7 +1397,7 @@ namespace rs2
         _pause = false;
     }
 
-    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
+    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
         std::stringstream ss;
         ss << "Starting streaming of ";
@@ -1412,11 +1412,11 @@ namespace rs2
         s->open(profiles);
 
         try {
-            s->start([&](frame f)
+            s->start([&, syncer](frame f)
             {
                 if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    viewer.s.invoke(f);
+                    syncer->invoke(f);
                 }
                 else
                 {
@@ -2100,7 +2100,7 @@ namespace rs2
         if (render_pose)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
-            const int num_of_pose_buttons = 3; // trajectory, draw camera, boundary selection
+            const int num_of_pose_buttons = 2; // trajectory, draw camera
 
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
             ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
@@ -2136,25 +2136,6 @@ namespace rs2
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
-
-            // Draw boundary selection button
-            ImGui::SameLine();
-            color_icon = tm2.boundary_button.is_pressed(); //draw boundary is on - color the icon
-            if (color_icon)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            }
-            if (ImGui::Button(tm2.boundary_button.get_icon().c_str(), { 24, buttons_heights }))
-            {
-                tm2.boundary_button.toggle_button();
-            }
-            if (color_icon)
-            {
-                ImGui::PopStyleColor(2);
-            }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", tm2.boundary_button.get_tooltip().c_str());
 
             ImGui::End();
         }
@@ -2799,8 +2780,10 @@ namespace rs2
 
     void device_model::reset()
     {
+        syncer->remove_syncer(dev_syncer);
         subdevices.resize(0);
         _recorder.reset();
+
     }
 
     std::pair<std::string, std::string> get_device_name(const device& dev)
@@ -2825,7 +2808,8 @@ namespace rs2
     }
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
-        : dev(dev)
+        : dev(dev),
+          syncer(viewer.syncer)
     {
         for (auto&& sub : dev.query_sensors())
         {
@@ -2871,6 +2855,8 @@ namespace rs2
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
+        if(!dev_syncer)
+            dev_syncer = viewer.syncer->create_syncer();
         for (auto&& sub : subdevices)
         {
             if (!sub->streaming)
@@ -2888,7 +2874,7 @@ namespace rs2
                 if (profiles.empty())
                     continue;
 
-                sub->play(profiles, viewer);
+                sub->play(profiles, viewer, dev_syncer);
 
                 for (auto&& profile : profiles)
                 {
@@ -3231,21 +3217,36 @@ namespace rs2
             source.frame_ready(std::move(res));
     }
 
+    void post_processing_filters::start()
+    {
+        if (render_thread_active.exchange(true) == false)
+        {
+            viewer.syncer->start();
+            render_thread = std::thread([&](){post_processing_filters::render_loop();});
+        }
+    }
 
+    void post_processing_filters::stop()
+    {
+        if (render_thread_active.exchange(false) == true)
+        {
+            viewer.syncer->stop();
+            render_thread.join();
+        }
+    }
     void post_processing_filters::render_loop()
     {
         while (render_thread_active)
         {
             try
             {
-                frame frm;
                 if(viewer.synchronization_enable)
                 {
-                    auto index = 0;
-                    while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
-                    {
-                        processing_block.invoke(frm);
-                    }
+                    auto frames = viewer.syncer->try_wait_for_frames();
+                        for(auto f:frames)
+                        {
+                            processing_block.invoke(f);
+                        }
                 }
                 else
                 {
@@ -3926,7 +3927,6 @@ namespace rs2
                 rs2_vector translation{ pose_trans.mat[0][3], pose_trans.mat[1][3], pose_trans.mat[2][3] };
                 tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
                 tm2.draw_trajectory(p);
-                tm2.draw_boundary(p);
             }
         }
 
@@ -5821,7 +5821,15 @@ namespace rs2
                                 auto profiles = sub->get_selected_profiles();
                                 try
                                 {
-                                    sub->play(profiles, viewer);
+                                    if(!dev_syncer)
+                                        dev_syncer = viewer.syncer->create_syncer();
+                                    
+                                    std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
+                                    if (friendly_name.find("Tracking") != std::string::npos)
+                                    {
+                                        viewer.synchronization_enable = false;
+}
+                                    sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
                                 {
@@ -6729,76 +6737,6 @@ namespace rs2
                 trajectory.push_back(p);
             }
         }
-    }
-
-    void tm2_model::draw_boundary(tracked_point& p)
-    {
-        if (!boundary_button.is_pressed())
-        {
-            //TODO - separate button
-            if (boundary.size() > 0)
-            {
-                //cleanup last boundary
-                boundary.clear();
-            }
-            return;
-        }
-
-        // if new boundary - grab from trajectory
-        if (boundary.size() == 0)
-        {
-            std::vector<float2> trajectory_projection;
-            //create the boundary from the trajectory
-            for (auto&& v : trajectory)
-            {
-                // project the trajectory on XZ plane - ignore y coordinate of the point
-                float2 p{ v.first.x, v.first.z };
-                trajectory_projection.push_back(p);
-            }
-            boundary = simplify_line(trajectory_projection);
-        }
-        // check if there is any boundary to render
-        if (boundary.size() == 0)
-        {
-            return;
-        }
-
-        // check if the current position is inside or outside the boundary, to color it accordingly
-        float2 point{ p.first.x, p.first.z };
-        bool inside = point_in_polygon_2D(boundary, point);
-        color c;
-        if (inside)
-        {
-            c = { 0.0f, 1.0f, 0.0f };
-        }
-        else
-        {
-            c = { 1.0f, 0.0f, 0.0f };
-        }
-        // draw the boundary lines parallel to XZ plane
-        glLineWidth(1.0f);
-        for (float height = -1.0f; height < 1.0f; height += 0.2f)
-        {
-            glBegin(GL_LINE_STRIP);
-            glColor3f(c[0], c[1], c[2]);
-            for (auto&& v : boundary)
-            {
-                glVertex3f(v.x, height, v.y);
-            }
-            glVertex3f(boundary[0].x, height, boundary[0].y);
-            glEnd();
-        }
-
-        // draw vertical lines along the boundary
-        glLineWidth(1.0f);
-        glBegin(GL_LINES);
-        glColor3f(c[0], c[1], c[2]);
-        for (auto&& v : boundary)
-        {
-            glVertex3f(v.x, -1.0f, v.y);
-            glVertex3f(v.x, 1.0f, v.y);
-        }
-        glEnd();
     }
 
     std::string get_timestamped_file_name()

@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1314817934
+CRC: 827759043
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 77a220749addac025edb4442d9fb7015
+    Hash: 2d1220d3d98957b62ca102abd8498a76
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 43e94fdad20c75bc683bf1b3c56f8c7b
+    Hash: bb5a68657e9add7589f6b3991cc77701
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -42,15 +42,33 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 2109663825, guid: f70555f144d8491a825f0804e09c671c, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 70a93f62582029d4aab3757e6e2fcaf2, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: edcacd9285a1fb242a7a1797a63904c6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: bec95ba2af23efd408d33138086f1c65, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3f321dd38a2028949a3ecd8e2905bb5f, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 00041e24a8ebd6a498e0ce1832ce37c2, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 2e2ca705e068d8147ab873ad0b3bd0ce, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 949c0815228b7334a89a9b09ff0c7fdb, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: aa4183e682c996540be86aee2429b651, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 18bce048bd313fc40b6eb0a08d7f83ab, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 5e9de158269bbf84dbbfe3f295429133, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: a370b019fb25fbe4384bc45033197fcd, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 475d71c97716db644863efe7bddfbd70, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: ab8658da5fac1924385546d4cfccbea4, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 48f1a4dc738fa514aa5e5d4cc3665aae, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 2a81fc1e64edf3540a7f9ba78a879104, type: 3}
 - Class: 114
@@ -74,9 +92,13 @@ Assets:
 - Assets/RealSenseSDK2.0/Misc/Textures/realsense_4c_075_white.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/color.png
 - Assets/RealSenseSDK2.0/Misc/Prefabs/ColormapDropdown.prefab
+- Assets/RealSenseSDK2.0/ProcessingPipe/AlignmentSample.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/087-on-off.png
+- Assets/RealSenseSDK2.0/ProcessingPipe/BackgroundSegmentation.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/pan.png
+- Assets/RealSenseSDK2.0/ProcessingPipe/ARBackground.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/254-pause.png
+- Assets/RealSenseSDK2.0/ProcessingPipe/PointCloudDepthAndColor.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/look.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/GitHub-Mark-Light-32px.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/081-arrow-back-left.png
@@ -85,6 +107,7 @@ Assets:
 - Assets/RealSenseSDK2.0/Misc/Textures/shadow.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/253-play.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/005b-help-outlined.png
+- Assets/RealSenseSDK2.0/ProcessingPipe/PointCloudProcessingBlocks.asset
 - Assets/RealSenseSDK2.0/Misc/Prefabs/MinMaxSlider.prefab
 - Assets/RealSenseSDK2.0/Misc/Prefabs/SampleUI.prefab
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/grayscale.png
@@ -93,3 +116,7 @@ Assets:
 - Assets/RealSenseSDK2.0/Misc/Textures/forkme_left_darkblue_121621.png
 - Assets/RealSenseSDK2.0/Misc/Textures/colormaps.png
 Dependencies: []
+
+CRC: 827759043
+    Hash: 2d1220d3d98957b62ca102abd8498a76
+    Hash: bb5a68657e9add7589f6b3991cc77701

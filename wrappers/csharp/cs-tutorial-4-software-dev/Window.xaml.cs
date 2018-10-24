@@ -14,7 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
+using System.Windows.Threading;
 
 namespace Intel.RealSense
 {
@@ -23,47 +23,44 @@ namespace Intel.RealSense
     /// </summary>
     public partial class CaptureWindow : Window
     {
-        private Pipeline  pipeline;
+        private Pipeline pipeline;
         private Colorizer colorizer;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-        private void UploadImage(Image img, VideoFrame frame)
+        static Action<VideoFrame> UpdateImage(Image img)
         {
-            Dispatcher.Invoke(new Action(() =>
+            var wbmp = img.Source as WriteableBitmap;
+            return new Action<VideoFrame>(frame =>
             {
-                if (frame.Width == 0) return;
-
-                var bytes = new byte[frame.Stride * frame.Height];
-                frame.CopyTo(bytes);
-
-                var bs = BitmapSource.Create(frame.Width, frame.Height,
-                                  300, 300,
-                                  PixelFormats.Rgb24,
-                                  null,
-                                  bytes,
-                                  frame.Stride);
-
-                var imgSrc = bs as ImageSource;
-
-                img.Source = imgSrc;
-            }));
+                using (frame)
+                {
+                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
+                }
+            });
         }
 
         public CaptureWindow()
         {
-            //Log.ToFile(LogSeverity.Debug, "1.log");
+            InitializeComponent();
 
             try
             {
+                Action<VideoFrame> updateDepth;
+                Action<VideoFrame> updateColor;
+
                 pipeline = new Pipeline();
                 colorizer = new Colorizer();
 
                 var cfg = new Config();
-                cfg.EnableStream(Stream.Depth, 640, 480, Format.Z16,  30);
+                cfg.EnableStream(Stream.Depth, 640, 480, Format.Z16, 30);
                 cfg.EnableStream(Stream.Color, 640, 480, Format.Rgb8, 30);
 
                 var profile = pipeline.Start(cfg);
 
+                SetupWindow(profile, out updateDepth, out updateColor);
+
+                // Setup the SW device and sensors
                 var software_dev = new SoftwareDevice();
                 var depth_sensor = software_dev.AddSensor("Depth");
                 var depth_profile = depth_sensor.AddVideoStream(new VideoStream
@@ -87,10 +84,11 @@ namespace Intel.RealSense
                     width = 640,
                     height = 480,
                     fps = 30,
-                    bpp = 2,
-                    fmt = Format.Z16,
+                    bpp = 3,
+                    fmt = Format.Rgb8,
                     intrinsics = (profile.GetStream(Stream.Color) as VideoStreamProfile).GetIntrinsics()
                 });
+
                 // Note about the Syncer: If actual FPS is significantly different from reported FPS in AddVideoStream
                 // this can confuse the syncer and prevent it from producing synchronized pairs
                 software_dev.SetMatcher(Matchers.Default);
@@ -100,15 +98,9 @@ namespace Intel.RealSense
                 depth_sensor.Open(depth_profile);
                 color_sensor.Open(color_profile);
 
-                depth_sensor.Start(f =>
-                {
-                    sync.SubmitFrame(f);
-                    //Debug.WriteLine("D");
-                });
-                color_sensor.Start(f => {
-                    sync.SubmitFrame(f);
-                    //Debug.WriteLine("C");
-                });
+                // Push the SW device frames to the syncer
+                depth_sensor.Start(f => { sync.SubmitFrame(f); });
+                color_sensor.Start(f => { sync.SubmitFrame(f); });
 
                 var token = tokenSource.Token;
 
@@ -116,43 +108,38 @@ namespace Intel.RealSense
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        var frames = pipeline.WaitForFrames();
-
-                        var depth_frame = frames.DepthFrame;
-                        var color_frame = frames.ColorFrame;
-
-                        var bytes = new byte[depth_frame.Stride * depth_frame.Height];
-                        depth_frame.CopyTo(bytes);
-                        depth_sensor.AddVideoFrame(bytes, depth_frame.Stride, 2, depth_frame.Timestamp,
-                            depth_frame.TimestampDomain, (int)depth_frame.Number,
-                            depth_profile);
-
-                        bytes = new byte[color_frame.Stride * color_frame.Height];
-                        color_frame.CopyTo(bytes);
-                        color_sensor.AddVideoFrame(bytes, color_frame.Stride, 2, depth_frame.Timestamp,
-                            color_frame.TimestampDomain, (int)depth_frame.Number,
-                            color_profile);
-
-                        depth_frame.Dispose();
-                        color_frame.Dispose();
-                        frames.Dispose();
-
-                        var new_frames = sync.WaitForFrames();
-                        if (new_frames.Count == 2)
+                        // We use the frames that are captured from live camera as the input data for the SW device
+                        using (var frames = pipeline.WaitForFrames())
                         {
-                            depth_frame = new_frames.DepthFrame;
-                            color_frame = new_frames.ColorFrame;
+                            var depthFrame = frames.DepthFrame.DisposeWith(frames);
+                            var colorFrame = frames.ColorFrame.DisposeWith(frames);
 
-                            var colorized_depth = colorizer.Colorize(depth_frame);
+                            var depthBytes = new byte[depthFrame.Stride * depthFrame.Height];
+                            depthFrame.CopyTo(depthBytes);
+                            depth_sensor.AddVideoFrame(depthBytes, depthFrame.Stride, depthFrame.BitsPerPixel / 8, depthFrame.Timestamp,
+                            depthFrame.TimestampDomain, (int)depthFrame.Number, depth_profile);
 
-                            UploadImage(imgDepth, colorized_depth);
-                            UploadImage(imgColor, color_frame);
-
-                            depth_frame.Dispose();
-                            colorized_depth.Dispose();
-                            color_frame.Dispose();
+                            var colorBytes = new byte[colorFrame.Stride * colorFrame.Height];
+                            colorFrame.CopyTo(colorBytes);
+                            color_sensor.AddVideoFrame(colorBytes, colorFrame.Stride, colorFrame.BitsPerPixel / 8, colorFrame.Timestamp,
+                                colorFrame.TimestampDomain, (int)colorFrame.Number, color_profile);
                         }
-                        new_frames.Dispose();
+
+                        // Dispaly the frames that come from the SW device after synchronization
+                        using (var new_frames = sync.WaitForFrames())
+                        {
+                            if (new_frames.Count == 2)
+                            {
+                                var depthFrame = new_frames.DepthFrame.DisposeWith(new_frames);
+                                var colorFrame = new_frames.ColorFrame.DisposeWith(new_frames);
+
+                                VideoFrame colorizedDepth = colorizer.Process(depthFrame).DisposeWith(new_frames) as VideoFrame;
+
+                                // Render the frames.
+                                Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
+                                Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+                            }
+                        }
                     }
                 }, token);
             }
@@ -161,13 +148,22 @@ namespace Intel.RealSense
                 MessageBox.Show(ex.Message);
                 Application.Current.Shutdown();
             }
-
-            InitializeComponent();
         }
 
         private void control_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             tokenSource.Cancel();
+        }
+
+        private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> depth, out Action<VideoFrame> color)
+        {
+            using (var p = pipelineProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+                imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            depth = UpdateImage(imgDepth);
+
+            using (var p = pipelineProfile.GetStream(Stream.Color) as VideoStreamProfile)
+                imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            color = UpdateImage(imgColor);
         }
     }
 }

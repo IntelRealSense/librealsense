@@ -67,6 +67,7 @@ add_library(${PROJECT_NAME}
 	Types\VideoStream.cs
 
 
+	Option.cs
 	.nuget/Intel.RealSense.targets
 )
 
@@ -105,4 +106,8 @@ add_dependencies(${PROJECT_NAME} realsense2)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
 	FOLDER Wrappers/csharp
+)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
+	"System"
 )

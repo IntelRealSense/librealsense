@@ -4,7 +4,7 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: depthMat
   m_Shader: {fileID: 4800000, guid: f8395e4599857704d889f76eb8a306b5, type: 3}
@@ -29,6 +29,6 @@ Material:
     m_Floats:
     - _Colormap: 3
     - _DepthScale: 0.001
-    - _MaxRange: 2.2857144
+    - _MaxRange: 7.714286
     - _MinRange: 0
     m_Colors: []
