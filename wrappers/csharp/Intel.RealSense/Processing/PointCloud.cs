@@ -34,7 +34,9 @@ namespace Intel.RealSense.Processing
                 indexFilter.Value = p.Index;
             }
 
+#pragma warning disable CS0642 // empty statement
             using (var f = Process(texture)) ;
+#pragma warning restore CS0642 // empty statement
         }
     }
 }

@@ -43,7 +43,7 @@ namespace Intel.RealSense.Frames
                 NativeMethods.rs2_release_frame(Instance.Handle);
 
             Instance = new HandleRef(this, IntPtr.Zero);
-            Pool.Releas(this);
+            Pool.Release(this);
         }
 
         public Frame Clone()

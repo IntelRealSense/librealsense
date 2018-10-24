@@ -149,7 +149,7 @@ namespace Intel.RealSense
 
             Instance = new HandleRef(this, IntPtr.Zero);
 
-            Pool.Realease(this); //TODO: Should be reimplemented as Threadsafe Pool.
+            Pool.Release(this); //TODO: Should be reimplemented as Threadsafe Pool.
         }
 
         public void ForEach(Action<Frame> action)

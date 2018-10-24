@@ -26,13 +26,25 @@ namespace Intel.RealSense
                 timestamp = timestamp,
                 domain = domain,
                 frame_number = frameNumber,
-                profile = profile.m_instance.Handle
+                profile = profile.Instance.Handle
             }, GCHandle.ToIntPtr(h));
         }
         public void AddVideoFrame(IntPtr pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
         {
+            AddVideoFrame(new SoftwareVideoFrame
+            {
+                pixels = pixels,
+                deleter = delegate { },
+                stride = stride,
+                bpp = bpp,
+                timestamp = timestamp,
+                domain = domain,
+                frame_number = frameNumber,
+                profile = profile.Instance.Handle
+            }, IntPtr.Zero);
+        }
 
-            public VideoStreamProfile AddVideoStream(VideoStream profile)
+        public VideoStreamProfile AddVideoStream(VideoStream profile)
             => new VideoStreamProfile(NativeMethods.rs2_software_sensor_add_video_stream(instance, profile, out var error));
 
         public void SetMetadata(FrameMetadataValue type, long value)

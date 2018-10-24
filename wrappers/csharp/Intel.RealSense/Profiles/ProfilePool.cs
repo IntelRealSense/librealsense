@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Intel.RealSense.Types;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
