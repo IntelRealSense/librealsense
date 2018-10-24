@@ -920,10 +920,31 @@ void make_factory(){
         factory->record(frame_queue_factory);
     }
     {
-        ClassFactory pointcloud_factory("rs2::pointcloud");
-        pointcloud_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        ClassFactory processing_block_factory("rs2::processing_block");
+        processing_block_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::pointcloud());
+            auto thiz = MatlabParamParser::parse<rs2::processing_block>(inv[0]);
+            auto frame = MatlabParamParser::parse<rs2::frame>(inv[1]);
+            outv[0] = MatlabParamParser::wrap(thiz.process(frame));
+        });
+        // TODO: expose more functions?
+        factory->record(processing_block_factory);
+    }
+    {
+        ClassFactory pointcloud_factory("rs2::pointcloud");
+        pointcloud_factory.record("new", 1, 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::pointcloud());
+                return;
+            }
+            auto stream = MatlabParamParser::parse<rs2_stream>(inv[0]);
+            if (inc == 1)
+                outv[0] = MatlabParamParser::wrap(rs2::pointcloud(stream));
+            else {
+                auto index = MatlabParamParser::parse<int>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(rs2::pointcloud(stream, index));
+            }
         });
         pointcloud_factory.record("calculate", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -976,10 +997,7 @@ void make_factory(){
             auto align_to = MatlabParamParser::parse<rs2_stream>(inv[0]);
             outv[0] = MatlabParamParser::wrap(rs2::align(align_to));
         });
-        align_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
-        {
-            MatlabParamParser::destroy<rs2::align>(inv[0]);
-        });
+        // TODO: how does this interact with the processing_block variant? Why are the separate?
         align_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::align>(inv[0]);
@@ -990,9 +1008,13 @@ void make_factory(){
     }
     {
         ClassFactory colorizer_factory("rs2::colorizer");
-        colorizer_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        colorizer_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::colorizer());
+            if (inc == 0) outv[0] = MatlabParamParser::wrap(rs2::colorizer());
+            else {
+                auto color_scheme = MatlabParamParser::parse<float>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::colorizer(color_scheme));
+            }
         });
         colorizer_factory.record("colorize", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -1003,37 +1025,45 @@ void make_factory(){
         factory->record(colorizer_factory);
     }
     {
-        ClassFactory process_interface_factory("rs2::process_interface");
-        process_interface_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
-        {
-            // TODO: will this work?
-            auto *thiz = MatlabParamParser::parse<rs2::process_interface*>(inv[0]);
-            auto frame = MatlabParamParser::parse<rs2::frame>(inv[1]);
-            outv[0] = MatlabParamParser::wrap(thiz->process(frame));
-        });
-        factory->record(process_interface_factory);
-    }
-    {
         ClassFactory decimation_filter_factory("rs2::decimation_filter");
-        decimation_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        decimation_filter_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::decimation_filter());
+            if (inc == 0) outv[0] = MatlabParamParser::wrap(rs2::decimation_filter());
+            else {
+                auto magnitude = MatlabParamParser::parse<float>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::decimation_filter(magnitude));
+            }
         });
         factory->record(decimation_filter_factory);
     }
     {
         ClassFactory temporal_filter_factory("rs2::temporal_filter");
-        temporal_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        temporal_filter_factory.record("new", 1, 0, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::temporal_filter());
+            if (inc == 0) outv[0] = MatlabParamParser::wrap(rs2::temporal_filter());
+            else if (inc == 3) {
+                auto smooth_alpha = MatlabParamParser::parse<float>(inv[0]);
+                auto smooth_delta = MatlabParamParser::parse<float>(inv[1]);
+                auto persistence_control = MatlabParamParser::parse<int>(inv[2]);
+                outv[0] = MatlabParamParser::wrap(rs2::temporal_filter(smooth_alpha, smooth_delta, persistence_control));
+            }
+            else mexErrMsgTxt("rs2::temporal_filter::new: Wrong number of Inputs");
         });
         factory->record(temporal_filter_factory);
     }
     {
         ClassFactory spatial_filter_factory("rs2::spatial_filter");
-        spatial_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        spatial_filter_factory.record("new", 1, 0, 4, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::spatial_filter());
+            if (inc == 0) outv[0] = MatlabParamParser::wrap(rs2::spatial_filter());
+            else if (inc == 4) {
+                auto smooth_alpha = MatlabParamParser::parse<float>(inv[0]);
+                auto smooth_delta = MatlabParamParser::parse<float>(inv[1]);
+                auto magnitude = MatlabParamParser::parse<float>(inv[2]);
+                auto hole_fill = MatlabParamParser::parse<float>(inv[3]);
+                outv[0] = MatlabParamParser::wrap(rs2::spatial_filter(smooth_alpha, smooth_delta, magnitude, hole_fill));
+            }
+            else mexErrMsgTxt("rs2::spatial_filter::new: Wrong number of Inputs");
         });
         factory->record(spatial_filter_factory);
     }
@@ -1053,9 +1083,13 @@ void make_factory(){
     }
     {
         ClassFactory hole_filling_filter_factory("rs2::hole_filling_filter");
-        hole_filling_filter_factory.record("new", 1, 0, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        hole_filling_filter_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            outv[0] = MatlabParamParser::wrap(rs2::hole_filling_filter());
+            if (inc == 0) outv[0] = MatlabParamParser::wrap(rs2::hole_filling_filter());
+            else {
+                auto mode = MatlabParamParser::parse<int>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::hole_filling_filter(mode));
+            }
         });
         factory->record(hole_filling_filter_factory);
     }

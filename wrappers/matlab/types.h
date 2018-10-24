@@ -235,12 +235,12 @@ template <> mxArray* MatlabParamParser::wrap_array<rs2::texture_coordinate>(cons
 }
 
 // rs_processing.hpp
-template<> rs2::process_interface* MatlabParamParser::mx_wrapper_fns<rs2::process_interface*>::parse(const mxArray* cell)
-{
-    using traits_t = type_traits<rs2::process_interface>;
-    auto ptr = static_cast<traits_t::rs2_internal_t*>(mxGetData(cell));
-    if (ptr->type == traits_t::carrier_enum::value) return reinterpret_cast<traits_t::carrier_t*>(ptr->ptr)->get();
-    mexErrMsgTxt("Error parsing argument, object is not a process_interface");
-}
+//template<> rs2::process_interface* MatlabParamParser::mx_wrapper_fns<rs2::process_interface*>::parse(const mxArray* cell)
+//{
+//    using traits_t = type_traits<rs2::process_interface>;
+//    auto ptr = static_cast<traits_t::rs2_internal_t*>(mxGetData(cell));
+//    if (ptr->type == traits_t::carrier_enum::value) return reinterpret_cast<traits_t::carrier_t*>(ptr->ptr)->get();
+//    mexErrMsgTxt("Error parsing argument, object is not a process_interface");
+//}
 
 // rs_pipeline.hpp

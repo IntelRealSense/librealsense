@@ -148,9 +148,6 @@
     <None Include="syncer.m">
       <Filter>Matlab Files\Classes</Filter>
     </None>
-    <None Include="process_interface.m">
-      <Filter>Matlab Files\Classes</Filter>
-    </None>
     <None Include="colorizer.m">
       <Filter>Matlab Files\Classes</Filter>
     </None>
@@ -180,6 +177,9 @@
     </None>
     <None Include="rosbag_example.m">
       <Filter>Matlab Files\Examples</Filter>
+    </None>
+    <None Include="processing_block.m">
+      <Filter>Matlab Files\Classes</Filter>
     </None>
   </ItemGroup>
 </Project>
