@@ -104,6 +104,8 @@ namespace librealsense
 
                     frame_interface* pframe = nullptr;
                     std::swap((*pf).frame, pframe);
+                    std::lock_guard<std::mutex> l(m_mutex);
+
                     m_user_callback->on_frame((rs2_frame*)pframe);
                     update_last_pushed_frame();
                 };
