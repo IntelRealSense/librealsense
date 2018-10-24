@@ -131,6 +131,8 @@ static void android_irsa_IrsaMgr_native_release(JNIEnv *env, jobject thiz) {
         IrsaPreview_native_finalize();
         IrsaMgr_native_finalize();
         bReleased = true;
+    } else {
+        LOGV("already released");
     }
 }
 

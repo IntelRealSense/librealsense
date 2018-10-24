@@ -5,7 +5,8 @@
 
 #######################################################
 #targets= armeabi-v7a x86 arm64-v8a x86_64
-targets= armeabi-v7a
+#targets= armeabi-v7a x86 arm64-v8a
+targets= armeabi-v7a arm64-v8a
 
 #######################################################
 #build_type is Release or Debug
@@ -107,4 +108,5 @@ clean_examples:
 	make -C examples clean
 
 clean: clean_librs  clean_irsajni  clean_irsajar clean_examples
+	@/bin/rm -rf examples/irsa_example/app/libs
 	@/bin/rm -rf out

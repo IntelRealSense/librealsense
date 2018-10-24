@@ -22,5 +22,3 @@ clean:
 		cd .. || \
 		exit 1; \
 	done
-	/bin/rm -rf ./irsa_example/app/libs
-

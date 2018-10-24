@@ -30,11 +30,17 @@ final public class IrsaMgr {
     }
 
 
+    @Override
+    protected void finalize() {
+        IrsaLog.w(TAG, "[Java] finalize");
+        native_release();
+    }
+
+
     public void release() {
         IrsaLog.w(TAG, "[Java] destructor");
         native_release();
     }
-
 
     private boolean versionCheck() {
         String javaVersion = IrsaVersion.IRSA_VERSION;

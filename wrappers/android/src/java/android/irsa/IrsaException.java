@@ -24,7 +24,7 @@ public class IrsaException extends Exception {
 		int index = message.indexOf(resultPart);
 		String errorCodePart = "ErrorCode:";
 		int index2 = message.indexOf(errorCodePart);
-			
+
 		if (index >=0) {
 			try {
 				if (index2 >= 0) {
@@ -36,7 +36,7 @@ public class IrsaException extends Exception {
 			} catch (Exception e) {
 			}
 		}
-			
+
 		if (index2 >=0) {
 			try {
 				this.internalCode = Integer.parseInt((message.substring(index2+errorCodePart.length())).trim());
@@ -49,7 +49,7 @@ public class IrsaException extends Exception {
 	public int getResult() {
 		return result;
 	}
-	
+
 	public int getInternalCode() {
 		return internalCode;
 	}

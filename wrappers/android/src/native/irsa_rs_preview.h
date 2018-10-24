@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
-// the RealsensePreview used to render RGB/Depth/IR data 
+// the RealsensePreview used to render RGB/Depth/IR data
 
 #pragma once
 
@@ -9,6 +9,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <chrono>
 
 #include <inttypes.h>
 #include <android/native_window_jni.h>
@@ -34,14 +35,12 @@ public:
 
     int getDeviceCounts();
 
-    void setRenderID(int renderID) {
-        _renderID = renderID;
-    }
+    void setRenderID(int renderID);
 
     void setStreamFormat(int stream, int width, int height, int fps, int format) {
-        _rgbWidth  = width;
-        _rgbHeight = height;
-        _rgbFPS    = fps;
+        _previewWidth  = width;
+        _previewHeight = height;
+        _previewFPS    = fps;
     }
 
     void setPreviewDisplay(std::map<int, ANativeWindow *> &surfaceMap);
@@ -52,7 +51,7 @@ public:
     void stopPreview();
 
 private:
-    void enableDevices();
+    bool enableDevices();
     void disableDevices();
 
     void threadPoll();
@@ -71,12 +70,12 @@ private:
     int _deviceCounts;
     int _renderID;
 
-    //RGB profile
-    int _rgbWidth;
-    int _rgbHeight;
-    int _rgbFPS;
+    //profile of preview stream
+    int _previewWidth;
+    int _previewHeight;
+    int _previewFPS;
 
-    //IR & Depth profile
+    //profile of IR & Depth stream
     int _depthWidth;
     int _depthHeight;
     int _depthFPS;
@@ -87,14 +86,18 @@ private:
     int _polledFrameCounts;
     int _workedFrameCounts;
 
+    std::chrono::steady_clock::time_point _beginTime;
+
     std::mutex _mutex;
     std::map<std::string, view_port> _devices;
     std::map<int, ANativeWindow *> _surfaceMap;
 
+
+
     ANativeWindow *_renderSurface;
 
-    fifo_t *_framesIRDepth;
-    fifo_t *_framesRGB;
+    fifo_t *_fifoIRDepth;
+    fifo_t *_fifoPreview;
 };
 
 

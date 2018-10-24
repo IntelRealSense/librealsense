@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
-// the RealsensePreview used to render RGB/Depth/IR data 
+// the RealsensePreview used to render RGB/Depth/IR data
 
 
 #include <string>
@@ -32,16 +32,16 @@ using namespace std::chrono;
 
 namespace irsa {
 
-static std::chrono::steady_clock::time_point beginTime;
 static const std::string no_camera_message = "No camera connected, please connect 1 or more";
 static const std::string platform_camera_name = "Platform Camera";
 
 static const int DEPTH_FIFO_CAPACITY = 6;
 static const int RGB_FIFO_CAPACITY = 30;
 
+
 static int probeRSDevice() {
     int deviceCounts = 0;
-    std::shared_ptr<rs2::context> ctx; 
+    std::shared_ptr<rs2::context> ctx;
 
 #ifndef __SMART_POINTER__
     IrsaMgr *mgr = IrsaMgr::getInstance();
@@ -94,7 +94,7 @@ RealsensePreview::RealsensePreview(): _renderID(1) {
 }
 
 
-RealsensePreview::~RealsensePreview() { 
+RealsensePreview::~RealsensePreview() {
     LOGV("destructor");
     close();
 }
@@ -163,19 +163,29 @@ int RealsensePreview::getDeviceCounts() {
 }
 
 
+void RealsensePreview::setRenderID(int renderID) {
+    _renderID = renderID;
+
+    _beginTime = std::chrono::steady_clock::now();
+    _polledFrameCounts      = 0;
+    _renderedFrameCounts    = 0;
+    _workedFrameCounts      = 0;
+}
+
+
 void RealsensePreview::setPreviewDisplay(std::map<int, ANativeWindow *> &surfaceMap) {
     LOGD("setPreviewDisplay");
     _surfaceMap = surfaceMap;
     for (auto &itr : _surfaceMap) {
-        ANativeWindow_setBuffersGeometry(itr.second, _rgbWidth, _rgbHeight, WINDOW_FORMAT_RGBX_8888);
+        ANativeWindow_setBuffersGeometry(itr.second, _previewWidth, _previewHeight, WINDOW_FORMAT_RGBX_8888);
     }
-    
+
     //for optimization purpose
     _renderSurface = _surfaceMap.at(0);
 }
 
 
-void RealsensePreview::enableDevices() {
+bool RealsensePreview::enableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
 
     for (auto &&dev : _ctx->query_devices()) {
@@ -193,35 +203,47 @@ void RealsensePreview::enableDevices() {
         }
 
         LOGD("camera name: %s", dev.get_info(RS2_CAMERA_INFO_NAME));
-        LOGD("Java layer's width %d height %d fps %d", _rgbWidth, _rgbHeight, _rgbFPS);
+        LOGD("Java layer's width %d height %d fps %d", _previewWidth, _previewHeight, _previewFPS);
 
-        rs2::pipeline p;
+        rs2::pipeline pipe;
         rs2::config cfg;
         cfg.enable_device(serial_number);
 
-        cfg.enable_stream(RS2_STREAM_COLOR, _rgbWidth, _rgbHeight, RS2_FORMAT_RGB8, _rgbFPS);
+        cfg.enable_stream(RS2_STREAM_COLOR, _previewWidth, _previewHeight, RS2_FORMAT_RGB8, _previewFPS);
         cfg.enable_stream(RS2_STREAM_DEPTH, _depthWidth, _depthHeight, RS2_FORMAT_Z16, _depthFPS);
         //cfg.enable_stream(RS2_STREAM_INFRARED, _depthWidth, _depthHeight, RS2_FORMAT_Y8, _depthFPS);
         cfg.enable_stream(RS2_STREAM_INFRARED, _depthWidth, _depthHeight, RS2_FORMAT_RGB8, _depthFPS);
 
-        //hardcode 
-        _cameraDataSize = _depthWidth * _depthHeight * 5 + _rgbWidth * _rgbHeight * 3 + 1;
+        if (!cfg.can_resolve(pipe)) {
+            LOGD("stream profile can't be resolved");
+            #ifndef __SMART_POINTER__
+                IrsaMgr *mgr = IrsaMgr::getInstance();
+            #else
+                std::shared_ptr<IrsaMgr> mgr = IrsaMgr::getInstance();
+            #endif
+            CHECK(mgr != nullptr);
+            mgr->notify(IRSA_ERROR, IRSA_ERROR_PREVIEW, (size_t)"one of depth/color/ir's stream profile can't be resolved");
+            return false;
+        }
+        rs2::pipeline_profile profile = pipe.start(cfg);
+
+        //hardcode
+        _cameraDataSize = _depthWidth * _depthHeight * 5 + _previewWidth * _previewHeight * 3 + 1;
         LOGD("_cameraDataSize %d\n", _cameraDataSize);
-
-        rs2::pipeline_profile profile = p.start(cfg);
         LOGD("serial_number %s", serial_number.c_str());
-        _devices.emplace(serial_number, view_port{p, cfg, profile});
+        _devices.emplace(serial_number, view_port{pipe, cfg, profile});
 
-        LOGD("allocate memory for RGB fifo and Depth fifo \n");
-        _framesIRDepth = fifo_new(DEPTH_FIFO_CAPACITY, _cameraDataSize);
-        _framesRGB     = fifo_new(RGB_FIFO_CAPACITY, _rgbWidth * _rgbHeight * 3);
+        LOGD("allocate memory for preview fifo and depth/ir fifo \n");
+        _fifoIRDepth = fifo_new(DEPTH_FIFO_CAPACITY, _cameraDataSize);
+        _fifoPreview     = fifo_new(RGB_FIFO_CAPACITY, _previewWidth * _previewHeight * 3);
     }
+    return true;
 }
-
 
 
 void RealsensePreview::disableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
+    LOGD("here");
     for (auto &view : _devices) {
         view.second.config.disable_all_streams();
         view.second.pipe.stop();
@@ -229,8 +251,9 @@ void RealsensePreview::disableDevices() {
 
     _devices.clear();
     LOGV("destroy camera data fifo");
-    _framesIRDepth->destroy(_framesIRDepth);
-    _framesRGB->destroy(_framesRGB);
+    LOGD("here");
+    _fifoIRDepth->destroy(_fifoIRDepth);
+    _fifoPreview->destroy(_fifoPreview);
 }
 
 
@@ -238,7 +261,8 @@ void RealsensePreview::startPreview() {
     LOGD("start");
     CHECK(_ctx != nullptr);
 
-    enableDevices();
+    if (!enableDevices())
+        return;
 
     _threadPoll   = std::thread(&RealsensePreview::threadPoll, this);
     _threadWorker = std::thread(&RealsensePreview::threadWorker, this);
@@ -249,6 +273,8 @@ void RealsensePreview::startPreview() {
 
 void RealsensePreview::stopPreview() {
     LOGD("Stop");
+    if (!_isRunning)
+        return;
     _isRunning = false;
 
     if (_threadRender.joinable())
@@ -272,11 +298,15 @@ void RealsensePreview::threadPoll() {
         LOGD("surface index %d, surface %p\n", surface.first, surface.second);
     }
 
-    beginTime = std::chrono::steady_clock::now();
+    _beginTime              = std::chrono::steady_clock::now();
     _polledFrameCounts      = 0;
     _renderedFrameCounts    = 0;
     _workedFrameCounts      = 0;
 
+    rs2::frame color;
+    rs2::frame depth;
+    rs2::frame ir;
+    rs2::frame colorize_depth;
     while (_isRunning) {
         int device_id = 0;
 
@@ -285,60 +315,77 @@ void RealsensePreview::threadPoll() {
             if (view.second.pipe.poll_for_frames(&frameset)) {
 
                 auto a = std::chrono::steady_clock::now();
+                if (1 == _renderID) {
+                    color = frameset.get_color_frame();
+                }
+                depth = frameset.get_depth_frame();
+                ir = frameset.get_infrared_frame();
+                if (0 == _renderID) {
+                    colorize_depth = _colorizer.process(depth);
+                }
 
-                auto color = frameset.get_color_frame();
-                auto depth = frameset.get_depth_frame();
-                auto ir = frameset.get_infrared_frame();
-                //auto colorize_depth = _colorizer.process(depth);
-
-                buf_element_t *frame_q = _framesRGB->buffer_try_alloc(_framesRGB);
+                buf_element_t *frame_q = _fifoPreview->buffer_try_alloc(_fifoPreview);
                 if (frame_q) {
-                    if (color) {
+                    if ((1 == _renderID) && color) {
                         auto vframe = color.as<rs2::video_frame>();
                         memcpy(frame_q->mem,
-                                reinterpret_cast<const uint8_t *>(vframe.get_data()),
-                                _rgbWidth * _rgbHeight * 3);
+                               reinterpret_cast<const uint8_t *>(vframe.get_data()),
+                               _previewWidth * _previewHeight * 3);
 
-                        _framesRGB->put(_framesRGB, frame_q);
+                        _fifoPreview->put(_fifoPreview, frame_q);
+                    } else if ((0 == _renderID) && colorize_depth) {
+                        auto vframe = colorize_depth.as<rs2::video_frame>();
+                        memcpy(frame_q->mem,
+                               reinterpret_cast<const uint8_t *>(vframe.get_data()),
+                               _depthWidth * _depthHeight * 3);
+
+                        _fifoPreview->put(_fifoPreview, frame_q);
+                    } else if ((2 == _renderID) && ir) {
+                        auto vframe = ir.as<rs2::video_frame>();
+                        memcpy(frame_q->mem,
+                               reinterpret_cast<const uint8_t *>(vframe.get_data()),
+                               _depthWidth * _depthHeight * 3);
+
+                        _fifoPreview->put(_fifoPreview, frame_q);
                     } else {
                         frame_q->free_buffer(frame_q);
                     }
                 } else {
-                    LOGD("dropping color frame");
+                    LOGV("dropping previewed frame");
                 }
 
 
                 auto b = std::chrono::steady_clock::now();
                 std::chrono::microseconds delta = std::chrono::duration_cast<microseconds>(b - a);
-                LOGD("duration of poll is %d microseconds\n", delta.count());
+                //LOGD("duration of poll is %d microseconds\n", delta.count());
 
                 ++_polledFrameCounts;
 
                 auto endTime = std::chrono::steady_clock::now();
                 std::chrono::milliseconds duration = std::chrono::duration_cast<milliseconds>(
-                        endTime - beginTime);
-                LOGD("poll fps:%d", static_cast<int>(_polledFrameCounts * 1.f / duration.count() * 1000));
+                        endTime - _beginTime);
+                //LOGD("poll fps:%d", static_cast<int>(_polledFrameCounts * 1.f / duration.count() * 1000));
 
-                buf_element_t *frame_p = _framesIRDepth->buffer_try_alloc(_framesIRDepth);
+                buf_element_t *frame_p = _fifoIRDepth->buffer_try_alloc(_fifoIRDepth);
                 if (frame_p) {
                     uint8_t *_cameraData = frame_p->mem;
                     if (ir) {
                         memcpy(_cameraData, reinterpret_cast<const uint8_t *>(ir.get_data()),
-                                _depthWidth * _depthHeight * 3);
+                               _depthWidth * _depthHeight * 3);
                     }
 
                     if (depth) {
                         memcpy(_cameraData + _depthWidth * _depthHeight * 3,
-                                reinterpret_cast<const uint8_t *>(depth.get_data()),
-                                _depthWidth * _depthHeight * 2);
+                               reinterpret_cast<const uint8_t *>(depth.get_data()),
+                               _depthWidth * _depthHeight * 2);
                     }
 
                     if (color) {
-                        //memcpy(_cameraData + _depthWidth * _depthHeight * 5, reinterpret_cast<const uint8_t *>(color.get_data()), _rgbWidth * _rgbHeight * 3);
+                        //memcpy(_cameraData + _depthWidth * _depthHeight * 5, reinterpret_cast<const uint8_t *>(color.get_data()), _previewWidth * _previewHeight * 3);
                     }
-                    _framesIRDepth->put(_framesIRDepth, frame_p);
+                    _fifoIRDepth->put(_fifoIRDepth, frame_p);
                 } else {
-                    LOGD("dropping ir&depth frame");
+                    //LOGD("dropping ir&depth frame");
                 }
             } else {
                 //LOGD("can't got frame from librealsense\n");
@@ -350,8 +397,6 @@ void RealsensePreview::threadPoll() {
 
 
 void RealsensePreview::threadRender() {
-    char szInfo[128];
-    int fps = 0;
 
 #ifndef __SMART_POINTER__
     IrsaMgr *mgr = IrsaMgr::getInstance();
@@ -359,13 +404,16 @@ void RealsensePreview::threadRender() {
     std::shared_ptr<IrsaMgr> mgr = IrsaMgr::getInstance();
 #endif
     CHECK(mgr != nullptr);
+    int fps = 0;
+    char szInfo[128];
 
     buf_element_t *frame_p = nullptr;
     while (_isRunning) {
-        frame_p = _framesRGB->try_get(_framesRGB);
+        frame_p = _fifoPreview->try_get(_fifoPreview);
         if (frame_p) {
             auto a = std::chrono::steady_clock::now();
-            if (1) {
+
+            if (1 == _renderID) {
                 //hardcode for RGB8 optimization purpose
                 ANativeWindow_Buffer buffer = {};
                 ARect rect = {0, 0, 640, 480};
@@ -376,9 +424,9 @@ void RealsensePreview::threadRender() {
 #if 1
                     for (int y = 0; y < 480; ++y) {
                         for (int x = 0; x < 640; ++x) {
-                            out[y * 640 * 4 + x * 4 + 0] = in[y * 1920 + x * 3 + 0];
-                            out[y * 640 * 4 + x * 4 + 1] = in[y * 1920 + x * 3 + 1];
-                            out[y * 640 * 4 + x * 4 + 2] = in[y * 1920 + x * 3 + 2];
+                            out[y * 640 * 4 + x * 4 + 0] = in[y * 640 * 3 + x * 3 + 0];
+                            out[y * 640 * 4 + x * 4 + 1] = in[y * 640 * 3 + x * 3 + 1];
+                            out[y * 640 * 4 + x * 4 + 2] = in[y * 640 * 3 + x * 3 + 2];
                             out[y * 640 * 4 + x * 4 + 3] = 0xFF;
                         }
                     }
@@ -389,19 +437,43 @@ void RealsensePreview::threadRender() {
                 }
             }
 
+            else if ((0 == _renderID) || ( 2 == _renderID)) {
+                ANativeWindow_Buffer buffer = {};
+                ARect rect = {0, 0, 640, 480};
+                if (ANativeWindow_lock(_renderSurface, &buffer, &rect) == 0) {
+                    //hardcode for optimization purpose:640 480 640 * 3
+                    uint8_t *out = static_cast<uint8_t *>(buffer.bits);
+                    const uint8_t *in = static_cast<const uint8_t *>(frame_p->mem);
+                    memset(out, 0, 640 * 480 * 4);
+#if 1
+                    for (int y = 0; y < 360; y++) {
+                        for (int x = 0; x < 640; x++) {
+                            out[(y + 60) * 640 * 4 + x * 4 + 0] = in[(y * 2) * 1280 * 3 + x * 2 * 3 + 0];
+                            out[(y + 60) * 640 * 4 + x * 4 + 1] = in[(y * 2) * 1280 * 3 + x * 2 * 3 + 1];
+                            out[(y + 60) * 640 * 4 + x * 4 + 2] = in[(y * 2) * 1280 * 3 + x * 2 * 3 + 2];
+                            out[(y + 60) * 640 * 4 + x * 4 + 3] = 0xFF;
+                        }
+                    }
+#endif
+                    ANativeWindow_unlockAndPost(_renderSurface);
+                } else {
+                    LOGD("ANativeWindow_lock FAILED");
+                }
+            }
+
+
             auto b = std::chrono::steady_clock::now();
             std::chrono::microseconds delta = std::chrono::duration_cast<microseconds>(b - a);
-            LOGD("duration of renderFrame is %d microseconds\n", delta.count());
+            //LOGD("duration of renderFrame is %d microseconds\n", delta.count());
 
             ++_renderedFrameCounts;
 
             auto endTime = std::chrono::steady_clock::now();
-            std::chrono::milliseconds duration = std::chrono::duration_cast<milliseconds>(endTime - beginTime);
-            fps = static_cast<int>(_renderedFrameCounts * 1.f / duration.count() * 1000);
-            LOGD("render fps:%d", fps);
-
-            if (0 == _renderedFrameCounts % 2) {
-                snprintf(szInfo, 128, "renderedFrames %d, render fps %d", _renderedFrameCounts, fps);
+            std::chrono::milliseconds duration = std::chrono::duration_cast<milliseconds>(endTime - _beginTime);
+            //LOGD("render fps:%d", static_cast<int>(_renderedFrameCounts * 1.f / duration.count() * 1000));
+            fps =  static_cast<int>(_renderedFrameCounts * 1.f / duration.count() * 1000);
+            if (0 == _renderedFrameCounts % 5) {
+                snprintf(szInfo, 128, "renderedFrame %d, render FPS %d", _renderedFrameCounts, fps);
                 mgr->notify(IRSA_INFO, IRSA_INFO_PREVIEW, (size_t)szInfo);
             }
 
@@ -419,22 +491,29 @@ void RealsensePreview::threadWorker() {
 
     buf_element_t *frame_p = nullptr;
     while (_isRunning) {
-        frame_p = _framesIRDepth->try_get(_framesIRDepth);
+        frame_p = _fifoIRDepth->try_get(_fifoIRDepth);
         if (frame_p) {
+            auto endTime = std::chrono::steady_clock::now();
+            std::chrono::milliseconds duration = std::chrono::duration_cast<milliseconds>(
+                        endTime - _beginTime);
+            int renderFPS =  static_cast<int>(_renderedFrameCounts * 1.f / duration.count() * 1000);
+
             uint8_t *_cameraData = frame_p->mem;
             auto a = std::chrono::steady_clock::now();
             //doing your proprietary/business code here
             //_doWork(_cameraData, _cameraDataSize);
             auto b = std::chrono::steady_clock::now();
             std::chrono::microseconds delta = std::chrono::duration_cast<microseconds>(b - a);
-            LOGD("duration of worker is %d microseconds\n", delta.count());
+            //LOGD("duration of worker is %d microseconds\n", delta.count());
             frame_p->free_buffer(frame_p);
 
+#if 0
             _workedFrameCounts++;
-            auto endTime = std::chrono::steady_clock::now();
+            endTime = std::chrono::steady_clock::now();
             std::chrono::milliseconds duration = std::chrono::duration_cast<milliseconds>(
-                        endTime - beginTime);
+                        endTime - _beginTime);
             LOGD("worker fps:%d", static_cast<int>(_workedFrameCounts * 1.f / duration.count() * 1000));
+#endif
         } else {
             std::this_thread::sleep_for(std::chrono::nanoseconds(100));
         }

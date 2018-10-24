@@ -2,11 +2,11 @@
 //
 package android.irsa;
 
-public interface IrsaEventListener {    
+public interface IrsaEventListener {
 	public void onEvent(
 			IrsaEventType eventType,
-			int what, 
-			int arg1, 
-			int arg2, 
-			Object obj);     	 
+			int what,
+			int arg1,
+			int arg2,
+			Object obj);
 }
