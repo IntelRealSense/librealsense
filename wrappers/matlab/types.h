@@ -4,7 +4,7 @@
 #include <array>
 
 // C API
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_extrinsics>::wrap(rs2_extrinsics&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_extrinsics>::wrap(rs2_extrinsics&& val)
 {
     const char* fnames[] = { "rotation", "translation" };
     mxArray* cell = mxCreateStructMatrix(1, 1, 2, fnames);
@@ -12,7 +12,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_extrinsics>::wr
     mxSetField(cell, 0, "translation", MatlabParamParser::wrap_array(val.translation, 3));
     return cell;
 }
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_intrinsics>::wrap(rs2_intrinsics&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_intrinsics>::wrap(rs2_intrinsics&& val)
 {
     const char* fnames[] = { "width", "height", "ppx", "ppy", "fx", "fy", "model", "coeffs" };
     mxArray* cell = mxCreateStructMatrix(1, 1, 8, fnames);
@@ -26,7 +26,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_intrinsics>::wr
     mxSetField(cell, 0, "coeffs", MatlabParamParser::wrap_array(val.coeffs, 5));
     return cell;
 }
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_motion_device_intrinsic>::wrap(rs2_motion_device_intrinsic&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_motion_device_intrinsic>::wrap(rs2_motion_device_intrinsic&& val)
 {
     const char* fnames[] = { "data", "noise_variances", "bias_variances"};
     mxArray* cell = mxCreateStructMatrix(1, 1, 3, fnames);
@@ -41,7 +41,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_motion_device_i
     mxSetField(cell, 0, "data", data_cell);
     return cell;
 }
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_vector>::wrap(rs2_vector&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_vector>::wrap(rs2_vector&& val)
 {
     using wrapper_t = mx_wrapper<float>;
     auto cells = mxCreateNumericMatrix(1, 3, wrapper_t::value::value, mxREAL);
@@ -51,7 +51,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_vector>::wrap(r
     ptr[2] = wrapper_t::type(val.z);
     return cells;
 }
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_quaternion>::wrap(rs2_quaternion&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_quaternion>::wrap(rs2_quaternion&& val)
 {
     using wrapper_t = mx_wrapper<decltype(rs2_quaternion::x)>;
     auto cells = mxCreateNumericMatrix(1, 4, wrapper_t::value::value, mxREAL);
@@ -62,7 +62,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_quaternion>::wr
     ptr[3] = wrapper_t::type(val.w);
     return cells;
 }
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_pose>::wrap(rs2_pose&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2_pose>::wrap(rs2_pose&& val)
 {
     const char* fnames[] = { "translation", "velocity", "acceleration", "rotation", "angular_velocity", "angular_acceleration", "tracker_confidence", "mapper_confidence" };
     mxArray* cell = mxCreateStructMatrix(1, 1, 8, fnames);
@@ -78,7 +78,7 @@ template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2_pose>::wrap(rs2
 }
 
 // rs_types.hpp
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::option_range>::wrap(rs2::option_range&& val)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2::option_range>::wrap(rs2::option_range&& val)
 {
     const char* fnames[] = { "min", "max", "step", "def" };
     mxArray* cell = mxCreateStructMatrix(1, 1, 4, fnames);
@@ -116,7 +116,7 @@ template<> struct MatlabParamParser::mx_wrapper_fns<rs2::region_of_interest>
 // rs_record_playback.hpp
 
 // rs_device.hpp
-template<> static mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::wrap(rs2::device_list&& var)
+template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::wrap(rs2::device_list&& var)
 {
     // Device list is sent as a native array of (ptr, id) pairs to preserve lazy instantiation of devices
     size_t len = var.size();
@@ -156,7 +156,7 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
         auto cells = mxCreateCellMatrix(1, 2);
         auto handle_cell = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
         auto handle_ptr = static_cast<uint64_t*>(mxGetData(cells));
-        *handle_ptr = reinterpret_cast<uint64_t>(type_traits<T>::rs2_internal_t(val));
+        *handle_ptr = reinterpret_cast<uint64_t>(typename type_traits<T>::rs2_internal_t(val));
 
         auto own_cell = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
         auto own_ptr = static_cast<uint64_t*>(mxGetData(cells));
@@ -191,7 +191,7 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
         using wrapper_t = mx_wrapper<T>;
         mxArray *cell = mxCreateNumericMatrix(1, 1, wrapper_t::value::value, mxREAL);
         auto *outp = static_cast<uint64_t*>(mxGetData(cell));
-        auto inptr = type_traits<T>::rs2_internal_t(var);
+        auto inptr = typename type_traits<T>::rs2_internal_t(var);
         rs2_frame_add_ref(inptr, nullptr);
         mexLock(); // Wrapper holds a reference to the internal type, which won't get destroyed until the wrapper lets go
         *outp = reinterpret_cast<uint64_t>(inptr);
@@ -199,18 +199,18 @@ template<typename T> struct MatlabParamParser::mx_wrapper_fns<T, typename std::e
     }
     static T parse(const mxArray* cell)
     {
-        auto inptr = mx_wrapper_fns<type_traits<T>::rs2_internal_t>::parse(cell);
+        auto inptr = mx_wrapper_fns<typename type_traits<T>::rs2_internal_t>::parse(cell);
         rs2_frame_add_ref(inptr, nullptr);
         return T(inptr);
     }
     static void destroy(const mxArray* cell)
     {
-        auto inptr = mx_wrapper_fns<type_traits<T>::rs2_internal_t>::parse(cell);
+        auto inptr = mx_wrapper_fns<typename type_traits<T>::rs2_internal_t>::parse(cell);
         rs2_release_frame(inptr);
         mexUnlock(); // Wrapper holds a reference to the internal type, which won't get destroyed until the wrapper lets go
     }
 };
-template <> static mxArray* MatlabParamParser::wrap_array<rs2::vertex>(const rs2::vertex* var, size_t length)
+template <> mxArray* MatlabParamParser::wrap_array<rs2::vertex>(const rs2::vertex* var, size_t length)
 {
     using wrapper_t = mx_wrapper<float>;
     auto cells = mxCreateNumericMatrix(length, 3, wrapper_t::value::value, mxREAL);
@@ -222,7 +222,7 @@ template <> static mxArray* MatlabParamParser::wrap_array<rs2::vertex>(const rs2
     }
     return cells;
 }
-template <> static mxArray* MatlabParamParser::wrap_array<rs2::texture_coordinate>(const rs2::texture_coordinate* var, size_t length)
+template <> mxArray* MatlabParamParser::wrap_array<rs2::texture_coordinate>(const rs2::texture_coordinate* var, size_t length)
 {
     using wrapper_t = mx_wrapper<float>;
     auto cells = mxCreateNumericMatrix(length, 2, wrapper_t::value::value, mxREAL);
@@ -235,7 +235,7 @@ template <> static mxArray* MatlabParamParser::wrap_array<rs2::texture_coordinat
 }
 
 // rs_processing.hpp
-template<> static rs2::process_interface* MatlabParamParser::mx_wrapper_fns<rs2::process_interface*>::parse(const mxArray* cell)
+template<> rs2::process_interface* MatlabParamParser::mx_wrapper_fns<rs2::process_interface*>::parse(const mxArray* cell)
 {
     using traits_t = type_traits<rs2::process_interface>;
     auto ptr = static_cast<traits_t::rs2_internal_t*>(mxGetData(cell));
