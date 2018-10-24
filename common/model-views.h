@@ -150,6 +150,17 @@ namespace rs2
     // that most of the application is presented on
     int pick_scale_factor(GLFWwindow* window);
 
+    // avoid display the following options
+    bool static skip_option(rs2_option opt)
+    {
+        if (opt == RS2_OPTION_STREAM_FILTER ||
+            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
+            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            return true;
+        return false;
+    }
+
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
     {
@@ -274,6 +285,72 @@ namespace rs2
         std::function<rs2::frame(rs2::frame)> _invoker;
     };
 
+    class syncer_model
+    {
+    public:
+        syncer_model():
+        _active(true){}
+
+        std::shared_ptr<rs2::asynchronous_syncer> create_syncer()
+        {
+            stop();
+            std::lock_guard<std::mutex> lock(_mutex);
+            auto shared_syncer = std::make_shared<rs2::asynchronous_syncer>();
+            rs2::frame_queue q;
+
+           _syncers.push_back({shared_syncer,q});
+           shared_syncer->start(q);
+           start();
+           return shared_syncer;
+        }
+
+        void remove_syncer(std::shared_ptr<rs2::asynchronous_syncer> s)
+        {
+            stop();
+            std::lock_guard<std::mutex> lock(_mutex);
+            _syncers.erase(std::remove_if(_syncers.begin(), _syncers.end(),
+                           [s](std::pair<std::shared_ptr<rs2::asynchronous_syncer>, rs2::frame_queue> pair)
+            {
+                return pair.first.get() == s.get();
+            }), _syncers.end()) ;
+            start();
+        }
+
+        std::vector<rs2::frameset> try_wait_for_frames()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+
+            std::vector<rs2::frameset> result;
+            for(auto&& s = _syncers.begin(); s!=_syncers.end() && _active; s++)
+            {
+                rs2::frameset f;
+                if(s->second.try_wait_for_frame(&f,1))
+                {
+                    result.push_back(f);
+                }
+            }
+
+            return result;
+        }
+
+        void stop()
+        {
+            _active.exchange(false);
+        }
+
+        void start()
+        {
+            _active.exchange(true);
+        }
+
+    private:
+        std::vector<std::pair<std::shared_ptr<rs2::asynchronous_syncer>, rs2::frame_queue>> _syncers;
+        std::mutex _mutex;
+        std::atomic<bool> _active;
+
+    };
+
+
     class subdevice_model
     {
     public:
@@ -290,7 +367,7 @@ namespace rs2
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         void stop(viewer_model& viewer);
-        void play(const std::vector<stream_profile>& profiles, viewer_model& viewer);
+        void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
@@ -481,6 +558,8 @@ namespace rs2
         void handle_hardware_events(const std::string& serialized_data);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
+        std::shared_ptr<syncer_model> syncer;
+        std::shared_ptr<rs2::asynchronous_syncer> dev_syncer;
         bool is_streaming() const;
         bool metadata_supported = false;
         bool get_curr_advanced_controls = true;
@@ -492,7 +571,6 @@ namespace rs2
         bool _playback_repeat = true;
         bool _should_replay = false;
         bool show_device_info = false;
-
         bool allow_remove = true;
         bool show_depth_only = false;
         bool show_stream_selection = true;
@@ -642,22 +720,10 @@ namespace rs2
         void update_texture(frame f) { pc->map_to(f); }
 
         /* Start the rendering thread in case its disabled */
-        void start()
-        {
-            if (render_thread_active.exchange(true) == false)
-            {
-                render_thread = std::thread(&post_processing_filters::render_loop, this);
-            }
-        }
+        void start();
 
         /* Stop the rendering thread in case its enabled */
-        void stop()
-        {
-            if (render_thread_active.exchange(false) == true)
-            {
-                render_thread.join();
-            }
-        }
+        void stop();
 
         bool is_rendering() const
         {
@@ -686,7 +752,6 @@ namespace rs2
 
         const size_t resulting_queue_max_size;
         std::map<int, rs2::frame_queue> frames_queue;
-        rs2::frame_queue syncer_queue;
         rs2::frame_queue resulting_queue;
 
         std::shared_ptr<pointcloud> get_pc() const { return pc; }
@@ -825,7 +890,7 @@ namespace rs2
             : ppf(*this),
               synchronization_enable(true)
         {
-            s.start(ppf.syncer_queue);
+            syncer = std::make_shared<syncer_model>();
             reset_camera();
             rs2_error* e = nullptr;
             not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
@@ -855,6 +920,8 @@ namespace rs2
 
         void popup_if_error(ImFont* font, std::string& error_message);
 
+        void popup_if_ui_not_aligned(ImFont* font);
+
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
@@ -876,7 +943,7 @@ namespace rs2
         std::map<int, int> streams_origin;
         bool fullscreen = false;
         stream_model* selected_stream = nullptr;
-
+        std::shared_ptr<syncer_model> syncer;
         post_processing_filters ppf;
         tm2_model tm2;
 
@@ -903,7 +970,8 @@ namespace rs2
 
         float dim_level = 1.f;
 
-        rs2::asynchronous_syncer s;
+
+        bool continue_with_ui_not_aligned = false;
     private:
         struct rgb {
             uint32_t r, g, b;

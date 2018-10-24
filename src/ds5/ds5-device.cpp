@@ -24,45 +24,41 @@
 
 namespace librealsense
 {
-    class ds5_auto_exposure_roi_method : public region_of_interest_method
+    ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
+        const hw_monitor& hwm,
+        ds::fw_cmd cmd) 
+        : _hw_monitor(hwm), _cmd(cmd) {}
+
+    void ds5_auto_exposure_roi_method::set(const region_of_interest& roi)
     {
-    public:
-        explicit ds5_auto_exposure_roi_method(const hw_monitor& hwm) : _hw_monitor(hwm) {}
+        command cmd(_cmd);
+        cmd.param1 = roi.min_y;
+        cmd.param2 = roi.max_y;
+        cmd.param3 = roi.min_x;
+        cmd.param4 = roi.max_x;
+        _hw_monitor.send(cmd);
+    }
 
-        void set(const region_of_interest& roi) override
+    region_of_interest ds5_auto_exposure_roi_method::get() const
+    {
+        region_of_interest roi;
+        command cmd(_cmd + 1);
+        auto res = _hw_monitor.send(cmd);
+
+        if (res.size() < 4 * sizeof(uint16_t))
         {
-            command cmd(ds::SETAEROI);
-            cmd.param1 = roi.min_y;
-            cmd.param2 = roi.max_y;
-            cmd.param3 = roi.min_x;
-            cmd.param4 = roi.max_x;
-            _hw_monitor.send(cmd);
+            throw std::runtime_error("Invalid result size!");
         }
 
-        region_of_interest get() const override
-        {
-            region_of_interest roi;
-            command cmd(ds::GETAEROI);
-            auto res = _hw_monitor.send(cmd);
+        auto words = reinterpret_cast<uint16_t*>(res.data());
 
-            if (res.size() < 4 * sizeof(uint16_t))
-            {
-                throw std::runtime_error("Invalid result size!");
-            }
+        roi.min_y = words[0];
+        roi.max_y = words[1];
+        roi.min_x = words[2];
+        roi.max_x = words[3];
 
-            auto words = reinterpret_cast<uint16_t*>(res.data());
-
-            roi.min_y = words[0];
-            roi.max_y = words[1];
-            roi.min_x = words[2];
-            roi.max_x = words[3];
-
-            return roi;
-        }
-
-    private:
-        const hw_monitor& _hw_monitor;
-    };
+        return roi;
+    }
 
     std::vector<uint8_t> ds5_device::send_receive_raw_data(const std::vector<uint8_t>& input)
     {

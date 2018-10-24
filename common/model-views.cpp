@@ -1397,7 +1397,7 @@ namespace rs2
         _pause = false;
     }
 
-    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer)
+    void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
         std::stringstream ss;
         ss << "Starting streaming of ";
@@ -1412,11 +1412,11 @@ namespace rs2
         s->open(profiles);
 
         try {
-            s->start([&](frame f)
+            s->start([&, syncer](frame f)
             {
                 if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
                 {
-                    viewer.s.invoke(f);
+                    syncer->invoke(f);
                 }
                 else
                 {
@@ -1498,7 +1498,7 @@ namespace rs2
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
             auto opt = static_cast<rs2_option>(i);
-            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+            if (skip_option(opt)) continue;
             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
             {
                 draw_option(opt, update_read_only_options, error_message, notifications);
@@ -1511,7 +1511,7 @@ namespace rs2
         return (uint64_t)std::count_if(
             std::begin(options_metadata),
             std::end(options_metadata),
-            [](const std::pair<int, option_model>& p) {return p.second.supported && p.second.opt != RS2_OPTION_FRAMES_QUEUE_SIZE; });
+            [](const std::pair<int, option_model>& p) {return p.second.supported && !skip_option(p.second.opt); });
     }
 
     bool option_model::draw_option(bool update_read_only_options,
@@ -2799,8 +2799,10 @@ namespace rs2
 
     void device_model::reset()
     {
+        syncer->remove_syncer(dev_syncer);
         subdevices.resize(0);
         _recorder.reset();
+
     }
 
     std::pair<std::string, std::string> get_device_name(const device& dev)
@@ -2825,7 +2827,8 @@ namespace rs2
     }
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
-        : dev(dev)
+        : dev(dev),
+          syncer(viewer.syncer)
     {
         for (auto&& sub : dev.query_sensors())
         {
@@ -2871,6 +2874,8 @@ namespace rs2
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
+        if(!dev_syncer)
+            dev_syncer = viewer.syncer->create_syncer();
         for (auto&& sub : subdevices)
         {
             if (!sub->streaming)
@@ -2888,7 +2893,7 @@ namespace rs2
                 if (profiles.empty())
                     continue;
 
-                sub->play(profiles, viewer);
+                sub->play(profiles, viewer, dev_syncer);
 
                 for (auto&& profile : profiles)
                 {
@@ -2981,28 +2986,90 @@ namespace rs2
             {
                 ImGui::OpenPopup(name.c_str());
             }
+
+            if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("RealSense error calling:");
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
+                ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
+                    error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor();
+
+                if (ImGui::Button("OK", ImVec2(120, 0)))
+                {
+                    if (dont_show_this_error)
+                    {
+                        errors_not_to_show.insert(simplify_error_message(error_message));
+                    }
+                    error_message = "";
+                    ImGui::CloseCurrentPopup();
+                    dont_show_this_error = false;
+                }
+
+                ImGui::SameLine();
+                ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
+
+                ImGui::EndPopup();
+            }
         }
+
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+    }
+
+    void rs2::viewer_model::popup_if_ui_not_aligned(ImFont* font_14)
+    {
+        constexpr const char* graphics_updated_driver = "https://downloadcenter.intel.com/download/27266/Graphics-Intel-Graphics-Driver-for-Windows-15-60-?product=80939";
+
+        if (continue_with_ui_not_aligned)
+            return;
+
+        std::string error_message = to_string() <<
+            "The application has detected possible UI alignment issue,            \n" <<
+            "sometimes caused by outdated graphics card drivers.\n" <<
+            "For Intel Integrated Graphics driver \n";
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui_ScopePushFont(font_14);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+        std::string name = to_string() << "  " << textual_icons::exclamation_triangle << " UI Offset Detected";
+
+
+        ImGui::OpenPopup(name.c_str());
+
         if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("RealSense error calling:");
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::InputTextMultiline("error", const_cast<char*>(error_message.c_str()),
-                error_message.size() + 1, { 500,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::Text(const_cast<char*>(error_message.c_str()));
             ImGui::PopStyleColor();
 
-            if (ImGui::Button("OK", ImVec2(120, 0)))
+            ImGui::PushStyleColor(ImGuiCol_Button, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, transparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, transparent);
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+            ImGui::SetCursorPos({ 190, 42 });
+            if (ImGui::Button("click here", { 150, 60 }))
             {
-                if (dont_show_this_error)
-                {
-                    errors_not_to_show.insert(simplify_error_message(error_message));
-                }
-                error_message = "";
-                ImGui::CloseCurrentPopup();
-                dont_show_this_error = false;
+                open_url(graphics_updated_driver);
             }
 
-            ImGui::SameLine();
-            ImGui::Checkbox("Don't show this error again", &dont_show_this_error);
+            ImGui::PopStyleColor(5);
+
+            if (ImGui::Button(" Ignore & Continue ", ImVec2(150, 0)))
+            {
+                continue_with_ui_not_aligned = true;
+                ImGui::CloseCurrentPopup();
+            }
 
             ImGui::EndPopup();
         }
@@ -3169,21 +3236,36 @@ namespace rs2
             source.frame_ready(std::move(res));
     }
 
+    void post_processing_filters::start()
+    {
+        if (render_thread_active.exchange(true) == false)
+        {
+            viewer.syncer->start();
+            render_thread = std::thread([&](){post_processing_filters::render_loop();});
+        }
+    }
 
+    void post_processing_filters::stop()
+    {
+        if (render_thread_active.exchange(false) == true)
+        {
+            viewer.syncer->stop();
+            render_thread.join();
+        }
+    }
     void post_processing_filters::render_loop()
     {
         while (render_thread_active)
         {
             try
             {
-                frame frm;
                 if(viewer.synchronization_enable)
                 {
-                    auto index = 0;
-                    while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
-                    {
-                        processing_block.invoke(frm);
-                    }
+                    auto frames = viewer.syncer->try_wait_for_frames();
+                        for(auto f:frames)
+                        {
+                            processing_block.invoke(f);
+                        }
                 }
                 else
                 {
@@ -5759,7 +5841,10 @@ namespace rs2
                                 auto profiles = sub->get_selected_profiles();
                                 try
                                 {
-                                    sub->play(profiles, viewer);
+                                    if(!dev_syncer)
+                                        dev_syncer = viewer.syncer->create_syncer();
+
+                                    sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
                                 {
@@ -5886,7 +5971,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
                                 if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
@@ -5922,7 +6007,7 @@ namespace rs2
                         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                         {
                             auto opt = static_cast<rs2_option>(i);
-                            if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                            if (skip_option(opt)) continue;
                             pb->get_option(opt).draw_option(
                                 dev.is<playback>() || update_read_only_options,
                                 false, error_message, viewer.not_model);
@@ -6091,7 +6176,7 @@ namespace rs2
                                 for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                                 {
                                     auto opt = static_cast<rs2_option>(i);
-                                    if (opt == RS2_OPTION_FRAMES_QUEUE_SIZE) continue;
+                                    if (skip_option(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,
                                         false, error_message, viewer.not_model);
