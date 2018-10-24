@@ -17,6 +17,8 @@ namespace Intel.RealSense.Processing
 
         public CustomProcessingBlock(FrameProcessorCallback cb)
         {
+            frameCallback = new FrameCallbackHandler(ProcessingBlockFrameCallback);
+            frameProcessorCallback = new FrameProcessorCallbackHandler(ProcessingBlockCallback);
             frameProcessorCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
             var cbPtr = GCHandle.ToIntPtr(frameProcessorCallbackHandle);
             var pb = NativeMethods.rs2_create_processing_block_fptr(frameProcessorCallback, cbPtr, out var error);
@@ -68,6 +70,13 @@ namespace Intel.RealSense.Processing
             }
 
             base.Dispose(disposing);
+        }
+
+        private static void ProcessingBlockCallback(IntPtr f, IntPtr src, IntPtr u)
+        {
+            var callback = GCHandle.FromIntPtr(u).Target as FrameProcessorCallback;
+            using (var frame = Frame.CreateFrame(f))
+                callback(frame, new FrameSource(new HandleRef(frame, src)));
         }
 
         private static void ProcessingBlockFrameCallback(IntPtr f, IntPtr u)
