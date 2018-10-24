@@ -819,11 +819,9 @@ namespace rs2
         void draw_controller_pose_object();
         void draw_pose_object();
         void draw_trajectory(tracked_point& p);
-        void draw_boundary(tracked_point& p);
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
         press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
-        press_button_model boundary_button{ u8"\uf278", u8"\uf278", "Set trajectory as boundary", "Discard boundary" };
 
     private:
         void add_to_trajectory(tracked_point& p);
