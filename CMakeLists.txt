@@ -121,7 +121,10 @@ elseif(UNIX)
 endif()
 
 
-option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" OFF)
+option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" ON)
+if(APPLE OR ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    set(BUILD_WITH_TM2 OFF)
+endif()
 
 option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
 
@@ -785,34 +788,38 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-if (NOT USE_SYSTEM_LIBUSB)
-    if(NOT WIN32 OR FORCE_LIBUVC)
-       include(ExternalProject)
+if ((NOT USE_SYSTEM_LIBUSB AND (NOT WIN32 OR FORCE_LIBUVC)) OR (BUILD_WITH_TM2 AND WIN32))
+        include(ExternalProject)
 
-       ExternalProject_Add(
-         libusb
+        ExternalProject_Add(
+            libusb
 
-         GIT_REPOSITORY "https://github.com/libusb/libusb.git"
-         GIT_TAG "master"
-
-         UPDATE_COMMAND   ${CMAKE_COMMAND} -E copy
-                          ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
-                          ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
-         PATCH_COMMAND ""
-
-         SOURCE_DIR "third-party/libusb/"
-         CMAKE_ARGS -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES} -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
-
-         TEST_COMMAND ""
-       )
-
-       set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
-
-       set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
-       link_directories(${LIBUSB1_LIBRARY_DIRS})
-
-       set(LIBUSB1_LIBRARIES usb log)
-    endif()
+            GIT_REPOSITORY "https://github.com/libusb/libusb.git"
+            GIT_TAG "master"
+            
+            UPDATE_COMMAND ${CMAKE_COMMAND} -E copy
+                    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
+                    ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
+            PATCH_COMMAND ""
+            
+            SOURCE_DIR "third-party/libusb/"
+            CMAKE_ARGS -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES}
+                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+                    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
+            TEST_COMMAND ""
+        )
+        
+        set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
+        
+        set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
+        link_directories(${LIBUSB1_LIBRARY_DIRS})
+        
+        set(LIBUSB1_LIBRARIES usb)
+        
+        if(NOT WIN32)
+            set(LIBUSB1_LIBRARIES ${LIBUSB1_LIBRARIES} log)
+        endif()
+        
 endif()
 
 add_subdirectory(third-party/realsense-file)
@@ -820,7 +827,7 @@ add_subdirectory(third-party/realsense-file)
 
 if (BUILD_WITH_TM2)
     message(STATUS "Building with TM2")
-
+    add_subdirectory(third-party/libtm)
     if(WIN32)
         source_group("Source Files\\Devices\\Tracking" FILES
             src/tm2/tm-context.cpp
@@ -835,22 +842,10 @@ if (BUILD_WITH_TM2)
             src/tm2/tm-conversions.h
             src/tm2/controller_event_serializer.h
             )
+        add_dependencies(tm libusb)
     endif()
 
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
-    find_package(libtm REQUIRED)
-
-    if(BUILD_WITH_STATIC_CRT)
-        foreach(flag_var
-                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-            if(${flag_var} MATCHES "/MD")
-                string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-            endif(${flag_var} MATCHES "/MD")
-        endforeach(flag_var)
-    endif()
 
     list(APPEND REALSENSE_HPP
     src/tm2/tm-context.h
@@ -864,16 +859,6 @@ if (BUILD_WITH_TM2)
     src/tm2/tm-context.cpp
     src/tm2/tm-device.cpp
     src/tm2/tm-info.cpp
-    )
-
-    include_directories(${LIBTM_INCLUDE_DIR})
-    set(TRACKING_DEVICE_LIBS libtm)
-
-    install(TARGETS libtm
-        EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 endif()
 
@@ -902,6 +887,8 @@ endif()
 
 if(BUILD_WITH_TM2)
     target_compile_definitions(realsense2 PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
+    target_link_libraries(realsense2 PRIVATE tm ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+    target_include_directories(realsense2 PRIVATE third-party/libtm/libtm/include)
 endif()
 set_target_properties(realsense2 PROPERTIES VERSION ${REALSENSE_VERSION_STRING}
                                 SOVERSION ${REALSENSE_VERSION_MAJOR})

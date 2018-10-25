@@ -2,7 +2,7 @@
 using System;
 
 [Serializable]
-public class RsVideoStreamRequest
+public struct RsVideoStreamRequest : IEquatable<RsVideoStreamRequest>
 {
     public Stream Stream;
     public Format Format;
@@ -11,77 +11,77 @@ public class RsVideoStreamRequest
     public int Width;
     public int Height;
 
-    public RsVideoStreamRequest()
+    public RsVideoStreamRequest(Stream stream, Format format, int framerate, int streamIndex, int width, int height)
     {
-
+        Stream = stream;
+        Format = format;
+        Framerate = framerate;
+        StreamIndex = streamIndex;
+        Width = width;
+        Height = height;
     }
 
-    public RsVideoStreamRequest(VideoFrame f)
+    public static RsVideoStreamRequest FromFrame(VideoFrame f)
     {
-        this.CopyProfile(f);
+        using (var p = f.Profile)
+            return new RsVideoStreamRequest(
+                p.Stream,
+                p.Format,
+                p.Framerate,
+                p.Index,
+                f.Width,
+                f.Height
+            );
     }
 
-    public RsVideoStreamRequest Clone()
-    {
-        return new RsVideoStreamRequest()
-        {
-            Stream = this.Stream,
-            Format = this.Format,
-            Framerate = this.Framerate,
-            StreamIndex = this.StreamIndex,
-            Width = this.Width,
-            Height = this.Height
-        };
-    }
 
-    public void CopyProfile(VideoFrame f)
+    public static RsVideoStreamRequest FromProfile(StreamProfile p)
     {
-        var vf = f as VideoFrame;
-
-        Stream = vf.Profile.Stream;
-        Format = vf.Profile.Format;
-        Framerate = vf.Profile.Framerate;
-        StreamIndex = vf.Profile.Index;
-        Width = vf.Width;
-        Height = vf.Height;
+        return new RsVideoStreamRequest(
+            p.Stream,
+            p.Format,
+            p.Framerate,
+            p.Index,
+            p is VideoStreamProfile ? (p as VideoStreamProfile).Width : 0,
+            p is VideoStreamProfile ? (p as VideoStreamProfile).Height : 0
+        );
     }
 
     public override bool Equals(object other)
     {
-        if (!(other is RsVideoStreamRequest))
-            return false;
-        RsVideoStreamRequest vsr = other as RsVideoStreamRequest;
-        if (Stream != vsr.Stream)
-            return false;
-        if (Format != vsr.Format)
-            return false;
-        if (Width != vsr.Width)
-            return false;
-        if (Height != vsr.Height)
-            return false;
-        if (Framerate != vsr.Framerate)
-            return false;
-        if (StreamIndex != vsr.StreamIndex)
-            return false;
-        return true;
+        return (other is RsVideoStreamRequest) && Equals((RsVideoStreamRequest)other);
+    }
+
+    public bool Equals(RsVideoStreamRequest other)
+    {
+        return
+            Stream == other.Stream &&
+            Format == other.Format &&
+            Framerate == other.Framerate &&
+            StreamIndex == other.StreamIndex &&
+            Width == other.Width &&
+            Height == other.Height;
     }
 
     public bool HasConflict(VideoFrame f)
     {
         var vf = f as VideoFrame;
-        if (Stream != Stream.Any && Stream != vf.Profile.Stream)
-            return true;
-        if (Format != Format.Any && Format != vf.Profile.Format)
-            return true;
-        if (Width != 0 && Width != vf.Width)
-            return true;
-        if (Height != 0 && Height != vf.Height)
-            return true;
-        if (Framerate != 0 && Framerate != vf.Profile.Framerate)
-            return true;
-        if (StreamIndex != 0 && StreamIndex != vf.Profile.Index)
-            return true;
-        return false;
+        using (var p = vf.Profile)
+        {
+            if (Stream != Stream.Any && Stream != p.Stream)
+                return true;
+            if (Format != Format.Any && Format != p.Format)
+                return true;
+            if (Width != 0 && Width != vf.Width)
+                return true;
+            if (Height != 0 && Height != vf.Height)
+                return true;
+            if (Framerate != 0 && Framerate != p.Framerate)
+                return true;
+            if (StreamIndex != 0 && StreamIndex != p.Index)
+                return true;
+            return false;
+        }
     }
 
     public bool HasConflict(RsVideoStreamRequest other)
@@ -99,5 +99,11 @@ public class RsVideoStreamRequest
         if (StreamIndex != 0 && StreamIndex != other.StreamIndex)
             return true;
         return false;
+    }
+
+    public override int GetHashCode()
+    {
+        // https://stackoverflow.com/questions/263400/what-is-the-best-algorithm-for-an-overridden-system-object-gethashcode
+        return new { Stream, Format, Framerate, StreamIndex, Width, Height }.GetHashCode();
     }
 }

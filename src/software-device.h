@@ -3,8 +3,6 @@
 #pragma once
 
 #include "core/streaming.h"
-#include "core/video.h"
-#include "device.h"
 #include "device.h"
 #include "context.h"
 

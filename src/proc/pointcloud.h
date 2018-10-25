@@ -24,15 +24,14 @@ namespace librealsense
         // Intermediate translation table of (depth_x*depth_y) with actual texel coordinates per depth pixel
         std::vector<float2>                    _pixels_map;
 
-        std::shared_ptr<rs2::video_stream_profile> _output_stream;
-        std::shared_ptr<rs2::video_stream_profile> _other_stream;
-        std::shared_ptr<rs2::video_stream_profile> _depth_stream;
+        rs2::stream_profile _output_stream;
+        rs2::frame _other_stream;
+        rs2::frame _depth_stream;
 
         void inspect_depth_frame(const rs2::frame& depth);
         void inspect_other_frame(const rs2::frame& other);
         rs2::frame process_depth_frame(const rs2::frame_source& source, const rs2::depth_frame& depth);
-
-        bool stream_changed(const rs2::stream_profile& old, const rs2::stream_profile& curr);
+        void set_extrinsics();
 
         std::vector<float> _pre_compute_map_x;
         std::vector<float> _pre_compute_map_y;

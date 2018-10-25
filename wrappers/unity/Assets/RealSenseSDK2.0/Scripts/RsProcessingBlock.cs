@@ -2,85 +2,44 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Intel.RealSense;
+using System.Linq;
 
-[Serializable]
-public enum ProcessingBlockType
+public interface IProcessingBlock
 {
-    Single,
-    Multi
+    Frame Process(Frame frame, FrameSource frameSource);
 }
 
 [Serializable]
-public abstract class RsProcessingBlock : MonoBehaviour
+public abstract class RsProcessingBlock : ScriptableObject, IProcessingBlock
 {
-    private RsProcessingPipe _processingPipe;
+    public bool enabled = true;
 
-    protected bool _enabled = false;
-    public int _order = 0;
-    public bool _fork = false;
-
-    public bool Enabled { get { return _enabled; } }
-    public int Order { get { return _order; } }
-
-    public abstract ProcessingBlockType ProcessingType { get; }
-
-    public abstract Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser);
-    public abstract List<Stream> Requirments();
-
-    public bool Fork() { return _fork; }
-
-    public void Start()
+    public bool Enabled
     {
-        ChangeState(true);
-    }
-
-    public void OnEnable()
-    {
-        ChangeState(true);
-    }
-
-    public void OnDisable()
-    {
-        ChangeState(false);
-    }
-
-    private void ChangeState(bool state)
-    {
-        _enabled = state;
-        if(_processingPipe == null)
-            _processingPipe = GetComponent<RsProcessingPipe>();
-        if (_processingPipe == null)
+        get
         {
-            Debug.LogWarning(this.name + " is not binded to a processing pipe");
-            return;
+            return enabled;
         }
-        if (state)
-            _processingPipe.AddProcessingBlock(this);
-        else
-            _processingPipe.RemoveProcessingBlock(this);
+
+        set
+        {
+            enabled = value;
+        }
     }
 
-    public bool CanProcess(Frame frame)
+    public abstract Frame Process(Frame frame, FrameSource frameSource);
+
+    public virtual void Reset()
     {
-        if(ProcessingType == ProcessingBlockType.Single)
-            return Requirments().Contains(frame.Profile.Stream);
+        this.name = GetType().Name;
 
-        using (var frameset = FrameSet.FromFrame(frame))
-        {
-            List<Stream> streams = new List<Stream>();
-
-            foreach (var f in frameset)
-            {
-                using (f)
-                    streams.Add(f.Profile.Stream);
-            }
-
-            foreach (var s in Requirments())
-            {
-                if (!streams.Contains(s))
-                    return false;
-            }
-            return true;
-        }
+#if UNITY_EDITOR
+        var p = UnityEditor.AssetDatabase.GetAssetPath(this);
+        Debug.Log(p);
+        var names = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(p).Where(a => a).Select(a => a.name).ToList();
+        names.Remove(GetType().Name);
+        this.name = UnityEditor.ObjectNames.GetUniqueName(names.ToArray(), GetType().Name);
+        UnityEditor.AssetDatabase.SaveAssets();
+#endif
     }
 }

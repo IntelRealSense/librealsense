@@ -1162,29 +1162,29 @@ namespace rs2
             last_queue[1].enqueue(rendered_frame);
         }
 
-        static void draw_axis(float axis_size = 1.f, float axisWidth = 4.f)
+        static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)
         {
 
             // Triangles For X axis
             glBegin(GL_TRIANGLES);
             glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(axis_size * 1.1f, 0.0f, 0.0f);
-            glVertex3f(axis_size, axis_size * 0.05f, 0.0f);
-            glVertex3f(axis_size, -0.05f * axis_size, 0.0f);
+            glVertex3f(axis_size * 1.1f, 0.f, 0.f);
+            glVertex3f(axis_size, -axis_size * 0.05f, 0.f);
+            glVertex3f(axis_size,  axis_size * 0.05f, 0.f);
+            glVertex3f(axis_size * 1.1f, 0.f, 0.f);
+            glVertex3f(axis_size, 0.f, -axis_size * 0.05f);
+            glVertex3f(axis_size, 0.f,  axis_size * 0.05f);
             glEnd();
 
             // Triangles For Y axis
             glBegin(GL_TRIANGLES);
-            glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
-            glVertex3f(0.0f, -1.0f * axis_size, 0.05f * axis_size);
-            glVertex3f(0.0f, -1.0f * axis_size, -0.05f * axis_size);
-            glEnd();
-            glBegin(GL_TRIANGLES);
-            glColor3f(0.0f, 1.0f, 0.0f);
-            glVertex3f(0.0f, -1.1f * axis_size, 0.0f);
-            glVertex3f(0.05f * axis_size, -1.0f * axis_size, 0.0f);
-            glVertex3f(-0.05f * axis_size, -1.0f * axis_size, 0.0f);
+            glColor3f(0.f, 1.f, 0.f);
+            glVertex3f(0.f, axis_size * 1.1f, 0.0f);
+            glVertex3f(0.f, axis_size,  0.05f * axis_size);
+            glVertex3f(0.f, axis_size, -0.05f * axis_size);
+            glVertex3f(0.f, axis_size * 1.1f, 0.0f);
+            glVertex3f( 0.05f * axis_size, axis_size, 0.f);
+            glVertex3f(-0.05f * axis_size, axis_size, 0.f);
             glEnd();
 
             // Triangles For Z axis
@@ -1193,6 +1193,9 @@ namespace rs2
             glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
             glVertex3f(0.0f, 0.05f * axis_size, 1.0f * axis_size);
             glVertex3f(0.0f, -0.05f * axis_size, 1.0f * axis_size);
+            glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+            glVertex3f(0.05f * axis_size, 0.f, 1.0f * axis_size);
+            glVertex3f(-0.05f * axis_size, 0.f, 1.0f * axis_size);
             glEnd();
 
             glLineWidth(axisWidth);
@@ -1207,7 +1210,7 @@ namespace rs2
             // Y axis - Green
             glColor3f(0.0f, 1.0f, 0.0f);
             glVertex3f(0.0f, 0.0f, 0.0f);
-            glVertex3f(0.0f, -axis_size, 0.0f);
+            glVertex3f(0.0f, axis_size, 0.0f);
 
             // Z axis - Blue
             glColor3f(0.0f, 0.0f, 1.0f);
@@ -1282,7 +1285,7 @@ namespace rs2
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
 
-            glViewport(0, 0, 1024, 1024);
+            glViewport(0, 0, 768, 768);
             glClearColor(0, 0, 0, 1);
             glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1291,15 +1294,16 @@ namespace rs2
 
             glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
 
-            glRotatef(-25, 1.0f, 0.0f, 0.0f);
+            glRotatef(25, 1.0f, 0.0f, 0.0f);
 
-            glTranslatef(0, 0.33f, -1.f);
+            glTranslatef(0, -0.33f, -1.f);
 
             float norm = std::sqrt(x*x + y*y + z*z);
 
-            glRotatef(-45, 0.0f, 1.0f, 0.0f);
+            glRotatef(-135, 0.0f, 1.0f, 0.0f);
 
-            draw_axis();
+            draw_axes();
+
             draw_circle(1, 0, 0, 0, 1, 0);
             draw_circle(0, 1, 0, 0, 0, 1);
             draw_circle(1, 0, 0, 0, 0, 1);
@@ -1331,7 +1335,7 @@ namespace rs2
                 glBegin(GL_LINES);
                 glColor3f(1.0f, 1.0f, 1.0f);
                 glVertex3f(0.0f, 0.0f, 0.0f);
-                glVertex3f(-x / norm, -y / norm, -z / norm);
+                glVertex3f(x / norm, y / norm, z / norm);
                 glEnd();
 
                 // Save model and projection matrix for later
@@ -1347,14 +1351,14 @@ namespace rs2
                 const auto precision = 3;
 
                 s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
-                print_text_in_3d(-x, -y, -z, s1.str().c_str(), false, model, proj, 1 / norm);
+                print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
 
                 std::ostringstream s2;
                 s2 << std::setprecision(precision) << norm;
-                print_text_in_3d(-x / 2, -y / 2, -z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+                print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
             }
 
-            glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
+            glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 768, 768, 0);
 
             glMatrixMode(GL_MODELVIEW);
             glPopMatrix();
@@ -1399,7 +1403,7 @@ namespace rs2
             glLoadIdentity();
 
             draw_grid();
-            draw_axis(0.3f, 2.f);
+            draw_axes(0.3f, 2.f);
 
             // Drawing pose:
             matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
@@ -1411,7 +1415,7 @@ namespace rs2
             glPushMatrix();
             glLoadMatrixf(model);
 
-            draw_axis(0.3f, 2.f);
+            draw_axes(0.3f, 2.f);
 
             // remove model matrix from the rest of the render
             glPopMatrix();
@@ -1608,6 +1612,23 @@ namespace rs2
             }
         }
         return false;
+    }
+
+    inline bool is_rasterizeable(rs2_format format)
+    {
+        // Check whether the produced
+        switch (format)
+        {
+            case RS2_FORMAT_ANY:
+            case RS2_FORMAT_XYZ32F:
+            case RS2_FORMAT_MOTION_RAW:
+            case RS2_FORMAT_MOTION_XYZ32F:
+            case RS2_FORMAT_GPIO_RAW:
+            case RS2_FORMAT_6DOF:
+                return false;
+            default:
+                return true;
+        }
     }
 
     // RS4xx with RealTec RGB sensor may additionally require sensor orientation control to make runtime adjustments

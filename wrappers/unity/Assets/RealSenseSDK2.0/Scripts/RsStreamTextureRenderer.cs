@@ -21,6 +21,7 @@ public class RsStreamTextureRenderer : MonoBehaviour
             case Format.Y16: return TextureFormat.R16;
             case Format.Raw16: return TextureFormat.R16;
             case Format.Raw8: return TextureFormat.Alpha8;
+            case Format.Disparity32: return TextureFormat.RFloat;
             case Format.Yuyv:
             case Format.Bgr8:
             case Format.Raw10:
@@ -28,12 +29,14 @@ public class RsStreamTextureRenderer : MonoBehaviour
             case Format.Uyvy:
             case Format.MotionRaw:
             case Format.MotionXyz32f:
-            case Format.GpioRaw: 
-            case Format.Any: 
+            case Format.GpioRaw:
+            case Format.Any:
             default:
-                throw new Exception(string.Format("{0} librealsense format: " + lrsFormat + ", is not supported by Unity"));
+                throw new ArgumentException(string.Format("librealsense format: {0}, is not supported by Unity", lrsFormat));
         }
     }
+
+    public RsFrameProvider Source;
 
     [System.Serializable]
     public class TextureEvent : UnityEvent<Texture> { }
@@ -44,200 +47,156 @@ public class RsStreamTextureRenderer : MonoBehaviour
 
     public FilterMode filterMode = FilterMode.Point;
 
-    private RsVideoStreamRequest _videoStreamFilter;
-    private RsVideoStreamRequest _currVideoStreamFilter;
-
     protected Texture2D texture;
+
 
     [Space]
     public TextureEvent textureBinding;
 
-    [System.NonSerialized]
-    private byte[] data;
-
-    readonly AutoResetEvent f = new AutoResetEvent(false);
-    protected int threadId;
-    protected bool bound;
-
-    virtual protected void Awake()
-    {
-        threadId = Thread.CurrentThread.ManagedThreadId;
-        _videoStreamFilter = new RsVideoStreamRequest() { Stream = _stream, Format = _format, StreamIndex = _streamIndex };
-        _currVideoStreamFilter = _videoStreamFilter.Clone();
-    }
+    FrameQueue q;
+    Predicate<Frame> matcher;
 
     void Start()
     {
-        RsDevice.Instance.OnStart += OnStartStreaming;
-        RsDevice.Instance.OnStop += OnStopStreaming;
+        Source.OnStart += OnStartStreaming;
+        Source.OnStop += OnStopStreaming;
     }
 
     void OnDestroy()
     {
-        if (texture != null) {
-            Destroy(texture);
-            texture = null;
-        }
-    }
-
-    protected virtual void OnStopStreaming()
-    {
-        RsDevice.Instance.OnNewSample -= OnNewSampleUnityThread;
-        RsDevice.Instance.OnNewSample -= OnNewSampleThreading;
-
-        f.Reset();
-        data = null;
-    }
-
-    protected virtual void OnStartStreaming(PipelineProfile activeProfile)
-    {
-
-        if (RsDevice.Instance.processMode == RsDevice.ProcessMode.UnityThread)
-        {
-            UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-            RsDevice.Instance.OnNewSample += OnNewSampleUnityThread;
-        }
-        else
-            RsDevice.Instance.OnNewSample += OnNewSampleThreading;
-    }
-
-    public void OnFrame(Frame f)
-    {
-        if (RsDevice.Instance.processMode == RsDevice.ProcessMode.UnityThread)
-        {
-            UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
-            OnNewSampleUnityThread(f);
-        }
-        else
-        {
-            OnNewSampleThreading(f);
-        }
-    }
-
-    private void UpdateData(Frame frame)
-    {
-        var vidFrame = frame as VideoFrame;
-        data = data ?? new byte[vidFrame.Stride * vidFrame.Height];
-        vidFrame.CopyTo(data);
-        if ((vidFrame as Frame) != frame)
-            vidFrame.Dispose();
-    }
-
-    private void ResetTexture(RsVideoStreamRequest vsr)
-    {
         if (texture != null)
         {
             Destroy(texture);
+            texture = null;
         }
 
-        texture = new Texture2D(vsr.Width, vsr.Height, Convert(vsr.Format), false, true)
+        if (q != null)
         {
-            wrapMode = TextureWrapMode.Clamp,
-            filterMode = filterMode
-        };
-
-        _currVideoStreamFilter = vsr.Clone();
-
-        texture.Apply();
-        textureBinding.Invoke(texture);
+            q.Dispose();
+        }
     }
 
-    private bool HasTextureConflict(Frame frame)
+    protected void OnStopStreaming()
     {
-        var vidFrame = frame as VideoFrame;
-        if (_videoStreamFilter.Width == vidFrame.Width && _videoStreamFilter.Height == vidFrame.Height && _videoStreamFilter.Format == vidFrame.Profile.Format)
-            return false;
-        _videoStreamFilter.CopyProfile(vidFrame);
-        data = null;
-        return true;
+        Source.OnNewSample -= OnNewSample;
+        // RsDevice.Instance.OnNewSampleSet -= OnNewSampleSet;
+
+        // e.Set();
+
+        if (q != null)
+        {
+            // foreach (var f in q)
+            // f.Dispose();
+
+            q.Dispose();
+            q = null;
+        }
     }
 
-    private bool HasRequestConflict(Frame frame)
+
+
+
+    public void OnStartStreaming(PipelineProfile activeProfile)
     {
-        if (!(frame is VideoFrame))
-            return true;
-        VideoFrame vf = frame as VideoFrame;
-        if (_videoStreamFilter.Stream != vf.Profile.Stream ||
-            _videoStreamFilter.Format != vf.Profile.Format ||
-            (_videoStreamFilter.StreamIndex != vf.Profile.Index && _videoStreamFilter.StreamIndex != 0))
-            return true;
-        return false;
+        q = new FrameQueue(1);
+
+        matcher = new Predicate<Frame>(Matches);
+
+        Source.OnNewSample += OnNewSample;
+        // e.Reset();
+
+        // RsDevice.Instance.OnNewSampleSet += OnNewSampleSet;
     }
 
-    private void OnNewSampleThreading(Frame frame)
+    private bool Matches(Frame f)
     {
-        if (HasRequestConflict(frame))
-            return;
-        if (HasTextureConflict(frame))
-            return;
-        UpdateData(frame);
-        f.Set();
+        using (var p = f.Profile)
+            return p.Stream == _stream && p.Format == _format && p.Index == _streamIndex;
     }
 
-    private void OnNewSampleUnityThread(Frame frame)
+    void OnNewSample(Frame frame)
     {
-        var vidFrame = frame as VideoFrame;
+        try
+        {
+            if (frame.IsComposite)
+            {
+                using (var fs = FrameSet.FromFrame(frame))
+                // using (var f = fs[_stream, _format, _streamIndex])
+                using (var f = fs.FirstOrDefault<VideoFrame>(matcher))
+                {
+                    if (f != null)
+                        q.Enqueue(f);
+                    return;
+                }
+            }
 
-        if (HasRequestConflict(vidFrame))
-            return;
-        if (HasTextureConflict(frame))
-            return;
+            // using (var p = frame.Profile)
+            // {
+            //     if (p.Stream != _stream || p.Format != _format || p.Index != _streamIndex)
+            //     {
+            //         return;
+            //     }
+            // }
+            if (!matcher(frame))
+                return;
 
-        UnityEngine.Assertions.Assert.AreEqual(threadId, Thread.CurrentThread.ManagedThreadId);
+            using (frame)
+            {
+                q.Enqueue(frame);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e, this);
+            // throw;
+        }
 
-        texture.LoadRawTextureData(vidFrame.Data, vidFrame.Stride * vidFrame.Height);
+    }
 
-        if ((vidFrame as Frame) != frame)
-            vidFrame.Dispose();
-
-        // Applied later (in Update) to sync all gpu uploads
-        // texture.Apply();
-        f.Set();
+    bool HasTextureConflict(VideoFrame vf)
+    {
+        using (var p = vf.Profile)
+        {
+            return !texture ||
+                texture.width != vf.Width ||
+                texture.height != vf.Height ||
+                Convert(p.Format) != texture.format;
+        }
     }
 
     protected void Update()
     {
-        if (!_currVideoStreamFilter.Equals(_videoStreamFilter))
-            ResetTexture(_videoStreamFilter);
+        // if (e.WaitOne(0, false))
+        // return;
 
-        if (f.WaitOne(0))
+        if (q != null)
         {
-            try
-            {
-                if (data != null)
-                    texture.LoadRawTextureData(data);
-            }
-            catch
-            {
-                OnStopStreaming();
-                Debug.LogError("Error loading texture data, check texture and stream formats");
-                throw;
-            }
-            texture.Apply();
-
-            if (!bound)
-            {
-                textureBinding.Invoke(texture);
-                bound = true;
-            }
+            Frame frame;
+            if (q.PollForFrame(out frame))
+                using (frame)
+                    ProcessFrame(frame as VideoFrame);
         }
     }
-}
 
-
-public class DefaultStreamAttribute : Attribute
-{
-    public Stream stream;
-    public TextureFormat format;
-
-    public DefaultStreamAttribute(Stream stream)
+    private void ProcessFrame(VideoFrame frame)
     {
-        this.stream = stream;
-    }
+        if (HasTextureConflict(frame))
+        {
+            if (texture != null)
+            {
+                Destroy(texture);
+            }
 
-    public DefaultStreamAttribute(Stream stream, TextureFormat format)
-    {
-        this.stream = stream;
-        this.format = format;
+            texture = new Texture2D(frame.Width, frame.Height, Convert(frame.Profile.Format), false, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = filterMode
+            };
+
+            textureBinding.Invoke(texture);
+        }
+
+        texture.LoadRawTextureData(frame.Data, frame.Stride * frame.Height);
+        texture.Apply();
     }
 }

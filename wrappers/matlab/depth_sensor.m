@@ -1,5 +1,5 @@
 % Wraps librealsense2 depth_sensor class
-classdef depth_sensor < sensor
+classdef depth_sensor < realsense.sensor
     methods
         % Constructor
         function this = depth_sensor(handle)
@@ -12,5 +12,5 @@ classdef depth_sensor < sensor
         function scale = get_depth_scale(this)
             scale = realsense.librealsense_mex('rs2::depth_sensor', 'get_depth_scale', this.objectHandle);
         end
-    emd
+    end
 end

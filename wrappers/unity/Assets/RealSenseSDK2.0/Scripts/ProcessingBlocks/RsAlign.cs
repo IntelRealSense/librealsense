@@ -1,68 +1,45 @@
 ﻿using Intel.RealSense;
-using System;
-using System.Collections.Generic;
 
+[ProcessingBlockDataAttribute(typeof(Align))]
 public class RsAlign : RsProcessingBlock
 {
     public Stream _alignTo = Stream.Depth;
 
+    public bool AlignOtherToDepth { set { _alignTo = Stream.Depth; } }
     public bool AlignDepthToColor { set { _alignTo = Stream.Color; } }
-    public bool AlignColorToDepth { set { _alignTo = Stream.Depth; } }
+    public bool AlignDepthToInfrared { set { _alignTo = Stream.Infrared; } }
 
     private Stream _currAlignTo;
     private Align _pb;
-    private List<Stream> _requirments = new List<Stream>() { Stream.Depth, Stream.Color };
 
-    private object _lock = new object();
-
-    private Dictionary<Stream, int> _profilesIds = new Dictionary<Stream, int>();
-
-    public override ProcessingBlockType ProcessingType { get { return ProcessingBlockType.Multi; } }
-
-    public void Awake()
+    public void Init()
     {
-        ResetAligner();
-    }
-
-    private void ResetAligner()
-    {
-        if(_pb != null)
+        if(_pb != null) {
             _pb.Dispose();
+        }
         _pb = new Align(_alignTo);
         _currAlignTo = _alignTo;
+
     }
 
-    public override Frame Process(Frame frame, FrameSource frameSource, FramesReleaser releaser)
+    void OnDisable()
     {
-        lock (_lock)
-        {
-            using (var frameset = FrameSet.FromFrame(frame))
-            {
-                using (var depth = frameset.DepthFrame)
-                using (var color = frameset.ColorFrame)
-                    if (_profilesIds.Count == 0 != !_profilesIds.ContainsValue(color.Profile.UniqueID) || !_profilesIds.ContainsValue(depth.Profile.UniqueID))
-                    {
-                        ResetAligner();
-                        _profilesIds[Stream.Depth] = depth.Profile.UniqueID;
-                        _profilesIds[Stream.Color] = color.Profile.UniqueID;
-                    }
-                return (_enabled ? _pb.Process(frameset, releaser) : frameset).AsFrame();
-            }
-        }
+        if (_pb != null)
+            _pb.Dispose();
+        _pb = null;
     }
 
-    public override List<Stream> Requirments()
+    public void AlignTo(Stream s)
     {
-        return _requirments;
+        _alignTo = s;
+        Init();
     }
 
-    public void Update()
+    public override Frame Process(Frame frame, FrameSource frameSource)
     {
-        if (_alignTo == _currAlignTo)
-            return;
-        lock (_lock)
-        {
-            ResetAligner();
-        }
+        if (_pb == null || _alignTo != _currAlignTo)
+            Init();
+
+        return _pb.Process(frame);
     }
 }
