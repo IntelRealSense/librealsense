@@ -282,13 +282,13 @@ namespace librealsense
 
         // Opaque retrieval
         d400_caps val{d400_caps::CAP_UNDEFINED};
-        if (gvd_buf[170])                          // DepthActiveMode
+        if (gvd_buf[active_projector])  // DepthActiveMode
             val |= d400_caps::CAP_ACTIVE_PROJECTOR;
-        if (gvd_buf[174])                           // WithRGB
+        if (gvd_buf[rgb_sensor])                           // WithRGB
             val |= d400_caps::CAP_RGB_SENSOR;
-        if (gvd_buf[178])
+        if (gvd_buf[imu_sensor])
             val |= d400_caps::CAP_IMU_SENSOR;
-        if (0xFF != (gvd_buf[112] & gvd_buf[113]))
+        if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
 
         return val;
