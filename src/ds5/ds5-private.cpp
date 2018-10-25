@@ -179,10 +179,12 @@ namespace librealsense
                     case RS460_PID:
                     case RS430_PID:
                     case RS420_PID:
+                    case RS400_IMU_PID:
                         found = (result.mi == 3);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
+                    case RS435I_PID:
                         found = (result.mi == 6);
                         break;
                     case RS415_PID:
@@ -204,5 +206,27 @@ namespace librealsense
             }
             return false;
         }
+
+
+        std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
+            d400_caps caps)
+        {
+            std::vector<platform::uvc_device_info> results;
+
+            switch (caps)
+            {
+                case d400_caps::CAP_FISHEYE_SENSOR:
+                    std::copy_if(devices.begin(),devices.end(),std::back_inserter(results),
+                        [](const platform::uvc_device_info& info)
+                        { return fisheye_pid.find(info.pid) != fisheye_pid.end();});
+                    break;
+                default:
+                    throw invalid_value_exception(to_string()
+                    << "Capability filters are not implemented for val "
+                    << std::hex << caps << std::dec);
+            }
+            return results;
+        }
+
     } // librealsense::ds
 } // namespace librealsense

@@ -98,29 +98,37 @@ namespace librealsense
 
 #pragma pack(pop)
 
-    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor, int count)
+    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor)
     {
         auto hid = (hid_data*)(source);
 
-        float axes[3] = { static_cast<float>((hid->x) * factor),
+        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
+        // Note that the implementation follows D435i installation pose and will require refactoring for other designs
+        // Reference spec: Bosch BMI055
+        float axes[3] = { static_cast<float>((hid->x) * -factor),
                          static_cast<float>((hid->y) * factor),
-                         static_cast<float>((hid->z) * factor) };
+                         static_cast<float>((hid->z) * -factor) };
         librealsense::copy(dest[0], axes, sizeof(axes));
     }
 
+    // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
+    // Librealsense output format: floating point 32bit. units m/s^2,
     template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
     {
-        auto count = width * height;
-        static const float gravity = 9.80665f; // Standard Gravitation Acceleration
-        static const double accelerator_transform_factor = 0.001f*gravity;
-        copy_hid_axes(dest, source, accelerator_transform_factor, count);
+        static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
+        static constexpr double accelerator_transform_factor = 0.001*gravity;
+
+        copy_hid_axes(dest, source, accelerator_transform_factor);
     }
 
+    // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
+    // Librealsense output format: floating point 32bit. units rad/sec,
     template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
-        auto count = width * height;
-        static const double gyro_transform_factor = 0.1* M_PI / 180.f;
-        copy_hid_axes(dest, source, gyro_transform_factor, count);
+        static constexpr double deg2rad = M_PI / 180.;
+        static const double gyro_transform_factor = 0.1 * deg2rad;
+
+        copy_hid_axes(dest, source, gyro_transform_factor);
     }
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int width, int height)

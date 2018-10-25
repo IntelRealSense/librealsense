@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../device.h"
+#include "../core/video.h"
 #include "../core/motion.h"
 #include "TrackingManager.h"
 #include "../media/playback/playback_device.h"

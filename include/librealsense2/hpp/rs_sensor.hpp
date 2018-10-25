@@ -352,7 +352,7 @@ namespace rs2
         */
         std::vector<stream_profile> get_stream_profiles() const
         {
-            std::vector<stream_profile> results;
+            std::vector<stream_profile> results{};
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(

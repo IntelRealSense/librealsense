@@ -8,6 +8,7 @@
 
 #include <map>
 #include <iomanip>
+#include <string>
 
 
 namespace librealsense
@@ -20,14 +21,16 @@ namespace librealsense
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
+        const uint16_t RS400_IMU_PID    = 0x0af2; // IMU
         const uint16_t RS420_PID        = 0x0af6; // PWG
         const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
-        const uint16_t RS410_MM_PID     = 0x0aff; // ASR
+        const uint16_t RS410_MM_PID     = 0x0aff; // ASRT
         const uint16_t RS400_MM_PID     = 0x0b00; // PSR
         const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
         const uint16_t RS460_PID        = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
+        const uint16_t RS435I_PID       = 0x0b3a; // D435i
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -40,21 +43,24 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
 
+        // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
-            ds::RS400_MM_PID,
             ds::RS410_PID,
-            ds::RS410_MM_PID,
             ds::RS415_PID,
-            ds::RS420_PID,
-            ds::RS420_MM_PID,
             ds::RS430_PID,
             ds::RS430_MM_PID,
+            ds::RS_USB2_PID,
+            ds::RS400_IMU_PID,
+            ds::RS420_PID,
+            ds::RS420_MM_PID,
+            ds::RS410_MM_PID,
+            ds::RS400_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID,
             ds::RS460_PID,
+            ds::RS435_RGB_PID,
             ds::RS405_PID,
-            ds::RS_USB2_PID
+            ds::RS435I_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -67,6 +73,14 @@ namespace librealsense
             ds::RS435_RGB_PID
         };
 
+        static const std::set<std::uint16_t> fisheye_pid = {
+            ds::RS400_MM_PID,
+            ds::RS410_MM_PID,
+            ds::RS420_MM_PID,
+            ds::RS430_MM_PID,
+            ds::RS430_MM_RGB_PID,
+        };
+
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
             { RS400_PID,        "Intel RealSense D400"},
             { RS400_MM_PID,     "Intel RealSense D400 with Tracking Module"},
@@ -77,11 +91,14 @@ namespace librealsense
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
             { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module"},
-            { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module and RGB Module"},
+            { RS430_MM_RGB_PID, "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS435_RGB_PID,    "Intel RealSense D435"},
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
-            { RS_USB2_PID,      "Intel RealSense USB2" }
+            { RS435I_PID,       "Intel RealSense D435I" },
+            { RS_USB2_PID,      "Intel RealSense USB2" },
+            { RS400_IMU_PID,    "Intel RealSense IMU" }
+
         };
 
         // DS5 fisheye XU identifiers
@@ -131,6 +148,50 @@ namespace librealsense
             INTERCAM_SYNC_SLAVE,
             INTERCAM_SYNC_MAX
         };
+
+        enum class d400_caps : uint16_t
+        {
+            CAP_UNDEFINED               = 0,
+            CAP_ACTIVE_PROJECTOR        = (1u << 0),    //
+            CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
+            CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
+            CAP_IMU_SENSOR              = (1u << 3),
+            CAP_MAX
+        };
+
+        static const std::map<d400_caps, std::string> d400_capabilities_names = {
+            { d400_caps::CAP_UNDEFINED,        "Undefined"         },
+            { d400_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
+            { d400_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
+            { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
+            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        }
+        };
+
+        inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
+        {
+            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+        }
+
+        inline d400_caps operator |(const d400_caps lhs, const d400_caps rhs)
+        {
+            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+        }
+
+        inline d400_caps& operator |=(d400_caps& lhs, d400_caps rhs)
+        {
+            return lhs = lhs | rhs;
+        }
+
+        inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
+        {
+            for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
+                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR})
+            {
+                if (i==(i&cap))
+                    stream << d400_capabilities_names.at(i) << " ";
+            }
+            return stream;
+        }
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
@@ -350,22 +411,28 @@ namespace librealsense
 
         enum gvd_fields
         {
+            // Keep sorted
             camera_fw_version_offset        = 12,
+            is_camera_locked_offset         = 25,
             module_serial_offset            = 48,
-            motion_module_fw_version_offset = 212,
-            is_camera_locked_offset         = 25
+            fisheye_sensor_lb               = 112,
+            fisheye_sensor_hb               = 113,
+            active_projector                = 170,
+            rgb_sensor                      = 174,
+            imu_sensor                      = 178,
+            motion_module_fw_version_offset = 212
         };
 
         enum calibration_table_id
         {
-            coefficients_table_id = 25,
-            depth_calibration_id = 31,
-            rgb_calibration_id = 32,
-            fisheye_calibration_id = 33,
-            imu_calibration_id = 34,
-            lens_shading_id = 35,
-            projector_id = 36,
-            max_id = -1
+            coefficients_table_id   = 25,
+            depth_calibration_id    = 31,
+            rgb_calibration_id      = 32,
+            fisheye_calibration_id  = 33,
+            imu_calibration_id      = 34,
+            lens_shading_id         = 35,
+            projector_id            = 36,
+            max_id                  = -1
         };
 
         struct ds5_calibration
@@ -484,6 +551,8 @@ namespace librealsense
             { stream_not_start_cam,         "Camera stream start failure" },
             { rec_error,                    "REC error" },
         };
+
+        std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
 
     } // librealsense::ds
 } // namespace librealsense

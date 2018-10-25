@@ -7,6 +7,7 @@
 #include "option.h"
 #include "context.h"
 #include "ds5/ds5-private.h"
+#include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/disparity-transform.h"
 #include "software-device.h"

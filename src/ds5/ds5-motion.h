@@ -23,11 +23,14 @@ namespace librealsense
                                                                                 const platform::extension_unit* fisheye_xu);
 
     private:
+
         friend class ds5_fisheye_sensor;
         friend class ds5_hid_sensor;
 
-        uint8_t _fisheye_device_idx = -1;
-        uint8_t _motion_module_device_idx = -1;
+        void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
+
+        optional_value<uint8_t> _fisheye_device_idx;
+        optional_value<uint8_t> _motion_module_device_idx;
 
         lazy<std::vector<uint8_t>>      _tm1_eeprom_raw;
         lazy<ds::tm1_eeprom>            _tm1_eeprom;
