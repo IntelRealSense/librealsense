@@ -185,7 +185,7 @@ size_t Manager::getDeviceList(TrackingDevice ** list, unsigned int maxListSize)
 
 Status Manager::setHostLogControl(IN const TrackingData::LogControl& logControl)
 {
-    LOGF("Set Host log Control, output to %s, verbosity = 0x%X, Rollover mode = 0x%X", (logControl.outputMode == LogOutputModeScreen)?"Screen":"Buffer", logControl.verbosity, logControl.rolloverMode);
+    //LOGF("Set Host log Control, output to %s, verbosity = 0x%X, Rollover mode = 0x%X", (logControl.outputMode == LogOutputModeScreen)?"Screen":"Buffer", logControl.verbosity, logControl.rolloverMode);
     __perc_Log_Set_Configuration(LogSourceHost, logControl.outputMode, logControl.verbosity, logControl.rolloverMode);
     return Status::SUCCESS;
 }
