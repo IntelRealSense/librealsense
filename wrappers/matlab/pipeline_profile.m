@@ -27,7 +27,7 @@ classdef pipeline_profile < handle
             narginchk(2, 3);
             validateattributes(stream_type, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 'stream_type', 2);
             if nargin == 2
-                out = realsense.librealsense_mex('rs2::pipeline_profile', 'get_streams', this.objectHandle, int64(stream_type));
+                out = realsense.librealsense_mex('rs2::pipeline_profile', 'get_stream', this.objectHandle, int64(stream_type));
             else
                 validateattributes(stream_index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'stream_index', 3);
                 out = realsense.librealsense_mex('rs2::pipeline_profile', 'get_stream', this.objectHandle, int64(stream_type), int64(stream_index));

@@ -1,10 +1,20 @@
 % Wraps librealsense2 pointcloud class
-classdef pointcloud < realsense.options
+classdef pointcloud < realsense.processing_block
     methods
         % Constructor
-        function this = pointcloud()
-            out = realsense.librealsense_mex('rs2::pointcloud', 'new');
-            this = this@realsense.options(out);
+        function this = pointcloud(stream, index)
+            switch nargin
+                case 0
+                    out = realsense.librealsense_mex('rs2::pointcloud', 'new');
+                case 1
+                    validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count});
+                    out = realsense.librealsense_mex('rs2::pointcloud', 'new', int64(stream));
+                case 2
+                    validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count});
+                    validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'});
+                    out = realsense.librealsense_mex('rs2::pointcloud', 'new', int64(stream), int64(index));
+            end
+            this = this@realsense.processing_block(out);
         end
         
         % Destructor (uses base class destructor)

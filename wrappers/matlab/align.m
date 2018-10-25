@@ -1,5 +1,5 @@
 % Wraps librealsense2 align class
-classdef align < handle
+classdef align < librealsense.processing_block
     properties (SetAccess = private, Hidden = true)
         objectHandle;
     end
@@ -9,14 +9,10 @@ classdef align < handle
             narginchk(1, 1);
             validateattributes(align_to, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count});
             this.objectHandle = realsense.librealsense_mex('rs2::align', 'new', int64(align_to));
+            this = this@realsense.processing_block(out);
         end
         
-        % Destructor
-        function delete(this)
-            if (this.objectHandle ~= 0)
-                realsense.librealsense_mex('rs2::align', 'delete', this.objectHandle);
-            end
-        end
+        % Destructor (uses base class destructor)
         
         % Functions
         function frames = process(this, frame)
