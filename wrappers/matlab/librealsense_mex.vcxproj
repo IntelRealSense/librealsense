@@ -94,7 +94,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(ProjectDir)..\..\build\third-party\realsense-file\$(Configuration);$(ProjectDir)..\..\build\$(Configuration);$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
     </Link>
     <PreBuildEvent>
@@ -113,7 +113,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include\;C:\MATLAB\R2017b\extern\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
@@ -150,7 +150,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(ProjectDir)..\..\build\third-party\realsense-file\$(Configuration);$(ProjectDir)..\..\build\$(Configuration);$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
     </Link>
     <PreBuildEvent>
