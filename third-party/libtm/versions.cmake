@@ -48,9 +48,9 @@ else()
     set (FW_SOURCE ${INTERNAL_FW_SOURCE})
 endif(FW_SOURCE)
 
-message("----------------------------------------------------------------------------")
-message("Product versions:")
-message("- HOST ${HOST_VERSION} (${HOST_VERSION_SOURCE})")
+message(STATUS "----------------------------------------------------------------------------")
+message(STATUS "Product versions:")
+message(STATUS "- HOST ${HOST_VERSION} (${HOST_VERSION_SOURCE})")
 
 if (FW_SOURCE MATCHES "Remote")
 # FW versions are already updated above
@@ -86,6 +86,6 @@ else()
     message(FATAL_ERROR "Can't build using FW source = ${FW_SOURCE}" )
 endif()
 
-message("- ${FW_SOURCE} FW ${FW_VERSION} (${FW_VERSION_SOURCE})")
-message("- ${FW_SOURCE} CENTRAL APP ${CENTRAL_APP_VERSION} (${CENTRAL_APP_VERSION_SOURCE})")
-message("- ${FW_SOURCE} CENTRAL BL ${CENTRAL_BL_VERSION} (${CENTRAL_BL_VERSION_SOURCE})")
+message(STATUS "- ${FW_SOURCE} FW ${FW_VERSION} (${FW_VERSION_SOURCE})")
+message(STATUS "- ${FW_SOURCE} CENTRAL APP ${CENTRAL_APP_VERSION} (${CENTRAL_APP_VERSION_SOURCE})")
+message(STATUS "- ${FW_SOURCE} CENTRAL BL ${CENTRAL_BL_VERSION} (${CENTRAL_BL_VERSION_SOURCE})")

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(libtm_util)
-MESSAGE("Building project ${PROJECT_NAME}")
+message(STATUS "Building project ${PROJECT_NAME}")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
