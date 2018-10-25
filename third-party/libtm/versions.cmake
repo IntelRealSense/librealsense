@@ -8,7 +8,7 @@ set(INTERNAL_HOST_VERSION "0.19.3.1175")
 set(INTERNAL_FW_VERSION "0.0.18.3452")
 set(INTERNAL_CENTRAL_APP_VERSION "2.0.19.269")
 set(INTERNAL_CENTRAL_BL_VERSION "1.0.1.112")
-set(INTERNAL_FW_SOURCE "Remote")
+set(INTERNAL_FW_SOURCE "Remote" CACHE STRING "Select TM2 FW archive: Remote/Local (to avoid FW polling from remote server)")
 
 option(HOST_VERSION "set HOST_VERSION to host version, set to 0 to use internal configuration (INTERNAL_HOST_VERSION)" 0)
 if(HOST_VERSION)
