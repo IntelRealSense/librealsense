@@ -995,6 +995,8 @@ option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
 option(BUILD_NODEJS_BINDINGS "Build Node.js bindings" OFF)
+option(BUILD_ANDROID_BINDINGS "Build ANDROID bindings" OFF)
+
 SET(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
 SET(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
