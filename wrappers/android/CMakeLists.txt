@@ -51,6 +51,7 @@ set(IRSA_CPP
     src/native/irsa_preview.cpp
     src/native/irsa_preview_factory.cpp
     src/native/irsa_rs_preview.cpp
+    src/native/irsa_fake_preview.cpp
     src/native/util.cpp
     src/native/cde_log.c
     src/native/fifo.c
@@ -93,21 +94,21 @@ set_target_properties(
                        realsense2-lib
                        PROPERTIES IMPORTED_LOCATION
 
-                       ${BASEPATH}/out/target/${ANDROID_ABI}/build_librealsense/librealsense2.a )
+                       ${BASEPATH}/out/${CMAKE_BUILD_TYPE}/target/${ANDROID_ABI}/build_librealsense/librealsense2.a )
 
 add_library(realsense2-usb-lib STATIC IMPORTED )
 set_target_properties( 
                        realsense2-usb-lib
                        PROPERTIES IMPORTED_LOCATION
 
-                       ${BASEPATH}/out/target/${ANDROID_ABI}/build_librealsense/libusb_install/lib/libusb.a)
+                       ${BASEPATH}/out/${CMAKE_BUILD_TYPE}/target/${ANDROID_ABI}/build_librealsense/libusb_install/lib/libusb.a)
 
 add_library(realsense2-file-lib STATIC IMPORTED )
 set_target_properties( 
                        realsense2-file-lib
                        PROPERTIES IMPORTED_LOCATION
 
-                       ${BASEPATH}/out/target/${ANDROID_ABI}/build_librealsense/third-party/realsense-file/librealsense-file.a)
+                       ${BASEPATH}/out/${CMAKE_BUILD_TYPE}/target/${ANDROID_ABI}/build_librealsense/third-party/realsense-file/librealsense-file.a)
 
 find_library(log-lib log)
 find_library(android-lib android)

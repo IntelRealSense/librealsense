@@ -38,9 +38,10 @@ final public class IrsaMgr {
 
 
     public void release() {
-        IrsaLog.w(TAG, "[Java] destructor");
+        IrsaLog.w(TAG, "[Java] release");
         native_release();
     }
+
 
     private boolean versionCheck() {
         String javaVersion = IrsaVersion.IRSA_VERSION;

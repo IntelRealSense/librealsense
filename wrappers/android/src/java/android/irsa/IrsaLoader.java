@@ -91,7 +91,7 @@ class IrsaLoader {
 				if (cpuFeature != null && cpuFeature.contains("neon")) {
 					cpus = new String[] {"arm64-v8a", "armv8", "armeabi-v7a", "armv7"};
                 } else if (cpuArchitecture.startsWith("8")) {
-					cpus = new String[] {"arm64-v8a", "armv8"};
+					cpus = new String[] {"arm64-v8a", "armeabi-v7a", "armv8"};
 				}
 	 		} 
 		}

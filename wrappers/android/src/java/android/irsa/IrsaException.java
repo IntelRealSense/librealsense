@@ -38,11 +38,11 @@ public class IrsaException extends Exception {
 		}
 
 		if (index2 >=0) {
-			try {
-				this.internalCode = Integer.parseInt((message.substring(index2+errorCodePart.length())).trim());
+            try {
+                this.internalCode = Integer.parseInt((message.substring(index2+errorCodePart.length())).trim());
 
-			} catch (Exception e) {
-			}
+            } catch (Exception e) {
+            }
 		}
 	}
 

@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
-// This is a "Hello-world" example to illustrate how to using android wrapper
+// This is a "Hello-world" example to illustrate how to using Android wrapper
 // for development activities with librealsense for Android based device
 
 package com.intel.irsa_example;
@@ -60,20 +60,20 @@ public class MainActivity extends Activity {
 
     private int dispWidth = 176;    // surface view's default width
     private int dispHeight = 144;   //surface view's default height;
-    private int rowReserved = 10;   //reserved space in horizontal
-    private int colReserved = 50;   //reserved space in vertical
-    private int rowSpace = 10;      //space between adjacent items in same row
-    private int colSpace = 5;       //space between adjacent items in same col
+    private int rowReserved = 10;//100;  //reserved space in horizontal
+    private int colReserved = 50;  //reserved space in vertical
+    private int rowSpace = 10;//40;      //space between adjacent items in same row
+    private int colSpace = 5;      //space between adjacent items in same col
     private int itemsInRow = 1;     //surface view's counts in the same row
     private int itemsInCol = 1;     //surface view's counts in the same col
     private int textHeight = 50;
     private int textWidth = 400;
     private int TEXT_VIEW_SIZE = 20;
 
-    //hardcode color stream format here
-    private int PREVIEW_WIDTH = 640;
-    private int PREVIEW_HEIGHT = 480;
-    private int PREVIEW_FPS = 30;
+    //hardcode color stream format here,only render color frame for irFace project
+    private int DEPTH_FRAME_WIDTH = 640;
+    private int DEPTH_FRAME_HEIGHT = 480;
+    private int DEPTH_FPS = 30;
 
     private RelativeLayout layout;
     private RadioGroup groupVR = null;
@@ -244,7 +244,6 @@ public class MainActivity extends Activity {
         IrsaLog.d(TAG, "cleanup native resource");
         if (mIrsaMgr != null) {
             mIrsaMgr.release();
-            mIrsaMgr = null;
         }
     }
 
@@ -260,22 +259,21 @@ public class MainActivity extends Activity {
     }
 
 
-
     private void addSurfaceView(SurfaceView sView, int colIndex, int rowIndex) {
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         lp.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
 
         if (0 == rowIndex) {
-            lp.width = PREVIEW_WIDTH;
-            lp.height = PREVIEW_HEIGHT;
+            lp.width = DEPTH_FRAME_WIDTH;
+            lp.height = DEPTH_FRAME_HEIGHT;
             lp.leftMargin = rowReserved;
         } else {
-            lp.width = PREVIEW_WIDTH;
-            lp.height = PREVIEW_HEIGHT;
-            lp.leftMargin = PREVIEW_WIDTH + rowReserved + rowSpace * rowIndex;
+            lp.width = DEPTH_FRAME_WIDTH;
+            lp.height = DEPTH_FRAME_HEIGHT;
+            lp.leftMargin = DEPTH_FRAME_WIDTH + rowReserved + rowSpace * rowIndex;
         }
-        lp.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (PREVIEW_HEIGHT + colSpace + textHeight) * colIndex;
+        lp.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (DEPTH_FRAME_HEIGHT + colSpace + textHeight) * colIndex;
         vectorLP.add(lp);
         if (sView != null) {
             sView.setLayoutParams(lp);
@@ -309,14 +307,14 @@ public class MainActivity extends Activity {
         lpText.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lpText.addRule(RelativeLayout.ALIGN_PARENT_TOP);
 
-        lpText.topMargin = colReserved / 2 + (PREVIEW_HEIGHT + colSpace * 2 + textHeight) * colIndex - lpText.height - 30;
+        lpText.topMargin = colReserved / 2 + (DEPTH_FRAME_HEIGHT + colSpace * 2 + textHeight) * colIndex - lpText.height - 30;
         lpText.width = textWidth;
         lpText.height = textHeight * 3;
 
         if (0 == rowIndex) {
             lpText.leftMargin = rowReserved;
         } else {
-            lpText.leftMargin = PREVIEW_WIDTH + dispWidth * (rowIndex - 1) + rowReserved + rowSpace * rowIndex;
+            lpText.leftMargin = DEPTH_FRAME_WIDTH + dispWidth * (rowIndex - 1) + rowReserved + rowSpace * rowIndex;
         }
         vectorLPHint.add(txtViewFace);
         txtViewFace.setVisibility(View.VISIBLE);
@@ -341,7 +339,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        mIrsaMgr.setStreamFormat(0, PREVIEW_WIDTH, PREVIEW_HEIGHT, PREVIEW_FPS, 0);
+        mIrsaMgr.setStreamFormat(0, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, 0);
         mIrsaMgr.setPreviewDisplay(mapSurfaceMap);
         bSetup = true;
     }

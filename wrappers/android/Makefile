@@ -6,12 +6,12 @@
 #######################################################
 #targets= armeabi-v7a x86 arm64-v8a x86_64
 #targets= armeabi-v7a x86 arm64-v8a
-targets= armeabi-v7a arm64-v8a
+targets= armeabi-v7a
 
 #######################################################
 #build_type is Release or Debug
-#build_type = Release
-build_type = Debug
+build_type = Release
+#build_type = Debug
 
 #######################################################
 ifneq (, $(findstring ndk-r16b,$(ANDROID_NDK_DIR)))
@@ -51,8 +51,8 @@ prepare:
 librs:
 	@echo == Building $@: $^ ==
 	@for target in ${targets}; do  \
-		mkdir -p ${basepath}/out/target/$$target && \
-		cd ${basepath}/out/target/$$target && \
+		mkdir -p ${basepath}/out/${build_type}/target/$$target && \
+		cd ${basepath}/out/${build_type}/target/$$target && \
 		mkdir -p build_librealsense && \
 		cd build_librealsense && \
 		cmake -DANDROID_ABI=$$target -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_DIR}/build/cmake/android.toolchain.cmake -DBUILD_SHARED_LIBS=false -DANDROID_STL=${android_stl} -DFORCE_LIBUVC=false -DCMAKE_BUILD_TYPE=${build_type} ${librs_src_dir} && \
@@ -64,7 +64,7 @@ librs:
 clean_librs:
 	@echo == Building $@: $^ ==
 	@for target in ${targets}; do  \
-		rm -rf ${basepath}/out/target/$$target/build_librealsense; \
+		rm -rf ${basepath}/out/${build_type}/target/$$target/build_librealsense; \
 	done
 
 
@@ -73,14 +73,14 @@ irsajni: librs
 	@echo == Building $@: $^ ==
 	echo ${basepath}
 	@for target in ${targets}; do  \
-		mkdir -p ${basepath}/out/target/$$target && \
-		cd ${basepath}/out/target/$$target && \
+		mkdir -p ${basepath}/out/${build_type}/target/$$target && \
+		cd ${basepath}/out/${build_type}/target/$$target && \
 		mkdir -p build_irsajni && \
 		cd build_irsajni && \
 		cmake -DBASEPATH=${basepath} -DANDROID_ABI=$$target -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_DIR}/build/cmake/android.toolchain.cmake -DBUILD_SHARED_LIBS=true -DANDROID_STL=${android_stl} -DCMAKE_BUILD_TYPE=${build_type} ${basepath} && \
 		make VERBOSE=1 && \
 		/bin/mkdir -p ${basepath}/examples/irsa_example/app/libs/$$target && \
-		/bin/cp -fv ${basepath}/out/target/$$target/build_irsajni/libirsajni.so ${basepath}/examples/irsa_example/app/libs/$$target/ && \
+		/bin/cp -fv ${basepath}/out/${build_type}/target/$$target/build_irsajni/libirsajni.so ${basepath}/examples/irsa_example/app/libs/$$target/ && \
 		cd ${basepath} || \
 		exit 1; \
 	done
@@ -89,7 +89,7 @@ irsajni: librs
 clean_irsajni:
 	@echo == Building $@: $^ ==
 	@for target in ${targets}; do  \
-		/bin/rm -rf ${basepath}/out/target/$$target/build_irsajni;  \
+		/bin/rm -rf ${basepath}/out/${build_type}/target/$$target/build_irsajni;  \
 	done
 
 

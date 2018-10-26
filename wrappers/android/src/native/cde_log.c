@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
-// a common/simple log mechanism for troubleshooting Linux kernel 
+// a common/simple log mechanism for troubleshooting Linux kernel
 // issue, Android source code issue, Linux source code issue
 
 

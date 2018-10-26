@@ -36,8 +36,8 @@ static void IrsaPreview_native_setup() {
     factory.registerClass("fake", createFakePreview);
     factory.registerClass("realsense", createRealsensePreview);
 
-    //g_preview = factory.create("fake");
-    g_preview = factory.create("realsense");
+    g_preview = factory.create("fake");
+    //g_preview = factory.create("realsense");
     CHECK(g_preview != nullptr);
 }
 

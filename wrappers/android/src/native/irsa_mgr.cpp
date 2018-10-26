@@ -35,6 +35,7 @@ std::shared_ptr<IrsaMgr> IrsaMgr::getInstance() {
 IrsaMgr::IrsaMgr() {
 }
 
+
 IrsaMgr::~IrsaMgr() {
     LOGV("destructor");
 #ifndef __SMART_POINTER__

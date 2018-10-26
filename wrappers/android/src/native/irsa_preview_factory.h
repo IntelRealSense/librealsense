@@ -1,5 +1,4 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// IRSA Project, 2018
 
 #pragma once
 
