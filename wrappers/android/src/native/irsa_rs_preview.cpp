@@ -1,6 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
 // the RealsensePreview used to render RGB/Depth/IR data
+//
+// size of surface view is hardcode to 640 x 480
+// profile of color stream hardcode to 640 x 480 x 30
+// profile of depth stream hardcode to 1280 x 720 x 6
+// profile of IR stream hardcode to 1280 x 720 x 6
 
 
 #include <string>
@@ -36,7 +41,7 @@ static const std::string no_camera_message = "No camera connected, please connec
 static const std::string platform_camera_name = "Platform Camera";
 
 static const int DEPTH_FIFO_CAPACITY = 6;
-static const int RGB_FIFO_CAPACITY = 30;
+static const int PREVIEW_FIFO_CAPACITY = 30;
 
 
 static int probeRSDevice() {
@@ -231,7 +236,7 @@ bool RealsensePreview::enableDevices() {
 
         LOGD("allocate memory for preview fifo and depth/ir fifo \n");
         _fifoIRDepth = fifo_new(DEPTH_FIFO_CAPACITY, _cameraDataSize);
-        _fifoPreview     = fifo_new(RGB_FIFO_CAPACITY, _previewWidth * _previewHeight * 3);
+        _fifoPreview     = fifo_new(PREVIEW_FIFO_CAPACITY, _previewWidth * _previewHeight * 3);
     }
     return true;
 }
@@ -410,11 +415,9 @@ void RealsensePreview::threadRender() {
             auto a = std::chrono::steady_clock::now();
 
             if (1 == _renderID) {
-                //hardcode for RGB8 optimization purpose
                 ANativeWindow_Buffer buffer = {};
                 ARect rect = {0, 0, 640, 480};
                 if (ANativeWindow_lock(_renderSurface, &buffer, &rect) == 0) {
-                    //hardcode for optimization purpose:640 480 640 * 3
                     uint8_t *out = static_cast<uint8_t *>(buffer.bits);
                     const uint8_t *in = static_cast<const uint8_t *>(frame_p->mem);
 #if 1
@@ -437,7 +440,6 @@ void RealsensePreview::threadRender() {
                 ANativeWindow_Buffer buffer = {};
                 ARect rect = {0, 0, 640, 480};
                 if (ANativeWindow_lock(_renderSurface, &buffer, &rect) == 0) {
-                    //hardcode for optimization purpose:640 480 640 * 3
                     uint8_t *out = static_cast<uint8_t *>(buffer.bits);
                     const uint8_t *in = static_cast<const uint8_t *>(frame_p->mem);
                     memset(out, 0, 640 * 480 * 4);

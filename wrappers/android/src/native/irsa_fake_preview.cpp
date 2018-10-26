@@ -1,6 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
 // the FakePreview used to render RGB/Depth data with bag file
+//
+// so we could use FakePreview to tracking code in librealsense's internal
+//
+// size of surface view is hardcode to 640 x 480
+//
+// the bag file was recorded by realsense_viewer in Ubuntu 18.04.1 x86-64
+// the stream's profile in bag file as following:
+// profile of color stream is 1280 x 720
+// profile of depth stream is 1280 x 720
 
 
 #include <string>
@@ -263,6 +272,8 @@ void FakePreview::threadPoll() {
                     if (_fifoPreview == nullptr) {
                         LOGD("allocate memory for preview fifo\n");
                         _fifoPreview     = fifo_new(PREVIEW_FIFO_CAPACITY, profile.width() * profile.height() * 3);
+                        _realColorWidth  = profile.width();
+                        _realColorHeight = profile.height();
                     }
                 }
                 ir = frameset.get_infrared_frame();
@@ -272,6 +283,8 @@ void FakePreview::threadPoll() {
                     if (_fifoPreview == nullptr) {
                         LOGD("allocate memory for preview fifo\n");
                         _fifoPreview     = fifo_new(PREVIEW_FIFO_CAPACITY, profile.width() * profile.height() * 3);
+                        _realColorWidth  = profile.width();
+                        _realColorHeight = profile.height();
                     }
                 }
                 if (0 == _renderID) {
@@ -352,11 +365,9 @@ void FakePreview::threadRender() {
             auto a = std::chrono::steady_clock::now();
 
             if (1 == _renderID) {
-                //hardcode for RGB8 optimization purpose
                 ANativeWindow_Buffer buffer = {};
                 ARect rect = {0, 0, 640, 480};
                 if (ANativeWindow_lock(_renderSurface, &buffer, &rect) == 0) {
-                    //hardcode for optimization purpose:640 480 640 * 3
                     uint8_t *out = static_cast<uint8_t *>(buffer.bits);
                     const uint8_t *in = static_cast<const uint8_t *>(frame_p->mem);
                     memset(out, 0, 640 * 480 * 4);
@@ -378,7 +389,6 @@ void FakePreview::threadRender() {
                 ANativeWindow_Buffer buffer = {};
                 ARect rect = {0, 0, 640, 480};
                 if (ANativeWindow_lock(_renderSurface, &buffer, &rect) == 0) {
-                    //hardcode for optimization purpose:640 480 640 * 3
                     uint8_t *out = static_cast<uint8_t *>(buffer.bits);
                     const uint8_t *in = static_cast<const uint8_t *>(frame_p->mem);
                     memset(out, 0, 640 * 480 * 4);
