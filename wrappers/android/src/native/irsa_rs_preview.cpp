@@ -107,40 +107,65 @@ RealsensePreview::~RealsensePreview() {
 
 void RealsensePreview::open() {
     LOGD("open");
-    _ctx = std::make_shared<rs2::context>();
+    if (0 == _deviceCounts)
+        return;
 
-    std::stringstream ss;
-    rs2_error *e = nullptr;
-    ss << "librealsense2 VERSION: " << api_version_to_string(rs2_get_api_version(&e)) << std::endl;
+#ifndef __SMART_POINTER__
+    IrsaMgr *mgr = IrsaMgr::getInstance();
+#else
+    std::shared_ptr<IrsaMgr> mgr = IrsaMgr::getInstance();
+#endif
+    CHECK(mgr != nullptr);
 
-    for (auto sensor : _ctx->query_all_sensors()) {
-        auto name = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME);
-        auto sn = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
-        auto fw = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    try {
+        _ctx = std::make_shared<rs2::context>();
 
-        LOGD("NAME: %s SN: %s FW: %s", name, sn, fw);
+        std::stringstream ss;
+        rs2_error *e = nullptr;
+        ss << "librealsense2 VERSION: " << api_version_to_string(rs2_get_api_version(&e)) << std::endl;
 
-        ss << "DEVICE NAME: " << name << " SN: " << sn << " FW: " << fw << std::endl;
-        for (auto profile : sensor.get_stream_profiles()) {
-            auto vprofile = profile.as<rs2::video_stream_profile>();
-            LOGD("PROFILE %d = %s, %s, %d, %d, %d", \
-                     profile.unique_id(), \
-                     vprofile.stream_name().c_str(), \
-                     rs2_format_to_string(vprofile.format()), \
-                     vprofile.width(), \
-                     vprofile.height(), \
-                     vprofile.fps());
-            ss << "PROFILE " << profile.unique_id() << " = " << vprofile.stream_name() << ", "
-                   << rs2_format_to_string(vprofile.format()) << ", " << vprofile.width() << ", "
-                   << vprofile.height() << ", " << vprofile.fps() << std::endl;
+        for (auto sensor : _ctx->query_all_sensors()) {
+            auto name = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME);
+            auto sn = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
+            auto fw = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+
+            LOGD("NAME: %s SN: %s FW: %s", name, sn, fw);
+
+            ss << "DEVICE NAME: " << name << " SN: " << sn << " FW: " << fw << std::endl;
+            for (auto profile : sensor.get_stream_profiles()) {
+                auto vprofile = profile.as<rs2::video_stream_profile>();
+                LOGD("PROFILE %d = %s, %s, %d, %d, %d", \
+                         profile.unique_id(), \
+                         vprofile.stream_name().c_str(), \
+                         rs2_format_to_string(vprofile.format()), \
+                         vprofile.width(), \
+                         vprofile.height(), \
+                         vprofile.fps());
+                ss << "PROFILE " << profile.unique_id() << " = " << vprofile.stream_name() << ", "
+                       << rs2_format_to_string(vprofile.format()) << ", " << vprofile.width() << ", "
+                       << vprofile.height() << ", " << vprofile.fps() << std::endl;
+            }
         }
+    } catch (const rs2::error &e) {
+        std::stringstream ss;
+        ss << "RealSense error calling:" << e.get_failed_function() << e.get_failed_args()
+           << e.what();
+        LOGV("%s", ss.str().c_str());
+        mgr->notify(IRSA_ERROR, IRSA_ERROR_PROBE_RS, (int)ss.str().c_str());
+    } catch (const std::exception &e) {
+        std::stringstream ss;
+        ss << "RealSense error: " << e.what();
+        LOGV("error_message :%s", ss.str().c_str());
+        mgr->notify(IRSA_ERROR, IRSA_ERROR_PROBE_RS, (int)ss.str().c_str());
     }
-
 }
 
 
 void RealsensePreview::close() {
     LOGD("close");
+    if (0 == _deviceCounts)
+        return;
+
     if (_isRunning)
         stopPreview();
     if (_ctx != nullptr) {
@@ -188,6 +213,8 @@ void RealsensePreview::setPreviewDisplay(std::map<int, ANativeWindow *> &surface
 
 bool RealsensePreview::enableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
+    if (0 == _deviceCounts)
+        return false;
 
     for (auto &&dev : _ctx->query_devices()) {
         std::string serial_number(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
@@ -244,7 +271,9 @@ bool RealsensePreview::enableDevices() {
 
 void RealsensePreview::disableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
-    LOGD("here");
+    if (0 == _deviceCounts)
+        return;
+
     for (auto &view : _devices) {
         view.second.config.disable_all_streams();
         view.second.pipe.stop();
@@ -252,7 +281,6 @@ void RealsensePreview::disableDevices() {
 
     _devices.clear();
     LOGV("destroy camera data fifo");
-    LOGD("here");
     _fifoIRDepth->destroy(_fifoIRDepth);
     _fifoPreview->destroy(_fifoPreview);
 }
@@ -260,6 +288,9 @@ void RealsensePreview::disableDevices() {
 
 void RealsensePreview::startPreview() {
     LOGD("start");
+    if (0 == _deviceCounts)
+        return;
+
     CHECK(_ctx != nullptr);
 
     if (!enableDevices())
@@ -274,6 +305,9 @@ void RealsensePreview::startPreview() {
 
 void RealsensePreview::stopPreview() {
     LOGD("Stop");
+    if (0 == _deviceCounts)
+        return;
+
     if (!_isRunning)
         return;
     _isRunning = false;

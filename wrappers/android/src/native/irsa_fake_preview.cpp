@@ -43,13 +43,28 @@ namespace irsa {
 
 static const int DEPTH_FIFO_CAPACITY = 6;
 static const int PREVIEW_FIFO_CAPACITY = 30;
+static const char *BAG_FILE="/sdcard/test.bag";
 
 
 FakePreview::FakePreview(): _renderID(1), _fifoPreview(nullptr) {
     _depthWidth = 1280;
     _depthHeight = 720;
     _depthFPS = 6;
-    _deviceCounts = 1;
+
+#ifndef __SMART_POINTER__
+    IrsaMgr *mgr = IrsaMgr::getInstance();
+#else
+    std::shared_ptr<IrsaMgr> mgr = IrsaMgr::getInstance();
+#endif
+    CHECK(mgr != nullptr);
+
+
+    if (0 == access(BAG_FILE, F_OK))
+        _deviceCounts = 1;
+    else  {
+        mgr->setInfo("pls check /sdcard/test.bag exist");
+        _deviceCounts = 0;
+    }
     LOGD("_deviceCounts %d\n", _deviceCounts);
 }
 
@@ -62,40 +77,68 @@ FakePreview::~FakePreview() {
 
 void FakePreview::open() {
     LOGD("open");
-    _ctx = std::make_shared<rs2::context>();
 
-    std::stringstream ss;
-    rs2_error *e = nullptr;
-    ss << "librealsense2 VERSION: " << api_version_to_string(rs2_get_api_version(&e)) << std::endl;
+    if (0 == _deviceCounts)
+        return;
 
-    for (auto sensor : _ctx->query_all_sensors()) {
-        auto name = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME);
-        auto sn = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
-        auto fw = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+#ifndef __SMART_POINTER__
+    IrsaMgr *mgr = IrsaMgr::getInstance();
+#else
+    std::shared_ptr<IrsaMgr> mgr = IrsaMgr::getInstance();
+#endif
+    CHECK(mgr != nullptr);
 
-        LOGD("NAME: %s SN: %s FW: %s", name, sn, fw);
+    try {
 
-        ss << "DEVICE NAME: " << name << " SN: " << sn << " FW: " << fw << std::endl;
-        for (auto profile : sensor.get_stream_profiles()) {
-            auto vprofile = profile.as<rs2::video_stream_profile>();
-            LOGD("PROFILE %d = %s, %s, %d, %d, %d", \
-                     profile.unique_id(), \
-                     vprofile.stream_name().c_str(), \
-                     rs2_format_to_string(vprofile.format()), \
-                     vprofile.width(), \
-                     vprofile.height(), \
-                     vprofile.fps());
-            ss << "PROFILE " << profile.unique_id() << " = " << vprofile.stream_name() << ", "
-                   << rs2_format_to_string(vprofile.format()) << ", " << vprofile.width() << ", "
-                   << vprofile.height() << ", " << vprofile.fps() << std::endl;
+        _ctx = std::make_shared<rs2::context>();
+
+        std::stringstream ss;
+        rs2_error *e = nullptr;
+        ss << "librealsense2 VERSION: " << api_version_to_string(rs2_get_api_version(&e)) << std::endl;
+
+        for (auto sensor : _ctx->query_all_sensors()) {
+            auto name = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME);
+            auto sn = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER);
+            auto fw = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+
+            LOGD("NAME: %s SN: %s FW: %s", name, sn, fw);
+
+            ss << "DEVICE NAME: " << name << " SN: " << sn << " FW: " << fw << std::endl;
+            for (auto profile : sensor.get_stream_profiles()) {
+                auto vprofile = profile.as<rs2::video_stream_profile>();
+                LOGD("PROFILE %d = %s, %s, %d, %d, %d", \
+                         profile.unique_id(), \
+                         vprofile.stream_name().c_str(), \
+                         rs2_format_to_string(vprofile.format()), \
+                         vprofile.width(), \
+                         vprofile.height(), \
+                         vprofile.fps());
+                ss << "PROFILE " << profile.unique_id() << " = " << vprofile.stream_name() << ", "
+                       << rs2_format_to_string(vprofile.format()) << ", " << vprofile.width() << ", "
+                       << vprofile.height() << ", " << vprofile.fps() << std::endl;
+            }
         }
+    } catch (const rs2::error &e) {
+        std::stringstream ss;
+        ss << "RealSense error calling:" << e.get_failed_function() << e.get_failed_args()
+           << e.what();
+        LOGV("%s", ss.str().c_str());
+        mgr->notify(IRSA_ERROR, IRSA_ERROR_PROBE_RS, (int)ss.str().c_str());
+    } catch (const std::exception &e) {
+        std::stringstream ss;
+        ss << "RealSense error: " << e.what();
+        LOGV("error_message :%s", ss.str().c_str());
+        mgr->notify(IRSA_ERROR, IRSA_ERROR_PROBE_RS, (int)ss.str().c_str());
     }
-
 }
 
 
 void FakePreview::close() {
     LOGD("close");
+
+    if (0 == _deviceCounts)
+        return;
+
     if (_isRunning)
         stopPreview();
     if (_ctx != nullptr) {
@@ -144,10 +187,13 @@ void FakePreview::setPreviewDisplay(std::map<int, ANativeWindow *> &surfaceMap) 
 bool FakePreview::enableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
 
+    if (0 == _deviceCounts)
+        return false;
+
     rs2::pipeline pipe;
     rs2::config cfg;
     LOGV("open bag file");
-    cfg.enable_device_from_file("/sdcard/test.bag");
+    cfg.enable_device_from_file(BAG_FILE);
     LOGV("after open bag file");
 
 #if 0
@@ -184,6 +230,10 @@ bool FakePreview::enableDevices() {
 
 void FakePreview::disableDevices() {
     std::lock_guard<std::mutex> lock(_mutex);
+
+    if (0 == _deviceCounts)
+        return;
+
     for (auto &view : _devices) {
         view.second.config.disable_all_streams();
         view.second.pipe.stop();
@@ -198,6 +248,10 @@ void FakePreview::disableDevices() {
 
 void FakePreview::startPreview() {
     LOGD("start");
+
+    if (0 == _deviceCounts)
+        return;
+
     CHECK(_ctx != nullptr);
 
     if (!enableDevices())
@@ -211,6 +265,9 @@ void FakePreview::startPreview() {
 
 void FakePreview::stopPreview() {
     LOGD("Stop");
+    if (0 == _deviceCounts)
+        return;
+
     if (!_isRunning)
         return;
     _isRunning = false;

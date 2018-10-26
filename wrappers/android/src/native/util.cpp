@@ -1,4 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
+// meng.yu1@intel.com
 
 #include "util.h"
 #include "cde_log.h"
