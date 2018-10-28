@@ -151,7 +151,7 @@ namespace librealsense
 
     void  temporal_filter::update_configuration(const rs2::frame& f)
     {
-        if (!_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
+        if (f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, _source_stream_profile.format());
