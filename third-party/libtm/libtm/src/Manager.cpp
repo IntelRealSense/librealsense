@@ -22,14 +22,25 @@ using namespace std;
 namespace perc {
 // -[factory]------------------------------------------------------------------    
 
+bool Manager::instanceExist = false;
+std::mutex Manager::instanceExistMutex;
+
 TrackingManager* TrackingManager::CreateInstance(Listener* lis, void* param)
 {
+    std::lock_guard<std::mutex> lock(Manager::instanceExistMutex);
     try
     {
+        if (Manager::instanceExist)
+        {
+            LOGE("Manager instance already exist");
+            return nullptr;
+        }
+        Manager::instanceExist = true;
         return new Manager(lis, param);
     }
     catch (std::exception& e)
     {
+        Manager::instanceExist = false;
         LOGE(e.what());
         return nullptr;
     }
@@ -37,10 +48,12 @@ TrackingManager* TrackingManager::CreateInstance(Listener* lis, void* param)
 
 void TrackingManager::ReleaseInstance(TrackingManager*& manager)
 {
+    std::lock_guard<std::mutex> lock(Manager::instanceExistMutex);
     try
     {
         if (manager)
         {
+            Manager::instanceExist = false;
             delete manager;
             manager = nullptr;
         }
