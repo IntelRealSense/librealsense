@@ -37,10 +37,6 @@
 #include "libuvc.h"
 #include "libuvc_internal.h"
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-#include "../third-party/libusb/libusb/libusb.h"
-#pragma GCC diagnostic pop
-
 #pragma GCC diagnostic ignored "-Woverflow"
 
 struct uvc_device_internal {
@@ -595,12 +591,92 @@ namespace librealsense
                     throw std::runtime_error("insufficient data writen to USB");
             }
 
+            // Translate between UVC Spec and RS
+            int32_t rs2_value_translate(uvc_req_code action, rs2_option option, int32_t value) const
+            {
+                // Value may be translated according to action/option value
+                int32_t translated_value = value;
+                
+                switch (action)
+                {
+                    case UVC_GET_CUR: // Translating from UVC 1.5 Spec up to RS
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            switch (value)
+                            {
+                                case UVC_AE_MODE_D3_AP:
+                                    translated_value = 1;
+                                    break;
+                                case UVC_AE_MODE_D0_MANUAL:
+                                    translated_value = 0;
+                                    break;
+                                default:
+                                    throw std::runtime_error("Unsupported GET value for RS2_OPTION_ENABLE_AUTO_EXPOSURE");
+                            }
+                        }
+                        break;
+                        
+                    case UVC_SET_CUR: // Translating from RS down to UVC 1.5 Spec
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            switch (value)
+                            {
+                                case 1:
+                                    // Enabling auto exposure
+                                    translated_value = UVC_AE_MODE_D3_AP;
+                                    break;
+                                case 0:
+                                    // Disabling auto exposure
+                                    translated_value = UVC_AE_MODE_D0_MANUAL;
+                                    break;
+                                default:
+                                    throw std::runtime_error("Unsupported SET value for RS2_OPTION_ENABLE_AUTO_EXPOSURE");
+                            }
+                        }
+                        break;
+                        
+                    case UVC_GET_MIN:
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            translated_value = 0; // Hardcoded MIN value
+                        }
+                        break;
+                        
+                    case UVC_GET_MAX:
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            translated_value = 1; // Hardcoded MAX value
+                        }
+                        break;
+                        
+                    case UVC_GET_RES:
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            translated_value = 1; // Hardcoded RES (step) value
+                        }
+                        break;
+                        
+                    case UVC_GET_DEF:
+                        if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                        {
+                            translated_value = 1; // Hardcoded DEF value
+                        }
+                        break;
+                        
+                    default:
+                        throw std::runtime_error("Unsupported action translation");
+                }
+                return translated_value;
+            }
+
+            
             bool get_pu(rs2_option opt, int32_t& value) const override
             {
                 int unit;
                 int control = rs2_option_to_ctrl_selector(opt, unit);
 
                 value = get_data_usb( UVC_GET_CUR, control, unit);
+                value = rs2_value_translate(UVC_GET_CUR, opt, value);
                 return true;
             }
 
@@ -609,6 +685,7 @@ namespace librealsense
                 int unit;
                 int control = rs2_option_to_ctrl_selector(opt, unit);
 
+                value = rs2_value_translate(UVC_SET_CUR, opt, value);
                 set_data_usb( UVC_SET_CUR, control, unit, value);
                 return true;
             }
@@ -617,10 +694,18 @@ namespace librealsense
             {
                 int unit;
                 int control = rs2_option_to_ctrl_selector(option, unit);
+                
                 int min = get_data_usb( UVC_GET_MIN, control, unit);
+                min = rs2_value_translate(UVC_GET_MIN, option, value);
+                
                 int max = get_data_usb( UVC_GET_MAX, control, unit);
+                max = rs2_value_translate(UVC_GET_MAX, option, value);
+                
                 int step = get_data_usb( UVC_GET_RES, control, unit);
+                step = rs2_value_translate(UVC_GET_RES, option, value);
+                
                 int def = get_data_usb( UVC_GET_DEF, control, unit);
+                def = rs2_value_translate(UVC_GET_DEF, option, value);
 
                 control_range result(min, max, step, def);
 

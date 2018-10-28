@@ -117,6 +117,7 @@ namespace librealsense
             std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
             res->set_intrinsics([int_func]() { return int_func(); });
             res->set_framerate(get_framerate());
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*res, *this);
             return res;
         }
 

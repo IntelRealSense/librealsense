@@ -30,7 +30,9 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
     };
 
-    class ds5_color_sensor : public uvc_sensor, public video_sensor_interface
+    class ds5_color_sensor : public uvc_sensor, 
+                             public video_sensor_interface,
+                             public roi_sensor_base
     {
     public:
         explicit ds5_color_sensor(ds5_color* owner,

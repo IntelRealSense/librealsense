@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Pipeline : IDisposable
+    public class Pipeline : IDisposable, IEnumerable<Frame>
     {
         internal HandleRef m_instance;
 
@@ -42,25 +44,42 @@ namespace Intel.RealSense
             NativeMethods.rs2_pipeline_stop(m_instance.Handle, out error);
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000, FramesReleaser releaser = null)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
             var ptr = NativeMethods.rs2_pipeline_wait_for_frames(m_instance.Handle, timeout_ms, out error);
-            return FramesReleaser.ScopedReturn(releaser, new FrameSet(ptr));
+            return FrameSet.Pool.Get(ptr);
         }
 
-        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
+        public bool PollForFrames(out FrameSet result)
         {
             object error;
-            FrameSet fs;
+            IntPtr fs;
             if (NativeMethods.rs2_pipeline_poll_for_frames(m_instance.Handle, out fs, out error) > 0)
             {
-                result = FramesReleaser.ScopedReturn(releaser, fs);
+                result = FrameSet.Pool.Get(fs);
                 return true;
             }
             result = null;
             return false;
         }
+
+        public IEnumerator<Frame> GetEnumerator()
+        {
+            FrameSet frames;
+            while (PollForFrames(out frames))
+            {
+                using (frames)
+                using (var frame = frames.AsFrame())
+                    yield return frame;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

@@ -116,7 +116,7 @@ function try_module_insert {
 	backup_available=1
 	dependent_modules=""
 
-	printf "\e[32mReplacing\e[93m\e[1m%s \e[32m:\n\e[0m" ${module_name}
+	printf "\e[32mReplacing \e[93m\e[1m%s \e[32m:\n\e[0m" ${module_name}
 
 	#Check if the module is loaded, and if does - are there dependent kernel modules.
 	#Unload those first, then unload the requsted module and proceed with replacement

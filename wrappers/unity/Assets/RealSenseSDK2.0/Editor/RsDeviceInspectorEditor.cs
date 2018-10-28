@@ -9,14 +9,14 @@ using System.Linq;
 
 public static class CameraOptionExtensions
 {
-    public static bool IsCheckbox(this Sensor.CameraOption opt)
+    public static bool IsCheckbox(this IOption opt)
     {
         return opt.Max == 1.0f &&
         opt.Min == 0.0f &&
         opt.Step == 1.0f;
     }
 
-    public static bool IsEnum(this Sensor.CameraOption opt, Sensor.SensorOptions s)
+    public static bool IsEnum(this IOption opt, IOptionsContainer s)
     {
         if (opt.Step < 0.001f)
             return false;
@@ -29,7 +29,7 @@ public static class CameraOptionExtensions
         return true;
     }
 
-    public static bool IsIntegersOnly(this Sensor.CameraOption opt)
+    public static bool IsIntegersOnly(this IOption opt)
     {
         Func<float, bool> is_integer = (v) => v == Math.Floor(v);
         return is_integer(opt.Min) && is_integer(opt.Max) &&
@@ -87,9 +87,9 @@ public class RsDeviceInspectorEditor : Editor
         }
     }
 
-    readonly Dictionary<Sensor.CameraOption, float> cachedValue = new Dictionary<Sensor.CameraOption, float>();
+    readonly Dictionary<IOption, float> cachedValue = new Dictionary<IOption, float>();
 
-    void DrawOption(Sensor sensor, Sensor.CameraOption opt)
+    void DrawOption(Sensor sensor, IOption opt)
     {
         if (!cachedValue.ContainsKey(opt))
             cachedValue[opt] = opt.Value;

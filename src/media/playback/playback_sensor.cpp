@@ -128,26 +128,29 @@ notifications_callback_ptr playback_sensor::get_notifications_callback() const
 void playback_sensor::start(frame_callback_ptr callback)
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
+    std::lock_guard<std::mutex> l(m_mutex);
     if (m_is_started == false)
     {
         started(m_sensor_id, callback);
+        m_user_callback = callback ;
         m_is_started = true;
-        m_user_callback = callback;
     }
 }
 
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
+
     if (m_is_started == true)
     {
-        stopped(m_sensor_id, invoke_required);
         m_is_started = false;
         for (auto dispatcher : m_dispatchers)
         {
             dispatcher.second->stop();
         }
+        std::lock_guard<std::mutex> l(m_mutex);
         m_user_callback.reset();
+        stopped(m_sensor_id, invoke_required);
     }
 }
 void playback_sensor::stop()

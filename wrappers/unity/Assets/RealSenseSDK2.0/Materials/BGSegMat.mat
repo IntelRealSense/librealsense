@@ -28,9 +28,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _DepthScale: 0.001
-    - _Feather: 0.17238982
+    - _Feather: 0.26692617
     - _Gamma: 1.2
     - _HasColor: 1
-    - _MaxRange: 10.042387
-    - _MinRange: 0.8111881
+    - _MaxRange: 20
+    - _MinRange: 0
     m_Colors: []

@@ -187,7 +187,15 @@ namespace librealsense
 
         hid_custom_sensor::~hid_custom_sensor()
         {
-            stop_capture();
+            try
+            {
+                if (_is_capturing)
+                    stop_capture();
+            }
+            catch(...)
+            {
+                LOG_ERROR("An error has occurred while hid_custom_sensor dtor()!");
+            }
         }
 
         std::vector<uint8_t> hid_custom_sensor::get_report_data(const std::string& report_name, custom_sensor_report_field report_field)
@@ -453,10 +461,14 @@ namespace librealsense
 
         iio_hid_sensor::~iio_hid_sensor()
         {
-            write_integer_to_param("buffer/enable", 0);
-            stop_capture();
+            try
+            {
+                write_integer_to_param("buffer/enable", 0);
+                stop_capture();
 
-            clear_buffer();
+                clear_buffer();
+            }
+            catch(...){}
 
             // clear inputs.
             _inputs.clear();

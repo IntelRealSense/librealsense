@@ -1,114 +1,113 @@
 ﻿using Intel.RealSense;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 
+[System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
+public sealed class ProcessingBlockDataAttribute : System.Attribute
+{
+    // See the attribute guidelines at
+    //  http://go.microsoft.com/fwlink/?LinkId=85236
+    public readonly Type blockClass;
+
+    public ProcessingBlockDataAttribute(Type blockClass)
+    {
+        this.blockClass = blockClass;
+    }
+
+}
+
+
 [Serializable]
-public class RsProcessingPipe : MonoBehaviour {
+public class RsProcessingPipe : RsFrameProvider
+{
+    public RsFrameProvider Source;
+    public RsProcessingProfile profile;
+    public override event Action<PipelineProfile> OnStart;
+    public override event Action OnStop;
+    public override event Action<Frame> OnNewSample;
+    private CustomProcessingBlock _block;
 
-    public HashSet<RsProcessingBlock> _processingBlocks = new HashSet<RsProcessingBlock>();
-
-    public void AddProcessingBlock(RsProcessingBlock processingBlock)
+    void Awake()
     {
-        _processingBlocks.Add(processingBlock);
+        Source.OnStart += OnSourceStart;
+        Source.OnStop += OnSourceStop;
+
+        _block = new CustomProcessingBlock(ProcessFrame);
+        _block.Start(OnFrame);
     }
-    public void RemoveProcessingBlock(RsProcessingBlock processingBlock)
+
+    private void OnSourceStart(PipelineProfile activeProfile)
     {
-        _processingBlocks.Remove(processingBlock);
+        Source.OnNewSample += _block.ProcessFrame;
+        ActiveProfile = activeProfile;
+        Streaming = true;
+        var h = OnStart;
+        if (h != null)
+            h.Invoke(activeProfile);
     }
 
-    internal void ProcessFrames(FrameSet frames, FrameSource src, FramesReleaser releaser, Action<Frame> handleFrame, Action<FrameSet> handleFrameSet)
+    private void OnSourceStop()
     {
-        var pbs = _processingBlocks.OrderBy(i => i.Order).Where(i => i.Enabled).ToList();
-        foreach (var vpb in pbs)
+        if (_block != null)
+            Source.OnNewSample -= _block.ProcessFrame;
+        Streaming = false;
+        var h = OnStop;
+        if (h != null)
+            h();
+    }
+
+    private void OnFrame(Frame f)
+    {
+        var onNewSample = OnNewSample;
+        if (onNewSample != null)
+            onNewSample.Invoke(f);
+    }
+
+    private void OnDestroy()
+    {
+        if (_block != null)
         {
-            FrameSet processedFrames = frames;
-            switch (vpb.ProcessingType)
+            _block.Dispose();
+            _block = null;
+        }
+    }
+
+    internal void ProcessFrame(Frame frame, FrameSource src)
+    {
+        try
+        {
+            Frame f = frame;
+
+            if (profile != null)
             {
-                case ProcessingBlockType.Single:
-                    processedFrames = HandleSingleFrameProcessingBlocks(frames, src, releaser, vpb, handleFrame);
-                    break;
-                case ProcessingBlockType.Multi:
-                    processedFrames = HandleMultiFramesProcessingBlocks(frames, src, releaser, vpb, handleFrameSet);
-                    break;
-            }
-            frames = processedFrames;
-        }
-
-        handleFrameSet(frames);
-        foreach (var fr in frames)
-        {
-            using (fr)
-                handleFrame(fr);
-        }
-    }
-
-    private Frame ApplyFilter(Frame frame, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock vpb, Action<Frame> handleFrame)
-    {
-        if (!vpb.CanProcess(frame))
-            return frame;
-
-        // run the processing block.
-        var processedFrame = vpb.Process(frame, frameSource, framesReleaser);
-
-        // incase fork is requested, notify on new frame and use the original frame for the new frameset.
-        if (vpb.Fork())
-        {
-            handleFrame(processedFrame);
-            processedFrame.Dispose();
-            return frame;
-        }
-
-        // avoid disposing the frame incase the filter returns the original frame.
-        if (processedFrame == frame)
-            return frame;
-
-        // replace the current frame with the processed one to be used as the input to the next iteration (next filter)
-        frame.Dispose();
-        return processedFrame;
-    }
-
-    private FrameSet HandleSingleFrameProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock videoProcessingBlock, Action<Frame> handleFrame)
-    {
-        // single frame filters
-        List<Frame> processedFrames = new List<Frame>();
-        foreach (var frame in frameSet)
-        {
-            var currFrame = ApplyFilter(frame, frameSource, framesReleaser, videoProcessingBlock, handleFrame);
-
-            // cache the pocessed frame
-            processedFrames.Add(currFrame);
-            if (frame != currFrame)
-                frame.Dispose();
-        }
-
-        // Combine the frames into a single frameset
-        var newFrameSet = frameSource.AllocateCompositeFrame(framesReleaser, processedFrames.ToArray());
-
-        foreach (var f in processedFrames)
-            f.Dispose();
-
-        return newFrameSet;
-    }
-
-    private FrameSet HandleMultiFramesProcessingBlocks(FrameSet frameSet, FrameSource frameSource, FramesReleaser framesReleaser, RsProcessingBlock videoProcessingBlock, Action<FrameSet> handleFrameSet)
-    {
-        using (var frame = frameSet.AsFrame())
-        {
-            if (videoProcessingBlock.CanProcess(frame))
-            {
-                using (var f = videoProcessingBlock.Process(frame, frameSource, framesReleaser))
+                var filters = profile.ToArray();
+                // foreach (var pb in profile)
+                foreach (var pb in filters)
                 {
-                    if (videoProcessingBlock.Fork())
+                    if (pb == null || !pb.Enabled)
+                        continue;
+
+                    var r = pb.Process(f, src);
+                    if (r != f)
                     {
-                        handleFrameSet(FrameSet.FromFrame(f, framesReleaser));
+                        f.Dispose();
+                        f = r;
                     }
-                    else
-                        return FrameSet.FromFrame(f, framesReleaser);
                 }
             }
+
+            src.FrameReady(f);
+
+            if (f != frame)
+                f.Dispose();
         }
-        return frameSet;
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
     }
 }

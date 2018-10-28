@@ -269,16 +269,9 @@ namespace librealsense
         for (auto i = 0; i < 4; i++)
             _gpio_streams[i] = std::make_shared<stream>(RS2_STREAM_GPIO, i+1);
 
-        auto&& backend = ctx->get_backend();
-
         _tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
         _tm1_eeprom = [this]() { return get_tm1_eeprom(); };
 
-        _fisheye_calibration_table_raw = [this]()
-        {
-            uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
-            return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
-        };
         _accel_intrinsics = [this]() { return (*_tm1_eeprom).calibration_table.imu_calib_table.accel_intrinsics; };
         _gyro_intrinsics = [this](){ return (*_tm1_eeprom).calibration_table.imu_calib_table.gyro_intrinsics; };
 
@@ -288,12 +281,72 @@ namespace librealsense
             motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
         }
 
+        initialize_fisheye_sensor(ctx,group);
+
+        // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
+
+        for (auto i = 0; i < 4; i++)
+        {
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
+            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
+        }
+
+        // Try to add hid endpoint
+        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
+        if (hid_ep)
+        {
+            _motion_module_device_idx = add_sensor(hid_ep);
+
+            try
+            {
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
+                    std::make_shared<enable_motion_correction>(hid_ep.get(),
+                        *_accel_intrinsics,
+                        *_gyro_intrinsics,
+                        option_range{ 0, 1, 1, 1 }));
+            }
+            catch (const std::exception& ex)
+            {
+                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+            }
+
+            if (!motion_module_fw_version.empty())
+                register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+        }
+    }
+
+    void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    {
+        using namespace ds;
+
         auto fisheye_infos = filter_by_mi(group.uvc_devices, 3);
-        if (fisheye_infos.size() != 1)
-            throw invalid_value_exception("RS450 model is expected to include a single fish-eye device!");
+        fisheye_infos = filter_device_by_capability(fisheye_infos,d400_caps::CAP_FISHEYE_SENSOR);
+
+        bool fe_dev_present = (fisheye_infos.size() == 1);
+        bool fe_capability = (d400_caps::CAP_UNDEFINED == _device_capabilities) ?
+            true :  !!(static_cast<uint32_t>(_device_capabilities&d400_caps::CAP_FISHEYE_SENSOR));
+
+        // Motion module w/o FishEye sensor
+        if (!(fe_dev_present | fe_capability)) return;
+
+        // Inconsistent FW
+        if (fe_dev_present ^ fe_capability)
+            throw invalid_value_exception(to_string()
+            << "Inconsistent HW/FW setup, FW FishEye capability = " << fe_capability
+            << ", FishEye devices " <<  std::dec << fisheye_infos.size()
+            << " while expecting " << fe_capability);
+
+        _fisheye_calibration_table_raw = [this]()
+        {
+            uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
+            return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
+        };
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
-
+        auto&& backend = ctx->get_backend();
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
                                                     std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
 
@@ -377,44 +430,5 @@ namespace librealsense
 
             return from_pose(ex);
         });
-
-        // Depth->Fisheye is not available
-        //environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_fisheye_stream, _depth_to_fisheye);
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_fisheye_stream, *_accel_stream, _fisheye_to_imu);
-
-        register_stream_to_extrinsic_group(*_fisheye_stream, 0);
-        register_stream_to_extrinsic_group(*_accel_stream, 0);
-
-        // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
-        register_stream_to_extrinsic_group(*_gyro_stream, 0);
-        for (auto i = 0; i < 4; i++)
-        {
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
-            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
-        }
-
-        // Try to add hid endpoint
-        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
-        if (hid_ep)
-        {
-            _motion_module_device_idx = add_sensor(hid_ep);
-
-            try
-            {
-                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
-                    std::make_shared<enable_motion_correction>(hid_ep.get(),
-                        *_accel_intrinsics,
-                        *_gyro_intrinsics,
-                        option_range{ 0, 1, 1, 1 }));
-            }
-            catch (const std::exception& ex)
-            {
-                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
-            }
-
-            if (!motion_module_fw_version.empty())
-                register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
-        }
     }
 }

@@ -5,47 +5,95 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class FramesReleaser : IDisposable
+    public class FramesReleaser : ICompositeDisposable
     {
-        public FramesReleaser() { }
+        internal readonly List<IDisposable> disposables = new List<IDisposable>();
 
-        public void AddFrameToRelease<T>(T f) where T : IDisposable
+        public void AddDisposable(IDisposable disposable)
         {
-            if (!m_objects.Contains(f))
-                m_objects.Add(f);
+            disposables.Add(disposable);
         }
 
+        [Obsolete("This method is obsolete. Use AddDisposable method instead")]
         // Add an object to a releaser (if one is provided) and return the object
         public static T ScopedReturn<T>(FramesReleaser releaser, T obj) where T : IDisposable
         {
-            if (releaser != null) releaser.AddFrameToRelease(obj);
+            if (releaser != null) releaser.AddDisposable(obj);
             return obj;
         }
 
-        private HashSet<IDisposable> m_objects = new HashSet<IDisposable>();
-        private bool disposedValue = false; // To detect redundant calls
+        #region IDisposable Support
+        internal bool disposedValue = false; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                foreach (var o in m_objects)
-                    o.Dispose();
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposables.ForEach(d => d?.Dispose());
+
                 disposedValue = true;
             }
         }
 
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         ~FramesReleaser()
         {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
         }
 
+        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
+
+    public struct StreamComparer : IEqualityComparer<Stream>
+    {
+        public static readonly StreamComparer Default = new StreamComparer();
+
+        public bool Equals(Stream x, Stream y)
+        {
+            return x == y;
+        }
+
+        public int GetHashCode(Stream obj)
+        {
+            // you need to do some thinking here,
+            return (int)obj;
+        }
+    }
+
+    public interface ICompositeDisposable : IDisposable
+    {
+        void AddDisposable(IDisposable disposable);
+    }
+
+    // https://leeoades.wordpress.com/2012/08/29/neat-disposal-pattern/
+    public static class DisposableExtensions
+    {
+        public static T DisposeWith<T>(this T disposable, ICompositeDisposable composite) where T : IDisposable
+        {
+            if (disposable == null || composite == null)
+                return disposable;
+            composite.AddDisposable(disposable);
+            return disposable;
+        }
+    }
+
 
     public static class Helpers
     {
@@ -100,17 +148,8 @@ namespace Intel.RealSense
                 string args = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_failed_args(pNativeData));
                 string message = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_error_message(pNativeData));
 
-                //Debug.LogError("<color=orange>rs_error was raised when calling " + function + "(" + args + ")" + "</color>");
-                //Debug.LogError("<color=orange>Message: " + message + "</color>");
-
-                //NativeMethods.rs_free_error(pNativeData);
-
-                var f = String.Format("{0}({1})", function, args);
-                //StackTrace stackTrace = new StackTrace(1, true);                
-                //Debug.Log(stackTrace.GetFrame(0).GetFileName());
-
                 //!TODO: custom exception type? 
-                var e = new Exception(message + Environment.NewLine + f);
+                var e = new Exception($"{message}{Environment.NewLine}{function}({args})");
 
                 //!TODO: maybe throw only in debug? would need to change all methods to return error\null
                 throw e;

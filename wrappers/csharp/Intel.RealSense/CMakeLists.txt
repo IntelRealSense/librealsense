@@ -16,6 +16,7 @@ add_library(${PROJECT_NAME}
 	StreamProfile.cs
 	Types.cs
 	SoftwareDevice.cs
+	Option.cs
 	.nuget/Intel.RealSense.targets
 	
 	Properties/AssemblyInfo.cs
@@ -28,8 +29,12 @@ csharp_set_designer_cs_properties(
 if(BUILD_UNITY_BINDINGS)
 	add_custom_command(TARGET ${PROJECT_NAME}
 			   POST_BUILD
-			   COMMAND XCOPY /y /s "$(OutDir)*.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
-			   COMMENT "Copy DLLs to Unity plugins folder")
+			   COMMAND XCOPY /y /s "$(OutDir)Intel.RealSense.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
+			   COMMENT "Copy Intel.RealSense.dll to Unity plugins folder")
+	add_custom_command(TARGET ${PROJECT_NAME}
+			   POST_BUILD
+			   COMMAND XCOPY /y /s "$(OutDir)realsense2.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
+			   COMMENT "Copy realsense2.dll to Unity plugins folder")
 			   
 	find_program (UNITY_PATH Unity\\Editor\\Unity.exe)
 	if(EXISTS ${UNITY_PATH})
@@ -52,4 +57,8 @@ add_dependencies(${PROJECT_NAME} realsense2)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
 	FOLDER Wrappers/csharp
+)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
+	"System"
 )

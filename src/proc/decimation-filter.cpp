@@ -6,11 +6,13 @@
 
 #include <numeric>
 #include <cmath>
+#include "environment.h"
 #include "option.h"
 #include "context.h"
+#include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "environment.h"
+
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }
 #define PIX_SWAP(a,b) { pixelvalue temp=(a);(a)=(b);(b)=temp; }
@@ -273,7 +275,7 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (_options_changed || (f.get_profile().get() != _source_stream_profile.get()))
+        if (_options_changed || !_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
         {
             _options_changed = false;
             _source_stream_profile = f.get_profile();
@@ -303,7 +305,6 @@ namespace librealsense
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
 
             auto tmp_profile = _source_stream_profile.clone(_source_stream_profile.stream_type(), _source_stream_profile.stream_index(), _source_stream_profile.format());
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(stream_interface*)(_source_stream_profile.get()->profile), *(stream_interface*)(tmp_profile.get()->profile));
             auto src_vspi = dynamic_cast<video_stream_profile_interface*>(_source_stream_profile.get()->profile);
             auto tgt_vspi = dynamic_cast<video_stream_profile_interface*>(tmp_profile.get()->profile);
             rs2_intrinsics src_intrin = src_vspi->get_intrinsics();
