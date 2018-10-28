@@ -33,7 +33,6 @@ namespace librealsense
                 {
                     LOG_ERROR("Failed to create TrackingManager");
                     return;
-//                    throw std::runtime_error("Failed to create TrackingManager"); 
                 }
                 _t = std::thread(&tm2_context::thread_proc, this);
             }

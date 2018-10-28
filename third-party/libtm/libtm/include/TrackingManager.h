@@ -46,6 +46,5 @@ namespace perc
         */
         virtual uint64_t version() = 0;
         virtual ~TrackingManager() {}
-
     };
 } 
