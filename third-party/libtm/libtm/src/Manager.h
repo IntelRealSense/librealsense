@@ -15,6 +15,7 @@
 #include "Event.h"
 #include "CompleteTask.h"
 #include <list>
+#include <mutex>
 
 namespace perc
 {
@@ -38,6 +39,9 @@ namespace perc
         // [interface] CompleteQueueHandler
         virtual void addTask(std::shared_ptr<CompleteTask>&) override;
         virtual void removeTasks(void* owner, bool completeTasks) override;
+
+        static std::mutex instanceExistMutex;
+        static bool instanceExist;
 
     protected:
         std::thread mThread;
@@ -151,5 +155,6 @@ namespace perc
         std::mutex mCompleteQMutex;
         Event mEvent;
         std::map<Device*, TrackingData::DeviceInfo> mTrackingDeviceInfoMap;
+
     };
 }

@@ -27,14 +27,15 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_manager_mutex);
             if (_manager == nullptr)
             {
-                _t = std::thread(&tm2_context::thread_proc, this);
                 _manager = std::shared_ptr<TrackingManager>(perc::TrackingManager::CreateInstance(this),
                     [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
                 if (_manager == nullptr)
                 {
                     LOG_ERROR("Failed to create TrackingManager");
-                    throw std::runtime_error("Failed to create TrackingManager");
+                    return;
+//                    throw std::runtime_error("Failed to create TrackingManager"); 
                 }
+                _t = std::thread(&tm2_context::thread_proc, this);
             }
         }
         auto version = _manager->version();
