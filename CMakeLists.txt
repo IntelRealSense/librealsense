@@ -125,7 +125,7 @@ option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" ON)
 # Checking Internet connection, as TM2 needs to download the FW from amazon cloud
 if(BUILD_WITH_TM2)
     message(STATUS "Checking internet connection...")
-    file(DOWNLOAD "https://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/connectivity_check" "${CMAKE_CURRENT_SOURCE_DIR}/connectivity_check" SHOW_PROGRESS TIMEOUT 5 STATUS status)
+    file(DOWNLOAD "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/connectivity_check" "${CMAKE_CURRENT_SOURCE_DIR}/connectivity_check" SHOW_PROGRESS TIMEOUT 5 STATUS status)
     list (FIND status "\"No error\"" _index)
     if (${_index} EQUAL -1)
         message(STATUS "Failed to identify Internet connection, disabling BUILD_WITH_TM2")
