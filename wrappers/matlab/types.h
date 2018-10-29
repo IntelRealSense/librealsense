@@ -133,7 +133,7 @@ template<> mxArray* MatlabParamParser::mx_wrapper_fns<rs2::device_list>::wrap(rs
         auto idx_cell = mxCreateNumericMatrix(1, 1, idx_wrap_t::value::value, mxREAL);
         *static_cast<idx_wrap_t::type*>(mxGetData(idx_cell)) = static_cast<idx_wrap_t::type>(i);
         mxSetCell(cells, 0, dl_cell);
-        mxSetCell(cells, 1, dl_cell);
+        mxSetCell(cells, 1, idx_cell);
         mxSetCell(vec, i, cells);
     }
 
