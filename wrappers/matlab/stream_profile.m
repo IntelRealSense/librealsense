@@ -58,11 +58,11 @@ classdef stream_profile < handle
             out = realsense.librealsense_mex('rs2::stream_profile', 'as', this.objectHandle, type);
             switch type
                 case 'stream_profile'
-                    profile = realsense.stream_profile(out);
+                    profile = realsense.stream_profile(out{:});
                 case 'video_stream_profile'
-                    profile = realsense.video_stream_profile(out);
+                    profile = realsense.video_stream_profile(out{:});
                 case 'motion_stream_profile'
-                    profile = realsense.motion_stream_profile(out);
+                    profile = realsense.motion_stream_profile(out{:});
             end
         end
         function name = stream_name(this)
