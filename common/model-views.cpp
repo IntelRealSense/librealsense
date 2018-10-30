@@ -6614,7 +6614,7 @@ namespace rs2
 
     device_changes::device_changes(rs2::context& ctx)
     {
-        _changes.emplace(rs2::device_list{}, ctx.query_devices());
+        _changes.emplace(rs2::device_list{}, ctx.query_devices(RS2_PRODUCT_LINE_ANY));
         ctx.set_devices_changed_callback([&](event_information& info)
         {
             add_changes(info);
