@@ -57,7 +57,7 @@ namespace librealsense
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
-        device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp) const;
+        device_serializer::nanoseconds calc_sleep_time(device_serializer::nanoseconds  timestamp);
         void start();
         void stop_internal();
         void try_looping();
