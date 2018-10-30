@@ -275,7 +275,7 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (_options_changed || !_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
+        if (_options_changed || f.get_profile().get() != _source_stream_profile.get())
         {
             _options_changed = false;
             _source_stream_profile = f.get_profile();

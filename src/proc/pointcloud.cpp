@@ -69,7 +69,7 @@ namespace librealsense
 
     void pointcloud::inspect_depth_frame(const rs2::frame& depth)
     {
-        if (!_output_stream || _depth_stream.get_profile().unique_id() != depth.get_profile().unique_id())
+        if (!_output_stream || _depth_stream.get_profile().get() != depth.get_profile().get())
         {
             _output_stream = depth.get_profile().as<rs2::video_stream_profile>().clone(
                 RS2_STREAM_DEPTH, depth.get_profile().stream_index(), RS2_FORMAT_XYZ32F);
@@ -114,7 +114,7 @@ namespace librealsense
             _prev_stream_filter = _stream_filter;
         }
 
-        if (_extrinsics.has_value() && other.get_profile().unique_id() == _other_stream.get_profile().unique_id())
+        if (_extrinsics.has_value() && other.get_profile().get() == _other_stream.get_profile().get())
             return;
 
         _other_stream = other;

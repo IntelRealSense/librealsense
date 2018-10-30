@@ -94,7 +94,7 @@ namespace librealsense
 
     void  disparity_transform::update_transformation_profile(const rs2::frame& f)
     {
-        if(!_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
+        if(f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
 
