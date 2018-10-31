@@ -13,7 +13,11 @@
 #include <cctype>
 #include <thread>
 #include <array>
+#include <map>
 #include <atomic>
+#include <regex>
+#include <algorithm>    // std::sort
+
 
 using namespace std;
 using namespace TCLAP;
@@ -21,16 +25,66 @@ using namespace TCLAP;
 int MAX_FRAMES_NUMBER = 10; //number of frames to capture from each stream
 const unsigned int NUM_OF_STREAMS = static_cast<int>(RS2_STREAM_COUNT);
 
-struct frame_data
+// The code is "borrowed" from win-helpers.cpp core library file
+std::vector<std::string> tokenize(std::string string, char separator)
 {
-    unsigned long long frame_number;
-    double ts;
-    long long arrival_time;
-    rs2_timestamp_domain domain;
-    rs2_stream stream_type;
+    std::vector<std::string> tokens;
+    std::string::size_type i1 = 0;
+    while(true)
+    {
+        auto i2 = string.find(separator, i1);
+        if(i2 == std::string::npos)
+        {
+            tokens.push_back(string.substr(i1));
+            return tokens;
+        }
+        tokens.push_back(string.substr(i1, i2-i1));
+        i1 = i2+1;
+    }
+}
+
+// This code also appears in rendering.h
+struct stringify
+{
+    std::ostringstream ss;
+    template<class T> stringify & operator << (const T & val) { ss << val; return *this; }
+    operator std::string() const { return ss.str(); }
 };
 
-enum Config_Params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT };
+struct frame_data
+{
+    unsigned long long		frame_number;
+    double					ts;
+    long long				arrival_time;
+    rs2_timestamp_domain	domain;
+    rs2_stream				stream_type;
+};
+
+struct stream_request
+{
+    rs2_stream  _stream_type;
+    rs2_format  _stream_format;
+    int         _width;
+    int         _height;
+    int         _fps;
+    int         _stream_idx;
+};
+
+inline std::ostream&  operator<<(std::ostream& os, const stream_request& req)
+{
+	return os << "Type: " << req._stream_type << ",Idx: " << req._stream_idx << ", "
+		<< req._stream_format << ", [" << req._width << "x" << req._height << "], " << req._fps << "fps" << std::endl;
+}
+
+//Defines the order at which the params (comma-separated) should appear in configuration file
+//#rs2_stream, width, height, fps, rs2_format, stream_index (optional, put zero or leave empty if you're not sure)
+//# Examples (note that all lines starting with non-alpha character (#@!...) will be skipped:
+//  DEPTH,640,480,30,Z16,0
+//  INFRARED,640,480,30,Y8,1
+//  COLOR,640,480,30,RGB8,0
+//  ACCEL,1,1,125,MOTION_XYZ32F
+//  GYRO,1,1,200,MOTION_XYZ32F
+enum config_params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT, STREAM_INDEX };
 
 int parse_number(char const *s, int base = 0)
 {
@@ -82,24 +136,43 @@ int parse_fps(const string str)
     return parse_number(str.c_str());
 }
 
-void parse_configuration(const vector<string> row, rs2_stream& type, int& width, int& height, rs2_format& format, int& fps)
+bool parse_configuration(const std::string& line, rs2_stream& type, int& width, int& height, rs2_format& format, int& fps, int& index)
 {
-    // Convert string to uppercase
-    auto stream_type_str = row[STREAM_TYPE];
-    type = parse_stream_type(to_lower(stream_type_str));
-    width = parse_number(row[RES_WIDTH].c_str());
-    height = parse_number(row[RES_HEIGHT].c_str());
-    fps = parse_fps(row[FPS]);
-    format = parse_format(to_lower(row[FORMAT]));
+    bool res = false;
+    try
+    {
+        auto tokens = tokenize(line,',');
+        if (tokens.size() < STREAM_INDEX)
+            return res;
+
+        // Convert string to uppercase
+        type    =   parse_stream_type(to_lower(tokens[STREAM_TYPE]));
+        width   =   parse_number(tokens[RES_WIDTH].c_str());
+        height  =   parse_number(tokens[RES_HEIGHT].c_str());
+        fps     =   parse_fps(tokens[FPS]);
+        format  =   parse_format(to_lower(tokens[FORMAT]));
+        // Backward compatibility
+        if (tokens.size() > STREAM_INDEX)
+            index = parse_number(tokens[STREAM_INDEX].c_str());
+        res = true;
+        std::cout << "Request added for " << line << std::endl;
+    }
+    catch (...)
+    {
+        std::cout << "Invalid syntax in configuration line " << line << std::endl;
+    }
+
+    return res;
 }
 
-void configure_stream(rs2::config& cfg, std::string filename)
+void parse_requests(std::vector<stream_request>& reqs, const std::string& config_filename)
 {
-    ifstream file(filename);
+    ifstream file(config_filename);
 
     if (!file.is_open())
-        throw runtime_error("Given .csv configure file Not Found!");
+        throw runtime_error(stringify() << "Given .csv configure file " << config_filename <<  " was not Found!");
 
+    // Parse data collecion requests
     string line;
     while (getline(file, line))
     {
@@ -115,12 +188,31 @@ void configure_stream(rs2::config& cfg, std::string filename)
 
         rs2_stream stream_type;
         rs2_format format;
-        int width, height, fps;
+        int width{}, height{}, fps{}, index{};
 
         // correctness check
-        parse_configuration(row, stream_type, width, height, format, fps);
-        cfg.enable_stream(stream_type, 0, width, height, format, fps);
+        // Line starting with non-alpha characters will be treated as comments
+        std::regex starts_with("^[a-zA-Z]");
+        if (std::regex_search(line, starts_with))
+        {
+            if (parse_configuration(line, stream_type, width, height, format, fps,index))
+				reqs.push_back({ stream_type, format, width, height, fps,  index });
+        }
     }
+
+	// negate multiple requests
+	if (reqs.size())
+	{
+		std::sort(reqs.begin(), reqs.end(), [](const stream_request& l, const stream_request& r) { return l._stream_type < r._stream_type; });
+		for (auto i = 0; i < reqs.size() - 1; i++)
+		{
+			if ((reqs[i]._stream_type == reqs[i+1]._stream_type) && ((reqs[i]._stream_idx == reqs[i+1]._stream_idx)))
+				throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
+					<< reqs[i] << "\n" << reqs[+i]);
+		}
+	}
+	else
+		throw std::runtime_error("Invalid configuration file - zero requests accepted");
 }
 
 void save_data_to_file(std::array<list<frame_data>, NUM_OF_STREAMS> buffer, const string& filename)
@@ -172,22 +264,33 @@ int main(int argc, char** argv) try
 
     bool succeed = false;
 
+    rs2::context ctx;
+    rs2::device_list list;
+	
+
     while (!succeed)
     {
-        rs2::pipeline pipe;
-        rs2::config config;
+		std::vector<stream_request> requests;
+        
+        list = ctx.query_devices();
+
+        if (0== list.size())
+            continue;
+
+        auto dev = std::make_shared<rs2::device>(list.front());
+
         if (config_file.isSet())
         {
-            configure_stream(config, config_file.getValue());
+            parse_requests(requests, config_file.getValue());
         }
 
-        rs2::pipeline_profile profile = pipe.start(config);
-        auto dev = profile.get_device();
+//        rs2::pipeline_profile profile = pipe.start(config);
+//        auto dev = profile.get_device();
 
         std::atomic_bool need_to_reset(false);
-        for (auto sub : dev.query_sensors())
+        for (auto&& sensor : dev->query_sensors())
         {
-            sub.set_notifications_callback([&](const rs2::notification& n)
+            sensor.set_notifications_callback([&](const rs2::notification& n)
             {
                 if (n.get_category() == RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
                 {
@@ -195,6 +298,73 @@ int main(int argc, char** argv) try
                 }
             });
         }
+
+        // Configure and starts streaming
+        for (auto&& sensor : dev->query_sensors())
+        {
+            auto profiles = sensor.get_stream_profiles();
+            std::vector<rs2::stream_profile> matches;
+			std::cout << "Sensor with " << profiles.size() << " profiles" << std::endl;
+
+			for (auto& profile : profiles)
+			{				
+				std::cout << "Basic params: " << profile.stream_type() << ", " << profile.stream_name() << ", "
+					<< profile.format() << ", " << profile.fps();
+				if (auto vp = profile.as<rs2::video_stream_profile>())
+				{
+					std::cout << ", UVC params: " << vp.width() << ", " << vp.height();
+				}
+
+				if (auto mp = profile.as<rs2::motion_stream_profile>())
+				{
+					std::cout << ", IMU profile: " << std::endl;
+				}
+				std::cout << std::endl;
+
+				// Map user requests to available streams
+				for_each(requests.begin(), requests.end(), [&matches, profile](const stream_request& req)
+				{
+					if (auto vp = profile.as<rs2::video_stream_profile>())
+					{
+						if ((vp.stream_type() == req._stream_type) && 
+							(vp.format() == req._stream_format) &&
+							(vp.stream_index()== req._stream_idx) &&
+							(vp.fps() == req._fps) && 
+							(vp.width() == req._width) && 
+							(vp.height() == req._height))
+							matches.push_back(profile);
+					}
+					else
+					{
+						if (auto mp = profile.as<rs2::motion_stream_profile>())
+						{
+							if ((mp.stream_type() == req._stream_type) &&
+								(mp.format() == req._stream_format) &&
+								(mp.stream_index() == req._stream_idx) &&
+								(mp.fps() == req._fps))
+								matches.push_back(profile);
+						}
+					}
+				});
+				
+			}
+			
+        }
+
+		// Start streaming
+		//for 
+			//if (request.matches(profile))
+
+			//std::copy_if(profiles.begin(),profiles.end(),std::back_inserter(matches),
+			//    [&config,sensor](const rs2::stream_profile& profile){
+			//        auto vf = profile.as<rs2::video_stream_profile>();
+			//        config.get()->stream
+			//        return false;//vf.stream_type() = config.get().
+			//    });
+//            sensor.open()
+//            sensor.start([&](rs2::frame f) { display(f); });
+
+
 
         std::array<std::list<frame_data>, NUM_OF_STREAMS> buffer;
         auto start_time = chrono::high_resolution_clock::now();
@@ -212,13 +382,14 @@ int main(int argc, char** argv) try
             }
 
             bool collected_enough_frames = true;
-            for (auto&& profile : pipe.get_active_profile().get_streams())
-            {
-                if (buffer[(int)profile.stream_type()].size() < max_frames_number)
-                {
-                    collected_enough_frames = false;
-                }
-            }
+            // TODO Evgeni re-enable
+//            for (auto&& profile : pipe.get_active_profile().get_streams())
+//            {
+//                if (buffer[(int)profile.stream_type()].size() < max_frames_number)
+//                {
+//                    collected_enough_frames = false;
+//                }
+//            }
 
             if (timeout.isSet() && !max_frames.isSet())
                 return timed_out;
@@ -226,39 +397,51 @@ int main(int argc, char** argv) try
             return timed_out || collected_enough_frames;
         };
 
-        while (!ready())
-        {
-            auto frameset = pipe.wait_for_frames();
-            auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
+//        while (!ready())
+//        {
+//            auto frameset = pipe.wait_for_frames();
+//            auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
 
-            for (auto it = frameset.begin(); it != frameset.end(); ++it)
-            {
-                auto f = (*it);
-                frame_data data{f.get_frame_number(),
-                                f.get_timestamp(),
-                                arrival_time.count(),
-                                f.get_frame_timestamp_domain(),
-                                f.get_profile().stream_type()};
-                if (buffer[(int)data.stream_type].size() < max_frames_number)
-                {
-                    buffer[(int)data.stream_type].push_back(data);
-                }
-            }
+//            for (auto it = frameset.begin(); it != frameset.end(); ++it)
+//            {
+//                auto f = (*it);
+//                if (auto motion = f.as<rs2::motion_frame>())
+//                {
+//                    auto axes = motion.get_motion_data();
+//                    std::cout
+//                    << "Frame type, " << f.get_profile().stream_type()
+//                    << " , num, " << f.get_frame_number()
+//                    << " ,ts, " << std::fixed << f.get_timestamp()
+//                    << " ,x, " <<  axes.x
+//                    << " ,y, " <<  axes.y
+//                    << " ,z, " <<  axes.z
+//                    << std::endl;
+//                }
+//                frame_data data{f.get_frame_number(),
+//                                f.get_timestamp(),
+//                                arrival_time.count(),
+//                                f.get_frame_timestamp_domain(),
+//                                f.get_profile().stream_type()};
+//                if (buffer[(int)data.stream_type].size() < max_frames_number)
+//                {
+//                    buffer[(int)data.stream_type].push_back(data);
+//                }
+//            }
 
-            if (need_to_reset)
-            {
-                dev.hardware_reset();
-                need_to_reset = false;
-                break;
-            }
-        }
+//            if (need_to_reset)
+//            {
+//                dev.hardware_reset();
+//                need_to_reset = false;
+//                break;
+//            }
+//        }
 
-        if(ready())
-        {
-            save_data_to_file(buffer, output_file);
-            pipe.stop();
-            succeed = true;
-        }
+//        if(ready())
+//        {
+//            save_data_to_file(buffer, output_file);
+//            pipe.stop();
+//            succeed = true;
+//        }
     }
     return EXIT_SUCCESS;
 }
