@@ -1,10 +1,15 @@
 % Wraps librealsense2 decimation_filter class
-classdef decimation_filter < realsense.process_interface
+classdef decimation_filter < realsense.processing_block
     methods
         % Constructor
-        function this = decimation_filter()
-            out = realsense.librealsense_mex('rs2::decimation_filter', 'new');
-            this = this@realsense.process_interface(out);
+        function this = decimation_filter(magnitude)
+            if (nargin == 0)
+                out = realsense.librealsense_mex('rs2::decimation_filter', 'new');
+            else
+                validateattributes(magnitude, {'numeric'}, {'scalar', 'nonnegative', 'real'});
+                out = realsense.librealsense_mex('rs2::decimation_filter', 'new', double(magnitude));
+            end
+            this = this@realsense.processing_block(out);
         end
         
         % Destructor (uses base class destructor)

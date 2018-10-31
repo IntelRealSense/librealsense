@@ -2,9 +2,10 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "video.h"
-
 #include <memory>
+
+#include "core/extension.h"
+#include "types.h"              // exception
 
 namespace librealsense
 {

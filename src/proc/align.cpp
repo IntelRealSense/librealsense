@@ -359,6 +359,7 @@ namespace librealsense
         case 3:
             move_other_to_depth(z_pixels, reinterpret_cast<const bytes<3>*>(source), reinterpret_cast<bytes<3>*>(dest), to,
                 _pixel_top_left_int, bottom_right);
+            break;
         case 4:
             move_other_to_depth(z_pixels, reinterpret_cast<const bytes<4>*>(source), reinterpret_cast<bytes<4>*>(dest), to,
                 _pixel_top_left_int, bottom_right);
@@ -505,38 +506,17 @@ namespace librealsense
         align_other_to_depth(other_aligned_to_z, [z_pixels, z_scale](int z_pixel_index) { return z_scale * z_pixels[z_pixel_index]; }, z_intrin, z_to_other, other_intrin, other_pixels, other_format);
     }
 
-    int align::get_unique_id(rs2::video_stream_profile&  original_profile,
-        rs2::video_stream_profile&  to_profile,
-        rs2::video_stream_profile&  aligned_profile)
+    std::shared_ptr<rs2::video_stream_profile> align::create_aligned_profile(
+        rs2::video_stream_profile& original_profile,
+        rs2::video_stream_profile& to_profile)
     {
-        //align_stream_unique_ids holds a cache of mapping between the 2 streams that created the new aligned stream
-        // to it stream id.
-        //When an aligned frame is created from other streams (but with the same instance of this class)
-        // the from-to pair will be different so a new id will be added to the cache.
-        //This allows the user to pass different streams to this class and for every pair of from_to
-        //the user will always get the same stream id for the aligned stream.
-        auto from_to = std::make_pair(original_profile.get()->profile->get_unique_id(), to_profile.get()->profile->get_unique_id());
+        auto from_to = std::make_pair(original_profile.get()->profile, to_profile.get()->profile);
         auto it = _align_stream_unique_ids.find(from_to);
         if (it != _align_stream_unique_ids.end())
         {
             return it->second;
         }
-        else
-        {
-            int new_id = aligned_profile.get()->profile->get_unique_id();
-            _align_stream_unique_ids[from_to] = new_id;
-            return new_id;
-        }
-    }
-
-    std::shared_ptr<rs2::video_stream_profile> align::create_aligned_profile(
-        rs2::video_stream_profile& original_profile,
-        rs2::video_stream_profile& to_profile)
-    {
         auto aligned_profile = std::make_shared<rs2::video_stream_profile>(original_profile.clone(original_profile.stream_type(), original_profile.stream_index(), original_profile.format()));
-        int aligned_unique_id = get_unique_id(original_profile, to_profile, *aligned_profile);
-        aligned_profile->get()->profile->set_unique_id(aligned_unique_id);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*aligned_profile.get()->get()->profile, *original_profile.get()->profile);
         aligned_profile->get()->profile->set_framerate(original_profile.fps());
         if (auto original_video_profile = As<video_stream_profile_interface>(original_profile.get()->profile))
         {
@@ -552,6 +532,7 @@ namespace librealsense
                 }
             }
         }
+        _align_stream_unique_ids[from_to] = aligned_profile;
         return aligned_profile;
     }
 

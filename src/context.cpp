@@ -103,6 +103,19 @@ namespace librealsense
         {
         case backend_type::standard:
             _backend = platform::create_backend();
+#if WITH_TRACKING
+            _tm2_context = std::make_shared<tm2_context>(this);
+            _tm2_context->on_device_changed += [this](std::shared_ptr<tm2_info> removed, std::shared_ptr<tm2_info> added)-> void
+            {
+                std::vector<rs2_device_info> rs2_devices_info_added;
+                std::vector<rs2_device_info> rs2_devices_info_removed;
+                if (removed)
+                    rs2_devices_info_removed.push_back({ shared_from_this(), removed });
+                if (added)
+                    rs2_devices_info_added.push_back({ shared_from_this(), added });
+                raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+            };
+#endif
             break;
         case backend_type::record:
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
@@ -117,19 +130,6 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
-#if WITH_TRACKING
-       _tm2_context = std::make_shared<tm2_context>(this);
-       _tm2_context->on_device_changed += [this](std::shared_ptr<tm2_info> removed, std::shared_ptr<tm2_info> added)-> void
-       {
-           std::vector<rs2_device_info> rs2_devices_info_added;
-           std::vector<rs2_device_info> rs2_devices_info_removed;
-           if(removed)
-               rs2_devices_info_removed.push_back({ shared_from_this(), removed });
-           if (added)
-               rs2_devices_info_added.push_back({ shared_from_this(), added });
-           raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
-       };
-#endif
     }
 
 
@@ -311,7 +311,9 @@ namespace librealsense
     {
 
         platform::backend_device_group devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
-
+#ifdef WITH_TRACKING
+        if (_tm2_context) _tm2_context->create_manager();
+#endif
         return create_devices(devices, _playback_devices, mask);
     }
 
@@ -326,8 +328,11 @@ namespace librealsense
         auto ctx = t->shared_from_this();
 
 #ifdef WITH_TRACKING
-        auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
-        std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+        if (_tm2_context)
+        {
+            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
+            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+        }
 #endif
 
         auto l500_devices = l500_info::pick_l500_devices(ctx, devices.uvc_devices, devices.usb_devices);

@@ -29,8 +29,13 @@ classdef frameset < realsense.frame
             ret = realsense.librealsense_mex('rs2::frameset', 'get_color_frame', this.objectHandle);
             color_frame = realsense.video_frame(ret);
         end
-        function infrared_frame = get_infrared_frame(this)
-            ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle);
+        function infrared_frame = get_infrared_frame(this, index)
+            if (nargin == 1)
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle);
+            else
+                validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', 2}, '', 'index', 2);
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle, int64_t(index));
+            end
             infrared_frame = realsense.video_frame(ret);
         end
         function size = get_size(this)

@@ -107,9 +107,6 @@
 
 			fixed4 frag (g2f i) : SV_Target
 			{
-				// return tex2D(_UVMap, i.uv + 0.5 * _MainTex_TexelSize.xy);
-				// return tex2D(_UVMap, i.uv);
-				// return tex2D(_UVMap, i.uv + 0.5 * _UVMap_TexelSize.xy);
 				float2 uv = tex2D(_UVMap, i.uv);
 				if(any(uv <= 0 || uv >= 1))
 					discard;

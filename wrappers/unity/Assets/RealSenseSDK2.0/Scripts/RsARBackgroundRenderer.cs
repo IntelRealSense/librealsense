@@ -8,6 +8,7 @@ using UnityEngine.XR;
 
 public class RsARBackgroundRenderer : MonoBehaviour
 {
+    public RsFrameProvider Source;
     public Material material;
     private Camera cam;
     private ARBackgroundRenderer bg;
@@ -18,9 +19,9 @@ public class RsARBackgroundRenderer : MonoBehaviour
 
     IEnumerator Start()
     {
-        yield return new WaitUntil(() => RsDevice.Instance.Streaming);
+        yield return new WaitUntil(() => Source && Source.Streaming);
 
-        using (var profile = RsDevice.Instance.ActiveProfile.GetStream(Stream.Color) as VideoStreamProfile)
+        using (var profile = Source.ActiveProfile.GetStream(Stream.Color) as VideoStreamProfile)
         {
             intrinsics = profile.GetIntrinsics();
         }

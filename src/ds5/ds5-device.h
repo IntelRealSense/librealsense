@@ -13,6 +13,19 @@
 
 namespace librealsense
 {
+    class ds5_auto_exposure_roi_method : public region_of_interest_method
+    {
+    public:
+        explicit ds5_auto_exposure_roi_method(const hw_monitor& hwm,
+            ds::fw_cmd cmd = ds::fw_cmd::SETAEROI);
+
+        void set(const region_of_interest& roi) override;
+        region_of_interest get() const override;
+    private:
+        const ds::fw_cmd _cmd;
+        const hw_monitor& _hw_monitor;
+    };
+
     class ds5_device : public virtual device, public debug_interface
     {
     public:
@@ -42,14 +55,17 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const;
 
+        ds::d400_caps  parse_device_capabilities() const;
+
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
         friend class ds5_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
-        firmware_version _fw_version;
-        firmware_version recommended_fw_version;
+        firmware_version            _fw_version;
+        firmware_version            _recommended_fw_version;
+        ds::d400_caps               _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

@@ -5,10 +5,9 @@ namespace Intel.RealSense
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void frame_callback(IntPtr frame, IntPtr user_data);
-    //public delegate void frame_callback([Out, MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(FrameMarshaler))] out Frame frame, IntPtr user_data);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void frame_processor_callback(IntPtr frame, IntPtr user, IntPtr user_data);
+    public delegate void frame_processor_callback(IntPtr frame, IntPtr frame_src, IntPtr user_data);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void frame_deleter(IntPtr frame);
@@ -124,6 +123,8 @@ namespace Intel.RealSense
         MotionRaw = 15,
         MotionXyz32f = 16,
         GpioRaw = 17,
+        SixDOF = 18,
+        Disparity32 = 19,
     }
 
     public enum TimestampDomain
@@ -348,16 +349,12 @@ namespace Intel.RealSense
         public Intrinsics intrinsics;
     }
 
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Deleter();
-
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public class SoftwareVideoFrame
     {
         public IntPtr pixels;
-        public Deleter deleter = delegate { };
+        public frame_deleter deleter = delegate { };
         public int stride;
         public int bpp;
         public double timestamp;
@@ -365,6 +362,4 @@ namespace Intel.RealSense
         public int frame_number;
         public IntPtr profile;
     }
-
-
 }

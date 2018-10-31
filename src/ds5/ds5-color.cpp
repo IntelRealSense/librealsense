@@ -133,6 +133,14 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
 
+        // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
+        if (_fw_version >= firmware_version("5.10.9.0"))
+        {
+            roi_sensor_interface* roi_sensor;
+            if (roi_sensor = dynamic_cast<roi_sensor_interface*>(color_ep.get()))
+                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+        }
+
         return color_ep;
     }
 

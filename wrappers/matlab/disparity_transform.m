@@ -1,5 +1,5 @@
 % Wraps librealsense2 disparity_transform class
-classdef disparity_transform < realsense.process_interface
+classdef disparity_transform < realsense.processing_block
     methods
         % Constructor
         function this = disparity_transform(transform_to_disparity)
@@ -8,7 +8,8 @@ classdef disparity_transform < realsense.process_interface
             else
                 validateattributes(transform_to_disparity, {'logical', 'numeric'}, {'scalar', 'real'});
                 out = realsense.librealsense_mex('rs2::disparity_transform', 'new', logical(transform_to_disparity));
-            this = this@realsense.process_interface(out);
+            end
+            this = this@realsense.processing_block(out);
         end
         
         % Destructor (uses base class destructor)

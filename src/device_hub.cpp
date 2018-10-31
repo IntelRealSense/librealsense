@@ -29,18 +29,18 @@ namespace librealsense
         return result;
     }
 
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int vid,
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid,
                            bool register_device_notifications)
         : _ctx(ctx), _vid(vid),
           _register_device_notifications(register_device_notifications)
     {
-        _device_list = filter_by_vid(_ctx->query_devices(RS2_PRODUCT_LINE_ANY), _vid);
+        _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
 
         auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
                    {
                         std::unique_lock<std::mutex> lock(_mutex);
 
-                        _device_list = filter_by_vid(_ctx->query_devices(RS2_PRODUCT_LINE_ANY), _vid);
+                        _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
 
                         // Current device will point to the first available device
                         _camera_index = 0;

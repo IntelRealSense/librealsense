@@ -18,8 +18,8 @@ classdef config < handle
         % Functions
         function enable_stream(this, varargin)
             narginchk(2, 7);
-            validateattributes(varargin{1}, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 'stream_type', 2);
-            which = 'none'
+            validateattributes(varargin{1}, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)}, '', 'stream_type', 2);
+            which = 'none';
             switch nargin
                 case 2
                     which = 'enable_stream#stream';
@@ -82,8 +82,12 @@ classdef config < handle
                     validateattributes(varargin{4}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'height', 5);
                     validateattributes(varargin{5}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'format', 6);
                     validateattributes(varargin{6}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'framerate', 7);
+                    which = 'enable_stream#full';
             end
-            args = num2cell(int64([varargin{:}]));
+            args = {size(varargin)};
+            for i = 1:length(varargin)
+                args{i} = int64(varargin{i});
+            end
             realsense.librealsense_mex('rs2::config', which, this.objectHandle, args{:});
         end
         function enable_all_streams(this)

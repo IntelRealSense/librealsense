@@ -169,10 +169,6 @@ namespace librealsense
             _source_stream_profile = f.get_profile();
             _target_stream_profile = _source_stream_profile.clone(RS2_STREAM_DEPTH, 0, _source_stream_profile.format());
 
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(
-                *(stream_interface*)(f.get_profile().get()->profile),
-                *(stream_interface*)(_target_stream_profile.get()->profile));
-
             _extension_type = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
             _bpp = (_extension_type == RS2_EXTENSION_DISPARITY_FRAME) ? sizeof(float) : sizeof(uint16_t);
             auto vp = _target_stream_profile.as<rs2::video_stream_profile>();

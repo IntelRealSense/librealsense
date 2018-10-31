@@ -124,7 +124,7 @@ namespace librealsense
         } };
 
     colorizer::colorizer()
-        : _min(0.f), _max(6.f), _equalize(true), _stream()
+        : _min(0.f), _max(6.f), _equalize(true), _target_stream_profile()
     {
         _stream_filter.stream = RS2_STREAM_DEPTH;
         _stream_filter.format = RS2_FORMAT_Z16;
@@ -196,10 +196,10 @@ namespace librealsense
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        if (!_stream || (f.get_profile().get() != _stream->get()))
+        if (f.get_profile().get() != _source_stream_profile.get())
         {
-            _stream = std::make_shared<rs2::stream_profile>(f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8));
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_stream->get()->profile, *f.get_profile().get()->profile);
+            _source_stream_profile = f.get_profile();
+            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8);
         }
         auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
         {
@@ -272,7 +272,7 @@ namespace librealsense
 
         auto vf = f.as<rs2::video_frame>();
         //rs2_extension ext = f.is<rs2::disparity_frame>() ? RS2_EXTENSION_DISPARITY_FRAME : RS2_EXTENSION_DEPTH_FRAME;
-        ret = source.allocate_video_frame(*_stream, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, RS2_EXTENSION_VIDEO_FRAME);
+        ret = source.allocate_video_frame(_target_stream_profile, f, 3, vf.get_width(), vf.get_height(), vf.get_width() * 3, RS2_EXTENSION_VIDEO_FRAME);
 
         if (_equalize)
             make_equalized_histogram(f, ret);
