@@ -16,6 +16,26 @@
 
 namespace librealsense
 {
+    class observable_option
+    {
+    public:
+        void add_observer(std::function<void(float)> callback)
+        {
+            _callbacks.push_back(callback);
+        }
+
+        void notify(float val)
+        {
+            for (auto callback : _callbacks)
+            {
+                callback(val);
+            }
+        }
+
+    private:
+        std::vector<std::function<void(float)>> _callbacks;
+    };
+
     class readonly_option : public option
     {
     public:

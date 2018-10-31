@@ -181,7 +181,7 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism>     _auto_exposure;
     };
 
-    class depth_scale_option : public option
+    class depth_scale_option : public option, public observable_option
     {
     public:
         depth_scale_option(hw_monitor& hwm);
@@ -199,6 +199,7 @@ namespace librealsense
         {
             _record_action = record_action;
         }
+
     private:
         ds::depth_table_control get_depth_table(ds::advanced_query_mode mode) const;
         std::function<void(const option &)> _record_action = [](const option&) {};
