@@ -17,11 +17,11 @@ execute_process(COMMAND git rev-parse --abbrev-ref HEAD
                 OUTPUT_VARIABLE GIT_BRANCH
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-MESSAGE("--------------------------------------------------------------------------------------------------------------------------------------------------------------")
-MESSAGE("Building ${PROJECT_NAME} project on ${OS}, LIBTM version [${LIBTM_VERSION_MAJOR}.${LIBTM_VERSION_MINOR}.${LIBTM_VERSION_PATCH}.${LIBTM_VERSION_BUILD}], API version [${LIBTM_API_VERSION_MAJOR}.${LIBTM_API_VERSION_MINOR}], branch [${GIT_BRANCH}], FW [${FW_VERSION}], Central APP [${CENTRAL_APP_VERSION}], Central BL [${CENTRAL_BL_VERSION}]")
+message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
+message(STATUS "Building ${PROJECT_NAME} project on ${OS}, LIBTM version [${LIBTM_VERSION_MAJOR}.${LIBTM_VERSION_MINOR}.${LIBTM_VERSION_PATCH}.${LIBTM_VERSION_BUILD}], API version [${LIBTM_API_VERSION_MAJOR}.${LIBTM_API_VERSION_MINOR}], branch [${GIT_BRANCH}], FW [${FW_VERSION}], Central APP [${CENTRAL_APP_VERSION}], Central BL [${CENTRAL_BL_VERSION}]")
 
 # Configure version file according to libtm version definitions and branch name above
-MESSAGE("Creating version file ${PROJECT_SOURCE_DIR}/src/Version.h")
+message(STATUS "Creating version file ${PROJECT_SOURCE_DIR}/src/Version.h")
 configure_file("${PROJECT_SOURCE_DIR}/src/Version.h.in" "${PROJECT_SOURCE_DIR}/src/Version.h")
 configure_file("${PROJECT_SOURCE_DIR}/src/version.rc.in" "${PROJECT_SOURCE_DIR}/src/version.rc")
 

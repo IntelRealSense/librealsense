@@ -33,7 +33,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -70,9 +70,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetExt>.mexw64</TargetExt>
+    <OutDir>$(SolutionDir)$(Configuration)\+realsense\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.mexw64</TargetExt>
+    <OutDir>$(SolutionDir)$(Configuration)\+realsense\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetExt>.mexw64</TargetExt>
@@ -80,7 +82,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.mexw64</TargetExt>
-    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\+realsense\</OutDir>
+    <OutDir>$(SolutionDir)$(Configuration)\+realsense\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -93,8 +95,8 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(ProjectDir)..\..\build\third-party\realsense-file\$(Configuration);$(ProjectDir)..\..\build\$(Configuration);$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(OutDir)..\..\third-party\libtm\libtm\src\$(Configuration);$(OutDir)..\..\third-party\realsense-file\$(Configuration);$(OutDir)..\..\libusb_install\lib;$(OutDir)..;$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
     </Link>
     <PreBuildEvent>
@@ -110,13 +112,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include\;C:\MATLAB\R2017b\extern\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\include\;C:\MATLAB\R2017a\extern\include\;C:\MATLAB\R2017b\extern\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(OutDir)..\..\third-party\libtm\libtm\src\$(Configuration);$(OutDir)..\..\third-party\realsense-file\$(Configuration);$(OutDir)..\..\libusb_install\lib;$(OutDir)..;$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,11 +130,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include\;C:\MATLAB\R2017b\extern\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\include\;C:\MATLAB\R2017a\extern\include\;C:\MATLAB\R2017b\extern\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(OutDir)..\..\third-party\libtm\libtm\src\$(Configuration);$(OutDir)..\..\third-party\realsense-file\$(Configuration);$(OutDir)..\..\libusb_install\lib;$(OutDir)..;$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,8 +155,8 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(ProjectDir)..\..\build\third-party\realsense-file\$(Configuration);$(ProjectDir)..\..\build\$(Configuration);$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\MATLAB\R2017a\extern\lib\win64\microsoft;C:\MATLAB\R2017b\extern\lib\win64\microsoft;$(OutDir)..\..\third-party\libtm\libtm\src\$(Configuration);$(OutDir)..\..\third-party\realsense-file\$(Configuration);$(OutDir)..\..\libusb_install\lib;$(OutDir)..;$(ProjectDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmex.lib;libmat.lib;realsense2.lib;realsense-file.lib;tm.lib;usb.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>librealsense_mex.def</ModuleDefinitionFile>
     </Link>
     <PreBuildEvent>
@@ -202,7 +208,7 @@
     <None Include="pointcloud.m" />
     <None Include="points.m" />
     <None Include="pose_frame.m" />
-    <None Include="process_interface.m" />
+    <None Include="processing_block.m" />
     <None Include="recorder.m" />
     <None Include="roi_sensor.m" />
     <None Include="rosbag_example.m" />

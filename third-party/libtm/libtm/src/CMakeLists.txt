@@ -60,7 +60,7 @@ ENDIF(WIN32)
 set(SDK_LIB_TYPE "STATIC")
 add_definitions(-DBUILD_STATIC)
 
-MESSAGE("Building project ${PROJECT_NAME} as ${SDK_LIB_TYPE} library ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "Building project ${PROJECT_NAME} as ${SDK_LIB_TYPE} library ${CMAKE_INSTALL_LIBDIR}")
 add_library(${PROJECT_NAME} ${SDK_LIB_TYPE} ${SOURCE_FILES})
 
 #LINK_LIBRARIES

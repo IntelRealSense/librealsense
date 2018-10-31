@@ -42,7 +42,7 @@ classdef stream_profile < handle
             validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'index', 3);
             validateattributes(fmt, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'fmt', 4);
             out = realsense.librealsense_mex('rs2::stream_profile', 'clone', this.objectHandle, int64(type), int64(index), int64(fmt));
-            realsense.stream_profile(out{:});
+            profile = realsense.stream_profile(out{:});
         end
         function value = is(this, type)
             narginchk(2, 2);
@@ -58,11 +58,11 @@ classdef stream_profile < handle
             out = realsense.librealsense_mex('rs2::stream_profile', 'as', this.objectHandle, type);
             switch type
                 case 'stream_profile'
-                    profile = realsense.stream_profile(out);
+                    profile = realsense.stream_profile(out{:});
                 case 'video_stream_profile'
-                    profile = realsense.video_stream_profile(out);
+                    profile = realsense.video_stream_profile(out{:});
                 case 'motion_stream_profile'
-                    profile = realsense.motion_stream_profile(out);
+                    profile = realsense.motion_stream_profile(out{:});
             end
         end
         function name = stream_name(this)

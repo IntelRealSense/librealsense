@@ -21,7 +21,6 @@
 2. Intel(R) RealSense(TM) D415 Camera
 3. Intel(R) RealSense(TM) D430 Module
 4. Intel(R) RealSense(TM) D435 Camera
-5. Intel(R) RealSense(TM) Camera DS5U
 
 ## Known Limitations:
 1. Multiple cameras are likely not to work at the moment (not validated)

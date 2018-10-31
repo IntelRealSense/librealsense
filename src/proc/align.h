@@ -90,11 +90,8 @@ namespace librealsense
         std::shared_ptr<rs2::video_stream_profile> create_aligned_profile(
             rs2::video_stream_profile& original_profile,
             rs2::video_stream_profile& to_profile);
-        int get_unique_id(rs2::video_stream_profile& original_profile,
-            rs2::video_stream_profile& to_profile,
-            rs2::video_stream_profile& aligned_profile);
         rs2_stream _to_stream_type;
-        std::map<std::pair<int, int>, int> _align_stream_unique_ids;
+        std::map<std::pair<stream_profile_interface*, stream_profile_interface*>, std::shared_ptr<rs2::video_stream_profile>> _align_stream_unique_ids;
         std::pair<int, int> _prev_depth_res;
 
 #ifdef __SSSE3__

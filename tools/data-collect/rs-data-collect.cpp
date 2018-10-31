@@ -153,7 +153,7 @@ int main(int argc, char** argv) try
     // Parse command line arguments
     CmdLine cmd("librealsense rs-data-collect example tool", ' ');
     ValueArg<int>    timeout("t", "Timeout", "Max amount of time to receive frames (in seconds)", false, 10, "");
-    ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximun number of frames data to receive", false, 100, "");
+    ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximum number of frames data to receive", false, 100, "");
     ValueArg<string> filename("f", "FullFilePath", "the file which the data will be saved to", false, "", "");
     ValueArg<string> config_file("c", "ConfigurationFile", "Specify file path with the requested configuration", false, "", "");
 

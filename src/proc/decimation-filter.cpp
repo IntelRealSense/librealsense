@@ -6,11 +6,13 @@
 
 #include <numeric>
 #include <cmath>
+#include "environment.h"
 #include "option.h"
 #include "context.h"
+#include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "environment.h"
+
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }
 #define PIX_SWAP(a,b) { pixelvalue temp=(a);(a)=(b);(b)=temp; }
@@ -273,7 +275,7 @@ namespace librealsense
 
     void  decimation_filter::update_output_profile(const rs2::frame& f)
     {
-        if (_options_changed || !_source_stream_profile || f.get_profile().unique_id() != _source_stream_profile.unique_id())
+        if (_options_changed || f.get_profile().get() != _source_stream_profile.get())
         {
             _options_changed = false;
             _source_stream_profile = f.get_profile();

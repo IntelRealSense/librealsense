@@ -212,7 +212,7 @@ namespace librealsense
         }
 
         //Look for satisfy device in case the user did not specify one.
-        auto devs = pipe->get_context()->query_devices(RS2_PRODUCT_LINE_ANY);
+        auto devs = pipe->get_context()->query_devices(RS2_PRODUCT_LINE_ANY_INTEL);
         for (auto dev_info : devs)
         {
             try
@@ -352,7 +352,7 @@ namespace librealsense
     */
 
     pipeline::pipeline(std::shared_ptr<librealsense::context> ctx)
-        :_ctx(ctx), _hub(ctx), _dispatcher(10)
+        :_ctx(ctx), _hub(ctx, RS2_PRODUCT_LINE_ANY_INTEL), _dispatcher(10)
     {}
 
     pipeline::~pipeline()

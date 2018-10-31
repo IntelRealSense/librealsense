@@ -3857,6 +3857,7 @@ namespace rs2
 
         glTranslatef(0, 0, -1);
 
+        // Render "floor" grid
         for (int i = 0; i <= 6; i++)
         {
             glVertex3i(i - 3, 1, 0);
@@ -3866,7 +3867,7 @@ namespace rs2
         }
         glEnd();
 
-        texture_buffer::draw_axis(0.1f, 1);
+        texture_buffer::draw_axes(0.4f, 1);
 
         if (draw_plane)
         {
@@ -6613,7 +6614,7 @@ namespace rs2
 
     device_changes::device_changes(rs2::context& ctx)
     {
-        _changes.emplace(rs2::device_list{}, ctx.query_devices());
+        _changes.emplace(rs2::device_list{}, ctx.query_devices(RS2_PRODUCT_LINE_ANY));
         ctx.set_devices_changed_callback([&](event_information& info)
         {
             add_changes(info);
@@ -6667,7 +6668,7 @@ namespace rs2
         }
         else //draw axis
         {
-            texture_buffer::draw_axis(0.1f, 1.f);
+            texture_buffer::draw_axes(0.1f, 1.f);
         }
     }
 
