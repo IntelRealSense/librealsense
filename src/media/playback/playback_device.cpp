@@ -370,7 +370,7 @@ void playback_device::update_time_base(device_serializer::nanoseconds base_times
     LOG_DEBUG("Updating Time Base... m_base_sys_time " << m_base_sys_time.time_since_epoch().count() << " m_base_timestamp " << m_base_timestamp.count());
 }
 
-device_serializer::nanoseconds playback_device::calc_sleep_time(device_serializer::nanoseconds timestamp) const
+device_serializer::nanoseconds playback_device::calc_sleep_time(device_serializer::nanoseconds timestamp)
 {
     if (!m_real_time)
         return device_serializer::nanoseconds(0);
@@ -378,9 +378,13 @@ device_serializer::nanoseconds playback_device::calc_sleep_time(device_serialize
     // and the playback time.
     auto now = std::chrono::high_resolution_clock::now();
     auto play_time = now - m_base_sys_time;
+
+    //Sometimes the first stream skip the first frame on the ros reader
+    //and the second stream go back to the first frame so its timestamp is smaller then the base timestamp
+    //in this case we need to restart the m_base_timestamp again
     if(timestamp < m_base_timestamp)
     {
-        assert(0);
+        update_time_base(timestamp);
     }
     auto time_diff = timestamp - m_base_timestamp;
     auto recorded_time = std::chrono::duration_cast<device_serializer::nanoseconds>(time_diff / m_sample_rate.load());
