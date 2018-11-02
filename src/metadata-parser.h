@@ -75,7 +75,7 @@ namespace librealsense
                 if (_type == *type)
                 {
                     const rs2_metadata_type* value = reinterpret_cast<const rs2_metadata_type*>(pos);
-                    result = *value;
+                    memcpy((void*)&result, (const void*)value, sizeof(*value));
                     return true;
                 }
                 pos += sizeof(rs2_metadata_type);
