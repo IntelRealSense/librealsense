@@ -199,6 +199,9 @@ set(REALSENSE_CPP
     src/proc/temporal-filter.cpp
     src/proc/hole-filling-filter.cpp
     src/proc/disparity-transform.cpp
+	
+	src/proc/sse/sse-align.cpp
+	
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -225,7 +228,7 @@ set(REALSENSE_CPP
     src/media/record/record_device.cpp
     src/media/record/record_sensor.cpp
     src/media/playback/playback_device.cpp
-    src/media/playback/playback_sensor.cpp
+    src/media/playback/playback_sensor.cpp	
     )
 
 ## Check for Windows Version ##
@@ -262,11 +265,15 @@ if (BUILD_WITH_CUDA)
     set(REALSENSE_CU
         src/cuda/cuda-conversion.cu
         src/cuda/cuda-pointcloud.cu
+		src/proc/cuda/cuda-align.cu
         )
 
     set(REALSENSE_CUH
+		src/cuda/rscuda_utils.cuh
         src/cuda/cuda-conversion.cuh
         src/cuda/cuda-pointcloud.cuh
+		src/proc/cuda/cuda-align.cuh
+		src/proc/cuda/cuda-align.h
         )
 endif()
 
@@ -336,6 +343,9 @@ set(REALSENSE_HPP
     src/proc/hole-filling-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
+	
+	src/proc/sse/sse-align.h
+	
     src/algo.h
     src/option.h
     src/metadata.h
@@ -619,8 +629,8 @@ if(WIN32)
         src/proc/syncer-processing-block.cpp
         src/proc/disparity-transform.cpp
         )
-
-    source_group("Header Files\\Processing Blocks" FILES
+	
+	source_group("Header Files\\Processing Blocks" FILES
         src/proc/colorizer.h
         src/proc/align.h
         src/proc/pointcloud.h
@@ -633,7 +643,25 @@ if(WIN32)
         src/proc/disparity-transform.h
         src/proc/hole-filling-filter.h
         )
+		
+	source_group("Source Files\\Processing Blocks\\sse" FILES
+		src/proc/sse/sse-align.cpp
+	)
+		
+	source_group("Header Files\\Processing Blocks\\sse" FILES
+		src/proc/sse/sse-align.h
+	)
 
+if (BUILD_WITH_CUDA)
+	source_group("Source Files\\Processing Blocks\\cuda" FILES
+		src/proc/cuda/cuda-align.cu
+	)
+		
+	source_group("Header Files\\Processing Blocks\\cuda" FILES
+		src/proc/cuda/cuda-align.cuh
+		src/proc/cuda/cuda-align.h
+	)
+endif()
     if(BUILD_WITH_STATIC_CRT)
         foreach(flag_var
                 CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
