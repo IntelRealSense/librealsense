@@ -181,7 +181,7 @@ int main() {
     if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
     {
         depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f); // Enable emitter
-        //depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f); // Disable emitter
+        depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f); // Disable emitter
     }
     if (depth_sensor.supports(RS2_OPTION_LASER_POWER))
     {
@@ -219,6 +219,16 @@ int main() {
 
         // Convert generated Point Cloud to PCL Formatting
         cloud_pointer cloud = PCL_Conversion(points, RGB);
+        
+        //========================================
+        // Filter PointCloud (PassThrough Method)
+        //========================================
+        pcl::PassThrough<pcl::PointXYZRGB> Cloud_Filter; // Create the filtering object
+        Cloud_Filter.setInputCloud (cloud);           // Input generated cloud to filter
+        Cloud_Filter.setFilterFieldName ("z");        // Set field name to Z-coordinate
+        Cloud_Filter.setFilterLimits (0.0, 1.0);      // Set accepted interval values
+        Cloud_Filter.filter (*newCloud);              // Filtered Cloud Outputted
+        
         cloudFile = "Captured_Frame" + to_string(i) + ".pcd";
         
         //==============================
