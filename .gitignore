@@ -6,6 +6,7 @@ ubuntu-xenial-hwe/
 
 # CMake
 build/
+connectivity_check
 
 # XCode
 .DS_Store
