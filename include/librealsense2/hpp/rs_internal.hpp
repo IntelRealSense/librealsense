@@ -88,6 +88,26 @@ namespace rs2
             return stream;
         }
 
+        stream_profile add_motion_stream(rs2_motion_stream motion_stream)
+        {
+            rs2_error* e = nullptr;
+
+            stream_profile stream(rs2_software_sensor_add_motion_stream(_sensor.get(), motion_stream, &e));
+            error::handle(e);
+
+            return stream;
+        }
+
+        stream_profile add_pose_stream(rs2_pose_stream pose_stream)
+        {
+            rs2_error* e = nullptr;
+
+            stream_profile stream(rs2_software_sensor_add_pose_stream(_sensor.get(), pose_stream, &e));
+            error::handle(e);
+
+            return stream;
+        }
+
         /**
         * Inject frame into the sensor
         *
@@ -97,6 +117,20 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_on_video_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
+
+        void on_motion_frame(rs2_software_motion_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_on_motion_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
+
+        void on_pose_frame(rs2_software_pose_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_on_pose_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
 

@@ -630,9 +630,8 @@ namespace librealsense
                     }
                     else if (kvp.first == FRAME_TIMESTAMP_MD_STR)
                     {
-                        double ts;
                         std::istringstream iss(kvp.second);
-                        iss >> std::hexfloat >> ts;
+                        double ts = std::strtod(iss.str().c_str(), NULL);
                         timestamp_ms = std::chrono::duration<double, std::milli>(ts);
                     }
                     else if (kvp.first == TRACKER_CONFIDENCE_MD_STR)
