@@ -19,5 +19,7 @@ Console app for converting ROS-bag files to various formats (currently supported
 
 ## Usage
 
+**Example**: If you have `1.bag` recorded from the Viewer or from API, copy it next to `rs-convert.exe` (for Windows), launch the command line and enter: `rs-convert.exe -v test -i 1.bag`. This will generate one `.csv` file for each frame inside the `.bag` file. 
+
 Several converters can be used simultaneously, e.g.:
 `rs-convert -i some.bag -p some_dir/some_file_prefix -r some_another_dir/some_another_file_prefix`
