@@ -3,6 +3,7 @@ Examples in this folder are designed to complement existing [SDK examples](../..
  
 ## List of Samples:
 1. [PCL](./pcl) - Minimal Point-cloud viewer that includes PCL processing
+2. [PCL-COLOR](./pcl-color) - Point-cloud viewer that includes RGB PCL processing
 
 ## Getting Started:
 This page is certainly **not** a comprehensive guide to getting started with PCL, but it can help get on the right track. 
