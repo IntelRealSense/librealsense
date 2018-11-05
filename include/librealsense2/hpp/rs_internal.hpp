@@ -88,6 +88,11 @@ namespace rs2
             return stream;
         }
 
+        /**
+        * Add motion stream to software sensor
+        *
+        * \param[in] motion   all the parameters that required to defind motion stream
+        */
         stream_profile add_motion_stream(rs2_motion_stream motion_stream)
         {
             rs2_error* e = nullptr;
@@ -98,6 +103,11 @@ namespace rs2
             return stream;
         }
 
+        /**
+        * Add pose stream to software sensor
+        *
+        * \param[in] pose   all the parameters that required to defind pose stream
+        */
         stream_profile add_pose_stream(rs2_pose_stream pose_stream)
         {
             rs2_error* e = nullptr;
@@ -109,7 +119,7 @@ namespace rs2
         }
 
         /**
-        * Inject frame into the sensor
+        * Inject video frame into the sensor
         *
         * \param[in] frame   all the parameters that required to define video frame
         */
@@ -120,6 +130,11 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * Inject motion frame into the sensor
+        *
+        * \param[in] frame   all the parameters that required to define motion frame
+        */
         void on_motion_frame(rs2_software_motion_frame frame)
         {
             rs2_error* e = nullptr;
@@ -127,6 +142,11 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * Inject pose frame into the sensor
+        *
+        * \param[in] frame   all the parameters that required to define pose frame
+        */
         void on_pose_frame(rs2_software_pose_frame frame)
         {
             rs2_error* e = nullptr;
