@@ -39,6 +39,5 @@ namespace librealsense
     private:
         rs2::frame allocate_aligned_frame(const rs2::frame_source& source, const rs2::video_frame& from, const rs2::video_frame& to);
         void align_frames(const rs2::video_frame& aligned, const rs2::video_frame& from, const rs2::video_frame& to);
-        void set_depth_scale(rs2::frame depth_frame);
     };
 }

@@ -232,24 +232,6 @@ namespace librealsense
         }
     }
 
-    void align::set_depth_scale(rs2::frame depth_frame)
-    {
-        auto sensor = ((frame_interface*)depth_frame.get())->get_sensor().get();
-        if (sensor == nullptr)
-        {
-            LOG_ERROR("Failed to get sensor from depth frame");
-            return;
-        }
-
-        if (sensor->supports_option(RS2_OPTION_DEPTH_UNITS) == false)
-        {
-            LOG_ERROR("Sensor of depth frame does not provide depth units");
-            return;
-        }
-
-        _depth_scale = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
-    }
-
     rs2::frame align::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         rs2::frame rv;
@@ -257,9 +239,9 @@ namespace librealsense
         std::vector<rs2::frame> other_frames;
 
         auto frames = f.as<rs2::frameset>();
-        auto depth = frames.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16).as<rs2::video_frame>();
+        auto depth = frames.first_or_default(RS2_STREAM_DEPTH, RS2_FORMAT_Z16).as<rs2::depth_frame>();
 
-        set_depth_scale(depth);
+        _depth_scale = ((librealsense::depth_frame*)depth.get())->get_units();
 
         if (_to_stream_type == RS2_STREAM_DEPTH)
             frames.foreach([&other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() != RS2_STREAM_DEPTH) other_frames.push_back(f); });
