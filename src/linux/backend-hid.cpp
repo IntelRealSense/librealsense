@@ -918,7 +918,7 @@ namespace librealsense
         void v4l_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _hid_profiles = hid_profiles;
-            for (auto& device_info : _hid_device_infos)
+             for (auto& device_info : _hid_device_infos)
              {
                 try
                 {
