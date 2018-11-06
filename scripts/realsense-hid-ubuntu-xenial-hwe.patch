@@ -4,16 +4,31 @@ From: Evgeni <evgeni.raikhel@intel.com>
 Date: Sun, 13 May 2018 10:49:26 -0400
 
 Subject: [PATCH] Adding missing HID timestamp patch for Gyro sensor.
-         Ubuntu 18.04 Bionic Beaver with KErnel 4.15
+         Ubuntu 18.04 Bionic Beaver with Kernel 4.15
 	A symmetric patch for Accelerator was already upstreamed,
 	this patch was skipped from upstream
 	The patch was written by Srinivas Pandruvada <srinivas.pandruvada@intel.com>
----
- drivers/iio/gyro/hid-sensor-gyro-3d.c | 28 ++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+	Additionally, timestamp management is fixed
 
+---
+ drivers/iio/accel/hid-sensor-accel-3d.c |  1 +
+ drivers/iio/gyro/hid-sensor-gyro-3d.c   | 31 ++++++++++++++++++++++++-------
+ 2 files changed, 25 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+index c066a3b..3346631 100644
+--- a/drivers/iio/accel/hid-sensor-accel-3d.c
++++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+@@ -286,6 +286,7 @@ static int accel_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 			hid_sensor_convert_timestamp(
+ 					&accel_state->common_attributes,
+ 					*(int64_t *)raw_data);
++		ret = 0;
+ 	break;
+ 	default:
+ 		break;
 diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index f59995a90..e3f2a8357 100644
+index f59995a..98cec98 100644
 --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
 +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
 @@ -42,11 +42,13 @@ struct gyro_3d_state {
@@ -76,17 +91,21 @@ index f59995a90..e3f2a8357 100644
  
  	return 0;
  }
-@@ -235,6 +245,10 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+@@ -235,6 +245,13 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
 +	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		gyro_state->timestamp = *(int64_t *)raw_data;
++		gyro_state->timestamp =
++			hid_sensor_convert_timestamp(
++					&gyro_state->common_attributes,
++					*(int64_t *)raw_data);
 +		ret = 0;
 +	break;
  	default:
  		break;
  	}
 -- 
-2.17.0
+2.7.4
+
 

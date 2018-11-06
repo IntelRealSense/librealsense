@@ -3029,7 +3029,7 @@ namespace rs2
         if (ImGui::BeginPopupModal(name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-            ImGui::Text(const_cast<char*>(error_message.c_str()));
+            ImGui::Text("%s", error_message.c_str());
             ImGui::PopStyleColor();
 
             ImGui::PushStyleColor(ImGuiCol_Button, transparent);

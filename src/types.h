@@ -48,6 +48,7 @@ namespace librealsense
 {
     #define UNKNOWN_VALUE "UNKNOWN"
     const double TIMESTAMP_USEC_TO_MSEC = 0.001;
+    const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
 
     ///////////////////////////////////
     // Utility types for general use //
