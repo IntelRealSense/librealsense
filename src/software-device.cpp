@@ -56,16 +56,12 @@ namespace librealsense
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
-            if (profile->get_unique_id() == video_stream.uid)
-            {
-                return true;
-            }
-            return false;
+            return profile->get_unique_id() == video_stream.uid;
         } ) != _profiles.end());
 
         if (exist)
         {
-            LOG_WARNING("Stream unique ID already exist!");
+            LOG_WARNING("Video stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
         }
 
@@ -87,16 +83,12 @@ namespace librealsense
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
-            if (profile->get_unique_id() == motion_stream.uid)
-            {
-                return true;
-            }
-            return false;
+            return profile->get_unique_id() == motion_stream.uid;
         }) != _profiles.end());
 
         if (exist)
         {
-            LOG_WARNING("Stream unique ID already exist!");
+            LOG_WARNING("Motion stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
         }
 
@@ -117,16 +109,12 @@ namespace librealsense
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
-            if (profile->get_unique_id() == pose_stream.uid)
-            {
-                return true;
-            }
-            return false;
+            return profile->get_unique_id() == pose_stream.uid;
         }) != _profiles.end());
 
         if (exist)
         {
-            LOG_WARNING("Stream unique ID already exist!");
+            LOG_WARNING("Pose stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
         }
 
@@ -226,6 +214,7 @@ namespace librealsense
         auto frame = _source.alloc_frame(extension, 0, data, false);
         if (!frame)
         {
+            LOG_WARNING("Dropped video frame. alloc_frame(...) returned nullptr");
             return;
         }
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
@@ -251,10 +240,6 @@ namespace librealsense
         {
             auto size_of_enum = sizeof(rs2_frame_metadata_value);
             auto size_of_data = sizeof(rs2_metadata_type);
-            if (data.metadata_size + size_of_enum + size_of_data > 255)
-            {
-                continue; //stop adding metadata to frame
-            }
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
             data.metadata_size += static_cast<uint32_t>(size_of_enum);
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
@@ -264,11 +249,9 @@ namespace librealsense
         auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 0, data, false);
         if (!frame)
         {
+            LOG_WARNING("Dropped motion frame. alloc_frame(...) returned nullptr");
             return;
         }
-        auto mid_profile = dynamic_cast<motion_stream_profile_interface*>(software_frame.profile->profile);
-        auto mid_frame = dynamic_cast<motion_frame*>(frame);
-
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
             software_frame.deleter(software_frame.data);
@@ -288,10 +271,6 @@ namespace librealsense
         {
             auto size_of_enum = sizeof(rs2_frame_metadata_value);
             auto size_of_data = sizeof(rs2_metadata_type);
-            if (data.metadata_size + size_of_enum + size_of_data > 255)
-            {
-                continue; //stop adding metadata to frame
-            }
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
             data.metadata_size += static_cast<uint32_t>(size_of_enum);
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
@@ -301,11 +280,9 @@ namespace librealsense
         auto frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, data, false);
         if (!frame)
         {
+            LOG_WARNING("Dropped pose frame. alloc_frame(...) returned nullptr");
             return;
         }
-        auto pid_profile = dynamic_cast<pose_stream_profile_interface*>(software_frame.profile->profile);
-        auto pid_frame = dynamic_cast<pose_frame*>(frame);
-
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
             software_frame.deleter(software_frame.data);

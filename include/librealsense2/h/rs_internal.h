@@ -30,7 +30,7 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
-/** \brief All the parameters are requaired to defind video stream*/
+/** \brief All the parameters are requaired to define video stream*/
 typedef struct rs2_video_stream
 {
     rs2_stream type;
@@ -44,7 +44,7 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
-/** \brief All the parameters are requaired to defind motion stream*/
+/** \brief All the parameters are requaired to define motion stream*/
 typedef struct rs2_motion_stream
 {
     rs2_stream type;
@@ -55,7 +55,7 @@ typedef struct rs2_motion_stream
     rs2_motion_device_intrinsic intrinsics;
 } rs2_motion_stream;
 
-/** \brief All the parameters are requaired to defind pose stream*/
+/** \brief All the parameters are requaired to define pose stream*/
 typedef struct rs2_pose_stream
 {
     rs2_stream type;
