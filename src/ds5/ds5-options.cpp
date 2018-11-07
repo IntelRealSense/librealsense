@@ -388,6 +388,7 @@ namespace librealsense
 
         _hwm.send(cmd);
         _record_action(*this);
+        notify(value);
     }
 
     float depth_scale_option::query() const
