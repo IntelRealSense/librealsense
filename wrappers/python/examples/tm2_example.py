@@ -15,21 +15,21 @@ import json
 from time import sleep
 
 def on_notification(n):
-    print n
+    print (n)
     if n.category == rs.notification_category.hardware_event:
         try:
             event = json.loads(n.serialized_data)
             if event and event['Event Type'] == 'Controller Event' \
                 and event['Data']['Sub Type'] == 'Discovery':
                 addr = event['Data']['Data']['MAC']
-                print 'Connecting to mac_str...'
+                print ('Connecting to mac_str...')
                 try:
                     tm2.connect_controller(addr)  # expecting tm2 = The device as tm2
                 except:
-                    print 'Failed to connect to controller ', mac_str
+                    print ('Failed to connect to controller ', mac_str)
         except:
-            print 'Serialized data is not in JSON format (', \
-                n.serialized_data, ')'
+            print ('Serialized data is not in JSON format (', \
+                n.serialized_data, ')')
 
 
 # Ignore frames arriving from the sensor (just to showcase controller usage)
@@ -43,16 +43,16 @@ try:
 
     # Wait until a TM2 device connects
     # We have to wait here, even if the device is already connected (since the library loads the device as usb device)
-    print 'Waiting for all devices to connect...'
+    print ('Waiting for all devices to connect...')
     found = False
     while not found:
         if len(ctx.devices) > 0:
             for d in ctx.devices:
                 if d.get_info(rs.camera_info.product_id) == '2803':
                     tm2 = d.as_tm2()
-                    print 'Found TM2 device: ', \
+                    print ('Found TM2 device: ', \
                         d.get_info(rs.camera_info.name), ' ', \
-                        d.get_info(rs.camera_info.serial_number)
+                        d.get_info(rs.camera_info.serial_number))
                     found = True
 
     # Get the sensor from the device
@@ -72,4 +72,4 @@ try:
     s.stop()
     s.close()
 except:
-    print "Error while running example"
+    print ("Error while running example")
