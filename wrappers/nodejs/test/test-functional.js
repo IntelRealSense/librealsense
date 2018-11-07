@@ -536,7 +536,7 @@ describe('Sensor tests', function() {
   }).timeout(5000);
 });
 
-//describe('Align tests', function() {
+// describe('Align tests', function() {
 //  let ctx;
 //  let align;
 //  let pipe;
@@ -561,7 +561,7 @@ describe('Sensor tests', function() {
 //    assert.equal(color instanceof rs2.VideoFrame, true);
 //    assert.equal(depth instanceof rs2.DepthFrame, true);
 //  });
-//});
+// });
 
 describe(('syncer test'), function() {
   let syncer;
