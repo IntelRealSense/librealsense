@@ -67,6 +67,7 @@ extern "C" {
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
+        RS2_OPTION_EMITTER_ON_AND_OFF_ENABLED, /**< 0 for disabled, 1 for enabled */
         RS2_OPTION_COUNT                                        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
     const char* rs2_option_to_string(rs2_option option);

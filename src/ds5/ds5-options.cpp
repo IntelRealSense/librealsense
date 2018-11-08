@@ -436,4 +436,37 @@ namespace librealsense
     {
         return *_range;
     }
+
+    emitter_on_and_off_option::emitter_on_and_off_option(hw_monitor& hwm)
+        : _hwm(hwm)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void emitter_on_and_off_option::set(float value)
+    {
+        command cmd(ds::SET_PWM_ON_OFF);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float emitter_on_and_off_option::query() const
+    {
+        command cmd(ds::GET_PWM_ON_OFF);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range emitter_on_and_off_option::get_range() const
+    {
+        return *_range;
+    }
 }

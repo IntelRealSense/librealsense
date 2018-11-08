@@ -108,7 +108,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_fisheye_calibration_table_raw,
                 ds::calibration_table_id::fisheye_calibration_id,
-                profile.width, profile.height);
+                profile.width, profile.height, profile.fps);
         }
 
         stream_profiles init_stream_profiles() override
