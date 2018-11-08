@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+<ScrollView android:id="@+id/scrollViewMain"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linear_layout_preview"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dip"
+    android:weightSum="1">
+
+    <TextView
+        android:id="@+id/TextView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="previewType" />
+
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/radiogroupType"
+        android:orientation="horizontal"
+        android:layout_weight="4.82">
+
+        <RadioButton
+            android:text="Fake Preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:id="@+id/radioFake"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="Realsense Preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioRS"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="FA Preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioFA"
+            android:layout_weight="1" />
+    </RadioGroup>
+
+
+    <TextView
+        android:id="@+id/TextView2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Render depth/color/IR" />
+
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/radiogroupVR"
+        android:orientation="horizontal"
+        android:layout_weight="4.82">
+
+        <RadioButton
+            android:text="Depth frame"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:id="@+id/radioDepth"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="Color frame"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioColor"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="IR frame"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioIR"
+            android:layout_weight="1" />
+    </RadioGroup>
+
+
+
+
+
+
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <ToggleButton
+            android:id="@+id/btnOn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="On"
+            android:textOff="On"
+            android:textOn="Off" />
+
+    <Button
+        android:id="@+id/toggleButtonSurface"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Toggle surface" />
+
+
+        <ToggleButton
+            android:id="@+id/fakeView2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.0"
+            android:alpha="0" />
+
+    <Button
+        android:id="@+id/toggleButtonEmitter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="EMITTER" />
+
+
+        <ToggleButton
+            android:id="@+id/btnPlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:text="Play"
+            android:enabled="false"
+            android:textOff="Play"
+            android:textOn="Stop" />
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/glView"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent">"
+
+    </RelativeLayout>
+
+
+</LinearLayout>
+
+</ScrollView>
+
+</android.support.constraint.ConstraintLayout>

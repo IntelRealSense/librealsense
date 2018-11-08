@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.irsa_example" >
+
+    <!--
+         Platform APILevel Coverage 
+         4.0 ICS     15
+         4.1 JB      16       99.2%
+         4.2 JB      17       96%
+         4.3 JB      18       91%
+         4.4 KK      19       90%
+         5.0 LP      21       71%
+         5.1 LP      22       62%
+         6.0 MM      23      
+         7.0 Nougat  24    
+         7.1 Nougat  25
+         8.0 Oreo    26
+         9.0 Pie     27
+    -->
+    <uses-sdk android:minSdkVersion="23" />
+    <uses-feature android:name="android.hardware.usb.host"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEM" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".MainActivity" android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
