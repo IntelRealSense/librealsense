@@ -1006,7 +1006,7 @@ option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
 option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
-#option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
+option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)
 option(BUILD_CV_EXAMPLES "Build OpenCV examples" OFF)
 option(BUILD_PCL_EXAMPLES "Build PCL examples" OFF)
@@ -1036,11 +1036,6 @@ endif()
 if (BUILD_WITH_CUDA)
     add_definitions(-DRS2_USE_CUDA)
 endif()
-
-if (BUILD_MATLAB_BINDINGS)
-  add_subdirectory(wrappers/matlab)
-endif()
-
 
 # Check for unreferenced files
 FILE(GLOB_RECURSE AllSources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
