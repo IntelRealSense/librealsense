@@ -188,6 +188,7 @@ set(REALSENSE_CPP
     src/backend.cpp
     src/verify.c
     src/software-device.cpp
+    src/proc/processing-blocks-factory.cpp
     src/proc/align.cpp
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
@@ -332,6 +333,7 @@ set(REALSENSE_HPP
     src/sync.h
     src/sensor.h
     src/stream.h
+    src/proc/processing-blocks-factory.h
     src/proc/align.h
     src/proc/colorizer.h
     src/proc/pointcloud.h
@@ -617,6 +619,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Processing Blocks" FILES
+        src/proc/processing-blocks-factory.cpp
         src/proc/colorizer.cpp
         src/proc/synthetic-stream.cpp
         src/proc/align.cpp
@@ -631,6 +634,7 @@ if(WIN32)
         )
 	
 	source_group("Header Files\\Processing Blocks" FILES
+        src/proc/processing-blocks-factory.h
         src/proc/colorizer.h
         src/proc/align.h
         src/proc/pointcloud.h
