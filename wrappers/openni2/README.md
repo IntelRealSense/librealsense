@@ -20,12 +20,13 @@ Download [OpenNI2 SDK](https://structure.io/openni)
 Download [RealSense2 SDK](https://github.com/IntelRealSense/librealsense/releases)
 
 Run CMake on driver and configure SDK's:
-* OPENNI2_DIR
+* OPENNI2_DIR (For linux, the path may be "/usr/include/openni2")
 * REALSENSE2_DIR
 
 Generate project files and compile driver
 
-Copy rs2driver.dll and realsense2.dll to OPENNI2_DIR/Samples/Bin/OpenNI2/Drivers/
+For Windows, copy rs2driver.dll and realsense2.dll to OPENNI2_DIR/Samples/Bin/OpenNI2/Drivers/
+For Linux, copy librs2driver.so and librealsense2.so to OPENNI2_DIR/Samples/Bin/OpenNI2/Drivers/
 
 Launch any OpenNI2 example (SimpleRead SimpleViewer NiViewer) located at OPENNI2_DIR/Samples/Bin/
 
