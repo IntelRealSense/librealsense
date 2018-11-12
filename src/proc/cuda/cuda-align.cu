@@ -27,7 +27,7 @@ int calc_block_size(int pixel_count, int thread_count)
 __device__ void kernel_transfer_pixels(int2* mapped_pixels, const rs2_intrinsics* depth_intrin,
     const rs2_intrinsics* other_intrin, const rs2_extrinsics* depth_to_other, float depth_val, int depth_x, int depth_y, int block_index)
 {
-    auto shift = block_index ? 0.5 : -0.5;
+    float shift = block_index ? 0.5 : -0.5;
     auto depth_size = depth_intrin->width * depth_intrin->height;
     auto mapped_index = block_index * depth_size + (depth_y * depth_intrin->width + depth_x);
 

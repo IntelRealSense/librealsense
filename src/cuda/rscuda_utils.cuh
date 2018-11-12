@@ -12,8 +12,6 @@
 #pragma comment(lib, "cudart_static")
 #endif
 
-#define RS2_CUDA_THREADS_PER_BLOCK 32
-
 namespace rscuda
 {
     template<typename  T>
