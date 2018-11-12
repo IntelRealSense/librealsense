@@ -294,6 +294,7 @@ set(REALSENSE_HPP
     include/librealsense2/hpp/rs_sensor.hpp
     include/librealsense2/hpp/rs_internal.hpp
     include/librealsense2/hpp/rs_pipeline.hpp
+    include/librealsense2/hpp/rs_export.hpp
 
     include/librealsense2/rsutil.h
     include/librealsense2/rs_advanced_mode.h
@@ -514,6 +515,7 @@ if(WIN32)
         include/librealsense2/hpp/rs_internal.hpp
 
         include/librealsense2/rs_advanced_mode.hpp
+        include/librealsense2/rs_export.hpp
         )
 
     source_group("Header Files\\Recorder" FILES

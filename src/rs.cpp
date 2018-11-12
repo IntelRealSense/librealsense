@@ -1622,6 +1622,22 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc, context)
 
+bool rs2_processing_block_register_simple_option(rs2_processing_block* block, int option_id, float min, float max, float step, float def, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_LE(min, max);
+    VALIDATE_RANGE(def, min, max);
+    VALIDATE_LE(0, step);
+
+    if (block->options->supports_option(rs2_option(option_id))) return false;
+    std::shared_ptr<option> opt = std::make_shared<float_option>(option_range{ min, max, step, def });
+    // TODO: am I supposed to use the extensions API here?
+    auto options = dynamic_cast<options_container*>(block->options);
+    options->register_option(rs2_option(option_id), opt);
+    return true;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, block, option_id, min, max, step, def)
+
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::syncer_process_unit>();
