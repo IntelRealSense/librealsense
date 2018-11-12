@@ -18,7 +18,7 @@ namespace librealsense
                 if (elem.second.x == width && elem.second.y == height)
                     return elem.first;
             }
-            throw invalid_value_exception("resolution not found.");
+            return max_ds5_rect_resolutions;
         }
 
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height, uint32_t fps)
@@ -40,13 +40,8 @@ namespace librealsense
                 << intrinsics_string(res_960_540));
 
             auto resolution = width_height_to_ds5_rect_resolutions(width, width == 848 && height == 100 ? 480 : height);
-            rs2_intrinsics intrinsics;
-            intrinsics.width = resolutions_list[resolution].x;
-            intrinsics.height = resolutions_list[resolution].y;
-
-            try
+            if (resolution < max_ds5_rect_resolutions)
             {
-                auto resolution = width_height_to_ds5_rect_resolutions(width, width == 848 && height == 100 ? 480 : height);
                 rs2_intrinsics intrinsics;
                 intrinsics.width = resolutions_list[resolution].x;
                 intrinsics.height = resolutions_list[resolution].y;
@@ -75,7 +70,7 @@ namespace librealsense
 
                 return intrinsics;
             }
-            catch (...)
+            else
             {
                 ds5_rect_resolutions resolution = res_1920_1080;
                 rs2_intrinsics intrinsics;
