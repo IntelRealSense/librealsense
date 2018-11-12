@@ -13,6 +13,7 @@
 #include "hpp/rs_record_playback.hpp"
 #include "hpp/rs_sensor.hpp"
 #include "hpp/rs_pipeline.hpp"
+#include "hpp/rs_export.hpp"
 
 namespace rs2
 {

@@ -270,7 +270,14 @@ namespace rs2
 
         operator rs2_options*() const { return (rs2_options*)get(); }
         rs2_processing_block* get() const { return _block.get(); }
+        
     protected:
+        void register_simple_option(int option_id, option_range range) {
+            rs2_error * e = nullptr;
+            rs2_processing_block_register_simple_option(_block.get(), option_id,
+                    range.min, range.max, range.step, range.def, &e);
+            error::handle(e);
+        }
         std::shared_ptr<rs2_processing_block> _block;
     };
 
@@ -326,6 +333,13 @@ namespace rs2
     protected:
         frame_queue _queue;
     };
+
+/**
+* This macro can be used in the public portion of a custom processing block's declaration 
+* to name a custom option which will be exposed as a static member of the custom type.
+* the IDs are added after RS2_OPTION_COUNT to avoid colisions with library options.
+*/
+#define DECLARE_PB_OPTION(name, id) static const auto name = rs2_option(RS2_OPTION_COUNT + id)
 
     /**
     * Generating the 3D point cloud base on depth frame also create the mapped texture.

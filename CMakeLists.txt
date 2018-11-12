@@ -4,6 +4,8 @@ project(librealsense2 LANGUAGES CXX C)
 
 # include librealsense general configuration
 include(CMake/global_config.cmake)
+    include/librealsense2/hpp/rs_export.hpp
+        include/librealsense2/rs_export.hpp
 
 config_cxx_flags()
 

@@ -15,8 +15,13 @@ namespace rs2
     public:
         save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud())
             : processing_block([this](rs2::frame f, rs2::frame_source& s) { func(f, s); }),
-            _pc(std::move(pc)), fname(filename) {}
+            _pc(std::move(pc)), fname(filename)
+        {
+            register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
+        }
 
+
+        DECLARE_PB_OPTION(OPTION_IGNORE_COLOR, 1);
     private:
         void func(rs2::frame data, rs2::frame_source& source)
         {
@@ -38,7 +43,7 @@ namespace rs2
         }
 
         void export_to_ply(points p, video_frame color) {
-            auto profile = p.get_profile().as<video_stream_profile>();
+            const bool use_texcoords = color && get_option(OPTION_IGNORE_COLOR);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             std::vector<rs2::vertex> new_verts;
@@ -46,7 +51,7 @@ namespace rs2
             std::map<int, int> idx_map;
 
             new_verts.reserve(p.size());
-            if (color) new_tex.reserve(p.size());
+            if (use_texcoords) new_tex.reserve(p.size());
 
             static const auto min_distance = 1e-6;
 
@@ -56,7 +61,7 @@ namespace rs2
                 {
                     idx_map[i] = new_verts.size();
                     new_verts.push_back(verts[i]);
-                    if (color)
+                    if (use_texcoords)
                     {
                         auto rgb = get_texcolor(color, texcoords[i].u, texcoords[i].v);
                         new_tex.push_back(rgb);
@@ -64,8 +69,9 @@ namespace rs2
                 }
             }
 
-            static const auto threshold = 0.05f;
+            auto profile = p.get_profile().as<video_stream_profile>();
             auto width = profile.width(), height = profile.height();
+            static const auto threshold = 0.05f;
             std::vector<std::array<int, 3>> faces;
             for (int x = 0; x < width - 1; ++x) {
                 for (int y = 0; y < height - 1; ++y) {
@@ -77,8 +83,8 @@ namespace rs2
                         if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
                             idx_map.count(d) == 0)
                             continue;
-                        faces.emplace_back(idx_map[a], idx_map[b], idx_map[d]);
-                        faces.emplace_back(idx_map[d], idx_map[c], idx_map[a]);
+                        faces.push_back({ idx_map[a], idx_map[b], idx_map[d] });
+                        faces.push_back({ idx_map[d], idx_map[c], idx_map[a] });
                     }
                 }
             }
@@ -91,7 +97,7 @@ namespace rs2
             out << "property float" << sizeof(float) * 8 << " x\n";
             out << "property float" << sizeof(float) * 8 << " y\n";
             out << "property float" << sizeof(float) * 8 << " z\n";
-            if (color)
+            if (use_texcoords)
             {
                 out << "property uchar red\n";
                 out << "property uchar green\n";
@@ -110,25 +116,33 @@ namespace rs2
                 out.write(reinterpret_cast<const char*>(&(new_verts[i].y)), sizeof(float));
                 out.write(reinterpret_cast<const char*>(&(new_verts[i].z)), sizeof(float));
 
-                if (color)
+                if (use_texcoords)
                 {
-                    uint8_t x = [0], y = new_tex[i][1], z = new_tex[i][2];
-                    out.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&(new_tex[i][0])), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&(new_tex[i][1])), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&(new_tex[i][2])), sizeof(uint8_t));
                 }
             }
             auto size = faces.size();
             for (int i = 0; i < size; ++i) {
-                int three = 3;
+                static const int three = 3;
                 out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
+                out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
+                out.write(reinterpret_cast<const char*>(&(faces[i][1])), sizeof(int));
+                out.write(reinterpret_cast<const char*>(&(faces[i][2])), sizeof(int));
             }
         }
 
         // TODO: get_texcolor, options API
+        std::array<uint8_t, 3> get_texcolor(const video_frame& texture, float u, float v)
+        {
+            const int w = texture.get_width(), h = texture.get_height();
+            int x = std::min(std::max(int(u*w + .5f), 0), w - 1);
+            int y = std::min(std::max(int(v*h + .5f), 0), h - 1);
+            int idx = x * texture.get_bytes_per_pixel() + y * texture.get_stride_in_bytes();
+            const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
+            return { texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
+        }
 
         std::string fname;
         pointcloud _pc;
