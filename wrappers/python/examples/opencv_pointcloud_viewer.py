@@ -12,12 +12,14 @@ Usage:
 ------
 Mouse: 
     Drag with left button to rotate around pivot (thick small axes), 
-    with right button to translate.
+    with right button to translate and the wheel to zoom.
 
 Keyboard: 
     [p]     Pause
     [r]     Reset View
     [d]     Cycle through decimation values
+    [z]     Toggle point scaling
+    [c]     Toggle color source
     [s]     Save PNG (./out.png)
     [e]     Export points to ply (./out.ply)
     [q\ESC] Quit
@@ -34,13 +36,15 @@ class AppState:
 
     def __init__(self, *args, **kwargs):
         self.WIN_NAME = 'RealSense'
-        self.pitch, self.yaw = 0, 0
+        self.pitch, self.yaw = math.radians(-10), math.radians(-15)
         self.translation = np.array([0, 0, -1], dtype=np.float32)
         self.distance = 2
         self.prev_mouse = 0, 0
-        self.mouse_btns = [False, False]
+        self.mouse_btns = [False, False, False]
         self.paused = False
         self.decimate = 1
+        self.scale = True
+        self.color = True
 
     def reset(self):
         self.pitch, self.yaw, self.distance = 0, 0, 2
@@ -95,18 +99,29 @@ def mouse_cb(event, x, y, flags, param):
     if event == cv2.EVENT_RBUTTONUP:
         state.mouse_btns[1] = False
 
+    if event == cv2.EVENT_MBUTTONDOWN:
+        state.mouse_btns[2] = True
+
+    if event == cv2.EVENT_MBUTTONUP:
+        state.mouse_btns[2] = False
+
     if event == cv2.EVENT_MOUSEMOVE:
 
-        (_, _, w, h) = cv2.getWindowImageRect(state.WIN_NAME)
+        h, w = out.shape[:2]
         dx, dy = x - state.prev_mouse[0], y - state.prev_mouse[1]
 
         if state.mouse_btns[0]:
-            state.yaw += dx / w * 2
-            state.pitch -= dy / h * 2
+            state.yaw += float(dx) / w * 2
+            state.pitch -= float(dy) / h * 2
 
         elif state.mouse_btns[1]:
             dp = np.array((dx / w, dy / h, 0), dtype=np.float32)
             state.translation -= np.dot(state.rotation, dp)
+
+        elif state.mouse_btns[2]:
+            dz = math.sqrt(dx**2 + dy**2) * math.copysign(0.01, -dy)
+            state.translation[2] += dz
+            state.distance -= dz
 
     if event == cv2.EVENT_MOUSEWHEEL:
         dz = math.copysign(0.1, flags)
@@ -116,16 +131,21 @@ def mouse_cb(event, x, y, flags, param):
     state.prev_mouse = (x, y)
 
 
-cv2.namedWindow(state.WIN_NAME, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+cv2.namedWindow(state.WIN_NAME, cv2.WINDOW_AUTOSIZE)
 cv2.resizeWindow(state.WIN_NAME, w, h)
 cv2.setMouseCallback(state.WIN_NAME, mouse_cb)
 
 
-def project(v, fx, fy, ppx, ppy):
+def project(v):
     """project 3d vector array to 2d"""
+    h, w = out.shape[:2]
+    view_aspect = float(h)/w
+
     # ignore divide by zero for invalid depth
     with np.errstate(divide='ignore', invalid='ignore'):
-        proj = v[:, :-1] / v[:, -1, np.newaxis] * (fx, fy) + (ppx, ppy)
+        proj = v[:, :-1] / v[:, -1, np.newaxis] * \
+            (w*view_aspect, h) + (w/2.0, h/2.0)
+
     # near clipping
     znear = 0.03
     proj[v[:, 2] < znear] = np.nan
@@ -139,9 +159,8 @@ def view(v):
 
 def line3d(out, pt1, pt2, color=(0x80, 0x80, 0x80), thickness=1):
     """draw a 3d line from pt1 to pt2"""
-    c = out.shape[1], out.shape[0], out.shape[1]/2.0, out.shape[0]/2.0
-    p0 = project(pt1.reshape(-1, 3), *c)[0]
-    p1 = project(pt2.reshape(-1, 3), *c)[0]
+    p0 = project(pt1.reshape(-1, 3))[0]
+    p1 = project(pt2.reshape(-1, 3))[0]
     if np.isnan(p0).any() or np.isnan(p1).any():
         return
     p0 = tuple(p0.astype(int))
@@ -152,18 +171,19 @@ def line3d(out, pt1, pt2, color=(0x80, 0x80, 0x80), thickness=1):
         cv2.line(out, p0, p1, color, thickness, cv2.LINE_AA)
 
 
-def grid(out, pos, size=1, n=10, color=(0x80, 0x80, 0x80)):
+def grid(out, pos, rotation=np.eye(3), size=1, n=10, color=(0x80, 0x80, 0x80)):
     """draw a grid on xz plane"""
     pos = np.array(pos)
     s = size / float(n)
+    s2 = 0.5 * size
     for i in range(0, n+1):
-        x = -0.5*size + i*s
-        line3d(out, view(pos + (x, 0, -0.5*size)),
-               view(pos + (x, 0, 0.5*size)), color)
+        x = -s2 + i*s
+        line3d(out, view(pos + np.dot((x, 0, -s2), rotation)),
+               view(pos + np.dot((x, 0, s2), rotation)), color)
     for i in range(0, n+1):
-        z = -0.5*size + i*s
-        line3d(out, view(pos + (-0.5*size, 0, z)),
-               view(pos + (0.5*size, 0, z)), color)
+        z = -s2 + i*s
+        line3d(out, view(pos + np.dot((-s2, 0, z), rotation)),
+               view(pos + np.dot((s2, 0, z), rotation)), color)
 
 
 def axes(out, pos, rotation=np.eye(3), size=0.075, thickness=2):
@@ -176,48 +196,53 @@ def axes(out, pos, rotation=np.eye(3), size=0.075, thickness=2):
            np.dot((size, 0, 0), rotation), (0, 0, 0xff), thickness)
 
 
-def frustum(out, color=(0x40, 0x40, 0x40)):
+def frustum(out, intrinsics, color=(0x40, 0x40, 0x40)):
     """draw camera's frustum"""
-    a = math.atan2(depth_intrinsics.fy, depth_intrinsics.fx)
-    fx = 0.5*depth_intrinsics.fx / depth_intrinsics.width
-    D = 4  # distance
+    orig = view([0, 0, 0])
+    w, h = intrinsics.width, intrinsics.height
 
-    line3d(out, view([0, 0, 0]), view([D*fx, a*D*fx, D]), color)
-    line3d(out, view([0, 0, 0]), view([-D*fx, a*D*fx, D]), color)
-    line3d(out, view([0, 0, 0]), view([-D*fx, a*-D*fx, D]), color)
-    line3d(out, view([0, 0, 0]), view([D*fx, a*-D*fx, D]), color)
+    for d in range(1, 6, 2):
+        def get_point(x, y):
+            p = rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], d)
+            line3d(out, orig, view(p), color)
+            return p
 
-    n = 3
-    for i in range(n):
-        d = D * (i + 1) / n
-        dfx = d * fx
-        line3d(out, view([-dfx, a*dfx, d]), view([dfx, a*dfx, d]), color)
-        line3d(out, view([dfx, a*dfx, d]), view([dfx, -a*dfx, d]), color)
-        line3d(out, view([dfx, -a*dfx, d]), view([-dfx, -a*dfx, d]), color)
-        line3d(out, view([-dfx, -a*dfx, d]), view([-dfx, a*dfx, d]), color)
+        top_left = get_point(0, 0)
+        top_right = get_point(w, 0)
+        bottom_right = get_point(w, h)
+        bottom_left = get_point(0, h)
+
+        line3d(out, view(top_left), view(top_right), color)
+        line3d(out, view(top_right), view(bottom_right), color)
+        line3d(out, view(bottom_right), view(bottom_left), color)
+        line3d(out, view(bottom_left), view(top_left), color)
 
 
 def pointcloud(out, verts, texcoords, color, painter=True):
     """draw point cloud with optional painter's algorithm"""
-
-    c = depth_intrinsics.fx, depth_intrinsics.fy, depth_intrinsics.ppx, depth_intrinsics.ppy
-    w, h = depth_intrinsics.width, depth_intrinsics.height
-
     if painter:
         # Painter's algo, sort points from back to front
 
-        # get reverse sorted indices by z
+        # get reverse sorted indices by z (in view-space)
         # https://gist.github.com/stevenvo/e3dad127598842459b68
-        s = verts[:, 2].argsort()[::-1]
-
-        proj = project(view(verts[s]), *c)
+        v = view(verts)
+        s = v[:, 2].argsort()[::-1]
+        proj = project(v[s])
     else:
-        proj = project(view(verts), *c)
+        proj = project(view(verts))
 
-    # proj now contains 2d image coordinates, clip them to image size
+    if state.scale:
+        proj *= 0.5**state.decimate
+
+    h, w = out.shape[:2]
+
+    # proj now contains 2d image coordinates
     j, i = proj.astype(np.uint32).T
-    np.clip(i, 0, h-1, out=i)
-    np.clip(j, 0, w-1, out=j)
+
+    # create a mask to ignore out-of-bound indices
+    im = (i >= 0) & (i < h)
+    jm = (j >= 0) & (j < w)
+    m = im & jm
 
     cw, ch = color.shape[:2][::-1]
     if painter:
@@ -227,11 +252,13 @@ def pointcloud(out, verts, texcoords, color, painter=True):
         v, u = (texcoords[s] * (cw, ch) + 0.5).astype(np.uint32).T
     else:
         v, u = (texcoords * (cw, ch) + 0.5).astype(np.uint32).T
+    # clip texcoords to image
     np.clip(u, 0, ch-1, out=u)
     np.clip(v, 0, cw-1, out=v)
 
     # perform uv-mapping
-    out[i, j] = color[u, v]
+    out[i[m], j[m]] = color[u[m], v[m]]
+
 
 out = np.empty((h, w, 3), dtype=np.uint8)
 
@@ -257,16 +284,18 @@ while True:
         depth_colormap = np.asanyarray(
             colorizer.colorize(depth_frame).get_data())
 
-        # mapped_frame, color_source = depth_frame, depth_colormap
-        mapped_frame, color_source = color_frame, color_image
+        if state.color:
+            mapped_frame, color_source = color_frame, color_image
+        else:
+            mapped_frame, color_source = depth_frame, depth_colormap
 
         points = pc.calculate(depth_frame)
         pc.map_to(mapped_frame)
 
         # Pointcloud data to arrays
         v, t = points.get_vertices(), points.get_texture_coordinates()
-        verts = np.asanyarray(v).view(np.float32).reshape(-1, 3) # xyz
-        texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2) # uv
+        verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+        texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
     # Render
     now = time.time()
@@ -274,19 +303,20 @@ while True:
     out.fill(0)
 
     grid(out, (0, 0.5, 1), size=1, n=10)
-    frustum(out)
+    frustum(out, depth_intrinsics)
     axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
 
-    if out.shape[:2] == (h, w):
+    if not state.scale or out.shape[:2] == (h, w):
         pointcloud(out, verts, texcoords, color_source)
     else:
         tmp = np.zeros((h, w, 3), dtype=np.uint8)
         pointcloud(tmp, verts, texcoords, color_source)
         tmp = cv2.resize(
             tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-        np.putmask(out, tmp>0, tmp)
+        np.putmask(out, tmp > 0, tmp)
 
-    axes(out, view(state.pivot.copy()), state.rotation, thickness=4)
+    if any(state.mouse_btns):
+        axes(out, view(state.pivot), state.rotation, thickness=4)
 
     dt = time.time() - now
 
@@ -306,6 +336,12 @@ while True:
     if key == ord("d"):
         state.decimate = (state.decimate + 1) % 3
         decimate.set_option(rs.option.filter_magnitude, 2 ** state.decimate)
+
+    if key == ord("z"):
+        state.scale ^= True
+
+    if key == ord("c"):
+        state.color ^= True
 
     if key == ord("s"):
         cv2.imwrite('./out.png', out)
