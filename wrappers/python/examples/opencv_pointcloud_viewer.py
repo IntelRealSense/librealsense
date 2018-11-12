@@ -6,7 +6,7 @@ OpenCV and Numpy Point cloud Software Renderer
 
 This sample is mostly for demonstration and educational purposes.
 It really doesn't offer the quality or performance that can be
-acheived with hardware acceleration.
+achieved with hardware acceleration.
 
 Usage:
 ------
