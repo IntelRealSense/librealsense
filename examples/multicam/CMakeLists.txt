@@ -20,16 +20,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-multicam rs-multicam.cpp ../example.hpp)
     include_directories(rs-multicam ../)
     target_link_libraries(rs-multicam ${DEPENDENCIES})
-    set_target_properties (rs-multicam PROPERTIES
-        FOLDER Examples
-    )
-
-    install(
-        TARGETS
-
-        rs-multicam
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    set_target_properties (rs-multicam PROPERTIES FOLDER Examples)
+    install(TARGETS rs-multicam RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

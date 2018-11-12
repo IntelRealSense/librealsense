@@ -72,6 +72,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         rs-rosbag-inspector
 
         RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
+        ${CMAKE_INSTALL_BINDIR}
     )
 endif()

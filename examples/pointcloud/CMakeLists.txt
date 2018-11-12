@@ -10,7 +10,6 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
@@ -21,16 +20,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-pointcloud rs-pointcloud.cpp ../example.hpp)
     target_link_libraries(rs-pointcloud ${DEPENDENCIES})
     include_directories(rs-pointcloud ../)
-    set_target_properties (rs-pointcloud PROPERTIES
-        FOLDER Examples
-    )
-
-    install(
-        TARGETS
-
-        rs-pointcloud
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    set_target_properties (rs-pointcloud PROPERTIES FOLDER Examples)
+    install(TARGETS rs-pointcloud RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
