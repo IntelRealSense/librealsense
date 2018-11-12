@@ -188,6 +188,7 @@ set(REALSENSE_CPP
     src/backend.cpp
     src/verify.c
     src/software-device.cpp
+    src/proc/processing-blocks-factory.cpp
     src/proc/align.cpp
     src/proc/colorizer.cpp
     src/proc/pointcloud.cpp
@@ -199,6 +200,9 @@ set(REALSENSE_CPP
     src/proc/temporal-filter.cpp
     src/proc/hole-filling-filter.cpp
     src/proc/disparity-transform.cpp
+
+    src/proc/sse/sse-align.cpp
+
     src/source.cpp
     src/ds5/ds5-options.cpp
     src/ds5/ds5-timestamp.cpp
@@ -262,11 +266,15 @@ if (BUILD_WITH_CUDA)
     set(REALSENSE_CU
         src/cuda/cuda-conversion.cu
         src/cuda/cuda-pointcloud.cu
+        src/proc/cuda/cuda-align.cu
         )
 
     set(REALSENSE_CUH
+        src/cuda/rscuda_utils.cuh
         src/cuda/cuda-conversion.cuh
         src/cuda/cuda-pointcloud.cuh
+        src/proc/cuda/cuda-align.cuh
+        src/proc/cuda/cuda-align.h
         )
 endif()
 
@@ -325,6 +333,7 @@ set(REALSENSE_HPP
     src/sync.h
     src/sensor.h
     src/stream.h
+    src/proc/processing-blocks-factory.h
     src/proc/align.h
     src/proc/colorizer.h
     src/proc/pointcloud.h
@@ -336,6 +345,9 @@ set(REALSENSE_HPP
     src/proc/hole-filling-filter.h
     src/proc/syncer-processing-block.h
     src/proc/disparity-transform.h
+
+    src/proc/sse/sse-align.h
+
     src/algo.h
     src/option.h
     src/metadata.h
@@ -610,6 +622,7 @@ if(WIN32)
         )
 
     source_group("Source Files\\Processing Blocks" FILES
+        src/proc/processing-blocks-factory.cpp
         src/proc/colorizer.cpp
         src/proc/synthetic-stream.cpp
         src/proc/align.cpp
@@ -624,6 +637,7 @@ if(WIN32)
         )
 
     source_group("Header Files\\Processing Blocks" FILES
+        src/proc/processing-blocks-factory.h
         src/proc/colorizer.h
         src/proc/align.h
         src/proc/pointcloud.h
@@ -637,6 +651,24 @@ if(WIN32)
         src/proc/hole-filling-filter.h
         )
 
+    source_group("Source Files\\Processing Blocks\\sse" FILES
+        src/proc/sse/sse-align.cpp
+    )
+
+    source_group("Header Files\\Processing Blocks\\sse" FILES
+        src/proc/sse/sse-align.h
+    )
+
+if (BUILD_WITH_CUDA)
+    source_group("Source Files\\Processing Blocks\\cuda" FILES
+        src/proc/cuda/cuda-align.cu
+    )
+
+    source_group("Header Files\\Processing Blocks\\cuda" FILES
+        src/proc/cuda/cuda-align.cuh
+        src/proc/cuda/cuda-align.h
+    )
+endif()
     if(BUILD_WITH_STATIC_CRT)
         foreach(flag_var
                 CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -683,21 +715,21 @@ if(FORCE_WINUSB_UVC)
     set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
 #
     list(APPEND REALSENSE_CPP
-		src/win7/winusb_uvc/winusb_uvc.cpp
+        src/win7/winusb_uvc/winusb_uvc.cpp
     )
 #
     list(APPEND REALSENSE_HPP
-		src/libuvc/utlist.h
-		src/win7/winusb_uvc/winusb_uvc.h
+        src/libuvc/utlist.h
+        src/win7/winusb_uvc/winusb_uvc.h
     )
 #
-	source_group("Source Files\\WinUsbUvc" FILES
-		src/win7/winusb_uvc/winusb_uvc.cpp
+    source_group("Source Files\\WinUsbUvc" FILES
+        src/win7/winusb_uvc/winusb_uvc.cpp
     )
 #
     source_group("Header Files\\WinUsbUvc" FILES
-		src/libuvc/utlist.h
-		src/win7/winusb_uvc/winusb_uvc.h
+        src/libuvc/utlist.h
+        src/win7/winusb_uvc/winusb_uvc.h
     )
 #
 #    message( WARNING "Using winusb_uvc!" )
