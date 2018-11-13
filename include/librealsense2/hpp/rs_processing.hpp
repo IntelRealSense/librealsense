@@ -201,7 +201,7 @@ namespace rs2
     /**
     * Define the processing block flow, inherit this class to generate your own processing_block. Best understanding is to refer to the viewer class in examples.hpp
     */
-    class processing_block : public process_interface, public options
+    class processing_block_base : public process_interface, public options
     {
     public:
         /**
@@ -243,6 +243,44 @@ namespace rs2
             error::handle(e);
         }
         /**
+        * constructor with already created low level processing block assigned.
+        *
+        * \param[in] block - low level rs2_processing_block created before.
+        */
+        processing_block_base(std::shared_ptr<rs2_processing_block> block)
+            : _block(block), options((rs2_options*)block.get())
+        {
+        }
+
+        /**
+        * constructor with callback function on_frame in rs2_frame_processor_callback structure assigned.
+        *
+        * \param[in] processing_function - function pointer of on_frame function in rs2_frame_processor_callback structure, which will be called back by invoke function .
+        */
+        template<class S>
+        processing_block_base(S processing_function)
+        {
+            rs2_error* e = nullptr;
+            _block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_processing_block(new frame_processor_callback<S>(processing_function), &e),
+                rs2_delete_processing_block);
+            options::operator=(_block);
+            error::handle(e);
+        }
+
+        operator rs2_options*() const { return (rs2_options*)get(); }
+        rs2_processing_block* get() const override { return _block.get(); }
+    protected:
+        std::shared_ptr<rs2_processing_block> _block;
+    };
+
+    /**
+    * Define the processing block flow, inherit this class to generate your own processing_block. Best understanding is to refer to the viewer class in examples.hpp
+    */
+    class processing_block : public processing_block_base, public synced_process_interface
+    {
+    public:
+        /**
         * Ask processing block to process the frame and poll the processed frame from internal queue
         *
         * \param[in] on_frame      frame to be processed.
@@ -256,14 +294,17 @@ namespace rs2
                 throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
             return f;
         }
+
         /**
         * constructor with already created low level processing block assigned.
         *
         * \param[in] block - low level rs2_processing_block created before.
         */
-        processing_block(std::shared_ptr<rs2_processing_block> block)
-            : _block(block), options((rs2_options*)block.get())
+        processing_block(std::shared_ptr<rs2_processing_block> block, int queue_size = 1)
+            : processing_block_base(block),
+            _queue(queue_size)
         {
+            start(_queue);
         }
 
         /**
@@ -272,27 +313,17 @@ namespace rs2
         * \param[in] processing_function - function pointer of on_frame function in rs2_frame_processor_callback structure, which will be called back by invoke function .
         */
         template<class S>
-        processing_block(S processing_function)
-        {
-            rs2_error* e = nullptr;
-            _block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_processing_block(new frame_processor_callback<S>(processing_function), &e),
-                rs2_delete_processing_block);
-            options::operator=(_block);
-            error::handle(e);
-        }
-
-        frame_queue get_queue() { return _queue; }
-        operator rs2_options*() const { return (rs2_options*)get(); }
-        rs2_processing_block* get() const override { return _block.get(); }
-    protected:
-        processing_block(std::shared_ptr<rs2_processing_block> block, int queue_size)
-            : _block(block), _queue(queue_size), options((rs2_options*)block.get())
+        processing_block(S processing_function, int queue_size = 1) :
+            processing_block_base(processing_function),
+            _queue(queue_size)
         {
             start(_queue);
         }
 
-        std::shared_ptr<rs2_processing_block> _block;
+        frame_queue get_queue() { return _queue; }
+        rs2_processing_block* get() const override { return _block.get(); }
+
+    protected:
         frame_queue _queue;
     };
 
@@ -354,13 +385,13 @@ namespace rs2
         }
     };
 
-    class asynchronous_syncer : public processing_block
+    class asynchronous_syncer : public processing_block_base
     {
     public:
         /**
         * Real asynchronous syncer within syncer class
         */
-        asynchronous_syncer() : processing_block(init(), 1) {}
+        asynchronous_syncer() : processing_block_base(init()) {}
 
     private:
         std::shared_ptr<rs2_processing_block> init()

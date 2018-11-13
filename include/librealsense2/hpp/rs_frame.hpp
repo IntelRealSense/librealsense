@@ -11,7 +11,7 @@ namespace rs2
     class frame_source;
     class frame_queue;
     class syncer;
-    class processing_block;
+    class processing_block_base;
     class pointcloud;
     class sensor;
     class frame;
@@ -288,9 +288,16 @@ namespace rs2
     class process_interface
     {
     public:
-        virtual rs2::frame process(rs2::frame frame) const = 0;
         virtual rs2_processing_block* get() const = 0;
         virtual ~process_interface() = default;
+    };
+
+    class synced_process_interface
+    {
+    public:
+        virtual rs2::frame process(rs2::frame frame) const = 0;
+        virtual rs2_processing_block* get() const = 0;
+        virtual ~synced_process_interface() = default;
     };
 
     class frame
@@ -506,7 +513,7 @@ namespace rs2
         rs2_frame* get() const { return frame_ref; }
         explicit operator rs2_frame*() { return frame_ref; }
 
-        frame apply_filter(process_interface& processing_block)
+        frame apply_filter(synced_process_interface& processing_block)
         {
             return processing_block.process(*this);
         }
@@ -537,7 +544,7 @@ namespace rs2
         friend class rs2::frame_source;
         friend class rs2::frame_queue;
         friend class rs2::syncer;
-        friend class rs2::processing_block;
+        friend class rs2::processing_block_base;
         friend class rs2::pointcloud;
         friend class rs2::points;
 
