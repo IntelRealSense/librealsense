@@ -6024,7 +6024,7 @@ namespace rs2
                             if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
-                                if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
+                                if (dev.is<advanced_mode>() && (opt == RS2_OPTION_VISUAL_PRESET || opt == RS2_OPTION_EMITTER_ON_AND_OFF_ENABLED))
                                     continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {
