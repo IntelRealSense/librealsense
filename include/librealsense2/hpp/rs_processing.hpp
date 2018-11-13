@@ -201,7 +201,7 @@ namespace rs2
     /**
     * Define the processing block flow, inherit this class to generate your own processing_block. Best understanding is to refer to the viewer class in examples.hpp
     */
-    class processing_block_base : public process_interface, public options
+    class processing_block_base : public options
     {
     public:
         /**
@@ -269,7 +269,7 @@ namespace rs2
         }
 
         operator rs2_options*() const { return (rs2_options*)get(); }
-        rs2_processing_block* get() const override { return _block.get(); }
+        rs2_processing_block* get() const { return _block.get(); }
     protected:
         std::shared_ptr<rs2_processing_block> _block;
     };
@@ -277,7 +277,7 @@ namespace rs2
     /**
     * Define the processing block flow, inherit this class to generate your own processing_block. Best understanding is to refer to the viewer class in examples.hpp
     */
-    class processing_block : public processing_block_base, public synced_process_interface
+    class processing_block : public processing_block_base, public process_interface
     {
     public:
         /**

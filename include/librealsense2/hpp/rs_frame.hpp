@@ -288,16 +288,9 @@ namespace rs2
     class process_interface
     {
     public:
-        virtual rs2_processing_block* get() const = 0;
-        virtual ~process_interface() = default;
-    };
-
-    class synced_process_interface
-    {
-    public:
         virtual rs2::frame process(rs2::frame frame) const = 0;
         virtual rs2_processing_block* get() const = 0;
-        virtual ~synced_process_interface() = default;
+        virtual ~process_interface() = default;
     };
 
     class frame
@@ -513,7 +506,7 @@ namespace rs2
         rs2_frame* get() const { return frame_ref; }
         explicit operator rs2_frame*() { return frame_ref; }
 
-        frame apply_filter(synced_process_interface& processing_block)
+        frame apply_filter(process_interface& processing_block)
         {
             return processing_block.process(*this);
         }
