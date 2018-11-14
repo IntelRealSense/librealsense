@@ -1622,7 +1622,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc, context)
 
-bool rs2_processing_block_register_simple_option(rs2_processing_block* block, int option_id, float min, float max, float step, float def, rs2_error** error) BEGIN_API_CALL
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, int option_id, float min, float max, float step, float def, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(block);
     VALIDATE_LE(min, max);

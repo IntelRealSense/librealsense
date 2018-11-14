@@ -118,7 +118,7 @@ namespace librealsense
         void set(float value) override
         {
             T val = static_cast<T>(value);
-            if (!std::isnormal<long double>(_step) && _step != 0)
+            if (!std::isnormal(static_cast<ty>(_step)) && _step != 0)
                 throw invalid_value_exception(to_string() << "set(...) failed! step is not properly defined. (" << _step << ")");
 
             if ((val < _min) || (val > _max))
@@ -126,7 +126,7 @@ namespace librealsense
 
             if (_step != 0) {
                 auto n = (val - _min) / _step;
-                if (std::fabs(std::fmod(n, 1)) >= limits::min()) {
+                if (std::fabs(std::fmod(n, 1)) >= std::numeric_limits<ty>::min()) {
                     throw invalid_value_exception(to_string() << "Given value" << val << "isn't a valid step!");
                 }
             }
@@ -177,8 +177,8 @@ namespace librealsense
 
         // Makes sure that we check the numeric limits of the type std::fabs will return.
         // while std::numeric_limits<typename std::result_of<std::fabs(T)>::type> should be simpler, MSVC errors on it.
-        using limits = std::numeric_limits<typename std::conditional<std::is_same<T, long double>::value, long double,
-                            typename std::conditional<std::is_same<T, float>::value, float, double>::type>::type>;
+        using ty = typename std::conditional<std::is_same<T, long double>::value, long double,
+                            typename std::conditional<std::is_same<T, float>::value, float, double>::type>::type;
     };
 
     class float_option : public option_base
