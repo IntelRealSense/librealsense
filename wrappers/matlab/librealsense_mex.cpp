@@ -1100,6 +1100,26 @@ void make_factory(){
         factory->record(hole_filling_filter_factory);
     }
 
+    // rs_export.hpp
+    {
+        ClassFactory save_to_ply_factory("rs2::save_to_ply");
+        save_to_ply_factory.record("new", 1, 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::save_to_ply());
+            }
+            else if (inc == 1) {
+                auto filename = MatlabParamParser::parse<std::string>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::save_to_ply(filename));
+            }
+            else if (inc == 2) {
+                auto filename = MatlabParamParser::parse<std::string>(inv[0]);
+                auto pc = MatlabParamParser::parse<rs2::pointcloud>(inc[1]);
+                outv[0] = MatlabParamParser::wrap(rs2::save_to_ply(filename, pc));
+            }
+        }
+    }
+
     // rs_context.hpp
     // rs2::event_information                                           [?]
     {
