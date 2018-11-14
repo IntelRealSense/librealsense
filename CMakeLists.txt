@@ -25,6 +25,9 @@ else()
     add_library(${LRS_TARGET} STATIC "")
 endif()
 
+# set library version
+set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION ${REALSENSE_VERSION_MAJOR})
+
 # Checking Internet connection, as TM2 needs to download the FW from amazon cloud
 if(BUILD_WITH_TM2)
     include(CMake/tm2_connectivity_check.cmake)
