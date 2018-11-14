@@ -6,6 +6,7 @@
 
 #include <map>
 #include <fstream>
+#include <cmath>
 #include "rs_processing.hpp"
 
 namespace rs2
