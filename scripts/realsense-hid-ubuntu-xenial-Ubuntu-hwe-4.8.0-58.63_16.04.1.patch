@@ -1,5 +1,6 @@
 From 5ef00171f95a150a912f1d14645bcae25df203c9 Mon Sep 17 00:00:00 2001
 From: Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
 Date: Tue, 13 Feb 2018 12:06:44 +0200
 Subject: [PATCH] Adding missing HID timestamp patch for Gyro sensor.
 	A symmetric patch for Accelerator was already upstreamed,
@@ -9,13 +10,13 @@ Subject: [PATCH] Adding missing HID timestamp patch for Gyro sensor.
 	of the target kernel version
 
 ---
- drivers/iio/accel/hid-sensor-accel-3d.c |  30 +++-
- drivers/iio/gyro/hid-sensor-gyro-3d.c   |  28 +++-
- include/linux/hid-sensor-ids.h          |   1 +
- 3 file changed, 59 insertions(+), 0 deletions(-)
+ drivers/iio/accel/hid-sensor-accel-3d.c | 30 ++++++++++++++++++++++--------
+ drivers/iio/gyro/hid-sensor-gyro-3d.c   | 28 +++++++++++++++++++++-------
+ include/linux/hid-sensor-ids.h          |  1 +
+ 3 files changed, 44 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
-index ab1e238..5de9718 100644
+index ab1e238..15b55a3 100644
 --- a/drivers/iio/accel/hid-sensor-accel-3d.c
 +++ b/drivers/iio/accel/hid-sensor-accel-3d.c
 @@ -42,11 +42,13 @@ struct accel_3d_state {
@@ -83,15 +84,15 @@ index ab1e238..5de9718 100644
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
-+	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		accel_state->timestamp = *(int64_t *)raw_data;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP: // usec->nsec
++		accel_state->timestamp = (*(int64_t *)raw_data)*1000;
 +		ret = 0;
 +	break;
  	default:
  		break;
  	}
 diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index c67ce2a..7ff0dfe 100644
+index c67ce2a..859cdde 100644
 --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
 +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
 @@ -42,11 +42,13 @@ struct gyro_3d_state {
@@ -158,8 +159,8 @@ index c67ce2a..7ff0dfe 100644
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
-+	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		gyro_state->timestamp = *(int64_t *)raw_data;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP:	// usec->nsec
++		gyro_state->timestamp = (*(int64_t *)raw_data)*1000;
 +		ret = 0;
 +	break;
  	default:
