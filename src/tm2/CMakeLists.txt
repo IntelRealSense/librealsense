@@ -1,0 +1,11 @@
+target_sources(${LRS_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/tm-context.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-info.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-conversions.h"
+        "${CMAKE_CURRENT_LIST_DIR}/controller_event_serializer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-context.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-device.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/tm-info.cpp"
+)

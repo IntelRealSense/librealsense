@@ -19,16 +19,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-measure rs-measure.cpp ../example.hpp)
     target_link_libraries(rs-measure ${DEPENDENCIES})
     include_directories(rs-measure ../)
-    set_target_properties (rs-measure PROPERTIES
-        FOLDER "Examples"
-    )
+    set_target_properties (rs-measure PROPERTIES FOLDER "Examples")
 
-    install(
-        TARGETS
-
-        rs-measure
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    install(TARGETS rs-measure RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

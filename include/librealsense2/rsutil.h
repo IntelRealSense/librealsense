@@ -14,14 +14,6 @@
 #include <stdint.h>
 #include <math.h>
 
-#ifdef RS2_USE_CUDA
-   // CUDA headers
-#include <cuda_runtime.h>
-#endif
-
-#ifdef RS2_USE_CUDA
-__device__
-#endif
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics * intrin, const float point[3])
 {
@@ -53,9 +45,6 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
     pixel[1] = y * intrin->fy + intrin->ppy;
 }
 
-#ifdef RS2_USE_CUDA
-__device__
-#endif
 /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
 static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics * intrin, const float pixel[2], float depth)
 {
@@ -79,9 +68,6 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
     point[2] = depth;
 }
 
-#ifdef RS2_USE_CUDA
-__device__
-#endif
 /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
 static void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics * extrin, const float from_point[3])
 {
@@ -126,9 +112,6 @@ static void adjust_2D_point_to_boundary(float p[2], int width, int height)
     if (p[1] > height) p[1] = height;
 }
 
-#ifdef RS2_USE_CUDA
-__device__
-#endif
 /* Find projected pixel with unknown depth search along line. */
 static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const uint16_t* data, float depth_scale,

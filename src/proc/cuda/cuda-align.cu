@@ -27,7 +27,7 @@ int calc_block_size(int pixel_count, int thread_count)
 __device__ void kernel_transfer_pixels(int2* mapped_pixels, const rs2_intrinsics* depth_intrin,
     const rs2_intrinsics* other_intrin, const rs2_extrinsics* depth_to_other, float depth_val, int depth_x, int depth_y, int block_index)
 {
-    auto shift = block_index ? 0.5 : -0.5;
+    float shift = block_index ? 0.5 : -0.5;
     auto depth_size = depth_intrin->width * depth_intrin->height;
     auto mapped_index = block_index * depth_size + (depth_y * depth_intrin->width + depth_x);
 
@@ -43,9 +43,9 @@ __device__ void kernel_transfer_pixels(int2* mapped_pixels, const rs2_intrinsics
 
     //// Map the top-left corner of the depth pixel onto the other image
     float depth_pixel[2] = { depth_x + shift, depth_y + shift }, depth_point[3], other_point[3], other_pixel[2];
-    rs2_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, depth_val);
-    rs2_transform_point_to_point(other_point, depth_to_other, depth_point);
-    rs2_project_point_to_pixel(other_pixel, other_intrin, other_point);
+    rscuda::rs2_deproject_pixel_to_point(depth_point, depth_intrin, depth_pixel, depth_val);
+    rscuda::rs2_transform_point_to_point(other_point, depth_to_other, depth_point);
+    rscuda::rs2_project_point_to_pixel(other_pixel, other_intrin, other_point);
     mapped_pixels[mapped_index].x = static_cast<int>(other_pixel[0] + 0.5f);
     mapped_pixels[mapped_index].y = static_cast<int>(other_pixel[1] + 0.5f);
 }
@@ -207,20 +207,20 @@ void align_cuda_helper::align_depth_to_other(unsigned char* h_aligned_out, const
     cudaMemset(_d_aligned_out.get(), 0xff, aligned_byte_size);
 
     if (!_d_pixel_map) _d_pixel_map = alloc_dev<int2>(depth_pixel_count * 2);
-    
+
     // config threads
     dim3 threads(RS2_CUDA_THREADS_PER_BLOCK, RS2_CUDA_THREADS_PER_BLOCK);
     dim3 depth_blocks(calc_block_size(h_depth_intrin.width, threads.x), calc_block_size(h_depth_intrin.height, threads.y));
     dim3 other_blocks(calc_block_size(h_other_intrin.width, threads.x), calc_block_size(h_other_intrin.height, threads.y));
     dim3 mapping_blocks(depth_blocks.x, depth_blocks.y, 2);
 
-    kernel_map_depth_to_other <<<mapping_blocks, threads>>> (_d_pixel_map.get(), _d_depth_in.get(), _d_depth_intrinsics.get(),
+    kernel_map_depth_to_other <<<mapping_blocks,threads>>> (_d_pixel_map.get(), _d_depth_in.get(), _d_depth_intrinsics.get(),
         _d_other_intrinsics.get(), _d_depth_other_extrinsics.get(), depth_scale);
 
     kernel_depth_to_other <<<depth_blocks,threads>>> ((uint16_t*)_d_aligned_out.get(), _d_depth_in.get(), _d_pixel_map.get(),
         _d_depth_intrinsics.get(), _d_other_intrinsics.get());
 
-    kernel_replace_to_zero <<<other_blocks,threads>>> ((uint16_t*)_d_aligned_out.get(), _d_other_intrinsics.get());
+    kernel_replace_to_zero <<<other_blocks, threads>>> ((uint16_t*)_d_aligned_out.get(), _d_other_intrinsics.get());
 
     cudaDeviceSynchronize();
 
