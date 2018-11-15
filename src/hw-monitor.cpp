@@ -156,20 +156,17 @@ namespace librealsense
             << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
     }
 
-    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset) const
+    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset, int size) const
     {
         std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
         get_gvd(gvd.size(), gvd.data(), gvd_cmd);
         unsigned char ss[8];
         librealsense::copy(ss, gvd.data() + offset, 8);
         std::stringstream formattedBuffer;
-        formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[0]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[1]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[2]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[3]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[4]) <<
-            std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[5]);
-
+        for (auto i = 0;i < size;i++)
+        {
+            formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[i]);
+        }
         return formattedBuffer.str();
     }
 
