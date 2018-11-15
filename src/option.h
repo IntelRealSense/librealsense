@@ -118,7 +118,7 @@ namespace librealsense
         {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
-                throw invalid_value_exception(to_string() << "Given value " << value << "is outside valid range!");
+                throw invalid_value_exception(to_string() << "Given value " << value << " is outside valid range!");
             *_value = val;
             _on_set(value);
         }
