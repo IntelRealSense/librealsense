@@ -37,6 +37,18 @@ ImVec4 flip(const ImVec4& c)
     return{ c.y, c.x, c.z, c.w };
 }
 
+// Use shortcuts for long names to avoid trimming of essential data
+std::string     truncate_string(const std::string& str, size_t width)
+{
+    if (str.length() > width)
+    {
+        std::stringstream ss;
+        ss << str.substr(0,width/3) << "..." << str.substr(str.length()-width/3);
+        return ss.str().c_str();
+    }
+    return str;
+}
+
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color)
 {
     auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
@@ -2496,9 +2508,10 @@ namespace rs2
             std::string label = to_string() << "Stream Info of " << profile.unique_id();
             ImGui::Begin(label.c_str(), nullptr, flags);
 
-            label = to_string() << size.x << "x" << size.y << ", "
-                << rs2_format_to_string(profile.format()) << ", "
-                << "FPS:";
+            std::string res;
+            if (profile.as<rs2::video_stream_profile>())
+                res = to_string() << size.x << "x" << size.y << ", ";
+            label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()),9) << ", FPS:";
             ImGui::Text("%s", label.c_str());
             ImGui::SameLine();
 
@@ -2515,7 +2528,7 @@ namespace rs2
 
             ImGui::Columns(2, 0, false);
             ImGui::SetColumnOffset(1, 160);
-            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(3) << timestamp;
+            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(1) << timestamp;
             ImGui::Text("%s", label.c_str());
             ImGui::NextColumn();
 
