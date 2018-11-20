@@ -53,11 +53,11 @@ struct stringify
 
 struct frame_data
 {
-    unsigned long long		frame_number;
-    double					ts;
-    long long				arrival_time;
-    rs2_timestamp_domain	domain;
-    rs2_stream				stream_type;
+    unsigned long long      frame_number;
+    double                  ts;
+    long long               arrival_time;
+    rs2_timestamp_domain    domain;
+    rs2_stream              stream_type;
 };
 
 struct stream_request
@@ -72,8 +72,8 @@ struct stream_request
 
 inline std::ostream&  operator<<(std::ostream& os, const stream_request& req)
 {
-	return os << "Type: " << req._stream_type << ",Idx: " << req._stream_idx << ", "
-		<< req._stream_format << ", [" << req._width << "x" << req._height << "], " << req._fps << "fps" << std::endl;
+    return os << "Type: " << req._stream_type << ",Idx: " << req._stream_idx << ", "
+        << req._stream_format << ", [" << req._width << "x" << req._height << "], " << req._fps << "fps" << std::endl;
 }
 
 //Defines the order at which the params (comma-separated) should appear in configuration file
@@ -196,23 +196,23 @@ void parse_requests(std::vector<stream_request>& reqs, const std::string& config
         if (std::regex_search(line, starts_with))
         {
             if (parse_configuration(line, stream_type, width, height, format, fps,index))
-				reqs.push_back({ stream_type, format, width, height, fps,  index });
+                reqs.push_back({ stream_type, format, width, height, fps,  index });
         }
     }
 
-	// negate multiple requests
-	if (reqs.size())
-	{
-		std::sort(reqs.begin(), reqs.end(), [](const stream_request& l, const stream_request& r) { return l._stream_type < r._stream_type; });
-		for (auto i = 0; i < reqs.size() - 1; i++)
-		{
-			if ((reqs[i]._stream_type == reqs[i+1]._stream_type) && ((reqs[i]._stream_idx == reqs[i+1]._stream_idx)))
-				throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
-					<< reqs[i] << "\n" << reqs[+i]);
-		}
-	}
-	else
-		throw std::runtime_error("Invalid configuration file - zero requests accepted");
+    // negate multiple requests
+    if (reqs.size())
+    {
+        std::sort(reqs.begin(), reqs.end(), [](const stream_request& l, const stream_request& r) { return l._stream_type < r._stream_type; });
+        for (auto i = 0; i < reqs.size() - 1; i++)
+        {
+            if ((reqs[i]._stream_type == reqs[i+1]._stream_type) && ((reqs[i]._stream_idx == reqs[i+1]._stream_idx)))
+                throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
+                    << reqs[i] << "\n" << reqs[+i]);
+        }
+    }
+    else
+        throw std::runtime_error("Invalid configuration file - zero requests accepted");
 }
 
 void save_data_to_file(std::array<list<frame_data>, NUM_OF_STREAMS> buffer, const string& filename)
@@ -266,11 +266,10 @@ int main(int argc, char** argv) try
 
     rs2::context ctx;
     rs2::device_list list;
-	
 
     while (!succeed)
     {
-		std::vector<stream_request> requests;
+        std::vector<stream_request> requests, orig_requests;
         
         list = ctx.query_devices();
 
@@ -299,72 +298,144 @@ int main(int argc, char** argv) try
             });
         }
 
+		orig_requests = requests;
+		std::vector<rs2::stream_profile> matches, total_matches;
         // Configure and starts streaming
         for (auto&& sensor : dev->query_sensors())
         {
             auto profiles = sensor.get_stream_profiles();
-            std::vector<rs2::stream_profile> matches;
-			std::cout << "Sensor with " << profiles.size() << " profiles" << std::endl;
+            std::cout << "Sensor with " << profiles.size() << " profiles" << std::endl;
 
-			for (auto& profile : profiles)
-			{				
-				std::cout << "Basic params: " << profile.stream_type() << ", " << profile.stream_name() << ", "
-					<< profile.format() << ", " << profile.fps();
-				if (auto vp = profile.as<rs2::video_stream_profile>())
-				{
-					std::cout << ", UVC params: " << vp.width() << ", " << vp.height();
-				}
+			std::cout << sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
+			int i = 0;
+            for (auto& profile : profiles)
+            {
+				i++;
 
-				if (auto mp = profile.as<rs2::motion_stream_profile>())
-				{
-					std::cout << ", IMU profile: " << std::endl;
-				}
-				std::cout << std::endl;
+				// All requests have been resolved
+				if (!requests.size())
+					break;
 
-				// Map user requests to available streams
-				for_each(requests.begin(), requests.end(), [&matches, profile](const stream_request& req)
-				{
-					if (auto vp = profile.as<rs2::video_stream_profile>())
-					{
-						if ((vp.stream_type() == req._stream_type) && 
-							(vp.format() == req._stream_format) &&
-							(vp.stream_index()== req._stream_idx) &&
-							(vp.fps() == req._fps) && 
-							(vp.width() == req._width) && 
-							(vp.height() == req._height))
-							matches.push_back(profile);
-					}
-					else
-					{
-						if (auto mp = profile.as<rs2::motion_stream_profile>())
-						{
-							if ((mp.stream_type() == req._stream_type) &&
-								(mp.format() == req._stream_format) &&
-								(mp.stream_index() == req._stream_idx) &&
-								(mp.fps() == req._fps))
-								matches.push_back(profile);
-						}
-					}
-				});
+                /*std::cout << "Basic params: " << profile.stream_type() << ", " << profile.stream_name() << ", "
+                    << profile.format() << ", " << profile.fps();*/
+                if (auto vp = profile.as<rs2::video_stream_profile>())
+                {
+                    std::cout << ", UVC params: " << vp.width() << ", " << vp.height();
+                }
+
+                if (auto mp = profile.as<rs2::motion_stream_profile>())
+                {
+                    std::cout << ", IMU profile: " << std::endl;
+                }
+                std::cout << std::endl;
+
+                // Map user requests to available streams
 				
+                //for_each(requests.begin(), requests.end(), [&matches, profile](const stream_request& req)
+                auto fulfilled_request = std::find_if(requests.begin(), requests.end(), [&matches, profile, i,sensor](const stream_request& req)
+                {
+                    bool res = false;
+                    if (auto vp = profile.as<rs2::video_stream_profile>())
+                    {
+                        rs2_stream type = vp.stream_type();
+                        rs2_format format = vp.format();
+                        int index   = vp.stream_index();
+                        int fps     = vp.fps();
+                        int width = vp.width();
+                        int height = vp.height();
+
+						std::cout << " Check profile " << i << ": "
+							<< type << ", " << format << ", index: " << index << ", "
+							<< fps << ", " << width << "x" << height
+							<< " against:" << req._stream_type << ", " << req._stream_format << ", index: " << req._stream_idx << ", "
+							<< req._fps << ", " << req._width << "x" << req._height;
+						if ((vp.stream_type() == req._stream_type) &&
+							(vp.format() == req._stream_format) &&
+							(vp.stream_index() == req._stream_idx) &&
+							(vp.fps() == req._fps) &&
+							(vp.width() == req._width) &&
+							(vp.height() == req._height))
+						{
+							matches.push_back(profile);
+							
+							res = true;
+							std::cout << " Bingo!!!!!!!";
+						}
+						std::cout << std::endl;
+
+                    }
+                    else
+                    {
+                        if (auto mp = profile.as<rs2::motion_stream_profile>())
+                        {
+                            if ((mp.stream_type() == req._stream_type) &&
+                                (mp.format() == req._stream_format) &&
+                                (mp.stream_index() == req._stream_idx) &&
+                                (mp.fps() == req._fps))
+                            {
+                                matches.push_back(profile);
+                                res = true;
+                            }
+                        }
+                    }
+                    return res;
+                });
+
+				if (fulfilled_request != requests.end())
+					requests.erase(fulfilled_request);
+            }
+
+			// Aggregate resolved requests
+			if (matches.size())
+			{
+				std::copy(matches.begin(), matches.end(), std::back_inserter(total_matches));
+				sensor.open(matches);
+				matches.clear();
 			}
-			
+
+			if (total_matches.size() == orig_requests.size())
+				succeed = true;
         }
 
-		// Start streaming
-		//for 
-			//if (request.matches(profile))
+		std::cout << "final matches are " << total_matches.size() << std::endl;
 
-			//std::copy_if(profiles.begin(),profiles.end(),std::back_inserter(matches),
-			//    [&config,sensor](const rs2::stream_profile& profile){
-			//        auto vf = profile.as<rs2::video_stream_profile>();
-			//        config.get()->stream
-			//        return false;//vf.stream_type() = config.get().
-			//    });
-//            sensor.open()
-//            sensor.start([&](rs2::frame f) { display(f); });
+        // Start streaming
+		for (auto&& sensor : dev->query_sensors())
+			sensor.start([&](rs2::frame f) 
+		{
+			if (auto motion = f.as<rs2::motion_frame>())
+			{
+			    auto axes = motion.get_motion_data();
+			    std::cout
+			    << "Frame type, " << f.get_profile().stream_type()
+			    << " , num, " << f.get_frame_number()
+			    << " ,ts, " << std::fixed << f.get_timestamp()
+			    << " ,x, " <<  axes.x
+			    << " ,y, " <<  axes.y
+			    << " ,z, " <<  axes.z
+			    << std::endl;
+			}
 
-
+			if (auto video = f.as<rs2::video_frame>())
+			{
+				std::cout
+					<< "Frame type, " << f.get_profile().stream_type()
+					<< " format, " << f.get_profile().format()
+					<< " , num, " << f.get_frame_number()
+					<< " ,ts, " << std::fixed << f.get_timestamp()
+					<< std::endl;
+			}
+			/*frame_data data{f.get_frame_number(),
+			                f.get_timestamp(),
+			                arrival_time.count(),
+			                f.get_frame_timestamp_domain(),
+			                f.get_profile().stream_type()};
+			if (buffer[(int)data.stream_type].size() < max_frames_number)
+			{
+			    buffer[(int)data.stream_type].push_back(data);
+			}*/
+		});
+        
 
         std::array<std::list<frame_data>, NUM_OF_STREAMS> buffer;
         auto start_time = chrono::high_resolution_clock::now();
@@ -373,7 +444,6 @@ int main(int argc, char** argv) try
             //If not switch is set, we're ready after max_frames_number frames.
             //If both switches are set, we're ready when the first of the two conditions is true
             //Otherwise, ready according to given switch
-
             bool timed_out = false;
             if (timeout.isSet())
             {
@@ -381,7 +451,7 @@ int main(int argc, char** argv) try
                 timed_out = (chrono::high_resolution_clock::now() - start_time >= timeout_sec);
             }
 
-            bool collected_enough_frames = true;
+			bool collected_enough_frames = false;// Evgeni true;
             // TODO Evgeni re-enable
 //            for (auto&& profile : pipe.get_active_profile().get_streams())
 //            {
@@ -436,12 +506,13 @@ int main(int argc, char** argv) try
 //            }
 //        }
 
-//        if(ready())
-//        {
-//            save_data_to_file(buffer, output_file);
-//            pipe.stop();
-//            succeed = true;
-//        }
+		while (!ready())
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        save_data_to_file(buffer, output_file);
+		for (auto&& sensor : dev->query_sensors())
+			sensor.stop();
+        succeed = true;
     }
     return EXIT_SUCCESS;
 }
