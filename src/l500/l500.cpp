@@ -92,7 +92,7 @@ namespace librealsense
 //#endif
         *_calib_table_raw;  //work around to bug on fw
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
-        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset, module_serial_size);
 
         auto pid = group.uvc_devices.front().pid;
         auto pid_hex_str = hexify(pid >> 8) + hexify(static_cast<uint8_t>(pid));

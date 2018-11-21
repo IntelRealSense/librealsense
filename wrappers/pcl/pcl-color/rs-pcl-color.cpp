@@ -8,7 +8,7 @@
  *          and a point cloud is generated and saved to
  *          a point cloud data format (.pcd).
  * 
- * Version 0.08 - Last Editted 11/04/18
+ * Version 0.09 - Last Editted 11/07/18
  * 
  * Rev:     Implementation of RGB Texture function to map
  *          color to point cloud data.
@@ -36,10 +36,6 @@
 #include <pcl/io/io.h>
 #include <pcl/visualization/cloud_viewer.h>
 
-// OpenCV Headers
-#include <opencv2/opencv.hpp>
-
-using namespace cv;
 using namespace std;
 
 typedef pcl::PointXYZRGB RGB_Cloud;
@@ -169,9 +165,9 @@ int main() {
     //======================
     // Stream configuration
     //======================
-    cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 640, 480, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_BGR8, 30);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1280, 720, RS2_FORMAT_Y8, 30);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
     
     rs2::pipeline_profile selection = pipe.start(cfg); 
 
@@ -245,7 +241,7 @@ int main() {
     }//End-while
    
    
-    cout << "Exitting Program... " << endl; 
+    cout << "Exiting Program... " << endl; 
     return EXIT_SUCCESS;
 }
 
@@ -310,7 +306,6 @@ bool userInput(void){
         }
         // Condition [N] - Exit Loop and close program
         else if (takeFrame == 'n' || takeFrame == 'N') {
-
             setLoopFlag = false;
             inputCheck = true;
             takeFrame = 0;

@@ -9,11 +9,11 @@ Subject: [PATCH] Adding missing HID timestamp patch for Gyro sensor.
 	this patch was skipped from upstream
 	The patch was written by Srinivas Pandruvada <srinivas.pandruvada@intel.com>
 ---
- drivers/iio/gyro/hid-sensor-gyro-3d.c | 28 ++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ drivers/iio/gyro/hid-sensor-gyro-3d.c | 30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index f59995a90..e3f2a8357 100644
+index f59995a..a4a5e9c 100644
 --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
 +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
 @@ -42,11 +42,13 @@ struct gyro_3d_state {
@@ -76,17 +76,19 @@ index f59995a90..e3f2a8357 100644
  
  	return 0;
  }
-@@ -235,6 +245,10 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+@@ -235,6 +245,12 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
 +	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		gyro_state->timestamp = *(int64_t *)raw_data;
-+		ret = 0;
++		gyro_state->timestamp =
++			hid_sensor_convert_timestamp(
++					&gyro_state->common_attributes,
++					*(int64_t *)raw_data);
 +	break;
  	default:
  		break;
  	}
 -- 
-2.17.0
+2.7.4
 
