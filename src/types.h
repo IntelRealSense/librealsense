@@ -50,6 +50,12 @@ namespace librealsense
     const double TIMESTAMP_USEC_TO_MSEC = 0.001;
     const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
 
+#ifdef _WIN32
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_USEC_TO_MSEC
+#else
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_NSEC_TO_MSEC
+#endif // define HID_TIMESTAMP_MULTIPLIER
+
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////

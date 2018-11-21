@@ -166,7 +166,7 @@ namespace librealsense
         {
             auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
             // The FW timestamps for HID are converted to Nanosec in Linux kernel. This may produce conflicts with MS API.
-            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_NSEC_TO_MSEC;
+            return static_cast<rs2_time_t>(timestamp) * HID_TIMESTAMP_MULTIPLIER;
         }
 
         if (!started)

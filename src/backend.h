@@ -398,6 +398,7 @@ namespace librealsense
             value
         };
 
+#pragma pack(push, 1)
         struct hid_sensor_data
         {
             short x;
@@ -409,6 +410,7 @@ namespace librealsense
             uint32_t ts_low;
             uint32_t ts_high;
         };
+#pragma pack(pop)
 
         typedef std::function<void(const sensor_data&)> hid_callback;
 

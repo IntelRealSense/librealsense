@@ -29,6 +29,8 @@
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
+const uint8_t HID_METADATA_SIZE = 8; // bytes
+
 namespace librealsense
 {
     namespace platform
@@ -144,7 +146,8 @@ namespace librealsense
                 d.sensor.name = CW2A(fName);
 
                 d.fo.pixels = &data;
-                d.fo.metadata = NULL;
+                d.fo.metadata = &data.ts_low;
+                d.fo.metadata_size = HID_METADATA_SIZE;
                 d.fo.frame_size = sizeof(data);
                 _callback(d);
 
