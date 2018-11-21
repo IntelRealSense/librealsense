@@ -314,7 +314,7 @@ namespace rs2
         */
         template<class S>
         filter(S processing_function, int queue_size = 1) :
-            processing_block_base(processing_function),
+            processing_block(processing_function),
             _queue(queue_size)
         {
             start(_queue);
