@@ -1,7 +1,9 @@
 # Set CMAKE_INSTALL_* if not defined
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${LRS_TARGET}")
 
-add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+if(NOT ${ROS_BUILD_TYPE})
+    add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+endif()
 
 include(CMakePackageConfigHelpers)
 
@@ -14,7 +16,9 @@ configure_package_config_file(CMake/realsense2Config.cmake.in realsense2Config.c
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+if(NOT ${ROS_BUILD_TYPE})
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
+endif()
 configure_file(config/librealsense.pc.in config/realsense2.pc @ONLY)
 
 install(TARGETS ${LRS_TARGET}
@@ -43,7 +47,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
         DESTINATION ${CMAKECONFIG_INSTALL_DIR}
 )
 
-install(CODE "execute_process(COMMAND ldconfig)")
+if(NOT ${ROS_BUILD_TYPE})
+       install(CODE "execute_process(COMMAND ldconfig)")
+endif()
 
 # Set library pkgconfig file for facilitating 3rd party integration
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"
