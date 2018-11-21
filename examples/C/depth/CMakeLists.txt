@@ -12,12 +12,5 @@ set_target_properties (rs-depth PROPERTIES
 FOLDER "Examples/C"
 )
 
-install(
-TARGETS
-
-rs-depth
-
-RUNTIME DESTINATION
-${CMAKE_INSTALL_PREFIX}/bin
-)
+install(TARGETS rs-depth RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

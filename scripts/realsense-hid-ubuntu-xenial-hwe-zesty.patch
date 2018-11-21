@@ -79,7 +79,7 @@ index c67ce2a..7ff0dfe 100644
  		ret = 0;
  	break;
 +	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		gyro_state->timestamp = *(int64_t *)raw_data;
++		gyro_state->timestamp = (*(int64_t *)raw_data)*1000;
 +		ret = 0;
 +	break;
  	default:
