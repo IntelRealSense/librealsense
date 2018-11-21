@@ -1,5 +1,10 @@
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.5)
+set(ROS_BUILD_TYPE TRUE)
+
+if(${ROS_BUILD_TYPE})
+    find_package(ament_cmake REQUIRED)
+endif()
+
 project(librealsense2 LANGUAGES CXX C)
 
 include(CMake/lrs_options.cmake)
@@ -101,3 +106,8 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
+include(CMake/install_config.cmake)
+
+if(${ROS_BUILD_TYPE})
+    ament_package()
+endif()
