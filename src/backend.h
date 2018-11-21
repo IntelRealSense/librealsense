@@ -64,6 +64,19 @@ namespace librealsense
 
     namespace platform
     {
+        class hid_serial_info
+        {
+            public:
+                hid_serial_info(uint16_t vid, uint16_t pid, const std::string& unique_id);
+                std::string get_serial(void);
+
+            private:
+                uint16_t _vid;
+                uint16_t _pid;
+                std::string _unique_id;
+                std::string _device_serial;
+        };
+
         struct control_range
         {
             control_range()

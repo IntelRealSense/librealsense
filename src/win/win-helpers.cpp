@@ -586,7 +586,6 @@ namespace librealsense
         // Provides Port Id and the USB Specification (USB type)
         bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec)
         {
-
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
             std::vector<GUID> guids = { GUID_DEVINTERFACE_IMAGE, GUID_DEVINTERFACE_CAMERA };
 

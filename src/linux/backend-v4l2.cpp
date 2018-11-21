@@ -1738,6 +1738,19 @@ namespace librealsense
         {
             return std::make_shared<v4l_backend>();
         }
+
+        hid_serial_info::hid_serial_info(uint16_t vid, uint16_t pid, const std::string& unique_id)
+        {
+            _vid = vid;
+            _pid = pid;
+            _unique_id = unique_id;
+            _device_serial = "";
+        }
+
+        std::string hid_serial_info::get_serial(void)
+        {
+            return _device_serial;
+        }
     }
 }
 
