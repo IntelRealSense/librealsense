@@ -320,7 +320,19 @@ namespace rs2
         */
         points calculate(frame depth)
         {
-            return process(depth);
+            auto res = process(depth);
+            if (res.as<points>())
+                return res;
+
+            if (auto set = res.as <frameset>())
+            {
+                for (auto f : set)
+                {
+                    if(f.as<points>())
+                        return f;
+                }
+            }
+            throw std::runtime_error("Error occured during execution of the processing block! See the log for more info");
         }
         /**
         * Map the point cloud to other frame.

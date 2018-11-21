@@ -19,16 +19,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-software-device rs-software-device.cpp)
     target_link_libraries(rs-software-device ${DEPENDENCIES})
     include_directories(rs-software-device ../ ../../third-party/tclap/include ../../third-party/ ../../common/res)
-    set_target_properties (rs-software-device PROPERTIES
-        FOLDER "Examples"
-    )
-
-    install(
-        TARGETS
-
-        rs-software-device
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    set_target_properties (rs-software-device PROPERTIES FOLDER "Examples")
+    install(TARGETS rs-software-device RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

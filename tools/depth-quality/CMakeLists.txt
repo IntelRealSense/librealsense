@@ -104,6 +104,6 @@ endif()
         rs-depth-quality
 
         RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
+        ${CMAKE_INSTALL_BINDIR}
     )
 endif()

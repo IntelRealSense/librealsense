@@ -14,7 +14,6 @@
 #include <stdint.h>
 #include <math.h>
 
-
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics * intrin, const float point[3])
 {
