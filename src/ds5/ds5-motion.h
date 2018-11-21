@@ -48,7 +48,7 @@ namespace librealsense
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
         { { "HID Sensor Class Device: Gyroscope",    { RS2_STREAM_GYRO,  0, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } } ,
           { "HID Sensor Class Device: Accelerometer",{ RS2_STREAM_ACCEL, 0, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } },
-          { "HID Sensor Class Device: Custom",       { RS2_STREAM_ACCEL, 0, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } } };
+          /*{ "HID Sensor Class Device: Custom",       { RS2_STREAM_ACCEL, 0, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } }*/ };
 #else
         // Bandwidth parameters from BOSCH BMI 055 spec'
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =

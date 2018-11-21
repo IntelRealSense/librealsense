@@ -287,6 +287,7 @@ namespace librealsense
             std::string pid;
             std::string unique_id;
             std::string device_path;
+            std::string serial_number;
 
             operator std::string()
             {

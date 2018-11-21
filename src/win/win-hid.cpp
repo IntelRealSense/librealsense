@@ -103,6 +103,7 @@ namespace librealsense
                     return E_INVALIDARG;
                 }
 
+                BSTR fName{};
                 SYSTEMTIME time;
                 report->GetTimestamp(&time);
 
@@ -138,7 +139,9 @@ namespace librealsense
                 data.z = rawZ;
                 data.ts_low = customTimestampLow;
                 data.ts_high = customTimestampHigh;
-                d.sensor.name = "HID Sensor Class Device: Gyroscope";
+
+                pSensor->GetFriendlyName(&fName);
+                d.sensor.name = CW2A(fName);
 
                 d.fo.pixels = &data;
                 d.fo.metadata = NULL;
@@ -193,15 +196,46 @@ namespace librealsense
 
         void wmf_hid_device::open(const std::vector<hid_profile>&iio_profiles)
         {
+            try
+            {
+                for (auto& sensor_to_open : iio_profiles)
+                {
+                    for (auto& connected_sensor : _connected_sensors)
+                    {
+                        if (sensor_to_open.sensor_name == connected_sensor->get_sensor_name())
+                        {
+                            _opened_sensors.push_back(connected_sensor);
+                        }
+                    }
+                }
+            }
+            catch (...)
+            {
+                for (auto& connected_sensor : _connected_sensors)
+                {
+                    connected_sensor.reset();
+                }
+                _connected_sensors.clear();
+                LOG_ERROR("Hid device is busy!");
+                throw;
+            }
         }
 
         void wmf_hid_device::close()
         {
+            for (auto& open_sensor : _opened_sensors)
+            {
+                open_sensor.reset();
+            }
+            _opened_sensors.clear();
         }
 
         void wmf_hid_device::stop_capture()
         {
-            _sensor->SetEventSink(NULL);
+            for (auto& sensor : _opened_sensors)
+            {
+                sensor->stop_capture();
+            }
             _cb = nullptr;
 
         }
@@ -212,7 +246,11 @@ namespace librealsense
             _cb = new sensor_events(callback);
             ISensorEvents* sensorEvents = nullptr;
             CHECK_HR(_cb->QueryInterface(IID_PPV_ARGS(&sensorEvents)));
-            CHECK_HR(_sensor->SetEventSink(sensorEvents));
+
+            for (auto& sensor : _opened_sensors)
+            {
+                CHECK_HR(sensor->start_capture(sensorEvents));
+            }
         }
 
         std::vector<hid_sensor> wmf_hid_device::get_sensors()
@@ -221,10 +259,11 @@ namespace librealsense
 
             HRESULT res = S_OK;
             BSTR fName{};
-            LOG_HR(res = _sensor->GetFriendlyName(&fName));
-            if (FAILED(res)) fName = L"Unidentified HID Sensor";
 
-            sensors.push_back({ std::string(fName, fName + wcslen(fName)) });
+            for (auto& sensor : _opened_sensors)
+            {
+                sensors.push_back({ sensor->get_sensor_name() });
+            }
 
             SysFreeString(fName);
 
@@ -304,12 +343,16 @@ namespace librealsense
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid;
-                                                if (parse_usb_path(vid, pid, mi, uid, info.device_path))
+                                                if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path))
                                                 {
                                                     info.unique_id = "*";
                                                     info.pid = to_string() << std::hex << pid;
                                                     info.vid = to_string() << std::hex << vid;
                                                 }
+                                            }
+                                            if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
+                                            {
+                                                info.serial_number = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
                                             }
                                         }
 

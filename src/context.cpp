@@ -19,6 +19,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "context.h"
+#include "win/win-helpers.h"
 
 #ifdef WITH_TRACKING
 #include "tm2/tm-info.h"
@@ -494,8 +495,19 @@ namespace librealsense
             auto unique_id = dev.front().unique_id;
             for (auto&& hid : hids)
             {
-                if (hid.unique_id == unique_id || hid.unique_id == "*")
-                    hid_group.push_back(hid);
+                if (hid.unique_id != "")
+                {
+                    std::string device_serial;
+                    uint16_t vid = std::stoi(hid.vid, nullptr, 16);
+                    uint16_t pid = std::stoi(hid.pid, nullptr, 16);
+
+                    platform::get_device_serial(vid, pid, unique_id, device_serial);
+
+                    if ((hid.unique_id == unique_id) || ((hid.unique_id == "*") && (hid.serial_number == device_serial)))
+                    {
+                        hid_group.push_back(hid);
+                    }
+                }
             }
             results.push_back(std::make_pair(dev, hid_group));
         }

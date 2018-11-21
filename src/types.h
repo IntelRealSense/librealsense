@@ -484,7 +484,8 @@ namespace librealsense
             (a.height == b.height) &&
             (a.fps == b.fps) &&
             (a.format == b.format) &&
-            (a.index == b.index);
+            (a.index == b.index) &&
+            (a.stream == b.stream);
     }
 
     struct stream_descriptor

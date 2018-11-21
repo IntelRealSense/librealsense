@@ -733,7 +733,7 @@ namespace librealsense
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
+                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, name)) continue;
 
                     uvc_device_info info;
                     info.vid = vid;
