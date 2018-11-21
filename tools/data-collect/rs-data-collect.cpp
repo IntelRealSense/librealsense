@@ -1,5 +1,24 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// The utility shall be used to collect and analyze Realsense Cameras performance.
+// Therefore no UI is provided, and the data is gathered and serialized in csv-compatible format for offline analysis.
+// The utility is configured via command-line parameters and requires user-provided configuration file to run
+// The lines 8-20 constitute a valid configuration file for D435i camera
+/*
+//Defines the order at which the params (comma-separated) should appear in configuration file
+//#rs2_stream, width, height, fps, rs2_format, stream_index (optional, put zero or leave empty if you're not sure)
+//# Examples (note that all lines starting with non-alpha character (#@!...) will be skipped:
+//  DEPTH,640,480,30,Z16,0
+//  INFRARED,640,480,30,Y8,1
+//  COLOR,640,480,30,RGB8,0
+//  ACCEL,1,1,125,MOTION_XYZ32F
+//  GYRO,1,1,200,MOTION_XYZ32F
+DEPTH,640,480,30,Z16,0
+INFRARED,640,480,30,Y8,1
+COLOR,640,480,30,RGB8,0
+ACCEL,1,1,125,MOTION_XYZ32F
+GYRO,1,1,200,MOTION_XYZ32F
+*/
 
 #include <librealsense2/rs.hpp>
 #include <chrono>
@@ -21,10 +40,10 @@
 using namespace std;
 using namespace TCLAP;
 
-// Default frames to capture if user does not supply alternatives
-const unsigned int MAX_FRAMES_NUMBER = 100;
+const uint64_t  DEF_FRAMES_NUMBER = 100;
+const std::string DEF_OUTPUT_FILE_NAME("frames_data.csv");
 
-// The code is "borrowed" from win-helpers.cpp core library file
+// Split string into token,  trim unreadable characters
 std::vector<std::string> tokenize(std::string line, char separator)
 {
     std::vector<std::string> tokens;
@@ -66,6 +85,17 @@ struct frame_data
     _stream_idx(stream_index)
     {};
 
+    virtual std::string to_string() const
+    {
+        std::stringstream ss;
+        ss  << std::endl
+            <<  rs2_stream_to_string(_stream_type) << ","
+            << _stream_idx << "," << _frame_number << ","
+            << std::fixed << std::setprecision(3) << _ts << "," << _arrival_time;
+
+        return ss.str().c_str();
+    }
+
     unsigned long long      _frame_number;
     double                  _ts;
     double                  _arrival_time;
@@ -73,15 +103,6 @@ struct frame_data
     rs2_stream              _stream_type;
     int                     _stream_idx;
 };
-
-inline std::ostream & operator << (std::ostream & out, frame_data data)
-{
-    return out  << "\n" << rs2_stream_to_string(data._stream_type) << ","
-                << data._stream_idx << ","
-                << data._frame_number << ","
-                << std::fixed << std::setprecision(3)
-                << data._ts << "," << data._arrival_time;
-}
 
 struct threedof_data : frame_data
 {
@@ -96,16 +117,19 @@ struct threedof_data : frame_data
         _x_axis(x), _y_axis(y), _z_axis(z)
         {};
 
+    virtual std::string to_string() const override
+    {
+        std::stringstream ss;
+        ss  << frame_data::to_string()<< ","
+            << _x_axis << "," << _y_axis << "," << _z_axis;
+
+        return ss.str().c_str();
+    }
+
     double  _x_axis;
     double  _y_axis;
     double  _z_axis;
 };
-
-inline std::ostream & operator << (std::ostream & os, threedof_data data)
-{
-    return os  << static_cast<frame_data>(data) << ","
-                << data._x_axis << "," << data._y_axis << "," << data._z_axis;
-}
 
 struct stream_request
 {
@@ -123,14 +147,6 @@ inline std::ostream&  operator<<(std::ostream& os, const stream_request& req)
         << req._stream_format << ", [" << req._width << "x" << req._height << "], " << req._fps << "fps" << std::endl;
 }
 
-//Defines the order at which the params (comma-separated) should appear in configuration file
-//#rs2_stream, width, height, fps, rs2_format, stream_index (optional, put zero or leave empty if you're not sure)
-//# Examples (note that all lines starting with non-alpha character (#@!...) will be skipped:
-//  DEPTH,640,480,30,Z16,0
-//  INFRARED,640,480,30,Y8,1
-//  COLOR,640,480,30,RGB8,0
-//  ACCEL,1,1,125,MOTION_XYZ32F
-//  GYRO,1,1,200,MOTION_XYZ32F
 enum config_params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT, STREAM_INDEX };
 
 int parse_number(char const *s, int base = 0)
@@ -270,7 +286,7 @@ std::string get_profile_description(const rs2::stream_profile& profile)
     return ss.str().c_str();
 }
 
-void save_data_to_file(const std::map<std::pair<rs2_stream, int>, std::vector<frame_data>>& buffer,
+void save_data_to_file(const std::map<std::pair<rs2_stream, int>, std::vector<std::shared_ptr<frame_data>>>& buffer,
                         const std::vector<rs2::stream_profile>& active_stream_profiles,
                         const string& out_filename)
 {
@@ -287,7 +303,7 @@ void save_data_to_file(const std::map<std::pair<rs2_stream, int>, std::vector<fr
     for (const auto& elem : buffer)
     {
         for (auto i = 0; i < elem.second.size(); i++)
-            csv << elem.second[i];
+            csv << elem.second[i]->to_string();
     }
 }
 
@@ -297,6 +313,7 @@ enum application_stop : uint8_t {
     stop_on_user_frame_num,
     stop_on_any
 };
+
 
 int main(int argc, char** argv) try
 {
@@ -315,14 +332,14 @@ int main(int argc, char** argv) try
     cmd.add(config_file);
     cmd.parse(argc, argv);
 
-    std::cout << "Running data collection tool with the following params : ";
+    std::cout << "Running rs-data-collect ";
     for (auto i=1; i < argc; ++i)
         std::cout << argv[i] << " ";
     std::cout << std::endl;
 
-    std::string output_file = filename.isSet() ? filename.getValue() : "frames_data.csv";
-
-    auto max_frames_number = (max_frames.isSet()) ? max_frames.getValue() :MAX_FRAMES_NUMBER;
+    auto output_file       = filename.isSet() ? filename.getValue() : DEF_OUTPUT_FILE_NAME;
+    auto max_frames_number = max_frames.isSet() ? max_frames.getValue() :
+                                timeout.isSet() ? std::numeric_limits<uint64_t>::max() : DEF_FRAMES_NUMBER;
 
     auto stop_cond = static_cast<application_stop>((max_frames.isSet() << 1) | timeout.isSet());
 
@@ -409,11 +426,11 @@ int main(int argc, char** argv) try
                 succeed = true;
         }
 
-        std::cout << "Device selected: " << dev->get_info(RS2_CAMERA_INFO_NAME)
+        std::cout << "\nDevice selected: " << dev->get_info(RS2_CAMERA_INFO_NAME)
                 << " s.n: " << dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
                 << "\nMatching profiles: " << total_matches.size() << std::endl << std::endl;
 
-        std::map<std::pair<rs2_stream, int>, std::vector<frame_data>> buffer;
+        std::map<std::pair<rs2_stream, int>, std::vector<std::shared_ptr<frame_data>>> buffer;
         auto start_time = chrono::high_resolution_clock::now();
 
         // Start streaming
@@ -429,37 +446,46 @@ int main(int argc, char** argv) try
 
                 if (buffer[stream_uid].size() < max_frames_number)
                 {
-                    threedof_data data{ f.get_frame_number(),
+//                    threedof_data data{ f.get_frame_number(),
+//                        f.get_timestamp(),
+//                        arrival_time.count(),
+//                        f.get_frame_timestamp_domain(),
+//                        f.get_profile().stream_type(),
+//                        f.get_profile().stream_index(),
+//                        axes.x, axes.y, axes.z};
+//                    //buffer[stream_uid].push_back(data);
+                    buffer[stream_uid].push_back(std::make_shared<threedof_data>(f.get_frame_number(),
                         f.get_timestamp(),
                         arrival_time.count(),
                         f.get_frame_timestamp_domain(),
                         f.get_profile().stream_type(),
                         f.get_profile().stream_index(),
-                        axes.x, axes.y, axes.z};
-                    buffer[stream_uid].push_back(data);
+                        axes.x, axes.y, axes.z));
                 }
             }
             else
             {
                 if (buffer[stream_uid].size() < max_frames_number)
                 {
-                    buffer[stream_uid].push_back({ f.get_frame_number(),
+                    buffer[stream_uid].push_back(std::make_shared<frame_data>( f.get_frame_number(),
                             f.get_timestamp(),
                             arrival_time.count(),
                             f.get_frame_timestamp_domain(),
                             f.get_profile().stream_type(),
-                            f.get_profile().stream_index()});
+                            f.get_profile().stream_index()));
                 }
             }
         });
+
         std::cout << "Data collect started.... " << std::endl;
+        bool timed_out = false;
 
         const auto collection_accomplished = [&]()
         {
             //If none of the (timeout/num of frames) switches is set, terminate after max_frames_number.
             //If both switches are set, then terminate of whatever comes first
             //Otherwise, ready according to the switch specified
-            bool timed_out = false;
+            timed_out = false;
             if (timeout.isSet())
             {
                 auto timeout_sec = std::chrono::seconds(timeout.getValue());
@@ -493,10 +519,26 @@ int main(int argc, char** argv) try
                     << " sec" << std::endl;
         }
 
-        for (auto&& sensor : dev->query_sensors())
-            sensor.stop();
+        try
+        {
+            // Stop sensors streaming
+            for (auto&& sensor : dev->query_sensors())
+                sensor.stop();
+        }
+        catch(...){
+            std::cout <<" sensor.stop(); failed" << std::endl;
+        }
 
-        std::cout << "Data collection completed, serializing data to " << output_file << std::endl;
+        std::vector<uint64_t> frames_per_stream;
+        for (const auto& kv : buffer)
+            frames_per_stream.emplace_back(kv.second.size());
+
+        std::sort(frames_per_stream.begin(),frames_per_stream.end());
+        std::cout   << "\nData collection accomplished with ["
+                    << frames_per_stream.front() << "-" << frames_per_stream.back()
+                    << "] frames recorded per stream\nSerializing captured results to"
+                    << output_file << std::endl;
+
         save_data_to_file(buffer, total_matches, output_file);
 
         succeed = true;
