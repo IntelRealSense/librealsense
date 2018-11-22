@@ -54,6 +54,8 @@ namespace librealsense
             for(auto profile : profiles)
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
         }
+        
+        bool compress_while_record() const override { return true; }
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);

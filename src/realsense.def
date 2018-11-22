@@ -200,7 +200,8 @@ EXPORTS
     rs2_load_json
     rs2_serialize_json
 
-    rs2_create_record_device 
+    rs2_create_record_device
+    rs2_create_record_device_ex
     rs2_record_device_pause
     rs2_record_device_resume
     rs2_record_device_filename
