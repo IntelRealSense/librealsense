@@ -21,16 +21,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-align rs-align.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
     target_link_libraries(rs-align ${DEPENDENCIES})
     include_directories(rs-align ../../common ../../third-party/imgui)
-    set_target_properties (rs-align PROPERTIES
-        FOLDER Examples
-    )
-
-    install(
-        TARGETS
-
-        rs-align
-
-        RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
-    )
+    set_target_properties (rs-align PROPERTIES FOLDER Examples)
+    install(TARGETS rs-align RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

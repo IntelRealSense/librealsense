@@ -16,6 +16,26 @@
 
 namespace librealsense
 {
+    class observable_option
+    {
+    public:
+        void add_observer(std::function<void(float)> callback)
+        {
+            _callbacks.push_back(callback);
+        }
+
+        void notify(float val)
+        {
+            for (auto callback : _callbacks)
+            {
+                callback(val);
+            }
+        }
+
+    private:
+        std::vector<std::function<void(float)>> _callbacks;
+    };
+
     class readonly_option : public option
     {
     public:
@@ -98,7 +118,7 @@ namespace librealsense
         {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
-                throw invalid_value_exception(to_string() << "Given value " << value << "is outside valid range!");
+                throw invalid_value_exception(to_string() << "Given value " << value << " is outside valid range!");
             *_value = val;
             _on_set(value);
         }

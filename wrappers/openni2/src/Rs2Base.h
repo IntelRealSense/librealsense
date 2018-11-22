@@ -36,9 +36,9 @@
 	#define RS2_ASSERT assert
 #endif
 
-#define rsTraceError(format, ...) printf("[RS2] ERROR at FILE %s LINE %d FUNC %s\n\t" format "\n", __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define rsTraceFunc(format, ...) printf("[RS2] " __FUNCTION__ " " format "\n", __VA_ARGS__)
-#define rsLogDebug(format, ...) printf("[RS2] " format "\n", __VA_ARGS__)
+#define rsTraceError(format, ...) printf("[RS2] ERROR at FILE %s LINE %d FUNC %s\n\t" format "\n", __FILE__, __LINE__, __FUNCTION__, ##  __VA_ARGS__)
+#define rsTraceFunc(format, ...) printf("[RS2] %s " format "\n", __FUNCTION__, ##  __VA_ARGS__)
+#define rsLogDebug(format, ...) printf("[RS2] " format "\n", ## __VA_ARGS__)
 
 namespace oni { namespace driver {
 

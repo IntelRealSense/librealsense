@@ -536,32 +536,32 @@ describe('Sensor tests', function() {
   }).timeout(5000);
 });
 
-describe('Align tests', function() {
-  let ctx;
-  let align;
-  let pipe;
+// describe('Align tests', function() {
+//  let ctx;
+//  let align;
+//  let pipe;
 
-  before(() => {
-    ctx = makeContext('align');
-    align = new rs2.Align(rs2.stream.STREAM_COLOR);
-    pipe = new rs2.Pipeline(ctx);
-  });
+//  before(() => {
+//    ctx = makeContext('align');
+//    align = new rs2.Align(rs2.stream.STREAM_COLOR);
+//    pipe = new rs2.Pipeline(ctx);
+//  });
 
-  after(() => {
-    pipe.stop();
-    rs2.cleanup();
-  });
+//  after(() => {
+//    pipe.stop();
+//    rs2.cleanup();
+//  });
 
-  it('process', () => {
-    pipe.start();
-    const frameset = pipe.waitForFrames();
-    const output = align.process(frameset);
-    const color = output.colorFrame;
-    const depth = output.depthFrame;
-    assert.equal(color instanceof rs2.VideoFrame, true);
-    assert.equal(depth instanceof rs2.DepthFrame, true);
-  });
-});
+//  it('process', () => {
+//    pipe.start();
+//    const frameset = pipe.waitForFrames();
+//    const output = align.process(frameset);
+//    const color = output.colorFrame;
+//    const depth = output.depthFrame;
+//    assert.equal(color instanceof rs2.VideoFrame, true);
+//    assert.equal(depth instanceof rs2.DepthFrame, true);
+//  });
+// });
 
 describe(('syncer test'), function() {
   let syncer;

@@ -168,6 +168,8 @@ namespace librealsense
 
         float get_depth_scale() const override { return _depth_units; }
 
+        void set_depth_scale(float val){ _depth_units = val; }
+
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const
@@ -191,7 +193,7 @@ namespace librealsense
         }
     protected:
         const ds5_device* _owner;
-        float _depth_units;
+        std::atomic<float> _depth_units;
         float _stereo_baseline_mm;
     };
 
@@ -476,7 +478,18 @@ namespace librealsense
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
 
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
-            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+        {
+            auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
+            auto depth_sensor = As<ds5_depth_sensor, uvc_sensor>(&depth_ep);
+            assert(depth_sensor);
+
+            depth_scale->add_observer([depth_sensor](float val)
+            {
+                depth_sensor->set_depth_scale(val);  
+            });
+
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
+        }
         else
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));

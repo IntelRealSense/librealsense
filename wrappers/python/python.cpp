@@ -358,7 +358,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_profile", &rs2::frame::get_profile)
         .def("keep", &rs2::frame::keep)
         .def_property_readonly("profile", &rs2::frame::get_profile)
-        //.def("apply_filter", &rs2::frame::apply_filter, "processing_block"_a)
+        //.def("apply_filter", &rs2::frame::apply_filter, "filter"_a)
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
@@ -460,8 +460,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a);
 
     /* rs2_processing.hpp */
-    py::class_<rs2::process_interface> process_interface(m, "process_interface");
-    process_interface.def("process", &rs2::process_interface::process, "frame"_a);
+    py::class_<rs2::filter_interface> filter_interface(m, "filter_interface");
+    filter_interface.def("process", &rs2::filter_interface::process, "frame"_a);
 
     // Base class for options interface. Should be used via sensor
     py::class_<rs2::options> options(m, "options");
@@ -478,13 +478,18 @@ PYBIND11_MODULE(NAME, m) {
             "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
 
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::processing_block, rs2::process_interface, rs2::options> processing_block(m, "processing_block");
+    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
     {
         self.start(f);
     }, "callback"_a)
         .def("invoke", &rs2::processing_block::invoke, "f"_a)
         /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
+
+    py::class_ <rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter");
+//    filter.def("__init__", [](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size){
+//        return filter(filter_function, queue_size);
+//    }, "filter_function"_a, "queue_size"_a = 1);
 
     // Not binding syncer_processing_block, not in Python API
 
@@ -509,7 +514,7 @@ PYBIND11_MODULE(NAME, m) {
         }, "timeout_ms"_a=5000)
         .def("__call__", &rs2::frame_queue::operator());
 
-    py::class_<rs2::pointcloud, rs2::processing_block> pointcloud(m, "pointcloud");
+    py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud");
     pointcloud.def(py::init<>())
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
@@ -532,28 +537,28 @@ PYBIND11_MODULE(NAME, m) {
         }, "timeout_ms"_a = 5000);
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
-    py::class_<rs2::colorizer, rs2::processing_block> colorizer(m, "colorizer");
+    py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
         .def("colorize", &rs2::colorizer::colorize, "depth"_a)
         /*.def("__call__", &rs2::colorizer::operator())*/;
 
-    py::class_<rs2::align, rs2::processing_block> align(m, "align");
+    py::class_<rs2::align, rs2::filter> align(m, "align");
     align.def(py::init<rs2_stream>(), "align_to"_a)
         .def("process", &rs2::align::process, "frames"_a);
 
-    py::class_<rs2::decimation_filter, rs2::processing_block> decimation_filter(m, "decimation_filter");
+    py::class_<rs2::decimation_filter, rs2::filter> decimation_filter(m, "decimation_filter");
     decimation_filter.def(py::init<>());
 
-    py::class_<rs2::temporal_filter, rs2::processing_block> temporal_filter(m, "temporal_filter");
+    py::class_<rs2::temporal_filter, rs2::filter> temporal_filter(m, "temporal_filter");
     temporal_filter.def(py::init<>());
 
-    py::class_<rs2::spatial_filter, rs2::processing_block> spatial_filter(m, "spatial_filter");
+    py::class_<rs2::spatial_filter, rs2::filter> spatial_filter(m, "spatial_filter");
     spatial_filter.def(py::init<>());
 
-    py::class_<rs2::hole_filling_filter, rs2::processing_block> hole_filling_filter(m, "hole_filling_filter");
+    py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter");
     hole_filling_filter.def(py::init<>());
 
-    py::class_<rs2::disparity_transform, rs2::processing_block> disparity_transform(m, "disparity_transform");
+    py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
     /* rs2_record_playback.hpp */
