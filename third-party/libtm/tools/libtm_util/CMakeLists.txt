@@ -36,9 +36,7 @@ target_link_libraries(${PROJECT_NAME}
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools)
 
 install(
-    TARGETS
-    ${PROJECT_NAME}
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+    TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 

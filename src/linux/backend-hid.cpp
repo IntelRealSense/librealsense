@@ -362,9 +362,6 @@ namespace librealsense
             if (fd < 0)
                 throw linux_backend_exception("Failed to open report!");
 
-            if (!_is_capturing)
-                enable(true);
-
             std::vector<uint8_t> buffer;
             buffer.resize(MAX_INPUT);
             auto read_size = read(fd, buffer.data(), buffer.size());
@@ -435,6 +432,17 @@ namespace librealsense
             }
             custom_device_file << input_data;
             custom_device_file.close();
+
+            // Work-around for the HID custom driver failing to release resources,
+            // preventing the device to enter idle U3 mode
+            // reading out the value will refresh the device tree in kernel
+//            if (!state)
+//            {
+//                std::string feat_val("default");
+//                if(!(std::ifstream(_custom_device_path + "/feature-0-200309/feature-0-200309-value") >> feat_val))
+//                    throw linux_backend_exception("Failed to read feat_val");
+//                std::cout << "Feat value is " << feat_val << std::endl;
+//            }
         }
 
         void hid_custom_sensor::signal_stop()
@@ -910,7 +918,7 @@ namespace librealsense
         void v4l_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _hid_profiles = hid_profiles;
-            for (auto& device_info : _hid_device_infos)
+             for (auto& device_info : _hid_device_infos)
              {
                 try
                 {

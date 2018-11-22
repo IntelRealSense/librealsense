@@ -1,8 +1,5 @@
 % Wraps librealsense2 align class
-classdef align < librealsense.processing_block
-    properties (SetAccess = private, Hidden = true)
-        objectHandle;
-    end
+classdef align < realsense.processing_block
     methods
         % Constructor
         function this = align(align_to)
