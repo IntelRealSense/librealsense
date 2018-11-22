@@ -1,4 +1,4 @@
-#  Build an Android Application for RealSense SDK
+#  Build an Android Application for RealSense SDK with libuvc
 This document describes how to build an Android application to stream Depth data with RealSense cameras.
 
 > Read about Android support [here](./Android.md).
@@ -13,7 +13,7 @@ This document describes how to build an Android application to stream Depth data
 ```
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/AndroidStudio1.png" /></p>
 
-Click on `configure` and choose `SDK Manager`.
+Click on `Configure` and choose `SDK Manager`.
 [Install LLDB, CMake and NDK](https://developer.android.com/ndk/guides/index.html#download-ndk) for Android Studio. Go to section "Download the NDK and Tools" and start with the second step (2. Click the SDK Tools tab).
 
 5. Click on `Start a new Android Studio project`.
@@ -38,14 +38,17 @@ Click on `configure` and choose `SDK Manager`.
 12. Replace the content of `MainActivity`, `native-lib.cpp`, `activity_main.xml` and `CMakeLists.txt` with [MainActivity](MainActivity.java_), [native-lib.cpp](./native-lib.cpp_), [activity_main.xml](./activity_main.xml_) and [CMakeLists.txt](./CMakeLists.txt_) respectively.
 <p align="center"><img width=90% src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/android/AndroidStudio7.png" /></p>
 
-13. In the `Gradle Scripts` section, go to the module-level `build.gradle` file. In the `defaultConfig` block, add an `ndk` block and configure the `abiFilters` option with `armeabi-v7a`:
+13. In the `Gradle Scripts` section, go to the module-level `build.gradle` file. In the `cmake` block, add configure the `abiFilters` option with `armeabi-v7a`. and turn cmake option `FORCE_LIBUVC` on:
 ```
 android {
     ...
     defaultConfig {
       ...
-      ndk {
-            abiFilters 'armeabi-v7a'
+      externalNativeBuild {
+        cmake {
+          abiFilters 'armeabi-v7a'
+          arguments "-DFORCE_LIBUVC=ON"
+        }
       }
   }
 }

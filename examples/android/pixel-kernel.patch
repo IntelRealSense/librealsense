@@ -1,0 +1,545 @@
+diff --git a/arch/arm64/configs/marlin_defconfig b/arch/arm64/configs/marlin_defconfig
+index 20648ea..4873642 100644
+--- a/arch/arm64/configs/marlin_defconfig
++++ b/arch/arm64/configs/marlin_defconfig
+@@ -642,3 +642,9 @@ CONFIG_LOCKUP_DETECTOR=y
+ CONFIG_HARD_LOCKUP_DETECTOR_OTHER_CPU=y
+ CONFIG_RCU_CPU_STALL_TIMEOUT=3
+ CONFIG_SCHED_STACK_END_CHECK=y
++CONFIG_VIDEOBUF2_CORE=y
++CONFIG_VIDEOBUF2_MEMOPS=y
++CONFIG_VIDEOBUF2_VMALLOC=y
++CONFIG_MEDIA_USB_SUPPORT=y
++CONFIG_USB_VIDEO_CLASS=y
++CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+\ No newline at end of file
+diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+index 8ed7c0a..8e5704c 100644
+--- a/drivers/iio/accel/hid-sensor-accel-3d.c
++++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+@@ -42,11 +42,13 @@ struct accel_3d_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+ 	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info accel[ACCEL_3D_CHANNEL_MAX];
+-	u32 accel_val[ACCEL_3D_CHANNEL_MAX];
++	/* Reserve for 3 channels + padding + timestamp */
++	u32 accel_val[ACCEL_3D_CHANNEL_MAX + 3];
+ 	int scale_pre_decml;
+ 	int scale_post_decml;
+ 	int scale_precision;
+ 	int value_offset;
++	int64_t timestamp;
+ };
+ 
+ static const u32 accel_3d_addresses[ACCEL_3D_CHANNEL_MAX] = {
+@@ -87,7 +89,8 @@ static const struct iio_chan_spec accel_3d_channels[] = {
+ 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+ 		BIT(IIO_CHAN_INFO_HYSTERESIS),
+ 		.scan_index = CHANNEL_SCAN_INDEX_Z,
+-	}
++	},
++	IIO_CHAN_SOFT_TIMESTAMP(3)
+ };
+ 
+ /* Adjust channel real bits based on report descriptor */
+@@ -199,10 +202,10 @@ static const struct iio_info accel_3d_info = {
+ 
+ /* Function to push data to buffer */
+ static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data,
+-	int len)
++	int len, int64_t timestamp)
+ {
+ 	dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
+-	iio_push_to_buffers(indio_dev, data);
++	iio_push_to_buffers_with_timestamp(indio_dev, data, timestamp);
+ }
+ 
+ /* Callback handler to send event after all samples are received and captured */
+@@ -214,11 +217,17 @@ static int accel_3d_proc_event(struct hid_sensor_hub_device *hsdev,
+ 	struct accel_3d_state *accel_state = iio_priv(indio_dev);
+ 
+ 	dev_dbg(&indio_dev->dev, "accel_3d_proc_event\n");
+-	if (atomic_read(&accel_state->common_attributes.data_ready))
++	if (atomic_read(&accel_state->common_attributes.data_ready)) {
++		if (!accel_state->timestamp)
++			accel_state->timestamp = iio_get_time_ns(indio_dev);
++
+ 		hid_sensor_push_data(indio_dev,
+ 				accel_state->accel_val,
+-				sizeof(accel_state->accel_val));
++				sizeof(accel_state->accel_val),
++				accel_state->timestamp);
+ 
++		accel_state->timestamp = 0;
++	}
+ 	return 0;
+ }
+ 
+@@ -242,6 +251,9 @@ static int accel_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 						*(u32 *)raw_data;
+ 		ret = 0;
+ 	break;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
++		accel_state->timestamp = *(int64_t *)raw_data;
++		ret = 0;
+ 	default:
+ 		break;
+ 	}
+diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+index c23c36b..8f4b7fe 100644
+--- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
++++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+@@ -42,11 +42,13 @@ struct gyro_3d_state {
+ 	struct hid_sensor_hub_callbacks callbacks;
+ 	struct hid_sensor_common common_attributes;
+ 	struct hid_sensor_hub_attribute_info gyro[GYRO_3D_CHANNEL_MAX];
+-	u32 gyro_val[GYRO_3D_CHANNEL_MAX];
++	/* Reserve for 3 channels + padding + timestamp */
++	u32 gyro_val[GYRO_3D_CHANNEL_MAX + 3];
+ 	int scale_pre_decml;
+ 	int scale_post_decml;
+ 	int scale_precision;
+ 	int value_offset;
++	int64_t timestamp;
+ };
+ 
+ static const u32 gyro_3d_addresses[GYRO_3D_CHANNEL_MAX] = {
+@@ -87,7 +89,8 @@ static const struct iio_chan_spec gyro_3d_channels[] = {
+ 		BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+ 		BIT(IIO_CHAN_INFO_HYSTERESIS),
+ 		.scan_index = CHANNEL_SCAN_INDEX_Z,
+-	}
++	},
++	IIO_CHAN_SOFT_TIMESTAMP(3)
+ };
+ 
+ /* Adjust channel real bits based on report descriptor */
+@@ -199,10 +202,10 @@ static const struct iio_info gyro_3d_info = {
+ 
+ /* Function to push data to buffer */
+ static void hid_sensor_push_data(struct iio_dev *indio_dev, const void *data,
+-	int len)
++	int len, int64_t timestamp)
+ {
+ 	dev_dbg(&indio_dev->dev, "hid_sensor_push_data\n");
+-	iio_push_to_buffers(indio_dev, data);
++	iio_push_to_buffers_with_timestamp(indio_dev, data, timestamp);
+ }
+ 
+ /* Callback handler to send event after all samples are received and captured */
+@@ -214,10 +217,17 @@ static int gyro_3d_proc_event(struct hid_sensor_hub_device *hsdev,
+ 	struct gyro_3d_state *gyro_state = iio_priv(indio_dev);
+ 
+ 	dev_dbg(&indio_dev->dev, "gyro_3d_proc_event\n");
+-	if (atomic_read(&gyro_state->common_attributes.data_ready))
++	if (atomic_read(&gyro_state->common_attributes.data_ready)) {
++		if (!gyro_state->timestamp)
++			gyro_state->timestamp = iio_get_time_ns(indio_dev);
++
+ 		hid_sensor_push_data(indio_dev,
+ 				gyro_state->gyro_val,
+-				sizeof(gyro_state->gyro_val));
++				sizeof(gyro_state->gyro_val),
++				gyro_state->timestamp);
++
++		gyro_state->timestamp = 0;
++	}
+ 
+ 	return 0;
+ }
+@@ -242,6 +252,9 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 						*(u32 *)raw_data;
+ 		ret = 0;
+ 	break;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
++		gyro_state->timestamp = *(int64_t *)raw_data;
++		ret = 0;
+ 	default:
+ 		break;
+ 	}
+diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
+index 3e59b28..888d32c 100644
+--- a/drivers/media/usb/uvc/uvc_ctrl.c
++++ b/drivers/media/usb/uvc/uvc_ctrl.c
+@@ -356,6 +356,7 @@ static struct uvc_menu_info power_line_frequency_controls[] = {
+ 	{ 0, "Disabled" },
+ 	{ 1, "50 Hz" },
+ 	{ 2, "60 Hz" },
++	{ 3, "Auto" },
+ };
+ 
+ static struct uvc_menu_info exposure_auto_controls[] = {
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 3c07af9..17e6919 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -142,6 +142,76 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_H264,
+ 		.fcc		= V4L2_PIX_FMT_H264,
+ 	},
++	{
++		.name		= "Greyscale 8 L/R (Y8I)",
++		.guid		= UVC_GUID_FORMAT_Y8I,
++		.fcc		= V4L2_PIX_FMT_Y8I,
++	},
++	{
++		.name		= "Greyscale 12 L/R (Y12I)",
++		.guid		= UVC_GUID_FORMAT_Y12I,
++		.fcc		= V4L2_PIX_FMT_Y12I,
++	},
++	{
++		.name		= "Depth data 16-bit (Z16)",
++		.guid		= UVC_GUID_FORMAT_Z16,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "Raw data 8-bit (RAW8)",
++		.guid		= UVC_GUID_FORMAT_RAW8,
++		.fcc		= V4L2_PIX_FMT_RAW8,
++	},
++	{
++		.name		= "Raw data 16-bit (RW16)",
++		.guid		= UVC_GUID_FORMAT_RW16,
++		.fcc		= V4L2_PIX_FMT_RW16,
++	},
++	{
++		.name		= "Depth 16-bit (INVZ)",
++		.guid		= UVC_GUID_FORMAT_INVZ,
++		.fcc		= V4L2_PIX_FMT_INVZ,
++	},
++	{
++		.name		= "Depth:IR 16:8 24-bit (INZI)",
++		.guid		= UVC_GUID_FORMAT_INZI,
++		.fcc		= V4L2_PIX_FMT_INZI,
++	},
++	{
++		.name		= "Depth 16-bit (INVR)",
++		.guid		= UVC_GUID_FORMAT_INVR,
++		.fcc		= V4L2_PIX_FMT_INVR,
++	},
++	{
++		.name		= "Depth:IR 16:8 24-bit (INRI)",
++		.guid		= UVC_GUID_FORMAT_INRI,
++		.fcc		= V4L2_PIX_FMT_INRI,
++	},
++	{
++		.name		= "Infrared 8-bit (INVI)",
++		.guid		= UVC_GUID_FORMAT_INVI,
++		.fcc		= V4L2_PIX_FMT_INVI,
++	},
++	{
++		.name		= "FlickerIR 8-bit (RELI)",
++		.guid		= UVC_GUID_FORMAT_RELI,
++		.fcc		= V4L2_PIX_FMT_RELI,
++	},
++	{
++		.name		= "Luminosity data 8-bit (L8)",
++		.guid		= UVC_GUID_FORMAT_L8,
++		.fcc		= V4L2_PIX_FMT_Y8,
++	},
++	{
++		.name		= "Luminosity data 16-bit (L16)",
++		.guid		= UVC_GUID_FORMAT_L16,
++		.fcc		= V4L2_PIX_FMT_Y16,
++	},
++	{
++		.name		= "Depth data 16-bit (D16)",
++		.guid		= UVC_GUID_FORMAT_D16,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
+ };
+ 
+ /* ------------------------------------------------------------------------
+@@ -2504,6 +2574,123 @@ static struct usb_device_id uvc_ids[] = {
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_PROBE_MINMAX
+ 				| UVC_QUIRK_IGNORE_SELECTOR_UNIT },
++	/* Intel D400/PSR depth camera*/
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0ad1,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D410/ASR depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0ad2,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D415/ASRC depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0ad3,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D430/AWG depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0ad4,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel D450/AWGT depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0ad5,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel D420/PWG depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0af6,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	/* Intel D420_MM/PWGT depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0afe,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D410_MM/ASRT depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0aff,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D400_MM/PSRT depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b00,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D430_MM/AWGCT depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b01,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D460/DS5U depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b03,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D435/AWGC depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b07,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel SR300 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0aa5,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
+ 	/* Generic USB Video Class */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, 0) },
+ 	{}
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index df81b9c..fd61277 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1220,9 +1220,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 	if (stream->bulk.header_size == 0 && !stream->bulk.skip_payload) {
+ 		do {
+ 			ret = uvc_video_decode_start(stream, buf, mem, len);
+-			if (ret == -EAGAIN)
++			if (ret == -EAGAIN) {
++				if (stream->dev->quirks & UVC_QUIRK_APPEND_UVC_HEADER) {
++					uvc_video_decode_data(stream, buf, stream->bulk.header,256);
++				}
+ 				buf = uvc_queue_next_buffer(&stream->queue,
+-							    buf);
++								buf);
++			}
+ 		} while (ret == -EAGAIN);
+ 
+ 		/* If an error occurred skip the rest of the payload. */
+@@ -1254,9 +1258,14 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 		if (!stream->bulk.skip_payload && buf != NULL) {
+ 			uvc_video_decode_end(stream, buf, stream->bulk.header,
+ 				stream->bulk.payload_size);
+-			if (buf->state == UVC_BUF_STATE_READY)
++			if (buf->state == UVC_BUF_STATE_READY) {
++				if (stream->dev->quirks & UVC_QUIRK_APPEND_UVC_HEADER) {
++					uvc_video_decode_data(stream, buf, stream->bulk.header,
++											stream->bulk.header_size);
++				}
+ 				buf = uvc_queue_next_buffer(&stream->queue,
+-							    buf);
++					buf);
++			}
+ 		}
+ 
+ 		stream->bulk.header_size = 0;
+@@ -1733,15 +1742,15 @@ int uvc_video_resume(struct uvc_streaming *stream, int reset)
+ 
+ 	uvc_video_clock_reset(stream);
+ 
++	if (!uvc_queue_streaming(&stream->queue))
++		return 0;
++
+ 	ret = uvc_commit_video(stream, &stream->ctrl);
+ 	if (ret < 0) {
+ 		uvc_queue_enable(&stream->queue, 0);
+ 		return ret;
+ 	}
+ 
+-	if (!uvc_queue_streaming(&stream->queue))
+-		return 0;
+-
+ 	ret = uvc_init_video(stream, GFP_NOIO);
+ 	if (ret < 0)
+ 		uvc_queue_enable(&stream->queue, 0);
+diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
+index 864ada7..afce5eb 100644
+--- a/drivers/media/usb/uvc/uvcvideo.h
++++ b/drivers/media/usb/uvc/uvcvideo.h
+@@ -116,7 +116,52 @@
+ #define UVC_GUID_FORMAT_H264 \
+ 	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+-
++#define UVC_GUID_FORMAT_Y8I \
++	{ 'Y',  '8',  'I',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y12I \
++	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Z16 \
++	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RW10 \
++	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RAW8 \
++    { 'R',  'A',  'W',  '8', 0x66, 0x1a, 0x42, 0xa2, \
++     0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_RW16 \
++    { 'R',  'W',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++     0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_INVZ \
++	{ 'I',  'N',  'V',  'Z', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INZI \
++	{ 'I',  'N',  'Z',  'I', 0x66, 0x1a, 0x42, 0xa2, \
++	 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_INVR \
++	{ 'I',  'N',  'V',  'R', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INRI \
++	{ 'I',  'N',  'R',  'I', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INVI \
++	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
++	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
++#define UVC_GUID_FORMAT_RELI \
++	{ 'R',  'E',  'L',  'I', 0x14, 0x13, 0x43, 0xf9, \
++	 0xa7, 0x5a, 0xee, 0x6b, 0xbf, 0x01, 0x2e, 0x23}
++#define UVC_GUID_FORMAT_L8 \
++	{ '2', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_L16 \
++	{ 'Q', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_D16 \
++	{ 'P', 0x00,  0x00,  0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++	 
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
+  */
+@@ -128,7 +173,7 @@
+ /* Maximum number of packets per URB. */
+ #define UVC_MAX_PACKETS		32
+ /* Maximum status buffer size in bytes of interrupt URB. */
+-#define UVC_MAX_STATUS_SIZE	16
++#define UVC_MAX_STATUS_SIZE	32
+ 
+ #define UVC_CTRL_CONTROL_TIMEOUT	300
+ #define UVC_CTRL_STREAMING_TIMEOUT	5000
+@@ -148,6 +193,7 @@
+ #define UVC_QUIRK_PROBE_DEF		0x00000100
+ #define UVC_QUIRK_RESTRICT_FRAME_RATE	0x00000200
+ #define UVC_QUIRK_RESTORE_CTRLS_ON_INIT	0x00000400
++#define UVC_QUIRK_APPEND_UVC_HEADER	0x00001000
+ 
+ /* Format flags */
+ #define UVC_FMT_FLAG_COMPRESSED		0x00000001
+diff --git a/include/linux/hid-sensor-ids.h b/include/linux/hid-sensor-ids.h
+index 109f0e6..fd949ef 100644
+--- a/include/linux/hid-sensor-ids.h
++++ b/include/linux/hid-sensor-ids.h
+@@ -93,6 +93,7 @@
+ #define HID_USAGE_SENSOR_TIME_HOUR				0x200525
+ #define HID_USAGE_SENSOR_TIME_MINUTE				0x200526
+ #define HID_USAGE_SENSOR_TIME_SECOND				0x200527
++#define HID_USAGE_SENSOR_TIME_TIMESTAMP			0x200529
+ 
+ /* Units */
+ #define HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED			0x00
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index d2cf8c2..aa611ec 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -472,6 +472,21 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_JPGL	v4l2_fourcc('J', 'P', 'G', 'L') /* JPEG-Lite */
+ #define V4L2_PIX_FMT_SE401      v4l2_fourcc('S', '4', '0', '1') /* se401 janggu compressed rgb */
+ #define V4L2_PIX_FMT_S5C_UYVY_JPG v4l2_fourcc('S', '5', 'C', 'I') /* S5C73M3 interleaved UYVY/JPEG */
++#define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
++#define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
++#define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
++#define V4L2_PIX_FMT_Y8       v4l2_fourcc('Y', '8', ' ', ' ') /* Greyscale 8-bit */
++#define V4L2_PIX_FMT_Y10      v4l2_fourcc('Y', '1', '0', ' ') /* Greyscale 10-bit */
++#define V4L2_PIX_FMT_Y12      v4l2_fourcc('Y', '1', '2', ' ') /* Greyscale 12-bit */
++#define V4L2_PIX_FMT_Y16      v4l2_fourcc('Y', '1', '6', ' ') /* Greyscale 16-bit */
++#define V4L2_PIX_FMT_RAW8     v4l2_fourcc('R', 'A', 'W', '8') /* Raw data 8-bit */
++#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
++#define V4L2_PIX_FMT_INVZ     v4l2_fourcc('I', 'N', 'V', 'Z') /* 16 Depth */
++#define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_INVR     v4l2_fourcc('I', 'N', 'V', 'R') /* 16 Depth */
++#define V4L2_PIX_FMT_INRI     v4l2_fourcc('I', 'N', 'R', 'I') /* 24 Depth/IR 16:8 */
++#define V4L2_PIX_FMT_INVI     v4l2_fourcc('I', 'N', 'V', 'I') /* 8 IR */
++#define V4L2_PIX_FMT_RELI     v4l2_fourcc('R', 'E', 'L', 'I') /* 8 IR alternating on off illumination */
+ 
+ /* SDR formats - used only for Software Defined Radio devices */
+ #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

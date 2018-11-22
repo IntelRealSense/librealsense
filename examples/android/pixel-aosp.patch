@@ -1,0 +1,67 @@
+
+project device/google/marlin/
+diff --git a/sailfish/BoardConfig.mk b/sailfish/BoardConfig.mk
+index 2109876..24026e1 100644
+--- a/sailfish/BoardConfig.mk
++++ b/sailfish/BoardConfig.mk
+@@ -91,7 +91,7 @@ ifneq ($(TARGET_USES_AOSP),true)
+ TARGET_USES_QCOM_BSP := true
+ endif
+ 
+-BOARD_KERNEL_CMDLINE := console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0 androidboot.hardware=sailfish user_debug=31 ehci-hcd.park=3 lpm_levels.sleep_disabled=1 cma=32M@0-0xffffffff
++BOARD_KERNEL_CMDLINE := console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0 androidboot.hardware=sailfish user_debug=31 ehci-hcd.park=3 lpm_levels.sleep_disabled=1 cma=32M@0-0xffffffff androidboot.selinux=permissive
+ 
+ BOARD_ROOT_EXTRA_FOLDERS := bt_firmware firmware firmware/radio persist
+ BOARD_ROOT_EXTRA_SYMLINKS := /vendor/lib/dsp:/dsp
+@@ -192,3 +192,5 @@ TARGET_COPY_OUT_VENDOR := vendor
+ 
+ #NFC
+ NXP_CHIP_TYPE := PN551
++
++ADDITIONAL_DEFAULT_PROPERTIES += persist.adb.tcp.port=5555 persist.secure.adb.enable=1
+diff --git a/ueventd.common.rc b/ueventd.common.rc
+index 45a2586..3040c9a 100644
+--- a/ueventd.common.rc
++++ b/ueventd.common.rc
+@@ -105,7 +105,7 @@
+ /dev/mhi_pipe_14          0640   radio      radio
+ /dev/mhi_pipe_16          0640   radio      radio
+ /dev/mhi_pipe_32          0640   radio      radio
+-/dev/video*               0660   system     camera
++/dev/video*               0777   system     camera
+ /dev/media*               0660   system     camera
+ /dev/v4l-subdev*          0660   system     camera
+ /dev/qseecom              0660   system     drmrpc
+
+project device/google/marlin-kernel/
+diff --git a/Image.gz-dtb b/Image.gz-dtb
+index f25bae8..9723151 100644
+Binary files a/Image.gz-dtb and b/Image.gz-dtb differ
+
+project system/core/
+diff --git a/rootdir/init.rc b/rootdir/init.rc
+index 7dc9e55..9ab1c96 100644
+--- a/rootdir/init.rc
++++ b/rootdir/init.rc
+@@ -473,6 +488,8 @@ on post-fs-data
+ 
+     # Set SELinux security contexts on upgrade or policy update.
+     restorecon_recursive /data
++    # Disable SELinux
++    setenforce 0
+ 
+     # Check any timezone data in /data is newer than the copy in /system, delete if not.
+     exec - system system -- /system/bin/tzdatacheck /system/usr/share/zoneinfo /data/misc/zoneinfo
+diff --git a/rootdir/ueventd.rc b/rootdir/ueventd.rc
+index 6ef491c..37885d8 100644
+--- a/rootdir/ueventd.rc
++++ b/rootdir/ueventd.rc
+@@ -86,7 +86,7 @@ subsystem adf
+ /dev/qmi0                 0640   radio      radio
+ /dev/qmi1                 0640   radio      radio
+ /dev/qmi2                 0640   radio      radio
+-/dev/bus/usb/*            0660   root       usb
++/dev/bus/usb/*            0777   root       usb
+ /dev/mtp_usb              0660   root       mtp
+ /dev/usb_accessory        0660   root       usb
+ /dev/tun                  0660   system     vpn

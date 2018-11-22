@@ -22,6 +22,7 @@
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <array>
 
 #include <dirent.h>
 #include <fcntl.h>
