@@ -53,7 +53,10 @@ endif()
 
 # Set library pkgconfig file for facilitating 3rd party integration
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+       DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
-install(CODE "execute_process(COMMAND ldconfig)")
+if(${ROS_BUILD_TYPE})
+      ament_export_include_directories(include)
+      ament_export_libraries(${LRS_TARGET})
+endif()
