@@ -64,19 +64,6 @@ namespace librealsense
 
     namespace platform
     {
-        class hid_serial_info
-        {
-            public:
-                hid_serial_info(uint16_t vid, uint16_t pid, const std::string& unique_id);
-                std::string get_serial(void);
-
-            private:
-                uint16_t _vid;
-                uint16_t _pid;
-                std::string _unique_id;
-                std::string _device_serial;
-        };
-
         struct control_range
         {
             control_range()
@@ -684,6 +671,12 @@ namespace librealsense
             virtual std::shared_ptr<time_service> create_time_service() const = 0;
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
+            
+            virtual std::string get_device_serial(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid) const
+            {
+                std::string empty_str;
+                return empty_str;
+            }
 
             virtual ~backend() = default;
         };
