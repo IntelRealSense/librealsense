@@ -640,7 +640,7 @@ namespace librealsense
             if (!dev)
                 throw librealsense::invalid_value_exception("Failed to create a pipeline_profile, device is null");
 
-            _dev = std::make_shared<record_device>(dev, std::make_shared<ros_writer>(to_file));
+            _dev = std::make_shared<record_device>(dev, std::make_shared<ros_writer>(to_file, dev->compress_while_record()));
         }
         _multistream = config.resolve(_dev.get());
     }

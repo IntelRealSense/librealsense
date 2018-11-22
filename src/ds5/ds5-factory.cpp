@@ -437,6 +437,7 @@ namespace librealsense
 
             return tags;
         };
+        bool compress_while_record() const override { return false; }
     };
 
 

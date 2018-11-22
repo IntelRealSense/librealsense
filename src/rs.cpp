@@ -1297,13 +1297,23 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device)
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(device->device);
+    VALIDATE_NOT_NULL(file);
+
+    return rs2_create_record_device_ex(device, file, device->device->compress_while_record(), error);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, device->device, file)
+
+rs2_device* rs2_create_record_device_ex(const rs2_device* device, const char* file, int compression_enabled, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(file);
 
     return new rs2_device({
         device->ctx,
         device->info,
-        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file))
-    });
+        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled))
+        });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, file)
 

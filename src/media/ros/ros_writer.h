@@ -22,10 +22,14 @@ namespace librealsense
     class ros_writer: public writer
     {
     public:
-        explicit ros_writer(const std::string& file) : m_file_path(file)
+        explicit ros_writer(const std::string& file, bool compress_while_record) : m_file_path(file)
         {
+            LOG_INFO("Compression while record is set to " << (compress_while_record ? "ON" : "OFF"));
             m_bag.open(file, rosbag::BagMode::Write);
-            m_bag.setCompression(rosbag::CompressionType::LZ4);
+            if (compress_while_record)
+            {
+                m_bag.setCompression(rosbag::CompressionType::LZ4);
+            }
             write_file_version();
         }
 
