@@ -489,6 +489,9 @@ namespace librealsense
         const std::vector<platform::hid_device_info>& hids)
     {
         std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
+        uint16_t vid;
+        uint16_t pid;
+
         for (auto&& dev : devices)
         {
             std::vector<platform::hid_device_info> hid_group;
@@ -497,8 +500,8 @@ namespace librealsense
             {
                 if (hid.unique_id != "")
                 {
-                    uint16_t vid = std::stoi(hid.vid, nullptr, 16);
-                    uint16_t pid = std::stoi(hid.pid, nullptr, 16);
+                    std::stringstream(hid.vid) >> std::hex >> vid;
+                    std::stringstream(hid.pid) >> std::hex >> pid;
                     auto&& backend = ctx->get_backend();
                     auto device_serial = backend.get_device_serial(vid, pid, unique_id);
 
