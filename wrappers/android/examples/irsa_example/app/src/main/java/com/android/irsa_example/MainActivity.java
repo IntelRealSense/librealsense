@@ -1,10 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
-// Author: weiguo.zhou@intel.com
-//         zhouwg2000@intel.com
-//
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
-//
 //
 package com.android.irsa_example;
 
