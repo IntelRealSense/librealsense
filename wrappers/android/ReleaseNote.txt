@@ -1,0 +1,42 @@
+v1.3.1:
+the following Android Java APIs was provided in IRSA v1.3.1:
+
+    int     getDeviceCounts();
+    String  getDeviceName();
+    String  getDeviceSN();
+    String  getDeviceFW();
+
+    Map<Integer, IrsaStreamProfile> getStreamProfiles(int stream);
+    void setStreamFormat(int stream, int width, int height, int fps, int format);
+    String formatToString(int format);
+    int formatFromString(String format);
+
+    /**
+     * @param previewType: IRSA_PREVIEW_FAKE, IRSA_PREVIEW_REALSENSE, IRSA_PREVIEW_FA
+     */
+    void setPreviewType(int previewType);
+    void setBAGFile(String name);
+
+    void enablePreview(int stream, Surface surface);
+    void disablePreview(int stream);
+
+    //open/close emitter
+    void switchEmitter();
+    void setEmitter(boolean bEnable);
+    void setLaserPower(int value);
+
+    void setROI(int stream, int x_start, int y_start, int x_end, int y_end);
+    IrsaRect getROI(int stream);
+
+    void startPreview();
+    void stopPreview();
+
+    //for FA(Face Authentication), need sign NDA with Realsense CDE team
+    boolean initIRFA(String dataDir);
+    void switchToRegister();
+
+known issues in v1.3.1:
+    1) ANR 
+    2) setStreamFormat with REALSENSE_MODE need be improved(add swscale function between camera data and SurfaceView);
+    3) setStreamFormat with FAKE_MODE need be improved(parse stream profiles from bag file);
+    4) ANR will occurred when stop playback with bag file(internal deadlock in librealsense)

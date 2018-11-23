@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+<ScrollView android:id="@+id/scrollViewMain"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linear_layout_preview"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dip"
+    android:weightSum="1">
+
+    <TextView
+        android:id="@+id/txtDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="deviceInfo:" />
+
+    <TextView
+        android:id="@+id/TextView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="previewType" />
+
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/radiogroupType"
+        android:orientation="horizontal"
+        android:layout_weight="4.82">
+
+        <RadioButton
+            android:text="BAG file Playback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:id="@+id/radioFake"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="Realsense Camera Preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioRS"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="Intel FA Preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioFA"
+            android:layout_weight="1" />
+    </RadioGroup>
+
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/TextView10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="stream profiles: depth " />
+
+    <Spinner
+        android:id="@+id/spinnerDepth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/TextView11"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="color " />
+
+    <Spinner
+        android:id="@+id/spinnerColor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/TextView12"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="IR " />
+
+    <Spinner
+        android:id="@+id/spinnerIR"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/TextView20"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Render color/IR in right surfaceview" />
+
+    <RadioGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/radiogroupVR"
+        android:orientation="horizontal"
+        >
+
+        <RadioButton
+            android:text="Color frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioColor"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:text="IR frame"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioIR"
+            android:layout_weight="1" />
+    </RadioGroup>
+    </LinearLayout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <ToggleButton
+            android:id="@+id/btnOn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="On"
+            android:textOff="On"
+            android:textOn="Off" />
+
+    <Button
+        android:id="@+id/toggleButtonRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Register" />
+
+        <ToggleButton
+            android:id="@+id/fakeView2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.0"
+            android:alpha="0" />
+
+    <Button
+        android:id="@+id/toggleButtonEmitter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="EMITTER" />
+
+
+        <ToggleButton
+            android:id="@+id/btnPlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:text="Play"
+            android:enabled="false"
+            android:textOff="Play"
+            android:textOn="Stop" />
+
+    </LinearLayout>
+
+
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+    <Button
+        android:id="@+id/toggleButtonDepthROI"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="set Depth ROI" />
+
+
+    <TextView
+        android:id="@+id/textROIX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="X:" />
+
+    <EditText
+        android:id="@+id/txtROIXStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="10" />
+
+    <EditText
+        android:id="@+id/txtROIXEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="300" />
+
+    <TextView
+        android:id="@+id/textROIY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Y:" />
+
+    <EditText
+        android:id="@+id/txtROIYStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="10" />
+
+    <EditText
+        android:id="@+id/txtROIYEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="200" />
+
+
+
+
+
+
+
+
+    <Button
+        android:id="@+id/toggleButtonColorROI"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="set Color ROI" />
+
+
+    <TextView
+        android:id="@+id/textColorROIX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="X:" />
+
+    <EditText
+        android:id="@+id/txtColorROIXStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="0" />
+
+    <EditText
+        android:id="@+id/txtColorROIXEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="639" />
+
+    <TextView
+        android:id="@+id/textColorROIY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Y:" />
+
+    <EditText
+        android:id="@+id/txtColorROIYStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="0" />
+
+    <EditText
+        android:id="@+id/txtColorROIYEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="479" />
+    <!--
+    </LinearLayout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+        -->
+
+    <Button
+        android:id="@+id/toggleButtonLaserPower"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="set Laser Power" />
+
+    <EditText
+        android:id="@+id/txtLaserPower"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal"
+        android:text="120" />
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/glView"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent">"
+
+    </RelativeLayout>
+
+
+</LinearLayout>
+
+</ScrollView>
+
+</android.support.constraint.ConstraintLayout>
