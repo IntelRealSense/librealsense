@@ -226,7 +226,7 @@ private:
             float cell_x_postion = (float)(mod * grid.w);
             if (mod == 0) curr_line++;
             float cell_y_position = curr_line * grid.h;
-            float2 margin = { grid.w * 0.02, grid.h * 0.02 };
+            float2 margin = { grid.w * 0.02f, grid.h * 0.02f };
             auto r = rect{ cell_x_postion + margin.x, cell_y_position + margin.y, grid.w - 2 * margin.x, grid.h };
             rv.push_back(r.adjust_ratio(float2{ fw, fh }));
         }
