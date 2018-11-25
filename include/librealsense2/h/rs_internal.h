@@ -30,7 +30,7 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
-/** \brief All the parameters are requaired to defind video stream*/
+/** \brief All the parameters are requaired to define video stream*/
 typedef struct rs2_video_stream
 {
     rs2_stream type;
@@ -44,6 +44,27 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
+/** \brief All the parameters are requaired to define motion stream*/
+typedef struct rs2_motion_stream
+{
+    rs2_stream type;
+    int index;
+    int uid;
+    int fps;
+    rs2_format fmt;
+    rs2_motion_device_intrinsic intrinsics;
+} rs2_motion_stream;
+
+/** \brief All the parameters are requaired to define pose stream*/
+typedef struct rs2_pose_stream
+{
+    rs2_stream type;
+    int index;
+    int uid;
+    int fps;
+    rs2_format fmt;
+} rs2_pose_stream;
+
 /** \brief All the parameters are requaired to define video frame*/
 typedef struct rs2_software_video_frame
 {
@@ -56,6 +77,39 @@ typedef struct rs2_software_video_frame
     int frame_number;
     const rs2_stream_profile* profile;
 } rs2_software_video_frame;
+
+/** \brief All the parameters are requaired to define motion frame*/
+typedef struct rs2_software_motion_frame
+{
+    void* data;
+    void(*deleter)(void*);
+    rs2_time_t timestamp;
+    rs2_timestamp_domain domain;
+    int frame_number;
+    const rs2_stream_profile* profile;
+} rs2_software_motion_frame;
+
+/** \brief All the parameters are requaired to define pose frame*/
+typedef struct rs2_software_pose_frame
+{
+    struct pose_frame_info
+    {
+        float translation[3];
+        float velocity[3];
+        float acceleration[3];
+        float rotation[4];
+        float angular_velocity[3];
+        float angular_acceleration[3];
+        int tracker_confidence;
+        int mapper_confidence;
+    };
+    void* data;
+    void(*deleter)(void*);
+    rs2_time_t timestamp;
+    rs2_timestamp_domain domain;
+    int frame_number;
+    const rs2_stream_profile* profile;
+} rs2_software_pose_frame;
 
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
@@ -108,12 +162,28 @@ rs2_device* rs2_create_software_device(rs2_error** error);
 rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
 
 /**
- * Inject frame to software sonsor
+ * Inject video frame to software sonsor
  * \param[in] sensor the software sensor
  * \param[in] frame all the frame components
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
+
+/**
+* Inject motion frame to software sonsor
+* \param[in] sensor the software sensor
+* \param[in] frame all the frame components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_on_motion_frame(rs2_sensor* sensor, rs2_software_motion_frame frame, rs2_error** error);
+
+/**
+* Inject pose frame to software sonsor
+* \param[in] sensor the software sensor
+* \param[in] frame all the frame components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_frame frame, rs2_error** error);
 
 /**
 * Set frame metadata for the upcoming frames
@@ -139,6 +209,22 @@ void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, r
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
+
+/**
+* Add motion stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] video_stream all the stream components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs2_motion_stream motion_stream, rs2_error** error);
+
+/**
+* Add pose stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] video_stream all the stream components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error);
 
 /**
  * Add read only option to sensor
