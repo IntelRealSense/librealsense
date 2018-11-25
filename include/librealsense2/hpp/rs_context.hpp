@@ -215,7 +215,6 @@ protected:
         friend class rs2::pipeline;
         friend class rs2::device_hub;
 
-        
         std::shared_ptr<rs2_context> _context;
     };
 

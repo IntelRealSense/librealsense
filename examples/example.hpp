@@ -10,7 +10,12 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
+#include <cmath>
 
+#define PI 3.14159265358979323846
+#define IMU_FRAME_WIDTH 1280
+#define IMU_FRAME_HEIGHT 720
 //////////////////////////////
 // Basic Data Types         //
 //////////////////////////////
@@ -58,10 +63,19 @@ inline void draw_text(int x, int y, const char * text)
 ////////////////////////
 class texture
 {
+    GLuint gl_handle = 0;
+    rs2_stream stream = RS2_STREAM_ANY;
+
 public:
+    void render(const rs2::video_frame& frame, const rect& r)
+    {
+        upload(frame);
+        show(r.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
+    }
+
     void render(const rs2::frameset& frames, int window_width, int window_height)
     {
-        std::vector<rs2::video_frame> supported_frames;
+        std::vector<rs2::frame> supported_frames;
         for (auto f : frames)
         {
             if (can_render(f))
@@ -71,23 +85,20 @@ public:
             return;
 
         std::sort(supported_frames.begin(), supported_frames.end(), [](rs2::frame first, rs2::frame second)
-            { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
+        { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
 
         auto image_grid = calc_grid(float2{ (float)window_width, (float)window_height }, supported_frames);
 
         int image_index = 0;
         for (auto f : supported_frames)
         {
-            upload(f);
-            show(image_grid.at(image_index));
+            auto r = image_grid.at(image_index);
+            if (auto vf = f.as<rs2::video_frame>())
+                render(vf, r);
+            if (auto mf = f.as<rs2::motion_frame>())
+                render_motoin(mf, r);
             image_index++;
         }
-    }
-
-    void render(const rs2::video_frame& frame, const rect& r)
-    {
-        upload(frame);
-        show(r.adjust_ratio({ float(width), float(height) }));
     }
 
     void upload(const rs2::video_frame& frame)
@@ -99,8 +110,8 @@ public:
         GLenum err = glGetError();
 
         auto format = frame.get_profile().format();
-        width = frame.get_width();
-        height = frame.get_height();
+        auto width = frame.get_width();
+        auto height = frame.get_height();
         stream = frame.get_profile().stream_type();
 
         glBindTexture(GL_TEXTURE_2D, gl_handle);
@@ -128,32 +139,36 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    GLuint get_gl_handle() { return gl_handle; }
-
     void show(const rect& r) const
     {
         if (!gl_handle)
             return;
 
+        glViewport(r.x, r.y, r.w, r.h);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glOrtho(0, r.w, r.h, 0, -1, +1);
+
         glBindTexture(GL_TEXTURE_2D, gl_handle);
         glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUAD_STRIP);
-        glTexCoord2f(0.f, 1.f); glVertex2f(r.x, r.y + r.h);
-        glTexCoord2f(0.f, 0.f); glVertex2f(r.x, r.y);
-        glTexCoord2f(1.f, 1.f); glVertex2f(r.x + r.w, r.y + r.h);
-        glTexCoord2f(1.f, 0.f); glVertex2f(r.x + r.w, r.y);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0, 0);
+        glTexCoord2f(0, 1); glVertex2f(0, r.h);
+        glTexCoord2f(1, 1); glVertex2f(r.w, r.h);
+        glTexCoord2f(1, 0); glVertex2f(r.w, 0);
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
-
-        draw_text((int)r.x + 15, (int)r.y + 20, rs2_stream_to_string(stream));
+        draw_text(0.05 * r.w, r.h - 0.05*r.h, rs2_stream_to_string(stream));
     }
 
+    GLuint get_gl_handle() { return gl_handle; }
+
 private:
-    GLuint gl_handle = 0;
-    int width = 0;
-    int height = 0;
-    rs2_stream stream = RS2_STREAM_ANY;
+    void render_motoin(const rs2::motion_frame& frame, const rect& r)
+    {
+        draw_motion(frame, r.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
 
     bool can_render(const rs2::frame& f) const
     {
@@ -163,6 +178,7 @@ private:
         case RS2_FORMAT_RGB8:
         case RS2_FORMAT_RGBA8:
         case RS2_FORMAT_Y8:
+        case RS2_FORMAT_MOTION_XYZ32F:
             return true;
         default:
             return false;
@@ -190,29 +206,220 @@ private:
         return rect{ static_cast<float>(w), static_cast<float>(h), static_cast<float>(new_w), static_cast<float>(new_h) };
     }
 
-    std::vector<rect> calc_grid(float2 window, std::vector<rs2::video_frame>& frames)
+    std::vector<rect> calc_grid(float2 window, std::vector<rs2::frame>& frames)
     {
         auto grid = calc_grid(window, frames.size());
 
-        int index = 0;
         std::vector<rect> rv;
         int curr_line = -1;
-        for (auto f  : frames)
-        {
-            auto mod = index % (int)grid.x;
-            auto fw = (float)frames[index].get_width();
-            auto fh = (float)frames[index].get_height();
 
+        for (int i = 0; i < frames.size(); i++)
+        {
+            auto mod = i % (int)grid.x;
+            float fw = IMU_FRAME_WIDTH;
+            float fh = IMU_FRAME_HEIGHT;
+            if (auto vf = frames[i].as<rs2::video_frame>())
+            {
+                fw = (float)vf.get_width();
+                fh = (float)vf.get_height();
+            }
             float cell_x_postion = (float)(mod * grid.w);
             if (mod == 0) curr_line++;
             float cell_y_position = curr_line * grid.h;
-
-            auto r = rect{ cell_x_postion, cell_y_position, grid.w, grid.h };
+            float2 margin = { grid.w * 0.02, grid.h * 0.02 };
+            auto r = rect{ cell_x_postion + margin.x, cell_y_position + margin.y, grid.w - 2 * margin.x, grid.h };
             rv.push_back(r.adjust_ratio(float2{ fw, fh }));
-            index++;
         }
 
         return rv;
+    }
+
+    void draw_motion(rs2::motion_frame f, rect r)
+    {
+        if (!gl_handle)
+            glGenTextures(1, &gl_handle);
+
+        glViewport(r.x, r.y, r.w, r.h);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glOrtho(0, r.w, r.h, 0, -1, +1);
+        draw_text(0.05 * r.w, r.h - 0.1*r.h, f.get_profile().stream_name().c_str());
+
+        auto md = f.get_motion_data();
+        auto x = md.x;
+        auto y = md.y;
+        auto z = md.z;
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glOrtho(-2.8, 2.8, -2.4, 2.4, -7, 7);
+
+        glRotatef(25, 1.0f, 0.0f, 0.0f);
+
+        glTranslatef(0, -0.33f, -1.f);
+
+        float norm = std::sqrt(x * x + y * y + z * z);
+
+        glRotatef(-135, 0.0f, 1.0f, 0.0f);
+
+        glRotatef(180, 0.0f, 0.0f, 1.0f);
+        glRotatef(-90, 0.0f, 1.0f, 0.0f);
+
+        draw_axes();
+
+        draw_circle(1, 0, 0, 0, 1, 0);
+        draw_circle(0, 1, 0, 0, 0, 1);
+        draw_circle(1, 0, 0, 0, 0, 1);
+
+        const auto canvas_size = 230;
+        auto vectorWidth = 5.f;
+        glLineWidth(vectorWidth);
+        glBegin(GL_LINES);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(x / norm, y / norm, z / norm);
+        glEnd();
+
+        // Save model and projection matrix for later
+        GLfloat model[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, model);
+        GLfloat proj[16];
+        glGetFloatv(GL_PROJECTION_MATRIX, proj);
+
+        glLoadIdentity();
+        glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+
+        std::ostringstream s1;
+        const auto precision = 3;
+
+        glRotatef(180, 1.0f, 0.0f, 0.0f);
+
+        s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
+        print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
+
+        std::ostringstream s2;
+        s2 << std::setprecision(precision) << norm;
+        print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+    }
+
+    //IMU drawing helper functions
+    void multiply_vector_by_matrix(GLfloat vec[], GLfloat mat[], GLfloat* result)
+    {
+        const auto N = 4;
+        for (int i = 0; i < N; i++)
+        {
+            result[i] = 0;
+            for (int j = 0; j < N; j++)
+            {
+                result[i] += vec[j] * mat[N*j + i];
+            }
+        }
+        return;
+    }
+
+    float2 xyz_to_xy(float x, float y, float z, GLfloat model[], GLfloat proj[], float vec_norm)
+    {
+        GLfloat vec[4] = { x, y, z, 0 };
+        float tmp_result[4];
+        float result[4];
+
+        const auto canvas_size = 230;
+
+        multiply_vector_by_matrix(vec, model, tmp_result);
+        multiply_vector_by_matrix(tmp_result, proj, result);
+
+        return{ canvas_size * vec_norm *result[0], canvas_size * vec_norm *result[1] };
+    }
+
+    void print_text_in_3d(float x, float y, float z, const char* text, bool center_text, GLfloat model[], GLfloat proj[], float vec_norm)
+    {
+        auto xy = xyz_to_xy(x, y, z, model, proj, vec_norm);
+        auto w = (center_text) ? stb_easy_font_width((char*)text) : 0;
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_text((int)(xy.x - w / 2), (int)xy.y, text);
+    }
+
+    static void  draw_axes(float axis_size = 1.f, float axisWidth = 4.f)
+    {
+        // Triangles For X axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(axis_size * 1.1f, 0.f, 0.f);
+        glVertex3f(axis_size, -axis_size * 0.05f, 0.f);
+        glVertex3f(axis_size, axis_size * 0.05f, 0.f);
+        glVertex3f(axis_size * 1.1f, 0.f, 0.f);
+        glVertex3f(axis_size, 0.f, -axis_size * 0.05f);
+        glVertex3f(axis_size, 0.f, axis_size * 0.05f);
+        glEnd();
+
+        // Triangles For Y axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.f, 1.f, 0.f);
+        glVertex3f(0.f, axis_size * 1.1f, 0.0f);
+        glVertex3f(0.f, axis_size, 0.05f * axis_size);
+        glVertex3f(0.f, axis_size, -0.05f * axis_size);
+        glVertex3f(0.f, axis_size * 1.1f, 0.0f);
+        glVertex3f(0.05f * axis_size, axis_size, 0.f);
+        glVertex3f(-0.05f * axis_size, axis_size, 0.f);
+        glEnd();
+
+        // Triangles For Z axis
+        glBegin(GL_TRIANGLES);
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+        glVertex3f(0.0f, 0.05f * axis_size, 1.0f * axis_size);
+        glVertex3f(0.0f, -0.05f * axis_size, 1.0f * axis_size);
+        glVertex3f(0.0f, 0.0f, 1.1f * axis_size);
+        glVertex3f(0.05f * axis_size, 0.f, 1.0f * axis_size);
+        glVertex3f(-0.05f * axis_size, 0.f, 1.0f * axis_size);
+        glEnd();
+
+        glLineWidth(axisWidth);
+
+        // Drawing Axis
+        glBegin(GL_LINES);
+        // X axis - Red
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(axis_size, 0.0f, 0.0f);
+
+        // Y axis - Green
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, axis_size, 0.0f);
+
+        // Z axis - Blue
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.0f, 0.0f, axis_size);
+        glEnd();
+    }
+
+    // intensity is grey intensity
+    static void draw_circle(float xx, float xy, float xz, float yx, float yy, float yz, float radius = 1.1, float3 center = { 0.0, 0.0, 0.0 }, float intensity = 0.5f)
+    {
+        const auto N = 50;
+        glColor3f(intensity, intensity, intensity);
+        glLineWidth(2);
+        glBegin(GL_LINE_STRIP);
+
+        for (int i = 0; i <= N; i++)
+        {
+            const double theta = (2 * PI / N) * i;
+            const auto cost = static_cast<float>(cos(theta));
+            const auto sint = static_cast<float>(sin(theta));
+            glVertex3f(
+                center.x + radius * (xx * cost + yx * sint),
+                center.y + radius * (xy * cost + yy * sint),
+                center.z + radius * (xz * cost + yz * sint)
+            );
+        }
+        glEnd();
     }
 };
 
@@ -313,7 +520,6 @@ struct glfw_state {
     float offset_y;
     texture tex;
 };
-
 
 // Handles all the OpenGL calls needed to display the point cloud
 void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points)

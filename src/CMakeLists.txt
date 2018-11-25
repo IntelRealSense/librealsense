@@ -8,6 +8,7 @@ include(${_rel_path}/media/CMakeLists.txt)
 include(${_rel_path}/mock/CMakeLists.txt)
 include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
+include(${_rel_path}/pipeline/CMakeLists.txt)
 
 if(FORCE_LIBUVC)
     include(${_rel_path}/libuvc/CMakeLists.txt)
@@ -41,7 +42,6 @@ target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/pipeline.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/archive.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
@@ -65,8 +65,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/software-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
-        "${CMAKE_CURRENT_LIST_DIR}/pipeline.h"
-        "${CMAKE_CURRENT_LIST_DIR}/config.h"
         "${CMAKE_CURRENT_LIST_DIR}/archive.h"
         "${CMAKE_CURRENT_LIST_DIR}/concurrency.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
