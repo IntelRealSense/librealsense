@@ -75,8 +75,6 @@ namespace librealsense
                     assign_stream(_owner->_accel_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GYRO)
                     assign_stream(_owner->_gyro_stream, p);
-                if (p->get_stream_type() == RS2_STREAM_GPIO)
-                    assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
 
                 //set motion intrinsics
                 if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
@@ -179,15 +177,6 @@ namespace librealsense
         }
 
         static const char* custom_sensor_fw_ver = "5.6.0.0";
-        if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
-        {
-            static const std::vector<std::pair<std::string, stream_profile>> custom_sensor_profiles =
-                {{std::string("custom"), { RS2_STREAM_GPIO, 1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
-            std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
-        }
 
         auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
@@ -266,9 +255,6 @@ namespace librealsense
     {
         using namespace ds;
 
-        for (auto i = 0; i < 4; i++)
-            _gpio_streams[i] = std::make_shared<stream>(RS2_STREAM_GPIO, i+1);
-
         _tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
         _tm1_eeprom = [this]() { return get_tm1_eeprom(); };
 
@@ -287,12 +273,6 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
-
-        for (auto i = 0; i < 4; i++)
-        {
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
-            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
-        }
 
         // Try to add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
