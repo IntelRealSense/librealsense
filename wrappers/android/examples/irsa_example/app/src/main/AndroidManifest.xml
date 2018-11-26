@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.irsa_example">
+    package="com.android.irsa_example" >
 
     <!--
          Platform APILevel Coverage 
@@ -17,7 +17,6 @@
          8.0 Oreo    26
          9.0 Pie     27
     -->
-
     <uses-sdk android:minSdkVersion="21" />
     <uses-feature android:name="android.hardware.usb.host"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -33,17 +32,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:screenOrientation="landscape"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".MainActivity"
-            android:label="@string/app_name"
-            android:screenOrientation="landscape"
-            android:theme="@style/AppTheme.NoActionBar">
+        <activity android:name=".MainActivity" android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
+
 </manifest>

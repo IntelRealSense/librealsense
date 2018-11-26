@@ -179,6 +179,7 @@ public class MainActivity extends Activity {
                     Toast.makeText(gMe.getApplicationContext(), eventString, Toast.LENGTH_SHORT).show();
                 }
                 if (arg1 == IrsaEvent.IRSA_ERROR_FA) {
+                    gMe.txtViewStatus.setText(eventString);
                 }
                 gMe.txtViewStatus.setText(eventString);
             }
@@ -188,6 +189,9 @@ public class MainActivity extends Activity {
                     gMe.txtViewFace.setText(eventString);
                 }
                 if (arg1 == IrsaEvent.IRSA_INFO_FA) {
+                    gMe.txtViewStatus.setText(eventString);
+                }
+                if (arg1 == IrsaEvent.IRSA_INFO_STATUS) {
                     gMe.txtViewStatus.setText(eventString);
                 }
             }
