@@ -5940,10 +5940,11 @@ namespace rs2
                                         dev_syncer = viewer.syncer->create_syncer();
                                     
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                                    if (friendly_name.find("Tracking") != std::string::npos)
+                                    if ((friendly_name.find("Tracking") != std::string::npos) ||
+                                        (friendly_name.find("Motion") != std::string::npos))
                                     {
                                         viewer.synchronization_enable = false;
-}
+                                    }
                                     sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
