@@ -123,13 +123,13 @@ namespace librealsense
             return std::make_shared<profile>(dev, config, _device_request.record_output);
         }
 
-        std::shared_ptr<profile> config::resolve(std::shared_ptr<pipeline> str, const std::chrono::milliseconds& timeout)
+        std::shared_ptr<profile> config::resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
         {
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
 
             //Resolve the the device that was specified by the user, this call will wait in case the device is not availabe.
-            auto requested_device = resolve_device_requests(str->get_context(), timeout);
+            auto requested_device = resolve_device_requests(pipe, timeout);
             if (requested_device != nullptr)
             {
                 _resolved_profile = resolve(requested_device);
@@ -137,7 +137,7 @@ namespace librealsense
             }
 
             //Look for satisfy device in case the user did not specify one.
-            auto devs = str->get_context()->query_devices(RS2_PRODUCT_LINE_ANY_INTEL);
+            auto devs = pipe->get_context()->query_devices(RS2_PRODUCT_LINE_ANY_INTEL);
             for (auto dev_info : devs)
             {
                 try
@@ -153,7 +153,7 @@ namespace librealsense
             }
 
             //If no device found wait for one
-            auto dev = str->wait_for_device(timeout);
+            auto dev = pipe->wait_for_device(timeout);
             if (dev != nullptr)
             {
                 _resolved_profile = resolve(dev);
@@ -165,11 +165,11 @@ namespace librealsense
             assert(0); //Unreachable code
         }
 
-        bool config::can_resolve(std::shared_ptr<pipeline> str)
+        bool config::can_resolve(std::shared_ptr<pipeline> pipe)
         {
             try
             {    // Try to resolve from connected devices. Non-blocking call
-                resolve(str);
+                resolve(pipe);
                 _resolved_profile.reset();
             }
             catch (const std::exception& e)
@@ -202,7 +202,7 @@ namespace librealsense
             return ctx->add_device(file);
         }
 
-        std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<context> ctx, const std::chrono::milliseconds& timeout)
+        std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)
         {
             //Prefer filename over serial
             if (!_device_request.filename.empty())
@@ -210,7 +210,7 @@ namespace librealsense
                 std::shared_ptr<device_interface> dev;
                 try
                 {
-                    dev = get_or_add_playback_device(ctx, _device_request.filename);
+                    dev = get_or_add_playback_device(pipe->get_context(), _device_request.filename);
                 }
                 catch (const std::exception& e)
                 {
@@ -241,10 +241,10 @@ namespace librealsense
                 return dev;
             }
 
-            //if (!_device_request.serial.empty())
-            //{
-            //    return pipe->wait_for_device(timeout, _device_request.serial);
-            //}
+            if (!_device_request.serial.empty())
+            {
+                return pipe->wait_for_device(timeout, _device_request.serial);
+            }
 
             return nullptr;
         }

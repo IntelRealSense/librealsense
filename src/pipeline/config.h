@@ -26,8 +26,8 @@ namespace librealsense
             void enable_record_to_file(const std::string& file);
             void disable_stream(rs2_stream stream, int index = -1);
             void disable_all_streams();
-            std::shared_ptr<profile> resolve(std::shared_ptr<pipeline> str, const std::chrono::milliseconds& timeout = std::chrono::milliseconds(0));
-            bool can_resolve(std::shared_ptr<pipeline> str);
+            std::shared_ptr<profile> resolve(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout = std::chrono::milliseconds(0));
+            bool can_resolve(std::shared_ptr<pipeline> pipe);
             bool get_repeat_playback();
 
             //Non top level API
@@ -50,7 +50,7 @@ namespace librealsense
                 std::string record_output;
             };
             std::shared_ptr<device_interface> get_or_add_playback_device(std::shared_ptr<context> ctx, const std::string& file);
-            std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<context> ctx, const std::chrono::milliseconds& timeout);
+            std::shared_ptr<device_interface> resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout);
             stream_profiles get_default_configuration(std::shared_ptr<device_interface> dev);
             std::shared_ptr<profile> resolve(std::shared_ptr<device_interface> dev);
 
