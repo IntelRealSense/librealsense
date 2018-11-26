@@ -478,14 +478,14 @@ namespace librealsense
 
         pose_frame() : frame() {}
 
-        float3   get_translation()          const { return reinterpret_cast<const pose_info*>(data.data())->translation; }
-        float3   get_velocity()             const { return reinterpret_cast<const pose_info*>(data.data())->velocity; }
-        float3   get_acceleration()         const { return reinterpret_cast<const pose_info*>(data.data())->acceleration; }
-        float4   get_rotation()             const { return reinterpret_cast<const pose_info*>(data.data())->rotation; }
-        float3   get_angular_velocity()     const { return reinterpret_cast<const pose_info*>(data.data())->angular_velocity; }
-        float3   get_angular_acceleration() const { return reinterpret_cast<const pose_info*>(data.data())->angular_acceleration; }
-        uint32_t get_tracker_confidence()   const { return reinterpret_cast<const pose_info*>(data.data())->tracker_confidence; }
-        uint32_t get_mapper_confidence()    const { return reinterpret_cast<const pose_info*>(data.data())->mapper_confidence; }
+        float3   get_translation()          const { return reinterpret_cast<const pose_info*>(get_frame_data())->translation; }
+        float3   get_velocity()             const { return reinterpret_cast<const pose_info*>(get_frame_data())->velocity; }
+        float3   get_acceleration()         const { return reinterpret_cast<const pose_info*>(get_frame_data())->acceleration; }
+        float4   get_rotation()             const { return reinterpret_cast<const pose_info*>(get_frame_data())->rotation; }
+        float3   get_angular_velocity()     const { return reinterpret_cast<const pose_info*>(get_frame_data())->angular_velocity; }
+        float3   get_angular_acceleration() const { return reinterpret_cast<const pose_info*>(get_frame_data())->angular_acceleration; }
+        uint32_t get_tracker_confidence()   const { return reinterpret_cast<const pose_info*>(get_frame_data())->tracker_confidence; }
+        uint32_t get_mapper_confidence()    const { return reinterpret_cast<const pose_info*>(get_frame_data())->mapper_confidence; }
     };
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_FRAME, librealsense::pose_frame);

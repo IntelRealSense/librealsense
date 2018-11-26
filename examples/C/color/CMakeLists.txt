@@ -12,12 +12,5 @@ set_target_properties (rs-color PROPERTIES
 FOLDER "Examples/C"
 )
 
-install(
-TARGETS
-
-rs-color
-
-RUNTIME DESTINATION
-${CMAKE_INSTALL_PREFIX}/bin
-)
+install(TARGETS rs-color RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

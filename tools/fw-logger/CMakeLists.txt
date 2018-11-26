@@ -43,6 +43,6 @@ install(
     rs-fw-logger
 
     RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+    ${CMAKE_INSTALL_BINDIR}
 )
 

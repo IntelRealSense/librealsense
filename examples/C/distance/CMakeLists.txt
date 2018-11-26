@@ -12,12 +12,5 @@ set_target_properties (rs-distance PROPERTIES
 FOLDER "Examples/C"
 )
 
-install(
-TARGETS
-
-rs-distance
-
-RUNTIME DESTINATION
-${CMAKE_INSTALL_PREFIX}/bin
-)
+install(TARGETS rs-distance RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

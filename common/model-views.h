@@ -762,6 +762,11 @@ namespace rs2
         void process(rs2::frame f, const rs2::frame_source& source);
         std::vector<rs2::frame> handle_frame(rs2::frame f);
 
+        void map_id(rs2::frame new_frame, rs2::frame old_frame);
+        void map_id_frameset_to_frame(rs2::frameset first, rs2::frame second);
+        void map_id_frameset_to_frameset(rs2::frameset first, rs2::frameset second);
+        void map_id_frame_to_frame(rs2::frame first, rs2::frame second);
+
         rs2::frame apply_filters(rs2::frame f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
@@ -903,8 +908,12 @@ namespace rs2
 
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
 
-        bool is_3d_texture_source(frame f);
+        std::vector<frame> get_frames(frame set);
+        frame get_3d_depth_source(frame f);
+        frame get_3d_texture_source(frame f);
+
         bool is_3d_depth_source(frame f);
+        bool is_3d_texture_source(frame f);
 
         texture_buffer* upload_frame(frame&& f);
 
