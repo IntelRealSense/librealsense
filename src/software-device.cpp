@@ -180,7 +180,7 @@ namespace librealsense
         _source.reset();
     }
 
-    
+
     void software_sensor::set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value)
     {
         _metadata_map[key] = value;

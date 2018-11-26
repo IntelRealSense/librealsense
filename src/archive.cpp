@@ -79,7 +79,7 @@ namespace librealsense
                     && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
                     && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold)
                 {
-                    if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 || 
+                    if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 ||
                         index2reducedIndex.count(d) == 0)
                         continue;
                     faces.emplace_back(index2reducedIndex[a], index2reducedIndex[b], index2reducedIndex[d]);

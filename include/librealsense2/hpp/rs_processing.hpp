@@ -593,7 +593,7 @@ namespace rs2
         {
             set_option(RS2_OPTION_FILTER_MAGNITUDE, magnitude);
         }
-        
+
     private:
         friend class context;
 

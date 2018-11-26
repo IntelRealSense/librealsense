@@ -5,7 +5,7 @@ if (BUILD_WITH_CUDA)
 endif()
 
 include(${_proc_rel_path}/sse/CMakeLists.txt)
-    
+
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.cpp"

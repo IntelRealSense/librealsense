@@ -49,7 +49,7 @@ namespace rs2
 
             return res > 0;
         }
-      
+
         /**
         * returns a list of all newly connected devices
         * \return            the list of all new connected devices
@@ -215,7 +215,6 @@ protected:
         friend class rs2::pipeline;
         friend class rs2::device_hub;
 
-        
         std::shared_ptr<rs2_context> _context;
     };
 

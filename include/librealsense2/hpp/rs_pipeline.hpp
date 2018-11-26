@@ -106,7 +106,7 @@ namespace rs2
         pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile) :
             _pipeline_profile(profile){}
     private:
-        
+
         std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
         friend class config;
         friend class pipeline;

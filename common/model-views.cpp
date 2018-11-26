@@ -3121,7 +3121,7 @@ namespace rs2
                     auto temp_filter = s.second.dev->temporal_filter;
                     auto hole_filling = s.second.dev->hole_filling_filter;
                     auto disparity_2_depth = s.second.dev->disparity_to_depth;
-                   
+
                     if (dec_filter && dec_filter->enabled)
                         f = dec_filter->invoke(f);
 
@@ -3181,7 +3181,6 @@ namespace rs2
                 break;
             }
         }
-       
 
         return f;
     }
@@ -3263,7 +3262,6 @@ namespace rs2
         }
         else
             res.push_back(filtered);
-           
         if(viewer.is_3d_view)
         {
             if(auto depth = viewer.get_3d_depth_source(filtered))
@@ -3286,7 +3284,7 @@ namespace rs2
         std::vector<frame> results;
 
         auto res = handle_frame(f);
-        
+
         auto frame = source.allocate_composite_frame(res);
 
         if(frame)
@@ -5528,7 +5526,7 @@ namespace rs2
                                             << opt_model.value << " (" << labels[selected] << ")");
 
                                         opt_model.endpoint->set_option(opt_model.opt, new_val);
-                                        
+
                                         // Only apply preset to GUI if set_option was succesful
                                         selected_file_preset = "";
                                         opt_model.value = new_val;
@@ -5938,7 +5936,7 @@ namespace rs2
                                 {
                                     if(!dev_syncer)
                                         dev_syncer = viewer.syncer->create_syncer();
-                                    
+
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
                                     if ((friendly_name.find("Tracking") != std::string::npos) ||
                                         (friendly_name.find("Motion") != std::string::npos))

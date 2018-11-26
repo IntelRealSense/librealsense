@@ -52,7 +52,7 @@ namespace librealsense
 
         if (frame.is<rs2::frameset>())
             return false;
-    
+
         if (_transform_to_disparity && (frame.get_profile().stream_type() != RS2_STREAM_DEPTH || frame.get_profile().format() != RS2_FORMAT_Z16))
             return false;
 
