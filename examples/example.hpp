@@ -260,8 +260,6 @@ private:
 
         glTranslatef(0, -0.33f, -1.f);
 
-        float norm = std::sqrt(x * x + y * y + z * z);
-
         glRotatef(-135, 0.0f, 1.0f, 0.0f);
 
         glRotatef(180, 0.0f, 0.0f, 1.0f);
@@ -274,35 +272,57 @@ private:
         draw_circle(1, 0, 0, 0, 0, 1);
 
         const auto canvas_size = 230;
-        auto vectorWidth = 5.f;
-        glLineWidth(vectorWidth);
-        glBegin(GL_LINES);
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 0.0f);
-        glVertex3f(x / norm, y / norm, z / norm);
-        glEnd();
+        const auto vec_threshold = 0.01f;
+        float norm = std::sqrt(x * x + y * y + z * z);
+        if (norm < vec_threshold)
+        {
+            const auto radius = 0.05;
+            static const int circle_points = 100;
+            static const float angle = 2.0f * 3.1416f / circle_points;
 
-        // Save model and projection matrix for later
-        GLfloat model[16];
-        glGetFloatv(GL_MODELVIEW_MATRIX, model);
-        GLfloat proj[16];
-        glGetFloatv(GL_PROJECTION_MATRIX, proj);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glBegin(GL_POLYGON);
+            double angle1 = 0.0;
+            glVertex2d(radius * cos(0.0), radius * sin(0.0));
+            int i;
+            for (i = 0; i < circle_points; i++)
+            {
+                glVertex2d(radius * cos(angle1), radius *sin(angle1));
+                angle1 += angle;
+            }
+            glEnd();
+        }
+        else
+        {
+            auto vectorWidth = 5.f;
+            glLineWidth(vectorWidth);
+            glBegin(GL_LINES);
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(x / norm, y / norm, z / norm);
+            glEnd();
 
-        glLoadIdentity();
-        glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
+            // Save model and projection matrix for later
+            GLfloat model[16];
+            glGetFloatv(GL_MODELVIEW_MATRIX, model);
+            GLfloat proj[16];
+            glGetFloatv(GL_PROJECTION_MATRIX, proj);
 
-        std::ostringstream s1;
-        const auto precision = 3;
+            glLoadIdentity();
+            glOrtho(-canvas_size, canvas_size, -canvas_size, canvas_size, -1, +1);
 
-        glRotatef(180, 1.0f, 0.0f, 0.0f);
+            std::ostringstream s1;
+            const auto precision = 3;
 
-        s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
-        print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
+            glRotatef(180, 1.0f, 0.0f, 0.0f);
 
-        std::ostringstream s2;
-        s2 << std::setprecision(precision) << norm;
-        print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+            s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
+            print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
 
+            std::ostringstream s2;
+            s2 << std::setprecision(precision) << norm;
+            print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+        }
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
     }
