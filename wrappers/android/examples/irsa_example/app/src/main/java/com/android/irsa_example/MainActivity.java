@@ -1,11 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 //
+// 1. this example could be built with gradle or Android Studio;
+//
+// 2. illustrate how to using IRSA in PoC/product development activities with librealsense for 
+//    Android based device;
+//
+// 3. study & research how to enable librealsense running on non-rooted Android device;
 //
 package com.android.irsa_example;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.app.PendingIntent;
+
 import android.os.Bundle;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
@@ -15,6 +23,9 @@ import android.content.DialogInterface;
 import android.content.res.AssetManager;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.IntentFilter;
+import android.content.Intent;
+import android.content.BroadcastReceiver;
 
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -46,12 +57,19 @@ import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.PixelFormat;
 
+import android.hardware.usb.UsbConstants;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbInterface;
+import android.hardware.usb.UsbManager;
+import android.hardware.usb.*;
+
 import android.util.Log;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.util.AttributeSet;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
 import java.util.List;
@@ -86,7 +104,7 @@ public class MainActivity extends Activity {
     private int textWidth       = 600;
     private int TEXT_VIEW_SIZE  = 20;
 
-    //hardcode color stream format here for FA
+    //hardcode color stream format here for FA(3D Face Authentication)
     private int RGB_FRAME_WIDTH     = 640;
     private int RGB_FRAME_HEIGHT    = 480;
     private int RGB_FPS             = 30;
@@ -161,6 +179,20 @@ public class MainActivity extends Activity {
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE" };
 
+    private UsbManager mUsbManager;
+    public static final String ACTION_DEVICE_PERMISSION = "com.irsa_example.USB_PERMISSION";
+    private PendingIntent mPermissionIntent;
+
+    private UsbEndpoint mUsbEndpointIn;
+    private UsbEndpoint mUsbEndpointOut;
+    private UsbInterface mUsbInterfaceInt;
+    private UsbInterface musbInterfaceOut;
+    private UsbDeviceConnection mUsbDeviceConnection;
+    protected static final int STD_USB_REQUEST_GET_DESCRIPTOR = 0x06;
+    // http://libusb.sourceforge.net/api-1.0/group__desc.html
+    protected static final int LIBUSB_DT_STRING = 0x03;
+
+
     protected class MyEventListener implements IrsaEventListener {
 
         MyEventListener() {
@@ -222,6 +254,9 @@ public class MainActivity extends Activity {
         if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
+
+        mUsbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
+        mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_DEVICE_PERMISSION), 0);
 
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -369,6 +404,7 @@ public class MainActivity extends Activity {
                 if (isChecked) {
                     MainActivity.this.btnOn.setEnabled(false);
 
+                    setup();
                     startPreview();
                 } else {
                     stopPreview();
@@ -391,8 +427,12 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
                 mIrsaMgr.switchToRegister();
-                mIrsaMgr.disablePreview(mDefaultRenderID);
-                mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
+
+                //mIrsaMgr.disablePreview(mDefaultRenderID);
+                //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
+
+                //do USB experiment here
+                checkUsbDevice();
             }
         });
 
@@ -631,6 +671,26 @@ public class MainActivity extends Activity {
 
 
     @Override
+    protected void onResume() {
+        IrsaLog.d(TAG, "onResume");
+        super.onResume();
+        IntentFilter usbFilter = new IntentFilter();
+        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        usbFilter.addAction(ACTION_DEVICE_PERMISSION);
+        registerReceiver(mUsbReceiver, usbFilter);
+    }
+
+
+    @Override
+    protected void onPause() {
+        IrsaLog.d(TAG, "onPause");
+        super.onPause();
+        unregisterReceiver(mUsbReceiver);
+    }
+
+
+    @Override
     public void onDestroy() {
         IrsaLog.d(TAG, "onDestroy cleanup resource");
         if (mIrsaMgr != null) {
@@ -806,6 +866,23 @@ public class MainActivity extends Activity {
                     mapSurfaceMap.put(Integer.valueOf(objIndex), objSV.getHolder().getSurface());
                 }
             }
+
+            mDepthIV = new DrawImageView(this);
+            mDepthIV.setLayoutParams(vectorLP.get(0));
+            layout.addView(mDepthIV);
+
+            mColorIV = new DrawImageView(this);
+            mColorIV.setLayoutParams(vectorLP.get(1));
+            layout.addView(mColorIV);
+
+            mDepthIV.setPos(0, 0, 1, 1);
+            mDepthIV.draw(new Canvas());
+
+            //color ROI disabled with USB2.0 currently
+            //color ROI's default range is full screen
+            mColorIV.setPos(0, 0, 639, 479);
+            mColorIV.draw(new Canvas());
+
             bSetup = true;
         }
 
@@ -816,22 +893,6 @@ public class MainActivity extends Activity {
             //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_INFRARED, mapSV.get(Integer.valueOf(2)).getHolder().getSurface());
             mIrsaMgr.enablePreview(mDefaultRenderID, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
         }
-
-        mDepthIV = new DrawImageView(this);
-        mDepthIV.setLayoutParams(vectorLP.get(0));
-        layout.addView(mDepthIV);
-
-        mColorIV = new DrawImageView(this);
-        mColorIV.setLayoutParams(vectorLP.get(1));
-        layout.addView(mColorIV);
-
-        mDepthIV.setPos(0, 0, 1, 1);
-        mDepthIV.draw(new Canvas());
-
-        //color ROI disabled with USB2.0 currently
-        //color ROI's default range is full screen
-        mColorIV.setPos(0, 0, 639, 479);
-        mColorIV.draw(new Canvas());
     }
 
 
@@ -971,4 +1032,245 @@ public class MainActivity extends Activity {
         }  
     }  
 
+
+    //=========== begin USB experiment ========================== {
+    private void checkUsbDevice() {
+        IrsaLog.d(TAG, "checkUsbInfo ");
+
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
+        IrsaLog.d(TAG, "deviceList.size " + deviceList.size());
+        Toast.makeText(this, "usb deviceList size " + deviceList.size(), Toast.LENGTH_LONG).show();
+        try {
+            Iterator<UsbDevice> deviceIterator = deviceList.values().iterator();
+
+            String devInfo = "";
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            while (deviceIterator.hasNext()) {
+                UsbDevice device = deviceIterator.next();
+                int deviceClass = device.getDeviceClass();
+
+                IrsaLog.e(TAG, "\ndevice class " + device.getDeviceClass() + ", device name: " + device.getDeviceName() + "\ndevice product name:" + device.getProductName() + "\nvendor id:" + Integer.toHexString(device.getVendorId()));
+
+                if (!(Integer.toHexString(device.getVendorId()).equals(new String("8086"))))
+                    continue;
+
+                if (device.getDeviceClass() != 0) 
+                {
+                    if (manager.hasPermission(device)) {
+                        IrsaLog.d(TAG, "has permission");
+                        initTalkWithCamera(device);
+                    } else {
+                        IrsaLog.d(TAG, "no permission");
+                        mUsbManager.requestPermission(device, mPermissionIntent);
+                    }
+                }
+
+                sb.append( "\n" +
+                       "DeviceID: " + device.getDeviceId() + "\n" +
+                       "DeviceName: " + device.getDeviceName() + "\n" +
+                       "ProductName: " + device.getProductName() + "\n" + 
+                       "DeviceClass: " + device.getDeviceClass() + " - " 
+                          + translateDeviceClass(device.getDeviceClass()) + "\n" +
+                       "DeviceSubClass: " + device.getDeviceSubclass() + "\n" +
+                       "VendorID: " + Integer.toHexString(device.getVendorId()) + "\n" +
+                       "ProductID: " + Integer.toHexString(device.getProductId()) + "\n" + 
+                       "device serial: " + device.getSerialNumber() + "\n" + 
+                       "device desc: " + device.toString() + "\n");
+
+                if (0 == deviceClass) {
+                    UsbInterface uinterface = device.getInterface(0);
+                    sb.append("interface.describeContents: " + uinterface.describeContents() + "\n");
+                    sb.append("interface.getInterfaceClass: " + uinterface.getInterfaceClass() + "\n");
+                    sb.append("interface.getId: " + uinterface.getId() + "\n");
+                    switch (uinterface.getInterfaceClass()) {
+                        case 3: 
+                            sb.append("HID\n");
+                            break;
+                        default:
+                            sb.append("unknown\n");
+                            break;
+                    }
+                    sb.append("interface.getEndpointCount: " + uinterface.getEndpointCount() + "\n");
+                    sb.append("interface desc: " + uinterface.toString() + "\n\n");
+                }
+
+                IrsaLog.d(TAG, "usb device  " + (i++) +  sb.toString());
+            }
+            txtViewFace.setText(sb.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+                 
+
+    }
+      
+
+    private String translateDeviceClass(int deviceClass){
+            switch(deviceClass){
+                case UsbConstants.USB_CLASS_APP_SPEC: 
+                    return "Application specific USB class";
+                case UsbConstants.USB_CLASS_AUDIO: 
+                    return "USB class for audio devices";
+                case UsbConstants.USB_CLASS_CDC_DATA: 
+                    return "USB class for CDC devices (communications device class)";
+                case UsbConstants.USB_CLASS_COMM: 
+                    return "USB class for communication devices";
+                case UsbConstants.USB_CLASS_CONTENT_SEC: 
+                    return "USB class for content security devices";
+                case UsbConstants.USB_CLASS_CSCID: 
+                    return "USB class for content smart card devices";
+                case UsbConstants.USB_CLASS_HID: 
+                    return "USB class for human interface devices (for example, mice and keyboards)";
+                case UsbConstants.USB_CLASS_HUB: 
+                    return "USB class for USB hubs";
+                case UsbConstants.USB_CLASS_MASS_STORAGE: 
+                    return "USB class for mass storage devices";
+                case UsbConstants.USB_CLASS_MISC: 
+                    //return "USB class for miscellaneous devices";
+                    return "USB class for Intel(R) RealSense(TM) 415";
+                case UsbConstants.USB_CLASS_PER_INTERFACE: 
+                    return "USB class indicating that the class is determined on a per-interface basis";
+                case UsbConstants.USB_CLASS_PHYSICA: 
+                    return "USB class for physical devices";
+                case UsbConstants.USB_CLASS_PRINTER: 
+                    return "USB class for printers";
+                case UsbConstants.USB_CLASS_STILL_IMAGE: 
+                    return "USB class for still image devices (digital cameras)";
+                case UsbConstants.USB_CLASS_VENDOR_SPEC: 
+                    return "Vendor specific USB class";
+                case UsbConstants.USB_CLASS_VIDEO: 
+                    return "USB class for video devices";
+                case UsbConstants.USB_CLASS_WIRELESS_CONTROLLER: 
+                    return "USB class for wireless controller devices";
+                default:
+                    return "Unknown USB class!";
+            }
+    }
+
+
+    private void initTalkWithCamera(UsbDevice device) {
+        IrsaLog.d(TAG, "initTalkWithCamera\n");
+        int interfaceCount = device.getInterfaceCount();
+        IrsaLog.d(TAG, "interfaceCount " + interfaceCount + "\n");
+        for (int interfaceIndex = 0; interfaceIndex < interfaceCount; interfaceIndex++) {
+            UsbInterface usbInterface = device.getInterface(interfaceIndex);
+            IrsaLog.d(TAG, "=========>>"+ usbInterface.getInterfaceClass() + usbInterface.getInterfaceSubclass()  + "<<===================\n");
+
+            if (UsbConstants.USB_CLASS_VIDEO != usbInterface.getInterfaceClass()) {
+                IrsaLog.d(TAG, "not uvc device");
+                continue;
+            } else {
+                IrsaLog.d(TAG, "found uvc device");
+            }
+
+            IrsaLog.d(TAG, "========="+ usbInterface.getEndpointCount() + "===================\n");
+            for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
+                UsbEndpoint ep = usbInterface.getEndpoint(i);
+                IrsaLog.d(TAG, "usbInterface.getEndpoint(i) " + ep.getType() + "\n");
+                if (ep.getType() == UsbConstants.USB_ENDPOINT_XFER_ISOC) {
+                    if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
+                        mUsbEndpointIn = ep;
+                        mUsbInterfaceInt = usbInterface;
+                        IrsaLog.d(TAG, "mUsbEndpointIn \n");
+                    } else {
+                        mUsbEndpointOut = ep;
+                        musbInterfaceOut = usbInterface;
+                        IrsaLog.d(TAG, "mUsbEndpointOut \n");
+                    }
+
+                }
+            }
+
+        }
+
+        if ((null == mUsbEndpointIn) || (null == mUsbEndpointOut)) {
+            IrsaLog.d(TAG, "endpoint is null\n");
+            mUsbEndpointIn = null;
+            mUsbEndpointOut = null;
+            //mUsbInterface = null;
+        } else {
+            IrsaLog.d(TAG, "\nendpoint out: " + mUsbEndpointOut + ",endpoint in: " +
+                    mUsbEndpointIn.getAddress()+"\n");
+            //mUsbInterface = usbInterface;
+            mUsbDeviceConnection = mUsbManager.openDevice(device);
+            mUsbDeviceConnection.claimInterface(mUsbInterfaceInt, true);
+            mUsbDeviceConnection.claimInterface(musbInterfaceOut, true);
+
+            IrsaLog.d(TAG, "mUsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n");
+
+
+            byte[] rawDescs = mUsbDeviceConnection.getRawDescriptors();
+            String manufacturer = "", product = "";
+
+            try {
+                byte[] buffer = new byte[255];
+                int idxMan = rawDescs[14];
+                int idxPrd = rawDescs[15];
+
+                int rdo = mUsbDeviceConnection.controlTransfer(UsbConstants.USB_DIR_IN
+                        | UsbConstants.USB_TYPE_STANDARD, STD_USB_REQUEST_GET_DESCRIPTOR,
+                        (LIBUSB_DT_STRING << 8) | idxMan, 0, buffer, 0xFF, 0);
+
+                manufacturer = new String(buffer, 2, rdo - 2, "UTF-16LE");
+                rdo = mUsbDeviceConnection.controlTransfer(UsbConstants.USB_DIR_IN
+                                | UsbConstants.USB_TYPE_STANDARD, STD_USB_REQUEST_GET_DESCRIPTOR,
+                        (LIBUSB_DT_STRING << 8) | idxPrd, 0, buffer, 0xFF, 0);
+                product = new String(buffer, 2, rdo - 2, "UTF-16LE");
+                
+                /* int rdo = mUsbDeviceConnection.controlTransfer(UsbConstants.USB_DIR_IN
+                        | UsbConstants.USB_TYPE_STANDARD, STD_USB_REQUEST_GET_DESCRIPTOR,
+                        (LIBUSB_DT_STRING << 8) | idxMan, 0x0409, buffer, 0xFF, 0);*/
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            IrsaLog.d(TAG, "Manufacturer:" + manufacturer + "\n");                      
+            IrsaLog.d(TAG, "Product:" + product + "\n");                        
+            IrsaLog.d(TAG, "Serial#:" + mUsbDeviceConnection.getSerial() + "\n");                     
+        }
+
+    }
+
+
+    private String byteToString(byte[] b){
+        String result = "";
+        for (int i = 0; i < b.length; i++){
+            result = String.format("%s %02x", result, b[i]);
+        }
+        return result;
+    }
+
+
+    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            IrsaLog.d(TAG, "BroadcastReceiver\n");
+
+            if(UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                IrsaLog.d(TAG, "ACTION_USB_DEVICE_ATTACHED\n");
+                UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                //initTalkWithCamera(device);
+            } else if(UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                IrsaLog.d(TAG, "ACTION_USB_DEVICE_DETACHED\n");
+            }else if (ACTION_DEVICE_PERMISSION.equals(action)){
+                synchronized (this) {
+                    UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        if (device != null) {
+                            IrsaLog.d(TAG, "usb EXTRA_PERMISSION_GRANTED");
+                        }
+                    } else {
+                        IrsaLog.d(TAG, "usb EXTRA_PERMISSION_GRANTED null!!!");
+                    }
+                }
+
+            }
+        }
+    };
+
+    //=========== end USB experiment ========================== }
 }
