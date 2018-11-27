@@ -23,12 +23,9 @@ Next, we include a [very short helper library](../example.hpp) to encapsulate Op
 ```
 
 This header lets us easily open a new window and prepare textures for rendering.  
-The `texture` class is designed to hold video frame data for rendering. 
 ```cpp
 // Create a simple OpenGL window for rendering:
 window app(1280, 720, "RealSense Capture Example");
-// Declare a texture object on the GPU, for all enabled streams.
-texture textures;
 ```
 
 Depth data is usually provided on a 12-bit grayscale which is not very useful for visualization.  
@@ -63,8 +60,9 @@ rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames f
                      apply_filter(color_map);   // Find and colorize the depth data
 ```
 
-Finally, render the images by the `texture` class from [example.hpp](../example.hpp)
+Finally, render the images by the `window` class from [example.hpp](../example.hpp)
 ```cpp
-// Render the frames
-textures.render(data, app.width(), app.height());
+// Show method, when applied on frameset, break it to frames and upload each frame into a gl textures
+// Each texture is displayed on different viewport according to it's stream unique id
+app.show(data);
 ```

@@ -39,19 +39,6 @@ namespace librealsense
             return unsafe_get_active_profile();
         }
 
-        std::shared_ptr<profile> pipeline::start_with_record(std::shared_ptr<config> conf, frame_callback_ptr callback, const std::string& file)
-        {
-            std::lock_guard<std::mutex> lock(_mtx);
-            if (_active_profile)
-            {
-                throw librealsense::wrong_api_call_sequence_exception("start() cannot be called before stop()");
-            }
-            _streams_callback = callback;
-            conf->enable_record_to_file(file);
-            unsafe_start(conf);
-            return unsafe_get_active_profile();
-        }
-
         std::shared_ptr<profile> pipeline::get_active_profile() const
         {
             std::lock_guard<std::mutex> lock(_mtx);
@@ -159,6 +146,7 @@ namespace librealsense
             }
             _active_profile.reset();
             _prev_conf.reset();
+            _streams_callback.reset();
         }
 
         std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
@@ -193,21 +181,8 @@ namespace librealsense
             _syncer = std::unique_ptr<syncer_process_unit>(new syncer_process_unit());
             _aggregator = std::unique_ptr<aggregator>(new aggregator(_streams_to_aggregate_ids, _streams_to_sync_ids));
 
-            auto to_callback = [&](frame_holder fref)
-            {
-                if (_streams_callback)
-                {
-                    frame_interface* ptr = nullptr;
-                    std::swap(fref.frame, ptr);
-                    _streams_callback->on_frame((rs2_frame*)ptr);
-                }
-            };
-
-            frame_callback_ptr agg_cb = {
-                new internal_frame_callback<decltype(to_callback)>(to_callback), [](rs2_frame_callback* p) { p->release(); }
-            };
-
-            _aggregator->set_output_callback(agg_cb);
+            if (_streams_callback)
+                _aggregator->set_output_callback(_streams_callback);
 
             return _streams_to_sync_ids;
         }

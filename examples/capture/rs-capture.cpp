@@ -11,8 +11,6 @@ int main(int argc, char * argv[]) try
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");
-    // Declare a texture object on the GPU, for all enabled streams
-    texture textures;
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
@@ -33,8 +31,9 @@ int main(int argc, char * argv[]) try
                              apply_filter(printer).     // Print each enabled stream frame rate
                              apply_filter(color_map);   // Find and colorize the depth data
 
-        // Render the frames
-        textures.render(data, app.width(), app.height());
+        // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
+        // Each texture is displayed on different viewport according to it's stream unique id
+        app.show(data);
     }
 
     return EXIT_SUCCESS;

@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(hello_librealsense2)
 
 # Find librealsense2 installed package
-# We provide a search hint to the default Windows installation path
-find_package(realsense2 REQUIRED HINTS "Intel RealSense SDK 2.0")
+find_package(realsense2 REQUIRED)
 
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)

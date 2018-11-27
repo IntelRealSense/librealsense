@@ -24,7 +24,6 @@ namespace librealsense
             explicit pipeline(std::shared_ptr<librealsense::context> ctx);
             virtual ~pipeline();
             std::shared_ptr<profile> start(std::shared_ptr<config> conf, frame_callback_ptr callback = nullptr);
-            std::shared_ptr<profile> start_with_record(std::shared_ptr<config> conf, frame_callback_ptr callback, const std::string& file);
             void stop();
             std::shared_ptr<profile> get_active_profile() const;
             frame_holder wait_for_frames(unsigned int timeout_ms = 5000);

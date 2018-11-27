@@ -2,10 +2,12 @@
 
 ## Overview
 
-This sample demonstrates how to configure the camera for streaming frames using the pipeline's callback API. 
+This sample demonstrates how to configure the camera for streaming frames using the pipeline's callback API.
+This API is recommended when streaming high frequency data such as IMU (Inertial measurement unit) since the callback is invoked immediately once the a frame is ready.
+This sample prints a frame counter for each stream, the code demonstrates how it can be done with correctly by synchronizing the callbacks.
 
 ## Expected Output
-![rs-callbak](https://user-images.githubusercontent.com/18511514/48921401-37a0c680-eea8-11e8-9ab4-18e566d69a8a.PNG)
+![rs-callback](https://user-images.githubusercontent.com/18511514/48921401-37a0c680-eea8-11e8-9ab4-18e566d69a8a.PNG)
 
 ## Code Overview 
 
@@ -15,18 +17,23 @@ All but advanced functionality is provided through a single header:
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 ```
 
-Define frame counters
+We define frame counters that will be updated every time a frame arrives.
+This counters will be used in the application main loop to print how many frames arrived from each stream.
 ```cpp
 std::map<int, int> counters;
 std::map<int, std::string> stream_names;
+```
+
+The mutex object is a synchronization primitive that will be used to protect our frame counters from being simultaneously accessed by multiple threads.
+```cpp
 std::mutex mutex;
 ```
 
-Define the frame callback which will be invoked by the pipeline on the sensors thread.
+Define the frame callback which will be invoked by the pipeline on the sensors thread once a frame (or frames) is ready.
 ```cpp
 // Define frame callback
-// The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
-// Therefore any modification to common memory should be done under lock
+// The callback is executed on a sensor thread and can be called simultaneously from multiple sensors.
+// Therefore any modification to shared data should be done under lock.
 auto callback = [&](const rs2::frame& frame)
 {
     std::lock_guard<std::mutex> lock(mutex);
@@ -62,7 +69,8 @@ for (auto p : profiles.get_streams())
     stream_names[p.unique_id()] = p.stream_name();
 ```
 
-Periodically print the frame counters.
+Finally, print the frame counters once every second.
+In order to protect our counters from being accessed simultaneously, protect the counters using the mutex.
 ```cpp
 std::cout << "RealSense callback sample" << std::endl << std::endl;
 

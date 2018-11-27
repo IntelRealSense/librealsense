@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <cmath>
+#include <map>
 
 #define PI 3.14159265358979323846
 #define IMU_FRAME_WIDTH 1280
@@ -58,6 +59,14 @@ inline void draw_text(int x, int y, const char * text)
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+void set_viewport(const rect& r)
+{
+    glViewport(r.x, r.y, r.w, r.h);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glOrtho(0, r.w, r.h, 0, -1, +1);
+}
+
 ////////////////////////
 // Image display code //
 ////////////////////////
@@ -67,38 +76,10 @@ class texture
     rs2_stream stream = RS2_STREAM_ANY;
 
 public:
-    void render(const rs2::video_frame& frame, const rect& r)
+    void render(const rs2::video_frame& frame, const rect& rect)
     {
         upload(frame);
-        show(r.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
-    }
-
-    void render(const rs2::frameset& frames, int window_width, int window_height)
-    {
-        std::vector<rs2::frame> supported_frames;
-        for (auto f : frames)
-        {
-            if (can_render(f))
-                supported_frames.push_back(f);
-        }
-        if (supported_frames.empty())
-            return;
-
-        std::sort(supported_frames.begin(), supported_frames.end(), [](rs2::frame first, rs2::frame second)
-        { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
-
-        auto image_grid = calc_grid(float2{ (float)window_width, (float)window_height }, supported_frames);
-
-        int image_index = 0;
-        for (auto f : supported_frames)
-        {
-            auto r = image_grid.at(image_index);
-            if (auto vf = f.as<rs2::video_frame>())
-                render(vf, r);
-            if (auto mf = f.as<rs2::motion_frame>())
-                render_motoin(mf, r);
-            image_index++;
-        }
+        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
     }
 
     void upload(const rs2::video_frame& frame)
@@ -144,10 +125,7 @@ public:
         if (!gl_handle)
             return;
 
-        glViewport(r.x, r.y, r.w, r.h);
-        glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
-        glOrtho(0, r.w, r.h, 0, -1, +1);
+        set_viewport(r);
 
         glBindTexture(GL_TEXTURE_2D, gl_handle);
         glEnable(GL_TEXTURE_2D);
@@ -163,86 +141,27 @@ public:
     }
 
     GLuint get_gl_handle() { return gl_handle; }
+};
 
-private:
-    void render_motoin(const rs2::motion_frame& frame, const rect& r)
+class imu_drawer
+{
+public:
+    void render(const rs2::motion_frame& frame, const rect& r)
     {
         draw_motion(frame, r.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
     }
 
-    bool can_render(const rs2::frame& f) const
+    GLuint get_gl_handle() { return _gl_handle; }
+
+private:
+    GLuint _gl_handle = 0;
+
+    void draw_motion(const rs2::motion_frame& f, const rect& r)
     {
-        auto format = f.get_profile().format();
-        switch (format)
-        {
-        case RS2_FORMAT_RGB8:
-        case RS2_FORMAT_RGBA8:
-        case RS2_FORMAT_Y8:
-        case RS2_FORMAT_MOTION_XYZ32F:
-            return true;
-        default:
-            return false;
-        }
-    }
+        if (!_gl_handle)
+            glGenTextures(1, &_gl_handle);
 
-    rect calc_grid(float2 window, int streams)
-    {
-        if (window.x <= 0 || window.y <= 0 || streams <= 0)
-            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
-        float ratio = window.x / window.y;
-        auto x = sqrt(ratio * (float)streams);
-        auto y = (float)streams / x;
-        auto w = round(x);
-        auto h = round(y);
-        if (w == 0 || h == 0)
-            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
-        while (w*h > streams)
-            h > w ? h-- : w--;
-        while (w*h < streams)
-            h > w ? w++ : h++;
-        auto new_w = round(window.x / w);
-        auto new_h = round(window.y / h);
-        // column count, line count, cell width cell height
-        return rect{ static_cast<float>(w), static_cast<float>(h), static_cast<float>(new_w), static_cast<float>(new_h) };
-    }
-
-    std::vector<rect> calc_grid(float2 window, std::vector<rs2::frame>& frames)
-    {
-        auto grid = calc_grid(window, frames.size());
-
-        std::vector<rect> rv;
-        int curr_line = -1;
-
-        for (int i = 0; i < frames.size(); i++)
-        {
-            auto mod = i % (int)grid.x;
-            float fw = IMU_FRAME_WIDTH;
-            float fh = IMU_FRAME_HEIGHT;
-            if (auto vf = frames[i].as<rs2::video_frame>())
-            {
-                fw = (float)vf.get_width();
-                fh = (float)vf.get_height();
-            }
-            float cell_x_postion = (float)(mod * grid.w);
-            if (mod == 0) curr_line++;
-            float cell_y_position = curr_line * grid.h;
-            float2 margin = { grid.w * 0.02f, grid.h * 0.02f };
-            auto r = rect{ cell_x_postion + margin.x, cell_y_position + margin.y, grid.w - 2 * margin.x, grid.h };
-            rv.push_back(r.adjust_ratio(float2{ fw, fh }));
-        }
-
-        return rv;
-    }
-
-    void draw_motion(rs2::motion_frame f, rect r)
-    {
-        if (!gl_handle)
-            glGenTextures(1, &gl_handle);
-
-        glViewport(r.x, r.y, r.w, r.h);
-        glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
-        glOrtho(0, r.w, r.h, 0, -1, +1);
+        set_viewport(r);
         draw_text(0.05 * r.w, r.h - 0.1*r.h, f.get_profile().stream_name().c_str());
 
         auto md = f.get_motion_data();
@@ -441,6 +360,7 @@ private:
         }
         glEnd();
     }
+
 };
 
 class window
@@ -520,11 +440,129 @@ public:
         glfwTerminate();
     }
 
+    void show(rs2::frame frame)
+    {
+        show(frame, { 0, 0, (float)_width, (float)_height });
+    }
+
+    void show(const rs2::frame& frame, const rect& rect)
+    {
+        if (auto fs = frame.as<rs2::frameset>())
+            render_frameset(fs, rect);
+        if (auto vf = frame.as<rs2::video_frame>())
+            render_video_frame(vf, rect);
+        if (auto mf = frame.as<rs2::motion_frame>())
+            render_motoin_frame(mf, rect);
+    }
+
     operator GLFWwindow*() { return win; }
 
 private:
     GLFWwindow * win;
+    std::map<int, texture> _textures;
+    std::map<int, imu_drawer> _imus;
     int _width, _height;
+
+    void render_video_frame(const rs2::video_frame& f, const rect& r)
+    {
+        auto& t = _textures[f.get_profile().unique_id()];
+        t.render(f, r);
+    }
+
+    void render_motoin_frame(const rs2::motion_frame& f, const rect& r)
+    {
+        auto& i = _imus[f.get_profile().unique_id()];
+        i.render(f, r);
+    }
+
+    void render_frameset(const rs2::frameset& frames, const rect& r)
+    {
+        std::vector<rs2::frame> supported_frames;
+        for (auto f : frames)
+        {
+            if (can_render(f))
+                supported_frames.push_back(f);
+        }
+        if (supported_frames.empty())
+            return;
+
+        std::sort(supported_frames.begin(), supported_frames.end(), [](rs2::frame first, rs2::frame second)
+        { return first.get_profile().stream_type() < second.get_profile().stream_type();  });
+
+        auto image_grid = calc_grid(r, supported_frames);
+
+        int image_index = 0;
+        for (auto f : supported_frames)
+        {
+            auto r = image_grid.at(image_index);
+            show(f, r);
+            image_index++;
+        }
+    }
+
+    bool can_render(const rs2::frame& f) const
+    {
+        auto format = f.get_profile().format();
+        switch (format)
+        {
+        case RS2_FORMAT_RGB8:
+        case RS2_FORMAT_RGBA8:
+        case RS2_FORMAT_Y8:
+        case RS2_FORMAT_MOTION_XYZ32F:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    rect calc_grid(rect r, int streams)
+    {
+        if (r.w <= 0 || r.h <= 0 || streams <= 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
+        float ratio = r.w / r.h;
+        auto x = sqrt(ratio * (float)streams);
+        auto y = (float)streams / x;
+        auto w = round(x);
+        auto h = round(y);
+        if (w == 0 || h == 0)
+            throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
+        while (w*h > streams)
+            h > w ? h-- : w--;
+        while (w*h < streams)
+            h > w ? w++ : h++;
+        auto new_w = round(r.w / w);
+        auto new_h = round(r.h / h);
+        // column count, line count, cell width cell height
+        return rect{ static_cast<float>(w), static_cast<float>(h), static_cast<float>(new_w), static_cast<float>(new_h) };
+    }
+
+    std::vector<rect> calc_grid(rect r, std::vector<rs2::frame>& frames)
+    {
+        auto grid = calc_grid(r, frames.size());
+
+        std::vector<rect> rv;
+        int curr_line = -1;
+
+        for (int i = 0; i < frames.size(); i++)
+        {
+            auto mod = i % (int)grid.x;
+            float fw = IMU_FRAME_WIDTH;
+            float fh = IMU_FRAME_HEIGHT;
+            if (auto vf = frames[i].as<rs2::video_frame>())
+            {
+                fw = (float)vf.get_width();
+                fh = (float)vf.get_height();
+            }
+            float cell_x_postion = (float)(mod * grid.w);
+            if (mod == 0) curr_line++;
+            float cell_y_position = curr_line * grid.h;
+            float2 margin = { grid.w * 0.02f, grid.h * 0.02f };
+            auto r = rect{ cell_x_postion + margin.x, cell_y_position + margin.y, grid.w - 2 * margin.x, grid.h };
+            rv.push_back(r.adjust_ratio(float2{ fw, fh }));
+        }
+
+        return rv;
+    } 
 };
 
 // Struct for managing rotation of pointcloud view
