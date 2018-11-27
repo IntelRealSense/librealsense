@@ -604,11 +604,8 @@ public class MainActivity extends Activity {
             }
         }
 
-        //copyData("demo.bag", "/mnt/sdcard/demo.bag");
-
         gMe = this;
         checkRoot();
-        //checkStoragePermissions(gMe);
         IrsaLog.d(TAG, "init done");
     }
 
@@ -1169,8 +1166,8 @@ public class MainActivity extends Activity {
             IrsaLog.d(TAG, "========="+ usbInterface.getEndpointCount() + "===================\n");
             for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
                 UsbEndpoint ep = usbInterface.getEndpoint(i);
-                IrsaLog.d(TAG, "usbInterface.getEndpoint(i) " + ep.getType() + "\n");
-                if (ep.getType() == UsbConstants.USB_ENDPOINT_XFER_ISOC) {
+                IrsaLog.d(TAG, "usbInterface.getEndpoint(" + i + ") " + ep.getType() + "\n");
+                if (ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
                     if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
                         mUsbEndpointIn = ep;
                         mUsbInterfaceInt = usbInterface;
@@ -1186,7 +1183,7 @@ public class MainActivity extends Activity {
 
         }
 
-        if ((null == mUsbEndpointIn) || (null == mUsbEndpointOut)) {
+        if ((null == mUsbEndpointIn) && (null == mUsbEndpointOut)) {
             IrsaLog.d(TAG, "endpoint is null\n");
             mUsbEndpointIn = null;
             mUsbEndpointOut = null;
@@ -1197,7 +1194,7 @@ public class MainActivity extends Activity {
             //mUsbInterface = usbInterface;
             mUsbDeviceConnection = mUsbManager.openDevice(device);
             mUsbDeviceConnection.claimInterface(mUsbInterfaceInt, true);
-            mUsbDeviceConnection.claimInterface(musbInterfaceOut, true);
+            //mUsbDeviceConnection.claimInterface(musbInterfaceOut, true);
 
             IrsaLog.d(TAG, "mUsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n");
 
@@ -1228,9 +1225,16 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
             }
 
-            IrsaLog.d(TAG, "Manufacturer:" + manufacturer + "\n");                      
-            IrsaLog.d(TAG, "Product:" + product + "\n");                        
-            IrsaLog.d(TAG, "Serial#:" + mUsbDeviceConnection.getSerial() + "\n");                     
+            IrsaLog.d(TAG, "mUsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n");
+            IrsaLog.d(TAG, "Manufacturer:" + manufacturer + "\n");
+            IrsaLog.d(TAG, "Product:" + product + "\n");
+            IrsaLog.d(TAG, "Serial#:" + mUsbDeviceConnection.getSerial() + "\n");
+
+            String info = "talk with USB Camera: UsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n"
+                         + "Manufacturer:" + manufacturer + "\n"
+                         + "Product:" + product + "\n"
+                         + "Serial#:" + mUsbDeviceConnection.getSerial() + "\n";
+            showMsgBox(gMe, info);
         }
 
     }
