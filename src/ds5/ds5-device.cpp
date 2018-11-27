@@ -26,7 +26,7 @@ namespace librealsense
 {
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
         const hw_monitor& hwm,
-        ds::fw_cmd cmd) 
+        ds::fw_cmd cmd)
         : _hw_monitor(hwm), _cmd(cmd) {}
 
     void ds5_auto_exposure_roi_method::set(const region_of_interest& roi)
@@ -485,7 +485,7 @@ namespace librealsense
 
             depth_scale->add_observer([depth_sensor](float val)
             {
-                depth_sensor->set_depth_scale(val);  
+                depth_sensor->set_depth_scale(val);
             });
 
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);

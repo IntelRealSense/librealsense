@@ -124,7 +124,7 @@ namespace librealsense
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
 
-        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices, 
+        std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
             const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
 
 

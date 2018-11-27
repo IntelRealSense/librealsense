@@ -263,9 +263,9 @@ namespace librealsense
                     *depth_ep,
                     ivcam2::depth_xu,
                     ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
-          
+
             depth_ep->register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() { 
+                lazy<float>([]() {
                 return 0.000125f; })));
             return depth_ep;
         }
