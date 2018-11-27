@@ -923,7 +923,7 @@ void make_factory(){
         ClassFactory processing_block_factory("rs2::processing_block");
         processing_block_factory.record("process", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
-            auto thiz = MatlabParamParser::parse<rs2::processing_block>(inv[0]);
+            auto thiz = MatlabParamParser::parse<rs2::filter>(inv[0]);
             auto frame = MatlabParamParser::parse<rs2::frame>(inv[1]);
             outv[0] = MatlabParamParser::wrap(thiz.process(frame));
         });
