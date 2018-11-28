@@ -516,11 +516,12 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud");
     pointcloud.def(py::init<>())
+        .def(py::init<rs2_stream, int>(), "stream"_a, "index"_a = 0)
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
 
     py::class_<rs2::syncer> syncer(m, "syncer");
-    syncer.def(py::init<>())
+    syncer.def(py::init<int>(), "queue_size"_a = 1)
         .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
             "of frames becomes available", "timeout_ms"_a = 5000)
         .def("poll_for_frames", [](const rs2::syncer &self)
@@ -539,6 +540,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
+        .def(py::init<float>(), "color_scheme"_a)
         .def("colorize", &rs2::colorizer::colorize, "depth"_a)
         /*.def("__call__", &rs2::colorizer::operator())*/;
 
@@ -547,16 +549,20 @@ PYBIND11_MODULE(NAME, m) {
         .def("process", &rs2::align::process, "frames"_a);
 
     py::class_<rs2::decimation_filter, rs2::filter> decimation_filter(m, "decimation_filter");
-    decimation_filter.def(py::init<>());
+    decimation_filter.def(py::init<>())
+        .def(py::init<float>(), "magnitude"_a);
 
     py::class_<rs2::temporal_filter, rs2::filter> temporal_filter(m, "temporal_filter");
-    temporal_filter.def(py::init<>());
+    temporal_filter.def(py::init<>())
+        .def(py::init<float, float, int>(), "smooth_alpha"_a, "smooth_delta"_a, "persistence_control"_a);
 
     py::class_<rs2::spatial_filter, rs2::filter> spatial_filter(m, "spatial_filter");
-    spatial_filter.def(py::init<>());
+    spatial_filter.def(py::init<>())
+        .def(py::init<float, float, float, float>(), "smooth_alpha"_a, "smooth_delta"_a, "magnitude"_a, "hole_fill"_a);;
 
     py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter");
-    hole_filling_filter.def(py::init<>());
+    hole_filling_filter.def(py::init<>())
+        .def(py::init<int>(), "mode"_a);
 
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
