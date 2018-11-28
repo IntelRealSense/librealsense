@@ -50,6 +50,14 @@ namespace librealsense
     const double TIMESTAMP_USEC_TO_MSEC = 0.001;
     const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
 
+#ifdef _WIN32
+/* The FW timestamps for HID are converted to Usec in Windows kernel */
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_USEC_TO_MSEC
+#else
+/* The FW timestamps for HID are converted to Nanosec in Linux kernel */
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_NSEC_TO_MSEC
+#endif // define HID_TIMESTAMP_MULTIPLIER
+
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////
@@ -484,7 +492,8 @@ namespace librealsense
             (a.height == b.height) &&
             (a.fps == b.fps) &&
             (a.format == b.format) &&
-            (a.index == b.index);
+            (a.index == b.index) &&
+            (a.stream == b.stream);
     }
 
     struct stream_descriptor
