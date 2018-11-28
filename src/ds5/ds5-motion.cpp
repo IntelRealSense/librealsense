@@ -290,7 +290,7 @@ namespace librealsense
             }
             catch (const std::exception& ex)
             {
-                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+                LOG_INFO("No Motion Module calibration is available, report: " << ex.what());
             }
 
             if (!motion_module_fw_version.empty())
