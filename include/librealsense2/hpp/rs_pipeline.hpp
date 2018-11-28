@@ -320,7 +320,7 @@ namespace rs2
             return _config;
         }
 
-        config(std::shared_ptr<rs2_config> config) : _config(config) {}
+        config(std::shared_ptr<rs2_config> cfg) : _config(cfg) {}
     private:
         std::shared_ptr<rs2_config> _config;
     };
