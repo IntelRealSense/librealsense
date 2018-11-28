@@ -518,27 +518,6 @@ PYBIND11_MODULE(NAME, m) {
 
     // Not binding syncer_processing_block, not in Python API
 
-    py::class_<rs2::frame_queue> frame_queue(m, "frame_queue");
-    frame_queue.def(py::init<unsigned int>(), "Create a frame queue. Frame queues are the simplest "
-        "cross-platform synchronization primitive provided by librealsense to help "
-        "developers who are not using async APIs.")
-        .def(py::init<>())
-        .def("wait_for_frame", [](const rs2::frame_queue& self, unsigned int timeout_ms) { py::gil_scoped_release(); self.wait_for_frame(timeout_ms); }, "Wait until a new frame "
-            "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000)
-        .def("poll_for_frame", [](const rs2::frame_queue &self)
-        {
-            rs2::frame frame;
-            self.poll_for_frame(&frame);
-            return frame;
-        }, "Poll if a new frame is available and dequeue it if it is")
-        .def("try_wait_for_frame", [](const rs2::frame_queue &self, unsigned int timeout_ms)
-        {
-            rs2::frame frame;
-            auto success = self.try_wait_for_frame(&frame, timeout_ms);
-            return std::make_tuple(success, frame);
-        }, "timeout_ms"_a=5000)
-        .def("__call__", &rs2::frame_queue::operator());
-
     py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud");
   
     pointcloud.def(py::init<>())
