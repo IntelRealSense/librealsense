@@ -1555,7 +1555,7 @@ namespace librealsense
             return std::move(_value);
         }
 
-        bool operator==(const T& other) const 
+        bool operator==(const T& other) const
         {
             return this->_value == other;
         }

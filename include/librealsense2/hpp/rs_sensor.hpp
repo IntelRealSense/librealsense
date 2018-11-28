@@ -226,7 +226,6 @@ namespace rs2
            return *this;
        }
 
-       
 
     private:
         rs2_options* _options;

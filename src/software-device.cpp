@@ -56,16 +56,12 @@ namespace librealsense
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
-            if (profile->get_unique_id() == video_stream.uid)
-            {
-                return true;
-            }
-            return false;
+            return profile->get_unique_id() == video_stream.uid;
         } ) != _profiles.end());
 
         if (exist)
         {
-            LOG_WARNING("Stream unique ID already exist!");
+            LOG_WARNING("Video stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
         }
 
@@ -78,6 +74,57 @@ namespace librealsense
         profile->set_stream_type(video_stream.type);
         profile->set_unique_id(video_stream.uid);
         profile->set_intrinsics([=]() {return video_stream.intrinsics; });
+        _profiles.push_back(profile);
+
+        return profile;
+    }
+
+    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream)
+    {
+        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
+        {
+            return profile->get_unique_id() == motion_stream.uid;
+        }) != _profiles.end());
+
+        if (exist)
+        {
+            LOG_WARNING("Motion stream unique ID already exist!");
+            throw rs2::error("Stream unique ID already exist!");
+        }
+
+        auto profile = std::make_shared<motion_stream_profile>(
+            platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 });
+        profile->set_format(motion_stream.fmt);
+        profile->set_framerate(motion_stream.fps);
+        profile->set_stream_index(motion_stream.index);
+        profile->set_stream_type(motion_stream.type);
+        profile->set_unique_id(motion_stream.uid);
+        profile->set_intrinsics([=]() {return motion_stream.intrinsics; });
+        _profiles.push_back(profile);
+
+        return profile;
+    }
+
+    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
+    {
+        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
+        {
+            return profile->get_unique_id() == pose_stream.uid;
+        }) != _profiles.end());
+
+        if (exist)
+        {
+            LOG_WARNING("Pose stream unique ID already exist!");
+            throw rs2::error("Stream unique ID already exist!");
+        }
+
+        auto profile = std::make_shared<pose_stream_profile>(
+            platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 });
+        profile->set_format(pose_stream.fmt);
+        profile->set_framerate(pose_stream.fps);
+        profile->set_stream_index(pose_stream.index);
+        profile->set_stream_type(pose_stream.type);
+        profile->set_unique_id(pose_stream.uid);
         _profiles.push_back(profile);
 
         return profile;
@@ -133,7 +180,7 @@ namespace librealsense
         _source.reset();
     }
 
-    
+
     void software_sensor::set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value)
     {
         _metadata_map[key] = value;
@@ -167,6 +214,7 @@ namespace librealsense
         auto frame = _source.alloc_frame(extension, 0, data, false);
         if (!frame)
         {
+            LOG_WARNING("Dropped video frame. alloc_frame(...) returned nullptr");
             return;
         }
         auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
@@ -177,6 +225,68 @@ namespace librealsense
         frame->attach_continuation(frame_continuation{ [=]() {
             software_frame.deleter(software_frame.pixels);
         }, software_frame.pixels });
+        _source.invoke_callback(frame);
+    }
+
+    void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
+    {
+        frame_additional_data data;
+        data.timestamp = software_frame.timestamp;
+        data.timestamp_domain = software_frame.domain;
+        data.frame_number = software_frame.frame_number;
+
+        data.metadata_size = 0;
+        for (auto i : _metadata_map)
+        {
+            auto size_of_enum = sizeof(rs2_frame_metadata_value);
+            auto size_of_data = sizeof(rs2_metadata_type);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
+            data.metadata_size += static_cast<uint32_t>(size_of_enum);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
+            data.metadata_size += static_cast<uint32_t>(size_of_data);
+        }
+
+        auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 0, data, false);
+        if (!frame)
+        {
+            LOG_WARNING("Dropped motion frame. alloc_frame(...) returned nullptr");
+            return;
+        }
+        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
+        frame->attach_continuation(frame_continuation{ [=]() {
+            software_frame.deleter(software_frame.data);
+        }, software_frame.data });
+        _source.invoke_callback(frame);
+    }
+
+    void software_sensor::on_pose_frame(rs2_software_pose_frame software_frame)
+    {
+        frame_additional_data data;
+        data.timestamp = software_frame.timestamp;
+        data.timestamp_domain = software_frame.domain;
+        data.frame_number = software_frame.frame_number;
+
+        data.metadata_size = 0;
+        for (auto i : _metadata_map)
+        {
+            auto size_of_enum = sizeof(rs2_frame_metadata_value);
+            auto size_of_data = sizeof(rs2_metadata_type);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
+            data.metadata_size += static_cast<uint32_t>(size_of_enum);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
+            data.metadata_size += static_cast<uint32_t>(size_of_data);
+        }
+
+        auto frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, data, false);
+        if (!frame)
+        {
+            LOG_WARNING("Dropped pose frame. alloc_frame(...) returned nullptr");
+            return;
+        }
+        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
+        frame->attach_continuation(frame_continuation{ [=]() {
+            software_frame.deleter(software_frame.data);
+        }, software_frame.data });
         _source.invoke_callback(frame);
     }
 

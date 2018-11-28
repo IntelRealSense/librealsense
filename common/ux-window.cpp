@@ -146,7 +146,6 @@ namespace rs2
                     }
                 }
             });
-            
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
@@ -157,11 +156,11 @@ namespace rs2
 
             begin_frame();
 
-			if (_first_frame)
-			{
-				_is_ui_aligned = is_gui_aligned(_win);
-				_first_frame = false;
-			}
+            if (_first_frame)
+            {
+                _is_ui_aligned = is_gui_aligned(_win);
+                _first_frame = false;
+            }
             glPushMatrix();
             glViewport(0, 0, _fb_width, _fb_height);
             glClearColor(0.036f, 0.044f, 0.051f, 1.f);

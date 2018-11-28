@@ -31,7 +31,7 @@ namespace librealsense
                     [](perc::TrackingManager* ptr) { perc::TrackingManager::ReleaseInstance(ptr); });
                 if (_manager == nullptr)
                 {
-                    LOG_ERROR("Failed to create TrackingManager");
+                    LOG_DEBUG("Failed to create TrackingManager");
                     return;
                 }
                 _t = std::thread(&tm2_context::thread_proc, this);
