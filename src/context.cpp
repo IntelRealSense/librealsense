@@ -505,7 +505,8 @@ namespace librealsense
                     auto&& backend = ctx->get_backend();
                     auto device_serial = backend.get_device_serial(vid, pid, unique_id);
 
-                    if ((hid.unique_id == unique_id) || ((hid.unique_id == "*") && (hid.serial_number == device_serial)))
+                    if ((hid.unique_id == unique_id) || // Linux check
+                        ((hid.unique_id == "*") && (hid.serial_number == device_serial))) // Windows check
                     {
                         hid_group.push_back(hid);
                     }

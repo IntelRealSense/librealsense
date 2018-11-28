@@ -178,7 +178,7 @@ namespace librealsense
 
         static const char* custom_sensor_fw_ver = "5.6.0.0";
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos[1]),
+        auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
                                                         fps_and_sampling_frequency_per_rs2_stream,
