@@ -25,6 +25,8 @@ namespace librealsense
             std::vector<hid_device_info> query_hid_devices() const override;
             virtual std::shared_ptr<time_service> create_time_service() const override;
             std::shared_ptr<device_watcher> create_device_watcher() const override;
+            std::string get_device_serial(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid) const override;
+
         private:
             std::chrono::high_resolution_clock::time_point _start_time;
         };
