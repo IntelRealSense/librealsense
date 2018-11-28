@@ -9,6 +9,10 @@ namespace Intel.RealSense
     {
         internal HandleRef m_instance;
 
+        //public delegate void FrameCallback<Frame, T>(Frame frame);
+        public delegate void FrameCallback(Frame frame);
+        private frame_callback m_callback;
+
         public Pipeline(Context ctx)
         {
             object error;
@@ -34,6 +38,34 @@ namespace Intel.RealSense
         {
             object error;
             var res = NativeMethods.rs2_pipeline_start_with_config(m_instance.Handle, cfg.m_instance.Handle, out error);
+            var prof = new PipelineProfile(res);
+            return prof;
+        }
+
+        public PipelineProfile Start(FrameCallback cb)
+        {
+            object error;
+            frame_callback cb2 = (IntPtr f, IntPtr u) =>
+            {
+                using (var frame = new Frame(f))
+                    cb(frame);
+            };
+            m_callback = cb2;
+            var res = NativeMethods.rs2_pipeline_start_with_callback(m_instance.Handle, cb2, IntPtr.Zero, out error);
+            var prof = new PipelineProfile(res);
+            return prof;
+        }
+
+        public PipelineProfile Start(Config cfg, FrameCallback cb)
+        {
+            object error;
+            frame_callback cb2 = (IntPtr f, IntPtr u) =>
+            {
+                using (var frame = new Frame(f))
+                    cb(frame);
+            };
+            m_callback = cb2;
+            var res = NativeMethods.rs2_pipeline_start_with_config_and_callback(m_instance.Handle, cfg.m_instance.Handle, cb2, IntPtr.Zero, out error);
             var prof = new PipelineProfile(res);
             return prof;
         }

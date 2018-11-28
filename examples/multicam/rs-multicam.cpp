@@ -122,17 +122,10 @@ public:
             // For each device get its frames
             for (auto&& id_to_frame : view.second.frames_per_stream)
             {
-                // If the frame is available
-                if (id_to_frame.second)
-                {
-                    view.second.tex.upload(id_to_frame.second);
-                }
                 rect frame_location{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
                 if (rs2::video_frame vid_frame = id_to_frame.second.as<rs2::video_frame>())
                 {
-                    rect adjuested = frame_location.adjust_ratio({ static_cast<float>(vid_frame.get_width())
-                                                                 , static_cast<float>(vid_frame.get_height()) });
-                    view.second.tex.show(adjuested);
+                    view.second.tex.render(vid_frame, frame_location);
                     stream_no++;
                 }
             }
