@@ -3,8 +3,8 @@
 ## Overview
 
 This sample demonstrates how to configure the camera for streaming frames using the pipeline's callback API.
-This API is recommended when streaming high frequency data such as IMU (Inertial measurement unit) since the callback is invoked immediately once the a frame is ready.
-This sample prints a frame counter for each stream, the code demonstrates how it can be done with correctly by synchronizing the callbacks.
+This API is recommended when streaming high frequency data such as IMU ([Inertial measurement unit](https://en.wikipedia.org/wiki/Inertial_measurement_unit)) since the callback is invoked immediately once the a frame is ready.
+This sample prints a frame counter for each stream, the code demonstrates how it can be done correctly by synchronizing the callbacks.
 
 ## Expected Output
 ![rs-callback](https://user-images.githubusercontent.com/18511514/48921401-37a0c680-eea8-11e8-9ab4-18e566d69a8a.PNG)
@@ -29,7 +29,7 @@ The mutex object is a synchronization primitive that will be used to protect our
 std::mutex mutex;
 ```
 
-Define the frame callback which will be invoked by the pipeline on the sensors thread once a frame (or frames) is ready.
+Define the frame callback which will be invoked by the pipeline on the sensors thread once a frame (or synchronised frameset) is ready.
 ```cpp
 // Define frame callback
 // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors.
@@ -62,7 +62,7 @@ rs2::pipeline pipe;
 rs2::pipeline_profile profiles = pipe.start(callback);
 ```
 
-Collect the stream names from the returned pipeline_profile.
+Collect the stream names from the returned `pipeline_profile` object:
 ```cpp
 // Collect the enabled streams names
 for (auto p : profiles.get_streams())
@@ -70,7 +70,8 @@ for (auto p : profiles.get_streams())
 ```
 
 Finally, print the frame counters once every second.
-In order to protect our counters from being accessed simultaneously, protect the counters using the mutex.
+After calling `start`, the main thread will continue to execute work, so even when no other action is required, we need to keep the application alive. 
+In order to protect our counters from being accessed simultaneously, access the counters using the mutex.
 ```cpp
 std::cout << "RealSense callback sample" << std::endl << std::endl;
 
