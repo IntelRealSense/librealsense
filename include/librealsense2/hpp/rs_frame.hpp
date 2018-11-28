@@ -791,7 +791,7 @@ namespace rs2
         * Retrieve back the motion data from IMU sensor
         * \return rs2_vector - 3D vector in Euclidean coordinate space.
         */
-        rs2_vector get_motion_data()
+        rs2_vector get_motion_data() const
         {
             auto data = reinterpret_cast<const float*>(get_data());
             return rs2_vector{ data[0], data[1], data[2] };
@@ -998,7 +998,5 @@ namespace rs2
     private:
         size_t _size;
     };
-
-
 }
 #endif // LIBREALSENSE_RS2_FRAME_HPP

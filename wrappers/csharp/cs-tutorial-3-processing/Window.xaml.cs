@@ -60,13 +60,15 @@ namespace Intel.RealSense
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
                 var pp = pipeline.Start(cfg);
 
-                using (var p = pp.GetStream(Stream.Depth) as VideoStreamProfile)
-                    imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
-                var updateDepth = UpdateImage(imgDepth);
-
+                // Allocate bitmaps for rendring.
+                // Since the sample aligns the depth frames to the color frames, both of the images will have the color resolution
                 using (var p = pp.GetStream(Stream.Color) as VideoStreamProfile)
+                {
                     imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                    imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                }
                 var updateColor = UpdateImage(imgColor);
+                var updateDepth = UpdateImage(imgDepth);
 
                 // Create custom processing block
                 // For demonstration purposes it will:

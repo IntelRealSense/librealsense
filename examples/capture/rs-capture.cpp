@@ -11,31 +11,29 @@ int main(int argc, char * argv[]) try
     rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
     // Create a simple OpenGL window for rendering:
     window app(1280, 720, "RealSense Capture Example");
-    // Declare two textures on the GPU, one for color and one for depth
-    texture depth_image, color_image;
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
+    // Declare rates printer for showing streaming rates of the enabled streams.
+    rs2::rates_printer printer;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
+
     // Start streaming with default recommended configuration
+    // The default video configuration contains Depth and Color streams
+    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default 
     pipe.start();
 
-    while(app) // Application still alive?
+    while (app) // Application still alive?
     {
-        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames from the camera
+                             apply_filter(printer).     // Print each enabled stream frame rate
+                             apply_filter(color_map);   // Find and colorize the depth data
 
-        rs2::frame depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
-        rs2::frame color = data.get_color_frame();            // Find the color data
-
-        // For cameras that don't have RGB sensor, we'll render infrared frames instead of color
-        if (!color)
-            color = data.get_infrared_frame();
-
-        // Render depth on to the first half of the screen and color on to the second
-        depth_image.render(depth, { 0,               0, app.width() / 2, app.height() });
-        color_image.render(color, { app.width() / 2, 0, app.width() / 2, app.height() });
+        // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
+        // Each texture is displayed on different viewport according to it's stream unique id
+        app.show(data);
     }
 
     return EXIT_SUCCESS;

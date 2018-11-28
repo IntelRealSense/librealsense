@@ -187,6 +187,13 @@ rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transfo
 */
 rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 
+/**
+* Creates a rates printer block. The printer prints the actual FPS of the invoked frame stream.
+* The block ignores reapiting frames and calculats the FPS only if the frame number of the relevant frame was changed.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif
