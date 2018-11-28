@@ -622,11 +622,7 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get()};
         std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
         _accel_stream.get(),
-        _gyro_stream.get(),
-        _gpio_streams[0].get(),
-        _gpio_streams[1].get(),
-        _gpio_streams[2].get(),
-        _gpio_streams[3].get()};
+        _gyro_stream.get()};
 
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
         {
@@ -663,11 +659,7 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get() };
         std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
             _accel_stream.get(),
-            _gyro_stream.get(),
-            _gpio_streams[0].get(),
-            _gpio_streams[1].get(),
-            _gpio_streams[2].get(),
-            _gpio_streams[3].get()};
+            _gyro_stream.get()};
 
         if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
         {
@@ -694,11 +686,7 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         std::vector<stream_interface*> mm_streams = { _fisheye_stream.get(),
             _accel_stream.get(),
-            _gyro_stream.get(),
-            _gpio_streams[0].get(),
-            _gpio_streams[1].get(),
-            _gpio_streams[2].get(),
-            _gpio_streams[3].get()};
+            _gyro_stream.get()};
 
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
         {
@@ -714,8 +702,6 @@ namespace librealsense
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         // TODO - A proper matcher for High-FPS sensor is required
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
-        for (auto i=0; i<4; i++)
-            mm_streams.emplace_back(_gpio_streams[i].get());
 
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
         {
@@ -730,9 +716,6 @@ namespace librealsense
     {
         // TODO - A proper matcher for High-FPS sensor is required
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
-        for (auto i=0; i<4; i++)
-            mm_streams.emplace_back(_gpio_streams[i].get());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams);
     }
-
 }
