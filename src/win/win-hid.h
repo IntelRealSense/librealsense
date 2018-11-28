@@ -30,6 +30,7 @@ namespace librealsense
             };
 
             const std::string& get_sensor_name() const { return _name; }
+            const CComPtr<ISensor>& get_sensor() const { return _pISensor; }
 
             HRESULT start_capture(ISensorEvents* sensorEvents)
             {

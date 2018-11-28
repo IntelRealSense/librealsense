@@ -52,6 +52,17 @@ namespace librealsense
           { "HID Sensor Class Device: Accelerometer", {RS2_STREAM_ACCEL, 0, 1, 1, 63, RS2_FORMAT_MOTION_XYZ32F} },
           { "HID Sensor Class Device: Accelerometer", {RS2_STREAM_ACCEL, 0, 1, 1, 250, RS2_FORMAT_MOTION_XYZ32F} },
           /*{ "HID Sensor Class Device: Custom",       { RS2_STREAM_ACCEL, 0, 1, 1, 1000, RS2_FORMAT_MOTION_XYZ32F } }*/ };
+
+        // Translate frequency to SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL
+        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
+                                                           {{RS2_STREAM_ACCEL,{{63,   1000},
+                                                                               {125,  800},
+                                                                               {250,  400 },
+                                                                               {500,  200 }}},
+                                                            {RS2_STREAM_GYRO, {{100,  1000},
+                                                                               {200,  500},
+                                                                               {400,  250}}}};
+
 #else
         // Bandwidth parameters from BOSCH BMI 055 spec'
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
@@ -69,8 +80,6 @@ namespace librealsense
              {"accel_3d", {RS2_STREAM_ACCEL, 0, 1, 1, 125,  RS2_FORMAT_MOTION_XYZ32F}},
              {"accel_3d", {RS2_STREAM_ACCEL, 0, 1, 1, 250,  RS2_FORMAT_MOTION_XYZ32F}},
              {"accel_3d", {RS2_STREAM_ACCEL, 0, 1, 1, 500,  RS2_FORMAT_MOTION_XYZ32F}}};
-#endif
-
 
         // The frequency selector is vendor and model-specific
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
@@ -81,6 +90,7 @@ namespace librealsense
                                                           {RS2_STREAM_GYRO,  {{100,  1},
                                                                               {200,  2},
                                                                               {400,  4}}}};
+#endif
 
     protected:
         std::shared_ptr<stream_interface> _fisheye_stream;

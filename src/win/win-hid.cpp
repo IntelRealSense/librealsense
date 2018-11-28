@@ -201,13 +201,34 @@ namespace librealsense
         {
             try
             {
-                for (auto& sensor_to_open : iio_profiles)
+                for (auto& profile_to_open : iio_profiles)
                 {
                     for (auto& connected_sensor : _connected_sensors)
                     {
-                        if (sensor_to_open.sensor_name == connected_sensor->get_sensor_name())
+                        if (profile_to_open.sensor_name == connected_sensor->get_sensor_name())
                         {
-                            _opened_sensors.push_back(connected_sensor);
+                            /* Set SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL sensor property to profile */
+                            HRESULT hr = S_OK;
+                            IPortableDeviceValues* pPropsToSet = NULL; // Input
+                            IPortableDeviceValues* pPropsReturn = NULL; // Output
+
+                            /* Create the input object */
+                            CHECK_HR(CoCreateInstance(__uuidof(PortableDeviceValues), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pPropsToSet)));
+
+                            /* Add the current report interval property */
+                            hr = pPropsToSet->SetUnsignedIntegerValue(SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL, profile_to_open.frequency);
+                            if (SUCCEEDED(hr))
+                            {
+                                // Setting a single property
+                                hr = connected_sensor->get_sensor()->SetProperties(pPropsToSet, &pPropsReturn);
+                                if (SUCCEEDED(hr))
+                                {
+                                    _opened_sensors.push_back(connected_sensor);
+                                    pPropsReturn->Release();
+                                }
+                            }
+
+                            pPropsToSet->Release();
                         }
                     }
                 }
@@ -233,16 +254,6 @@ namespace librealsense
             _opened_sensors.clear();
         }
 
-        void wmf_hid_device::stop_capture()
-        {
-            for (auto& sensor : _opened_sensors)
-            {
-                sensor->stop_capture();
-            }
-            _cb = nullptr;
-
-        }
-
         void wmf_hid_device::start_capture(hid_callback callback)
         {
             // Hack, start default profile
@@ -254,6 +265,15 @@ namespace librealsense
             {
                 CHECK_HR(sensor->start_capture(sensorEvents));
             }
+        }
+
+        void wmf_hid_device::stop_capture()
+        {
+            for (auto& sensor : _opened_sensors)
+            {
+                sensor->stop_capture();
+            }
+            _cb = nullptr;
         }
 
         std::vector<hid_sensor> wmf_hid_device::get_sensors()
