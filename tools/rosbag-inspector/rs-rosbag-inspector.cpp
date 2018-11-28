@@ -373,7 +373,7 @@ inline void sort(sort_type m_sort_type, const std::string& in, const std::string
         {
 
         }
-        if (m.getTime() == ros::TIME_MIN)
+        if (m.getTime() == rs2rosinternal::TIME_MIN)
         {
             bag_out.write(m.getTopic(), m.getTime(), m);
             continue;

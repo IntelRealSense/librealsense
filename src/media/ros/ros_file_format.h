@@ -533,21 +533,21 @@ namespace librealsense
         return device_serializer::nanoseconds::min();
     }
 
-    inline device_serializer::nanoseconds to_nanoseconds(const ros::Time& t)
+    inline device_serializer::nanoseconds to_nanoseconds(const rs2rosinternal::Time& t)
     {
-        if (t == ros::TIME_MIN)
+        if (t == rs2rosinternal::TIME_MIN)
             return get_static_file_info_timestamp();
 
         return device_serializer::nanoseconds(t.toNSec());
     }
 
-    inline ros::Time to_rostime(const device_serializer::nanoseconds& t)
+    inline rs2rosinternal::Time to_rostime(const device_serializer::nanoseconds& t)
     {
         if (t == get_static_file_info_timestamp())
-            return ros::TIME_MIN;
+            return rs2rosinternal::TIME_MIN;
         
         auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(t);
-        return ros::Time(secs.count());
+        return rs2rosinternal::Time(secs.count());
     }
 
     namespace legacy_file_format

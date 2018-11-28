@@ -30,7 +30,7 @@
 
 #include <ostream>
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -71,7 +71,7 @@ struct Printer<uint8_t>
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSLIB_MESSAGE_OPERATIONS_H
 

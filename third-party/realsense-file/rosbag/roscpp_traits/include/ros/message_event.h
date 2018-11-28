@@ -42,7 +42,7 @@
 #include "boost/function.hpp"
 
 
-namespace ros
+namespace rs2rosinternal
 {
 
 template<typename M>
@@ -61,7 +61,7 @@ ROS_DEPRECATED inline std::shared_ptr<M> defaultMessageCreateFunction()
 }
 
 /**
- * \brief Event type for subscriptions, const ros::MessageEvent<M const>& can be used in your callback instead of const std::shared_ptr<M const>&
+ * \brief Event type for subscriptions, const rs2rosinternal::MessageEvent<M const>& can be used in your callback instead of const std::shared_ptr<M const>&
  *
  * Useful if you need to retrieve meta-data about the message, such as the full connection header, or the publisher's node name
  */
@@ -111,25 +111,25 @@ public:
    */
   MessageEvent(const ConstMessagePtr& message)
   {
-    init(message, std::shared_ptr<M_string>(), ros::Time::now(), true, ros::DefaultMessageCreator<Message>());
+    init(message, std::shared_ptr<M_string>(), rs2rosinternal::Time::now(), true, rs2rosinternal::DefaultMessageCreator<Message>());
   }
 
-  MessageEvent(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, ros::Time receipt_time)
+  MessageEvent(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, rs2rosinternal::Time receipt_time)
   {
-    init(message, connection_header, receipt_time, true, ros::DefaultMessageCreator<Message>());
+    init(message, connection_header, receipt_time, true, rs2rosinternal::DefaultMessageCreator<Message>());
   }
 
-  MessageEvent(const ConstMessagePtr& message, ros::Time receipt_time)
+  MessageEvent(const ConstMessagePtr& message, rs2rosinternal::Time receipt_time)
   {
-    init(message, std::shared_ptr<M_string>(), receipt_time, true, ros::DefaultMessageCreator<Message>());
+    init(message, std::shared_ptr<M_string>(), receipt_time, true, rs2rosinternal::DefaultMessageCreator<Message>());
   }
 
-  MessageEvent(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, ros::Time receipt_time, bool nonconst_need_copy, const CreateFunction& create)
+  MessageEvent(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, rs2rosinternal::Time receipt_time, bool nonconst_need_copy, const CreateFunction& create)
   {
     init(message, connection_header, receipt_time, nonconst_need_copy, create);
   }
 
-  void init(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, ros::Time receipt_time, bool nonconst_need_copy, const CreateFunction& create)
+  void init(const ConstMessagePtr& message, const std::shared_ptr<M_string>& connection_header, rs2rosinternal::Time receipt_time, bool nonconst_need_copy, const CreateFunction& create)
   {
     message_ = message;
     connection_header_ = connection_header;
@@ -178,7 +178,7 @@ public:
   /**
    * \brief Returns the time at which this message was received
    */
-  ros::Time getReceiptTime() const { return receipt_time_; }
+  rs2rosinternal::Time getReceiptTime() const { return receipt_time_; }
 
   bool nonConstWillCopy() const { return nonconst_need_copy_; }
   bool getMessageWillCopy() const { return !boost::is_const<M>::value && nonconst_need_copy_; }
@@ -241,7 +241,7 @@ private:
   // Kind of ugly to make this mutable, but it means we can pass a const MessageEvent to a callback and not worry about other things being modified
   mutable MessagePtr message_copy_;
   std::shared_ptr<M_string> connection_header_;
-  ros::Time receipt_time_;
+  rs2rosinternal::Time receipt_time_;
   bool nonconst_need_copy_;
   CreateFunction create_;
 

@@ -32,7 +32,7 @@
 #include <vector>
 #include "cpp_common_decl.h"
 
-namespace ros
+namespace rs2rosinternal
 {
 
 namespace debug

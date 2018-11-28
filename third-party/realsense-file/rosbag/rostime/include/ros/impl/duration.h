@@ -38,7 +38,7 @@
 #include <ros/rate.h>
 //#include <boost/date_time/posix_time/posix_time_types.hpp>
 
-namespace ros {
+namespace rs2rosinternal {
   //
   // DurationBase template member function implementation
   //
