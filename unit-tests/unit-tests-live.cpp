@@ -5062,7 +5062,7 @@ TEST_CASE("Record software-device", "[software-device][record]")
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
     auto player_dev = ctx.load_device(filename);
-
+    player_dev.set_real_time(false);
     syncer player_sync;
     auto s = player_dev.query_sensors()[0];
     REQUIRE_NOTHROW(s.open(s.get_stream_profiles()));
