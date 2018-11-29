@@ -74,6 +74,8 @@ namespace librealsense
 
         void tag_profiles(stream_profiles profiles) const override;
 
+        virtual bool compress_while_record() const override { return true; }
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
         int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);

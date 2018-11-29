@@ -32,7 +32,7 @@
 #include <memory>
 #include <vector>
 
-namespace ros
+namespace rs2rosinternal
 {
 
 class ROSCPP_SERIALIZATION_DECL SerializedMessage
@@ -60,6 +60,6 @@ public:
   {}
 };
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSLIB_SERIALIZED_MESSAGE_H

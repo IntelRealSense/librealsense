@@ -1,5 +1,5 @@
 % Wraps librealsense2 pointcloud class
-classdef pointcloud < realsense.processing_block
+classdef pointcloud < realsense.filter
     methods
         % Constructor
         function this = pointcloud(stream, index)
@@ -14,7 +14,7 @@ classdef pointcloud < realsense.processing_block
                     validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'});
                     out = realsense.librealsense_mex('rs2::pointcloud', 'new', int64(stream), int64(index));
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

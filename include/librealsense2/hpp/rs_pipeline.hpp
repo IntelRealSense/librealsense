@@ -106,7 +106,7 @@ namespace rs2
         pipeline_profile(std::shared_ptr<rs2_pipeline_profile> profile) :
             _pipeline_profile(profile){}
     private:
-        
+
         std::shared_ptr<rs2_pipeline_profile> _pipeline_profile;
         friend class config;
         friend class pipeline;
@@ -320,7 +320,7 @@ namespace rs2
             return _config;
         }
 
-        config(std::shared_ptr<rs2_config> config) : _config(config) {}
+        config(std::shared_ptr<rs2_config> cfg) : _config(cfg) {}
     private:
         std::shared_ptr<rs2_config> _config;
     };
@@ -403,6 +403,54 @@ namespace rs2
             return pipeline_profile(p);
         }
 
+        /**
+        * Start the pipeline streaming with its default configuration.
+        * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
+        * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+        * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
+        *
+        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
+        * \return               The actual pipeline device and streams profile, which was successfully configured to the streaming device.
+        */
+        template<class S>
+        pipeline_profile start(S callback)
+        {
+            rs2_error* e = nullptr;
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_start_with_callback_cpp(_pipeline.get(), new frame_callback<S>(callback), &e),
+                rs2_delete_pipeline_profile);
+
+            error::handle(e);
+            return pipeline_profile(p);
+        }
+
+        /**
+        * Start the pipeline streaming according to the configuraion.
+        * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
+        * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+        * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
+        * The pipeline selects and activates the device upon start, according to configuration or a default configuration.
+        * When the rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result.
+        * If the application requests are conflicting with pipeline computer vision modules or no matching device is available on
+        * the platform, the method fails.
+        * Available configurations and devices may change between config \c resolve() call and pipeline start, in case devices
+        * are connected or disconnected, or another application acquires ownership of a device.
+        *
+        * \param[in] config     A rs2::config with requested filters on the pipeline configuration. By default no filters are applied.
+        * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
+        * \return               The actual pipeline device and streams profile, which was successfully configured to the streaming device.
+        */
+        template<class S>
+        pipeline_profile start(const config& config, S callback)
+        {
+            rs2_error* e = nullptr;
+            auto p = std::shared_ptr<rs2_pipeline_profile>(
+                rs2_pipeline_start_with_config_and_callback_cpp(_pipeline.get(), config.get().get(), new frame_callback<S>(callback), &e),
+                rs2_delete_pipeline_profile);
+
+            error::handle(e);
+            return pipeline_profile(p);
+        }
 
         /**
         * Stop the pipeline streaming.

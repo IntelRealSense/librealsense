@@ -164,6 +164,7 @@ EXPORTS
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block
     rs2_create_hole_filling_filter_block
+    rs2_create_rates_printer_block
     rs2_create_disparity_transform_block
     rs2_embedded_frames_count
     rs2_extract_frame
@@ -200,7 +201,8 @@ EXPORTS
     rs2_load_json
     rs2_serialize_json
 
-    rs2_create_record_device 
+    rs2_create_record_device
+    rs2_create_record_device_ex
     rs2_record_device_pause
     rs2_record_device_resume
     rs2_record_device_filename
@@ -231,10 +233,15 @@ EXPORTS
     rs2_delete_pipeline
     rs2_pipeline_start
     rs2_pipeline_start_with_config
+    rs2_pipeline_start_with_callback
+    rs2_pipeline_start_with_config_and_callback
+    rs2_pipeline_start_with_callback_cpp
+    rs2_pipeline_start_with_config_and_callback_cpp
     rs2_pipeline_get_active_profile
     rs2_pipeline_profile_get_device
     rs2_pipeline_profile_get_streams
     rs2_delete_pipeline_profile
+
     rs2_create_config
     rs2_delete_config
     rs2_config_enable_stream
@@ -258,8 +265,12 @@ EXPORTS
     rs2_create_software_device
     rs2_software_device_add_sensor
     rs2_software_sensor_on_video_frame
+    rs2_software_sensor_on_motion_frame
+    rs2_software_sensor_on_pose_frame
     rs2_software_device_create_matcher
     rs2_software_sensor_add_video_stream
+    rs2_software_sensor_add_motion_stream
+    rs2_software_sensor_add_pose_stream
     rs2_software_sensor_add_read_only_option
     rs2_software_sensor_update_read_only_option
     rs2_software_sensor_set_metadata

@@ -22,10 +22,14 @@ namespace librealsense
     class ros_writer: public writer
     {
     public:
-        explicit ros_writer(const std::string& file) : m_file_path(file)
+        explicit ros_writer(const std::string& file, bool compress_while_record) : m_file_path(file)
         {
+            LOG_INFO("Compression while record is set to " << (compress_while_record ? "ON" : "OFF"));
             m_bag.open(file, rosbag::BagMode::Write);
-            m_bag.setCompression(rosbag::CompressionType::LZ4);
+            if (compress_while_record)
+            {
+                m_bag.setCompression(rosbag::CompressionType::LZ4);
+            }
             write_file_version();
         }
 
@@ -140,7 +144,7 @@ namespace librealsense
             noti_msg.severity = get_string(n.severity);
             noti_msg.description = n.description;
             auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::duration<double, std::nano>(n.timestamp));
-            noti_msg.timestamp = ros::Time(secs.count());
+            noti_msg.timestamp = rs2rosinternal::Time(secs.count());
             noti_msg.serialized_data = n.serialized_data;
             return noti_msg;
         }
@@ -188,7 +192,7 @@ namespace librealsense
             image.data.assign(p_data, p_data + size);
             image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
             std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
-            image.header.stamp = ros::Time(std::chrono::duration<double>(timestamp_ms).count());
+            image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
             std::string TODO_CORRECT_ME = "0";
             image.header.frame_id = TODO_CORRECT_ME;
             auto image_topic = ros_topic::frame_data_topic(stream_id);
@@ -206,7 +210,7 @@ namespace librealsense
             
             imu_msg.header.seq = static_cast<uint32_t>(frame.frame->get_frame_number());
             std::chrono::duration<double, std::milli> timestamp_ms(frame.frame->get_frame_timestamp());
-            imu_msg.header.stamp = ros::Time(std::chrono::duration<double>(timestamp_ms).count());
+            imu_msg.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
             std::string TODO_CORRECT_ME = "0";
             imu_msg.header.frame_id = TODO_CORRECT_ME;
             auto data_ptr = reinterpret_cast<const float*>(frame.frame->get_frame_data());

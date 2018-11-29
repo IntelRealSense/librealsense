@@ -40,9 +40,9 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , /**< Timestamp get from uvc driver. usec*/
     RS2_FRAME_METADATA_ACTUAL_FPS                           , /**< Actual fps */
     RS2_FRAME_METADATA_FRAME_LASER_POWER                    , /**< Laser power value 0-360. */
-    RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. */    
+    RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , /**< Laser power mode. Zero corresponds to Laser power switched off and one for switched on. */
     RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , /**< Exposure priority. */
-    RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT                    , /**< Left region of interest for the auto exposure Algorithm. */          
+    RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT                    , /**< Left region of interest for the auto exposure Algorithm. */
     RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT                   , /**< Right region of interest for the auto exposure Algorithm. */
     RS2_FRAME_METADATA_EXPOSURE_ROI_TOP                     , /**< Top region of interest for the auto exposure Algorithm. */
     RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM                  , /**< Bottom region of interest for the auto exposure Algorithm. */

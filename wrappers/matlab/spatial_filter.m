@@ -1,5 +1,5 @@
 % Wraps librealsense2 spatial_filter class
-classdef spatial_filter < realsense.processing_block
+classdef spatial_filter < realsense.filter
     methods
         % Constructor
         function this = spatial_filter(smooth_alpha, smooth_delta, magnitude, hole_fill)
@@ -14,7 +14,7 @@ classdef spatial_filter < realsense.processing_block
             else
                 % TODO: Error out on bad arg count
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

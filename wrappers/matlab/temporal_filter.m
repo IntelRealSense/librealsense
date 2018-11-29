@@ -1,5 +1,5 @@
 % Wraps librealsense2 temporal_filter class
-classdef temporal_filter < realsense.processing_block
+classdef temporal_filter < realsense.filter
     methods
         % Constructor
         function this = temporal_filter(smooth_alpha, smooth_delta, persistence_control)
@@ -13,7 +13,7 @@ classdef temporal_filter < realsense.processing_block
             else
                 % TODO: Error out on bad arg count
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

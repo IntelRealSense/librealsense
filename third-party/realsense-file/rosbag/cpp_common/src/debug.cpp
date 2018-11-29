@@ -39,7 +39,7 @@
 #include <cstdio>
 #include <sstream>
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace debug
 {

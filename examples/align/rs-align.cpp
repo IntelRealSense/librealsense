@@ -100,7 +100,7 @@ int main(int argc, char * argv[]) try
         rect pip_stream{ 0, 0, w / 5, h / 5 };
         pip_stream = pip_stream.adjust_ratio({ static_cast<float>(aligned_depth_frame.get_width()),static_cast<float>(aligned_depth_frame.get_height()) });
         pip_stream.x = altered_other_frame_rect.x + altered_other_frame_rect.w - pip_stream.w - (std::max(w, h) / 25);
-        pip_stream.y = altered_other_frame_rect.y + altered_other_frame_rect.h - pip_stream.h - (std::max(w, h) / 25);
+        pip_stream.y = altered_other_frame_rect.y + (std::max(w, h) / 25);
 
         // Render depth (as picture in pipcture)
         renderer.upload(c.process(aligned_depth_frame));

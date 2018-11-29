@@ -90,14 +90,14 @@ inline static void allInOne(Stream& stream, T t)
     return stream.getLength(); \
   }
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
 namespace mt = message_traits;
 namespace mpl = boost::mpl;
 
-class ROSCPP_SERIALIZATION_DECL StreamOverrunException : public ros::Exception
+class ROSCPP_SERIALIZATION_DECL StreamOverrunException : public rs2rosinternal::Exception
 {
 public:
   StreamOverrunException(const std::string& what)
@@ -118,7 +118,7 @@ template<typename T>
 struct Serializer
 {
   /**
-   * \brief Write an object to the stream.  Normally the stream passed in here will be a ros::serialization::OStream
+   * \brief Write an object to the stream.  Normally the stream passed in here will be a rs2rosinternal::serialization::OStream
    */
   template<typename Stream>
   inline static void write(Stream& stream, typename boost::call_traits<T>::param_type t)
@@ -127,7 +127,7 @@ struct Serializer
   }
 
   /**
-   * \brief Read an object from the stream.  Normally the stream passed in here will be a ros::serialization::IStream
+   * \brief Read an object from the stream.  Normally the stream passed in here will be a rs2rosinternal::serialization::IStream
    */
   template<typename Stream>
   inline static void read(Stream& stream, typename boost::call_traits<T>::reference t)
@@ -145,7 +145,7 @@ struct Serializer
 };
 
 /**
- * \brief Serialize an object.  Stream here should normally be a ros::serialization::OStream
+ * \brief Serialize an object.  Stream here should normally be a rs2rosinternal::serialization::OStream
  */
 template<typename T, typename Stream>
 inline void serialize(Stream& stream, const T& t)
@@ -154,7 +154,7 @@ inline void serialize(Stream& stream, const T& t)
 }
 
 /**
- * \brief Deserialize an object.  Stream here should normally be a ros::serialization::IStream
+ * \brief Deserialize an object.  Stream here should normally be a rs2rosinternal::serialization::IStream
  */
 template<typename T, typename Stream>
 inline void deserialize(Stream& stream, T& t)
@@ -307,52 +307,52 @@ struct Serializer<std::basic_string<char, std::char_traits<char>, ContainerAlloc
 };
 
 /**
- * \brief Serializer specialized for ros::Time
+ * \brief Serializer specialized for rs2rosinternal::Time
  */
 template<>
-struct Serializer<ros::Time>
+struct Serializer<rs2rosinternal::Time>
 {
   template<typename Stream>
-  inline static void write(Stream& stream, const ros::Time& v)
+  inline static void write(Stream& stream, const rs2rosinternal::Time& v)
   {
     stream.next(v.sec);
     stream.next(v.nsec);
   }
 
   template<typename Stream>
-  inline static void read(Stream& stream, ros::Time& v)
+  inline static void read(Stream& stream, rs2rosinternal::Time& v)
   {
     stream.next(v.sec);
     stream.next(v.nsec);
   }
 
-  inline static uint32_t serializedLength(const ros::Time&)
+  inline static uint32_t serializedLength(const rs2rosinternal::Time&)
   {
     return 8;
   }
 };
 
 /**
- * \brief Serializer specialized for ros::Duration
+ * \brief Serializer specialized for rs2rosinternal::Duration
  */
 template<>
-struct Serializer<ros::Duration>
+struct Serializer<rs2rosinternal::Duration>
 {
   template<typename Stream>
-  inline static void write(Stream& stream, const ros::Duration& v)
+  inline static void write(Stream& stream, const rs2rosinternal::Duration& v)
   {
     stream.next(v.sec);
     stream.next(v.nsec);
   }
 
   template<typename Stream>
-  inline static void read(Stream& stream, ros::Duration& v)
+  inline static void read(Stream& stream, rs2rosinternal::Duration& v)
   {
     stream.next(v.sec);
     stream.next(v.nsec);
   }
 
-  inline static uint32_t serializedLength(const ros::Duration&)
+  inline static uint32_t serializedLength(const rs2rosinternal::Duration&)
   {
     return 8;
   }
@@ -921,6 +921,6 @@ struct PreDeserialize
 
 } // namespace serialization
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSCPP_SERIALIZATION_H

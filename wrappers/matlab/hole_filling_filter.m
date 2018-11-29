@@ -1,5 +1,5 @@
 % Wraps librealsense2 hole_filling_filter class
-classdef hole_filling_filter < realsense.processing_block
+classdef hole_filling_filter < realsense.filter
     methods
         % Constructor
         function this = hole_filling_filter(mode)
@@ -9,7 +9,7 @@ classdef hole_filling_filter < realsense.processing_block
                 validateattributes(mode, {'numeric'}, {'scalar', 'real', 'integer'});
                 out = realsense.librealsense_mex('rs2::hole_filling_filter', 'new', int64(mode));
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

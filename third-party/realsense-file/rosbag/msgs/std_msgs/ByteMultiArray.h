@@ -62,13 +62,13 @@ typedef boost::shared_ptr< ::std_msgs::ByteMultiArray const> ByteMultiArrayConst
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::std_msgs::ByteMultiArray_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::std_msgs::ByteMultiArray_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::std_msgs::ByteMultiArray_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace std_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -191,9 +191,9 @@ uint32 stride  # stride of given dimension\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -210,9 +210,9 @@ namespace serialization
   }; // struct ByteMultiArray_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -235,6 +235,6 @@ struct Printer< ::std_msgs::ByteMultiArray_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // STD_MSGS_MESSAGE_BYTEMULTIARRAY_H

@@ -9,7 +9,7 @@
 #include "proc/synthetic-stream.h"
 #include "image.h"
 #include "source.h"
- 
+
 namespace librealsense
 {
     class align : public generic_processing_block
