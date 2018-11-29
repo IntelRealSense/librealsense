@@ -166,7 +166,7 @@ list(APPEND PP_Rosbag_Recordings_List
 set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
 foreach(i ${PP_Rosbag_Recordings_List})
     if(NOT EXISTS "${Deployment_Location}${i}")
-        Message("Downloading ${PP_Rosbag_Recordings_URL}${i} to ${Deployment_Location}${i}")
+        message(STATUS "Downloading ${PP_Rosbag_Recordings_URL}${i}")
         file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
     endif()
 endforeach(i)
