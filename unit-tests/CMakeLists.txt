@@ -156,3 +156,17 @@ foreach(i ${PP_Tests_List})
     endforeach(idx)
   endforeach(ext)
 endforeach(i)
+
+list(APPEND PP_Rosbag_Recordings_List  
+    [aligned_2c]_all_combinations_depth_color.bag
+    [aligned_2d]_all_combinations_depth_color.bag
+    all_combinations_depth_color.bag
+)
+
+set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
+foreach(i ${PP_Rosbag_Recordings_List})
+    if(NOT EXISTS "${Deployment_Location}${i}")
+        Message("Downloading ${PP_Rosbag_Recordings_URL}${i} to ${Deployment_Location}${i}")
+        file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
+    endif()
+endforeach(i)

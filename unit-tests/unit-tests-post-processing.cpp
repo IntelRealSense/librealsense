@@ -665,12 +665,12 @@ void compare_aligned_frames_vs_recorded_frames(rs2_stream stream, std::string fi
     std::cout << "---------------------------------------------------------------------------------------------\n";
     for (int i = 0; i < frames.size(); i++)
     {
+        auto d = frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        auto c = frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>();
         auto started = std::chrono::high_resolution_clock::now();
         auto fs_res = align.process(frames[i]);
         auto done = std::chrono::high_resolution_clock::now();
-        auto d = frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>();
-        auto c = frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>();
-        std::cout << "DEPTH " << std::setw(4) << d.format() << " " << std::setw(10) << std::to_string(c.width()) + "x" + std::to_string(c.height()) << " | " <<
+        std::cout << "DEPTH " << std::setw(4) << d.format() << " " << std::setw(10) << std::to_string(d.width()) + "x" + std::to_string(d.height()) << " | " <<
                      "COLOR " << std::setw(6) << c.format() << " " << std::setw(10) << std::to_string(c.width()) + "x" + std::to_string(c.height()) << std::setw(4) << " [" <<
                     std::setw(6) << std::chrono::duration_cast<std::chrono::nanoseconds>(done - started).count() << " ns]" << std::endl;
         validate_ppf_results(fs_res.get_depth_frame(), ref_frames[i].get_depth_frame());
