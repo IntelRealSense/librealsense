@@ -504,6 +504,9 @@ PYBIND11_MODULE(NAME, m) {
 
     // Not binding frame_processor_callback, templated
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
+    processing_block.def("__init__", [](rs2::processing_block &self, std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
+        new (&self) rs2::processing_block(processing_function);
+    }, "processing_function"_a);
     processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
                          {
                              self.start(f);
@@ -512,20 +515,21 @@ PYBIND11_MODULE(NAME, m) {
                   /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
 
     py::class_ <rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter");
-//    filter.def("__init__", [](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size){
-//        return filter(filter_function, queue_size);
-//    }, "filter_function"_a, "queue_size"_a = 1);
+    filter.def("__init__", [](rs2::filter &self, std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size){
+        new (&self) rs2::filter(filter_function, queue_size);
+    }, "filter_function"_a, "queue_size"_a = 1);
 
     // Not binding syncer_processing_block, not in Python API
 
     py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud");
   
     pointcloud.def(py::init<>())
+        .def(py::init<rs2_stream, int>(), "stream"_a, "index"_a = 0)
         .def("calculate", &rs2::pointcloud::calculate, "depth"_a)
         .def("map_to", &rs2::pointcloud::map_to, "mapped"_a);
 
     py::class_<rs2::syncer> syncer(m, "syncer");
-    syncer.def(py::init<>())
+    syncer.def(py::init<int>(), "queue_size"_a = 1)
         .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
             "of frames becomes available", "timeout_ms"_a = 5000)
         .def("poll_for_frames", [](const rs2::syncer &self)
@@ -544,6 +548,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
+        .def(py::init<float>(), "color_scheme"_a)
         .def("colorize", &rs2::colorizer::colorize, "depth"_a)
         /*.def("__call__", &rs2::colorizer::operator())*/;
 
@@ -552,16 +557,20 @@ PYBIND11_MODULE(NAME, m) {
         .def("process", (rs2::frameset (rs2::align::*)(rs2::frameset)) &rs2::align::process, "frames"_a);
 
     py::class_<rs2::decimation_filter, rs2::filter> decimation_filter(m, "decimation_filter");
-    decimation_filter.def(py::init<>());
+    decimation_filter.def(py::init<>())
+        .def(py::init<float>(), "magnitude"_a);
 
     py::class_<rs2::temporal_filter, rs2::filter> temporal_filter(m, "temporal_filter");
-    temporal_filter.def(py::init<>());
+    temporal_filter.def(py::init<>())
+        .def(py::init<float, float, int>(), "smooth_alpha"_a, "smooth_delta"_a, "persistence_control"_a);
 
     py::class_<rs2::spatial_filter, rs2::filter> spatial_filter(m, "spatial_filter");
-    spatial_filter.def(py::init<>());
+    spatial_filter.def(py::init<>())
+        .def(py::init<float, float, float, float>(), "smooth_alpha"_a, "smooth_delta"_a, "magnitude"_a, "hole_fill"_a);;
 
     py::class_<rs2::hole_filling_filter, rs2::filter> hole_filling_filter(m, "hole_filling_filter");
-    hole_filling_filter.def(py::init<>());
+    hole_filling_filter.def(py::init<>())
+        .def(py::init<int>(), "mode"_a);
 
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);

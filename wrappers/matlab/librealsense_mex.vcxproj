@@ -209,7 +209,7 @@
     <None Include="pointcloud.m" />
     <None Include="points.m" />
     <None Include="pose_frame.m" />
-    <None Include="processing_block.m" />
+    <None Include="filter.m" />
     <None Include="recorder.m" />
     <None Include="roi_sensor.m" />
     <None Include="rosbag_example.m" />

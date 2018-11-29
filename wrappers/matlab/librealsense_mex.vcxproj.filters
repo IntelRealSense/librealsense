@@ -178,7 +178,7 @@
     <None Include="rosbag_example.m">
       <Filter>Matlab Files\Examples</Filter>
     </None>
-    <None Include="processing_block.m">
+    <None Include="filter.m">
       <Filter>Matlab Files\Classes</Filter>
     </None>
   </ItemGroup>
