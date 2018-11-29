@@ -690,12 +690,12 @@ void compare_aligned_frames_vs_recorded_frames(rs2_stream stream, std::string fi
     }
 }
 
-TEST_CASE("test align color to depth from recording", "[software-device][record]")
+TEST_CASE("test align color to depth from recording", "[software-device][align]")
 {
     compare_aligned_frames_vs_recorded_frames(RS2_STREAM_DEPTH, "[aligned_2d]_all_combinations_depth_color.bag");
 }
 
-TEST_CASE("test align depth to color from recording", "[software-device][record]")
+TEST_CASE("test align depth to color from recording", "[software-device][align]")
 {
     compare_aligned_frames_vs_recorded_frames(RS2_STREAM_COLOR, "[aligned_2c]_all_combinations_depth_color.bag");
 }
