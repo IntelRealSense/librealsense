@@ -21,7 +21,7 @@ namespace librealsense
         return *sensor;
     }
 
-    void software_device::register_stream_to_extrinsic(const stream_interface& stream, uint32_t groupd_index)
+    void software_device::register_extrinsic(const stream_interface& stream, uint32_t groupd_index)
     {
         register_stream_to_extrinsic_group(stream, groupd_index);
     }
@@ -234,7 +234,7 @@ namespace librealsense
         }, software_frame.pixels });
 
         auto sd = dynamic_cast<software_device*>(_owner);
-        sd->register_stream_to_extrinsic(*vid_profile, _unique_id);
+        sd->register_extrinsic(*vid_profile, _unique_id);
         _source.invoke_callback(frame);
     }
 
