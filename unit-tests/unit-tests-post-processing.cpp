@@ -560,3 +560,140 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
     REQUIRE_THROWS(is_subset(full_pipe, original));
     pipe.stop();
 }
+
+std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors)
+{
+    std::vector<rs2::frameset> composite_frames;
+
+    std::vector<rs2::frame> frames;
+    std::mutex frame_processor_lock;
+    rs2::processing_block frame_processor([&](rs2::frame data, rs2::frame_source& source)
+    {
+        std::lock_guard<std::mutex> lock(frame_processor_lock);
+        frames.push_back(data);
+        if (frames.size() == 2)
+        {
+            source.frame_ready(source.allocate_composite_frame(frames));
+            frames.clear();
+        }
+    });
+
+    rs2::frame_queue postprocessed_frames;
+    frame_processor >> postprocessed_frames;
+
+    bool processing = true;
+    std::thread video_processing_thread([&]() {
+        while (processing)
+        {
+            rs2::frameset composite_fs;
+            if (postprocessed_frames.try_wait_for_frame(&composite_fs))
+            {
+                composite_fs.keep();
+                composite_frames.push_back(composite_fs);
+            }
+        }
+    });
+
+    for (auto s : sensors)
+    {
+        s.open(s.get_stream_profiles());
+        s.start([&](rs2::frame f)
+        {
+            frame_processor.invoke(f);
+        });
+    }
+
+    while (composite_frames.size() < sensors.size())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    processing = false;
+    if (video_processing_thread.joinable())
+        video_processing_thread.join();
+
+    return composite_frames;
+}
+
+void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& reference_frame)
+{
+    auto result_profile = result_frame.get_profile().as<rs2::video_stream_profile>();
+    REQUIRE(result_profile);
+    CAPTURE(result_profile.width());
+    CAPTURE(result_profile.height());
+
+    auto reference_profile = reference_frame.get_profile().as<rs2::video_stream_profile>();
+    REQUIRE(reference_profile);
+    CAPTURE(reference_profile.width());
+    CAPTURE(reference_profile.height());
+
+    REQUIRE(result_profile.width() == reference_profile.width());
+    REQUIRE(result_profile.height() == reference_profile.height());
+
+    auto pixels_as_bytes = reference_frame.as<rs2::video_frame>().get_bytes_per_pixel() * result_profile.width() * result_profile.height();
+
+    // Pixel-by-pixel comparison of the resulted filtered depth vs data ercorded with external tool
+    auto v1 = reinterpret_cast<const uint8_t*>(result_frame.get_data());
+    auto v2 = reinterpret_cast<const uint8_t*>(reference_frame.get_data());
+
+    REQUIRE(std::memcmp(v1, v2, pixels_as_bytes) == 0);
+}
+
+void compare_aligned_frames_vs_recorded_frames(rs2_stream stream, std::string file)
+{
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    auto ref_dev = ctx.load_device(file);
+    ref_dev.set_real_time(false);
+
+    std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
+    auto ref_frames = get_composite_frames(ref_sensors);
+
+    auto dev = ctx.load_device("all_combinations_depth_color.bag");
+    dev.set_real_time(false);
+
+    std::vector<rs2::sensor> sensors = dev.query_sensors();
+    auto frames = get_composite_frames(sensors);
+
+    rs2::align align(stream);
+    std::cout << "---------------------------------------------------------------------------------------------\n";
+    std::cout << "Calculated time interval to align a frame\n";
+    std::cout << "---------------------------------------------------------------------------------------------\n";
+    for (int i = 0; i < frames.size(); i++)
+    {
+        auto started = std::chrono::high_resolution_clock::now();
+        auto fs_res = align.process(frames[i]);
+        auto done = std::chrono::high_resolution_clock::now();
+        auto d = frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        auto c = frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>();
+        std::cout << "DEPTH " << std::setw(4) << d.format() << " " << std::setw(10) << std::to_string(c.width()) + "x" + std::to_string(c.height()) << " | " <<
+                     "COLOR " << std::setw(6) << c.format() << " " << std::setw(10) << std::to_string(c.width()) + "x" + std::to_string(c.height()) << std::setw(4) << " [" <<
+                    std::setw(6) << std::chrono::duration_cast<std::chrono::nanoseconds>(done - started).count() << " ns]" << std::endl;
+        validate_ppf_results(fs_res.get_depth_frame(), ref_frames[i].get_depth_frame());
+        validate_ppf_results(fs_res.get_color_frame(), ref_frames[i].get_color_frame());
+    }
+
+    for (auto s : sensors)
+    {
+        s.stop();
+        s.close();
+    }
+
+    for (auto s : ref_sensors)
+    {
+        s.stop();
+        s.close();
+    }
+}
+
+TEST_CASE("test align color to depth from recording", "[software-device][record]")
+{
+    compare_aligned_frames_vs_recorded_frames(RS2_STREAM_DEPTH, "[aligned_2d]_all_combinations_depth_color.bag");
+}
+
+TEST_CASE("test align depth to color from recording", "[software-device][record]")
+{
+    compare_aligned_frames_vs_recorded_frames(RS2_STREAM_COLOR, "[aligned_2c]_all_combinations_depth_color.bag");
+}
