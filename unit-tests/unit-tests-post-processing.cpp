@@ -645,13 +645,15 @@ void compare_aligned_frames_vs_recorded_frames(rs2_stream stream, std::string fi
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
 
-    auto ref_dev = ctx.load_device(file);
+    std::string folder_name = get_folder_path(special_folder::temp_folder);
+
+    auto ref_dev = ctx.load_device(folder_name + file);
     ref_dev.set_real_time(false);
 
     std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
     auto ref_frames = get_composite_frames(ref_sensors);
 
-    auto dev = ctx.load_device("all_combinations_depth_color.bag");
+    auto dev = ctx.load_device(folder_name + "all_combinations_depth_color.bag");
     dev.set_real_time(false);
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
