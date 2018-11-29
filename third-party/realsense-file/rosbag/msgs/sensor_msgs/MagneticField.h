@@ -70,13 +70,13 @@ typedef boost::shared_ptr< ::sensor_msgs::MagneticField const> MagneticFieldCons
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::sensor_msgs::MagneticField_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::sensor_msgs::MagneticField_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::sensor_msgs::MagneticField_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace sensor_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -210,9 +210,9 @@ float64 z\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -230,9 +230,9 @@ namespace serialization
   }; // struct MagneticField_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -258,6 +258,6 @@ struct Printer< ::sensor_msgs::MagneticField_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // SENSOR_MSGS_MESSAGE_MAGNETICFIELD_H

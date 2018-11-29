@@ -66,13 +66,13 @@ typedef std::shared_ptr< ::realsense_msgs::StreamInfo const> StreamInfoConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_msgs::StreamInfo_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_msgs::StreamInfo_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_msgs::StreamInfo_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -160,9 +160,9 @@ bool is_recommended # Is this stream recommended by RealSense SDK\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -180,9 +180,9 @@ namespace serialization
   }; // struct StreamInfo_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -202,6 +202,6 @@ struct Printer< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // REALSENSE_MSGS_MESSAGE_STREAMINFO_H

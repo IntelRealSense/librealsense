@@ -304,16 +304,16 @@ namespace rs2
         * Base class for multiple frame extensions with internal frame handle
         * \param[in] rs2_frame frame_ref - internal frame instance
         */
-        frame(rs2_frame* frame_ref) : frame_ref(frame_ref)
+        frame(rs2_frame* ref) : frame_ref(ref)
         {
 #ifdef _DEBUG
-            if (frame_ref)
+            if (ref)
             {
                 rs2_error* e = nullptr;
-                auto r = rs2_get_frame_number(frame_ref, &e);
+                auto r = rs2_get_frame_number(ref, &e);
                 if (!e)
                     frame_number = r;
-                auto s = rs2_get_frame_stream_profile(frame_ref, &e);
+                auto s = rs2_get_frame_stream_profile(ref, &e);
                 if (!e)
                     profile = stream_profile(s);
             }
@@ -656,7 +656,6 @@ namespace rs2
 
             if (get())
             {
-                rs2_error* e = nullptr;
                 _size = rs2_get_frame_points_count(get(), &e);
                 error::handle(e);
             }
@@ -853,7 +852,6 @@ namespace rs2
 
             if (get())
             {
-                rs2_error* e = nullptr;
                 _size = rs2_embedded_frames_count(get(), &e);
                 error::handle(e);
             }
@@ -868,10 +866,10 @@ namespace rs2
         frame first_or_default(rs2_stream s, rs2_format f = RS2_FORMAT_ANY) const
         {
             frame result;
-            foreach([&result, s, f](frame frame) {
-                if (!result && frame.get_profile().stream_type() == s && (f == RS2_FORMAT_ANY || f == frame.get_profile().format()))
+            foreach([&result, s, f](frame frm) {
+                if (!result && frm.get_profile().stream_type() == s && (f == RS2_FORMAT_ANY || f == frm.get_profile().format()))
                 {
-                    result = std::move(frame);
+                    result = std::move(frm);
                 }
             });
             return result;
@@ -884,9 +882,9 @@ namespace rs2
         */
         frame first(rs2_stream s, rs2_format f = RS2_FORMAT_ANY) const
         {
-            auto frame = first_or_default(s, f);
-            if (!frame) throw error("Frame of requested stream type was not found!");
-            return frame;
+            auto frm = first_or_default(s, f);
+            if (!frm) throw error("Frame of requested stream type was not found!");
+            return frm;
         }
 
         /**
@@ -928,9 +926,9 @@ namespace rs2
             }
             else
             {
-                foreach([&f, index](const frame& frame) {
-                    if (frame.get_profile().stream_type() == RS2_STREAM_INFRARED && frame.get_profile().stream_index() == index)
-                        f = frame;
+                foreach([&f, index](const frame& frm) {
+                    if (frm.get_profile().stream_type() == RS2_STREAM_INFRARED && 
+                        frm.get_profile().stream_index() == index) f = frm;
                 });
             }
             return f;

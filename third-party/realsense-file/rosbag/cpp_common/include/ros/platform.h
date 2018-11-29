@@ -54,7 +54,7 @@
 #endif
 #include <string>
 
-namespace ros {
+namespace rs2rosinternal {
 
 /**
  * Convenient cross platform function for returning a std::string of an
@@ -79,6 +79,6 @@ inline bool get_environment_variable(std::string &str, const char* environment_v
 	}
 }
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif /* CPP_COMMON_PLATFORM_H_ */

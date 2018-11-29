@@ -210,11 +210,11 @@ namespace rs2
         * \param[in]  file      The desired path to which the recorder should save the data
         * \param[in]  device    The device to record
         */
-        recorder(const std::string& file, rs2::device device)
+        recorder(const std::string& file, rs2::device dev)
         {
             rs2_error* e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_record_device(device.get().get(), file.c_str(), &e),
+                rs2_create_record_device(dev.get().get(), file.c_str(), &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }
@@ -225,11 +225,11 @@ namespace rs2
         * \param[in]  device                The device to record
         * \param[in]  compression_enabled   Indicates if compression is enabled
         */
-        recorder(const std::string& file, rs2::device device, bool compression_enabled)
+        recorder(const std::string& file, rs2::device dev, bool compression_enabled)
         {
             rs2_error* e = nullptr;
             _dev = std::shared_ptr<rs2_device>(
-                rs2_create_record_device_ex(device.get().get(), file.c_str(), compression_enabled, &e),
+                rs2_create_record_device_ex(dev.get().get(), file.c_str(), compression_enabled, &e),
                 rs2_delete_device);
             rs2::error::handle(e);
         }

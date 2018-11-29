@@ -107,13 +107,13 @@ typedef std::shared_ptr< ::rosgraph_msgs::Log const> LogConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::rosgraph_msgs::Log_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::rosgraph_msgs::Log_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::rosgraph_msgs::Log_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace rosgraph_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -232,9 +232,9 @@ string frame_id\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -257,9 +257,9 @@ namespace serialization
   }; // struct Log_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -294,6 +294,6 @@ struct Printer< ::rosgraph_msgs::Log_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSGRAPH_MSGS_MESSAGE_LOG_H

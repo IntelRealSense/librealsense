@@ -27,7 +27,7 @@ data_collector::data_collector(std::shared_ptr<rs2::device> dev,
     _time_out_sec = timeout.isSet() ? timeout.getValue() : -1;
 
     _stop_cond = static_cast<application_stop>((int(max_frames.isSet()) << 1) + int(timeout.isSet()));
-};
+}
 
 void data_collector::parse_and_configure(ValueArg<string>& config_file)
 {

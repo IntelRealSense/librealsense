@@ -381,27 +381,27 @@ public:
         glfwMakeContextCurrent(win);
 
         glfwSetWindowUserPointer(win, this);
-        glfwSetMouseButtonCallback(win, [](GLFWwindow * win, int button, int action, int mods)
+        glfwSetMouseButtonCallback(win, [](GLFWwindow * w, int button, int action, int mods)
         {
-            auto s = (window*)glfwGetWindowUserPointer(win);
+            auto s = (window*)glfwGetWindowUserPointer(w);
             if (button == 0) s->on_left_mouse(action == GLFW_PRESS);
         });
 
-        glfwSetScrollCallback(win, [](GLFWwindow * win, double xoffset, double yoffset)
+        glfwSetScrollCallback(win, [](GLFWwindow * w, double xoffset, double yoffset)
         {
-            auto s = (window*)glfwGetWindowUserPointer(win);
+            auto s = (window*)glfwGetWindowUserPointer(w);
             s->on_mouse_scroll(xoffset, yoffset);
         });
 
-        glfwSetCursorPosCallback(win, [](GLFWwindow * win, double x, double y)
+        glfwSetCursorPosCallback(win, [](GLFWwindow * w, double x, double y)
         {
-            auto s = (window*)glfwGetWindowUserPointer(win);
+            auto s = (window*)glfwGetWindowUserPointer(w);
             s->on_mouse_move(x, y);
         });
 
-        glfwSetKeyCallback(win, [](GLFWwindow * win, int key, int scancode, int action, int mods)
+        glfwSetKeyCallback(win, [](GLFWwindow * w, int key, int scancode, int action, int mods)
         {
-            auto s = (window*)glfwGetWindowUserPointer(win);
+            auto s = (window*)glfwGetWindowUserPointer(w);
             if (0 == action) // on key release
             {
                 s->on_key_release(key);

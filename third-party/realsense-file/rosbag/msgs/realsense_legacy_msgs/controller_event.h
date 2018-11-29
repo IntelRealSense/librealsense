@@ -51,7 +51,7 @@ struct controller_event_
    typedef std::array<uint8_t, 6>  _mac_address_type;
   _mac_address_type mac_address;
 
-   typedef ros::Time _timestamp_type;
+   typedef rs2rosinternal::Time _timestamp_type;
   _timestamp_type timestamp;
 
 
@@ -74,13 +74,13 @@ typedef std::shared_ptr< ::realsense_legacy_msgs::controller_event const> contro
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_legacy_msgs::controller_event_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_legacy_msgs::controller_event_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_legacy_msgs::controller_event_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_legacy_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -166,9 +166,9 @@ time timestamp\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -187,9 +187,9 @@ namespace serialization
   }; // struct controller_event_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -210,11 +210,11 @@ struct Printer< ::realsense_legacy_msgs::controller_event_<ContainerAllocator> >
       Printer<uint8_t>::stream(s, indent + "  ", v.mac_address[i]);
     }
     s << indent << "timestamp: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.timestamp);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.timestamp);
   }
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // realsense_legacy_msgs_MESSAGE_CONTROLLER_EVENT_H

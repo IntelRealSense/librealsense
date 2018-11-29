@@ -90,11 +90,11 @@ public:
 
   /* Set the time in the bag to start.  
    * Default is the first message */
-  void set_start(const ros::Time &start);
+  void set_start(const rs2rosinternal::Time &start);
 
   /* Set the time in the bag to stop. 
    * Default is the last message */
-  void set_end(const ros::Time &end);
+  void set_end(const rs2rosinternal::Time &end);
 
   /* Set the speed to playback.  1.0 is the default. 
    * 2.0 would be twice as fast, 0.5 is half realtime.  */
@@ -105,7 +105,7 @@ public:
   void start_play();
   
   /* Get the current time of the playback */
-  ros::Time get_time();
+  rs2rosinternal::Time get_time();
 
   // Destructor
   virtual ~BagPlayer();
@@ -115,14 +115,14 @@ public:
   Bag bag;
   
 private:
-    ros::Time real_time(const ros::Time &msg_time);
+    rs2rosinternal::Time real_time(const rs2rosinternal::Time &msg_time);
 
     std::map<std::string, BagCallback *> cbs_;
-    ros::Time bag_start_;
-    ros::Time bag_end_;
-    ros::Time last_message_time_;
+    rs2rosinternal::Time bag_start_;
+    rs2rosinternal::Time bag_end_;
+    rs2rosinternal::Time last_message_time_;
     double playback_speed_;
-    ros::Time play_start_;
+    rs2rosinternal::Time play_start_;
 };
 
 template<class T>

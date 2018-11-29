@@ -43,7 +43,7 @@
 #include "../../../cpp_common/include/ros/datatypes.h"
 #include "cpp_common_decl.h"
 
-namespace ros
+namespace rs2rosinternal
 {
 
 /**

@@ -63,13 +63,13 @@ typedef std::shared_ptr< ::geometry_msgs::PoseArray const> PoseArrayConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::geometry_msgs::PoseArray_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::geometry_msgs::PoseArray_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::geometry_msgs::PoseArray_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace geometry_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -196,9 +196,9 @@ float64 w\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -215,9 +215,9 @@ namespace serialization
   }; // struct PoseArray_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -242,6 +242,6 @@ struct Printer< ::geometry_msgs::PoseArray_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // GEOMETRY_MSGS_MESSAGE_POSEARRAY_H
