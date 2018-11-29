@@ -581,19 +581,6 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     rs2::frame_queue postprocessed_frames;
     frame_processor >> postprocessed_frames;
 
-    bool processing = true;
-    std::thread video_processing_thread([&]() {
-        while (processing)
-        {
-            rs2::frameset composite_fs;
-            if (postprocessed_frames.try_wait_for_frame(&composite_fs))
-            {
-                composite_fs.keep();
-                composite_frames.push_back(composite_fs);
-            }
-        }
-    });
-
     for (auto s : sensors)
     {
         s.open(s.get_stream_profiles());
@@ -605,12 +592,13 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
 
     while (composite_frames.size() < sensors.size())
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        rs2::frameset composite_fs;
+        if (postprocessed_frames.try_wait_for_frame(&composite_fs))
+        {
+            composite_fs.keep();
+            composite_frames.push_back(composite_fs);
+        }
     }
-
-    processing = false;
-    if (video_processing_thread.joinable())
-        video_processing_thread.join();
 
     return composite_frames;
 }
