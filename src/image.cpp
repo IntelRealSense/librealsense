@@ -1029,10 +1029,10 @@ namespace librealsense
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_accel_axes               = { 'ACCL', 1, 1, {  { true,                &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,  { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                               { false,               &unpack_hid_raw_data,                          { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_RAW  } } }} };
-    const native_pixel_format pf_gyro_axes                = { 'GYRO', 1, 1, {  { true,                &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,   { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                               { false,               &unpack_hid_raw_data,                          { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_RAW  } } }} };
+    const native_pixel_format pf_accel_axes               = { 'ACCL', 1, 1, {  { true,                &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,  { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_XYZ32F } } } } };
+                                                                               //{ false,               &unpack_hid_raw_data,                          { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_RAW  } } } } };
+    const native_pixel_format pf_gyro_axes                = { 'GYRO', 1, 1, {  { true,                &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,   { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_XYZ32F } } } } };
+                                                                               //{ false,               &unpack_hid_raw_data,                          { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_RAW  } } } } };
     const native_pixel_format pf_gpio_timestamp           = { 'GPIO', 1, 1, {  { false,               &unpack_input_reports_data,                  { { { RS2_STREAM_GPIO, 1 },      RS2_FORMAT_GPIO_RAW },
                                                                                                                                                      { { RS2_STREAM_GPIO, 2 },      RS2_FORMAT_GPIO_RAW },
                                                                                                                                                      { { RS2_STREAM_GPIO, 3 },      RS2_FORMAT_GPIO_RAW },

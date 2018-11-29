@@ -300,7 +300,6 @@ namespace librealsense
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
-            //return;
             /* Enumerate all HID devices and run action function on each device */
             try
             {

@@ -344,7 +344,11 @@ namespace librealsense
         std::string wmf_backend::get_device_serial(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid) const
         {
             std::string device_serial = "";
-            platform::get_device_serial(device_vid, device_pid, device_uid, device_serial);
+            std::string location = "";
+            usb_spec spec = usb_undefined;
+
+            platform::get_usb_descriptors(device_vid, device_pid, device_uid, location, spec, device_serial);
+
             return device_serial;
         }
     }
