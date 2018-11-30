@@ -114,8 +114,11 @@ public class MainActivity extends Activity {
     private int DEPTH_FPS           = 6;
 
     private RelativeLayout layout;
-    private RadioGroup groupVR = null;
-    private RadioButton radioDepth, radioColor, radioIR;
+
+    private CheckBox cbDepth, cbColor, cbIR;
+
+    private RadioGroup  radioGroupVR = null;
+    private RadioButton radioH, radioV;
 
     private RadioGroup groupType = null;
     private RadioButton radioFake, radioRS, radioFA;
@@ -142,7 +145,7 @@ public class MainActivity extends Activity {
     private boolean  bRooted= false;
     private boolean  bSetup = false;
     private boolean  bIRFA  = false; //status of FA module's initialization
-    private int mDefaultRenderID = IrsaRS2Type.RS2_STREAM_COLOR;
+    private boolean  bRenderIR = false;
     private int mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FAKE;
     private String mBAGFile = "/mnt/sdcard/demo.bag";
 
@@ -265,14 +268,18 @@ public class MainActivity extends Activity {
         screenHeight = dm.heightPixels;
         IrsaLog.d(TAG, "screenWidth: " + screenWidth + " screenHeight:" + screenHeight);
 
-        layout = (RelativeLayout) findViewById(R.id.glView);
+        layout = (RelativeLayout)findViewById(R.id.glView);
 
         txtDevice  = ((TextView)findViewById(R.id.txtDevice));
 
-        groupType = (RadioGroup) findViewById(R.id.radiogroupType);
-        radioFake = (RadioButton) findViewById(R.id.radioFake);
-        radioRS = (RadioButton) findViewById(R.id.radioRS);
-        radioFA = (RadioButton) findViewById(R.id.radioFA);
+        groupType = (RadioGroup)findViewById(R.id.radiogroupType);
+        radioFake = (RadioButton)findViewById(R.id.radioFake);
+        radioRS = (RadioButton)findViewById(R.id.radioRS);
+        radioFA = (RadioButton)findViewById(R.id.radioFA);
+
+        cbDepth = (CheckBox)findViewById(R.id.cbDepth);
+        cbColor = (CheckBox)findViewById(R.id.cbColor);
+        cbIR    = (CheckBox)findViewById(R.id.cbIR);
 
         spinnerDepth = ((Spinner)findViewById(R.id.spinnerDepth));
         spinnerColor = ((Spinner)findViewById(R.id.spinnerColor));
@@ -295,6 +302,12 @@ public class MainActivity extends Activity {
                     btnRegister.setEnabled(false);
                     btnDepthROI.setEnabled(false);
                     btnLaserPower.setEnabled(false);
+                    radioGroupVR.setEnabled(false);
+                    radioH.setEnabled(false);
+                    radioV.setEnabled(false);
+                    cbDepth.setChecked(true);
+                    cbColor.setChecked(true);
+                    cbIR.setChecked(false);
 
                     checkStoragePermissions(gMe);
                     //TODO: select bag file from device
@@ -309,6 +322,12 @@ public class MainActivity extends Activity {
                     btnEmitter.setEnabled(true);
                     btnDepthROI.setEnabled(true);
                     btnLaserPower.setEnabled(true);
+                    radioGroupVR.setEnabled(false);
+                    radioH.setEnabled(false);
+                    radioV.setEnabled(false);
+                    cbDepth.setChecked(true);
+                    cbColor.setChecked(false);
+                    cbIR.setChecked(false);
                 } else if (checkId == radioFA.getId()) {
                     Log.d(TAG, "select " + "FA preview");
                     mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FA;
@@ -324,6 +343,12 @@ public class MainActivity extends Activity {
                     btnRegister.setEnabled(true);
                     btnDepthROI.setEnabled(true);
                     btnLaserPower.setEnabled(true);
+                    radioGroupVR.setEnabled(true);
+                    radioH.setEnabled(true);
+                    radioV.setEnabled(true);
+                    cbDepth.setChecked(true);
+                    cbColor.setChecked(true);
+                    cbIR.setChecked(true);
                     //String errorMsg = "FA mode disabled because of IPR policy";
                     //showMsgBox(gMe, errorMsg);
                     if (txtViewStatus != null) {
@@ -335,41 +360,35 @@ public class MainActivity extends Activity {
         });
         //radioFake.setChecked(true);
 
-        groupVR = (RadioGroup) findViewById(R.id.radiogroupVR);
-        radioColor = (RadioButton) findViewById(R.id.radioColor);
-        radioIR = (RadioButton) findViewById(R.id.radioIR);
-        groupVR.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+        cbIR.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (cbIR.isChecked()) {
+                    bRenderIR = true;
+                } else {
+                    bRenderIR = false;
+                }
+            }
+        });
+
+        radioGroupVR = (RadioGroup)findViewById(R.id.radiogroupVR);
+        radioH  = (RadioButton)findViewById(R.id.radioH);
+        radioV  = (RadioButton)findViewById(R.id.radioV);
+        radioGroupVR.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkId) {
-                if (checkId == radioColor.getId()) {
-                    String info =  "render Color stream";
+                if (checkId == radioH.getId()) {
                     if (mIrsaMgr != null) {
-                        //txtViewStatus.setText(info);
-                        mIrsaMgr.disablePreview(mDefaultRenderID);
-                        mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
-                        mDefaultRenderID = IrsaRS2Type.RS2_STREAM_COLOR;
+                        mIrsaMgr.setFADirection(IrsaRS2Type.FA_DIR_H);
                     }
-                    if (vectorLPHint.size() >= 2) {
-                        vectorLPHint.get(1).setText("Camera 0: Color");
-                    }
-                } else if (checkId == radioIR.getId()) {
-                    String info =  "render IR stream";
+                } else if (checkId == radioV.getId()) {
                     if (mIrsaMgr != null) {
-                        //txtViewStatus.setText(info);
-                        mIrsaMgr.disablePreview(mDefaultRenderID);
-                        mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_INFRARED, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
-                        mDefaultRenderID = IrsaRS2Type.RS2_STREAM_INFRARED;
-                    }
-                    if (vectorLPHint.size() >= 2) {
-                        vectorLPHint.get(1).setText("Camera 0: IR");
+                        mIrsaMgr.setFADirection(IrsaRS2Type.FA_DIR_V);
                     }
                 }
             }
-
         });
-        radioColor.setChecked(true);
-
-
+        radioH.setChecked(true);
 
         btnOn = (ToggleButton)findViewById(R.id.btnOn);
         btnPlay = (ToggleButton)findViewById(R.id.btnPlay);
@@ -426,13 +445,14 @@ public class MainActivity extends Activity {
         btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mIrsaMgr.switchToRegister();
-
-                //mIrsaMgr.disablePreview(mDefaultRenderID);
-                //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
-
-                //do USB experiment here
-                checkUsbDevice();
+                if (mDefaultPreviewType == IrsaRS2Type.IRSA_PREVIEW_FA) {
+                    if (mIrsaMgr != null) {
+                        mIrsaMgr.switchToRegister();
+                    }
+                } else {
+                    //do USB experiment here
+                    checkUsbDevice();
+                }
             }
         });
 
@@ -470,7 +490,8 @@ public class MainActivity extends Activity {
                     mDepthIV.draw(new Canvas());
                     mDepthIV.invalidate();
 
-                    if (mDefaultRenderID == IrsaRS2Type.RS2_STREAM_INFRARED) {
+                    //if (mDefaultRenderID == IrsaRS2Type.RS2_STREAM_INFRARED) {
+                    if (bRenderIR) {
                         mIrsaMgr.setROI(IrsaRS2Type.RS2_STREAM_INFRARED, xs, ys, xe, ye);
                         mColorIV.setPos(xs / 2, ys / 2 + 60 , (xe - xs) / 2, (ye - ys) / 2);
                         mColorIV.draw(new Canvas());
@@ -564,10 +585,6 @@ public class MainActivity extends Activity {
         }
 
         int objIndex = 0;
-        if (screenWidth >= RGB_FRAME_WIDTH * 3)
-            itemsInRow = 3;
-        else if (screenWidth >= RGB_FRAME_WIDTH * 2)
-            itemsInRow = 2;
 
         for (int colIndex = 0; colIndex < itemsInCol; colIndex++) {
             for (int rowIndex = 0; rowIndex < itemsInRow; rowIndex++) {
@@ -885,20 +902,26 @@ public class MainActivity extends Activity {
 
 
         if (mIrsaMgr != null) {
-            mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_DEPTH, mapSV.get(Integer.valueOf(0)).getHolder().getSurface());
-            //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
-            //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_INFRARED, mapSV.get(Integer.valueOf(2)).getHolder().getSurface());
-            mIrsaMgr.enablePreview(mDefaultRenderID, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
+            if (cbDepth.isChecked()) { 
+                mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_DEPTH, mapSV.get(Integer.valueOf(0)).getHolder().getSurface());
+            }
+
+            if (cbColor.isChecked()) { 
+                mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
+            }
+
+            if (cbIR.isChecked()) { 
+                mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_INFRARED, mapSV.get(Integer.valueOf(2)).getHolder().getSurface());
+            }
         }
     }
 
 
     private void startPreview() {
         if (mIrsaMgr != null) {
-            mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_DEPTH, mapSV.get(Integer.valueOf(0)).getHolder().getSurface());
+            //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_DEPTH, mapSV.get(Integer.valueOf(0)).getHolder().getSurface());
             //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_COLOR, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
             //mIrsaMgr.enablePreview(IrsaRS2Type.RS2_STREAM_INFRARED, mapSV.get(Integer.valueOf(2)).getHolder().getSurface());
-            mIrsaMgr.enablePreview(mDefaultRenderID, mapSV.get(Integer.valueOf(1)).getHolder().getSurface());
             mIrsaMgr.startPreview();
         }
     }
@@ -907,9 +930,8 @@ public class MainActivity extends Activity {
     private void stopPreview() {
         if (mIrsaMgr != null) {
             mIrsaMgr.disablePreview(IrsaRS2Type.RS2_STREAM_DEPTH);
-            //mIrsaMgr.disablePreview(IrsaRS2Type.RS2_STREAM_COLOR);
-            //mIrsaMgr.disablePreview(IrsaRS2Type.RS2_STREAM_INFRARED);
-            mIrsaMgr.disablePreview(mDefaultRenderID);
+            mIrsaMgr.disablePreview(IrsaRS2Type.RS2_STREAM_COLOR);
+            mIrsaMgr.disablePreview(IrsaRS2Type.RS2_STREAM_INFRARED);
             mIrsaMgr.stopPreview();
         }
     }
@@ -1033,9 +1055,7 @@ public class MainActivity extends Activity {
     //=========== begin USB experiment ========================== {
     private void checkUsbDevice() {
         IrsaLog.d(TAG, "checkUsbInfo ");
-
-        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
+        HashMap<String, UsbDevice> deviceList = mUsbManager.getDeviceList();
         IrsaLog.d(TAG, "deviceList.size " + deviceList.size());
         Toast.makeText(this, "usb deviceList size " + deviceList.size(), Toast.LENGTH_LONG).show();
         try {
@@ -1050,18 +1070,9 @@ public class MainActivity extends Activity {
 
                 IrsaLog.e(TAG, "\ndevice class " + device.getDeviceClass() + ", device name: " + device.getDeviceName() + "\ndevice product name:" + device.getProductName() + "\nvendor id:" + Integer.toHexString(device.getVendorId()));
 
-                if (!(Integer.toHexString(device.getVendorId()).equals(new String("8086"))))
+                if (!(Integer.toHexString(device.getVendorId()).equals(new String("8086")))) {
+                    IrsaLog.d(TAG, "not Realsense Camera");
                     continue;
-
-                if (device.getDeviceClass() != 0) 
-                {
-                    if (manager.hasPermission(device)) {
-                        IrsaLog.d(TAG, "has permission");
-                        initTalkWithCamera(device);
-                    } else {
-                        IrsaLog.d(TAG, "no permission");
-                        mUsbManager.requestPermission(device, mPermissionIntent);
-                    }
                 }
 
                 sb.append( "\n" +
@@ -1076,24 +1087,39 @@ public class MainActivity extends Activity {
                        "device serial: " + device.getSerialNumber() + "\n" + 
                        "device desc: " + device.toString() + "\n");
 
-                if (0 == deviceClass) {
+                if (UsbConstants.USB_CLASS_PER_INTERFACE == deviceClass) {
                     UsbInterface uinterface = device.getInterface(0);
                     sb.append("interface.describeContents: " + uinterface.describeContents() + "\n");
                     sb.append("interface.getInterfaceClass: " + uinterface.getInterfaceClass() + "\n");
                     sb.append("interface.getId: " + uinterface.getId() + "\n");
                     switch (uinterface.getInterfaceClass()) {
-                        case 3: 
+                        case UsbConstants.USB_CLASS_HID: 
                             sb.append("HID\n");
                             break;
+                        case UsbConstants.USB_CLASS_VIDEO: 
+                            sb.append("UVC\n");
+                            break;
+
                         default:
                             sb.append("unknown\n");
                             break;
                     }
                     sb.append("interface.getEndpointCount: " + uinterface.getEndpointCount() + "\n");
-                    sb.append("interface desc: " + uinterface.toString() + "\n\n");
+                    sb.append("interface desc: " + uinterface.toString() + "\n\n\n");
                 }
 
                 IrsaLog.d(TAG, "usb device  " + (i++) +  sb.toString());
+
+                if (device.getDeviceClass() != 0) 
+                {
+                    if (mUsbManager.hasPermission(device)) {
+                        IrsaLog.d(TAG, "has permission");
+                        initTalkWithCamera(device);
+                    } else {
+                        IrsaLog.d(TAG, "no permission");
+                        mUsbManager.requestPermission(device, mPermissionIntent);
+                    }
+                }
             }
             txtViewFace.setText(sb.toString());
 
@@ -1154,7 +1180,7 @@ public class MainActivity extends Activity {
         IrsaLog.d(TAG, "interfaceCount " + interfaceCount + "\n");
         for (int interfaceIndex = 0; interfaceIndex < interfaceCount; interfaceIndex++) {
             UsbInterface usbInterface = device.getInterface(interfaceIndex);
-            IrsaLog.d(TAG, "=========>>"+ usbInterface.getInterfaceClass() + usbInterface.getInterfaceSubclass()  + "<<===================\n");
+            IrsaLog.d(TAG, "=====usbInterface " + interfaceIndex + ",name " + usbInterface.getName() + " class: " +  usbInterface.getInterfaceClass() + ",subclass:" +  usbInterface.getInterfaceSubclass()  + ",protocol: "+ usbInterface.getInterfaceProtocol() + ",endPointCount: "+ usbInterface.getEndpointCount() + "===================\n");
 
             if (UsbConstants.USB_CLASS_VIDEO != usbInterface.getInterfaceClass()) {
                 IrsaLog.d(TAG, "not uvc device");
@@ -1226,14 +1252,14 @@ public class MainActivity extends Activity {
             }
 
             IrsaLog.d(TAG, "mUsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n");
-            IrsaLog.d(TAG, "Manufacturer:" + manufacturer + "\n");
-            IrsaLog.d(TAG, "Product:" + product + "\n");
-            IrsaLog.d(TAG, "Serial#:" + mUsbDeviceConnection.getSerial() + "\n");
+            IrsaLog.d(TAG, "Manufacturer:" + manufacturer + "\n");                      
+            IrsaLog.d(TAG, "Product:" + product + "\n");                        
+            IrsaLog.d(TAG, "Serial#:" + mUsbDeviceConnection.getSerial() + "\n");                     
 
             String info = "talk with USB Camera: UsbDeviceConnection: " + byteToString(mUsbDeviceConnection.getRawDescriptors()) + "\n"
-                         + "Manufacturer:" + manufacturer + "\n"
-                         + "Product:" + product + "\n"
-                         + "Serial#:" + mUsbDeviceConnection.getSerial() + "\n";
+                         + "Manufacturer:" + manufacturer + "\n"                      
+                         + "Product:" + product + "\n"                        
+                         + "Serial#:" + mUsbDeviceConnection.getSerial() + "\n";                     
             showMsgBox(gMe, info);
         }
 

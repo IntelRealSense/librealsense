@@ -74,15 +74,22 @@
         android:id="@+id/TextView10"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="stream profiles: depth " />
+        android:text="stream profiles: " />
+
+    <CheckBox
+        android:id="@+id/cbDepth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked = "true"
+        android:text=" depth " />
 
     <Spinner
         android:id="@+id/spinnerDepth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/TextView11"
+    <CheckBox
+        android:id="@+id/cbColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="color " />
@@ -92,8 +99,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/TextView12"
+    <CheckBox
+        android:id="@+id/cbIR"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="IR " />
@@ -115,7 +122,7 @@
         android:id="@+id/TextView20"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Render color/IR in right surfaceview" />
+        android:text="FA direction:" />
 
     <RadioGroup
         android:layout_width="wrap_content"
@@ -125,17 +132,17 @@
         >
 
         <RadioButton
-            android:text="Color frame"
+            android:text="Horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/radioColor"
+            android:id="@+id/radioH"
             android:layout_weight="1" />
 
         <RadioButton
-            android:text="IR frame"
+            android:text="Vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/radioIR"
+            android:id="@+id/radioV"
             android:layout_weight="1" />
     </RadioGroup>
     </LinearLayout>
