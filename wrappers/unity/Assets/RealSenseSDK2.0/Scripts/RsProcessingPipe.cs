@@ -94,7 +94,11 @@ public class RsProcessingPipe : RsFrameProvider
                     var r = pb.Process(f, src);
                     if (r != f)
                     {
-                        f.Dispose();
+                        // Prevent from disposing the original frame during post-processing
+                        if (f != frame)
+                        {
+                            f.Dispose();
+                        }
                         f = r;
                     }
                 }
