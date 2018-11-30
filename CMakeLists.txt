@@ -47,8 +47,13 @@ global_target_config()
 
 add_subdirectory(wrappers)
 
-if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
-  add_subdirectory(third-party/glfw)
+if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES))
+  if(WIN32)
+    add_subdirectory(third-party/glfw)
+    add_library(glfw ALIAS glfw3)
+  else()
+    find_package(glfw3 REQUIRED)
+  endif()
 endif()
 
 if(BUILD_EXAMPLES)
