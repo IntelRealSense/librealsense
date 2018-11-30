@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/output"
+        android:layout_width="562dp"
+        android:layout_height="311dp"
+        android:layout_below="@+id/btnStart"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="61dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="60dp"
+        tools:srcCompat="@tools:sample/backgrounds/scenic[11]" />
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/btnStart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="false"
+        android:layout_alignParentTop="true"
+        android:enabled="false"
+        android:text="@string/no_device" />
+
+</RelativeLayout>

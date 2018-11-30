@@ -1,0 +1,4 @@
+[submodule "uvchost/third_party/librealsense"]
+	path = uvchost/third_party/librealsense
+	url = git@github.com:dperox/librealsense.git
+	branch = USBHost_LIBUSB

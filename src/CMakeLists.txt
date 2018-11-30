@@ -10,6 +10,7 @@ include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
 
+
 if(FORCE_LIBUVC)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
@@ -21,7 +22,9 @@ endif()
 if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()
-
+if(BUILD_FOR_ANDROID)
+    include(${_rel_path}/android/CMakeLists.txt)
+endif()
 if(BUILD_FOR_WIN7)
     include(${_rel_path}/win7/CMakeLists.txt)
 endif()
