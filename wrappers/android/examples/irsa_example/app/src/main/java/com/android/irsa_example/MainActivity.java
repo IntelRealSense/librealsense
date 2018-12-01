@@ -721,7 +721,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         IrsaLog.d(TAG, "=======================onResume");
 		PowerManager pManager = ((PowerManager)getSystemService(POWER_SERVICE));
-		mWakeLock = pManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+		mWakeLock = pManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, TAG);
 		mWakeLock.acquire();
 		
         IntentFilter usbFilter = new IntentFilter();
@@ -741,6 +741,7 @@ public class MainActivity extends Activity {
 			txtViewStatus.setText("");
 		}
 
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onResume();
 
 	}
@@ -761,8 +762,9 @@ public class MainActivity extends Activity {
     public void onStop() {
         IrsaLog.d(TAG, "=======================onStop");
         unregisterReceiver(mUsbReceiver);
+		getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-		if (mWakeLock != null) {
+		if ((mWakeLock != null) && (mWakeLock.isHeld())) {
 			mWakeLock.release();
 			mWakeLock = null;
 		}
