@@ -16,6 +16,8 @@ import android.app.PendingIntent;
 
 import android.os.Bundle;
 import android.os.Build;
+import android.os.SystemClock;
+import android.os.PowerManager;
 import android.support.v4.content.ContextCompat;
 
 import android.content.Context;
@@ -120,15 +122,16 @@ public class MainActivity extends Activity {
     private RadioGroup  radioGroupVR = null;
     private RadioButton radioH, radioV;
 
-    private RadioGroup groupType = null;
+    private RadioGroup  radioGroupPreviewType = null;
     private RadioButton radioFake, radioRS, radioFA;
 
     private ToggleButton btnOn, btnPlay;
 
-    private Vector<RelativeLayout.LayoutParams> vectorLP = new Vector<RelativeLayout.LayoutParams>();
+    private Vector<RelativeLayout.LayoutParams> vectorLPStatus  = new Vector<RelativeLayout.LayoutParams>();
+    private Vector<RelativeLayout.LayoutParams> vectorLPHint    = new Vector<RelativeLayout.LayoutParams>();
+    private Vector<RelativeLayout.LayoutParams> vectorLPSurface = new Vector<RelativeLayout.LayoutParams>();
     private Map<Integer, SurfaceView> mapSV = new HashMap<Integer, SurfaceView>();
     private Map<Integer, Surface> mapSurfaceMap = new HashMap<Integer, Surface>();
-    private Vector<TextView> vectorLPHint = new Vector<TextView>();
 
     private int mDeviceCounts = 0;
 
@@ -195,6 +198,7 @@ public class MainActivity extends Activity {
     // http://libusb.sourceforge.net/api-1.0/group__desc.html
     protected static final int LIBUSB_DT_STRING = 0x03;
 
+	private PowerManager.WakeLock mWakeLock;
 
     protected class MyEventListener implements IrsaEventListener {
 
@@ -272,7 +276,7 @@ public class MainActivity extends Activity {
 
         txtDevice  = ((TextView)findViewById(R.id.txtDevice));
 
-        groupType = (RadioGroup)findViewById(R.id.radiogroupType);
+        radioGroupPreviewType = (RadioGroup)findViewById(R.id.radiogroupType);
         radioFake = (RadioButton)findViewById(R.id.radioFake);
         radioRS = (RadioButton)findViewById(R.id.radioRS);
         radioFA = (RadioButton)findViewById(R.id.radioFA);
@@ -288,77 +292,22 @@ public class MainActivity extends Activity {
         vectorSpinner.add(spinnerColor);
         vectorSpinner.add(spinnerIR);
 
-        groupType.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+        radioGroupPreviewType.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkId) {
                 if (checkId == radioFake.getId()) {
-                    Log.d(TAG, "select " + "fake preview");
-                    mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FAKE;
-
-                    spinnerDepth.setEnabled(false);
-                    spinnerColor.setEnabled(false);
-                    spinnerIR.setEnabled(false);
-                    btnEmitter.setEnabled(false);
-                    btnRegister.setEnabled(false);
-                    btnDepthROI.setEnabled(false);
-                    btnLaserPower.setEnabled(false);
-                    radioGroupVR.setEnabled(false);
-                    radioH.setEnabled(false);
-                    radioV.setEnabled(false);
-                    cbDepth.setChecked(true);
-                    cbColor.setChecked(true);
-                    cbIR.setChecked(false);
-
-                    checkStoragePermissions(gMe);
-                    //TODO: select bag file from device
-                    copyData("demo.bag", "/mnt/sdcard/demo.bag");
-                    mBAGFile = "/mnt/sdcard/demo.bag";
+                    IrsaLog.d(TAG, "select " + "fake preview");
+					radioFakeChecked();
                 } else if (checkId == radioRS.getId()) {
-                    Log.d(TAG, "select " + "realsense preview");
-                    mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_REALSENSE;
-                    spinnerDepth.setEnabled(true);
-                    spinnerColor.setEnabled(true);
-                    spinnerIR.setEnabled(true);
-                    btnEmitter.setEnabled(true);
-                    btnDepthROI.setEnabled(true);
-                    btnLaserPower.setEnabled(true);
-                    radioGroupVR.setEnabled(false);
-                    radioH.setEnabled(false);
-                    radioV.setEnabled(false);
-                    cbDepth.setChecked(true);
-                    cbColor.setChecked(false);
-                    cbIR.setChecked(false);
+                    IrsaLog.d(TAG, "select " + "realsense preview");
+					radioRSChecked();
                 } else if (checkId == radioFA.getId()) {
-                    Log.d(TAG, "select " + "FA preview");
-                    mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FA;
-                    //stream profiles are hardcoded with FA mode
-                    //IrsaRS2Type.RS2_STREAM_DEPTH, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, IrsaRS2Type.RS2_FORMAT_Z16
-                    //IrsaRS2Type.RS2_STREAM_COLOR, RGB_FRAME_WIDTH, RGB_FRAME_HEIGHT, RGB_FPS, IrsaRS2Type.RS2_FORMAT_RGB8
-                    //IrsaRS2Type.RS2_STREAM_INFRARED, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, IrsaRS2Type.RS2_FORMAT_RGB8
-                    String info = "stream profiles are hardcoded with FA mode:" + " depth:1280 * 720 * 6 * RS2_FORMAT_Z16 " + ", color: 640 * 480 * 30 * RS2_FORMAT_RGB8 " + ",IR: 1280 * 720 * 6 * RS2_FORMAT_RGB8"; 
-                    spinnerDepth.setEnabled(false);
-                    spinnerColor.setEnabled(false);
-                    spinnerIR.setEnabled(false);
-                    btnEmitter.setEnabled(true);
-                    btnRegister.setEnabled(true);
-                    btnDepthROI.setEnabled(true);
-                    btnLaserPower.setEnabled(true);
-                    radioGroupVR.setEnabled(true);
-                    radioH.setEnabled(true);
-                    radioV.setEnabled(true);
-                    cbDepth.setChecked(true);
-                    cbColor.setChecked(true);
-                    cbIR.setChecked(true);
-                    //String errorMsg = "FA mode disabled because of IPR policy";
-                    //showMsgBox(gMe, errorMsg);
-                    if (txtViewStatus != null) {
-                        txtViewStatus.setText(info);
-                    }
+                    IrsaLog.d(TAG, "select " + "FA preview");
+					radioFAChecked();
                 }
             }
-
         });
-        //radioFake.setChecked(true);
+        radioFake.setChecked(true);
 
         cbIR.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
             @Override
@@ -396,6 +345,7 @@ public class MainActivity extends Activity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
+					IrsaLog.d(TAG, "btnOn checked");
                     if (txtViewStatus != null) {
                         txtViewStatus.setText("");
                         txtViewFace.setText("");
@@ -412,7 +362,8 @@ public class MainActivity extends Activity {
                     MainActivity.this.btnPlay.setEnabled(true);
                 } else {
                     MainActivity.this.btnPlay.setEnabled(false);
-                    mIrsaMgr.close();
+					if (mIrsaMgr != null)
+						mIrsaMgr.close();
                 }
             }
         });
@@ -421,6 +372,7 @@ public class MainActivity extends Activity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
+					IrsaLog.d(TAG, "btnPlay checked");
                     MainActivity.this.btnOn.setEnabled(false);
 
                     setup();
@@ -545,11 +497,128 @@ public class MainActivity extends Activity {
         });
 
 
+        AssetManager assetManager = getAssets();
+        try {
+            String[] files = assetManager.list("");
+            for (String file : files) {
+                System.out.println(file);
+                if (file.contains("webkit") || file.contains("images") || file.contains("sounds")) {
+                    continue;
+                }
+                String path = this.getApplicationContext().getFilesDir().getAbsolutePath() + "/" + file;
+                copyData(file, path);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+        int objIndex = 0;
+        txtViewFace = addStatus("Preview Status", 0, 0);
+        txtViewStatus = addStatus("Common Status:", 0, 1);
+
+        for (int colIndex = 0; colIndex < itemsInCol; colIndex++) {
+            for (int rowIndex = 0; rowIndex < itemsInRow; rowIndex++) {
+                objIndex = colIndex * itemsInRow + rowIndex;
+                SurfaceView objSurfaceView = new SurfaceView(this);
+                mapSV.put(Integer.valueOf(objIndex), objSurfaceView);
+                addHint(colIndex, rowIndex);
+                addSurfaceView(objSurfaceView, colIndex, rowIndex);
+            }
+        }
+
+		initIrsaMgr();
+
+        gMe = this;
+        checkRoot();
+
+        //radioFake.setChecked(true);
+		//radioFakeChecked();
+
+        checkStoragePermissions(gMe);
+        copyData("demo.bag", "/mnt/sdcard/demo.bag");
+        IrsaLog.d(TAG, "init done");
+    }
+
+
+	private void radioFakeChecked() {
+		mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FAKE;
+		spinnerDepth.setEnabled(false);
+		spinnerColor.setEnabled(false);
+		spinnerIR.setEnabled(false);
+		btnEmitter.setEnabled(false);
+		btnRegister.setEnabled(false);
+		btnDepthROI.setEnabled(false);
+		btnLaserPower.setEnabled(false);
+		radioGroupVR.setEnabled(false);
+		radioH.setEnabled(false);
+		radioV.setEnabled(false);
+		cbDepth.setChecked(true);
+		cbColor.setChecked(true);
+		cbIR.setChecked(false);
+
+		checkStoragePermissions(gMe);
+		//TODO: select bag file from device
+		copyData("demo.bag", "/mnt/sdcard/demo.bag");
+		mBAGFile = "/mnt/sdcard/demo.bag";
+	}
+
+
+	private void radioRSChecked() {
+		mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_REALSENSE;
+		spinnerDepth.setEnabled(true);
+		spinnerColor.setEnabled(true);
+		spinnerIR.setEnabled(true);
+		btnEmitter.setEnabled(true);
+		btnDepthROI.setEnabled(true);
+		btnLaserPower.setEnabled(true);
+		radioGroupVR.setEnabled(false);
+		radioH.setEnabled(false);
+		radioV.setEnabled(false);
+		cbDepth.setChecked(true);
+		cbColor.setChecked(false);
+		cbIR.setChecked(false);
+	}
+
+
+	private void radioFAChecked() {
+		mDefaultPreviewType = IrsaRS2Type.IRSA_PREVIEW_FA;
+		//stream profiles are hardcoded with FA mode
+		//IrsaRS2Type.RS2_STREAM_DEPTH, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, IrsaRS2Type.RS2_FORMAT_Z16
+		//IrsaRS2Type.RS2_STREAM_COLOR, RGB_FRAME_WIDTH, RGB_FRAME_HEIGHT, RGB_FPS, IrsaRS2Type.RS2_FORMAT_RGB8
+		//IrsaRS2Type.RS2_STREAM_INFRARED, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, IrsaRS2Type.RS2_FORMAT_RGB8
+		String info = "stream profiles are hardcoded with FA mode:" + " depth:1280 * 720 * 6 * RS2_FORMAT_Z16 " + ", color: 640 * 480 * 30 * RS2_FORMAT_RGB8 " + ",IR: 1280 * 720 * 6 * RS2_FORMAT_RGB8"; 
+		spinnerDepth.setEnabled(false);
+		spinnerColor.setEnabled(false);
+		spinnerIR.setEnabled(false);
+		btnEmitter.setEnabled(true);
+		btnRegister.setEnabled(true);
+		btnDepthROI.setEnabled(true);
+		btnLaserPower.setEnabled(true);
+		radioGroupVR.setEnabled(true);
+		radioH.setEnabled(true);
+		radioV.setEnabled(true);
+		cbDepth.setChecked(true);
+		cbColor.setChecked(true);
+		cbIR.setChecked(true);
+		//String errorMsg = "FA mode disabled because of IPR policy";
+		//showMsgBox(gMe, errorMsg);
+		if (txtViewStatus != null) {
+			txtViewStatus.setText(info);
+		}
+	}
+
+
+	private void initIrsaMgr() {
+		if (mIrsaMgr != null)
+			return;
+
         try {
             mIrsaMgr = new IrsaMgr(mEventListener);
-
-            radioRS.setChecked(true);
-            mIrsaMgr.setPreviewType(IrsaRS2Type.IRSA_PREVIEW_REALSENSE);
+			radioFake.setChecked(true);
+			radioFakeChecked();
+            mIrsaMgr.setPreviewType(IrsaRS2Type.IRSA_PREVIEW_FAKE);
 
             mDeviceCounts = mIrsaMgr.getDeviceCounts();
             IrsaLog.d(TAG, "device counts " + mDeviceCounts);
@@ -566,6 +635,14 @@ public class MainActivity extends Activity {
                 showMsgBox(this, "can't find camera device, init failed");
             }
 
+			if (mIrsaMgr != null) {
+				bIRFA = mIrsaMgr.initIRFA(this.getApplicationContext().getFilesDir().getAbsolutePath());
+				IrsaLog.d(TAG, "IRFA initialize " + (bIRFA ? " ok " : "failed"));
+				if (!bIRFA) {
+					//radioFA.setEnabled(false);
+				}
+			}
+
         } catch (IrsaException e) {
             String errorMsg = "An Exception was thrown by the MainActivity:\n" + " " + e.getMessage();
 
@@ -574,63 +651,19 @@ public class MainActivity extends Activity {
 
             e.printStackTrace();
         }
-
-        switch (mDeviceCounts) {
-            case 1:
-            case 2:
-                break;
-            default:
-                itemsInCol = 1;
-                break;
-        }
-
-        int objIndex = 0;
-
-        for (int colIndex = 0; colIndex < itemsInCol; colIndex++) {
-            for (int rowIndex = 0; rowIndex < itemsInRow; rowIndex++) {
-                objIndex = colIndex * itemsInRow + rowIndex;
-                SurfaceView objSurfaceView = new SurfaceView(this);
-                mapSV.put(Integer.valueOf(objIndex), objSurfaceView);
-                addSurfaceView(objSurfaceView, colIndex, rowIndex);
-                addHint(colIndex, rowIndex);
-            }
-        }
-        txtViewFace = addStatus("FA Status", 0, 0);
-        txtViewStatus = addStatus("Common Status:", 0, 1);
-
-        AssetManager assetManager = getAssets();
-        try {
-            String[] files = assetManager.list("");
-            for (String file : files) {
-                System.out.println(file);
-                if (file.contains("webkit") || file.contains("images") || file.contains("sounds")) {
-                    continue;
-                }
-                String path = this.getApplicationContext().getFilesDir().getAbsolutePath() + "/" + file;
-                copyData(file, path);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (mIrsaMgr != null) {
-            bIRFA = mIrsaMgr.initIRFA(this.getApplicationContext().getFilesDir().getAbsolutePath());
-            IrsaLog.d(TAG, "IRFA initialize " + (bIRFA ? " ok " : "failed"));
-            if (!bIRFA) {
-                //radioFA.setEnabled(false);
-            }
-        }
-
-        gMe = this;
-        checkRoot();
-        IrsaLog.d(TAG, "init done");
     }
 
 
     private void initStreamProfiles() {
+		if (mIrsaMgr == null)
+			return;
+
         mapDepth = mIrsaMgr.getStreamProfiles(IrsaRS2Type.RS2_STREAM_DEPTH);
         mapColor = mIrsaMgr.getStreamProfiles(IrsaRS2Type.RS2_STREAM_COLOR);
         mapIR = mIrsaMgr.getStreamProfiles(IrsaRS2Type.RS2_STREAM_INFRARED);
+
+		if ((mapDepth == null) || (mapColor == null) || (mapIR == null))
+			return;
 
         vectorMap.add(mapDepth);
         vectorMap.add(mapColor);
@@ -686,27 +719,36 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onResume() {
-        IrsaLog.d(TAG, "onResume");
-        super.onResume();
+        IrsaLog.d(TAG, "=======================onResume");
+		PowerManager pManager = ((PowerManager)getSystemService(POWER_SERVICE));
+		mWakeLock = pManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+		mWakeLock.acquire();
+		
         IntentFilter usbFilter = new IntentFilter();
         usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         usbFilter.addAction(ACTION_DEVICE_PERMISSION);
         registerReceiver(mUsbReceiver, usbFilter);
-    }
 
+		initIrsaMgr();
 
-    @Override
-    protected void onPause() {
-        IrsaLog.d(TAG, "onPause");
-        super.onPause();
-        unregisterReceiver(mUsbReceiver);
-    }
+		if (btnPlay.isChecked() && !btnOn.isEnabled()) {
+			btnPlay.toggle();
+			btnOn.toggle();
+			btnPlay.setEnabled(false);
+			btnOn.setEnabled(true);
+			txtViewFace.setText("");
+			txtViewStatus.setText("");
+		}
+
+        super.onResume();
+
+	}
 
 
     @Override
     public void onDestroy() {
-        IrsaLog.d(TAG, "onDestroy cleanup resource");
+        IrsaLog.d(TAG, "=======================onDestroy");
         if (mIrsaMgr != null) {
             mIrsaMgr.release();
             mIrsaMgr = null;
@@ -717,8 +759,16 @@ public class MainActivity extends Activity {
 
     @Override
     public void onStop() {
-        IrsaLog.d(TAG, "onStop, cleanup resource");
+        IrsaLog.d(TAG, "=======================onStop");
+        unregisterReceiver(mUsbReceiver);
+
+		if (mWakeLock != null) {
+			mWakeLock.release();
+			mWakeLock = null;
+		}
+
         if (mIrsaMgr != null) {
+			mIrsaMgr.close();
             mIrsaMgr.release();
             mIrsaMgr = null;
         }
@@ -728,7 +778,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        IrsaLog.d(TAG, "onBackPressed, cleanup resource");
+        IrsaLog.d(TAG, "=======================onBackPressed");
         if (mIrsaMgr != null) {
             mIrsaMgr.release();
             mIrsaMgr = null;
@@ -737,27 +787,40 @@ public class MainActivity extends Activity {
     }
 
 
-    private void addSurfaceView(SurfaceView sView, int colIndex, int rowIndex) {
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        lp.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+    private TextView addStatus(String info, int colIndex, int rowIndex) {
+        if (rowIndex >= 2 )
+            return null;
 
-        lp.width = RGB_FRAME_WIDTH;
-        lp.height = RGB_FRAME_HEIGHT;
+        int objIndex = colIndex * itemsInRow + rowIndex;
+        TextView txtView = new TextView(this);
+        txtView.setSingleLine(false);
+        txtView.setMaxLines(5);
+        txtView.setGravity(Gravity.LEFT);
+        //txtView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXT_VIEW_SIZE);
 
-        if (0 == rowIndex) { 
-            lp.leftMargin = rowReserved;
+        txtView.setText(info);
+        RelativeLayout.LayoutParams lpText = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        lpText.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        lpText.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+
+        lpText.topMargin = colReserved / 2 + (RGB_FRAME_HEIGHT + colSpace * 2 + textHeight) * colIndex - lpText.height - 30;
+        lpText.width = screenWidth / 2;
+        lpText.height = textHeight * 4;
+
+        if (0 == rowIndex) {
+            lpText.leftMargin = rowReserved;
         } else {
-            lp.leftMargin = RGB_FRAME_WIDTH * rowIndex + rowReserved + rowSpace * rowIndex;
+            //lpText.leftMargin = RGB_FRAME_WIDTH * rowIndex + dispWidth * (rowIndex - 1) + rowReserved + rowSpace * rowIndex;
+            lpText.leftMargin = rowReserved + lpText.width + 10;
         }
+        vectorLPStatus.add(lpText);
+        txtView.setVisibility(View.VISIBLE);
+        txtView.setLayoutParams(lpText);
+        layout.addView(txtView);
 
-        lp.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (RGB_FRAME_HEIGHT + colSpace + textHeight) * colIndex;
-        vectorLP.add(lp);
-        if (sView != null) {
-            sView.setLayoutParams(lp);
-            layout.addView(sView);
-        }
+        return txtView;
     }
+
 
 
     private void addHint(int colIndex, int rowIndex) {
@@ -784,55 +847,45 @@ public class MainActivity extends Activity {
         lpText.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lpText.addRule(RelativeLayout.ALIGN_PARENT_TOP);
 
-        lpText.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (RGB_FRAME_HEIGHT + colSpace + textHeight) * colIndex - 40;
+        //lpText.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (RGB_FRAME_HEIGHT + colSpace + textHeight) * colIndex - 40;
+		lpText.topMargin = vectorLPStatus.get(0).topMargin + vectorLPStatus.get(0).height + 10;
         lpText.width = textWidth ;
-        lpText.height = 40;
+        lpText.height = 60;
 
         if (0 == rowIndex) {
             lpText.leftMargin = rowReserved;
         } else {
             lpText.leftMargin = RGB_FRAME_WIDTH * rowIndex + dispWidth * (rowIndex - 1) + rowReserved + rowSpace * rowIndex;
         }
-        vectorLPHint.add(txtView);
+        vectorLPHint.add(lpText);
         txtView.setVisibility(View.VISIBLE);
         txtView.setLayoutParams(lpText);
         layout.addView(txtView);
     }
 
-    private TextView addStatus(String info, int colIndex, int rowIndex) {
-        if (rowIndex >= 2 )
-            return null;
 
-        int objIndex = colIndex * itemsInRow + rowIndex;
-        TextView txtView = new TextView(this);
-        txtView.setSingleLine(false);
-        //txtView.setMaxLines(4);
-        txtView.setGravity(Gravity.LEFT);
-        //txtView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXT_VIEW_SIZE);
+    private void addSurfaceView(SurfaceView sView, int colIndex, int rowIndex) {
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
 
-        txtView.setText(info);
-        RelativeLayout.LayoutParams lpText = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        lpText.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        lpText.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        lp.width = RGB_FRAME_WIDTH;
+        lp.height = RGB_FRAME_HEIGHT;
 
-        lpText.topMargin = colReserved / 2 + (RGB_FRAME_HEIGHT + colSpace * 2 + textHeight) * colIndex - lpText.height - 30;
-        lpText.width = screenWidth - 20;
-        lpText.height = textHeight * 2;
-
-        if (0 == rowIndex) {
-            lpText.leftMargin = rowReserved;
+        if (0 == rowIndex) { 
+            lp.leftMargin = rowReserved;
         } else {
-            //lpText.leftMargin = RGB_FRAME_WIDTH * rowIndex + dispWidth * (rowIndex - 1) + rowReserved + rowSpace * rowIndex;
-            lpText.leftMargin = (screenWidth > 1200) ? 1200 : 800;
+            lp.leftMargin = RGB_FRAME_WIDTH * rowIndex + rowReserved + rowSpace * rowIndex;
         }
-        vectorLPHint.add(txtView);
-        txtView.setVisibility(View.VISIBLE);
-        txtView.setLayoutParams(lpText);
-        layout.addView(txtView);
 
-        return txtView;
+        //lp.topMargin = colReserved / 2 + TEXT_VIEW_SIZE + textHeight * 2 +  (RGB_FRAME_HEIGHT + colSpace + textHeight) * colIndex;
+		lp.topMargin = vectorLPHint.get(0).topMargin + vectorLPHint.get(0).height + 10;
+        vectorLPSurface.add(lp);
+        if (sView != null) {
+            sView.setLayoutParams(lp);
+            layout.addView(sView);
+        }
     }
-
 
 
     private void setup() {
@@ -882,11 +935,11 @@ public class MainActivity extends Activity {
             }
 
             mDepthIV = new DrawImageView(this);
-            mDepthIV.setLayoutParams(vectorLP.get(0));
+            mDepthIV.setLayoutParams(vectorLPSurface.get(0));
             layout.addView(mDepthIV);
 
             mColorIV = new DrawImageView(this);
-            mColorIV.setLayoutParams(vectorLP.get(1));
+            mColorIV.setLayoutParams(vectorLPSurface.get(1));
             layout.addView(mColorIV);
 
             mDepthIV.setPos(0, 0, 1, 1);

@@ -26,6 +26,8 @@
     <uses-permission android:name="android.hardware.usb.host" />
     <uses-permission android:name="android.hardware.usb.accessory" />
 
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
