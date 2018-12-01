@@ -10,13 +10,13 @@ import pybackend2 as rs
 import time
 
 def on_frame(profile, f):
-    print "Received %d bytes" % f.frame_size
+    print ("Received %d bytes" % f.frame_size)
 
     # Accessing image pixels
     p = f.pixels
-    print "First 10 bytes are: ",
+    print ("First 10 bytes are: ")
     for i in range(10):
-        print hex(p[i]),
+        print (hex(p[i]))
     print
 
 try:
