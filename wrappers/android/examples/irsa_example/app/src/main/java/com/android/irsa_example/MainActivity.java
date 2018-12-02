@@ -662,7 +662,7 @@ public class MainActivity extends Activity {
         mapColor = mIrsaMgr.getStreamProfiles(IrsaRS2Type.RS2_STREAM_COLOR);
         mapIR = mIrsaMgr.getStreamProfiles(IrsaRS2Type.RS2_STREAM_INFRARED);
 
-		if ((mapDepth == null) || (mapColor == null) || (mapIR == null))
+		if ((mapDepth == null) && (mapColor == null) && (mapIR == null))
 			return;
 
         vectorMap.add(mapDepth);
@@ -684,6 +684,9 @@ public class MainActivity extends Activity {
 
         for (int j = 0; j < vectorMap.size(); j++) {
             map = vectorMap.get(j);
+			if (map == null)
+				continue;
+
             IrsaLog.d(TAG, "map.size " + map.size());
             listString = new ArrayList<String>();
 
@@ -704,9 +707,14 @@ public class MainActivity extends Activity {
             spinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
                 public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                     IrsaLog.d(TAG, "select: pos: " + pos + ", id:" + id);
-                    IrsaLog.d(TAG, "select: " + spinnerDepth.getSelectedItem().toString());
-                    IrsaLog.d(TAG, "select: " + spinnerColor.getSelectedItem().toString());
-                    IrsaLog.d(TAG, "select: " + spinnerIR.getSelectedItem().toString());
+					if (mapDepth != null)
+						IrsaLog.d(TAG, "select: " + spinnerDepth.getSelectedItem().toString());
+
+					if (mapColor != null)
+						IrsaLog.d(TAG, "select: " + spinnerColor.getSelectedItem().toString());
+
+					if (mapIR != null)
+						IrsaLog.d(TAG, "select: " + spinnerIR.getSelectedItem().toString());
                 }
 
                 public void onNothingSelected(AdapterView<?> parent) {
@@ -824,7 +832,6 @@ public class MainActivity extends Activity {
     }
 
 
-
     private void addHint(int colIndex, int rowIndex) {
         int objIndex = colIndex * itemsInRow + rowIndex;
         TextView txtView = new TextView(this);
@@ -900,27 +907,39 @@ public class MainActivity extends Activity {
                 mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_COLOR, RGB_FRAME_WIDTH, RGB_FRAME_HEIGHT, RGB_FPS, IrsaRS2Type.RS2_FORMAT_RGB8);
                 mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_INFRARED, DEPTH_FRAME_WIDTH, DEPTH_FRAME_HEIGHT, DEPTH_FPS, IrsaRS2Type.RS2_FORMAT_RGB8);
             } else {
-                String profileDepth = spinnerDepth.getSelectedItem().toString();
-                String profileColor = spinnerColor.getSelectedItem().toString();
-                String profileIR    = spinnerIR.getSelectedItem().toString();
-                IrsaLog.d(TAG, "select depth profile: " + profileDepth);
-                IrsaLog.d(TAG, "select color profile: " + profileColor);
-                IrsaLog.d(TAG, "select IR    profile: " + profileIR);
-                String[] pDepth = profileDepth.split("\\*");
-                String[] pColor = profileColor.split("\\*");
-                String[] pIR    = profileIR.split("\\*");
-                IrsaLog.d(TAG, "depth profile: " + pDepth[0] + "," + pDepth[1] + "," + pDepth[2] + "," + pDepth[3]);
-                IrsaLog.d(TAG, "depth profile: " + Integer.parseInt(pDepth[0].trim()) + "," + Integer.parseInt(pDepth[1].trim()) + "," + Integer.parseInt(pDepth[2].trim()) + "," + mIrsaMgr.formatFromString(pDepth[3].trim()));
+				if ((mapDepth == null) && (mapColor == null) && (mapIR == null))
+					return;
 
-                IrsaLog.d(TAG, "color profile: " + pColor[0] + "," + pColor[1] + "," + pColor[2] + "," + pColor[3]);
-                IrsaLog.d(TAG, "color profile: " + Integer.parseInt(pColor[0].trim()) + "," + Integer.parseInt(pColor[1].trim()) + "," + Integer.parseInt(pColor[2].trim()) + "," + mIrsaMgr.formatFromString(pColor[3].trim()));
+                String profileDepth;
+                String profileColor;
+                String profileIR;
+				if (mapDepth != null)  {
+					profileDepth = spinnerDepth.getSelectedItem().toString();
+					IrsaLog.d(TAG, "select depth profile: " + profileDepth);
+					String[] pDepth = profileDepth.split("\\*");
+					IrsaLog.d(TAG, "depth profile: " + pDepth[0] + "," + pDepth[1] + "," + pDepth[2] + "," + pDepth[3]);
+					IrsaLog.d(TAG, "depth profile: " + Integer.parseInt(pDepth[0].trim()) + "," + Integer.parseInt(pDepth[1].trim()) + "," + Integer.parseInt(pDepth[2].trim()) + "," + mIrsaMgr.formatFromString(pDepth[3].trim()));
+					mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_DEPTH, Integer.parseInt(pDepth[0].trim()), Integer.parseInt(pDepth[1].trim()), Integer.parseInt(pDepth[2].trim()), mIrsaMgr.formatFromString(pDepth[3].trim()));
+				}
 
-                IrsaLog.d(TAG, "IR    profile: " + pIR[0] + "," + pIR[1] + "," + pIR[2] + "," + pIR[3]);
-                IrsaLog.d(TAG, "IR    profile: " + Integer.parseInt(pIR[0].trim()) + "," + Integer.parseInt(pIR[1].trim()) + "," + Integer.parseInt(pIR[2].trim()) + "," + mIrsaMgr.formatFromString(pIR[3].trim()));
+				if (mapColor != null)  {
+					profileColor = spinnerColor.getSelectedItem().toString();
+					IrsaLog.d(TAG, "select color profile: " + profileColor);
+					String[] pColor = profileColor.split("\\*");
+					IrsaLog.d(TAG, "color profile: " + pColor[0] + "," + pColor[1] + "," + pColor[2] + "," + pColor[3]);
+					IrsaLog.d(TAG, "color profile: " + Integer.parseInt(pColor[0].trim()) + "," + Integer.parseInt(pColor[1].trim()) + "," + Integer.parseInt(pColor[2].trim()) + "," + mIrsaMgr.formatFromString(pColor[3].trim()));
+					mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_COLOR, Integer.parseInt(pColor[0].trim()), Integer.parseInt(pColor[1].trim()), Integer.parseInt(pColor[2].trim()), mIrsaMgr.formatFromString(pColor[3].trim()));
+				}
 
-                mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_DEPTH, Integer.parseInt(pDepth[0].trim()), Integer.parseInt(pDepth[1].trim()), Integer.parseInt(pDepth[2].trim()), mIrsaMgr.formatFromString(pDepth[3].trim()));
-                mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_COLOR, Integer.parseInt(pColor[0].trim()), Integer.parseInt(pColor[1].trim()), Integer.parseInt(pColor[2].trim()), mIrsaMgr.formatFromString(pColor[3].trim()));
-                mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_INFRARED, Integer.parseInt(pIR[0].trim()), Integer.parseInt(pIR[1].trim()), Integer.parseInt(pIR[2].trim()), mIrsaMgr.formatFromString(pIR[3].trim()));
+				if (mapIR != null)  {
+					profileIR    = spinnerIR.getSelectedItem().toString();
+					IrsaLog.d(TAG, "select IR    profile: " + profileIR);
+					String[] pIR    = profileIR.split("\\*");
+					IrsaLog.d(TAG, "IR    profile: " + pIR[0] + "," + pIR[1] + "," + pIR[2] + "," + pIR[3]);
+					IrsaLog.d(TAG, "IR    profile: " + Integer.parseInt(pIR[0].trim()) + "," + Integer.parseInt(pIR[1].trim()) + "," + Integer.parseInt(pIR[2].trim()) + "," + mIrsaMgr.formatFromString(pIR[3].trim()));
+					mIrsaMgr.setStreamFormat(IrsaRS2Type.RS2_STREAM_INFRARED, Integer.parseInt(pIR[0].trim()), Integer.parseInt(pIR[1].trim()), Integer.parseInt(pIR[2].trim()), mIrsaMgr.formatFromString(pIR[3].trim()));
+				}
+
             }
         }
 
