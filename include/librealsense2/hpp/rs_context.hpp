@@ -59,15 +59,6 @@ namespace rs2
             return _added;
         }
 
-        /**
-        * returns a list of all newly removed devices
-        * \return            the list of all newly removed devices
-        */
-        device_list get_removed_devices()  const
-        {
-            return _removed;
-        }
-
     private:
         device_list _removed;
         device_list _added;
