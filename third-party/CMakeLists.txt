@@ -9,4 +9,10 @@ if(BUILD_EASYLOGGINGPP)
     include(${_rel_path}/easyloggingpp/CMakeLists.txt)
 endif()
 
+if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
+    include(${_rel_path}/libusb/CMakeLists.txt)
+endif()
+
+include(${_rel_path}/libusb/CMakeLists.txt)
+
 add_subdirectory(${_rel_path}/realsense-file)
