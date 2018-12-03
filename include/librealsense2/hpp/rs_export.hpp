@@ -11,11 +11,11 @@
 
 namespace rs2
 {
-    class save_to_ply : public processing_block
+    class save_to_ply : public filter
     {
     public:
         save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud())
-            : processing_block([this](rs2::frame f, rs2::frame_source& s) { func(f, s); }),
+            : filter([this](rs2::frame f, rs2::frame_source& s) { func(f, s); }),
             _pc(std::move(pc)), fname(filename)
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
@@ -41,6 +41,7 @@ namespace rs2
             }
 
             export_to_ply(depth, color);
+            source.frame_ready(data); // passthrough filter because processing_block::process doesn't support sinks
         }
 
         void export_to_ply(points p, video_frame color) {
@@ -109,7 +110,7 @@ namespace rs2
             out << "end_header\n";
             out.close();
 
-            out.open(fname, std::ios_base::app | std::ios_base::binary);
+            out.open(fname + std::to_string(p.get_frame_number()) + ".ply", std::ios_base::app | std::ios_base::binary);
             for (int i = 0; i < new_verts.size(); ++i)
             {
                 // we assume little endian architecture on your device
