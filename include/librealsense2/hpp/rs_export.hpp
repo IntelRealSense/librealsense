@@ -8,7 +8,9 @@
 #include <fstream>
 #include <cmath>
 #include <sstream>
+#include <cassert>
 #include "rs_processing.hpp"
+#include "rs_internal.hpp"
 
 namespace rs2
 {
@@ -154,6 +156,77 @@ namespace rs2
 
         std::string fname;
         pointcloud _pc;
+    };
+
+    class save_single_frameset : public filter {
+    public:
+        save_single_frameset(std::string filename = "RealSense Frameset ")
+            : filter([this](frame f, frame_source& s) { save(f, s); }), fname(filename)
+        {}
+
+    private:
+        void save(frame data, frame_source& source, bool do_signal=true)
+        {
+            software_device dev;
+            
+            std::vector<std::tuple<software_sensor, stream_profile, int>> sensors;
+            if (auto fs = data.as<frameset>()) {
+                int uid = 0;
+                for (int i = 0; i < fs.size(); ++i) {
+                    frame f = fs[i];
+                    auto profile = f.get_profile();
+                    auto s = dev.add_sensor(profile.stream_name() + "Sensor (" + std::to_string(uid) + ")");
+                    stream_profile software_profile;
+
+                    if (auto vf = f.as<video_frame>()) {
+                        auto vp = profile.as<video_stream_profile>();
+                        rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), uid++, vp.width(), vp.height(), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
+                        software_profile = s.add_video_stream(stream);
+                    } else if (f.is<motion_frame>()) {
+                        auto mp = profile.as<motion_stream_profile>();
+                        rs2_motion_stream stream{ mp.stream_type(), mp.stream_index(), uid++, mp.fps(), mp.format(), mp.get_motion_intrinsics() };
+                        software_profile = s.add_motion_stream(stream);
+                    } else if (f.is<pose_frame>()) {
+                        rs2_pose_stream stream{ profile.stream_type(), profile.stream_index(), uid++, profile.fps(), profile.format() };
+                        software_profile = s.add_pose_stream(stream);
+                    } else {
+                        // TODO: How to handle other frame types? (e.g. points)
+                        assert(false);
+                    }
+                    sensors.emplace_back(s, software_profile, i);
+                }
+
+                // Recorder needs sensors to already exist when its created
+                recorder rec(fname + std::to_string(data.get_frame_number()) + ".bag", dev);
+
+                for (auto group : sensors) {
+                    auto s = std::get<software_sensor>(group);
+                    auto profile = std::get<stream_profile>(group);
+                    s.open(profile);
+                    s.start([](frame) {});
+                    frame f = fs[std::get<int>(group)];
+                    if (auto vf = f.as<video_frame>()) {
+                        s.on_video_frame({ const_cast<void*>(vf.get_data()), [](void*) {}, vf.get_stride_in_bytes(), vf.get_bytes_per_pixel(),
+                                           vf.get_timestamp(), vf.get_frame_timestamp_domain(), static_cast<int>(vf.get_frame_number()), profile });
+                    } else if (f.is<motion_frame>()) {
+                        s.on_motion_frame({ const_cast<void*>(f.get_data()), [](void*) {}, f.get_timestamp(),
+                                            f.get_frame_timestamp_domain(), static_cast<int>(f.get_frame_number()), profile });
+                    } else if (f.is<pose_frame>()) {
+                        s.on_pose_frame({ const_cast<void*>(f.get_data()), [](void*) {}, f.get_timestamp(),
+                                          f.get_frame_timestamp_domain(), static_cast<int>(f.get_frame_number()), profile });
+                    }
+                }
+            } else {
+                // single frame
+                auto set = source.allocate_composite_frame({ data });
+                save(set, source, false);
+            }
+
+            if (do_signal)
+                source.frame_ready(data);
+        }
+
+        std::string fname;
     };
 }
 
