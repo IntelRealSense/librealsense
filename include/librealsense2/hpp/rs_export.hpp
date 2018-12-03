@@ -15,7 +15,7 @@ namespace rs2
     {
     public:
         save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud())
-            : filter([this](rs2::frame f, rs2::frame_source& s) { func(f, s); }),
+            : filter([this](frame f, frame_source& s) { func(f, s); }),
             _pc(std::move(pc)), fname(filename)
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
@@ -24,14 +24,17 @@ namespace rs2
 
         DECLARE_PB_OPTION(OPTION_IGNORE_COLOR, 1);
     private:
-        void func(rs2::frame data, rs2::frame_source& source)
+        void func(frame data, frame_source& source)
         {
             frame depth, color;
             if (auto fs = data.as<frameset>()) {
-                depth = fs.first(RS2_STREAM_DEPTH);
-                color = fs.first(RS2_STREAM_COLOR);
-            } else {
-                depth = data.as<depth_frame>();
+                for (auto f : fs) {
+                    if (f.is<points>()) depth = f;
+                    else if (!depth && f.is<depth_frame>()) depth = f;
+                    else if (!color && f.is<video_frame>()) color = f;
+                }
+            } else if (data.is<depth_frame>() || data.is<points>()) {
+                depth = data;
             }
 
             if (!depth) throw std::runtime_error("Need depth data to save PLY");
