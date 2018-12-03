@@ -22,10 +22,16 @@
     android:weightSum="1">
 
     <TextView
-        android:id="@+id/txtDevice"
+        android:id="@+id/txtSysInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="deviceInfo:" />
+
+    <TextView
+        android:id="@+id/txtUVCInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="UVCInfo:" />
 
     <TextView
         android:id="@+id/TextView1"
