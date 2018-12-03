@@ -1114,10 +1114,11 @@ void make_factory(){
             }
             else if (inc == 2) {
                 auto filename = MatlabParamParser::parse<std::string>(inv[0]);
-                auto pc = MatlabParamParser::parse<rs2::pointcloud>(inc[1]);
+                auto pc = MatlabParamParser::parse<rs2::pointcloud>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(rs2::save_to_ply(filename, pc));
             }
-        }
+        });
+        factory->record(save_to_ply_factory);
     }
 
     // rs_context.hpp
