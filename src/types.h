@@ -651,6 +651,9 @@ namespace librealsense
         firmware_version(int major, int minor, int patch, int build, bool is_any = false)
             : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
 
+        // CTO experimental firmware versions are marked with build >= 90
+        bool experimental() const { return m_build >= 90; }
+
         static firmware_version any()
         {
             return{};
