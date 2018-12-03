@@ -72,7 +72,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return            true if adding the option succeeds. false if it fails e.g. an option with this id is already registered
 */
-int rs2_processing_block_register_simple_option(rs2_processing_block* block, int option_id, float min, float max, float step, float def, rs2_error** error);
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2_option option_id, float min, float max, float step, float def, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object
