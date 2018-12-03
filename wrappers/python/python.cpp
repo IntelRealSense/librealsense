@@ -572,7 +572,7 @@ PYBIND11_MODULE(NAME, m) {
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
     /* rs_export.hpp */
-    py::class_<rs2::save_to_ply, rs2::processing_block> save_to_ply(m, "save_to_ply");
+    py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
     save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
                .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
 
