@@ -37,6 +37,7 @@ namespace librealsense
         lazy<ds::imu_intrinsics>        _accel_intrinsics;
         lazy<ds::imu_intrinsics>        _gyro_intrinsics;
         std::shared_ptr<lazy<rs2_extrinsics>> _fisheye_to_imu;
+        std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_imu;
 
         ds::tm1_eeprom        get_tm1_eeprom() const;
         std::vector<uint8_t>  get_tm1_eeprom_raw() const;
