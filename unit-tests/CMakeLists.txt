@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseUnitTests)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
@@ -28,7 +31,7 @@ set (unit_tests_sources
 )
 
 add_executable(live-test ${unit_tests_sources})
-target_link_libraries(live-test ${DEPENDENCIES})
+target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
 
 set_target_properties (live-test PROPERTIES
     FOLDER "Unit-Tests"
