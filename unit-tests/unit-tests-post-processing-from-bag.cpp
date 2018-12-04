@@ -18,6 +18,7 @@
 
 typedef struct _sw_context
 {
+
     rs2::software_device sdev;
     std::map<std::string, std::shared_ptr<rs2::software_sensor>> sw_sensors;
     std::map<std::string, rs2::syncer> sw_syncers;
@@ -476,30 +477,36 @@ TEST_CASE("Record software-device all resolutions", "[record-bag]")
 
 TEST_CASE("Record align color to depth software-device all resolutions", "[record-bag][align]")
 {
-    record_frames_all_res(align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR), "[aligned_2d]_all_combinations_depth_color.bag");
+    auto record_block = align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR);
+    record_frames_all_res(record_block, "[aligned_2d]_all_combinations_depth_color.bag");
 }
 
 TEST_CASE("Record align depth to color software-device all resolutions", "[record-bag][align]")
 {
-    record_frames_all_res(align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH), "[aligned_2c]_all_combinations_depth_color.bag");
+    auto record_block = align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH);
+    record_frames_all_res(record_block, "[aligned_2c]_all_combinations_depth_color.bag");
 }
 
 TEST_CASE("Record point cloud software-device all resolutions", "[record-bag][point-cloud]")
 {
-    record_frames_all_res(pointcloud_record_block(), "[pointcloud]_all_combinations_depth_color.bag");
+    auto record_block = pointcloud_record_block();
+    record_frames_all_res(record_block, "[pointcloud]_all_combinations_depth_color.bag");
 }
 
 TEST_CASE("Test align color to depth from recording", "[software-device][align]")
 {
-    compare_processed_frames_vs_recorded_frames(align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR), "[aligned_2d]_all_combinations_depth_color.bag");
+    auto record_block = align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR);
+    compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag");
 }
 
 TEST_CASE("Test align depth to color from recording", "[software-device][align]")
 {
-    compare_processed_frames_vs_recorded_frames(align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH), "[aligned_2c]_all_combinations_depth_color.bag");
+    auto record_block = align_record_block(RS2_STREAM_COLOR, RS2_STREAM_DEPTH);
+    compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2c]_all_combinations_depth_color.bag");
 }
 
 TEST_CASE("Test point cloud from recording", "[software-device][point-cloud]")
 {
-    compare_processed_frames_vs_recorded_frames(pointcloud_record_block(), "[pointcloud]_all_combinations_depth_color.bag");
+    auto record_block = pointcloud_record_block();
+    compare_processed_frames_vs_recorded_frames(record_block, "[pointcloud]_all_combinations_depth_color.bag");
 }
