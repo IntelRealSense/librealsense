@@ -1,5 +1,8 @@
 #include "android-hid.h"
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#ifdef RS2_USE_ANDROID_BACKEND
 void librealsense::platform::android_hid_device::open(
         const std::vector<librealsense::platform::hid_profile> &iio_profiles) {
 
@@ -29,3 +32,4 @@ std::vector<uint8_t> librealsense::platform::android_hid_device::get_custom_repo
     return std::vector<uint8_t>();
 }
 
+#endif

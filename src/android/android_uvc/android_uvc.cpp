@@ -1,12 +1,12 @@
 
-#ifdef RS2_USE_USBHOST_UVC_BACKEND
+#ifdef RS2_USE_ANDROID_BACKEND
 
 #define MAX_USBFS_BUFFER_SIZE   16384
 
 
-#include "usbmanager.h"
+#include "UsbManager.h"
 #include "libuvc/utlist.h"
-#include "Android.h"
+
 #include "concurrency.h"
 #include "types.h"
 #include "android_uvc.h"
@@ -912,20 +912,22 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         }
     });
     LOGD("Transfer thread started...");
+    usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
     do {
-        size_t res = pipe->ReadPipe(strctx->stream->outbuf , LIBUVC_XFER_BUF_SIZE);
+        //auto res=usb_device_bulk_transfer(dev->GetHandle(),strctx->endpoint,buffer,buffer_size,10);
+        int res = pipe->ReadPipe(strctx->stream->outbuf , LIBUVC_XFER_BUF_SIZE,0);
         if (res>0) {
             strctx->stream->got_bytes = res;
             lock_guard<mutex> lock_guard(m);
             usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
         } else if (res<0){
-            LOGE("Readpipe returned error: %s",strerror(errno));
-            break;
+            LOGE("Readpipe returned error and was clear halted ERROR: %s",strerror(errno));
+            res=usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
+            continue;
         }
     } while (strctx->stream->running);
 
-    // reseting pipe after use
-    usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
+
     free(buffer);
     free(strctx);
 
@@ -934,6 +936,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     archive.wait_until_empty();
     keep_sending_callbacks = false;
     t.join();
+    usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
 };
 
 uvc_error_t usbhost_uvc_stream_start(
@@ -997,7 +1000,7 @@ uvc_error_t usbhost_uvc_stream_stop(usbhost_uvc_stream_handle_t *strmh) {
     if (!strmh->running)
         return UVC_ERROR_INVALID_PARAM;
 
-    strmh->running = 0;
+    strmh->running = false;
     strmh->cb_thread.join();
 
     return UVC_SUCCESS;
@@ -1496,11 +1499,13 @@ uvc_error_t usbhost_get_stream_ctrl_format_size_all(
 
 
 void poll_interrupts(shared_ptr<UsbDevice> device_handle, int ep, uint16_t timeout) {
-/*    auto pipe=device_handle->GetPipe(ep);
+    auto pipe=device_handle->GetPipe(ep);
     static const unsigned short interrupt_buf_size = 0x400;
-    uint8_t buffer[interrupt_buf_size];                         *//* 64 byte transfer buffer  - dedicated channel*//*
-    ULONG num_bytes = pipe->ReadPipe(buffer,interrupt_buf_size,timeout);*/
-    //LOGD("Received interrupt of %d bytes",num_bytes);
+    uint8_t buffer[interrupt_buf_size];
+    int ret;
+    //* 64 byte transfer buffer  - dedicated channel*//*
+    ret = pipe->ReadPipe(buffer,interrupt_buf_size,timeout);
+    //LOGD("Received interrupt of %d bytes",ret);
 }
 
 /**
@@ -1660,8 +1665,6 @@ usbhost_find_devices(int vid, int pid) {
 
         }
     }
-
-
     LOGD("usbhost_find_devices() found %d devices", list_internal.size());
     return list_internal;
 }

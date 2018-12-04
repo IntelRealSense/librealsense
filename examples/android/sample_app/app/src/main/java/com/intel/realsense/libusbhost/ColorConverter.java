@@ -1,55 +1,83 @@
 package com.intel.realsense.libusbhost;
 
 import android.content.Context;
-import android.graphics.Bitmap;
+import android.graphics.PixelFormat;
+import android.graphics.SurfaceTexture;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.Matrix4f;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicColorMatrix;
+import android.renderscript.ScriptIntrinsicResize;
 import android.renderscript.Type;
-import android.util.Pair;
+import android.view.Surface;
+import android.view.TextureView;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 
-public class ColorConverter {
+public class ColorConverter implements TextureView.SurfaceTextureListener {
     private final RenderScript mRs;
     private final ConversionType mType;
     private final ScriptIntrinsicColorMatrix mScriptColorMatrix;
-    private final ScriptC_depth mScriptDepth;
-    private HashMap<Bitmap, Pair<Allocation, Allocation>> mAllocations;
+    private final DepthHistogram mDepthHistogram;
+    private Allocation mAllocationIn;
+    private Allocation mAllocationOut;
+    private Allocation mAllocationCodec;
+    private Surface mOutputSurface;
+    private Surface mCodecSurface;
+    ScriptIntrinsicResize mScriptResize;
 
-    ColorConverter(Context ctx, ConversionType type) {
+    ColorConverter(Context ctx, ConversionType type, int w, int h) {
         mRs = RenderScript.create(ctx);
-        mAllocations = new HashMap<>();
+        mScriptResize = ScriptIntrinsicResize.create(mRs);
         mScriptColorMatrix = ScriptIntrinsicColorMatrix.create(mRs);
         mScriptColorMatrix.setAdd(0, 0, 0, 1.0f);
         mScriptColorMatrix.setColorMatrix(getColorMatrix(type));
-
+        mDepthHistogram = new DepthHistogram(8 * 1024, mRs);
         mType = type;
-        mScriptDepth = new ScriptC_depth(mRs);
+        mAllocationIn = Allocation.createTyped(mRs, getType(type, w, h));
+        mAllocationCodec = Allocation.createTyped(mRs,
+                new Type.Builder(mRs, Element.RGBA_8888(mRs))
+                        .setX(w)
+                        .setY(h).create(),
+                Allocation.USAGE_SCRIPT);
+        mScriptResize.setInput(mAllocationCodec);
     }
 
-    void toBitmap(ByteBuffer buffer, Bitmap bitmap) {
-        Pair<Allocation, Allocation> alloc = getAllocations(bitmap);
-        if (alloc.first == null) {
-            mAllocations.put(bitmap, new Pair<>(Allocation.createTyped(mRs, getType(mType, bitmap)), alloc.second));
-            alloc = mAllocations.get(bitmap);
-        }
-        int bytes = alloc.first.getBytesSize();
+    public void setCodecSurface(Surface codecSurface){
+        /*mCodecSurface=codecSurface;
+        mAllocationCodec.setSurface(mCodecSurface);*/
+    }
+    void process(ByteBuffer buffer) {
+        if (mAllocationOut == null)
+            return;
+        int bytes = mAllocationIn.getBytesSize();
         if (bytes == buffer.capacity()) {
-            alloc.first.copyFromUnchecked(buffer.array());
             switch (mType) {
-                case BGRA2RGBA:
-                    mScriptColorMatrix.forEach(alloc.first, alloc.second);
+                case RGB:
+                    mAllocationCodec.copyFromUnchecked(buffer.array());
+                    mScriptColorMatrix.forEach(mAllocationIn, mAllocationCodec);
                     break;
-                case DEPTH2RGBA:
-                    mScriptDepth.forEach_depth2rgba(alloc.first,alloc.second);
+                case IR:
+                    mAllocationCodec.copyFromUnchecked(buffer.array());
+                    mScriptColorMatrix.forEach(mAllocationIn, mAllocationCodec);
+                    break;
+                case RGBA:
+                    mAllocationCodec.copyFromUnchecked(buffer.array());
+                    break;
+                case DEPTH:
+                    mAllocationIn.copyFromUnchecked(buffer.array());
+                    mDepthHistogram.DepthToRGBA(mAllocationIn, mAllocationCodec);
                     break;
             }
-
-            alloc.second.copyTo(bitmap);
+            if(mCodecSurface!=null) {
+                //mAllocationCodec.ioSend();
+            }
+            if(mAllocationOut!=null && mAllocationCodec!=null)
+            {
+                mScriptResize.forEach_bicubic(mAllocationOut);
+                mAllocationOut.ioSend();
+            }
             return;
         }
         throw new RuntimeException("Buffer size smaller then allocation size");
@@ -57,7 +85,7 @@ public class ColorConverter {
 
     private Matrix4f getColorMatrix(ConversionType type) {
         switch (type) {
-            case DEPTH2RGBA:
+            case DEPTH:
                 return new Matrix4f(new float[]
                         {
 
@@ -66,13 +94,29 @@ public class ColorConverter {
                                 1f, 0f, 0f, 0f,
                                 0f, 0f, 0f, 1
                         });
-            case BGRA2RGBA:
+            case RGBA:
                 return new Matrix4f(new float[]
                         {
                                 0f, 0f, 1f, 0f,
                                 0f, 1f, 0f, 0f,
                                 1f, 0f, 0f, 0f,
                                 0f, 0f, 0f, 1
+                        });
+            case IR:
+                return new Matrix4f(new float[]
+                        {
+                                1f, 0f, 0f, 0f,
+                                0f, 1f, 0f, 0f,
+                                0f, 0f, 1f, 0f,
+                                0f, 0f, 0f, 1
+                        });
+            case RGB:
+                return new Matrix4f(new float[]
+                        {
+                                0f, 0f, 1f, 0f,
+                                0f, 1f, 0f, 0f,
+                                1f, 0f, 0f, 0f,
+                                0f, 0f, 0f, 1f
                         });
             default:
                 return null;
@@ -81,28 +125,52 @@ public class ColorConverter {
 
     ;
 
-    private Type getType(ConversionType type, Bitmap bitmap) {
+    private Type getType(ConversionType type, int w, int h) {
         switch (type) {
-            case BGRA2RGBA:
-                return Type.createXY(mRs, Element.RGBA_8888(mRs), bitmap.getWidth(), bitmap.getHeight());
-            case DEPTH2RGBA:
-                return Type.createXY(mRs, Element.U16(mRs), bitmap.getWidth(), bitmap.getHeight());
+            case RGB:
+                // Output Allocation
+                // Create a new Pixel Element of type RGBA
+                Element elemOUT = Element.createPixel(mRs, Element.DataType.UNSIGNED_8, Element.DataKind.PIXEL_RGB);
+                // Create a new (Type).Builder object of type elemOUT
+                Type.Builder TypeOUT = new Type.Builder(mRs, elemOUT);
+                // create an Allocation
+                return TypeOUT.setX(w).setY(h).create();             // will be used as a SurfaceTexture producer
+            case RGBA:
+                return Type.createXY(mRs, Element.RGBA_8888(mRs), w, h);
+            case IR:
+                return Type.createXY(mRs, Element.U8(mRs), w, h);
+            case DEPTH:
+                return Type.createXY(mRs, Element.U16(mRs), w, h);
             default:
                 throw new RuntimeException("Unsupported conversion type");
         }
     }
 
-    private Pair<Allocation, Allocation> getAllocations(Bitmap bitmap) {
-        Pair<Allocation, Allocation> ret;
-        if (mAllocations.containsKey(bitmap)) {
-            ret = mAllocations.get(bitmap);
-            if (ret.second.getBytesSize() == bitmap.getByteCount()) {
-                return ret;
-            }
-        }
-        ret = new Pair<>(null, Allocation.createFromBitmap(mRs, bitmap));
-        mAllocations.put(bitmap, ret);
-        return ret;
+    @Override
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        mAllocationOut = Allocation.createTyped(mRs,
+                new Type.Builder(mRs, Element.RGBA_8888(mRs))
+                        .setX(width)
+                        .setY(height).create(),
+                Allocation.USAGE_SCRIPT |Allocation.USAGE_IO_OUTPUT );
+        mOutputSurface = new Surface(surface);
+        mAllocationOut.setSurface(mOutputSurface);
+
     }
 
+    @Override
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        mAllocationOut = null;
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+    }
 }

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "ch9_custom.h"
+#include "UsbHost.h"
 
 class UsbEndpoint {
     usb_endpoint_descriptor _desc;

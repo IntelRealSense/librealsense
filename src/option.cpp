@@ -113,7 +113,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
         (platform::uvc_device& dev)
         {
             std::vector<uint8_t> result;
-            std::lock_guard<platform::uvc_device> lock(dev);
+            std::lock_guard<platform::uvc_device> lock(dev); //TODO: fix issue hang because of double lock
 
             if (data.size() > HW_MONITOR_BUFFER_SIZE)
             {

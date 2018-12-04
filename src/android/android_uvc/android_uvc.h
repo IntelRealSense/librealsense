@@ -1,6 +1,6 @@
 #pragma once
 
-#include "usbhost.h"
+#include "UsbHost.h"
 #include "backend.h"
 #include "UsbDevice.h"
 #include <thread>
@@ -24,7 +24,7 @@ enum uvc_req_code {
     UVC_REQ_TYPE_INTERFACE_SET = 0x21  // 00100001: Bit [4..0] = 0001: Request directed to interface, Bit [6..5] = 10: Vendor Specific request, Bit [7] = 0: Host to Device
 };
 
-#define LIBUVC_XFER_BUF_SIZE	( 16 * 1024 * 1024 )
+#define LIBUVC_XFER_BUF_SIZE	( 4 * 1024 * 1024 )
 #define MAX_USB_INTERFACES 20
 
 struct usbhost_uvc_interface {

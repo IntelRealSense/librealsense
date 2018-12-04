@@ -4,8 +4,8 @@
 #include <unordered_map>
 #include <vector>
 #include <regex>
-#include "usbhost.h"
-#include "Android.h"
+#include "UsbHost.h"
+#include "android_debug.h"
 #include "UsbConfiguration.h"
 #include "UsbDevice.h"
 using namespace std;

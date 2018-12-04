@@ -9,9 +9,9 @@
 #include <android/log.h>
 #include <Android.h>
 #include <thread>
-#include "../../../../third_party/librealsense/src/android/usbhost_uvc/usbmanager.h"
-#include "../../../../third_party/librealsense/src/android/usbhost_uvc/usbhost.h"
-#include "../../../../third_party/librealsense/include/librealsense2/hpp/rs_pipeline.hpp"
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2/hpp/rs_pipeline.hpp>
+#include "../../../../../../../../src/android/android_uvc/UsbManager.h"
 
 
 UsbManager &usbHost = UsbManager::getInstance();
@@ -28,19 +28,21 @@ void open_device(usb_device_handle *pDevice, __u8 *outputAddress) {
 bool running = false;
 std::thread t;
 rs2::pipeline p;
-void *output;
-rs2::colorizer colorizer;
+void *outputBufferDepth;
+void *outputBufferColor;
 
 void call_from_thread() {
-    //colorizer.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
-    colorizer.set_option(RS2_OPTION_COLOR_SCHEME, 0);
     while (isStreaming) {
 
         auto frameset = p.wait_for_frames(600000);
         auto depth = frameset.get_depth_frame();
-        if (depth.get_data() != nullptr && output != NULL)
-            memcpy((unsigned char *) output, depth.get_data(),
+        if (depth.get_data() != nullptr && outputBufferDepth != NULL)
+            memcpy((unsigned char *) outputBufferDepth, depth.get_data(),
                    depth.get_height() * depth.get_stride_in_bytes());
+       auto infrared = frameset.get_infrared_frame(0);
+        if (infrared.get_data() != nullptr && outputBufferColor != NULL)
+            memcpy((unsigned char *) outputBufferColor, infrared.get_data(),
+                   infrared.get_height() * infrared.get_stride_in_bytes());
     }
 }
 
@@ -50,13 +52,19 @@ extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_intel_realsense_libusbhost_MainActivity_librsStartStreaming(JNIEnv *env,
                                                                      jobject instance,
-                                                                     jobject buffer) {
+                                                                     jobject depthBuffer,jobject infraredBuffer, jint w, jint h) {
     rs2::config cfg;
-    output = env->GetDirectBufferAddress(buffer);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480);
+    outputBufferDepth = env->GetDirectBufferAddress(depthBuffer);
+    outputBufferColor = env->GetDirectBufferAddress(infraredBuffer);
+    cfg.enable_stream(RS2_STREAM_DEPTH, w, h);
+    cfg.enable_stream(RS2_STREAM_INFRARED,0,0,RS2_FORMAT_BGRA8);
+    //cfg.enable_stream(RS2_STREAM_COLOR,w,h,RS2_FORMAT_BGRA8); //TODO: Bug - DOESNT WORK!
+
+
     profile = p.start(cfg);
+    //auto sensor=profile.get_device().first<rs2::depth_stereo_sensor>();
+    //sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY); //TODO: Bug - DOESNT WORK!
     isStreaming = true;
-    sleep(2);
     t = std::thread(call_from_thread);
     return true;
 }
@@ -68,9 +76,9 @@ Java_com_intel_realsense_libusbhost_MainActivity_librsStopStreaming(JNIEnv *env,
                                                                     jobject instance) {
 
     if (isStreaming) {
+        isStreaming = false;
         t.join();
         p.stop();
-        isStreaming = false;
     }
     return true;
 }

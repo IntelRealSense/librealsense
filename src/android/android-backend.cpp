@@ -1,6 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef RS2_USE_USBHOST_UVC_BACKEND
+#ifdef RS2_USE_ANDROID_BACKEND
 
 
 #include "android-backend.h"
@@ -10,7 +10,7 @@
 #include "../types.h"
 #include <chrono>
 #include <cctype> // std::tolower
-#include <android/usbhost_uvc/usbmanager.h>
+#include <android/android_uvc/UsbManager.h>
 
 
 namespace librealsense {

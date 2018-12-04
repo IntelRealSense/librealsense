@@ -9,12 +9,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <zconf.h>
-#include "usbhost.h"
+#include "UsbHost.h"
 #include "UsbEndpoint.h"
 #include <linux/usbdevice_fs.h>
 #include <unordered_map>
 #include "Queue.h"
 #include <chrono>
+
+using namespace std::chrono;
 
 
 using namespace std;
@@ -22,11 +24,16 @@ using namespace std;
 class UsbPipe {
 
 
-    void submit_request(uint8_t *buffer, size_t buffer_len) {
+    usb_request *submit_request(uint8_t *buffer, size_t buffer_len) {
         auto req = usb_request_new(_device, _endpoint.GetDescriptor());
         req->buffer = buffer;
         req->buffer_length = buffer_len;
-        usb_request_queue(req);
+        int res=usb_request_queue(req);
+        if(res<0) {
+            LOGE("Cannot queue request: %s", strerror(errno));
+            return nullptr;
+        }
+        return req;
     }
 
 
@@ -43,35 +50,32 @@ public:
 
     }
 
-    size_t ReadPipe(uint8_t *buffer, size_t buffer_len,unsigned int timeout_ms=0) {
+    size_t ReadPipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 10) {
         using namespace std::chrono;
         int bytes_copied = 0;
         // Wait until pipe gets data
         std::unique_lock<std::mutex> lk(m);
-        submit_request(buffer, buffer_len);
-        high_resolution_clock::time_point t1 = high_resolution_clock::now();
-
-
-
-
-        cv.wait(lk, [&] {
-            if(timeout_ms>0){
-                high_resolution_clock::time_point t2 = high_resolution_clock::now();
-                duration<double, std::milli> time_span = t2 - t1;
-
-                if(time_span.count() > timeout_ms)
-                    return false;
-            }
+        auto request = submit_request(buffer, buffer_len);
+        if(request== nullptr){
+            lk.unlock();
+            return -1;
+        }
+        auto res = cv.wait_for(lk, chrono::seconds(5), [&] {
             auto itInner = _requests_filled.find(buffer);
             return (itInner != _requests_filled.end());
         });
-        auto req = _requests_filled[buffer];
-        if (req != nullptr) {
+        if (res == true) {
+            auto req = _requests_filled[buffer];
             bytes_copied = req->actual_length;
             _requests_filled.erase(buffer);
+        } else {
+            LOGE("Timeout reached waiting for response!");
+            usb_request_cancel(request);
+            bytes_copied = -1;
         }
-        //TODO: check this
+        //TODO: check this*/
         lk.unlock();
+
         return bytes_copied;
     }
 

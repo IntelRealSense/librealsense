@@ -6,7 +6,7 @@ android {
         applicationId "com.intel.realsense.libusbhost"
         minSdkVersion 23
         targetSdkVersion 28
-        versionCode 2
+        versionCode 3
         versionName "0.1"
         renderscriptTargetApi 24
     }

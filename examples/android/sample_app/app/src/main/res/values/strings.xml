@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Realsense DepthViewer</string>
-    <string name="device_found">Start streaming</string>
     <string name="no_device">Connect Realsense Camera!</string>
-    <string name="stream_started">Streaming...</string>
-    <string name="start_streaming">Start streaming</string>
+    <string name="stream_stop">stream_stop</string>
+    <string name="stream_start">Start stream</string>
+    <string name="permission_request">Can we record video?</string>
 </resources>

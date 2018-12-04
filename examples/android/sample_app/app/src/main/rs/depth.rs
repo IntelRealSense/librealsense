@@ -2,12 +2,12 @@
 #pragma rs java_package_name(com.intel.realsense.libusbhost)
 #pragma rs_fp_relaxed
 
-uchar4 RS_KERNEL depth2rgba(ushort in, uint32_t x, uint32_t y) {
-  uchar4 out;
-  uchar d=in/256.0f;
-  out.r = d;
-  out.g = d;
-  out.b = d;
-  out.a = 255;
-  return out;
+rs_allocation aHistogramColorMap;
+
+/**
+ * 16bit lumiance to RGBA
+ * using the gHistogramColorMap Global allocation
+ */
+uchar4 __attribute__((kernel)) zImageToDepthHistogram(const uint16_t in, uint32_t x, uint32_t y){
+			return rsGetElementAt_uchar4(aHistogramColorMap,in);
 }

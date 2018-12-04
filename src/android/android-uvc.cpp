@@ -1,14 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_USBHOST_UVC_BACKEND
+#ifdef RS2_USE_ANDROID_BACKEND
 
 
 #include "android-uvc.h"
 #include "android-usb.h"
 #include "../types.h"
 #include "libuvc/utlist.h"
-#include "usbhost_uvc/usbhost_uvc.h"
+#include "android_uvc/android_uvc.h"
 
 
 #include <limits>
@@ -364,7 +364,7 @@ namespace librealsense {
                             _extension_unit = eu->bUnitID;
                         }
 
-                        _keep_pulling_interrupts = true;
+                        _keep_pulling_interrupts = false;
                         _interrupt_polling_thread = std::shared_ptr<std::thread>(
                                 new std::thread([this]() {
                                     poll_interrupts();

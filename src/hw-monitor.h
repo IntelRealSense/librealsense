@@ -207,7 +207,7 @@ namespace librealsense
             return _uvc_sensor_base.invoke_powered([&]
                 (platform::uvc_device& dev)
                 {
-                    std::lock_guard<platform::uvc_device> lock(dev);
+                    //std::lock_guard<platform::uvc_device> lock(dev);
                     return _command_transfer->send_receive(data, timeout_ms, require_response);
                 });
         }

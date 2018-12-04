@@ -11,22 +11,26 @@
 #include <regex>
 #include <iostream>
 #include <random>
-#include "usbhost.h"
-#include "Android.h"
+#include "UsbHost.h"
+#include "android_debug.h"
 #include "UsbStringHelpers.h"
 #include "UsbConfiguration.h"
 #include <memory>
 
 #include <string>
-#include "usbhost.h"
+#include "UsbHost.h"
 #include "UsbPipe.h"
 #include <string>
 #include <regex>
 #include <sstream>
 
 
+
+
 class UsbDevice {
 private:
+
+
     std::string toString(char *cstr) {
         if (cstr == nullptr)
             return "null";
@@ -137,18 +141,19 @@ protected:
     std::string _sProduct;
     std::string _sManufacturer;
     std::string _sSerialNumber;
-    bool _pull_requests;
     unique_ptr<std::thread> _pull_thread;
     unordered_map<int, shared_ptr<UsbPipe>> _pipes;
 
 public:
     UsbDevice() :
             _pull_thread(nullptr) {
+        _pull_requests=true;
 
     }
 
     ~UsbDevice() {
         _pipes.clear();
+        _pull_requests=false;
 
 
     }
@@ -159,14 +164,15 @@ public:
 
     UsbDevice(usb_device_handle *usb_device) {
         if (usb_device != NULL) {
+            int TIMEOUT=10;
             this->_handle = usb_device;
             _usb_device_descriptor = usb_device_get_device_descriptor(usb_device);
             _sProduct = toString(
-                    usb_device_get_string(usb_device, _usb_device_descriptor->iProduct));
+                    usb_device_get_string(usb_device, _usb_device_descriptor->iProduct,TIMEOUT));
             _sManufacturer = toString(
-                    usb_device_get_string(usb_device, _usb_device_descriptor->iManufacturer));
+                    usb_device_get_string(usb_device, _usb_device_descriptor->iManufacturer,TIMEOUT));
             _sSerialNumber = toString(
-                    usb_device_get_string(usb_device, _usb_device_descriptor->iSerialNumber));
+                    usb_device_get_string(usb_device, _usb_device_descriptor->iSerialNumber,TIMEOUT));
         }
     }
 
@@ -242,19 +248,23 @@ public:
             if (_pull_thread == nullptr)
                 _pull_thread = std::unique_ptr<std::thread>(new thread([&] {
                     do {
-                        usb_request *req = usb_request_wait(_handle);
+                        usb_request *req = usb_request_wait(_handle,1000);
                         if (req != nullptr) {
                             auto p = _pipes[req->endpoint];
                             if (p != nullptr) {
                                 p->QueueFinishedRequest(req);
                             }
+                        } else {
+                            sleep(1);
                         }
-                    } while (_pull_requests);
+                    } while (_pull_requests == true);
                 }));
         }
     }
 
 private:
+    bool _pull_requests = true;
+
     mutex m;
 };
 

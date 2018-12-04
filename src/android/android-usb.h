@@ -4,9 +4,9 @@
 
 #include "../backend.h"
 
-#include "usbhost_uvc/usbhost.h"
-#include <android/usbhost_uvc/usbhost_uvc.h>
-#include "usbhost_uvc\usbmanager.h"
+#include "android_uvc/UsbHost.h"
+#include "android_uvc/android_uvc.h"
+
 #define HW_MONITOR_BUFFER_SIZE   (1024)
 typedef unsigned long ULONG;
 typedef ULONG *PULONG;

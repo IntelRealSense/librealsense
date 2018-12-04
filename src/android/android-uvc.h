@@ -5,7 +5,7 @@
 #include "../backend.h"
 
 //#include "android-helpers.h"
-#include "usbhost_uvc/usbhost_uvc.h"
+#include "android_uvc/android_uvc.h"
 
 #include <unordered_map>
 #include <mutex>

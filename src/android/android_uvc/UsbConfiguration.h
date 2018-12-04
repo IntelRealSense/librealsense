@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include "usbhost.h"
+#include "UsbHost.h"
 #include "UsbInterface.h"
 #include "UsbInterfaceAssociation.h"
 #include <vector>

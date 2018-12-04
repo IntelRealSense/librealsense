@@ -44,6 +44,7 @@ namespace librealsense
     void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
+        return;
         auto res = _locked_transfer->send_receive(out_vec);
 
         // read

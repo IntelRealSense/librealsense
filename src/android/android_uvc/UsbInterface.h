@@ -6,7 +6,6 @@
 
 
 #include <vector>
-#include "ch9_custom.h"
 #include "UsbEndpoint.h"
 using namespace std;
 class UsbInterface {
