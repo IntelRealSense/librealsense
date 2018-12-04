@@ -300,9 +300,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("was_added", &rs2::event_information::was_added, "Check if "
             "specific device was added.", "dev"_a)
         .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
-            "list of all newly connected devices")
-        .def("get_removed_devices", &rs2::event_information::get_removed_devices, "Returns a "
-            "list of all newly removed devices");
+            "list of all newly connected devices");
 
     py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
     tm2.def(py::init<rs2::device>(), "device"_a)
