@@ -456,13 +456,13 @@ extern "C" int _check_usb_vfs(const char *path) {
 }
 
 
-static char mDescriptor[1024];
+static const int MAX_DESC_LEN = 2048;
+static char mDescriptor[MAX_DESC_LEN];
 static int  iDescriptor = 0;
 
 extern "C" int _getDescriptor(char *source) {
     LOGD("getDescriptor");
     AutoJNIEnv env;
-	int len = 1024;
 	if (source == nullptr)
 	  return 0;
 
@@ -473,7 +473,7 @@ extern "C" int _getDescriptor(char *source) {
 		return iDescriptor;
 	}
 
-    jbyteArray byteDescription = env->NewByteArray(len);
+    jbyteArray byteDescription = env->NewByteArray(MAX_DESC_LEN);
 	jint bufSize;
     if (s_Fields.getDescriptor != nullptr) {
         bufSize = env->CallStaticIntMethod(s_Fields.gClass, s_Fields.getDescriptor, byteDescription);
