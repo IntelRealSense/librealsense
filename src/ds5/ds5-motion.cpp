@@ -269,7 +269,25 @@ namespace librealsense
 
         initialize_fisheye_sensor(ctx,group);
 
+        // D435i to use predefined values extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            // BMI055 assembly transformation based on mechanical drawing (mm)
+            //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
+            //      [  0.  ,   1.  ,   0.  ,   5.1 ],
+            //      [  0.  ,   0.  ,  -1.  , -11.74],
+            //      [  0.  ,   0.  ,   0.  ,   1.  ]])
+            // The orientation matrix will be integrated into the IMU stream data
+            pose ex = { {  1.f,     0.f,    0.f,
+                           0.f,     1.f,    0.f,
+                           0.f,     0.f,    1.f},
+                        { 0.00552f, -0.0051, -0.01174}};
+
+            return from_pose(ex);
+        });
+
         // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);

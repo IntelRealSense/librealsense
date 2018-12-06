@@ -18,7 +18,6 @@ namespace librealsense
         void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
         bool try_fetch_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics* extr);
 
-
         struct extrinsics_lock
         {
             extrinsics_lock(extrinsics_graph& owner)
