@@ -29,6 +29,10 @@
 
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
+  <depend>libgl1-mesa-dev</depend>
+  <depend>libglfw3-dev</depend>
+  <depend>libglu1-mesa-dev</depend>
+  <depend>libgtk-3-dev</depend>
   <depend>libssl-dev</depend>
   <depend>dkms</depend>
   <depend>udev</depend>
