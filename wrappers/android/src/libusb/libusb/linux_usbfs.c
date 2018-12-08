@@ -202,11 +202,11 @@ struct linux_transfer_priv {
 
 #ifdef ANDROID
 //weiguo
-extern int  _openUVCDevice();
-extern void _closeUVCDevice();
-extern int _check_usb_vfs(const char *path);
-extern int _getDescriptor(char *source);
-extern char *_getUVCName();
+extern int   _openUVCDevice();
+extern void  _closeUVCDevice();
+extern int   _checkUSBVFS(const char *path);
+extern int   _getDescriptor(char *pool);
+extern char* _getUVCName();
 #endif
 
 static int _open(const char *path, int flags)
@@ -307,7 +307,7 @@ static int check_usb_vfs(const char *dirname)
 
 #ifdef ANDROID
 	//weiguo
-	return _check_usb_vfs(dirname);
+	return _checkUSBVFS(dirname);
 #endif
 
 	dir = opendir(dirname);
@@ -1017,6 +1017,11 @@ static int initialize_device(struct libusb_device *dev, uint8_t busnum,
 	usbi_dbg("enter");
 	dev->bus_number = busnum;
 	dev->device_address = devaddr;
+
+#ifdef ANDROID
+    //weiguo
+    //dev->speed = LIBUSB_SPEED_HIGH;
+#endif
 
 	if (sysfs_dir) {
 		priv->sysfs_dir = strdup(sysfs_dir);
@@ -2086,7 +2091,7 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 		urb->usercontext = itransfer;
 		switch (transfer->type) {
 		case LIBUSB_TRANSFER_TYPE_BULK:
-			usbi_dbg("BULK");
+			//usbi_dbg("BULK");
 			urb->type = USBFS_URB_TYPE_BULK;
 			urb->stream_id = 0;
 			break;
@@ -2171,7 +2176,8 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 				"discards before reporting error", i);
 			return 0;
 		} else {
-			usbi_dbg("reporting successful submission");
+            //weiguo
+			//usbi_dbg("reporting successful submission");
         }
 	}
 

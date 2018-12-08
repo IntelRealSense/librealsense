@@ -2418,14 +2418,6 @@ static void usbi_log_str(enum libusb_log_level level, const char *str)
 void usbi_log_v(struct libusb_context *ctx, enum libusb_log_level level,
 	const char *file, const char *function, int line, const char *format, va_list args)
 {
-#ifdef __BUILD_RELEASE__
-    return;
-#endif
-
-#ifdef __BUILD_FA__
-    return;
-#endif
-
 	const char *prefix;
 	char buf[USBI_MAX_LOG_LEN];
 	struct timespec now;
