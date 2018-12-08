@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
+project(librealsense2 LANGUAGES CXX C)
+
 set(ROS_BUILD_TYPE TRUE)
 
 if(${ROS_BUILD_TYPE})
