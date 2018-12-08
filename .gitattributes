@@ -1,1 +1,0 @@
-wrappers/android/irsa_example/app/libs/armeabi-v7a/libirsajni.so filter=lfs diff=lfs merge=lfs -text
