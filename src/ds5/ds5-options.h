@@ -230,4 +230,26 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
     };
+
+    class emitter_on_and_off_option : public option
+    {
+    public:
+        emitter_on_and_off_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~emitter_on_and_off_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override 
+        { 
+            return "Emitter On/Off Mode: 0:disabled(default), 1:enabled(emitter toggles between on and off). Can only be set before streaming";
+        }
+        virtual void enable_recording(std::function<void(const option &)> record_action) {_record_action = record_action;}
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
 }
