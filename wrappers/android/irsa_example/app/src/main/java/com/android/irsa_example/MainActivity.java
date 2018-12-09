@@ -15,7 +15,7 @@
 //
 //
 // How to debug:
-// 1) must be built with Android NDK 18 (NDK's Pkg.Revision = 18.0.5002713) which STL is libstdc++ STL
+// 1) must be built with Android NDK 18 (NDK's Pkg.Revision = 18.0.5002713) which STL is libc++ STL
 //
 // 2) capture APK's running log:
 //
