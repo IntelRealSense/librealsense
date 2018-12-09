@@ -327,11 +327,13 @@ void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& refe
     REQUIRE(result_profile);
     CAPTURE(result_profile.width());
     CAPTURE(result_profile.height());
+    CAPTURE(result_profile.format());
 
     auto reference_profile = reference_frame.get_profile().as<rs2::video_stream_profile>();
     REQUIRE(reference_profile);
     CAPTURE(reference_profile.width());
     CAPTURE(reference_profile.height());
+    CAPTURE(reference_profile.format());
 
     REQUIRE(result_profile.width() == reference_profile.width());
     REQUIRE(result_profile.height() == reference_profile.height());
@@ -365,7 +367,9 @@ void compare_processed_frames_vs_recorded_frames(processing_recordable_block& re
 
     std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
     auto ref_frames = get_frames(ref_sensors);
-
+    CAPTURE(ref_frames.size());
+    CAPTURE(frames.size());
+    REQUIRE(ref_frames.size() == frames.size());
     std::cout << "---------------------------------------------------------------------------------------------\n";
     std::cout << "Calculated time interval to process frame\n";
     std::cout << "---------------------------------------------------------------------------------------------\n";
