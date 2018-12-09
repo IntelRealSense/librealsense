@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 2.8)
 # If FW source = Remote - FW versions are defined below
 # If FW source = Local - FW versions are defined according to /resources/remote_versions.log
 # If FW source = Internal - FW versions are defined according to fw.h, CentralAppFw.h, CentralBlFw.h
-set(INTERNAL_HOST_VERSION "0.19.3.1175")
-set(INTERNAL_FW_VERSION "0.0.18.3452")
-set(INTERNAL_CENTRAL_APP_VERSION "2.0.19.269")
+set(INTERNAL_HOST_VERSION "0.19.3.1428")
+set(INTERNAL_FW_VERSION "0.0.18.4386")
+set(INTERNAL_CENTRAL_APP_VERSION "2.0.19.271")
 set(INTERNAL_CENTRAL_BL_VERSION "1.0.1.112")
 set(INTERNAL_FW_SOURCE "Remote" CACHE STRING "Select TM2 FW archive: Remote/Local (to avoid FW polling from remote server)")
 
