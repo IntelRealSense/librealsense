@@ -463,7 +463,7 @@ namespace librealsense
         command cmd(ds::GET_PWM_ON_OFF);
         auto res = _hwm.send(cmd);
         if (res.empty())
-            throw invalid_value_exception("external_sync_mode::query result is empty!");
+            throw invalid_value_exception("emitter_on_and_off_option::query result is empty!");
 
         return (res.front());
     }
