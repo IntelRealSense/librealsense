@@ -4317,10 +4317,36 @@ namespace rs2
         if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
             ppf.depth_stream_active = true;
 
-        auto index = f.get_profile().unique_id();
+        if (f.get_profile().stream_type() == RS2_STREAM_DEPTH || f.get_profile().stream_type() == RS2_STREAM_INFRARED)
+        {
+            if (f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                frame_emitter_mode = (int)f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE);
+            else
+                return nullptr;
 
-        std::lock_guard<std::mutex> lock(streams_mutex);
-        return streams[streams_origin[index]].upload_frame(std::move(f));
+            if (view_opt == 0 || view_opt == 1 && frame_emitter_mode == 1 || view_opt == 2 && frame_emitter_mode == 0)
+            {
+                if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                    ppf.depth_stream_active = true;
+
+                auto index = f.get_profile().unique_id();
+
+                std::lock_guard<std::mutex> lock(streams_mutex);
+                return streams[streams_origin[index]].upload_frame(std::move(f));
+            }
+            else
+                return nullptr;
+        }
+        else
+        {
+            if (f.get_profile().stream_type() == RS2_STREAM_DEPTH)
+                ppf.depth_stream_active = true;
+
+            auto index = f.get_profile().unique_id();
+
+            std::lock_guard<std::mutex> lock(streams_mutex);
+            return streams[streams_origin[index]].upload_frame(std::move(f));
+        }
     }
 
     void device_model::start_recording(const std::string& path, std::string& error_message)
@@ -6062,6 +6088,72 @@ namespace rs2
                     }
                 }
 
+                if (sub->s.get()->supports(RS2_OPTION_848X100_START_LINE))
+                {
+                    if (sub->streaming)
+                    {
+                        float start_line_number = sub->s.get()->get_option(RS2_OPTION_848X100_START_LINE);
+                        
+                        auto streaming_tooltip = [&]() {
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Can't modify while streaming");
+                            };
+                        
+                        auto col0 = ImGui::GetCursorPosX();
+                        auto col1 = 155.f;
+                        ImGui::Text("848x100 depth ROI start line: %d", (int)start_line_number);
+                        streaming_tooltip();
+                        ImGui::SetCursorPosX(col0);
+                    }
+                    else
+                    {
+                        rs2_option opt = RS2_OPTION_848X100_START_LINE;
+                        if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                        {
+                            get_curr_advanced_controls = true;
+                            selected_file_preset.clear();
+                        }
+                    }
+                }
+                
+                if (sub->s.get()->supports(RS2_OPTION_EMITTER_ON_OFF))
+                {
+                    if (sub->streaming)
+                    {
+                        float on_off_enabled = sub->s.get()->get_option(RS2_OPTION_EMITTER_ON_OFF);
+
+                        auto streaming_tooltip = [&]() {
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Can't modify while streaming");
+                        };
+
+                        auto col0 = ImGui::GetCursorPosX();
+                        auto col1 = 155.f;
+                        ImGui::Text("Emitter On and Off Enabled: %s", on_off_enabled < 0.6f ? "No" : "Yes");
+                        streaming_tooltip();
+                        ImGui::SetCursorPosX(col0);
+                    }
+                    else
+                    {
+                        rs2_option opt = RS2_OPTION_EMITTER_ON_OFF;
+                        if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
+                        {
+                            get_curr_advanced_controls = true;
+                            selected_file_preset.clear();
+                        }
+                    }
+                }
+
+                if (sub->s->is<depth_sensor>())
+                {
+                    ImGui::PushItemWidth(210);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
+                    std::vector<std::string> view_labels = { "All Frames", "Emitter On Frames", "Emitter Off Frames" };
+                    draw_combo_box(" View Option", view_labels, viewer.view_opt);
+                    ImGui::PopStyleColor();
+                    ImGui::PopItemWidth();
+                }
+                
                 if (sub->num_supported_non_default_options())
                 {
                     label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
@@ -6073,7 +6165,7 @@ namespace rs2
                             if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
-                                if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
+                                if (dev.is<advanced_mode>() && (opt == RS2_OPTION_VISUAL_PRESET || opt == RS2_OPTION_EMITTER_ON_OFF || opt == RS2_OPTION_848X100_START_LINE))
                                     continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {

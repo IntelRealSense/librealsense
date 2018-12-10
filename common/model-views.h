@@ -977,7 +977,9 @@ namespace rs2
 
         float dim_level = 1.f;
 
-
+        int frame_emitter_mode = 0;
+        int view_opt = 0;
+        
         bool continue_with_ui_not_aligned = false;
     private:
         struct rgb {
