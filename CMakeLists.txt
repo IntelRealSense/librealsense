@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
+project(librealsense2 LANGUAGES CXX C)
+
 set(ROS_BUILD_TYPE TRUE)
 
 if(${ROS_BUILD_TYPE})
     find_package(ament_cmake REQUIRED)
 endif()
-
-project(librealsense2 LANGUAGES CXX C)
 
 # include librealsense general configuration
 include(CMake/global_config.cmake)
