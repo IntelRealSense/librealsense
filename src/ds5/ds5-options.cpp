@@ -472,4 +472,37 @@ namespace librealsense
     {
         return *_range;
     }
+
+    start_line_option::start_line_option(hw_monitor& hwm)
+        : _hwm(hwm)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 360, 1, 190 };
+        };
+    }
+
+    void start_line_option::set(float value)
+    {
+        command cmd(ds::SET_START_LINE);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float start_line_option::query() const
+    {
+        command cmd(ds::GET_START_LINE);
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("external_sync_mode::query result is empty!");
+
+        return (float) (*((uint16_t*)res.data()));
+    }
+
+    option_range start_line_option::get_range() const
+    {
+        return *_range;
+    }
 }

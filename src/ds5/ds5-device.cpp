@@ -85,7 +85,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height, profile.fps);
+                profile.width, profile.height, _owner);
         }
 
         void open(const stream_profiles& requests) override
@@ -468,6 +468,7 @@ namespace librealsense
             _fw_version.experimental()) // Not yet available in production firmware
         {
             depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &depth_ep));
+            depth_ep.register_option(RS2_OPTION_848X100_START_LINE, std::make_shared<start_line_option>(*_hw_monitor));
         }
 
         if (_fw_version >= firmware_version("5.9.15.1"))

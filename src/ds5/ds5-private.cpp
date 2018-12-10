@@ -2,6 +2,8 @@
 //// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "ds5-private.h"
+#include "ds5-device.h"
+#include "ds5-options.h"
 
 using namespace std;
 
@@ -21,7 +23,7 @@ namespace librealsense
             return max_ds5_rect_resolutions;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height, uint32_t fps)
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height, const ds5_device* owner)
         {
             auto table = check_calib<ds::coefficients_table>(raw_data);
 
@@ -72,8 +74,9 @@ namespace librealsense
                 if (width == 848 && height == 100)
                 {
                     intrinsics.height = 100;
-                    if (fps <= 90)
-                        intrinsics.ppy -= 190;
+                    ds5_device* ds5 = const_cast<ds5_device*>(owner);
+                    start_line_option slo(*(ds5->get_hw_monitor()));
+                    intrinsics.ppy -= slo.query();
                 }
 
                 return intrinsics;
@@ -156,13 +159,13 @@ namespace librealsense
             return calc_intrinsic;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps)
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, const ds5_device* owner)
         {
             switch (table_id)
             {
             case coefficients_table_id:
             {
-                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height, fps);
+                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height, owner);
             }
             case fisheye_calibration_id:
             {

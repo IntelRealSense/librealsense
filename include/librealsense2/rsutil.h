@@ -86,7 +86,7 @@ static void rs2_fov(const struct rs2_intrinsics * intrin, float to_fov[2])
 static void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
 {
     float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
-    if (abs(end[0] - curr[0]) > abs(end[1] - curr[1]))
+    if (fabs(end[0] - curr[0]) > fabs(end[1] - curr[1]))
     {
         curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
         curr[1] = end[1] - line_slope * (end[0] - curr[0]);

@@ -252,4 +252,22 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };
+
+    class start_line_option : public option
+    {
+    public:
+        start_line_option(hw_monitor& hwm);
+        virtual ~start_line_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override { return "Start line number for 848x100 depth ROI output (Only use this option before streaming)"; }
+        virtual void enable_recording(std::function<void(const option &)> record_action) { _record_action = record_action; }
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+    };
 }
