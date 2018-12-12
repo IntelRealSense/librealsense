@@ -1,6 +1,7 @@
 #include "MatlabParamParser.h"
 #include "Factory.h"
 #include "librealsense2/rs.hpp"
+#include "librealsense2/hpp/rs_export.hpp"
 
 #pragma comment(lib, "libmx.lib")
 #pragma comment(lib, "libmex.lib")
@@ -1119,6 +1120,20 @@ void make_factory(){
             }
         });
         factory->record(save_to_ply_factory);
+    }
+    {
+        ClassFactory save_single_frameset_factory("rs2::save_single_frameset");
+        save_single_frameset_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            if (inc == 0) {
+                outv[0] = MatlabParamParser::wrap(rs2::save_single_frameset());
+            }
+            else if (inc == 1) {
+                auto filename = MatlabParamParser::parse<std::string>(inv[0]);
+                outv[0] = MatlabParamParser::wrap(rs2::save_single_frameset(filename));
+            }
+        });
+        factory->record(save_single_frameset_factory);
     }
 
     // rs_context.hpp
