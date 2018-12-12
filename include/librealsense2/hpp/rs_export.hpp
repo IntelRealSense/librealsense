@@ -175,7 +175,9 @@ namespace rs2
                 for (int i = 0; i < fs.size(); ++i) {
                     frame f = fs[i];
                     auto profile = f.get_profile();
-                    auto s = dev.add_sensor(profile.stream_name() + "Sensor (" + std::to_string(uid) + ")");
+                    std::stringstream sname;
+                    sname << "Sensor (" << uid << ")";
+                    auto s = dev.add_sensor(sname.str());
                     stream_profile software_profile;
 
                     if (auto vf = f.as<video_frame>()) {
@@ -197,7 +199,9 @@ namespace rs2
                 }
 
                 // Recorder needs sensors to already exist when its created
-                recorder rec(fname + std::to_string(data.get_frame_number()) + ".bag", dev);
+                std::stringstream name;
+                name << fname << data.get_frame_number() << ".bag";
+                recorder rec(name.str(), dev);
 
                 for (auto group : sensors) {
                     auto s = std::get<software_sensor>(group);
