@@ -334,13 +334,6 @@ namespace rs2
         frame_queue _queue;
     };
 
-/**
-* This macro can be used in the public portion of a custom processing block's declaration 
-* to name a custom option which will be exposed as a static member of the custom type.
-* the IDs are added after RS2_OPTION_COUNT to avoid colisions with library options.
-*/
-#define DECLARE_PB_OPTION(name, id) static const auto name = rs2_option(RS2_OPTION_COUNT + id)
-
     /**
     * Generating the 3D point cloud base on depth frame also create the mapped texture.
     */

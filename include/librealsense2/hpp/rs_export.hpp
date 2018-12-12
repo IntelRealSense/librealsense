@@ -25,7 +25,7 @@ namespace rs2
         }
 
 
-        DECLARE_PB_OPTION(OPTION_IGNORE_COLOR, 1);
+        static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
     private:
         void func(frame data, frame_source& source)
         {
@@ -51,7 +51,7 @@ namespace rs2
         }
 
         void export_to_ply(points p, video_frame color) {
-            const bool use_texcoords = color && get_option(OPTION_IGNORE_COLOR);
+            const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             std::vector<rs2::vertex> new_verts;
