@@ -649,12 +649,21 @@ final public class IrsaMgr
     }
 
 
+    public String getIRSAVersion() {
+        String javaVersion = IrsaVersion.IRSA_VERSION;
+
+        return javaVersion;
+    }
+
     public native void native_open();
     public native void native_close();
     public native int  getDeviceCounts();
     public native String  getDeviceName();
     public native String  getDeviceSN();
     public native String  getDeviceFW();
+
+    //get librealsense's version
+    public native String  getSDKVersion();
 
     public native Map<Integer, IrsaStreamProfile> getStreamProfiles(int stream);
     public native void setStreamFormat(int stream, int width, int height, int fps, int format);

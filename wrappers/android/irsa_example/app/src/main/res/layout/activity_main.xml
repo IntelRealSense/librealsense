@@ -69,25 +69,23 @@
             android:layout_weight="1" />
     </RadioGroup>
 
-
-
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
-
     <TextView
         android:id="@+id/TextView10"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="stream profiles: " />
 
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
     <CheckBox
         android:id="@+id/cbDepth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked = "true"
-        android:text=" depth " />
+        android:text="depth"/>
 
     <Spinner
         android:id="@+id/spinnerDepth"
@@ -98,7 +96,7 @@
         android:id="@+id/cbColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="color " />
+        android:text="color"/>
 
     <Spinner
         android:id="@+id/spinnerColor"
@@ -109,7 +107,7 @@
         android:id="@+id/cbIR"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="IR " />
+        android:text="IR" />
 
     <Spinner
         android:id="@+id/spinnerIR"

@@ -1472,7 +1472,8 @@ int API_EXPORTED libusb_submit_transfer(struct libusb_transfer *transfer)
 	struct libusb_context *ctx = TRANSFER_CTX(transfer);
 	int r;
 
-	usbi_dbg("transfer %p", transfer);
+    //weiguo
+	//usbi_dbg("transfer %p", transfer);
 
 	/*
 	 * Important note on locking, this function takes / releases locks
@@ -1665,7 +1666,8 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 	flags = transfer->flags;
 	transfer->status = status;
 	transfer->actual_length = itransfer->transferred;
-	usbi_dbg("transfer %p has callback %p", transfer, transfer->callback);
+    //weiguo
+	//usbi_dbg("transfer %p has callback %p", transfer, transfer->callback);
 	if (transfer->callback)
 		transfer->callback(transfer);
 	/* transfer might have been freed by the above call, do not use from
@@ -2147,9 +2149,11 @@ static int handle_events(struct libusb_context *ctx, struct timeval *tv)
 	if (tv->tv_usec % 1000)
 		timeout_ms++;
 
-	usbi_dbg("poll() %d fds with timeout in %dms", nfds, timeout_ms);
+    //weiguo
+	//usbi_dbg("poll() %d fds with timeout in %dms", nfds, timeout_ms);
 	r = usbi_poll(fds, nfds, timeout_ms);
-	usbi_dbg("poll() returned %d", r);
+    //weiguo
+	//usbi_dbg("poll() returned %d", r);
 	if (r == 0) {
 		r = handle_timeouts(ctx);
 		goto done;
@@ -2344,7 +2348,8 @@ retry:
 	if (libusb_try_lock_events(ctx) == 0) {
 		if (completed == NULL || !*completed) {
 			/* we obtained the event lock: do our own event handling */
-			usbi_dbg("doing our own event handling");
+            //weiguo
+			//usbi_dbg("doing our own event handling");
 			r = handle_events(ctx, &poll_timeout);
 		}
 		libusb_unlock_events(ctx);
@@ -2598,7 +2603,8 @@ int API_EXPORTED libusb_get_next_timeout(libusb_context *ctx,
 		timerclear(tv);
 	} else {
 		timersub(&next_timeout, &cur_tv, tv);
-		usbi_dbg("next timeout in %d.%06ds", tv->tv_sec, tv->tv_usec);
+        //weiguo
+		//usbi_dbg("next timeout in %d.%06ds", tv->tv_sec, tv->tv_usec);
 	}
 
 	return 1;

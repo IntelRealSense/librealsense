@@ -52,7 +52,7 @@ static const char *classPathName = "android/irsa/IrsaMgr";
 
 static void IrsaMgr_native_finalize();
 
-#define IRSA_VERSION "1.6.0"
+#define IRSA_VERSION "1.3.2"
 
 class IrsaMgrJNIListener: public IrsaMgrListener
 {
@@ -287,6 +287,22 @@ static void android_irsa_IrsaMgr_setBAGFile(JNIEnv *env, jobject thiz, jstring f
 }
 
 
+static jstring android_irsa_IrsaMgr_getSDKVersion(JNIEnv *env, jobject thiz) {
+
+    std::stringstream ss;
+    rs2_error *e = nullptr;
+    ss << "librealsense2 VERSION: " << api_version_to_string(rs2_get_api_version(&e)) << std::endl;
+    LOGD("%s\n", ss.str().c_str());
+
+    std::string ver = api_version_to_string(rs2_get_api_version(&e));
+    if (!ver.empty()) {
+        return env->NewStringUTF(ver.c_str());
+    } else {
+        return env->NewStringUTF("unknown");
+    }
+}
+
+
 static jboolean android_irsa_IrsaMgr_initIRFA(JNIEnv *env, jobject thiz, jstring jniDataDir)
 {
     LOGD("enter JNI initIRFA");
@@ -321,6 +337,7 @@ static JNINativeMethod sMethods[] =
     {"formatToString",          "(I)Ljava/lang/String;",   (void *)android_irsa_IrsaMgr_formatToString},
     {"formatFromString",        "(Ljava/lang/String;)I",   (void *)android_irsa_IrsaMgr_formatFromString},
     {"setBAGFile",              "(Ljava/lang/String;)V",   (void *)android_irsa_IrsaMgr_setBAGFile},
+    {"getSDKVersion",           "()Ljava/lang/String;",    (void *)android_irsa_IrsaMgr_getSDKVersion},
 };
 
 
@@ -496,9 +513,11 @@ extern "C" void irsa_closeUVCDevice()
     AutoJNIEnv env;
     if (s_Fields.closeUVCDevice != nullptr)
     {
+        LOGV("close");
         CHECK(env.get() != nullptr);
         env->CallStaticVoidMethod(s_Fields.gClass, s_Fields.closeUVCDevice);
         s_Fields.uvcFD = -1;
+        LOGV("uvc fd: %d", s_Fields.uvcFD);
     }
 }
 
@@ -521,7 +540,6 @@ extern "C" void _closeUVCDevice()
 {
     LOGD("enter");
     //return;
-
     irsa_closeUVCDevice();
 }
 

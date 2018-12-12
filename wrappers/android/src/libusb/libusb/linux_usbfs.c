@@ -2075,8 +2075,8 @@ static int submit_bulk_transfer(struct usbi_transfer *itransfer)
 		last_urb_partial = 1;
 		num_urbs++;
 	}
-	usbi_dbg("need %d urbs for new transfer with length %d", num_urbs,
-		transfer->length);
+    //weiguo
+	//usbi_dbg("need %d urbs for new transfer with length %d", num_urbs, transfer->length);
 	urbs = calloc(num_urbs, sizeof(struct usbfs_urb));
 	if (!urbs)
 		return LIBUSB_ERROR_NO_MEM;
@@ -2458,8 +2458,8 @@ static int handle_bulk_completion(struct usbi_transfer *itransfer,
 	int urb_idx = urb - tpriv->urbs;
 
 	usbi_mutex_lock(&itransfer->lock);
-	usbi_dbg("handling completion status %d of bulk urb %d/%d", urb->status,
-		urb_idx + 1, tpriv->num_urbs);
+    //weiguo
+	//usbi_dbg("handling completion status %d of bulk urb %d/%d", urb->status, urb_idx + 1, tpriv->num_urbs);
 
 	tpriv->num_retired++;
 
@@ -2552,7 +2552,8 @@ static int handle_bulk_completion(struct usbi_transfer *itransfer,
 	/* if we're the last urb or we got less data than requested then we're
 	 * done */
 	if (urb_idx == tpriv->num_urbs - 1) {
-		usbi_dbg("last URB in transfer --> complete!");
+        //weiguo
+		//usbi_dbg("last URB in transfer --> complete!");
 		goto completed;
 	} else if (urb->actual_length < urb->buffer_length) {
 		usbi_dbg("short transfer %d/%d --> complete!",
@@ -2792,8 +2793,8 @@ static int reap_for_handle(struct libusb_device_handle *handle)
 	itransfer = urb->usercontext;
 	transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 
-	usbi_dbg("urb type=%d status=%d transferred=%d", urb->type, urb->status,
-		urb->actual_length);
+    //weiguo
+	//usbi_dbg("urb type=%d status=%d transferred=%d", urb->type, urb->status, urb->actual_length);
 
 	switch (transfer->type) {
 	case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:

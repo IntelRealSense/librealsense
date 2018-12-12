@@ -13,14 +13,6 @@
 //    2018/12/08: the librs + IRSA could preview Depth & IR data successfully on my non-rooted Android phone;
 //                preview start/stop is ok on my non-rooted Android phone;
 //
-//
-// How to debug:
-// 1) must be built with Android NDK 18 (NDK's Pkg.Revision = 18.0.5002713) which STL is libc++ STL
-//
-// 2) capture APK's running log:
-//
-//    adb logcat | grep irsa
-//
 package com.android.irsa_example;
 
 import android.app.Activity;
@@ -244,7 +236,7 @@ public class MainActivity extends Activity
                 if (arg1 == IrsaEvent.IRSA_ERROR_PROBE_RS)
                 {
                     IrsaLog.d(TAG, "IRSA_ERROR_PROBE_RS, disable controls");
-                    gMe.btnOn.setEnabled(false);
+                    //gMe.btnOn.setEnabled(false);
                     Toast.makeText(gMe.getApplicationContext(), eventString, Toast.LENGTH_SHORT).show();
                 }
                 if (arg1 == IrsaEvent.IRSA_ERROR_FA)
@@ -618,14 +610,14 @@ public class MainActivity extends Activity
                     //surfaceview 's size is 640  x 480
                     //stream's profile    is 1280 x 720
                     //mDepthIV.setPos(xs, ys, xe - xs, ye - ys);
-                    mDepthIV.setPos(xs / 2, ys / 2 + 60 , (xe - xs) / 2, (ye - ys) / 2);
+                    mDepthIV.setPos(xs / 2, ys / 2 + 60, (xe - xs) / 2, (ye - ys) / 2);
                     mDepthIV.draw(new Canvas());
                     mDepthIV.invalidate();
 
                     if (bRenderIR)
                     {
                         mIrsaMgr.setROI(IrsaRS2Type.RS2_STREAM_INFRARED, xs, ys, xe, ye);
-                        mColorIV.setPos(xs / 2, ys / 2 + 60 , (xe - xs) / 2, (ye - ys) / 2);
+                        mColorIV.setPos(xs / 2, ys / 2 + 60, (xe - xs) / 2, (ye - ys) / 2);
                         mColorIV.draw(new Canvas());
                         mColorIV.invalidate();
                     }
@@ -745,8 +737,11 @@ public class MainActivity extends Activity
         IrsaLog.d(TAG, "device Name: " + mIrsaMgr.getDeviceName());
         IrsaLog.d(TAG, "device SN: " + mIrsaMgr.getDeviceSN());
         IrsaLog.d(TAG, "device FW: " + mIrsaMgr.getDeviceFW());
+        IrsaLog.d(TAG, "LibRS Version: " + mIrsaMgr.getSDKVersion());
+        IrsaLog.d(TAG, "IRSA Version: " + mIrsaMgr.getIRSAVersion());
+
         String info = "screenWidth: " + screenWidth + " screenHeight:" + screenHeight;
-        info += ",dev: " + mDeviceCounts + ",Camera Name: " + mIrsaMgr.getDeviceName() + ",SN:" + mIrsaMgr.getDeviceSN() + ",FW:" + mIrsaMgr.getDeviceFW();
+        info += ",dev: " + mDeviceCounts + ",Camera Name: " + mIrsaMgr.getDeviceName() + ",SN:" + mIrsaMgr.getDeviceSN() + ",FW:" + mIrsaMgr.getDeviceFW() + ",LibRS: " + mIrsaMgr.getSDKVersion() + ",IRSA: " + mIrsaMgr.getIRSAVersion();
         txtSysInfo.setText(mSysInfo);
         txtUVCInfo.setText(info);
 
@@ -960,15 +955,21 @@ public class MainActivity extends Activity
             {
                 public void onItemSelected(AdapterView<?> parent, View view, int pos, long id)
                 {
-                    IrsaLog.d(TAG, "select: pos: " + pos + ", id:" + id);
+                    //IrsaLog.d(TAG, "select: pos: " + pos + ", id:" + id);
                     if (mapDepth != null)
-                        IrsaLog.d(TAG, "select: " + spinnerDepth.getSelectedItem().toString());
+                    {
+                        //IrsaLog.d(TAG, "select: " + spinnerDepth.getSelectedItem().toString());
+                    }
 
                     if (mapRGB != null)
-                        IrsaLog.d(TAG, "select: " + spinnerColor.getSelectedItem().toString());
+                    {
+                        //IrsaLog.d(TAG, "select: " + spinnerColor.getSelectedItem().toString());
+                    }
 
                     if (mapIR != null)
-                        IrsaLog.d(TAG, "select: " + spinnerIR.getSelectedItem().toString());
+                    {
+                        //IrsaLog.d(TAG, "select: " + spinnerIR.getSelectedItem().toString());
+                    }
                 }
 
                 public void onNothingSelected(AdapterView<?> parent)
