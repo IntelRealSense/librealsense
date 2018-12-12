@@ -7,7 +7,7 @@
 #include <map>
 #include <fstream>
 #include <cmath>
-#include <string>
+#include <sstream>
 #include "rs_processing.hpp"
 
 namespace rs2
@@ -95,9 +95,11 @@ namespace rs2
                 }
             }
 
-            std::ofstream out(fname + std::to_string(p.get_frame_number()) + ".ply");
+            std::stringstream name;
+            name << fname << p.get_frame_number() << ".ply";
+            std::ofstream out(name.str());
             out << "ply\n";
-            out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
+            out << "format binary_little_endian 1.0\n";
             out << "comment pointcloud saved from Realsense Viewer\n";
             out << "element vertex " << new_verts.size() << "\n";
             out << "property float" << sizeof(float) * 8 << " x\n";
@@ -114,7 +116,7 @@ namespace rs2
             out << "end_header\n";
             out.close();
 
-            out.open(fname + std::to_string(p.get_frame_number()) + ".ply", std::ios_base::app | std::ios_base::binary);
+            out.open(name.str(), std::ios_base::app | std::ios_base::binary);
             for (int i = 0; i < new_verts.size(); ++i)
             {
                 // we assume little endian architecture on your device
