@@ -204,11 +204,11 @@ namespace rs2
                 recorder rec(name.str(), dev);
 
                 for (auto group : sensors) {
-                    auto s = std::get<software_sensor>(group);
-                    auto profile = std::get<stream_profile>(group);
+                    auto s = std::get<0>(group);
+                    auto profile = std::get<1>(group);
                     s.open(profile);
                     s.start([](frame) {});
-                    frame f = fs[std::get<int>(group)];
+                    frame f = fs[std::get<2>(group)];
                     if (auto vf = f.as<video_frame>()) {
                         s.on_video_frame({ const_cast<void*>(vf.get_data()), [](void*) {}, vf.get_stride_in_bytes(), vf.get_bytes_per_pixel(),
                                            vf.get_timestamp(), vf.get_frame_timestamp_domain(), static_cast<int>(vf.get_frame_number()), profile });
