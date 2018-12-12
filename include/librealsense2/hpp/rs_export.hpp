@@ -7,6 +7,7 @@
 #include <map>
 #include <fstream>
 #include <cmath>
+#include <string>
 #include "rs_processing.hpp"
 
 namespace rs2
@@ -82,8 +83,8 @@ namespace rs2
                 for (int y = 0; y < height - 1; ++y) {
                     auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
                     if (verts[a].z && verts[b].z && verts[c].z && verts[d].z
-                        && abs(verts[a].z - verts[b].z) < threshold && abs(verts[a].z - verts[c].z) < threshold
-                        && abs(verts[b].z - verts[d].z) < threshold && abs(verts[c].z - verts[d].z) < threshold)
+                        && fabs(verts[a].z - verts[b].z) < threshold && fabs(verts[a].z - verts[c].z) < threshold
+                        && fabs(verts[b].z - verts[d].z) < threshold && fabs(verts[c].z - verts[d].z) < threshold)
                     {
                         if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
                             idx_map.count(d) == 0)
