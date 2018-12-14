@@ -59,7 +59,7 @@ namespace librealsense
                 devices.push_back(info);
             };
 
-            wmf_uvc_device::foreach_uvc_device(action);
+            foreach_uvc_device(action);
 
             return devices;
         }

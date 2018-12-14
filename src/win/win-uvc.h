@@ -44,26 +44,50 @@ namespace librealsense
         };
 
         typedef std::function<void(const uvc_device_info&, IMFActivate*)>
-                enumeration_callback;
+            enumeration_callback;
+
+        typedef struct frame_rate {
+            unsigned int denominator;
+            unsigned int numerator;
+        } frame_rate;
+
+        typedef struct mf_profile {
+            uint32_t index;
+            frame_rate min_rate;
+            frame_rate max_rate;
+            stream_profile profile;
+            int media_type_index;
+        } mf_profile;
+
+        template <class T>
+        static void safe_release(T &ppT)
+        {
+            if (ppT)
+            {
+                ppT.Release();
+                ppT = NULL;
+            }
+        }
+
+        void foreach_uvc_device(enumeration_callback action);
+        bool is_connected(const uvc_device_info& info);
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
-                               public uvc_device
+            public uvc_device
         {
+
         public:
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
-            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n){}) override;
+            void stream_on(std::function<void(const notification& n)> error_handler = [](const notification& n) {}) override;
             void start_callbacks() override;
             void stop_callbacks() override;
             void close(stream_profile profile) override;
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _power_state; }
             std::vector<stream_profile> get_profiles() const override;
-
-            static bool is_connected(const uvc_device_info& info);
-            static void foreach_uvc_device(enumeration_callback action);
 
             void init_xu(const extension_unit& xu) override;
             bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override;
@@ -103,12 +127,17 @@ namespace librealsense
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
             std::vector<std::pair<stream_profile, int>> get_stream_profiles_and_indexes() const;
-            int get_stream_index_by_profile(const stream_profile& profile) const;
+            void create_cached_profiles();
+            void release_source();
+            void init();
+            CComPtr<IMFAttributes> create_device_attrs();
+            CComPtr<IMFAttributes> create_reader_attrs();
+            void set_d0();
+            void set_d3();
 
             const uvc_device_info                   _info;
             power_state                             _power_state = D3;
 
-            CComPtr<source_reader_callback>         _callback = nullptr;
             CComPtr<IMFSourceReader>                _reader = nullptr;
             CComPtr<IMFMediaSource>                 _source = nullptr;
             CComPtr<IMFActivate>                    _activate = nullptr;
@@ -137,6 +166,9 @@ namespace librealsense
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
+            std::vector<stream_profile>             _cached_stream_profiles;
+            std::vector<mf_profile>                 _cached_mf_profiles;
+            std::wstring                            _device_id;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback
