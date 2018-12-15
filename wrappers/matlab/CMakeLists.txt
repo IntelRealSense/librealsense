@@ -38,5 +38,6 @@ set(MATLAB_M align.m camera_info.m colorizer.m config.m context.m
 matlab_add_mex(NAME librealsense_mex
                SRC ${MATLAB_CPP} ${MATLAB_H}
                LINK_TO ${DEPENDENCIES})
+set_target_properties(librealsense_mex PROPERTIES FOLDER Wrappers)
 
 #TODO: additionally, the compiled mex file and all the .m files need to be copied into a folder called `+realsense` at the install site
