@@ -56,7 +56,6 @@ namespace librealsense
             frame_rate min_rate;
             frame_rate max_rate;
             stream_profile profile;
-            int media_type_index;
         } mf_profile;
 
         template <class T>
@@ -126,12 +125,12 @@ namespace librealsense
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
-            std::vector<std::pair<stream_profile, int>> get_stream_profiles_and_indexes() const;
-            void create_cached_profiles();
             void release_source();
             void init();
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();
+            void foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const;
+
             void set_d0();
             void set_d3();
 
@@ -166,8 +165,6 @@ namespace librealsense
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
-            std::vector<stream_profile>             _cached_stream_profiles;
-            std::vector<mf_profile>                 _cached_mf_profiles;
             std::wstring                            _device_id;
         };
 

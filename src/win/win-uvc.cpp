@@ -809,10 +809,6 @@ namespace librealsense
             CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
 
             _streams.resize(_streamIndex);
-
-            set_d0();
-            create_cached_profiles();
-            set_d3();
         }
 
         void wmf_uvc_device::set_d0()
@@ -856,73 +852,6 @@ namespace librealsense
             case D0: set_d0(); break;
             case D3: set_d3(); break;
             }
-        }
-
-        void wmf_uvc_device::create_cached_profiles()
-        {
-            check_connection();
-
-            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
-            {
-                for (auto k = 0;; k++)
-                {
-                    CComPtr<IMFMediaType> pMediaType = nullptr;
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
-                    if (FAILED(hr) || pMediaType == nullptr)
-                    {
-                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
-
-                        break;
-                    }
-
-                    GUID subtype;
-                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
-
-                    unsigned width = 0;
-                    unsigned height = 0;
-
-                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
-
-                    frame_rate frameRateMin;
-                    frame_rate frameRateMax;
-
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
-
-                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
-                        static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
-                    {
-                        std::swap(frameRateMax, frameRateMin);
-                    }
-                    int currFps = frameRateMax.numerator / frameRateMax.denominator;
-
-                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-                    if (fourcc_map.count(device_fourcc))
-                        device_fourcc = fourcc_map.at(device_fourcc);
-
-                    stream_profile sp;
-                    sp.width = width;
-                    sp.height = height;
-                    sp.fps = currFps;
-                    sp.format = device_fourcc;
-                    _cached_stream_profiles.push_back(sp);
-
-                    mf_profile mfp;
-                    mfp.index = sIndex;
-                    mfp.min_rate = frameRateMin;
-                    mfp.max_rate = frameRateMax;
-                    mfp.media_type_index = k;
-                    mfp.profile = sp;
-                    _cached_mf_profiles.push_back(mfp);
-                    safe_release(pMediaType);
-                }
-            }
-        }
-
-        std::vector<stream_profile> wmf_uvc_device::get_profiles() const
-        {
-            return _cached_stream_profiles;
         }
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
@@ -983,32 +912,100 @@ namespace librealsense
             _frame_callbacks.push_back(callback);
         }
 
+        void wmf_uvc_device::foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const
+        {
+            bool quit = false;
+            CComPtr<IMFMediaType> pMediaType = nullptr;
+            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
+            {
+                for (auto k = 0;; k++)
+                {
+                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
+                    if (FAILED(hr) || pMediaType == nullptr)
+                    {
+                        safe_release(pMediaType);
+                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+
+                        break;
+                    }
+
+                    GUID subtype;
+                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
+
+                    unsigned width = 0;
+                    unsigned height = 0;
+
+                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
+
+                    frame_rate frameRateMin;
+                    frame_rate frameRateMax;
+
+                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
+                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
+
+                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
+                        static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
+                    {
+                        std::swap(frameRateMax, frameRateMin);
+                    }
+                    int currFps = frameRateMax.numerator / frameRateMax.denominator;
+
+                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+                    if (fourcc_map.count(device_fourcc))
+                        device_fourcc = fourcc_map.at(device_fourcc);
+
+                    stream_profile sp;
+                    sp.width = width;
+                    sp.height = height;
+                    sp.fps = currFps;
+                    sp.format = device_fourcc;
+
+                    mf_profile mfp;
+                    mfp.index = sIndex;
+                    mfp.min_rate = frameRateMin;
+                    mfp.max_rate = frameRateMax;
+                    mfp.profile = sp;
+                    
+                    action(mfp, pMediaType, quit);
+
+                    safe_release(pMediaType);
+
+                    if (quit)
+                        return;
+                }
+            }
+        }
+
+        std::vector<stream_profile> wmf_uvc_device::get_profiles() const
+        {
+            check_connection();
+
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query supported profiles!");
+
+            std::vector<stream_profile> results;
+            foreach_profile([&results](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
+            {
+                results.push_back(mfp.profile);
+            });
+
+            return results;
+        }
+
         void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
         {
-            for (auto&& mfp : _cached_mf_profiles)
+            bool profile_found = false;
+            foreach_profile([this, profile, callback, &profile_found](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
             {
-                CComPtr<IMFMediaType> pMediaType = nullptr;
-                CHECK_HR(_reader->GetNativeMediaType(mfp.index, mfp.media_type_index, &pMediaType.p));
-
-                GUID subtype;
-                CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
-
-                uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-
-                if (device_fourcc != profile.format &&
-                    (fourcc_map.count(device_fourcc) == 0 ||
-                        profile.format != fourcc_map.at(device_fourcc)))
-                    continue;
-
                 if ((mfp.profile.width == profile.width) && (mfp.profile.height == profile.height))
                 {
                     if (mfp.max_rate.denominator && mfp.min_rate.denominator)
                     {
-                        int currFps = mfp.max_rate.numerator / mfp.max_rate.denominator;
-                        if (currFps == int(profile.fps))
+                        if (mfp.profile.fps == int(profile.fps))
                         {
-                            auto hr = _reader->SetCurrentMediaType(mfp.index, nullptr, pMediaType);
-                            if (SUCCEEDED(hr) && pMediaType)
+                            auto hr = _reader->SetCurrentMediaType(mfp.index, nullptr, media_type);
+                            if (SUCCEEDED(hr) && media_type)
                             {
                                 for (unsigned int i = 0; i < _streams.size(); ++i)
                                 {
@@ -1041,7 +1038,8 @@ namespace librealsense
                                 {
                                     LOG_WARNING("First frame took more then " << timeout_ms << "ms to arrive!");
                                 }
-
+                                profile_found = true;
+                                quit = true;
                                 return;
                             }
                             else
@@ -1051,10 +1049,9 @@ namespace librealsense
                         }
                     }
                 }
-                safe_release(pMediaType);
-            }
-            throw std::runtime_error("Stream profile not found!");
-
+            });
+            if(!profile_found)
+                throw std::runtime_error("Stream profile not found!");
         }
 
         void wmf_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
@@ -1179,5 +1176,4 @@ namespace librealsense
         }
     }
 }
-
 #endif
