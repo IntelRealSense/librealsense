@@ -86,7 +86,7 @@ namespace librealsense
 
         constexpr uint8_t ms_header_size = sizeof(ms_metadata_header);
 
-        void foreach_uvc_device(enumeration_callback action)
+        void wmf_uvc_device::foreach_uvc_device(enumeration_callback action)
         {
             for (auto attributes_params_set : attributes_params)
             {
@@ -134,7 +134,7 @@ namespace librealsense
             }
         }
 
-        bool is_connected(const uvc_device_info& info)
+        bool wmf_uvc_device::is_connected(const uvc_device_info& info)
         {
             auto result = false;
             foreach_uvc_device([&result, &info](const uvc_device_info& i, IMFActivate*)

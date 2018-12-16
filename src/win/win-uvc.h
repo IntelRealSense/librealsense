@@ -68,14 +68,14 @@ namespace librealsense
             }
         }
 
-        void foreach_uvc_device(enumeration_callback action);
-        bool is_connected(const uvc_device_info& info);
-
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
             public uvc_device
         {
 
         public:
+            static void foreach_uvc_device(enumeration_callback action);
+            static bool is_connected(const uvc_device_info& info);
+
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
             ~wmf_uvc_device();
 
