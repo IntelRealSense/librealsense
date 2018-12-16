@@ -5,7 +5,6 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <example.hpp>         // Include short list of convenience functions for rendering
 
-#include <chrono>
 #include <thread>
 #include <queue>
 #include <atomic>
@@ -33,7 +32,6 @@ void colorize_pointcloud(const Mat points, Mat& color)
     color.convertTo(color, CV_8UC1, 255 / (max - min), -255 * min / (max - min));
     // Get an rgb value for each point
     applyColorMap(color, color, COLORMAP_JET);
-
 }
 
 // Handles all the OpenGL calls needed to display the point cloud
@@ -148,7 +146,7 @@ void export_to_ply(Mat points, Mat normals)
         out.write(reinterpret_cast<const char*>(&(normals.at<float>(i, 1))), sizeof(float));
         out.write(reinterpret_cast<const char*>(&(normals.at<float>(i, 2))), sizeof(float));
 
-        // wrtie colors
+        // write colors
         out.write(reinterpret_cast<const char*>(&(color.at<uchar>(i, 0))), sizeof(uint8_t));
         out.write(reinterpret_cast<const char*>(&(color.at<uchar>(i, 1))), sizeof(uint8_t));
         out.write(reinterpret_cast<const char*>(&(color.at<uchar>(i, 2))), sizeof(uint8_t));
@@ -222,14 +220,8 @@ int main(int argc, char **argv)
     d = decimation.process(d);
     auto w = d.get_width();
     auto h = d.get_height();
+    Size size = Size(w, h);
 
-    window app(1280, 720, "RealSense KinectFusion Example");
-    glfw_state app_state;
-    register_glfw_callbacks(app, app_state);
-
-    Mat f(h, w, CV_16UC1, (void*)d.get_data());
-
-    auto size = f.size();
     auto intrin = stream_depth.as<rs2::video_stream_profile>().get_intrinsics();
 
     // Configure kinfu's parameters
@@ -245,6 +237,10 @@ int main(int argc, char **argv)
     bool after_reset = false;
     mat_queue points_queue;
     mat_queue normals_queue;
+
+    window app(1280, 720, "RealSense KinectFusion Example");
+    glfw_state app_state;
+    register_glfw_callbacks(app, app_state);
 
     std::atomic_bool stopped(false);
 
@@ -309,6 +305,7 @@ int main(int argc, char **argv)
                 if (!after_reset)
                 {
                     kf->getCloud(points, normals);
+                    after_reset = false;
                 }
 
                 if (!points.empty() && !normals.empty())
@@ -322,8 +319,6 @@ int main(int argc, char **argv)
                     points_queue.push(_points);
                     normals_queue.push(_normals);
                 }
-
-                after_reset = false;
             }
         }
         catch (const std::exception& e) // Save pointcloud in case an error occurs (for example, camera disconnects)
@@ -351,4 +346,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
