@@ -102,20 +102,8 @@ namespace librealsense
 
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
-
-            IAMVideoProcAmp* get_video_proc() const
-            {
-                if (!_video_proc.p)
-                    throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
-                return _video_proc.p;
-            }
-
-            IAMCameraControl* get_camera_control() const
-            {
-                if (!_camera_control.p)
-                    throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
-                return _camera_control.p;
-            }
+            IAMVideoProcAmp* get_video_proc() const;
+            IAMCameraControl* get_camera_control() const;
 
         private:
             friend class source_reader_callback;
@@ -125,7 +113,7 @@ namespace librealsense
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
-            void release_source();
+            void release();
             void init();
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();

@@ -718,6 +718,24 @@ namespace librealsense
             throw std::runtime_error(to_string() << "Unsupported control - " << opt);
         }
 
+        IAMVideoProcAmp* wmf_uvc_device::get_video_proc() const
+        {
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query video_proc!");
+            if (!_video_proc.p)
+                throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
+            return _video_proc.p;
+        }
+
+        IAMCameraControl* wmf_uvc_device::get_camera_control() const
+        {
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query camera_control!");
+            if (!_camera_control.p)
+                throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
+            return _camera_control.p;
+        }
+
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
         {
             if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE ||
@@ -757,29 +775,6 @@ namespace librealsense
             throw std::runtime_error("unsupported control");
         }
 
-        void wmf_uvc_device::release_source()
-        {
-            for (auto&& c : _ks_controls)
-                safe_release(c.second);
-            _ks_controls.clear();
-
-            safe_release(_camera_control);
-            safe_release(_video_proc);
-
-            safe_release(_device_attrs);
-            safe_release(_reader_attrs);
-
-            safe_release(_reader);
-
-            if (_activate)
-                _activate->DetachObject();
-            safe_release(_activate);
-
-            if(_source)
-                _source->Shutdown();
-            safe_release(_source);
-        }
-
         CComPtr<IMFAttributes> wmf_uvc_device::create_device_attrs()
         {
             CComPtr<IMFAttributes> device_attrs = nullptr;
@@ -815,11 +810,7 @@ namespace librealsense
         {
             //enable source
             CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
-            
-            safe_release(_camera_control);
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
-
-            safe_release(_video_proc);
             LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
 
             //enable reader
@@ -832,11 +823,29 @@ namespace librealsense
         {
             _activate->ShutdownObject();
             _activate->DetachObject();
+            safe_release(_camera_control);
+            safe_release(_video_proc);
             safe_release(_reader);
             safe_release(_source);
             for (auto& elem : _streams)
                 elem.callback = nullptr;
             _power_state = D3;
+        }
+
+        void wmf_uvc_device::release()
+        {
+            set_d3();
+
+            for (auto&& c : _ks_controls)
+                safe_release(c.second);
+            _ks_controls.clear();
+
+            safe_release(_device_attrs);
+            safe_release(_reader_attrs);
+
+            if (_activate)
+                _activate->DetachObject();
+            safe_release(_activate);
         }
 
         void wmf_uvc_device::set_power_state(power_state state)
@@ -895,7 +904,7 @@ namespace librealsense
                     flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
 
-                release_source();
+                release();
             }
             catch (...)
             {
