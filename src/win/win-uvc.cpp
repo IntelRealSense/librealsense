@@ -982,6 +982,11 @@ namespace librealsense
             bool profile_found = false;
             foreach_profile([this, profile, callback, &profile_found](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
             {
+                if (mfp.profile.format != profile.format &&
+                    (fourcc_map.count(mfp.profile.format) == 0 ||
+                        profile.format != fourcc_map.at(mfp.profile.format)))
+                    return;
+
                 if ((mfp.profile.width == profile.width) && (mfp.profile.height == profile.height))
                 {
                     if (mfp.max_rate.denominator && mfp.min_rate.denominator)
