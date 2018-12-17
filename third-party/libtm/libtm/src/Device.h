@@ -54,8 +54,8 @@ namespace perc
         virtual Status SetExposure(const TrackingData::Exposure& exposure);
         virtual Status GetTemperature(TrackingData::Temperature& temperature);
         virtual Status SetTemperatureThreshold(const TrackingData::Temperature& temperature, uint32_t token);
-        virtual Status LockConfiguration(LockType type, bool lock);
-        virtual Status PermanentLockConfiguration(LockType type, uint32_t token);
+        virtual Status LockConfiguration(LockType type, bool lock, uint16_t tableType);
+        virtual Status PermanentLockConfiguration(LockType type, uint32_t token, uint16_t tableType);
         virtual Status ReadConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer, uint16_t* actualSize = nullptr);
         virtual Status WriteConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer);
         virtual Status DeleteConfiguration(uint16_t tableType);
@@ -68,6 +68,7 @@ namespace perc
         virtual Status EepromRead(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual);
         virtual Status EepromWrite(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual, bool verify = false);
         virtual Status Reset(void);
+        virtual Status AppendCalibration(const TrackingData::CalibrationData& calibrationData);
         virtual Status SendFrame(const TrackingData::VelocimeterFrame& frame);
         virtual Status SendFrame(const TrackingData::VideoFrame& frame);
         virtual Status SendFrame(const TrackingData::GyroFrame& frame);
@@ -90,6 +91,8 @@ namespace perc
         // [interface] - EventHandler
         virtual void onMessage(const Message &) override {};
         virtual void onExit() override;
+        virtual Status DevConfigurationLock(uint32_t lockValue, uint16_t tableType);
+        virtual Status DevEepromLock(uint32_t lockValue);
 
         virtual void putBufferBack(SensorId id, std::shared_ptr<uint8_t>& frame);
 
@@ -402,7 +405,6 @@ namespace perc
 
         bool mPlaybackIsOn;
         bool mSyncTimeEnabled;
-        bool mHasBluetooth;
         DEVICE_USB_STATE mUsbState;
         Status mDeviceStatus;
 

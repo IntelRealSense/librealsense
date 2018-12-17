@@ -59,8 +59,8 @@ before_install:
 install:
   # Install nodejs via nvm
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget https://github.com/glfw/glfw/releases/download/3.1.1/glfw-3.1.1.zip;
-      unzip glfw-3.1.1.zip && cd glfw-3.1.1;
+      wget https://github.com/glfw/glfw/releases/download/3.2.1/glfw-3.2.1.zip;
+      unzip glfw-3.2.1.zip && cd glfw-3.2.1;
       cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
       make -j $CPU_NUM;
       sudo make install && cd ..;

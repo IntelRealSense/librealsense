@@ -37,7 +37,7 @@
 //#include <boost/shared_ptr.hpp>
 
 
-namespace ros {
+namespace rs2rosinternal {
 
 typedef std::vector<std::pair<std::string, std::string> > VP_string;
 typedef std::vector<std::string> V_string;

@@ -165,7 +165,8 @@ namespace librealsense
         if(has_metadata(mode, fo.metadata, fo.metadata_size))
         {
             auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
+            // The FW timestamps for HID are converted to Nanosec in Linux kernel. This may produce conflicts with MS API.
+            return static_cast<rs2_time_t>(timestamp) * HID_TIMESTAMP_MULTIPLIER;
         }
 
         if (!started)
@@ -227,6 +228,7 @@ namespace librealsense
         static const uint8_t timestamp_offset = 17;
 
         auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
+        // TODO - verify units with custom report
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
 

@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 2.8)
 project(libtm_util)
 message(STATUS "Building project ${PROJECT_NAME}")
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
@@ -31,14 +34,13 @@ add_executable(${PROJECT_NAME}
 # Link hello_perc binary against pthread and libtm libraries
 target_link_libraries(${PROJECT_NAME}
     tm
+    Threads::Threads
 )
 
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools)
 
 install(
-    TARGETS
-    ${PROJECT_NAME}
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+    TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 

@@ -1,0 +1,282 @@
+LIBRARY
+
+EXPORTS
+    rs2_create_context
+    rs2_delete_context
+    rs2_create_recording_context
+    rs2_create_mock_context
+    rs2_create_mock_context_versioned
+    rs2_get_time
+    rs2_context_add_device
+    rs2_context_remove_device
+
+    rs2_query_devices
+    rs2_query_devices_ex
+    rs2_get_device_count
+    rs2_delete_device_list
+    rs2_create_device
+    rs2_delete_device
+
+    rs2_query_sensors
+    rs2_get_sensors_count
+    rs2_delete_sensor_list
+    rs2_create_sensor
+    rs2_delete_sensor
+    
+    rs2_get_extrinsics
+    rs2_register_extrinsics
+    rs2_get_motion_intrinsics
+
+    rs2_get_stream_profiles
+    rs2_get_stream_profile
+    rs2_get_stream_profiles_count
+    rs2_delete_stream_profiles_list
+
+    rs2_open
+    rs2_open_multiple
+    rs2_close
+
+    rs2_start
+    rs2_start_queue
+    rs2_start_cpp
+    rs2_stop
+    rs2_hardware_reset
+
+    rs2_set_notifications_callback
+    rs2_set_notifications_callback_cpp
+    rs2_get_notification_description
+    rs2_get_notification_timestamp
+    rs2_get_notification_severity
+    rs2_get_notification_category
+    rs2_get_notification_serialized_data
+
+    rs2_get_frame_metadata
+    rs2_supports_frame_metadata
+    rs2_get_frame_timestamp
+    rs2_get_frame_timestamp_domain
+    rs2_get_frame_number
+    rs2_get_frame_data
+    rs2_get_frame_width
+    rs2_get_frame_height
+    rs2_get_frame_stride_in_bytes
+    rs2_get_frame_bits_per_pixel
+    rs2_get_frame_stream_profile
+    rs2_get_frame_vertices
+    rs2_get_frame_texture_coordinates
+    rs2_get_frame_points_count
+    rs2_release_frame
+    rs2_keep_frame
+    rs2_frame_add_ref
+    rs2_pose_frame_get_pose_data
+
+    rs2_get_option
+    rs2_set_option
+    rs2_supports_option
+    rs2_get_option_range
+    rs2_get_option_description
+    rs2_get_option_value_description
+    rs2_is_option_read_only
+    
+    rs2_set_region_of_interest
+    rs2_get_region_of_interest
+
+    rs2_send_and_receive_raw_data
+    rs2_get_raw_data_size
+    rs2_delete_raw_data
+    rs2_get_raw_data
+
+    rs2_get_device_info
+    rs2_supports_device_info
+    rs2_get_sensor_info
+    rs2_supports_sensor_info
+
+    rs2_create_frame_queue
+    rs2_delete_frame_queue
+    rs2_wait_for_frame
+    rs2_poll_for_frame
+    rs2_try_wait_for_frame
+    rs2_enqueue_frame
+    rs2_flush_queue
+
+    rs2_get_failed_function
+    rs2_get_failed_args
+    rs2_get_error_message
+    rs2_free_error
+    rs2_get_librealsense_exception_type
+    rs2_exception_type_to_string
+    rs2_extension_type_to_string
+    rs2_extension_to_string
+    rs2_playback_status_to_string
+    rs2_log_severity_to_string
+    rs2_log
+
+    rs2_stream_to_string
+    rs2_format_to_string
+    rs2_distortion_to_string
+    rs2_option_to_string
+    rs2_camera_info_to_string
+    rs2_frame_metadata_to_string
+    rs2_frame_metadata_value_to_string
+    rs2_timestamp_domain_to_string
+    rs2_sr300_visual_preset_to_string
+    rs2_notification_category_to_string
+
+    rs2_log_to_console
+    rs2_log_to_file
+
+    rs2_get_api_version
+    rs2_set_devices_changed_callback_cpp
+    rs2_set_devices_changed_callback
+    rs2_device_list_contains
+    rs2_create_device_from_sensor
+    rs2_get_depth_scale
+
+    rs2_is_sensor_extendable_to
+    rs2_is_device_extendable_to
+    rs2_is_frame_extendable_to
+    rs2_stream_profile_is
+
+    rs2_set_stream_profile_data
+    rs2_get_stream_profile_data
+    rs2_get_video_stream_resolution
+    rs2_get_video_stream_intrinsics
+
+    rs2_is_stream_profile_default
+
+    rs2_delete_stream_profile
+    rs2_clone_stream_profile
+
+    rs2_allocate_synthetic_video_frame
+    rs2_allocate_points
+    rs2_allocate_composite_frame
+    rs2_synthetic_frame_ready
+    rs2_create_processing_block
+    rs2_create_processing_block_fptr
+    rs2_start_processing
+    rs2_start_processing_queue
+    rs2_start_processing_fptr
+    rs2_process_frame
+    rs2_delete_processing_block
+    rs2_create_sync_processing_block
+    rs2_create_pointcloud
+    rs2_create_colorizer
+    rs2_create_decimation_filter_block
+    rs2_create_temporal_filter_block
+    rs2_create_spatial_filter_block
+    rs2_create_hole_filling_filter_block
+    rs2_create_rates_printer_block
+    rs2_create_disparity_transform_block
+    rs2_embedded_frames_count
+    rs2_extract_frame
+    rs2_depth_frame_get_distance
+    rs2_depth_stereo_frame_get_baseline
+
+    rs2_set_depth_control
+    rs2_get_depth_control
+    rs2_set_rsm
+    rs2_get_rsm
+    rs2_set_rau_support_vector_control
+    rs2_get_rau_support_vector_control
+    rs2_set_color_control
+    rs2_get_color_control
+    rs2_set_rau_thresholds_control
+    rs2_get_rau_thresholds_control
+    rs2_set_slo_color_thresholds_control
+    rs2_get_slo_color_thresholds_control
+    rs2_get_slo_penalty_control
+    rs2_set_slo_penalty_control
+    rs2_get_hdad
+    rs2_set_hdad
+    rs2_set_color_correction
+    rs2_get_color_correction
+    rs2_set_depth_table
+    rs2_get_depth_table
+    rs2_set_ae_control
+    rs2_get_ae_control
+    rs2_set_census
+    rs2_get_census
+    rs2_rs400_visual_preset_to_string
+    rs2_is_enabled
+    rs2_toggle_advanced_mode
+    rs2_load_json
+    rs2_serialize_json
+
+    rs2_create_record_device
+    rs2_create_record_device_ex
+    rs2_record_device_pause
+    rs2_record_device_resume
+    rs2_record_device_filename
+
+    rs2_context_add_device
+    rs2_context_remove_device
+
+    rs2_playback_device_get_file_path
+    rs2_playback_get_duration
+    rs2_playback_seek
+    rs2_playback_get_position
+    rs2_playback_device_resume
+    rs2_playback_device_pause
+    rs2_playback_device_set_real_time
+    rs2_playback_device_is_real_time
+    rs2_playback_device_set_status_changed_callback
+    rs2_playback_device_get_current_status
+    rs2_playback_device_set_playback_speed
+    rs2_playback_device_stop
+
+    rs2_create_align
+
+    rs2_create_pipeline
+    rs2_pipeline_stop
+    rs2_pipeline_wait_for_frames
+    rs2_pipeline_poll_for_frames
+    rs2_pipeline_try_wait_for_frames
+    rs2_delete_pipeline
+    rs2_pipeline_start
+    rs2_pipeline_start_with_config
+    rs2_pipeline_start_with_callback
+    rs2_pipeline_start_with_config_and_callback
+    rs2_pipeline_start_with_callback_cpp
+    rs2_pipeline_start_with_config_and_callback_cpp
+    rs2_pipeline_get_active_profile
+    rs2_pipeline_profile_get_device
+    rs2_pipeline_profile_get_streams
+    rs2_delete_pipeline_profile
+
+    rs2_create_config
+    rs2_delete_config
+    rs2_config_enable_stream
+    rs2_config_enable_all_stream
+    rs2_config_enable_device
+    rs2_config_enable_device_from_file
+    rs2_config_enable_device_from_file_repeat_option
+    rs2_config_enable_record_to_file
+    rs2_config_disable_stream
+    rs2_config_disable_indexed_stream
+    rs2_config_disable_all_streams
+    rs2_config_resolve
+    rs2_config_can_resolve
+
+    rs2_create_device_hub
+    rs2_device_hub_is_device_connected
+    rs2_device_hub_wait_for_device
+    rs2_delete_device_hub
+
+    rs2_export_to_ply
+    rs2_create_software_device
+    rs2_software_device_add_sensor
+    rs2_software_sensor_on_video_frame
+    rs2_software_sensor_on_motion_frame
+    rs2_software_sensor_on_pose_frame
+    rs2_software_device_create_matcher
+    rs2_software_sensor_add_video_stream
+    rs2_software_sensor_add_motion_stream
+    rs2_software_sensor_add_pose_stream
+    rs2_software_sensor_add_read_only_option
+    rs2_software_sensor_update_read_only_option
+    rs2_software_sensor_set_metadata
+
+    rs2_loopback_enable
+    rs2_loopback_disable
+    rs2_loopback_is_enabled
+    rs2_connect_tm2_controller
+    rs2_disconnect_tm2_controller

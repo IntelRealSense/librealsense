@@ -7,6 +7,9 @@ set(RS_TARGET rs-convert)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -27,7 +30,7 @@ add_executable(${RS_TARGET} rs-convert.cpp
     converters/converter-raw.hpp
 )
 
-target_link_libraries(${RS_TARGET} ${DEPENDENCIES})
+target_link_libraries(${RS_TARGET} ${DEPENDENCIES} Threads::Threads)
 include_directories(${RS_TARGET} ../../common ../../third-party ../../third-party/tclap/include)
 
 set_target_properties (${RS_TARGET} PROPERTIES
@@ -38,5 +41,5 @@ install(
     TARGETS
     ${RS_TARGET}
     RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+    ${CMAKE_INSTALL_BINDIR}
 )

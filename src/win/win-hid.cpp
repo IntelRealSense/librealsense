@@ -29,6 +29,8 @@
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
+const uint8_t HID_METADATA_SIZE = 8; // bytes
+
 namespace librealsense
 {
     namespace platform
@@ -103,6 +105,7 @@ namespace librealsense
                     return E_INVALIDARG;
                 }
 
+                BSTR fName{};
                 SYSTEMTIME time;
                 report->GetTimestamp(&time);
 
@@ -116,17 +119,46 @@ namespace librealsense
                 CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE2, &var));
                 auto customTimestampHigh = var.ulVal;
 
-                // Raw X
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
-                auto rawX = var.iVal;
+                /* Retrieve sensor type - Sensor types are more specific groupings than sensor categories. Sensor type IDs are GUIDs that are defined in Sensors.h */
 
-                // Raw Y
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
-                auto rawY = var.iVal;
+                SENSOR_TYPE_ID type{};
 
-                // Raw Z
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
-                auto rawZ = var.iVal;
+                CHECK_HR(pSensor->GetType(&type));
+
+                double rawX, rawY, rawZ;
+
+
+                if (type == SENSOR_TYPE_ACCELEROMETER_3D)
+                {
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_X_G, &var));
+                    rawX = var.dblVal;
+
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_Y_G, &var));
+                    rawY = var.dblVal;
+
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_Z_G, &var));
+                    rawZ = var.dblVal;
+
+                    static constexpr double accelerator_transform_factor = 1000.0;
+
+                    rawX *= accelerator_transform_factor;
+                    rawY *= accelerator_transform_factor;
+                    rawZ *= accelerator_transform_factor;
+                }
+                else
+                {
+                    // Raw X
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
+                    rawX = var.iVal;
+
+                    // Raw Y
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
+                    rawY = var.iVal;
+
+                    // Raw Z
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
+                    rawZ = var.iVal;
+                }
 
                 PropVariantClear(&var);
 
@@ -138,10 +170,13 @@ namespace librealsense
                 data.z = rawZ;
                 data.ts_low = customTimestampLow;
                 data.ts_high = customTimestampHigh;
-                d.sensor.name = "";
+
+                pSensor->GetFriendlyName(&fName);
+                d.sensor.name = CW2A(fName);
 
                 d.fo.pixels = &data;
-                d.fo.metadata = NULL;
+                d.fo.metadata = &data.ts_low;
+                d.fo.metadata_size = HID_METADATA_SIZE;
                 d.fo.frame_size = sizeof(data);
                 _callback(d);
 
@@ -153,7 +188,7 @@ namespace librealsense
             {
                 HRESULT hr = S_OK;
 
-                // Peform any housekeeping tasks for the sensor that is leaving.
+                // Perform any housekeeping tasks for the sensor that is leaving.
                 // For example, if you have maintained a reference to the sensor,
                 // release it now and set the pointer to NULL.
 
@@ -193,17 +228,59 @@ namespace librealsense
 
         void wmf_hid_device::open(const std::vector<hid_profile>&iio_profiles)
         {
+            try
+            {
+                for (auto& profile_to_open : iio_profiles)
+                {
+                    for (auto& connected_sensor : _connected_sensors)
+                    {
+                        if (profile_to_open.sensor_name == connected_sensor->get_sensor_name())
+                        {
+                            /* Set SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL sensor property to profile */
+                            HRESULT hr = S_OK;
+                            IPortableDeviceValues* pPropsToSet = NULL; // Input
+                            IPortableDeviceValues* pPropsReturn = NULL; // Output
+
+                            /* Create the input object */
+                            CHECK_HR(CoCreateInstance(__uuidof(PortableDeviceValues), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pPropsToSet)));
+
+                            /* Add the current report interval property */
+                            hr = pPropsToSet->SetUnsignedIntegerValue(SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL, profile_to_open.frequency);
+                            if (SUCCEEDED(hr))
+                            {
+                                // Setting a single property
+                                hr = connected_sensor->get_sensor()->SetProperties(pPropsToSet, &pPropsReturn);
+                                if (SUCCEEDED(hr))
+                                {
+                                    _opened_sensors.push_back(connected_sensor);
+                                    pPropsReturn->Release();
+                                }
+                            }
+
+                            pPropsToSet->Release();
+                        }
+                    }
+                }
+            }
+            catch (...)
+            {
+                for (auto& connected_sensor : _connected_sensors)
+                {
+                    connected_sensor.reset();
+                }
+                _connected_sensors.clear();
+                LOG_ERROR("Hid device is busy!");
+                throw;
+            }
         }
 
         void wmf_hid_device::close()
         {
-        }
-
-        void wmf_hid_device::stop_capture()
-        {
-            _sensor->SetEventSink(NULL);
-            _cb = nullptr;
-
+            for (auto& open_sensor : _opened_sensors)
+            {
+                open_sensor.reset();
+            }
+            _opened_sensors.clear();
         }
 
         void wmf_hid_device::start_capture(hid_callback callback)
@@ -212,7 +289,20 @@ namespace librealsense
             _cb = new sensor_events(callback);
             ISensorEvents* sensorEvents = nullptr;
             CHECK_HR(_cb->QueryInterface(IID_PPV_ARGS(&sensorEvents)));
-            CHECK_HR(_sensor->SetEventSink(sensorEvents));
+
+            for (auto& sensor : _opened_sensors)
+            {
+                CHECK_HR(sensor->start_capture(sensorEvents));
+            }
+        }
+
+        void wmf_hid_device::stop_capture()
+        {
+            for (auto& sensor : _opened_sensors)
+            {
+                sensor->stop_capture();
+            }
+            _cb = nullptr;
         }
 
         std::vector<hid_sensor> wmf_hid_device::get_sensors()
@@ -221,10 +311,11 @@ namespace librealsense
 
             HRESULT res = S_OK;
             BSTR fName{};
-            LOG_HR(res = _sensor->GetFriendlyName(&fName));
-            if (FAILED(res)) fName = L"Unidentified HID Sensor";
 
-            sensors.push_back({ std::string(fName, fName + wcslen(fName)) });
+            for (auto& sensor : _opened_sensors)
+            {
+                sensors.push_back({ sensor->get_sensor_name() });
+            }
 
             SysFreeString(fName);
 
@@ -238,134 +329,91 @@ namespace librealsense
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
-            return; // HID devices aren't supported on Windows OS
+            /* Enumerate all HID devices and run action function on each device */
             try
             {
                 CComPtr<ISensorManager> pSensorManager = nullptr;
-                CComPtr<ISensorCollection> pSensorColl = nullptr;
+                CComPtr<ISensorCollection> pSensorCollection = nullptr;
                 CComPtr<ISensor> pSensor = nullptr;
-                ULONG uCount{};
+                ULONG sensorCount = 0;
                 HRESULT res{};
 
-                CComPtr<ISensorDataReport> ppDataReport;
+                CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSensorManager)));
 
-                CHECK_HR(CoCreateInstance(CLSID_SensorManager, NULL,
-                         CLSCTX_INPROC_SERVER,
-                         IID_PPV_ARGS(&pSensorManager)));
-
-                LOG_HR(res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorColl));
+                /* Retrieves a collection containing all sensors associated with category SENSOR_CATEGORY_ALL */
+                LOG_HR(res=pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection));
                 if (SUCCEEDED(res))
                 {
-                    CHECK_HR(pSensorColl->GetCount(&uCount));
+                    /* Retrieves the count of sensors in the collection */
+                    CHECK_HR(pSensorCollection->GetCount(&sensorCount));
 
-                    for (ULONG i = 0; i < uCount; i++)
+                    for (ULONG i = 0; i < sensorCount; i++)
                     {
-                        if (SUCCEEDED(pSensorColl->GetAt(i, &pSensor.p)))
+                        /* Retrieves the sensor at the specified index in the collection */
+                        if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor.p)))
                         {
+                            /* Retrieve SENSOR_PROPERTY_FRIENDLY_NAME which is the sensor name that is intended to be seen by the user */
                             BSTR fName{};
                             LOG_HR(res = pSensor->GetFriendlyName(&fName));
                             if (FAILED(res)) fName= L"Unidentified HID sensor";
 
+                            /* Retrieve SENSOR_PROPERTY_PERSISTENT_UNIQUE_ID which is a GUID that uniquely identifies the sensor on the current computer */
                             SENSOR_ID id{};
                             CHECK_HR(pSensor->GetID(&id));
 
+                            /* Retrieve sensor type - Sensor types are more specific groupings than sensor categories. Sensor type IDs are GUIDs that are defined in Sensors.h */
                             SENSOR_TYPE_ID type{};
                             CHECK_HR(pSensor->GetType(&type));
 
                             CComPtr<IPortableDeviceValues> pValues = nullptr;  // Output
-
                             hid_device_info info{};
 
+                            /* Retrieves multiple sensor properties */
                             auto hr = pSensor->GetProperties(nullptr, &pValues);
-                            DWORD cVals = 0; // Count of returned properties.
                             if (SUCCEEDED(hr))
                             {
-                                // Get the number of values returned.
-                                hr = pValues->GetCount(&cVals);
+                                /* Get the number of property returned */
+                                DWORD propertyCount = 0;
+                                hr = pValues->GetCount(&propertyCount);
                                 if (SUCCEEDED(hr))
                                 {
-                                    PROPERTYKEY pk; // Keys
-                                    PROPVARIANT pv = {}; // Values
+                                    PROPERTYKEY propertyKey;
+                                    PROPVARIANT propertyValue = {};
 
-                                    // Loop through the values
-                                    for (DWORD j = 0; j < cVals; j++)
+                                    /* Loop through the properties */
+                                    for (DWORD properyIndex = 0; properyIndex < propertyCount; properyIndex++)
                                     {
                                         // Get the value at the current index.
-                                        hr = pValues->GetAt(j, &pk, &pv);
+                                        hr = pValues->GetAt(properyIndex, &propertyKey, &propertyValue);
                                         if (SUCCEEDED(hr))
                                         {
-                                            if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_DEVICE_PATH))
+                                            if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
+                                                info.device_path = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
                                                 info.id = std::string(fName, fName + wcslen(fName));
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid;
-                                                if (parse_usb_path(vid, pid, mi, uid, info.device_path))
+                                                if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path))
                                                 {
                                                     info.unique_id = "*";
                                                     info.pid = to_string() << std::hex << pid;
                                                     info.vid = to_string() << std::hex << vid;
                                                 }
                                             }
-
-                                            //if (IsEqualPropertyKey(pk, SENSOR_PROPERTY_MODEL))
-                                            //{
-                                            //    info.pid = std::string(pv.pwszVal, pv.pwszVal + wcslen(pv.pwszVal));
-                                            //}
+                                            if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
+                                            {
+                                                info.serial_number = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
+                                            }
                                         }
-                                        PropVariantClear(&pv);
+
+                                        PropVariantClear(&propertyValue);
                                     }
                                 }
                             }
 
                             action(info, pSensor);
 
-                            //if (wcsstr(fName, L"Accelerometer") != NULL)
-                            //if (wcsstr(fName, L"Gyroscope") != NULL)
-                            //{
-                            //    auto callback = new SensorEvents();
-                            //    ISensorEvents* sensorEvents;
-                            //    HRESULT hr = callback->QueryInterface(IID_PPV_ARGS(&sensorEvents));
-                            //    hr = pSensor->SetEventSink(sensorEvents);
-                            //    //for (int i = 0; i < 10000; i++)
-                            //    //{
-                            //    //    hr = pSensor->GetData(&ppDataReport);
-                            //    //    if (ppDataReport != NULL)
-                            //    //    {
-                            //    //        SYSTEMTIME time;
-                            //    //        ppDataReport->GetTimestamp(&time);
-
-                            //    //        printf("%d.%d.%d %d:%d:%d.%d\n", time.wDay, time.wMonth, time.wYear, time.wHour, time.wMinute, time.wSecond, time.wMilliseconds);
-
-                            //    //        IPortableDeviceValues* values;
-                            //    //        ppDataReport->GetSensorValues(NULL, &values);
-
-                            //    //        DWORD valuesCount = 0;
-                            //    //        hr = values->GetCount(&valuesCount);
-                            //    //        if (SUCCEEDED(hr))
-                            //    //        {
-                            //    //            PROPERTYKEY pk; // Keys
-                            //    //            PROPVARIANT pv = {}; // Values
-
-                            //    //            for (DWORD i = 0; i < valuesCount; i++)
-                            //    //            {
-                            //    //                // Get the value at the current index.
-                            //    //                hr = values->GetAt(i, &pk, &pv);
-                            //    //                if (SUCCEEDED(hr))
-                            //    //                {
-                            //    //                    if (IsEqualPropertyKey(pk, SENSOR_DATA_TYPE_CUSTOM_USAGE))
-                            //    //                    {
-                            //    //                        wprintf_s(L"\Acceleration X: %lu\n", pv.ulVal);
-                            //    //                    }
-                            //    //                }
-                            //    //            }
-                            //    //        }
-                            //    //        //SENSOR_DATA_TYPE_ACCELERATION_X_G
-                            //    //    }
-                            //    //}
-                            //    //printf("\n");
-                            //}
                             SysFreeString(fName);
                         }
                     }

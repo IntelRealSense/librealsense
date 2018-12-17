@@ -733,7 +733,7 @@ namespace librealsense
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path(vid, pid, mi, unique_id, name)) continue;
+                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, name)) continue;
 
                     uvc_device_info info;
                     info.vid = vid;
@@ -959,7 +959,7 @@ namespace librealsense
             }
             try
             {
-                if (!get_usb_descriptors(info.vid, info.pid, info.unique_id, _location, _device_usb_spec))
+                if (!get_usb_descriptors(info.vid, info.pid, info.unique_id, _location, _device_usb_spec, _device_serial))
                 {
                     LOG_WARNING("Could not retrieve USB descriptor for device " << std::hex << info.vid << ":"
                         << info.pid << " , id:" << info.unique_id);

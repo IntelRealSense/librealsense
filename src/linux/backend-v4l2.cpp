@@ -265,7 +265,7 @@ namespace librealsense
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
-                LOG_DEBUG("Enqueue buf " << _buf.index << " for fd " << fd);
+                //LOG_DEBUG("Enqueue buf " << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
                 {
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
@@ -949,7 +949,7 @@ namespace librealsense
 
                                 throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for fd: " << _fd);
                             }
-                            LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _fd);
+                            //LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _fd);
 
                             auto buffer = _buffers[buf.index];
                             buf_mgr.handle_buffer(e_video_buf,_fd, buf,buffer);
@@ -1606,7 +1606,6 @@ namespace librealsense
 
             // Request streaming for video node
             v4l_uvc_device::prepare_capture_buffers();
-
         }
 
         // retrieve metadata from a dedicated UVC node
@@ -1619,7 +1618,6 @@ namespace librealsense
             if(FD_ISSET(_md_fd, &fds))
             {
                 FD_CLR(_md_fd,&fds);
-                //FD_ZERO(&fds);
                 v4l2_buffer buf{};
                 buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
                 buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
@@ -1631,7 +1629,7 @@ namespace librealsense
 
                     throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for metadata fd: " << _md_fd);
                 }
-                LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _md_fd);
+                //LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _md_fd);
 
                 auto buffer = _md_buffers[buf.index];
                 buf_mgr.handle_buffer(e_metadata_buf,_md_fd, buf,buffer);

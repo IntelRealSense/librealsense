@@ -1,149 +1,284 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Minimalistic command-line collect & analyze bandwidth/performance tool for Realsense Cameras.
+// The data is gathered and serialized in csv-compatible format for offline analysis.
+// Extract and store frame headers info for video streams; for IMU&Tracking streams also store the actual data
+// The utility is configured with command-line keys and requires user-provided config file to run
+// See rs-data-collect.h for config examples
 
 #include <librealsense2/rs.hpp>
-#include <chrono>
-#include <thread>
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include "rs-data-collect.h"
 #include "tclap/CmdLine.h"
-#include <condition_variable>
-#include <set>
-#include <cctype>
 #include <thread>
-#include <array>
-#include <atomic>
+#include <regex>
+#include <iostream>
+#include <algorithm>
 
 using namespace std;
 using namespace TCLAP;
+using namespace rs_data_collect;
 
-int MAX_FRAMES_NUMBER = 10; //number of frames to capture from each stream
-const unsigned int NUM_OF_STREAMS = static_cast<int>(RS2_STREAM_COUNT);
 
-struct frame_data
+data_collector::data_collector(std::shared_ptr<rs2::device> dev,
+    ValueArg<int>& timeout, ValueArg<int>& max_frames) : _dev(dev)
 {
-    unsigned long long frame_number;
-    double ts;
-    long long arrival_time;
-    rs2_timestamp_domain domain;
-    rs2_stream stream_type;
-};
+    _max_frames = max_frames.isSet() ? max_frames.getValue() :
+        timeout.isSet() ? std::numeric_limits<uint64_t>::max() : DEF_FRAMES_NUMBER;
+    _time_out_sec = timeout.isSet() ? timeout.getValue() : -1;
 
-enum Config_Params { STREAM_TYPE = 0, RES_WIDTH, RES_HEIGHT, FPS, FORMAT };
-
-int parse_number(char const *s, int base = 0)
-{
-    char c;
-    stringstream ss(s);
-    int i;
-    ss >> i;
-
-    if (ss.fail() || ss.get(c))
-    {
-        throw runtime_error(string(string("Invalid numeric input - ") + s + string("\n")));
-    }
-    return i;
+    _stop_cond = static_cast<application_stop>((int(max_frames.isSet()) << 1) + int(timeout.isSet()));
 }
 
-std::string to_lower(const std::string& s)
+void data_collector::parse_and_configure(ValueArg<string>& config_file)
 {
-    auto copy = s;
-    std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
-    return copy;
-}
+    if (!config_file.isSet())
+        throw std::runtime_error(stringify()
+            << "The tool requires a profile configuration file to proceed"
+            << "\nRun rs-data-collect --help for details");
 
-rs2_format parse_format(const string str)
-{
-    for (int i = RS2_FORMAT_ANY; i < RS2_FORMAT_COUNT; i++)
-    {
-        if (to_lower(rs2_format_to_string((rs2_format)i)) == str)
-        {
-            return (rs2_format)i;
-        }
-    }
-    throw runtime_error((string("Invalid format - ") + str + string("\n")).c_str());
-}
-
-rs2_stream parse_stream_type(const string str)
-{
-    for (int i = RS2_STREAM_ANY; i < RS2_STREAM_COUNT; i++)
-    {
-        if (to_lower(rs2_stream_to_string((rs2_stream)i)) == str)
-        {
-            return static_cast<rs2_stream>(i);
-        }
-    }
-    throw runtime_error((string("Invalid stream type - ") + str + string("\n")).c_str());
-}
-
-int parse_fps(const string str)
-{
-    return parse_number(str.c_str());
-}
-
-void parse_configuration(const vector<string> row, rs2_stream& type, int& width, int& height, rs2_format& format, int& fps)
-{
-    // Convert string to uppercase
-    auto stream_type_str = row[STREAM_TYPE];
-    type = parse_stream_type(to_lower(stream_type_str));
-    width = parse_number(row[RES_WIDTH].c_str());
-    height = parse_number(row[RES_HEIGHT].c_str());
-    fps = parse_fps(row[FPS]);
-    format = parse_format(to_lower(row[FORMAT]));
-}
-
-void configure_stream(rs2::config& cfg, std::string filename)
-{
-    ifstream file(filename);
+    const std::string config_filename(config_file.getValue());
+    ifstream file(config_filename);
 
     if (!file.is_open())
-        throw runtime_error("Given .csv configure file Not Found!");
+        throw runtime_error(stringify() << "Given .csv configure file " << config_filename << " was not found!");
 
+    // Line starting with non-alpha characters will be treated as comments
+    const static std::regex starts_with("^[a-zA-Z]");
     string line;
+    rs2_stream stream_type;
+    rs2_format format;
+    int width{}, height{}, fps{}, index{};
+
+    // Parse the config file
     while (getline(file, line))
     {
-        // Parsing configuration requests
-        stringstream ss(line);
-        vector<string> row;
-        while (ss.good())
+        auto tokens = tokenize(line, ',');
+
+        if (std::regex_search(line, starts_with))
         {
-            string substr;
-            getline(ss, substr, ',');
-            row.push_back(substr);
+            if (parse_configuration(line, tokens, stream_type, width, height, format, fps, index))
+                user_requests.push_back({ stream_type, format, width, height, fps,  index });
         }
+    }
 
-        rs2_stream stream_type;
-        rs2_format format;
-        int width, height, fps;
+    // Sanity test agains multiple conflicting requests for the same sensor
+    if (user_requests.size())
+    {
+        std::sort(user_requests.begin(), user_requests.end(),
+            [](const stream_request& l, const stream_request& r) { return l._stream_type < r._stream_type; });
 
-        // correctness check
-        parse_configuration(row, stream_type, width, height, format, fps);
-        cfg.enable_stream(stream_type, 0, width, height, format, fps);
+        for (auto i = 0; i < user_requests.size() - 1; i++)
+        {
+            if ((user_requests[i]._stream_type == user_requests[i + 1]._stream_type) && ((user_requests[i]._stream_idx == user_requests[i + 1]._stream_idx)))
+                throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
+                    << user_requests[i] << user_requests[+i]);
+        }
+    }
+    else
+        throw std::runtime_error(stringify() << "Invalid configuration file - " << config_filename << " zero requests accepted");
+
+    // Assign user profile to actual sensors
+    configure_sensors();
+
+    // Report results
+    std::cout << "\nDevice selected: \n\t" << _dev->get_info(RS2_CAMERA_INFO_NAME)
+        << (_dev->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ?
+            std::string((stringify() << ". USB Type: " << _dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))) : "")
+        << "\n\tS.N: " << (_dev->supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? _dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "")
+        << "\n\tFW Ver: " << _dev->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
+        << "\n\nUser streams requested: " << user_requests.size()
+        << ", actual matches: " << selected_stream_profiles.size() << std::endl;
+
+    if (requests_to_go.size())
+    {
+        std::cout << "\nThe following request(s) are not supported by the device: " << std::endl;
+        for (auto& elem : requests_to_go)
+            std::cout << elem;
     }
 }
 
-void save_data_to_file(std::array<list<frame_data>, NUM_OF_STREAMS> buffer, const string& filename)
+void data_collector::save_data_to_file(const string& out_filename)
 {
-    // Save to file
-    ofstream csv;
-    csv.open(filename);
-    csv << "Stream Type,F#,Timestamp,Arrival Time\n";
+    if (!data_collection.size())
+        throw runtime_error(stringify() << "No data collected, aborting");
 
-    for (int stream_index = 0; stream_index < NUM_OF_STREAMS; stream_index++)
+    // Report amount of frames collected
+    std::vector<uint64_t> frames_per_stream;
+    for (const auto& kv : data_collection)
+        frames_per_stream.emplace_back(kv.second.size());
+
+    std::sort(frames_per_stream.begin(), frames_per_stream.end());
+    std::cout << "\nData collection accomplished with ["
+        << frames_per_stream.front() << "-" << frames_per_stream.back()
+        << "] frames recorded per stream\nSerializing captured results to "
+        << out_filename << std::endl;
+
+    // Serialize and store data into csv-like format
+    ofstream csv(out_filename);
+    if (!csv.is_open())
+        throw runtime_error(stringify() << "Cannot open the requested output file " << out_filename << ", please check permissions");
+
+    csv << "Configuration:\nStream Type,Stream Name,Format,FPS,Width,Height\n";
+    for (const auto& elem : selected_stream_profiles)
+        csv << get_profile_description(elem);
+
+    for (const auto& elem : data_collection)
     {
-        auto buffer_size = buffer[stream_index].size();
-        for (auto i = 0; i < buffer_size; i++)
+        csv << "\n\nStream Type,Index,F#,HW Timestamp (ms),Host Timestamp(ms)"
+            << (val_in_range(elem.first.first, { RS2_STREAM_GYRO,RS2_STREAM_ACCEL }) ? ",3DOF_x,3DOF_y,3DOF_z" : "")
+            << (val_in_range(elem.first.first, { RS2_STREAM_POSE }) ? ",t_x,t_y,t_z,r_x,r_y,r_z,r_w" : "")
+            << std::endl;
+
+        for (auto i = 0; i < elem.second.size(); i++)
+            csv << elem.second[i].to_string();
+    }
+}
+
+void data_collector::collect_frame_attributes(rs2::frame f, std::chrono::time_point<std::chrono::high_resolution_clock> start_time)
+{
+    auto arrival_time = std::chrono::duration<double, std::milli>(chrono::high_resolution_clock::now() - start_time);
+    auto stream_uid = std::make_pair(f.get_profile().stream_type(), f.get_profile().stream_index());
+
+    if (data_collection[stream_uid].size() < _max_frames)
+    {
+        frame_record rec{ f.get_frame_number(),
+            f.get_timestamp(),
+            arrival_time.count(),
+            f.get_frame_timestamp_domain(),
+            f.get_profile().stream_type(),
+            f.get_profile().stream_index() };
+
+        // Assume that the frame extensions are unique
+        if (auto motion = f.as<rs2::motion_frame>())
         {
-            ostringstream line;
-            auto data = buffer[stream_index].front();
-            line << rs2_stream_to_string(data.stream_type) << "," << data.frame_number << "," << std::fixed << std::setprecision(3) << data.ts << "," << data.arrival_time << "\n";
-            buffer[stream_index].pop_front();
-            csv << line.str();
+            auto axes = motion.get_motion_data();
+            rec._params = { axes.x, axes.y, axes.z };
+        }
+
+        if (auto pf = f.as<rs2::pose_frame>())
+        {
+            auto pose = pf.get_pose_data();
+            rec._params = { pose.translation.x, pose.translation.y, pose.translation.z,
+                    pose.rotation.x,pose.rotation.y,pose.rotation.z,pose.rotation.w };
+        }
+
+        data_collection[stream_uid].emplace_back(rec);
+    }
+}
+
+bool data_collector::collecting(std::chrono::time_point<std::chrono::high_resolution_clock> start_time)
+{
+    bool timed_out = false;
+
+    if (_time_out_sec > 0)
+    {
+        timed_out = (chrono::high_resolution_clock::now() - start_time) > std::chrono::seconds(_time_out_sec);
+        // When the timeout is the only option is specified, disregard frame number
+        if (stop_on_timeout == _stop_cond)
+            return !timed_out;
+    }
+
+    bool collected_enough_frames = true;
+    for (auto&& profile : selected_stream_profiles)
+    {
+        auto key = std::make_pair(profile.stream_type(), profile.stream_index());
+        if (!data_collection.size() || (data_collection.find(key) != data_collection.end() &&
+            (data_collection[key].size() && data_collection[key].size() < _max_frames)))
+        {
+            collected_enough_frames = false;
+            break;
         }
     }
 
-    csv.close();
+    return !(timed_out || collected_enough_frames);
+
+}
+
+bool data_collector::parse_configuration(const std::string& line, const std::vector<std::string>& tokens,
+    rs2_stream& type, int& width, int& height, rs2_format& format, int& fps, int& index)
+{
+    bool res = false;
+    try
+    {
+        auto tokens = tokenize(line, ',');
+        if (tokens.size() < e_stream_index)
+            return res;
+
+        // Convert string to uppercase
+        type = parse_stream_type(to_lower(tokens[e_stream_type]));
+        width = parse_number(tokens[e_res_width].c_str());
+        height = parse_number(tokens[e_res_height].c_str());
+        fps = parse_fps(tokens[e_fps]);
+        format = parse_format(to_lower(tokens[e_format]));
+        // Backward compatibility
+        if (tokens.size() > e_stream_index)
+            index = parse_number(tokens[e_stream_index].c_str());
+        res = true;
+        std::cout << "Request added for " << line << std::endl;
+    }
+    catch (...)
+    {
+        std::cout << "Invalid syntax in configuration line " << line << std::endl;
+    }
+
+    return res;
+}
+
+// Assign the user configuration to the selected device
+bool data_collector::configure_sensors()
+{
+    bool succeed = false;
+    requests_to_go = user_requests;
+    std::vector<rs2::stream_profile> matches;
+
+    // Configure and starts streaming
+    for (auto&& sensor : _dev->query_sensors())
+    {
+        for (auto& profile : sensor.get_stream_profiles())
+        {
+            // All requests have been resolved
+            if (!requests_to_go.size())
+                break;
+
+            // Find profile matches
+            auto fulfilled_request = std::find_if(requests_to_go.begin(), requests_to_go.end(), [&matches, profile](const stream_request& req)
+            {
+                bool res = false;
+                if ((profile.stream_type() == req._stream_type) &&
+                    (profile.format() == req._stream_format) &&
+                    (profile.stream_index() == req._stream_idx) &&
+                    (profile.fps() == req._fps))
+                {
+                    if (auto vp = profile.as<rs2::video_stream_profile>())
+                    {
+                        if ((vp.width() != req._width) || (vp.height() != req._height))
+                            return false;
+                    }
+                    res = true;
+                    matches.push_back(profile);
+                }
+
+                return res;
+            });
+
+            // Remove the request once resolved
+            if (fulfilled_request != requests_to_go.end())
+                requests_to_go.erase(fulfilled_request);
+        }
+
+        // Aggregate resolved requests
+        if (matches.size())
+        {
+            std::copy(matches.begin(), matches.end(), std::back_inserter(selected_stream_profiles));
+            sensor.open(matches);
+            active_sensors.emplace_back(sensor);
+            matches.clear();
+        }
+
+        if (selected_stream_profiles.size() == user_requests.size())
+            succeed = true;
+    }
+    return succeed;
 }
 
 int main(int argc, char** argv) try
@@ -153,113 +288,78 @@ int main(int argc, char** argv) try
     // Parse command line arguments
     CmdLine cmd("librealsense rs-data-collect example tool", ' ');
     ValueArg<int>    timeout("t", "Timeout", "Max amount of time to receive frames (in seconds)", false, 10, "");
-    ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximum number of frames data to receive", false, 100, "");
-    ValueArg<string> filename("f", "FullFilePath", "the file which the data will be saved to", false, "", "");
+    ValueArg<int>    max_frames("m", "MaxFrames_Number", "Maximum number of frames-per-stream to receive", false, 100, "");
+    ValueArg<string> out_file("f", "FullFilePath", "the file where the data will be saved to", false, "", "");
     ValueArg<string> config_file("c", "ConfigurationFile", "Specify file path with the requested configuration", false, "", "");
 
     cmd.add(timeout);
     cmd.add(max_frames);
-    cmd.add(filename);
+    cmd.add(out_file);
     cmd.add(config_file);
     cmd.parse(argc, argv);
 
-    std::string output_file = filename.isSet() ? filename.getValue() : "frames_data.csv";
+    std::cout << "Running rs-data-collect: ";
+    for (auto i=1; i < argc; ++i)
+        std::cout << argv[i] << " ";
+    std::cout << std::endl << std::endl;
 
-    auto max_frames_number = MAX_FRAMES_NUMBER;
-
-    if (max_frames.isSet())
-        max_frames_number = max_frames.getValue();
+    auto output_file       = out_file.isSet() ? out_file.getValue() : DEF_OUTPUT_FILE_NAME;
 
     bool succeed = false;
+    rs2::context ctx;
+    rs2::device_list list;
 
     while (!succeed)
     {
-        rs2::pipeline pipe;
-        rs2::config config;
-        if (config_file.isSet())
+        list = ctx.query_devices();
+
+        if (0== list.size())
         {
-            configure_stream(config, config_file.getValue());
+            std::cout << "Connect Realsense Camera to proceed" << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            continue;
         }
 
-        rs2::pipeline_profile profile = pipe.start(config);
-        auto dev = profile.get_device();
+        auto dev = std::make_shared<rs2::device>(list.front());
 
-        std::atomic_bool need_to_reset(false);
-        for (auto sub : dev.query_sensors())
-        {
-            sub.set_notifications_callback([&](const rs2::notification& n)
-            {
-                if (n.get_category() == RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT)
-                {
-                    need_to_reset = true;
-                }
-            });
-        }
+        data_collector  dc(dev,timeout,max_frames);         // Parser and the data aggregator
 
-        std::array<std::list<frame_data>, NUM_OF_STREAMS> buffer;
+        dc.parse_and_configure(config_file);
+
+        //data_collection buffer;
         auto start_time = chrono::high_resolution_clock::now();
-        const auto ready = [&]()
+
+        // Start streaming
+        for (auto&& sensor : dc.selected_sensors())
+            sensor.start([&dc,&start_time](rs2::frame f)
         {
-            //If not switch is set, we're ready after max_frames_number frames.
-            //If both switches are set, we're ready when the first of the two conditions is true
-            //Otherwise, ready according to given switch
+            dc.collect_frame_attributes(f,start_time);
+        });
 
-            bool timed_out = false;
-            if (timeout.isSet())
-            {
-                auto timeout_sec = std::chrono::seconds(timeout.getValue());
-                timed_out = (chrono::high_resolution_clock::now() - start_time >= timeout_sec);
-            }
+        std::cout << "\nData collection started.... \n" << std::endl;
 
-            bool collected_enough_frames = true;
-            for (auto&& profile : pipe.get_active_profile().get_streams())
-            {
-                if (buffer[(int)profile.stream_type()].size() < max_frames_number)
-                {
-                    collected_enough_frames = false;
-                }
-            }
-
-            if (timeout.isSet() && !max_frames.isSet())
-                return timed_out;
-
-            return timed_out || collected_enough_frames;
-        };
-
-        while (!ready())
+        while (dc.collecting(start_time))
         {
-            auto frameset = pipe.wait_for_frames();
-            auto arrival_time = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - start_time);
-
-            for (auto it = frameset.begin(); it != frameset.end(); ++it)
-            {
-                auto f = (*it);
-                frame_data data{f.get_frame_number(),
-                                f.get_timestamp(),
-                                arrival_time.count(),
-                                f.get_frame_timestamp_domain(),
-                                f.get_profile().stream_type()};
-                if (buffer[(int)data.stream_type].size() < max_frames_number)
-                {
-                    buffer[(int)data.stream_type].push_back(data);
-                }
-            }
-
-            if (need_to_reset)
-            {
-                dev.hardware_reset();
-                need_to_reset = false;
-                break;
-            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::cout << "Collecting data for "
+                    << chrono::duration_cast<chrono::seconds>(chrono::high_resolution_clock::now() - start_time).count()
+                    << " sec" << std::endl;
         }
 
-        if(ready())
+        // Stop & flush all active sensors
+        for (auto&& sensor : dc.selected_sensors())
         {
-            save_data_to_file(buffer, output_file);
-            pipe.stop();
-            succeed = true;
+            sensor.stop();
+            sensor.close();
         }
+
+        dc.save_data_to_file(output_file);
+
+        succeed = true;
     }
+
+    std::cout << "Task completed" << std::endl;
+
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)

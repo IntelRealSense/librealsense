@@ -43,7 +43,7 @@ playback_sensor::~playback_sensor()
 
 bool playback_sensor::streams_contains_one_frame_or_more()
 {
-    for (auto d : m_dispatchers)
+    for (auto&& d : m_dispatchers)
     {
         if (d.second->empty())
             return false;
@@ -98,7 +98,7 @@ void playback_sensor::close()
 {
     LOG_DEBUG("Close sensor " << m_sensor_id);
     std::vector<device_serializer::stream_identifier> closed_streams;
-    for (auto dispatcher : m_dispatchers)
+    for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
         for (auto available_profile : m_available_profiles)
@@ -140,7 +140,7 @@ void playback_sensor::start(frame_callback_ptr callback)
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
-
+    std::lock_guard<std::mutex> l(m_mutex);
     if (m_is_started == true)
     {
         m_is_started = false;
@@ -148,7 +148,6 @@ void playback_sensor::stop(bool invoke_required)
         {
             dispatcher.second->stop();
         }
-        std::lock_guard<std::mutex> l(m_mutex);
         m_user_callback.reset();
         stopped(m_sensor_id, invoke_required);
     }

@@ -21,6 +21,9 @@ template<typename T> struct MatlabParamParser::type_traits<T, typename std::enab
 
 // rs_sensor.hpp
 template<> struct MatlabParamParser::type_traits<rs2::options> {
+    // since it is impossible to create an rs2::options object (you must cast from a deriving type)
+    // The carrier's job is to help jump bridge that gap. Each type that derives directly from rs2::options
+    // must be added to the carrier's logic
     struct carrier {
         void * ptr;
         enum class types { rs2_sensor, rs2_processing_block } type;

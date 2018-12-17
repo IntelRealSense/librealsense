@@ -6,6 +6,9 @@ project(RealsenseToolsDepthQuality)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -93,7 +96,9 @@ endif()
                                              ../../third-party/tclap/include)
     endif()
 
-    target_link_libraries(rs-depth-quality ${DEPENDENCIES} ${GTK3_LIBRARIES})
+    target_link_libraries(rs-depth-quality ${DEPENDENCIES}
+                                           ${GTK3_LIBRARIES}
+                                           Threads::Threads)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )
@@ -104,6 +109,6 @@ endif()
         rs-depth-quality
 
         RUNTIME DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/bin
+        ${CMAKE_INSTALL_BINDIR}
     )
 endif()

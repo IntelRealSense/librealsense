@@ -94,7 +94,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Requested time is out of playback length. (Requested = " << seek_time.count() << ", Duration = " << m_total_duration.count() << ")");
             }
             auto seek_time_as_secs = std::chrono::duration_cast<std::chrono::duration<double>>(seek_time);
-            auto seek_time_as_rostime = ros::Time(seek_time_as_secs.count());
+            auto seek_time_as_rostime = rs2rosinternal::Time(seek_time_as_secs.count());
 
             m_samples_view.reset(new rosbag::View(m_file, FalseQuery()));
             
@@ -119,7 +119,7 @@ namespace librealsense
             {
                 view.addQuery(m_file, rosbag::TopicQuery(topic), start_time, as_rostime);
             }
-            std::map<device_serializer::stream_identifier, ros::Time> last_frames;
+            std::map<device_serializer::stream_identifier, rs2rosinternal::Time> last_frames;
             for (auto&& m : view)
             {
                 if (m.isType<sensor_msgs::Image>() || m.isType<sensor_msgs::Imu>())
@@ -156,7 +156,7 @@ namespace librealsense
 
         virtual void enable_stream(const std::vector<device_serializer::stream_identifier>& stream_ids) override
         {
-            ros::Time start_time = ros::TIME_MIN + ros::Duration{ 0, 1 }; //first non 0 timestamp and afterward
+            rs2rosinternal::Time start_time = rs2rosinternal::TIME_MIN + rs2rosinternal::Duration{ 0, 1 }; //first non 0 timestamp and afterward
             if (m_samples_view == nullptr) //Starting to stream
             {
                 m_samples_view = std::unique_ptr<rosbag::View>(new rosbag::View(m_file, FalseQuery()));
@@ -204,7 +204,7 @@ namespace librealsense
             {
                 return;
             }
-            ros::Time curr_time;
+            rs2rosinternal::Time curr_time;
             if (m_samples_itrator == m_samples_view->end())
             {
                 curr_time = m_samples_view->getEndTime();
@@ -248,7 +248,7 @@ namespace librealsense
             {
                 throw io_exception(to_string() 
                     << "Invalid file format, expected " 
-                    << ros::message_traits::DataType<ROS_TYPE>::value()
+                    << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
                     << " message but got: " << msg.getDataType()
                     << "(Topic: " << msg.getTopic() << ")");
             }
@@ -630,9 +630,8 @@ namespace librealsense
                     }
                     else if (kvp.first == FRAME_TIMESTAMP_MD_STR)
                     {
-                        double ts;
                         std::istringstream iss(kvp.second);
-                        iss >> std::hexfloat >> ts;
+                        double ts = std::strtod(iss.str().c_str(), NULL);
                         timestamp_ms = std::chrono::duration<double, std::milli>(ts);
                     }
                     else if (kvp.first == TRACKER_CONFIDENCE_MD_STR)
@@ -1039,8 +1038,8 @@ namespace librealsense
                 {
                     throw io_exception(to_string()
                         << "Invalid file format, expected "
-                        << ros::message_traits::DataType<realsense_legacy_msgs::motion_stream_info>::value()
-                        << " or " << ros::message_traits::DataType<realsense_legacy_msgs::stream_info>::value()
+                        << rs2rosinternal::message_traits::DataType<realsense_legacy_msgs::motion_stream_info>::value()
+                        << " or " << rs2rosinternal::message_traits::DataType<realsense_legacy_msgs::stream_info>::value()
                         << " message but got: " << infos_msg.getDataType()
                         << "(Topic: " << infos_msg.getTopic() << ")");
                 }

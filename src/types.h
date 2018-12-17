@@ -48,6 +48,15 @@ namespace librealsense
 {
     #define UNKNOWN_VALUE "UNKNOWN"
     const double TIMESTAMP_USEC_TO_MSEC = 0.001;
+    const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
+
+#ifdef _WIN32
+/* The FW timestamps for HID are converted to Usec in Windows kernel */
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_USEC_TO_MSEC
+#else
+/* The FW timestamps for HID are converted to Nanosec in Linux kernel */
+#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_NSEC_TO_MSEC
+#endif // define HID_TIMESTAMP_MULTIPLIER
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -483,7 +492,8 @@ namespace librealsense
             (a.height == b.height) &&
             (a.fps == b.fps) &&
             (a.format == b.format) &&
-            (a.index == b.index);
+            (a.index == b.index) &&
+            (a.stream == b.stream);
     }
 
     struct stream_descriptor
@@ -649,6 +659,9 @@ namespace librealsense
 
         firmware_version(int major, int minor, int patch, int build, bool is_any = false)
             : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
+
+        // CTO experimental firmware versions are marked with build >= 90
+        bool experimental() const { return m_build >= 90; }
 
         static firmware_version any()
         {
@@ -1547,7 +1560,7 @@ namespace librealsense
             return std::move(_value);
         }
 
-        bool operator==(const T& other) const 
+        bool operator==(const T& other) const
         {
             return this->_value == other;
         }

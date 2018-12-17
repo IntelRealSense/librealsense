@@ -75,8 +75,6 @@ namespace librealsense
                     assign_stream(_owner->_accel_stream, p);
                 if (p->get_stream_type() == RS2_STREAM_GYRO)
                     assign_stream(_owner->_gyro_stream, p);
-                if (p->get_stream_type() == RS2_STREAM_GPIO)
-                    assign_stream(_owner->_gpio_streams[p->get_stream_index()-1], p);
 
                 //set motion intrinsics
                 if (p->get_stream_type() == RS2_STREAM_ACCEL || p->get_stream_type() == RS2_STREAM_GYRO)
@@ -108,7 +106,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_fisheye_calibration_table_raw,
                 ds::calibration_table_id::fisheye_calibration_id,
-                profile.width, profile.height);
+                profile.width, profile.height, profile.fps);
         }
 
         stream_profiles init_stream_profiles() override
@@ -179,15 +177,6 @@ namespace librealsense
         }
 
         static const char* custom_sensor_fw_ver = "5.6.0.0";
-        if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
-        {
-            static const std::vector<std::pair<std::string, stream_profile>> custom_sensor_profiles =
-                {{std::string("custom"), { RS2_STREAM_GPIO, 1, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 2, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 3, 1, 1, 1, RS2_FORMAT_GPIO_RAW}},
-                 {std::string("custom"), { RS2_STREAM_GPIO, 4, 1, 1, 1, RS2_FORMAT_GPIO_RAW}}};
-            std::copy(custom_sensor_profiles.begin(), custom_sensor_profiles.end(), std::back_inserter(sensor_name_and_hid_profiles));
-        }
 
         auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
@@ -266,9 +255,6 @@ namespace librealsense
     {
         using namespace ds;
 
-        for (auto i = 0; i < 4; i++)
-            _gpio_streams[i] = std::make_shared<stream>(RS2_STREAM_GPIO, i+1);
-
         _tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
         _tm1_eeprom = [this]() { return get_tm1_eeprom(); };
 
@@ -283,16 +269,28 @@ namespace librealsense
 
         initialize_fisheye_sensor(ctx,group);
 
+        // D435i to use predefined values extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            // BMI055 assembly transformation based on mechanical drawing (mm)
+            //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
+            //      [  0.  ,   1.  ,   0.  ,   5.1 ],
+            //      [  0.  ,   0.  ,  -1.  , -11.74],
+            //      [  0.  ,   0.  ,   0.  ,   1.  ]])
+            // The orientation matrix will be integrated into the IMU stream data
+            pose ex = { {  1.f,     0.f,    0.f,
+                           0.f,     1.f,    0.f,
+                           0.f,     0.f,    1.f},
+                        { 0.00552f, -0.0051, -0.01174}};
+
+            return from_pose(ex);
+        });
+
         // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
-
-        for (auto i = 0; i < 4; i++)
-        {
-            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gpio_streams[i]);
-            register_stream_to_extrinsic_group(*_gpio_streams[i], 0);
-        }
 
         // Try to add hid endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
@@ -310,7 +308,7 @@ namespace librealsense
             }
             catch (const std::exception& ex)
             {
-                LOG_ERROR("Motion Device is not calibrated! Motion Data Correction will not be available! Error: " << ex.what());
+                LOG_INFO("No Motion Module calibration is available, report: " << ex.what());
             }
 
             if (!motion_module_fw_version.empty())

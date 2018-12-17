@@ -95,13 +95,13 @@ typedef boost::shared_ptr< ::sensor_msgs::PointField const> PointFieldConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::sensor_msgs::PointField_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::sensor_msgs::PointField_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::sensor_msgs::PointField_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace sensor_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -198,9 +198,9 @@ uint32 count     # How many elements in the field\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -219,9 +219,9 @@ namespace serialization
   }; // struct PointField_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -243,6 +243,6 @@ struct Printer< ::sensor_msgs::PointField_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // SENSOR_MSGS_MESSAGE_POINTFIELD_H

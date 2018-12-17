@@ -77,13 +77,13 @@ typedef std::shared_ptr< ::realsense_legacy_msgs::motion_intrinsics const> motio
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_legacy_msgs::motion_intrinsics_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_legacy_msgs::motion_intrinsics_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_legacy_msgs::motion_intrinsics_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_legacy_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -168,9 +168,9 @@ float32[3] bias_variances\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -188,9 +188,9 @@ namespace serialization
   }; // struct motion_intrinsics_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -222,6 +222,6 @@ struct Printer< ::realsense_legacy_msgs::motion_intrinsics_<ContainerAllocator> 
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // realsense_legacy_msgs_MESSAGE_MOTION_INTRINSICS_H

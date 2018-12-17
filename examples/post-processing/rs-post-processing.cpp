@@ -34,10 +34,10 @@ Class to encapsulate a filter alongside its options
 class filter_options
 {
 public:
-    filter_options(const std::string name, rs2::processing_block& filter);
+    filter_options(const std::string name, rs2::filter& filter);
     filter_options(filter_options&& other);
     std::string filter_name;                                   //Friendly name of the filter
-    rs2::processing_block& filter;                            //The filter in use
+    rs2::filter& filter;                                       //The filter in use
     std::map<rs2_option, filter_slider_ui> supported_options;  //maps from an option supported by the filter, to the corresponding slider
     std::atomic_bool is_enabled;                               //A boolean controlled by the user that determines whether to apply the filter or not
 };
@@ -348,9 +348,9 @@ bool filter_slider_ui::is_all_integers(const rs2::option_range& range)
 /**
 Constructor for filter_options, takes a name and a filter.
 */
-filter_options::filter_options(const std::string name, rs2::processing_block& filter) :
+filter_options::filter_options(const std::string name, rs2::filter& flt) :
     filter_name(name),
-    filter(filter),
+    filter(flt),
     is_enabled(true)
 {
     const std::array<rs2_option, 3> possible_filter_options = {
@@ -362,13 +362,13 @@ filter_options::filter_options(const std::string name, rs2::processing_block& fi
     //Go over each filter option and create a slider for it
     for (rs2_option opt : possible_filter_options)
     {
-        if (filter.supports(opt))
+        if (flt.supports(opt))
         {
-            rs2::option_range range = filter.get_option_range(opt);
+            rs2::option_range range = flt.get_option_range(opt);
             supported_options[opt].range = range;
             supported_options[opt].value = range.def;
             supported_options[opt].is_int = filter_slider_ui::is_all_integers(range);
-            supported_options[opt].description = filter.get_option_description(opt);
+            supported_options[opt].description = flt.get_option_description(opt);
             std::string opt_name = rs2_option_to_string(opt);
             supported_options[opt].name = name + "_" + opt_name;
             std::string prefix = "Filter ";

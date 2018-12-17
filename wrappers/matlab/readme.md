@@ -7,14 +7,13 @@ To get started controlling the RealSense Cameras with Matlab® in Windows 10, we
 
 ## Getting Started
 ### Building from Source
-1. Download the Git repository and run CMake, specifying the x64 toolchain and static linkage (`-DBUILD_SHARED_LIBS:BOOL=OFF`). Additionally, make sure you compile the optional TM2 libraries (-DBUILD_WITH_TM2:BOOL=ON)
-2. Open Visual Studio and import the project file located [here](./librealsense_mex.vcxproj).
-3. Make sure that the project settings are consistent with the instructions listed in this web page for [Compiling Mex File with Visual Studio](https://www.ini.uzh.ch/~ppyk/BasicsOfInstrumentation/matlab_help/matlab_external/compiling-mex-files-with-the-microsoft-visual-c-ide.html) and your system. For more information on Matlab settings, you can also refer to this [Matlab example project](http://coachk.cs.ucf.edu/GPGPU/Compiling_a_MEX_file_with_Visual_Studio2.htm).
-4. Make sure that in the project's settings `Target Platform Version` and `Platform Toolset` match the values set for the `realsense2` target.
-5. Build the `realsense2` target.
-6. Build the `librealsense_mex` target.
-7. After compiling the project, set [build/Debug](../../build/Debug) or [build/Release](../../build/Release) as your Matlab working directory. Alternatively copy the `+realsense` folder from there to a place where Matlab can find it.
-8. Our simple example can be run by typing [`realsense.depth_example`](./depth_example.m) at the Matlab prompt.
+1. Download the Git repository. Opt in the Matlab wrapper for LibRs with `cmake .. -D... -DBUILD_MATLAB_BINDINGS:BOOL=ON` when configuring CMake.
+2. Build the `librealsense_mex` target.
+3. After compiling the project, set [build/Debug](../../build/Debug) or [build/Release](../../build/Release) as your Matlab working directory. Alternatively copy the `+realsense` folder from there to a place where Matlab can find it.
+4. Start exploring with Realsense devices by typing at the Matlab prompt:  
+[`realsense.depth_example`](./depth_example.m)  -  Capture and render Depth frame with a live device .  
+[`realsense.rosbag_example`](./rosbag_example.m)  - Playback pre-recorded video and data streams stored in [rosbag](http://wiki.ros.org/rosbag) format.
+[`realsense.pointcloud_example`](./depth_example.m)  -  Generate and visualize 3D point cloud from live stream.  
 
 ### Windows Installer
 1. Run the Windows Installer and select the Matlab Developer Package checkbox.

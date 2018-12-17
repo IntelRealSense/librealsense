@@ -32,6 +32,7 @@
 #define MAX_EEPROM_CONFIGURATION_SIZE 1200
 #define MAX_GUID_LENGTH 128
 #define MAX_FW_UPDATE_FILE_COUNT 6
+#define MAX_SLAM_APPEND_CALIBRATION 10000
 
 namespace perc
 {
@@ -90,6 +91,9 @@ namespace perc
         SLAM_GET_LOCALIZATION_DATA_STREAM = 0x1009,
         SLAM_SET_STATIC_NODE = 0x100A,
         SLAM_GET_STATIC_NODE = 0x100B,
+        SLAM_APPEND_CALIBRATION = 0x100C,
+        SLAM_CALIBRATION = 0x100D,
+        SLAM_RELOCALIZATION_EVENT = 0x100E,
 
         /* Controller messages */
         CONTROLLER_POSE_CONTROL = 0x2002,
@@ -140,7 +144,6 @@ namespace perc
         INCOMPATIBLE = 0x0013,        /* Controller version is incompatible with TM2 version */
         AUTH_ERROR = 0x0014,          /* Authentication error in firmware update */
         DEVICE_RESET = 0x0015,        /* A device reset has occurred. The user may read the FW log for additional detail */
-        NO_BLUETOOTH = 0x0016,        /* The device doesn't have bluetooth, so the command failed */
         SLAM_NO_DICTIONARY = 0x9001,  /* No relocalization dictionary was loaded */
     };
 
@@ -153,7 +156,16 @@ namespace perc
         EEPROM_LOCK_STATE_PERMANENT_LOCKED = 0x0003,
         EEPROM_LOCK_STATE_MAX = 0xFFFF,
     } EEPROM_LOCK_STATE;
-
+    
+    /**
+    * @brief Defines SKU info types
+    */
+    typedef enum {
+        SKU_INFO_TYPE_WITHOUT_BLUETOOTH = 0x0000,
+        SKU_INFO_TYPE_WITH_BLUETOOTH = 0x0001,
+        SKU_INFO_TYPE_MAX = 0xFFFF,
+    } SKU_INFO_TYPE;
+    
     /**
     * @brief Defines all control messages ids
     */
@@ -253,11 +265,11 @@ namespace perc
         uint8_t bCentralBootloaderVersionMajor; /**< Major part of the Central firmware version                                         */
         uint8_t bCentralBootloaderVersionMinor; /**< Minor part of the Minor Central firmware version                                   */
         uint8_t bCentralBootloaderVersionPatch; /**< Patch part of the Patch Central firmware version                                   */
+        uint32_t dwCentralAppVersionBuild;      /**< Build part of the Build Central firmware version                                   */
         uint8_t bEepromLocked;                  /**< 0x0 - The EEPROM is fully writeable                                                */
                                                 /**< 0x1 - The upper quarter of the EEPROM memory is write-protected                    */
                                                 /**< 0x3 - The upper quarter of the EEPROM memory is permanently write-protected        */
-        uint32_t dwCentralAppVersionBuild;      /**< Build part of the Build Central firmware version                                   */
-
+        uint8_t bSKUInfo;                       /**< 1 for T260 - with ble, 0 for T265 - w/o ble                                        */
     } device_info_libtm_message;
 
 
@@ -675,6 +687,7 @@ namespace perc
         uint64_t llNanoseconds;       /**< Timestamp of pose, measured in nanoseconds since device system initialization                 */
         uint32_t dwTrackerConfidence; /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                        */
         uint32_t dwMapperConfidence;  /**< Bits 0-1: 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High, Bits 2-31: Reserved              */
+        uint32_t dwTrackerState;      /**< tracker state 0x0 - Inactive, 0x3 Active 3DOF, 0x4 Active 6DOF, 0x7 Inertial only 3DOF        */
     } pose_data;
 
     typedef struct {
@@ -837,13 +850,12 @@ namespace perc
     * @brief Bulk configuration Lock Message
     *
     * Write-protect the manufactoring configuration tables from future changes.
-    * on DEV_LOCK_CONFIGURATION - The locking is done in software by the firmware managing a lock bits in each configuration table metadata.
-    * on DEV_LOCK_EEPROM - The locking is done in hardware by locking the upper quarter of the EEPROM memory
+    * The locking is done in software by the firmware managing a lock bits in each configuration table metadata.
     * The lock can be applied permanently, meaning it cannot be latter un-locked.
     */
     typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION or DEV_LOCK_EEPROM                          */
-        uint16_t wReserved;                 /**< Reserved = 0                                                                                                                 */
+        bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION                                             */
+        uint16_t wTableType;                /**< Table ID to lock                                                                                                             */
         uint32_t dwLock;                    /**< 0x0 - Unlock, 0x1 - Lock                                                                                                     */
                                             /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
                                             /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
@@ -852,6 +864,27 @@ namespace perc
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_LOCK_CONFIGURATION */
     } bulk_message_response_lock_configuration;
+
+
+    /**
+    * @brief Bulk eeprom Lock Message
+    *
+    * Write-protect the manufactoring configuration tables from future changes.
+    * Tables that will be locked: 0x8 - ODM, 0x6 - OEM, 0x10 - module info, 0x11 - internal data, 0x12 - HVS
+    * The locking is done in hardware by locking the upper quarter of the EEPROM memory
+    * The lock can be applied permanently, meaning it cannot be latter un-locked.
+    */
+    typedef struct {
+        bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION or DEV_LOCK_EEPROM                          */
+        uint16_t wReserved;                 /**< Reserved = 0                                                                                                                 */
+        uint32_t dwLock;                    /**< 0x0 - Unlock, 0x1 - Lock                                                                                                     */
+                                                    /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
+                                                    /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
+    } bulk_message_request_lock_eeprom;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_LOCK_CONFIGURATION */
+    } bulk_message_response_lock_eeprom;
 
 
     /**
@@ -1044,6 +1077,20 @@ namespace perc
         bulk_message_response_header header; /**< Message response header: dwLength = 36 byte, wMessageID = SLAM_GET_STATIC_NODE */
         static_node_data data;               /**< Static node data                                                               */
     } bulk_message_response_get_static_node;
+
+    /**
+    * @brief Bulk SLAM override calibration Message
+    *
+    * Override current SLAM calibration
+    */
+    typedef struct {
+        bulk_message_request_header header;                        /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_APPEND_CALIBRATION */
+        uint8_t calibration_append_string[MAX_SLAM_APPEND_CALIBRATION]; /**< Calibration string                                                                     */
+    } bulk_message_request_slam_append_calibration;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLength = 8 byte, wMessageID = SLAM_APPEND_CALIBRATION */
+    } bulk_message_response_slam_append_calibration;
 
 
     /**
@@ -1460,7 +1507,7 @@ namespace perc
     * Start of all Interrupt messages.
     */
     typedef struct {
-        uint32_t dwLength;   /**< Message length in bytes */
+        uint32_t dwLength;    /**< Message length in bytes */
         uint16_t wMessageID;  /**< ID of message           */
     } interrupt_message_header;
 
@@ -1783,6 +1830,18 @@ namespace perc
         uint8_t bReserved;               /**< Reserved = 0                                                                                 */
     } interrupt_message_set_localization_data_stream;
 
+
+    /**
+    * @brief Interrupt SLAM Relocalization Event message
+    *
+    * Event information when SLAM relocalizes.
+    */
+    typedef struct {
+        interrupt_message_header header; /**< Interrupt message header: wMessageID = SLAM_RELOCALIZATION_EVENT                              */
+        uint64_t llNanoseconds;          /**< Timestamp of relocalization event, measured in nanoseconds since device system initialization */
+        uint16_t wSessionId;             /**< Session id of the relocalized map. Current session if 0, previous session otherwise           */
+    } interrupt_message_slam_relocalization_event;
+
     /**
     * @brief Interrupt firmware update stream message
     *
@@ -1853,7 +1912,7 @@ namespace perc
 
 
     /**
-    * @brief This function initilize the message request header with needed length and message ID
+    * @brief This function initialize the message request header with needed length and message ID
     *
     * @param[in] message_request - message request buffer.
     * @param[in] dwLength - message request length.

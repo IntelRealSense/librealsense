@@ -76,7 +76,7 @@
 //  }
 //}
 
-namespace ros
+namespace rs2rosinternal
 {
 
   /*********************************************************************
@@ -90,8 +90,8 @@ namespace ros
   {
   public:
     TimeNotInitializedException()
-      : Exception("Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  "
-                  "If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()")
+      : Exception("Cannot use rs2rosinternal::Time::now() before the first NodeHandle has been created or rs2rosinternal::start() has been called.  "
+                  "If this is a standalone app or test that just uses rs2rosinternal::Time and does not communicate over ROS, you may also call rs2rosinternal::Time::init()")
     {}
   };
 
@@ -172,7 +172,7 @@ namespace ros
   /**
    * \brief Time representation.  May either represent wall clock time or ROS clock time.
    *
-   * ros::TimeBase provides most of its functionality.
+   * rs2rosinternal::TimeBase provides most of its functionality.
    */
   class ROSTIME_DECL Time : public TimeBase<Time, Duration>
   {
@@ -216,7 +216,7 @@ namespace ros
     /**
      * \brief Wait for time to become valid, with timeout
      */
-    static bool waitForValid(const ros::WallDuration& timeout);
+    static bool waitForValid(const rs2rosinternal::WallDuration& timeout);
 
     /*static Time fromBoost(const boost::posix_time::ptime& t);
     static Time fromBoost(const boost::posix_time::time_duration& d);*/
@@ -228,7 +228,7 @@ namespace ros
   /**
    * \brief Time representation.  Always wall-clock time.
    *
-   * ros::TimeBase provides most of its functionality.
+   * rs2rosinternal::TimeBase provides most of its functionality.
    */
   class ROSTIME_DECL WallTime : public TimeBase<WallTime, WallDuration>
   {

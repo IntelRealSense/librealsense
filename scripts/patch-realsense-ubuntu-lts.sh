@@ -20,7 +20,7 @@ fi
 source ./scripts/patch-utils.sh
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git
+sudo apt-get install linux-headers-generic build-essential git -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev

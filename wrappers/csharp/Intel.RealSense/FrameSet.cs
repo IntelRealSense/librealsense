@@ -159,6 +159,29 @@ namespace Intel.RealSense
                 using (var frame = this[i])
                     action(frame);
             }
+
+        }
+
+        public void Release(FrameSet t)
+        {
+            lock (locker)
+            {
+                stack.Push(t);
+            }
+        }
+    }
+
+    public class FrameEnumerator : IEnumerator<Frame>
+    {
+        private readonly FrameSet fs;
+        private Frame current;
+        private int index;
+
+        public FrameEnumerator(FrameSet fs)
+        {
+            this.fs = fs;
+            index = 0;
+            current = default(Frame);
         }
                 
         public void AddDisposable(IDisposable disposable)

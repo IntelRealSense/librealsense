@@ -33,6 +33,7 @@ namespace librealsense
         {
             return std::vector<tagged_profile>();
         };
+        bool compress_while_record() const override { return false; }
     private:
         static const char* tm2_device_name()
         {

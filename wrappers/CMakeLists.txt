@@ -67,3 +67,7 @@ if(BUILD_CSHARP_BINDINGS)
     add_subdirectory(csharp)
 endif()
 
+if(BUILD_OPENNI2_BINDINGS)
+	add_subdirectory(openni2)
+endif()
+

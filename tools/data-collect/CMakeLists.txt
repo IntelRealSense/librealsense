@@ -17,7 +17,7 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 # data-collect
-add_executable(rs-data-collect rs-data-collect.cpp)
+add_executable(rs-data-collect rs-data-collect.h rs-data-collect.cpp)
 target_link_libraries(rs-data-collect ${DEPENDENCIES})
 include_directories(rs-data-collect ../../common ../../third-party/tclap/include)
 set_target_properties (rs-data-collect PROPERTIES
@@ -30,6 +30,6 @@ install(
     rs-data-collect
 
     RUNTIME DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/bin
+    ${CMAKE_INSTALL_BINDIR}
 )
 

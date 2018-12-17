@@ -6,7 +6,12 @@ set(OPENNI2_DIR "c:/Program Files/OpenNI2" CACHE FILEPATH "OpenNI2 SDK directory
 set(REALSENSE2_DIR "c:/Program Files (x86)/Intel RealSense SDK 2.0" CACHE FILEPATH "RealSense2 SDK directory")
 
 # INCLUDE DIR
-include_directories (${OPENNI2_DIR}/Include)
+if (UNIX)
+    include_directories (${OPENNI2_DIR})
+else ()
+    include_directories (${OPENNI2_DIR}/Include)
+endif ()
+
 include_directories (${REALSENSE2_DIR}/include)
 include_directories (src)
 

@@ -1,3 +1,18 @@
+From 5ef00171f95a150a912f1d14645bcae25df203c9 Mon Sep 17 00:00:00 2001
+From: Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Tue, 13 Feb 2018 12:06:44 +0200
+Subject: [PATCH] Adding missing HID timestamp patch for Gyro sensor.
+	A symmetric patch for Accelerator was already upstreamed,
+	this patch was skipped from upstream
+	The patch was written by Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+	Additionally, timestamp management is fixed
+
+---
+ drivers/iio/gyro/hid-sensor-gyro-3d.c | 28 ++++++++++++++++++++-------
+ drivers/iio/gyro/hid-sensor-accel-3d.c | 28 ++++++++++++++++++++-------
+ 2 file changed, 56 insertions(+), 14 deletions(-)
+ 
 diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
 index ab1e238..28262c4 100644
 --- a/drivers/iio/accel/hid-sensor-accel-3d.c
@@ -68,8 +83,8 @@ index ab1e238..28262c4 100644
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
-+	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		accel_state->timestamp = *(int64_t *)raw_data;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP:	// usec->nsec
++		accel_state->timestamp = (*(int64_t *)raw_data)*1000;
 +		ret = 0;
 +	break;
  	default:
@@ -144,8 +159,8 @@ index c67ce2a..f45c5a2 100644
  						*(u32 *)raw_data;
  		ret = 0;
  	break;
-+	case HID_USAGE_SENSOR_TIME_TIMESTAMP:
-+		gyro_state->timestamp = *(int64_t *)raw_data;
++	case HID_USAGE_SENSOR_TIME_TIMESTAMP: // usec->nsec
++		gyro_state->timestamp = (*(int64_t *)raw_data)*1000;
 +		ret = 0;
 +	break;
  	default:

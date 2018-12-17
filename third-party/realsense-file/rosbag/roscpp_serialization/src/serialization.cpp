@@ -27,7 +27,7 @@
 
 #include <ros/serialization.h>
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {

@@ -26,7 +26,7 @@ namespace librealsense
 {
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
         const hw_monitor& hwm,
-        ds::fw_cmd cmd) 
+        ds::fw_cmd cmd)
         : _hw_monitor(hwm), _cmd(cmd) {}
 
     void ds5_auto_exposure_roi_method::set(const region_of_interest& roi)
@@ -85,7 +85,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height);
+                profile.width, profile.height, profile.fps);
         }
 
         void open(const stream_profiles& requests) override
@@ -168,6 +168,8 @@ namespace librealsense
 
         float get_depth_scale() const override { return _depth_units; }
 
+        void set_depth_scale(float val){ _depth_units = val; }
+
         float get_stereo_baseline_mm() const override { return _owner->get_stereo_baseline_mm(); }
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const
@@ -191,7 +193,7 @@ namespace librealsense
         }
     protected:
         const ds5_device* _owner;
-        float _depth_units;
+        std::atomic<float> _depth_units;
         float _stereo_baseline_mm;
     };
 
@@ -462,6 +464,12 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
+        if (_fw_version >= firmware_version("5.10.9.0") &&
+            _fw_version.experimental()) // Not yet available in production firmware
+        {
+            depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &depth_ep));
+        }
+
         if (_fw_version >= firmware_version("5.9.15.1"))
         {
             get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
@@ -476,7 +484,18 @@ namespace librealsense
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
 
         if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
-            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<depth_scale_option>(*_hw_monitor));
+        {
+            auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
+            auto depth_sensor = As<ds5_depth_sensor, uvc_sensor>(&depth_ep);
+            assert(depth_sensor);
+
+            depth_scale->add_observer([depth_sensor](float val)
+            {
+                depth_sensor->set_depth_scale(val);
+            });
+
+            depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
+        }
         else
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));
