@@ -68,10 +68,10 @@ struct TopicStatistics_
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _node_sub_type;
   _node_sub_type node_sub;
 
-   typedef ros::Time _window_start_type;
+   typedef rs2rosinternal::Time _window_start_type;
   _window_start_type window_start;
 
-   typedef ros::Time _window_stop_type;
+   typedef rs2rosinternal::Time _window_stop_type;
   _window_stop_type window_stop;
 
    typedef int32_t _delivered_msgs_type;
@@ -83,22 +83,22 @@ struct TopicStatistics_
    typedef int32_t _traffic_type;
   _traffic_type traffic;
 
-   typedef ros::Duration _period_mean_type;
+   typedef rs2rosinternal::Duration _period_mean_type;
   _period_mean_type period_mean;
 
-   typedef ros::Duration _period_stddev_type;
+   typedef rs2rosinternal::Duration _period_stddev_type;
   _period_stddev_type period_stddev;
 
-   typedef ros::Duration _period_max_type;
+   typedef rs2rosinternal::Duration _period_max_type;
   _period_max_type period_max;
 
-   typedef ros::Duration _stamp_age_mean_type;
+   typedef rs2rosinternal::Duration _stamp_age_mean_type;
   _stamp_age_mean_type stamp_age_mean;
 
-   typedef ros::Duration _stamp_age_stddev_type;
+   typedef rs2rosinternal::Duration _stamp_age_stddev_type;
   _stamp_age_stddev_type stamp_age_stddev;
 
-   typedef ros::Duration _stamp_age_max_type;
+   typedef rs2rosinternal::Duration _stamp_age_max_type;
   _stamp_age_max_type stamp_age_max;
 
 
@@ -121,13 +121,13 @@ typedef boost::shared_ptr< ::rosgraph_msgs::TopicStatistics const> TopicStatisti
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace rosgraph_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -241,9 +241,9 @@ duration stamp_age_max\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -272,9 +272,9 @@ namespace serialization
   }; // struct TopicStatistics_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -291,9 +291,9 @@ struct Printer< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >
     s << indent << "node_sub: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.node_sub);
     s << indent << "window_start: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.window_start);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.window_start);
     s << indent << "window_stop: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.window_stop);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.window_stop);
     s << indent << "delivered_msgs: ";
     Printer<int32_t>::stream(s, indent + "  ", v.delivered_msgs);
     s << indent << "dropped_msgs: ";
@@ -301,21 +301,21 @@ struct Printer< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >
     s << indent << "traffic: ";
     Printer<int32_t>::stream(s, indent + "  ", v.traffic);
     s << indent << "period_mean: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.period_mean);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.period_mean);
     s << indent << "period_stddev: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.period_stddev);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.period_stddev);
     s << indent << "period_max: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.period_max);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.period_max);
     s << indent << "stamp_age_mean: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.stamp_age_mean);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.stamp_age_mean);
     s << indent << "stamp_age_stddev: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.stamp_age_stddev);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.stamp_age_stddev);
     s << indent << "stamp_age_max: ";
-    Printer<ros::Duration>::stream(s, indent + "  ", v.stamp_age_max);
+    Printer<rs2rosinternal::Duration>::stream(s, indent + "  ", v.stamp_age_max);
   }
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSGRAPH_MSGS_MESSAGE_TOPICSTATISTICS_H

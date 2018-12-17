@@ -130,6 +130,8 @@ namespace librealsense
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
             SETRGBAEROI     = 0x75,     // set RGB auto-exposure region of interest
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
+            SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
+            GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -482,8 +484,8 @@ namespace librealsense
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps);
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height, uint32_t fps);
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
@@ -528,10 +530,10 @@ namespace librealsense
             { hot_laser_power_reduce,       "Laser hot - power reduce" },
             { hot_laser_disable,            "Laser hot - disabled" },
             { flag_B_laser_disable,         "Flag B - laser disabled" },
-            { stereo_module_not_connected,  "Stered Module is not connected" },
+            { stereo_module_not_connected,  "Stereo Module is not connected" },
             { eeprom_corrupted,             "EEPROM corrupted" },
             { calibration_corrupted,        "Calibration corrupted" },
-            { mm_upd_fail,                  "Moton Module update failed" },
+            { mm_upd_fail,                  "Motion Module update failed" },
             { isp_upd_fail,                 "ISP update failed" },
             { mm_force_pause,               "Motion Module force pause" },
             { mm_failure,                   "Motion Module failure" },

@@ -484,18 +484,33 @@ namespace librealsense
     }
 
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
+        std::shared_ptr<context> ctx,
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
         const std::vector<platform::hid_device_info>& hids)
     {
         std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> results;
+        uint16_t vid;
+        uint16_t pid;
+
         for (auto&& dev : devices)
         {
             std::vector<platform::hid_device_info> hid_group;
             auto unique_id = dev.front().unique_id;
             for (auto&& hid : hids)
             {
-                if (hid.unique_id == unique_id || hid.unique_id == "*")
-                    hid_group.push_back(hid);
+                if (hid.unique_id != "")
+                {
+                    std::stringstream(hid.vid) >> std::hex >> vid;
+                    std::stringstream(hid.pid) >> std::hex >> pid;
+                    auto&& backend = ctx->get_backend();
+                    auto device_serial = backend.get_device_serial(vid, pid, unique_id);
+
+                    if ((hid.unique_id == unique_id) || // Linux check
+                        ((hid.unique_id == "*") && (hid.serial_number == device_serial))) // Windows check
+                    {
+                        hid_group.push_back(hid);
+                    }
+                }
             }
             results.push_back(std::make_pair(dev, hid_group));
         }

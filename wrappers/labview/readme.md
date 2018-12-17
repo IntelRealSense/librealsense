@@ -80,4 +80,10 @@ So now you are streaming data. To grab data you call the Capture VI inside a loo
 Note that frames can arrive asynchronously. You can query their time stamp or counters to align them, or just grab the nearest frames in time.     
 
 
-Finally, it is VERY important that you use the Release Frame VI to release each frame when it is no longer needed, or you will very quickly stop streaming. Also, be sure to CLOSE everything properly, or you will have problems streaming the next time, and LabVIEW may crash.   
+Finally, it is VERY important that you use the Release Frame VI to release each frame when it is no longer needed, or you will very quickly stop streaming. Also, be sure to CLOSE everything properly, or you will have problems streaming the next time, and LabVIEW may crash. 
+
+
+-------------------
+
+
+> **Note**: If you are looking for a different way to modify DLL file location, please refer to [#1947](https://github.com/IntelRealSense/librealsense/issues/1947) and consider trying   [github.com/ryannazaretian/librealsense/tree/master/wrappers/labview](https://github.com/ryannazaretian/librealsense/tree/master/wrappers/labview) as a possible solution. 

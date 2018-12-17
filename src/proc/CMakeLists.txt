@@ -5,7 +5,7 @@ if (BUILD_WITH_CUDA)
 endif()
 
 include(${_proc_rel_path}/sse/CMakeLists.txt)
-    
+
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.cpp"
@@ -20,6 +20,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/temporal-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rates_printer.cpp"
+
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/align.h"
         "${CMAKE_CURRENT_LIST_DIR}/colorizer.h"
@@ -32,4 +34,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.h"
         "${CMAKE_CURRENT_LIST_DIR}/syncer-processing-block.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rates_printer.h"
 )

@@ -49,7 +49,7 @@ namespace rs2
 
             return res > 0;
         }
-      
+
         /**
         * returns a list of all newly connected devices
         * \return            the list of all new connected devices
@@ -57,15 +57,6 @@ namespace rs2
         device_list get_new_devices()  const
         {
             return _added;
-        }
-
-        /**
-        * returns a list of all newly removed devices
-        * \return            the list of all newly removed devices
-        */
-        device_list get_removed_devices()  const
-        {
-            return _removed;
         }
 
     private:
@@ -215,7 +206,6 @@ protected:
         friend class rs2::pipeline;
         friend class rs2::device_hub;
 
-        
         std::shared_ptr<rs2_context> _context;
     };
 

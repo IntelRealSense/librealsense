@@ -33,7 +33,7 @@ struct Time_
 
 
 
-   typedef ros::Time _data_type;
+   typedef rs2rosinternal::Time _data_type;
   _data_type data;
 
 
@@ -56,13 +56,13 @@ typedef boost::shared_ptr< ::std_msgs::Time const> TimeConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::std_msgs::Time_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::std_msgs::Time_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::std_msgs::Time_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace std_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -145,9 +145,9 @@ struct Definition< ::std_msgs::Time_<ContainerAllocator> >
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -163,9 +163,9 @@ namespace serialization
   }; // struct Time_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -176,11 +176,11 @@ struct Printer< ::std_msgs::Time_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::std_msgs::Time_<ContainerAllocator>& v)
   {
     s << indent << "data: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.data);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.data);
   }
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // STD_MSGS_MESSAGE_TIME_H

@@ -26,7 +26,7 @@ namespace librealsense
 {
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
         const hw_monitor& hwm,
-        ds::fw_cmd cmd) 
+        ds::fw_cmd cmd)
         : _hw_monitor(hwm), _cmd(cmd) {}
 
     void ds5_auto_exposure_roi_method::set(const region_of_interest& roi)
@@ -85,7 +85,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height);
+                profile.width, profile.height, profile.fps);
         }
 
         void open(const stream_profiles& requests) override
@@ -464,6 +464,12 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
+        if (_fw_version >= firmware_version("5.10.9.0") &&
+            _fw_version.experimental()) // Not yet available in production firmware
+        {
+            depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &depth_ep));
+        }
+
         if (_fw_version >= firmware_version("5.9.15.1"))
         {
             get_depth_sensor().register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
@@ -485,7 +491,7 @@ namespace librealsense
 
             depth_scale->add_observer([depth_sensor](float val)
             {
-                depth_sensor->set_depth_scale(val);  
+                depth_sensor->set_depth_scale(val);
             });
 
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);

@@ -1,8 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
+#pragma once
 
 #include <map>
 #include <mutex>
@@ -17,7 +16,6 @@
 
 namespace librealsense
 {
-
     namespace util
     {
         enum config_preset
@@ -51,8 +49,6 @@ namespace librealsense
                 }
             };
 
-
-
             static bool match_stream(const index_type& a, const index_type& b)
             {
                 if (a.stream != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a.stream != b.stream))
@@ -75,7 +71,6 @@ namespace librealsense
                 if (a.fps() != 0 && b.fps() != 0 && (a.fps() != b.fps()))
                     return false;
 
-
                 if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
                 {
                     if (auto vid_b = dynamic_cast<video_stream_profile_interface*>(b))
@@ -87,7 +82,6 @@ namespace librealsense
                     }
                     else return false;
                 }
-
                 return true;
             }
 
@@ -113,7 +107,6 @@ namespace librealsense
                 return true;
             }
 
-
             static bool contradicts(stream_profile_interface* a, stream_profiles others)
             {
                 for (auto request : others)
@@ -135,20 +128,19 @@ namespace librealsense
                         }
                     }
                 }
-
                 return false;
             }
 
             static bool contradicts(stream_profile_interface* a, const std::vector<request_type>& others)
             {
-                for (auto request : others)
-                {
-                    if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
-                        return true;
-                }
-
                 if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
                 {
+                    for (auto request : others)
+                    {
+                        if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                            return true;
+                    }
+
                     for (auto request : others)
                     {
                         // Patch for DS5U_S that allows different resolutions on multi-pin device
@@ -160,7 +152,6 @@ namespace librealsense
                             return true;
                     }
                 }
-
                 return false;
             }
 
@@ -182,6 +173,7 @@ namespace librealsense
                 if (a.stream_index == -1) return true;
                 return false;
             }
+
             std::map<index_type, request_type> get_requests()
             {
                 return _requests;
@@ -199,7 +191,6 @@ namespace librealsense
                             _dev_to_profiles(std::move(dev_to_profiles)),
                             _results(std::move(results))
                 {}
-
 
                 void open()
                 {
@@ -250,20 +241,23 @@ namespace librealsense
             void enable_streams(stream_profiles profiles)
             {
                 std::map<std::tuple<int, int>, std::vector<std::shared_ptr<stream_profile_interface>>> profiles_map;
+
                 for (auto profile : profiles)
                 {
                     profiles_map[std::make_tuple(profile->get_unique_id(), profile->get_stream_index())].push_back(profile);
                 }
+
                 for (auto profs : profiles_map)
                 {
                     std::sort(begin(profs.second), end(profs.second), sort_best_quality);
-                    auto p = dynamic_cast<video_stream_profile*>(profs.second.front().get());
-                    if (!p)
+                    auto p = profs.second.front().get();
+                    auto vp = dynamic_cast<video_stream_profile*>(p);
+                    if (vp)
                     {
-                        LOG_ERROR("prof is not video_stream_profile");
-                        throw std::logic_error("Failed to resolve request. internal error");
+                        enable_stream(vp->get_stream_type(), vp->get_stream_index(), vp->get_width(), vp->get_height(), vp->get_format(), vp->get_framerate());
+                        continue;
                     }
-                    enable_stream(p->get_stream_type(), p->get_stream_index(), p->get_width(), p->get_height(), p->get_format(), p->get_framerate());
+                    enable_stream(p->get_stream_type(), p->get_stream_index(), 0, 0, p->get_format(), p->get_framerate());
                 }
             }
 
@@ -292,7 +286,6 @@ namespace librealsense
                         itr++;
                     }
                 }
-
             }
 
             void disable_all()
@@ -528,8 +521,5 @@ namespace librealsense
             std::map<index_type, request_type> _requests;
             bool require_all;
         };
-
     }
 }
-
-#endif

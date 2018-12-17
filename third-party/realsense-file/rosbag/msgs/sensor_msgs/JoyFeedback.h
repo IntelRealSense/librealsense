@@ -75,13 +75,13 @@ typedef boost::shared_ptr< ::sensor_msgs::JoyFeedback const> JoyFeedbackConstPtr
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::sensor_msgs::JoyFeedback_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace sensor_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -178,9 +178,9 @@ float32 intensity\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -198,9 +198,9 @@ namespace serialization
   }; // struct JoyFeedback_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -220,6 +220,6 @@ struct Printer< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // SENSOR_MSGS_MESSAGE_JOYFEEDBACK_H

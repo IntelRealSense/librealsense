@@ -164,6 +164,7 @@ EXPORTS
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block
     rs2_create_hole_filling_filter_block
+    rs2_create_rates_printer_block
     rs2_create_disparity_transform_block
     rs2_embedded_frames_count
     rs2_extract_frame
@@ -232,10 +233,15 @@ EXPORTS
     rs2_delete_pipeline
     rs2_pipeline_start
     rs2_pipeline_start_with_config
+    rs2_pipeline_start_with_callback
+    rs2_pipeline_start_with_config_and_callback
+    rs2_pipeline_start_with_callback_cpp
+    rs2_pipeline_start_with_config_and_callback_cpp
     rs2_pipeline_get_active_profile
     rs2_pipeline_profile_get_device
     rs2_pipeline_profile_get_streams
     rs2_delete_pipeline_profile
+
     rs2_create_config
     rs2_delete_config
     rs2_config_enable_stream

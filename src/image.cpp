@@ -5,6 +5,7 @@
 #include <cmath>
 #include "image.h"
 #include "image_avx.h"
+#include "types.h"
 
 #ifdef RS2_USE_CUDA
 #include "cuda/cuda-conversion.cuh"
@@ -98,37 +99,43 @@ namespace librealsense
 
 #pragma pack(pop)
 
-    inline void copy_hid_axes(byte * const dest[], const byte * source, double factor)
+    template<rs2_format FORMAT> void copy_hid_axes(byte * const dest[], const byte * source, double factor)
     {
+        using namespace librealsense;
         auto hid = (hid_data*)(source);
 
         // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
         // Note that the implementation follows D435i installation pose and will require refactoring for other designs
         // Reference spec: Bosch BMI055
-        float axes[3] = { static_cast<float>((hid->x) * -factor),
-                         static_cast<float>((hid->y) * factor),
-                         static_cast<float>((hid->z) * -factor) };
-        librealsense::copy(dest[0], axes, sizeof(axes));
+        auto res= float3{ float(hid->x), float(hid->y), float(hid->z)} * float(factor);
+
+        if (RS2_FORMAT_MOTION_XYZ32F==FORMAT)
+        {
+            float3x3 rot = {{-1,0,0},{0,1,0},{0,0,-1}};
+            res=rot*res;
+        }
+
+        librealsense::copy(dest[0], &res, sizeof(float3));
     }
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
     // Librealsense output format: floating point 32bit. units m/s^2,
-    template<size_t SIZE> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
+    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
         static constexpr double accelerator_transform_factor = 0.001*gravity;
 
-        copy_hid_axes(dest, source, accelerator_transform_factor);
+        copy_hid_axes<FORMAT>(dest, source, accelerator_transform_factor);
     }
 
     // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
     // Librealsense output format: floating point 32bit. units rad/sec,
-    template<size_t SIZE> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
+    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
         static constexpr double deg2rad = M_PI / 180.;
         static const double gyro_transform_factor = 0.1 * deg2rad;
 
-        copy_hid_axes(dest, source, gyro_transform_factor);
+        copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor);
     }
 
     void unpack_hid_raw_data(byte * const dest[], const byte * source, int width, int height)
@@ -1029,10 +1036,10 @@ namespace librealsense
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGRA8 } } } } };
 
-    const native_pixel_format pf_accel_axes               = { 'ACCL', 1, 1, {  { true,                &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,  { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                               { false,               &unpack_hid_raw_data,                          { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_RAW  } } }} };
-    const native_pixel_format pf_gyro_axes                = { 'GYRO', 1, 1, {  { true,                &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,   { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_XYZ32F } } },
-                                                                               { false,               &unpack_hid_raw_data,                          { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_RAW  } } }} };
+    const native_pixel_format pf_accel_axes               = { 'ACCL', 1, 1, {  { true,                &unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>,  { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_XYZ32F } } } } };
+                                                                               //{ false,               &unpack_hid_raw_data,                          { { RS2_STREAM_ACCEL,          RS2_FORMAT_MOTION_RAW  } } } } };
+    const native_pixel_format pf_gyro_axes                = { 'GYRO', 1, 1, {  { true,                &unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>,   { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_XYZ32F } } } } };
+                                                                               //{ false,               &unpack_hid_raw_data,                          { { RS2_STREAM_GYRO,           RS2_FORMAT_MOTION_RAW  } } } } };
     const native_pixel_format pf_gpio_timestamp           = { 'GPIO', 1, 1, {  { false,               &unpack_input_reports_data,                  { { { RS2_STREAM_GPIO, 1 },      RS2_FORMAT_GPIO_RAW },
                                                                                                                                                      { { RS2_STREAM_GPIO, 2 },      RS2_FORMAT_GPIO_RAW },
                                                                                                                                                      { { RS2_STREAM_GPIO, 3 },      RS2_FORMAT_GPIO_RAW },

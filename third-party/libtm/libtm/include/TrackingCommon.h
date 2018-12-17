@@ -44,6 +44,7 @@ namespace perc {
     #define CONTROLLER_SENSOR_DATA_SIZE 6
 
     typedef uint8_t SensorId;
+    typedef uint16_t SessionId;
 
     /**
     * @brief Defines all sensors types (bSensorID/bCameraID/bMotionID)
@@ -96,8 +97,7 @@ namespace perc {
         CONTROLLER_CALIBRATION_INTERNAL_FAILURE = 29,     /**< Controller Calibration internal failure                                                                                                                                  */
         AUTH_ERROR = 30,                                  /**< Authentication error in firmware update or error in image signature                                                                                                      */
         LIST_TOO_BIG = 31,                                /**< Image size is too big                                                                                                                                                    */
-        DEVICE_RESET = 32,                                /**< A device reset has occurred. The user may read the FW log for additional details                                                                                         */
-        NO_BLUETOOTH = 33,                                /**< The device doesn't have bluetooth, so the command failed                                                                                                                 */
+        DEVICE_RESET = 32,                                /**< A device reset has occurred. The user may read the FW log for additional details                                                                                       */
     };
 
     enum PixelFormat

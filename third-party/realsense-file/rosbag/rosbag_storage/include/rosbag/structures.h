@@ -55,13 +55,13 @@ struct ROSBAG_DECL ConnectionInfo
     std::string md5sum;
     std::string msg_def;
 
-	std::shared_ptr<ros::M_string> header;
+	std::shared_ptr<rs2rosinternal::M_string> header;
 };
 
 struct ChunkInfo
 {
-    ros::Time   start_time;    //! earliest timestamp of a message in the chunk
-    ros::Time   end_time;      //! latest timestamp of a message in the chunk
+    rs2rosinternal::Time   start_time;    //! earliest timestamp of a message in the chunk
+    rs2rosinternal::Time   end_time;      //! latest timestamp of a message in the chunk
     uint64_t    pos;           //! absolute byte offset of chunk record in bag file
 
     std::map<uint32_t, uint32_t> connection_counts;   //! number of messages in each connection stored in the chunk
@@ -76,7 +76,7 @@ struct ROSBAG_DECL ChunkHeader
 
 struct ROSBAG_DECL IndexEntry
 {
-    ros::Time time;            //! timestamp of the message
+    rs2rosinternal::Time time;            //! timestamp of the message
     uint64_t  chunk_pos;       //! absolute byte offset of the chunk record containing the message
     uint32_t  offset;          //! relative byte offset of the message record (either definition or data) in the chunk
 
@@ -85,8 +85,8 @@ struct ROSBAG_DECL IndexEntry
 
 struct ROSBAG_DECL IndexEntryCompare
 {
-    bool operator()(ros::Time const& a, IndexEntry const& b) const { return a < b.time; }
-    bool operator()(IndexEntry const& a, ros::Time const& b) const { return a.time < b; }
+    bool operator()(rs2rosinternal::Time const& a, IndexEntry const& b) const { return a < b.time; }
+    bool operator()(IndexEntry const& a, rs2rosinternal::Time const& b) const { return a.time < b; }
 };
 
 } // namespace rosbag

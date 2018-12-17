@@ -168,11 +168,11 @@ MessageInstance& View::iterator::dereference() const {
 
 View::View(bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) { }
 
-View::View(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
+View::View(Bag const& bag, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
 	addQuery(bag, start_time, end_time);
 }
 
-View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
+View::View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time, bool const& reduce_overlap) : view_revision_(0), size_cache_(0), size_revision_(0), reduce_overlap_(reduce_overlap) {
 	addQuery(bag, query, start_time, end_time);
 }
 
@@ -184,11 +184,11 @@ View::~View() {
 }
 
 
-ros::Time View::getBeginTime()
+rs2rosinternal::Time View::getBeginTime()
 {
   update();
 
-  ros::Time begin = ros::TIME_MAX;
+  rs2rosinternal::Time begin = rs2rosinternal::TIME_MAX;
 
   foreach (rosbag::MessageRange* range, ranges_)
   {
@@ -199,11 +199,11 @@ ros::Time View::getBeginTime()
   return begin;
 }
 
-ros::Time View::getEndTime()
+rs2rosinternal::Time View::getEndTime()
 {
   update();
 
-  ros::Time end = ros::TIME_MIN;
+  rs2rosinternal::Time end = rs2rosinternal::TIME_MIN;
 
   foreach (rosbag::MessageRange* range, ranges_)
   {
@@ -245,7 +245,7 @@ uint32_t View::size() {
   return size_cache_;
 }
 
-void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const& end_time) {
+void View::addQuery(Bag const& bag, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time) {
     if ((bag.getMode() & bagmode::Read) != bagmode::Read)
         throw BagException("Bag not opened for reading");
 
@@ -256,7 +256,7 @@ void View::addQuery(Bag const& bag, ros::Time const& start_time, ros::Time const
     updateQueries(queries_.back());
 }
 
-void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, ros::Time const& start_time, ros::Time const& end_time) {
+void View::addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query, rs2rosinternal::Time const& start_time, rs2rosinternal::Time const& end_time) {
     if ((bag.getMode() & bagmode::Read) != bagmode::Read)
         throw BagException("Bag not opened for reading");
 

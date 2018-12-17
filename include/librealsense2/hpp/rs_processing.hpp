@@ -593,7 +593,7 @@ namespace rs2
         {
             set_option(RS2_OPTION_FILTER_MAGNITUDE, magnitude);
         }
-        
+
     private:
         friend class context;
 
@@ -772,6 +772,30 @@ namespace rs2
 
             // Redirect options API to the processing block
             //options::operator=(_block);
+
+            return block;
+        }
+    };
+
+    class rates_printer : public filter
+    {
+    public:
+        /**
+        * Create hole filling processing block
+        * the processing perform the hole filling base on different hole filling mode.
+        */
+        rates_printer() : filter(init(), 1) {}
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_rates_printer_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
 
             return block;
         }

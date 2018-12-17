@@ -4487,6 +4487,49 @@ TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
     }
 }
 
+TEST_CASE("Pipeline stream with callback", "[live][pipeline][using_pipeline]")
+{
+    rs2::context ctx;
+
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    rs2::pipeline pipe(ctx);
+    rs2::frame_queue q;
+
+    auto callback = [&](const rs2::frame& f)
+    {
+        q.enqueue(f);
+    };
+
+    // Stream with callback
+    pipe.start(callback);
+    REQUIRE_THROWS(pipe.wait_for_frames());
+    rs2::frameset frame_from_queue;
+    REQUIRE_THROWS(pipe.poll_for_frames(&frame_from_queue));
+    REQUIRE_THROWS(pipe.try_wait_for_frames(&frame_from_queue));
+
+    rs2::frame frame_from_callback = q.wait_for_frame();
+    pipe.stop();
+
+    REQUIRE(frame_from_callback);
+    REQUIRE(frame_from_queue == false);
+
+    frame_from_callback = rs2::frame();
+    frame_from_queue = rs2::frameset();
+
+    // Stream without callback
+    pipe.start();
+    REQUIRE_NOTHROW(pipe.wait_for_frames());
+    REQUIRE_NOTHROW(pipe.poll_for_frames(&frame_from_queue));
+    REQUIRE_NOTHROW(pipe.try_wait_for_frames(&frame_from_queue));
+
+    pipe.stop();
+
+    REQUIRE(frame_from_callback == false);
+    REQUIRE(frame_from_queue);
+}
+
 TEST_CASE("Syncer sanity with software-device device", "[live][software-device]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -5019,7 +5062,7 @@ TEST_CASE("Record software-device", "[software-device][record]")
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
     auto player_dev = ctx.load_device(filename);
-
+    player_dev.set_real_time(false);
     syncer player_sync;
     auto s = player_dev.query_sensors()[0];
     REQUIRE_NOTHROW(s.open(s.get_stream_profiles()));

@@ -144,7 +144,7 @@ namespace rs2
         friend class rs2::device_hub;
 
         std::shared_ptr<rs2_device> _dev;
-        
+
     };
 
     class debug_protocol : public device

@@ -30,16 +30,16 @@ float dist_2d(const pixel& a, const pixel& b);
 struct toggle
 {
     toggle() : x(0.f), y(0.f) {}
-    toggle(float x, float y)
-        : x(std::min(std::max(x, 0.f), 1.f)),
-          y(std::min(std::max(y, 0.f), 1.f))
+    toggle(float xl, float yl)
+        : x(std::min(std::max(xl, 0.f), 1.f)),
+          y(std::min(std::max(yl, 0.f), 1.f))
     {}
 
     // Move from [0,1] space to pixel space of specific frame
-    pixel get_pixel(rs2::depth_frame frame) const
+    pixel get_pixel(rs2::depth_frame frm) const
     {
-        int px = x * frame.get_width();
-        int py = y * frame.get_height();
+        int px = x * frm.get_width();
+        int py = y * frm.get_height();
         return{ px, py };
     }
 
@@ -287,16 +287,16 @@ int main(int argc, char * argv[]) try
                         // Calculate distance in 3D between the two neighboring pixels
                         auto d = dist_3d(depth, u, v);
                         // Calculate total distance from source
-                        auto total_dist = dist[u] + d;
+                        auto total_distl = dist[u] + d;
 
                         // If we encounter a potential improvement,
-                        if (dist[v] > total_dist)
+                        if (dist[v] > total_distl)
                         {
                             // Update parent and distance
                             parent[v] = u;
-                            dist[v] = total_dist;
+                            dist[v] = total_distl;
                             // And re-visit that pixel by re-introducing it to the queue
-                            q.emplace(total_dist, v);
+                            q.emplace(total_distl, v);
                         }
                     }
                 }
@@ -496,9 +496,9 @@ void render_shortest_path(const rs2::depth_frame& depth,
 
     for (int i = 0; i < path.size(); i++)
     {
-        auto&& pixel = path[i];
-        auto x = (float(pixel.first)  /  depth.get_width()) * app.width();
-        auto y = (float(pixel.second) / depth.get_height()) * app.height();
+        auto&& pixel1 = path[i];
+        auto x = (float(pixel1.first)  /  depth.get_width()) * app.width();
+        auto y = (float(pixel1.second) / depth.get_height()) * app.height();
         glVertex2f(x, y);
 
         if (i == path.size() / 2) center = { x, y };

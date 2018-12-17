@@ -112,7 +112,7 @@ namespace rosbag_inspector
             return std::chrono::nanoseconds((only_frames.getEndTime() - only_frames.getBeginTime()).toNSec());
         }
 
-        std::map<std::tuple<std::string, std::string, std::string, std::string, ros::Time, uint64_t>, std::string> cache;
+        std::map<std::tuple<std::string, std::string, std::string, std::string, rs2rosinternal::Time, uint64_t>, std::string> cache;
         std::chrono::nanoseconds file_duration;
         std::string file_name;
         std::string path;

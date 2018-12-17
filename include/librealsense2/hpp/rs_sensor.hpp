@@ -13,18 +13,18 @@ namespace rs2
     class notification
     {
     public:
-        notification(rs2_notification* notification)
+        notification(rs2_notification* nt)
         {
             rs2_error* e = nullptr;
-            _description = rs2_get_notification_description(notification, &e);
+            _description = rs2_get_notification_description(nt, &e);
             error::handle(e);
-            _timestamp = rs2_get_notification_timestamp(notification, &e);
+            _timestamp = rs2_get_notification_timestamp(nt, &e);
             error::handle(e);
-            _severity = rs2_get_notification_severity(notification, &e);
+            _severity = rs2_get_notification_severity(nt, &e);
             error::handle(e);
-            _category = rs2_get_notification_category(notification, &e);
+            _category = rs2_get_notification_category(nt, &e);
             error::handle(e);
-            _serialized_data = rs2_get_notification_serialized_data(notification, &e);
+            _serialized_data = rs2_get_notification_serialized_data(nt, &e);
             error::handle(e);
         }
 
@@ -226,7 +226,6 @@ namespace rs2
            return *this;
        }
 
-       
 
     private:
         rs2_options* _options;

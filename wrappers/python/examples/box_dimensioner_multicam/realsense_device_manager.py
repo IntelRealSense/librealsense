@@ -213,10 +213,11 @@ class DeviceManager:
                 frames[serial] = {}
                 for stream in streams:
                     if (rs.stream.infrared == stream.stream_type()):
+                        frame = frameset.get_infrared_frame(stream.stream_index())
                         key_ = (stream.stream_type(), stream.stream_index())
                     else:
+                        frame = frameset.first_or_default(stream.stream_type())
                         key_ = stream.stream_type()
-                    frame = frameset.first_or_default(stream.stream_type())
                     frames[serial][key_] = frame
 
         return frames
