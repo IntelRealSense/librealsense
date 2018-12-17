@@ -769,6 +769,8 @@ namespace librealsense
             {
             case D0: set_d0(); break;
             case D3: set_d3(); break;
+            default:
+                throw std::runtime_error("illegal power state request ");
             }
         }
 
@@ -817,7 +819,7 @@ namespace librealsense
             }
             catch (...)
             {
-                // TODO: Log
+                LOG_WARNING("Exception thrown while flushing MF source");
             }
         }
 

@@ -42,7 +42,12 @@ namespace librealsense
 {
     namespace platform
     {
-        template<typename T> size_t vector_bytes_size(const typename std::vector<T>& vec) { return sizeof(T) * vec.size(); }
+        template<typename T>
+        size_t vector_bytes_size(const typename std::vector<T>& vec)
+        {
+            static_assert((std::is_arithmetic<T>::value), "vector_bytes_size requires numeric type for input data");
+            return sizeof(T) * vec.size();
+        }
 
         std::string hr_to_string(HRESULT hr)
         {
