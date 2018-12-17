@@ -42,6 +42,13 @@ namespace librealsense
 {
     namespace platform
     {
+        template<typename T>
+        size_t vector_bytes_size(const typename std::vector<T>& vec)
+        {
+            static_assert((std::is_arithmetic<T>::value), "vector_bytes_size requires numeric type for input data");
+            return sizeof(T) * vec.size();
+        }
+
         std::string hr_to_string(HRESULT hr)
         {
             _com_error err(hr);
@@ -363,13 +370,14 @@ namespace librealsense
             {
                 // Build a device info represent all imaging devices
                 HDEVINFO device_info = SetupDiGetClassDevsEx(static_cast<const GUID *>(&guid), nullptr, nullptr, DIGCF_PRESENT, nullptr, nullptr, nullptr);
+
+                // Add automatic destructor to the device info
+                auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
+
                 if (device_info == INVALID_HANDLE_VALUE)
                 {
                     return false;
                 }
-
-                // Add automatic destructor to the device info
-                auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
                 // Enumerate all imaging devices
                 for (int member_index = 0; ; ++member_index)
@@ -391,28 +399,18 @@ namespace librealsense
                         return false;
                     }
 
-                    auto alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
-                    if (!alloc)
-                    {
-                        LOG_ERROR("malloc call failed");
-                        return false;
-                    }
-
-                    auto pInstID = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
+                    std::vector<WCHAR> pInstID(buf_size + 1);
 
                     // Get the device ID of current device
-                    if (CM_Get_Device_ID(devInfo.DevInst, pInstID.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS)
+                    if (CM_Get_Device_ID(devInfo.DevInst, pInstID.data(), vector_bytes_size(pInstID), 0) != CR_SUCCESS)
                     {
                         LOG_ERROR("CM_Get_Device_ID failed");
                         return false;
                     }
 
-                    if (pInstID == nullptr) continue;
-
-
                     // Check if this is our device
                     uint16_t usb_vid, usb_pid, usb_mi; std::string usb_unique_id;
-                    if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.get())))) continue;
+                    if (!parse_usb_path_from_device_id(usb_vid, usb_pid, usb_mi, usb_unique_id, std::string(win_to_utf(pInstID.data())))) continue;
                     if (usb_vid != device_vid || usb_pid != device_pid || /* usb_mi != device->mi || */ usb_unique_id != device_uid) continue;
 
                     // Get parent (composite device) instance
@@ -429,22 +427,20 @@ namespace librealsense
                         LOG_ERROR("CM_Get_Device_ID_Size failed");
                         return false;
                     }
-                    alloc = std::malloc(buf_size * sizeof(WCHAR) + sizeof(WCHAR));
-                    if (!alloc)
-                    {
-                        LOG_ERROR("malloc fail");
-                        return false;
-                    }
 
-                    // Get the parent (composite) device ID
-                    auto pInstID2 = std::shared_ptr<WCHAR>(reinterpret_cast<WCHAR *>(alloc), std::free);
-                    if (CM_Get_Device_ID(instance, pInstID2.get(), buf_size * sizeof(WCHAR) + sizeof(WCHAR), 0) != CR_SUCCESS) {
+                    std::vector<WCHAR> pInstID2(buf_size + 1);
+
+                    if (CM_Get_Device_ID(instance, pInstID2.data(), vector_bytes_size(pInstID2), 0) != CR_SUCCESS) {
                         LOG_ERROR("CM_Get_Device_ID failed");
                         return false;
                     }
 
                     // Upgrade to DEVINFO_DATA for SetupDiGetDeviceRegistryProperty
-                    device_info = SetupDiGetClassDevs(nullptr, pInstID2.get(), nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
+                    device_info = SetupDiGetClassDevs(nullptr, pInstID2.data(), nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE | DIGCF_ALLCLASSES);
+
+                    // Add automatic destructor to the device info
+                    di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
+
                     if (device_info == INVALID_HANDLE_VALUE) {
                         LOG_ERROR("SetupDiGetClassDevs failed");
                         return false;
@@ -465,17 +461,13 @@ namespace librealsense
                         LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         return false;
                     }
-                    alloc = std::malloc(buf_size);
-                    if (!alloc)
-                    {
-                        LOG_ERROR("malloc fail");
-                        return false;
-                    }
 
-                    auto detail_data = std::shared_ptr<SP_DEVICE_INTERFACE_DETAIL_DATA>(reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(alloc), std::free);
+                    std::vector<BYTE> detail_data_buff(buf_size);
+                    SP_DEVICE_INTERFACE_DETAIL_DATA* detail_data = reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA *>(detail_data_buff.data());
+
                     detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                     SP_DEVINFO_DATA parent_data = { sizeof(SP_DEVINFO_DATA) };
-                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data.get(), buf_size, nullptr, &parent_data))
+                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data, vector_bytes_size(detail_data_buff), nullptr, &parent_data))
                     {
                         LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         return false;
@@ -485,7 +477,7 @@ namespace librealsense
                     uint16_t pid = 0;
                     uint16_t mi = 0;
                     std::string uid = "";
-                    std::wstring ws(detail_data.get()->DevicePath);
+                    std::wstring ws(detail_data->DevicePath);
                     std::string path(ws.begin(), ws.end());
                     
                     /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
@@ -504,21 +496,17 @@ namespace librealsense
                         LOG_ERROR("SetupDiGetDeviceRegistryProperty failed in an unexpected manner");
                         return false;
                     }
-                    alloc = std::malloc(buf_size);
-                    if (!alloc)
-                    {
-                        LOG_ERROR("malloc fail");
-                        return false;
-                    }
-                    auto driver_key = std::shared_ptr<BYTE>(reinterpret_cast<BYTE*>(alloc), std::free);
-                    if (!SetupDiGetDeviceRegistryProperty(device_info, &parent_data, SPDRP_DRIVER, nullptr, driver_key.get(), buf_size, nullptr))
+
+                    std::vector<BYTE> driver_key(buf_size);
+
+                    if (!SetupDiGetDeviceRegistryProperty(device_info, &parent_data, SPDRP_DRIVER, nullptr, driver_key.data(), vector_bytes_size(driver_key), nullptr))
                     {
                         LOG_ERROR("SetupDiGetDeviceRegistryProperty failed");
                         return false;
                     }
 
                     // contains composite device key
-                    std::wstring targetKey(reinterpret_cast<const wchar_t*>(driver_key.get()));
+                    std::wstring targetKey(reinterpret_cast<const wchar_t*>(driver_key.data()));
 
                     // recursively check all hubs, searching for composite device
                     std::wstringstream buf;
@@ -545,17 +533,11 @@ namespace librealsense
                                 return false; // alt: fail silently and hope its on a different root hub
                             }
 
-                            // alloc space
-                            alloc = std::malloc(name.ActualLength);
-                            if (!alloc)
-                            {
-                                LOG_ERROR("malloc fail");
-                                return false;
-                            }
-                            auto pName = std::shared_ptr<USB_ROOT_HUB_NAME>(reinterpret_cast<USB_ROOT_HUB_NAME *>(alloc), std::free);
+                            std::vector<char> name_buff(name.ActualLength);
+                            USB_ROOT_HUB_NAME* pName = reinterpret_cast<USB_ROOT_HUB_NAME *>(name_buff.data());
 
                             // get name
-                            if (!DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, nullptr, 0, pName.get(), name.ActualLength, nullptr, nullptr)) {
+                            if (!DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, nullptr, 0, pName, vector_bytes_size(name_buff), nullptr, nullptr)) {
                                 LOG_ERROR("DeviceIoControl failed");
                                 return false; // alt: fail silently and hope its on a different root hub
                             }
