@@ -869,8 +869,11 @@ namespace librealsense
 
         void wmf_uvc_device::set_d3()
         {
-            _activate->ShutdownObject();
-            _activate->DetachObject();
+            if (_activate)
+            {
+                _activate->ShutdownObject();
+                _activate->DetachObject();
+            }
             safe_release(_camera_control);
             safe_release(_video_proc);
             safe_release(_reader);
