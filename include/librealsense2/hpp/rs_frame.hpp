@@ -977,7 +977,7 @@ namespace rs2
             throw error("Requested index is out of range!");
         }
 
-        class iterator
+        class iterator : public std::iterator<std::forward_iterator_tag, frame>
         {
         public:
             iterator(const frameset* owner, size_t index = 0) : _index(index), _owner(owner) {}
