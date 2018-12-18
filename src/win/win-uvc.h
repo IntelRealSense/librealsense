@@ -112,8 +112,6 @@ namespace librealsense
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
-            void release();
-            void init();
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();
             void foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const;
@@ -126,7 +124,6 @@ namespace librealsense
 
             CComPtr<IMFSourceReader>                _reader = nullptr;
             CComPtr<IMFMediaSource>                 _source = nullptr;
-            CComPtr<IMFActivate>                    _activate = nullptr;
             CComPtr<IMFAttributes>                  _device_attrs = nullptr;
             CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
 
