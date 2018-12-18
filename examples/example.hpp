@@ -586,7 +586,7 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
         return;
 
     // OpenGL commands that prep screen for the pointcloud
-    glPopMatrix();
+    glLoadIdentity();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
@@ -635,7 +635,6 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glPopAttrib();
-    glPushMatrix();
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud

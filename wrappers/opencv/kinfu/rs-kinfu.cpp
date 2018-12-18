@@ -42,7 +42,7 @@ void draw_kinfu_pointcloud(glfw_state& app_state, Mat points, Mat normals)
     colorize_pointcloud(points, color);
 
     // OpenGL commands that prep screen for the pointcloud
-    glPopMatrix();
+    glLoadIdentity();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
 
     glClearColor(153.f / 255, 153.f / 255, 153.f / 255, 1);
@@ -95,7 +95,6 @@ void draw_kinfu_pointcloud(glfw_state& app_state, Mat points, Mat normals)
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glPopAttrib();
-    glPushMatrix();
 }
 
 
@@ -107,7 +106,7 @@ void export_to_ply(Mat points, Mat normals)
     time_t t = time(0);   // get time now
     struct tm * now = localtime(&t);
     strftime(fname, buffer_size, "%m%d%y %H%M%S.ply", now);
-    std::cout << "exporting to" << fname;
+    std::cout << "exporting to" << fname << std::endl;
 
     // Get rgb values for points
     Mat color;
@@ -214,7 +213,7 @@ int main(int argc, char **argv)
     auto spatial = rs2::spatial_filter();
     auto temporal = rs2::temporal_filter();
 
-    auto clipping_dist = max_dist;
+    auto clipping_dist = max_dist / depth_scale; // convert clipping_dist to raw depth units
 
     // Use decimation once to get the final size of the frame
     d = decimation.process(d);
@@ -267,11 +266,8 @@ int main(int argc, char **argv)
                     auto depth_pixel_index = y * w;
                     for (int x = 0; x < w; x++, ++depth_pixel_index)
                     {
-                        // Get the depth value of the current pixel
-                        auto pixels_distance = depth_scale * p_depth_frame[depth_pixel_index];
-
-                        // Check if the depth value is invalid (<=0) or greater than the threshold
-                        if (pixels_distance <= 0.f || pixels_distance > clipping_dist)
+                        // Check if the depth value of the current pixel is greater than the threshold
+                        if (p_depth_frame[depth_pixel_index] > clipping_dist)
                         {
                             p_depth_frame[depth_pixel_index] = 0;
                         }
@@ -305,7 +301,6 @@ int main(int argc, char **argv)
                 if (!after_reset)
                 {
                     kf->getCloud(points, normals);
-                    after_reset = false;
                 }
 
                 if (!points.empty() && !normals.empty())
@@ -319,6 +314,7 @@ int main(int argc, char **argv)
                     points_queue.push(_points);
                     normals_queue.push(_normals);
                 }
+                after_reset = false;
             }
         }
         catch (const std::exception& e) // Save pointcloud in case an error occurs (for example, camera disconnects)
