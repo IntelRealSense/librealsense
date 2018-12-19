@@ -20,6 +20,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_export.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
 #include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
@@ -192,7 +193,6 @@ PYBIND11_MODULE(NAME, m) {
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     /* rs2_types.hpp */
-
     py::class_<rs2::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
@@ -312,7 +312,6 @@ PYBIND11_MODULE(NAME, m) {
 
 
     /* rs2_frame.hpp */
-
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
@@ -573,6 +572,14 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
+    /* rs_export.hpp */
+    py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
+    save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
+               .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
+
+    py::class_<rs2::save_single_frameset, rs2::filter> save_single_frameset(m, "save_single_frameset");
+    save_single_frameset.def(py::init<std::string>(), "filename"_a = "RealSense Frameset ");
+
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
     playback.def(py::init<rs2::device>(), "device"_a)
@@ -713,8 +720,6 @@ PYBIND11_MODULE(NAME, m) {
         .def("__nonzero__", &rs2::depth_sensor::operator bool);
 
     /* rs2_pipeline.hpp */
-
-
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
         .def(py::init([]() { return rs2::pipeline(rs2::context()); }))
@@ -746,7 +751,6 @@ PYBIND11_MODULE(NAME, m) {
 
     py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
-    /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
     pipeline_profile.def(py::init<>())
         .def("get_streams", &rs2::pipeline_profile::get_streams)

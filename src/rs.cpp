@@ -544,7 +544,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).is_read_only();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
@@ -552,7 +552,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
 float rs2_get_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).query();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
@@ -560,7 +560,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.0f, options, option)
 void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     options->options->get_option(option).set(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
@@ -569,7 +569,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 int rs2_supports_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
     return options->options->supports_option(option);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
@@ -578,7 +577,7 @@ void rs2_get_option_range(const rs2_options* options, rs2_option option,
     float* min, float* max, float* step, float* def, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     VALIDATE_NOT_NULL(min);
     VALIDATE_NOT_NULL(max);
     VALIDATE_NOT_NULL(step);
@@ -858,7 +857,7 @@ NOEXCEPT_RETURN(, frame)
 const char* rs2_get_option_description(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_description();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option)
@@ -873,7 +872,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, frame)
 const char* rs2_get_option_value_description(const rs2_options* options, rs2_option option, float value, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_ENUM(option);
+    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).get_value_description(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options, option, value)
@@ -1670,6 +1669,22 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
     return new rs2_processing_block{ block };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, proc, context)
+
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2_option option_id, float min, float max, float step, float def, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_LE(min, max);
+    VALIDATE_RANGE(def, min, max);
+    VALIDATE_LE(0, step);
+
+    if (block->options->supports_option(option_id)) return false;
+    std::shared_ptr<option> opt = std::make_shared<float_option>(option_range{ min, max, step, def });
+    // TODO: am I supposed to use the extensions API here?
+    auto options = dynamic_cast<options_container*>(block->options);
+    options->register_option(option_id, opt);
+    return true;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, block, option_id, min, max, step, def)
 
 rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error) BEGIN_API_CALL
 {

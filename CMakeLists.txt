@@ -5,6 +5,7 @@ project(librealsense2 LANGUAGES CXX C)
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
+
 config_cxx_flags()
 
 # include os specific macros

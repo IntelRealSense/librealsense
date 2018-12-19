@@ -406,6 +406,7 @@ return __p.invoke(func);\
 
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
+    #define VALIDATE_OPTION(OBJ, OPT_ID) if(!OBJ->options->supports_option(OPT_ID)) { std::ostringstream ss; ss << "object doesn't support option #" << std::to_string(OPT_ID); throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_LE(ARG, MAX) if((ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw std::runtime_error(ss.str()); }
     #define VALIDATE_INTERFACE_NO_THROW(X, T)                                                   \
