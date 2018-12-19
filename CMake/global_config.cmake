@@ -48,6 +48,10 @@ macro(global_set_flags)
         add_definitions(-DRS2_USE_CUDA)
     endif()
 
+    if (PREVENT_HID_SUSPEND)
+        add_definitions(-DPREVENT_HID_SUSPEND)
+    endif()
+
     if(FORCE_LIBUVC)
         set(BACKEND RS2_USE_LIBUVC_BACKEND)
         message( WARNING "Using libuvc!" )
