@@ -814,6 +814,8 @@ namespace librealsense
 
                 set_power_state(D3);
 
+                safe_release(_device_attrs);
+                safe_release(_reader_attrs);
                 for (auto&& c : _ks_controls)
                     safe_release(c.second);
                 _ks_controls.clear();
@@ -848,8 +850,11 @@ namespace librealsense
 
         void wmf_uvc_device::set_d0()
         {
-            _device_attrs = create_device_attrs();
-            _reader_attrs = create_reader_attrs();
+            if (!_device_attrs)
+                _device_attrs = create_device_attrs();
+
+            if (!_reader_attrs)
+                _reader_attrs = create_reader_attrs();
             _streams.resize(_streamIndex);
 
             //enable source
@@ -865,8 +870,6 @@ namespace librealsense
 
         void wmf_uvc_device::set_d3()
         {
-            safe_release(_device_attrs);
-            safe_release(_reader_attrs);
             safe_release(_camera_control);
             safe_release(_video_proc);
             safe_release(_reader);
