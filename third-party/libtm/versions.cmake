@@ -49,7 +49,7 @@ else()
 endif(FW_SOURCE)
 
 message(STATUS "----------------------------------------------------------------------------")
-message(STATUS "Product versions:")
+message(STATUS "TM2 Product versions:")
 message(STATUS "- HOST ${HOST_VERSION} (${HOST_VERSION_SOURCE})")
 
 if (FW_SOURCE MATCHES "Remote")
