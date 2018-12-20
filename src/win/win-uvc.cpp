@@ -761,16 +761,13 @@ namespace librealsense
         {
             if (state == _power_state)
                 return;
-            if (!_activate)
-            {
-                init();
-            }
+
             switch (state)
             {
             case D0: set_d0(); break;
             case D3: set_d3(); break;
             default:
-                throw std::runtime_error("illegal power state request ");
+                throw std::runtime_error("illegal power state request");
             }
         }
 
@@ -815,7 +812,13 @@ namespace librealsense
                     flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
 
-                release();
+                set_power_state(D3);
+
+                safe_release(_device_attrs);
+                safe_release(_reader_attrs);
+                for (auto&& c : _ks_controls)
+                    safe_release(c.second);
+                _ks_controls.clear();
             }
             catch (...)
             {
@@ -845,19 +848,17 @@ namespace librealsense
             return reader_attrs;
         }
 
-        void wmf_uvc_device::init()
-        {
-            _device_attrs = create_device_attrs();
-            _reader_attrs = create_reader_attrs();
-            CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
-
-            _streams.resize(_streamIndex);
-        }
-
         void wmf_uvc_device::set_d0()
         {
+            if (!_device_attrs)
+                _device_attrs = create_device_attrs();
+
+            if (!_reader_attrs)
+                _reader_attrs = create_reader_attrs();
+            _streams.resize(_streamIndex);
+
             //enable source
-            CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
+            CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
             LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
             LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
 
@@ -869,31 +870,14 @@ namespace librealsense
 
         void wmf_uvc_device::set_d3()
         {
-            _activate->ShutdownObject();
-            _activate->DetachObject();
             safe_release(_camera_control);
             safe_release(_video_proc);
             safe_release(_reader);
+            _source->Shutdown(); //Failure to call Shutdown can result in memory leak
             safe_release(_source);
             for (auto& elem : _streams)
                 elem.callback = nullptr;
             _power_state = D3;
-        }
-
-        void wmf_uvc_device::release()
-        {
-            set_d3();
-
-            for (auto&& c : _ks_controls)
-                safe_release(c.second);
-            _ks_controls.clear();
-
-            safe_release(_device_attrs);
-            safe_release(_reader_attrs);
-
-            if (_activate)
-                _activate->DetachObject();
-            safe_release(_activate);
         }
 
         void wmf_uvc_device::foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const
@@ -982,6 +966,11 @@ namespace librealsense
             bool profile_found = false;
             foreach_profile([this, profile, callback, &profile_found](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
             {
+                if (mfp.profile.format != profile.format &&
+                    (fourcc_map.count(mfp.profile.format) == 0 ||
+                        profile.format != fourcc_map.at(mfp.profile.format)))
+                    return;
+
                 if ((mfp.profile.width == profile.width) && (mfp.profile.height == profile.height))
                 {
                     if (mfp.max_rate.denominator && mfp.min_rate.denominator)
