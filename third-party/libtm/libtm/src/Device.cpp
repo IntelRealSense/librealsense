@@ -20,7 +20,6 @@
 #include "TrackingData.h"
 #include "CentralAppFw.h"
 #include "CentralBlFw.h"
-//#include "types.h"
 
 #define CHUNK_SIZE 512
 #define BUFFER_SIZE 1024
@@ -44,7 +43,7 @@ namespace perc {
         mListener(nullptr), mLibusbDevice(dev), mDevice(nullptr), mDispatcher(dispatcher),
         mStreamEndpointThreadStop(false), mInterruptEndpointThreadStop(false), mStreamEndpointThreadActive(false), mInterruptEndpointThreadActive(false), mOwner(owner), mTaskHandler(taskHandler), mCleared(false),
         mEndpointBulkMessages(BULK_ENDPOINT_MESSAGES), mStreamEndpoint(BULK_ENDPOINT_FRAMES), mEepromChunkSize(CHUNK_SIZE), mSyncTimeout(SYNC_TIME_FREQUENCY_NS),
-        mPlaybackIsOn(false), mSyncTimeEnabled(false), mUsbState(DEVICE_USB_STATE_INIT), mDeviceStatus(Status::SUCCESS), mHasBluetooth(true), mFWInterfaceVersion{0}
+        mPlaybackIsOn(false), mSyncTimeEnabled(false), mUsbState(DEVICE_USB_STATE_INIT), mDeviceStatus(Status::SUCCESS), mFWInterfaceVersion{0}
     {
         memset(&mDeviceInfo, 0, sizeof(mDeviceInfo));
         supported_raw_stream_libtm_message streams[MAX_SUPPORTED_STREAMS];
@@ -132,18 +131,6 @@ namespace perc {
             return;
         }
 
-        if (mDeviceInfo.bCentralAppVersionMajor == 0 &&
-            mDeviceInfo.bCentralAppVersionMinor == 0 &&
-            mDeviceInfo.bCentralAppVersionPatch == 0 &&
-            mDeviceInfo.dwCentralAppVersionBuild == 0)
-        {
-            mHasBluetooth = false;
-        }
-        else
-        {
-            mHasBluetooth = true;
-        }
-
         // Pending for FW
         //status = SetDeviceStreamConfig(MAX_BIG_DATA_MESSAGE_LENGTH);
         //if (status != Status::SUCCESS)
@@ -214,7 +201,7 @@ namespace perc {
             } // end of switch
         }
 
-        if (mHasBluetooth)
+        if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITH_BLUETOOTH)
         {
             status = CentralFWUpdate();
             if (status != Status::SUCCESS)
@@ -492,10 +479,10 @@ namespace perc {
 
     Status Device::SetController6DoFControl(bool enabled, uint8_t numOfControllers)
     {
-        if (!mHasBluetooth && enabled)
+        if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITH_BLUETOOTH && enabled)
         {
             DEVICELOGE("cannot SetController6DoFControl with controllers enabled, there is no bluetooth in the device");
-            return Status::NO_BLUETOOTH;
+            return Status::FEATURE_UNSUPPORTED;
         }
         bulk_message_request_controller_pose_control req;
         bulk_message_response_controller_pose_control res = {0};
@@ -1338,6 +1325,7 @@ namespace perc {
             DEVICELOGD("angularAcceleration [X,Y,Z] = [%f,%f,%f]", pose.angularAcceleration.x, pose.angularAcceleration.y, pose.angularAcceleration.z);
             DEVICELOGD("trackerConfidence = 0x%X", pose.trackerConfidence);
             DEVICELOGD("mapperConfidence = 0x%X", pose.mapperConfidence);
+            DEVICELOGD("trackerState = 0x%X", pose.trackerState);
         }
 
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
@@ -1543,82 +1531,78 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
-    Status Device::LockConfiguration(LockType type, bool lock)
+    Status Device::DevConfigurationLock(uint32_t lockValue, uint16_t tableType)
     {
-        bulk_message_request_lock_configuration request = {0};
-        bulk_message_response_lock_configuration response = {0};
-
-        switch (type)
-        {   
-            case HardwareLock:
-                request.header.wMessageID = DEV_LOCK_EEPROM;
-                break;
-            case SoftwareLock:
-                request.header.wMessageID = DEV_LOCK_CONFIGURATION;
-                break;
-            default:
-                DEVICELOGE("Error: unknown lock type (0x%X)", type);
-                return Status::ERROR_PARAMETER_INVALID;
-                break;
-        }
-
+        bulk_message_request_lock_configuration request = { 0 };
+        bulk_message_response_lock_configuration response = { 0 };
+        request.header.wMessageID = DEV_LOCK_CONFIGURATION;
         request.header.dwLength = sizeof(request);
-        request.dwLock = uint32_t(lock);
-
-        DEVICELOGD("Set %s Configuration Lock: Lock = %s", (request.header.wMessageID == DEV_LOCK_EEPROM)?"Hardware":"Software", (lock == true) ? "True" : "False");
+        request.wTableType = tableType;
+        request.dwLock = lockValue;
+        DEVICELOGD("Set %s Configuration Lock, Change Lock Value to be %s, table id is 0x%x", (request.header.wMessageID == DEV_LOCK_EEPROM) ? "Hardware" : "Software", (lockValue == 0) ? "false" : "true", tableType);
         Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
-
         mDispatcher->sendMessage(&mFsm, msg);
         if (msg.Result != toUnderlying(Status::SUCCESS))
         {
             DEVICELOGE("USB Error (0x%X)", msg.Result);
             return Status::ERROR_USB_TRANSFER;
         }
-
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
-    Status Device::PermanentLockConfiguration(LockType type, uint32_t token)
+    Status Device::DevEepromLock(uint32_t lockValue)
+    {
+        bulk_message_request_lock_eeprom request = { 0 };
+        bulk_message_response_lock_eeprom response = { 0 };
+
+        request.header.wMessageID = DEV_LOCK_EEPROM;
+        request.header.dwLength = sizeof(request);
+        request.dwLock = lockValue;
+
+        DEVICELOGD("Set %s Configuration Lock, Change Lock Value to be %s", (request.header.wMessageID == DEV_LOCK_EEPROM) ? "Hardware" : "Software", (lockValue == 0) ? "false" : "true");
+        Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
+        mDispatcher->sendMessage(&mFsm, msg);
+        if (msg.Result != toUnderlying(Status::SUCCESS))
+        {
+            DEVICELOGE("USB Error (0x%X)", msg.Result);
+            return Status::ERROR_USB_TRANSFER;
+        }
+        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
+    }
+
+    Status Device::LockConfiguration(LockType type, bool lock, uint16_t tableType)
+    {
+        switch (type)
+        {
+        case HardwareLock: return DevEepromLock(uint32_t(lock));
+        case SoftwareLock: return DevConfigurationLock(uint32_t(lock), tableType);
+        default:
+            DEVICELOGE("Error: unknown lock type (0x%X)", type);
+            return Status::ERROR_PARAMETER_INVALID;
+            break;
+        }
+    }
+
+    Status Device::PermanentLockConfiguration(LockType type, uint32_t token, uint16_t tableType)
     {
         if (token != PERMANENT_LOCK_CONFIGURATION_TOKEN)
         {
             DEVICELOGE("Error: Bad token (0x%X)", token);
             return Status::ERROR_PARAMETER_INVALID;
         }
-
-        bulk_message_request_lock_configuration request = {0};
-        bulk_message_response_lock_configuration response = {0};
-
+        DEVICELOGD("Permanent Lock Configuration...");
         switch (type)
         {
-            case HardwareLock:
-                request.header.wMessageID = DEV_LOCK_EEPROM;
-                break;
-            case SoftwareLock:
-                request.header.wMessageID = DEV_LOCK_CONFIGURATION;
-                break;
-            default:
-                DEVICELOGE("Error: unknown lock type (0x%X)", type);
-                return Status::ERROR_PARAMETER_INVALID;
-                break;
+        case HardwareLock: return DevEepromLock(token);
+        case SoftwareLock: return DevConfigurationLock(token, tableType);
+        default:
+            DEVICELOGE("Error: unknown lock type (0x%X)", type);
+            return Status::ERROR_PARAMETER_INVALID;
+            break;
         }
-
-        request.header.wMessageID = DEV_LOCK_CONFIGURATION;
-        request.header.dwLength = sizeof(request);
-        request.dwLock = token;
-
-        DEVICELOGD("Set Permanent %s Configuration Lock", (request.header.wMessageID == DEV_LOCK_EEPROM) ? "Hardware" : "Software");
-        Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
-
-        mDispatcher->sendMessage(&mFsm, msg);
-        if (msg.Result != toUnderlying(Status::SUCCESS))
-        {
-            DEVICELOGE("USB Error (0x%X)", msg.Result);
-            return Status::ERROR_USB_TRANSFER;
-        }
-
-        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
+        
     }
+
 
     Status Device::ReadConfiguration(uint16_t configurationId, uint16_t size, uint8_t* buffer, uint16_t* actualSize)
     {
@@ -1871,6 +1855,35 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
+    Status Device::AppendCalibration(const TrackingData::CalibrationData& calibrationData)
+    {
+        if (calibrationData.length > MAX_SLAM_APPEND_CALIBRATION)
+        {
+            DEVICELOGE("Error: Buffer length (%d) is too big, max length = %d", calibrationData.length, MAX_SLAM_APPEND_CALIBRATION);
+            return Status::ERROR_PARAMETER_INVALID;
+        }
+
+        DEVICELOGD("Appending calibration (length %d)", calibrationData.length);
+
+        std::vector<uint8_t> buf;
+        buf.resize(calibrationData.length + sizeof(bulk_message_request_header));
+
+        bulk_message_request_slam_append_calibration* msg = (bulk_message_request_slam_append_calibration*)buf.data();
+        msg->header.wMessageID = SLAM_APPEND_CALIBRATION;
+        msg->header.dwLength = (uint32_t)buf.size();
+
+        perc::copy(buf.data() + sizeof(bulk_message_request_header), calibrationData.buffer, calibrationData.length);
+
+        int actual;
+        auto rc = libusb_bulk_transfer(mDevice, mStreamEndpoint | TO_DEVICE, buf.data(), (int)buf.size(), &actual, USB_TRANSFER_MEDIUM_TIMEOUT_MS);
+        if (rc != 0 || actual == 0)
+        {
+            DEVICELOGE("Error while sending frame to device: %d", rc);
+            return Status::ERROR_USB_TRANSFER;
+        }
+
+        return Status::SUCCESS;
+    }
 
     Status Device::SetGeoLocation(const TrackingData::GeoLocalization& geoLocation)
     {
@@ -2490,10 +2503,10 @@ namespace perc {
 
     Status Device::CentralLoadFW(uint8_t* buffer)
     {
-        if (!mHasBluetooth)
+        if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH)
         {
             DEVICELOGE("cannot CentralLoadFW, there is no bluetooth in the device");
-            return Status::NO_BLUETOOTH;
+            return Status::FEATURE_UNSUPPORTED;
         }
         uint32_t addressSize = offsetof(message_fw_update_request, bNumFiles);
         std::vector<uint8_t> msgArr(addressSize + CENTRAL_APP_SIZE, 0);
@@ -2524,10 +2537,10 @@ namespace perc {
 
     Status Device::CentralFWUpdate()
     {
-        if(!mHasBluetooth)
+        if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH)
         {
             DEVICELOGE("cannot CentralFWUpdate, there is no bluetooth in the device");
-            return Status::NO_BLUETOOTH;
+            return Status::FEATURE_UNSUPPORTED;
         }
 
         bool updateApp = false;
@@ -2567,10 +2580,10 @@ namespace perc {
 
     Status Device::ControllerFWUpdate(const TrackingData::ControllerFW& fw)
     {
-        if (!mHasBluetooth)
+        if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH)
         {
             DEVICELOGE("cannot ControllerFWUpdate, there is no bluetooth in the device");
-            return Status::NO_BLUETOOTH;
+            return Status::FEATURE_UNSUPPORTED;
         }
         if (fw.imageSize == 0)
         {
@@ -2998,6 +3011,17 @@ namespace perc {
                     break;
                 }
 
+                case SLAM_RELOCALIZATION_EVENT:
+                {
+                    interrupt_message_slam_relocalization_event* msg = (interrupt_message_slam_relocalization_event*)header;
+                    DEVICELOGD("Got SLAM relocalization, timestamp %" PRIu64 ", session %" PRIu16, msg->llNanoseconds, msg->wSessionId);
+
+                    std::shared_ptr<CompleteTask> ptr = std::make_shared<RelocalizationEventFrameCompleteTask>(mListener, msg, this);
+                    mTaskHandler->addTask(ptr);
+
+                    break;
+                }
+
                 case CONTROLLER_DEVICE_DISCOVERY_EVENT:
                 {
                     interrupt_message_controller_device_discovery* controllerDeviceDiscovery = (interrupt_message_controller_device_discovery*)header;
@@ -3197,6 +3221,7 @@ namespace perc {
         DEVICELOGD("       | EEPROM Version              | %u.%u", mDeviceInfo.bEepromDataMajor, mDeviceInfo.bEepromDataMinor);
         DEVICELOGD("       | EEPROM Lock State           | %s (0x%X)", (mDeviceInfo.bEepromLocked == EEPROM_LOCK_STATE_PERMANENT_LOCKED) ? "Permanent locked" : ((mDeviceInfo.bEepromLocked == EEPROM_LOCK_STATE_LOCKED) ? "Locked" : (mDeviceInfo.bEepromLocked == EEPROM_LOCK_STATE_WRITEABLE) ? "Writeable" : "Unknown"), mDeviceInfo.bEepromLocked);
         DEVICELOGD("       | Serial Number               | %" PRIx64, bytesSwap(mDeviceInfo.llSerialNumber) >> 16);
+        DEVICELOGD("       | SKU Info                    | %u", mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH ? "No Bluetooth" : "Has Bluetooth");
         DEVICELOGD("FW     | FW Version                  | %u.%u.%u.%u", mDeviceInfo.bFWVersionMajor, mDeviceInfo.bFWVersionMinor, mDeviceInfo.bFWVersionPatch, mDeviceInfo.dwFWVersionBuild);
         DEVICELOGD("       | FW Interface Version        | %u.%u", mFWInterfaceVersion.dwMajor, mFWInterfaceVersion.dwMinor);
         DEVICELOGD("       | Central App Version         | %u.%u.%u.%u", mDeviceInfo.bCentralAppVersionMajor, mDeviceInfo.bCentralAppVersionMinor, mDeviceInfo.bCentralAppVersionPatch, mDeviceInfo.dwCentralAppVersionBuild);
@@ -3429,6 +3454,7 @@ namespace perc {
         info.version.hw.set(mDeviceInfo.bHwVersion);
         info.serialNumber = bytesSwap(mDeviceInfo.llSerialNumber);
         info.deviceType = mDeviceInfo.bDeviceType;
+        info.skuInfo = mDeviceInfo.bSKUInfo;
         info.status.host = mDeviceStatus;
 
         switch (mDeviceInfo.dwStatusCode)

@@ -428,9 +428,11 @@ public:
     {
         SensorStatistics::reset();
         trackerConfidence = 0;
+        trackerState = 0;
     }
 
-    uint32_t trackerConfidence;
+    uint32_t trackerConfidence{0};
+    uint32_t trackerState{0};
 };
 class ControllerStatistics : public SensorStatistics {
 public:
@@ -1155,6 +1157,7 @@ public:
 
         pose[poseFrame.sourceIndex].prevFrameTimeStamp = poseFrame.timestamp;
         pose[poseFrame.sourceIndex].trackerConfidence = poseFrame.trackerConfidence;
+        pose[poseFrame.sourceIndex].trackerState = poseFrame.trackerState;
     }
 
     /* Increase video (left/right FishEye) frame count */
@@ -1440,8 +1443,8 @@ public:
     {
         gStatistics.inc(pose);
 
-        LOGV("Got Pose[%u] (%" PRId64 "): Timestamp %" PRId64 ", Translation[%f, %f, %f], TrackerConfidence = 0x%X",
-            pose.sourceIndex, gStatistics.pose[pose.sourceIndex].frames, pose.timestamp, pose.translation.x, pose.translation.y, pose.translation.z, pose.trackerConfidence);
+        LOGV("Got Pose[%u] (%" PRId64 "): Timestamp %" PRId64 ", Translation[%f, %f, %f], TrackerConfidence = 0x%X, TrackerState = 0x%X",
+            pose.sourceIndex, gStatistics.pose[pose.sourceIndex].frames, pose.timestamp, pose.translation.x, pose.translation.y, pose.translation.z, pose.trackerConfidence, pose.trackerState);
 
         if (gConfiguration.statistics == true)
         {
@@ -1456,7 +1459,7 @@ public:
                 << pose.rotation.i << "," << pose.rotation.j << "," << pose.rotation.k << "," << pose.rotation.r << ","
                 << pose.angularVelocity.x << "," << pose.angularVelocity.y << "," << pose.angularVelocity.z << ","
                 << pose.angularAcceleration.x << "," << pose.angularAcceleration.y << "," << pose.angularAcceleration.z << ","
-                << pose.trackerConfidence << "," << pose.mapperConfidence << "\n";
+                << pose.trackerConfidence << "," << pose.mapperConfidence << "," << pose.trackerState << "\n";
         }
 
         switch (gConfiguration.tumFormat)
@@ -3267,7 +3270,7 @@ void saveOutput()
                       << "Rotation I," << "Rotation J," << "Rotation K," << "Rotation R,"
                       << "Angular Velocity X (Radians/Sec)," << "Angular Velocity Y (Radians/Sec)," << "Angular Velocity Z (Radians/Sec),"
                       << "Angular Acceleration X (Radians/Sec^2)," << "Angular Acceleration Y (Radians/Sec^2)," << "Angular Acceleration Z (Radians/Sec^2),"
-                      << "Tracker Confidence," << "Mapper Confidence," << "\n";
+                      << "Tracker Confidence," << "Mapper Confidence," << "Tracker State," << "\n";
 
             static int poseCount = 0;
             std::string fileHeaderName(gFileHeaderName);

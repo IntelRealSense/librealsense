@@ -15,7 +15,8 @@
 #include <map>
 
 #define TM2_DEV_VID 0x8087
-#define TM2_DEV_PID 0x0AF3
+#define TM2_T265_PID 0x0B37
+#define TM2_T260_PID 0x0AF3
 #define TM2_UDF_DEV_VID 0x03E7
 #define TM2_UDF_DEV_PID 0x2150
 #define ENUMERATE_TIMEOUT_NSEC 500000000

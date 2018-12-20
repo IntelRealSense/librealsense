@@ -24,6 +24,8 @@ The library will be compiled without the metadata support!\n")
 #define NOMINMAX
 #endif
 
+#define DEVICE_ID_MAX_SIZE 256
+
 #include "win-uvc.h"
 #include "../types.h"
 
@@ -750,201 +752,23 @@ namespace librealsense
                         // TODO
                     }
                 }
-
+                safe_release(pAttributes);
                 CoTaskMemFree(ppDevices);
             }
         }
 
         void wmf_uvc_device::set_power_state(power_state state)
         {
-            static auto rs2 = false;
+            if (state == _power_state)
+                return;
 
-            // This is temporary work-around for Windows 10 Red-Stone2 build
-            // There seem to be issues re-creating Media Foundation objects frequently
-            // That's why until this is properly investigated on RS2 machines librealsense will keep MF objects alive
-            // As a negative side-effect the camera will remain in D0 power state longer
-            if (rs2)
+            switch (state)
             {
-                if (_power_state != D0 && state == D0)
-                {
-                    foreach_uvc_device([this](const uvc_device_info& i,
-                        IMFActivate* device)
-                    {
-                        if (i == _info && device)
-                        {
-                            wchar_t did[256];
-                            HRESULT hr = S_OK;
-                            int count = 0;
-                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
-
-                            if (_reader == nullptr)
-                            {
-                                CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
-                                CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                                CHECK_HR(_device_attrs->SetString(did_guid, did));
-                                hr = device->ActivateObject(IID_PPV_ARGS(&_source));
-                                if (_source == nullptr)
-                                {
-                                    do
-                                    {
-                                        Sleep(10);
-                                        count++;
-                                        hr = device->ActivateObject(IID_PPV_ARGS(&_source));
-                                    } while (_source == nullptr && count < 30);
-                                }
-
-                                CHECK_HR(hr);
-
-                                _callback = new source_reader_callback(shared_from_this()); /// async I/O
-
-                                CHECK_HR(MFCreateAttributes(&_reader_attrs, 3));
-                                CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                                CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, static_cast<IUnknown*>(_callback)));
-                                CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                                CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
-                            }
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p)));
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p)));
-
-                            _streams.resize(_streamIndex);
-                            for (auto& elem : _streams)
-                                elem.callback = nullptr;
-
-                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
-                        }
-                    });
-
-                    _power_state = D0;
-                }
-
-                if (_power_state != D3 && state == D3)
-                {
-                    _power_state = D3;
-                }
+            case D0: set_d0(); break;
+            case D3: set_d3(); break;
+            default:
+                throw std::runtime_error("illegal power state request");
             }
-            else
-            {
-                if (_power_state != D0 && state == D0)
-                {
-                    foreach_uvc_device([this](const uvc_device_info& i,
-                        IMFActivate* device)
-                    {
-                        if (i == _info && device)
-                        {
-                            wchar_t did[256];
-                            CHECK_HR(device->GetString(did_guid, did, sizeof(did) / sizeof(wchar_t), nullptr));
-
-                            CHECK_HR(MFCreateAttributes(&_device_attrs, 2));
-                            CHECK_HR(_device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
-                            CHECK_HR(_device_attrs->SetString(did_guid, did));
-                            CHECK_HR(MFCreateDeviceSourceActivate(_device_attrs, &_activate));
-
-                            _callback = new source_reader_callback(shared_from_this()); /// async I/O
-
-                            CHECK_HR(MFCreateAttributes(&_reader_attrs, 2));
-                            CHECK_HR(_reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
-                            CHECK_HR(_reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
-                                static_cast<IUnknown*>(_callback)));
-
-                            CHECK_HR(_reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
-                            CHECK_HR(_activate->ActivateObject(IID_IMFMediaSource, reinterpret_cast<void **>(&_source)));
-                            CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
-
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl),
-                                reinterpret_cast<void **>(&_camera_control.p)));
-                            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp),
-                                reinterpret_cast<void **>(&_video_proc.p)));
-
-                            _streams.resize(_streamIndex);
-                            for (auto& elem : _streams)
-                                elem.callback = nullptr;
-
-                            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
-                        }
-                    });
-
-                    _power_state = D0;
-                }
-
-                if (_power_state != D3 && state == D3)
-                {
-                    _ks_controls.clear();
-                    _camera_control = nullptr;
-                    _video_proc = nullptr;
-                    _reader = nullptr;
-                    _source = nullptr;
-                    _reader_attrs = nullptr;
-                    _activate = nullptr;
-                    _device_attrs = nullptr;
-
-                    _power_state = D3;
-                }
-            }
-        }
-
-        std::vector<stream_profile> wmf_uvc_device::get_profiles() const
-        {
-            check_connection();
-
-            if (get_power_state() != D0)
-                throw std::runtime_error("Device must be powered to query supported profiles!");
-
-            CComPtr<IMFMediaType> pMediaType = nullptr;
-            std::vector<stream_profile> results;
-            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
-            {
-                for (auto k = 0;; k++)
-                {
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
-                    if (FAILED(hr) || pMediaType == nullptr)
-                    {
-                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
-
-                        break;
-                    }
-
-                    GUID subtype;
-                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
-
-                    unsigned width = 0;
-                    unsigned height = 0;
-
-                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
-
-                    typedef struct frameRate {
-                        unsigned int denominator;
-                        unsigned int numerator;
-                    } frameRate;
-
-                    frameRate frameRateMin;
-                    frameRate frameRateMax;
-
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
-
-                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
-                        static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
-                    {
-                        std::swap(frameRateMax, frameRateMin);
-                    }
-                    int currFps = frameRateMax.numerator / frameRateMax.denominator;
-
-                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-                    if (fourcc_map.count(device_fourcc))
-                        device_fourcc = fourcc_map.at(device_fourcc);
-
-                    stream_profile sp;
-                    sp.width = width;
-                    sp.height = height;
-                    sp.fps = currFps;
-                    sp.format = device_fourcc;
-                    results.push_back(sp);
-                }
-            }
-            return results;
         }
 
         wmf_uvc_device::wmf_uvc_device(const uvc_device_info& info,
@@ -970,6 +794,14 @@ namespace librealsense
                 LOG_WARNING("Accessing USB info failed for " << std::hex << info.vid << ":"
                     << info.pid << " , id:" << info.unique_id);
             }
+            foreach_uvc_device([this](const uvc_device_info& i, IMFActivate* device)
+            {
+                if (i == _info && device)
+                {
+                    _device_id.resize(DEVICE_ID_MAX_SIZE);
+                    CHECK_HR(device->GetString(did_guid, const_cast<LPWSTR>(_device_id.c_str()), _device_id.size(), nullptr));
+                }
+            });
         }
 
         wmf_uvc_device::~wmf_uvc_device()
@@ -979,31 +811,220 @@ namespace librealsense
                 {
                     flush(MF_SOURCE_READER_ALL_STREAMS);
                 }
-                wmf_uvc_device::set_power_state(D3);
 
-                if (_source)
-                {
-                    _ks_controls.clear();
-                    _camera_control.Release();
-                    _camera_control = nullptr;
-                    _video_proc.Release();
-                    _video_proc = nullptr;
-                    _source.Release();
-                    _source = nullptr;
-                    _reader.Release();
-                    _reader = nullptr;
-                    _reader_attrs.Release();
-                    _reader_attrs = nullptr;
-                    _activate.Release();
-                    _activate = nullptr;
-                    _device_attrs.Release();
-                    _device_attrs = nullptr;
-                }
+                set_power_state(D3);
+
+                safe_release(_device_attrs);
+                safe_release(_reader_attrs);
+                for (auto&& c : _ks_controls)
+                    safe_release(c.second);
+                _ks_controls.clear();
             }
             catch (...)
             {
-                // TODO: Log
+                LOG_WARNING("Exception thrown while flushing MF source");
             }
+        }
+
+        CComPtr<IMFAttributes> wmf_uvc_device::create_device_attrs()
+        {
+            CComPtr<IMFAttributes> device_attrs = nullptr;
+
+            CHECK_HR(MFCreateAttributes(&device_attrs, 2));
+            CHECK_HR(device_attrs->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, type_guid));
+            CHECK_HR(device_attrs->SetString(did_guid, _device_id.c_str()));
+            return device_attrs;
+        }
+
+        CComPtr<IMFAttributes> wmf_uvc_device::create_reader_attrs()
+        {
+            CComPtr<IMFAttributes> reader_attrs = nullptr;
+
+            CHECK_HR(MFCreateAttributes(&reader_attrs, 3));
+            CHECK_HR(reader_attrs->SetUINT32(MF_SOURCE_READER_DISCONNECT_MEDIASOURCE_ON_SHUTDOWN, FALSE));
+            CHECK_HR(reader_attrs->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE));
+            CHECK_HR(reader_attrs->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
+                static_cast<IUnknown*>(new source_reader_callback(shared_from_this()))));
+            return reader_attrs;
+        }
+
+        void wmf_uvc_device::set_d0()
+        {
+            if (!_device_attrs)
+                _device_attrs = create_device_attrs();
+
+            if (!_reader_attrs)
+                _reader_attrs = create_reader_attrs();
+            _streams.resize(_streamIndex);
+
+            //enable source
+            CHECK_HR(MFCreateDeviceSource(_device_attrs, &_source));
+            LOG_HR(_source->QueryInterface(__uuidof(IAMCameraControl), reinterpret_cast<void **>(&_camera_control)));
+            LOG_HR(_source->QueryInterface(__uuidof(IAMVideoProcAmp), reinterpret_cast<void **>(&_video_proc)));
+
+            //enable reader
+            CHECK_HR(MFCreateSourceReaderFromMediaSource(_source, _reader_attrs, &_reader));
+            CHECK_HR(_reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), TRUE));
+            _power_state = D0;
+        }
+
+        void wmf_uvc_device::set_d3()
+        {
+            safe_release(_camera_control);
+            safe_release(_video_proc);
+            safe_release(_reader);
+            _source->Shutdown(); //Failure to call Shutdown can result in memory leak
+            safe_release(_source);
+            for (auto& elem : _streams)
+                elem.callback = nullptr;
+            _power_state = D3;
+        }
+
+        void wmf_uvc_device::foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const
+        {
+            bool quit = false;
+            CComPtr<IMFMediaType> pMediaType = nullptr;
+            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
+            {
+                for (auto k = 0;; k++)
+                {
+                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
+                    if (FAILED(hr) || pMediaType == nullptr)
+                    {
+                        safe_release(pMediaType);
+                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
+                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+
+                        break;
+                    }
+
+                    GUID subtype;
+                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
+
+                    unsigned width = 0;
+                    unsigned height = 0;
+
+                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
+
+                    frame_rate frameRateMin;
+                    frame_rate frameRateMax;
+
+                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
+                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
+
+                    if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
+                        static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
+                    {
+                        std::swap(frameRateMax, frameRateMin);
+                    }
+                    int currFps = frameRateMax.numerator / frameRateMax.denominator;
+
+                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
+                    if (fourcc_map.count(device_fourcc))
+                        device_fourcc = fourcc_map.at(device_fourcc);
+
+                    stream_profile sp;
+                    sp.width = width;
+                    sp.height = height;
+                    sp.fps = currFps;
+                    sp.format = device_fourcc;
+
+                    mf_profile mfp;
+                    mfp.index = sIndex;
+                    mfp.min_rate = frameRateMin;
+                    mfp.max_rate = frameRateMax;
+                    mfp.profile = sp;
+
+                    action(mfp, pMediaType, quit);
+
+                    safe_release(pMediaType);
+
+                    if (quit)
+                        return;
+                }
+            }
+        }
+
+        std::vector<stream_profile> wmf_uvc_device::get_profiles() const
+        {
+            check_connection();
+
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query supported profiles!");
+
+            std::vector<stream_profile> results;
+            foreach_profile([&results](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
+            {
+                results.push_back(mfp.profile);
+            });
+
+            return results;
+        }
+
+        void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
+        {
+            bool profile_found = false;
+            foreach_profile([this, profile, callback, &profile_found](const mf_profile& mfp, CComPtr<IMFMediaType> media_type, bool& quit)
+            {
+                if (mfp.profile.format != profile.format &&
+                    (fourcc_map.count(mfp.profile.format) == 0 ||
+                        profile.format != fourcc_map.at(mfp.profile.format)))
+                    return;
+
+                if ((mfp.profile.width == profile.width) && (mfp.profile.height == profile.height))
+                {
+                    if (mfp.max_rate.denominator && mfp.min_rate.denominator)
+                    {
+                        if (mfp.profile.fps == int(profile.fps))
+                        {
+                            auto hr = _reader->SetCurrentMediaType(mfp.index, nullptr, media_type);
+                            if (SUCCEEDED(hr) && media_type)
+                            {
+                                for (unsigned int i = 0; i < _streams.size(); ++i)
+                                {
+                                    if (mfp.index == i || (_streams[i].callback))
+                                        continue;
+
+                                    _reader->SetStreamSelection(i, FALSE);
+                                }
+
+                                CHECK_HR(_reader->SetStreamSelection(mfp.index, TRUE));
+
+                                {
+                                    std::lock_guard<std::mutex> lock(_streams_mutex);
+                                    if (_streams[mfp.index].callback)
+                                        throw std::runtime_error("Camera already streaming via this stream index!");
+
+                                    _streams[mfp.index].profile = profile;
+                                    _streams[mfp.index].callback = callback;
+                                }
+
+                                _readsample_result = S_OK;
+                                CHECK_HR(_reader->ReadSample(mfp.index, 0, nullptr, nullptr, nullptr, nullptr));
+
+                                const auto timeout_ms = 5000;
+                                if (_has_started.wait(timeout_ms))
+                                {
+                                    check("_reader->ReadSample(...)", _readsample_result);
+                                }
+                                else
+                                {
+                                    LOG_WARNING("First frame took more then " << timeout_ms << "ms to arrive!");
+                                }
+                                profile_found = true;
+                                quit = true;
+                                return;
+                            }
+                            else
+                            {
+                                throw std::runtime_error("Could not set Media Type. Device may be locked");
+                            }
+                        }
+                    }
+                }
+            });
+            if (!profile_found)
+                throw std::runtime_error("Stream profile not found!");
         }
 
         void wmf_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int /*buffers*/)
@@ -1015,109 +1036,22 @@ namespace librealsense
             _frame_callbacks.push_back(callback);
         }
 
-        void wmf_uvc_device::play_profile(stream_profile profile, frame_callback callback)
+        IAMVideoProcAmp* wmf_uvc_device::get_video_proc() const
         {
-            CComPtr<IMFMediaType> pMediaType = nullptr;
-            for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
-            {
-                for (auto k = 0;; k++)
-                {
-                    auto hr = _reader->GetNativeMediaType(sIndex, k, &pMediaType.p);
-                    if (FAILED(hr) || pMediaType == nullptr)
-                    {
-                        if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            check("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)", hr, false);
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query video_proc!");
+            if (!_video_proc.p)
+                throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
+            return _video_proc.p;
+        }
 
-                        break;
-                    }
-
-                    GUID subtype;
-                    CHECK_HR(pMediaType->GetGUID(MF_MT_SUBTYPE, &subtype));
-
-                    uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t> &>(subtype.Data1);
-
-                    if (device_fourcc != profile.format &&
-                        (fourcc_map.count(device_fourcc) == 0 ||
-                            profile.format != fourcc_map.at(device_fourcc)))
-                        continue;
-
-                    unsigned int width;
-                    unsigned int height;
-
-                    CHECK_HR(MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &width, &height));
-
-                    typedef struct frameRate {
-                        unsigned int denominator;
-                        unsigned int numerator;
-                    } frameRate;
-
-                    frameRate frameRateMin;
-                    frameRate frameRateMax;
-
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MIN, &frameRateMin.numerator, &frameRateMin.denominator));
-                    CHECK_HR(MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE_RANGE_MAX, &frameRateMax.numerator, &frameRateMax.denominator));
-
-                    if ((width == profile.width) && (height == profile.height))
-                    {
-                        if (frameRateMax.denominator && frameRateMin.denominator)
-                        {
-                            if (static_cast<float>(frameRateMax.numerator) / frameRateMax.denominator <
-                                static_cast<float>(frameRateMin.numerator) / frameRateMin.denominator)
-                            {
-                                std::swap(frameRateMax, frameRateMin);
-                            }
-                            int currFps = frameRateMax.numerator / frameRateMax.denominator;
-                            if (currFps == int(profile.fps))
-                            {
-                                hr = _reader->SetCurrentMediaType(sIndex, nullptr, pMediaType);
-
-                                if (SUCCEEDED(hr) && pMediaType)
-                                {
-                                    for (unsigned int i = 0; i < _streams.size(); ++i)
-                                    {
-                                        if (sIndex == i || (_streams[i].callback))
-                                            continue;
-
-                                        _reader->SetStreamSelection(i, FALSE);
-                                    }
-
-                                    CHECK_HR(_reader->SetStreamSelection(sIndex, TRUE));
-
-                                    {
-                                        std::lock_guard<std::mutex> lock(_streams_mutex);
-                                        if (_streams[sIndex].callback)
-                                            throw std::runtime_error("Camera already streaming via this stream index!");
-
-                                        _streams[sIndex].profile = profile;
-                                        _streams[sIndex].callback = callback;
-                                    }
-
-                                    _readsample_result = S_OK;
-                                    CHECK_HR(_reader->ReadSample(sIndex, 0, nullptr, nullptr, nullptr, nullptr));
-
-                                    const auto timeout_ms = 5000;
-                                    if (_has_started.wait(timeout_ms))
-                                    {
-                                        check("_reader->ReadSample(...)", _readsample_result);
-                                    }
-                                    else
-                                    {
-                                        LOG_WARNING("First frame took more then " << timeout_ms << "ms to arrive!");
-                                    }
-
-                                    return;
-                                }
-                                else
-                                {
-                                    throw std::runtime_error("Could not set Media Type. Device may be locked");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            throw std::runtime_error("Stream profile not found!");
-
+        IAMCameraControl* wmf_uvc_device::get_camera_control() const
+        {
+            if (get_power_state() != D0)
+                throw std::runtime_error("Device must be powered to query camera_control!");
+            if (!_camera_control.p)
+                throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
+            return _camera_control.p;
         }
 
         void wmf_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)

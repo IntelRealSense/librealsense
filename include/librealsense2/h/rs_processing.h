@@ -16,6 +16,7 @@ extern "C" {
 
 #include "rs_types.h"
 #include "rs_sensor.h"
+#include "rs_option.h"
 
 /**
 * Creates Depth-Colorizer processing block that can be used to quickly visualize the depth data
@@ -59,6 +60,20 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 * \return           new processing block, to be released by rs2_delete_processing_block
 */
 rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error);
+
+/**
+* This method adds a custom option to a custom processing block. This is a simple float that can be accessed via rs2_set_option and rs2_get_option
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as save_to_ply, etc..
+* \param[in] block      Processing block
+* \param[in] option_id  an int ID for referencing the option
+* \param[in] min     the minimum value which will be accepted for this option
+* \param[in] max     the maximum value which will be accepted for this option
+* \param[in] step    the granularity of options which accept discrete values, or zero if the option accepts continuous values
+* \param[in] def     the default value of the option. This will be the initial value.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if adding the option succeeds. false if it fails e.g. an option with this id is already registered
+*/
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2_option option_id, float min, float max, float step, float def, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object

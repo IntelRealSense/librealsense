@@ -270,7 +270,14 @@ namespace rs2
 
         operator rs2_options*() const { return (rs2_options*)get(); }
         rs2_processing_block* get() const { return _block.get(); }
+        
     protected:
+        void register_simple_option(rs2_option option_id, option_range range) {
+            rs2_error * e = nullptr;
+            rs2_processing_block_register_simple_option(_block.get(), option_id,
+                    range.min, range.max, range.step, range.def, &e);
+            error::handle(e);
+        }
         std::shared_ptr<rs2_processing_block> _block;
     };
 
