@@ -1,142 +1,131 @@
-os:
-  - linux
-  - osx
+env:
+  - LRS_BUILD_CONFIG=Debug
+matrix:
+  include:
+    - name: "Windows - cpp"
+      os: windows
+      language: cpp
+      script:
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - ls $LRS_BUILD_CONFIG
 
-language: cpp
+    - name: "Windows - C#"
+      os: windows
+      language: cpp
+      script:
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - ls $LRS_BUILD_CONFIG
+        
+    - name: "Mac - cpp"
+      os: osx
+      language: cpp
+      sudo: required
+      osx_image: xcode7
+      script:
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ls
 
-sudo: required
-dist: trusty
-osx_image: xcode7
+    - name: "Linux Testing - cpp"
+      os: linux
+      language: cpp
+      sudo: required
+      dist: xenial
+      env:
+        RS_CPP_TEST=true
+      script:
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ./unit-tests/live-test -d yes -i [software-device]
+        - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
+        - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+
+    - name: "Linux - cpp"
+      os: linux
+      language: cpp
+      sudo: required
+      dist: xenial
+      script:
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ls
+
+    - name: "Linux - python & nodejs"
+      os: linux
+      language: cpp
+      sudo: required
+      dist: xenial
+      python: "2.7"
+      node_js: "6"
+      env:
+        - LRS_BUILD_NODEJS=true
+      script:
+        - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - cd ../wrappers/nodejs/test
+        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec
+        - mocha test-functional.js --playback nodejs_record.rec
+
+    - name: "Android - cpp"
+      os: linux
+      language: cpp
+      sudo: required
+      dist: xenial
+      env:
+        - LRS_BUILD_ANDROID=true
+      script:
+        - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ls
 
 before_install:
-  # Install nodejs via nvm
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash;
-      source ~/.bashrc;
-      nvm install 6 && nvm use 6;
+  - cd scripts && ./api_check.sh && cd ..
+  - if [[ "$LRS_BUILD_NODEJS" == "true" ]]; then
+      nvm use 6;
       npm install -g node-gyp;
       npm install -g mocha;
-    fi
-    # Remove duplicated python 2.x, only leave python2.7; Otherwise node-gyp will complain and stop
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      for i in `pyenv versions|sed 's/ //g'|grep "^2"`; do if [ $i = "2.7" ]; then continue; else pyenv uninstall -f $i; fi; done;
-    fi
-    # Run linter
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
       export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
       cd wrappers/nodejs/tools && npm install && cd ..;
       node ./tools/linter.js;
       export PATH=$OLDPATH && unset OLDPATH && cd ../../;
     fi
-
-  # Get logical CPU number
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      export CPU_NUM=`grep -c ^processor /proc/cpuinfo`;
-    elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      export CPU_NUM=`sysctl -n hw.logicalcpu_max`;
+  - if [[ "$LRS_BUILD_ANDROID" == "true" ]]; then
+      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
+      unzip -q android-ndk-r16b-linux-x86_64.zip -d ./;
     fi
-    
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew uninstall xctool;
-      brew install xctool --HEAD;
-      brew install homebrew/core/glfw3;
-      brew list libusb || brew install libusb;
+  - mkdir build && cd build
+  - if [[ "$RS_CPP_TEST" == "true" ]]; then
+      export LRS_LOG_LEVEL="DEBUG";
+      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
+      records_name="records.txt";
+      url_records_list=$url_records_path$records_name;
+      wget $url_records_path$records_name;
+      tests_list=`cat $records_name`;
+      for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
     fi
 
-  # Install linux required packages
+install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
       sudo apt-get update;
       sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
       sudo apt-get install -qq libusb-1.0-0-dev;
       sudo apt-get install -qq libgtk-3-dev;
-      sudo apt-get install -qq python python-dev;
       sudo apt-get install gcc-5 g++-5;
       sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+      sudo apt-get install libglfw3-dev libglfw3;
     fi
 
-install:
-  # Install nodejs via nvm
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget https://github.com/glfw/glfw/releases/download/3.2.1/glfw-3.2.1.zip;
-      unzip glfw-3.2.1.zip && cd glfw-3.2.1;
-      cmake -G "Unix Makefiles" -DBUILD_SHARED_LIBS=ON;
-      make -j $CPU_NUM;
-      sudo make install && cd ..;
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install -y vcbuildtools --version 2015.4 --force;
     fi
-#Unit-Test Suite
-# Each successful build will invoke a set of predefined unit-test that will run from recorded live test sessions
-# The records are available for download from the location specified in the tests, and are arranged in the following convention
-# |
-# |---| ..
-# |   | Records.txt
-# |   |
-# |   | single_cam
-# |               | ..
-# |               | Recorded_Test_1
-# |               | Recorded_Test_2
-# |               | ......
-# |
-# |   | multi_cam
-# |               | ..
-# |               | Recorded_Test_3
-# |               | Recorded_Test_4
-# |               | ......
-# |
-# The content of Records.txt is a list of all record paths one per line, e.g:
-# single_cam/Recorded_Test_1
-# single_cam/Recorded_Test_2
-# multi_cam/Recorded_Test_3
-# multi_cam/Recorded_Test_4
-#
-script:
-  # Exit immediately if a command exits with a non-zero status
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      set -e;
-      pyenv install 3.6.1;
-      pyenv local `pyenv versions|sed 's/ //g'|grep "^3"|tail -1`;
 
-      cd scripts;
-      ./api_check.sh;
-      cd ..;
-
-      mkdir build && cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_PYTHON_BINDINGS:BOOL=true -DBUILD_NODEJS_BINDINGS:BOOL=true -DBUILD_UNIT_TESTS:BOOL=true;
-      make -j $CPU_NUM;
-      sudo "PATH=$PATH" make install;
-
-      export LRS_LOG_LEVEL="DEBUG";
-
-      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
-      records_name="records.txt";
-      url_records_list=$url_records_path$records_name;
-      wget $url_records_path$records_name;
-      tests_list=`cat $records_name`;
-
-      echo "Downloading unit-test records...";
-      for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
-
-      ./unit-tests/live-test -d yes -i [software-device];
-      for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done;
-      for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done;
-
-      echo "Build RealSense SDK for Android...";
-      cd ../;
-      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
-      unzip android-ndk-r16b-linux-x86_64.zip -d ./;
-      mkdir build_android && cd build_android;
-      cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake;
-      make -j $CPU_NUM;
-    fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      mkdir build && cd build;
-      cmake .. -DBUILD_EXAMPLES:BOOL=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false;
-      make -j $CPU_NUM;
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      cd ../wrappers/nodejs/test;
-      wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec;
-      mocha test-functional.js --playback nodejs_record.rec;
-      cd ../../..;
+      brew uninstall xctool;
+      brew install xctool --HEAD;
+      brew install homebrew/core/glfw3;
+      brew list libusb || brew install libusb;
     fi
