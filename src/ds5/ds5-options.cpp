@@ -175,8 +175,8 @@ namespace librealsense
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsics& accel,
-                                                       const ds::imu_intrinsics& gyro,
+                                                       const ds::imu_intrinsic& accel,
+                                                       const ds::imu_intrinsic& gyro,
                                                        const option_range& opt_range)
         : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
     {
@@ -187,7 +187,8 @@ namespace librealsense
             {
                 auto xyz = (float*)(fr->get_frame_data());
 
-                if (stream == RS2_STREAM_ACCEL)
+                // Evgeni TODO
+               /* if (stream == RS2_STREAM_ACCEL)
                 {
                     for (int i = 0; i < 3; i++)
                         xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
@@ -197,7 +198,7 @@ namespace librealsense
                 {
                     for (int i = 0; i < 3; i++)
                         xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
-                }
+                }*/
             }
         });
     }

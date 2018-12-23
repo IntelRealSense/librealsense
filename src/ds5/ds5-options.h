@@ -69,14 +69,14 @@ namespace librealsense
         }
 
         enable_motion_correction(sensor_base* mm_ep,
-                                 const ds::imu_intrinsics& accel,
-                                 const ds::imu_intrinsics& gyro,
+                                 const ds::imu_intrinsic& accel,
+                                 const ds::imu_intrinsic& gyro,
                                  const option_range& opt_range);
 
     private:
-        std::atomic<bool>  _is_enabled;
-        ds::imu_intrinsics _accel;
-        ds::imu_intrinsics _gyro;
+        std::atomic<bool>   _is_enabled;
+        ds::imu_intrinsic   _accel;
+        ds::imu_intrinsic   _gyro;
     };
 
     class enable_auto_exposure_option : public option_base

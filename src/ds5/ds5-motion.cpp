@@ -143,28 +143,59 @@ namespace librealsense
 
     rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
     {
+        // Evgeni
+        //if ((stream == RS2_STREAM_ACCEL) || (stream == RS2_STREAM_GYRO))
+        //    return create_motion_intrinsics(get_intrinsic(stream));
+
         if (stream == RS2_STREAM_ACCEL)
-            return create_motion_intrinsics(*_accel_intrinsics);
+            return create_motion_intrinsics(*_accel_intrinsic);
 
         if (stream == RS2_STREAM_GYRO)
-            return create_motion_intrinsics(*_gyro_intrinsics);
+            return create_motion_intrinsics(*_gyro_intrinsic);
 
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
 
-    std::vector<uint8_t> ds5_motion::get_tm1_eeprom_raw() const
-    {
-        const int offset = 0;
-        const int size = ds::tm1_eeprom_size;
-        command cmd(ds::MMER, offset, size);
-        return _hw_monitor->send(cmd);
-    }
+    //std::vector<uint8_t> ds5_motion::get_imu_eeprom_raw() const
+    //{
+    //    const int offset = 0;
+    //    const int size = ds::eeprom_imu_table_size;
+    //    command cmd(ds::MMER, offset, size);
+    //    return _hw_monitor->send(cmd);
+    //}
 
-    ds::tm1_eeprom ds5_motion::get_tm1_eeprom() const
-    {
-        auto table = ds::check_calib<ds::tm1_eeprom>(*_tm1_eeprom_raw);
-        return *table;
-    }
+    ////template<class T>
+    ////const T* check_calib(const std::vector<uint8_t>& raw_data)
+    //auto ds5_motion::get_imu_eeprom()
+    //{
+    //    // Read the calibration table format, and act accordingly
+    //    auto header = reinterpret_cast<const ds::table_header*>(*_imu_eeprom_raw);
+    //    switch (header->version)
+    //    {
+    //    case 1:
+    //        auto tm1_calib_tbl = ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw);
+    //        return *tm1_calib_tbl;
+    //    case 2:
+    //        auto dm_v2_calib_tbl = ds::check_calib<ds::dm_v2_eeprom>(*_imu_eeprom_raw);
+    //        return *dm_v2_calib_tbl;
+    //    default:
+    //        std::runtime_error(to_string() << "Motion Intrinsics unresolved, type: " << header->version <<  " !");
+    //    }
+    //}
+
+    //std::vector<uint8_t> ds5_motion::get_tm1_eeprom_raw() const
+    //{
+    //    const int offset = 0;
+    //    const int size = ds::tm1_eeprom_size;
+    //    command cmd(ds::MMER, offset, size);
+    //    return _hw_monitor->send(cmd);
+    //}
+
+    //ds::tm1_eeprom ds5_motion::get_tm1_eeprom() const
+    //{
+    //    auto table = ds::check_calib<ds::tm1_eeprom>(*_tm1_eeprom_raw);
+    //    return *table;
+    //}
 
     std::shared_ptr<hid_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
@@ -255,11 +286,16 @@ namespace librealsense
     {
         using namespace ds;
 
-        _tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
-        _tm1_eeprom = [this]() { return get_tm1_eeprom(); };
+        //_tm1_eeprom_raw = [this]() { return get_tm1_eeprom_raw(); };
+        //_imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+        //_tm1_eeprom = [this]() { return *_imu_eeprom_raw; };
 
-        _accel_intrinsics = [this]() { return (*_tm1_eeprom).calibration_table.imu_calib_table.accel_intrinsics; };
-        _gyro_intrinsics = [this](){ return (*_tm1_eeprom).calibration_table.imu_calib_table.gyro_intrinsics; };
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor);
+
+        _accel_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); };
+        _gyro_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); };
+        //_accel_intrinsic = [this]() { return (*_tm1_eeprom).calibration_table.imu_calib_table.accel_intrinsics; };
+        //_gyro_intrinsic = [this](){ return (*_tm1_eeprom).calibration_table.imu_calib_table.gyro_intrinsics; };
 
         std::string motion_module_fw_version = "";
         if (_fw_version >= firmware_version("5.5.8.0"))
@@ -281,7 +317,7 @@ namespace librealsense
             pose ex = { {  1.f,     0.f,    0.f,
                            0.f,     1.f,    0.f,
                            0.f,     0.f,    1.f},
-                        { 0.00552f, -0.0051, -0.01174}};
+                        { 0.00552f, -0.0051f, -0.01174f}};
 
             return from_pose(ex);
         });
@@ -302,8 +338,8 @@ namespace librealsense
             {
                 hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
                     std::make_shared<enable_motion_correction>(hid_ep.get(),
-                        *_accel_intrinsics,
-                        *_gyro_intrinsics,
+                        *_accel_intrinsic,
+                        *_gyro_intrinsic,
                         option_range{ 0, 1, 1, 1 }));
             }
             catch (const std::exception& ex)
@@ -339,8 +375,10 @@ namespace librealsense
 
         _fisheye_calibration_table_raw = [this]()
         {
-            uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
-            return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
+            // Evgeni TODO
+            //uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&(*_tm1_eeprom).calibration_table.calib_model.fe_calibration);
+            //return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ fisheye_calibration_table_size);
+            return _mm_calib->get_fisheye_calib_raw();
         };
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
@@ -416,17 +454,70 @@ namespace librealsense
         //    return from_pose(inverse(extr));
         //});
 
-        _fisheye_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            auto fe_calib = (*_tm1_eeprom).calibration_table.calib_model.fe_calibration;
+        //_fisheye_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        //{
+        //    auto fe_calib = (*_tm1_eeprom).calibration_table.calib_model.fe_calibration;
 
-            auto rot = fe_calib.fisheye_to_imu.rotation;
-            auto trans = fe_calib.fisheye_to_imu.translation;
+        //    auto rot = fe_calib.fisheye_to_imu.rotation;
+        //    auto trans = fe_calib.fisheye_to_imu.translation;
 
-            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(0,1), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
-            { trans[0], trans[1], trans[2] } };
+        //    pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(0,1), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
+        //    { trans[0], trans[1], trans[2] } };
 
-            return from_pose(ex);
-        });
+        //    return from_pose(ex);
+        //});
     }
+
+    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
+    {
+        const int offset = 0;
+        const int size = ds::eeprom_imu_table_size;
+        command cmd(ds::MMER, offset, size);
+        return _hw_monitor->send(cmd);
+    }
+
+    //auto mm_calib_handler::get_imu_eeprom()
+    //{
+    //    // Read the calibration table format, and act accordingly
+    //    //auto header = reinterpret_cast<const ds::table_header*>(*_imu_eeprom_raw);
+    //    auto data = *_imu_eeprom_raw;
+    //    auto header = reinterpret_cast<ds::table_header*>(&data);
+    //    switch (header->version)
+    //    {
+    //    case 1:
+    //        auto tm1_calib_tbl = ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw);
+    //        return tm1_calib_tbl;
+    //    case 2:
+    //        auto dm_v2_calib_tbl = ds::check_calib<ds::dm_v2_eeprom>(*_imu_eeprom_raw);
+    //        return dm_v2_calib_tbl;
+    //    default:
+    //        std::runtime_error(to_string() << "Motion Intrinsics unresolved, type: " << header->version << " !");
+    //    }
+    //}
+
+    ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
+    {
+
+        return (*_calib_parser)->get_intrinsic(stream);
+    }
+
+    rs2_extrinsics mm_calib_handler::get_extrinsic(rs2_stream stream)
+    {
+        return (*_calib_parser)->get_extrinsic_to(stream);
+    }
+
+    const std::vector<uint8_t> mm_calib_handler::get_fisheye_calib_raw()
+    {
+        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
+        uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&fe_calib_table);
+        return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ ds::fisheye_calibration_table_size);
+    }
+
+    //const std::vector<uint8_t>& mm_calib_handler::get_fisheye_calib()
+    //{
+    //    // TODO Evgeni
+    //    ds::tm1_eeprom a;
+    //    return a.calibration_table.calib_model.fe_calibration;
+    //    //auto fe_calib = (*_tm1_eeprom).calibration_table.calib_model.fe_calibration;
+    //}
 }

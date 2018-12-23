@@ -282,10 +282,20 @@ namespace librealsense
             float3              translation;
         };
 
+        // TODO Evgeni - remove this as obsolete -need to check recorder/playback
         struct imu_intrinsics
         {
             float bias[3];
             float scale[3];
+        };
+
+        // Note that the intrinsic definition follows rs2_motion_device_intrinsic with different data layout
+        struct imu_intrinsic
+        {
+            float3x3    sensitivity;
+            float3      bias;
+            float3      noise_variances;  /**< Variance of noise for X, Y, and Z axis */
+            float3      bias_variances;   /**< Variance of bias for X, Y, and Z axis */
         };
 
         struct fisheye_calibration_table
@@ -365,6 +375,48 @@ namespace librealsense
 
         constexpr size_t tm1_eeprom_size = sizeof(tm1_eeprom);
 
+        struct dm_v2_imu_intrinsic
+        {
+            float3x3            sensitivity;
+            float3              bias;
+        };
+
+        struct dm_v2_calibration_table
+        {
+            table_header            header;
+            extrinsics_table        depth_to_imu;       // The extrinsic parameters of IMU persented in Depth sensor's CS
+            dm_v2_imu_intrinsic     accel_intrinsic;
+            dm_v2_imu_intrinsic     gyro_intrinsic;
+            uint8_t                 reserved[96];
+        };
+
+        constexpr size_t dm_v2_calibration_table_size = sizeof(dm_v2_calibration_table);
+
+        struct dm_v2_calib_info
+        {
+            table_header            header;
+            dm_v2_calibration_table dm_v2_calib_table;
+            tm1_serial_num_table    serial_num_table;
+        };
+
+        constexpr size_t dm_v2_calib_info_size = sizeof(dm_v2_calib_info);
+
+        // Depth Module V2 IMU EEPROM ver 0.52
+        struct dm_v2_eeprom
+        {
+            table_header            header;
+            dm_v2_calib_info        module_info;
+        };
+
+        constexpr size_t dm_v2_eeprom_size = sizeof(dm_v2_eeprom);
+
+        union eeprom_imu_table {
+            tm1_eeprom      tm1_table;
+            dm_v2_eeprom    dm_v2_table;
+        };
+
+        constexpr size_t eeprom_imu_table_size = sizeof(eeprom_imu_table);
+
         struct depth_table_control
         {
             uint32_t depth_units;
@@ -395,15 +447,29 @@ namespace librealsense
         };
 
 
-        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsics data)
+        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
             rs2_motion_device_intrinsic result;
-            memset(&result, 0, sizeof(result));
+            //float3x3    sensitivity;
+            //float3      bias;
+            //float3      noise_variances;  /**< Variance of noise for X, Y, and Z axis */
+            //float3      bias_variances;   /**< Variance of bias for X, Y, and Z axis */
+            // Evgeni
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                    result.data[i][j] = data.sensitivity(i,j);
+
+                result.bias_variances[i] = data.bias_variances[i];
+                result.noise_variances[i] = data.noise_variances[i];
+            }
+            
+            /*memset(&result, 0, sizeof(result));
             for (int i = 0; i < 3; i++)
             {
                 result.data[i][3] = data.bias[i];
                 result.data[i][i] = data.scale[i];
-            }
+            }*/
             return result;
         }
 
