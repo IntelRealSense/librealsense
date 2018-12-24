@@ -257,16 +257,29 @@ namespace librealsense
         // D435i to use predefined values extrinsics
         _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
-            // BMI055 assembly transformation based on mechanical drawing (mm)
-            //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
-            //      [  0.  ,   1.  ,   0.  ,   5.1 ],
-            //      [  0.  ,   0.  ,  -1.  , -11.74],
-            //      [  0.  ,   0.  ,   0.  ,   1.  ]])
-            // The orientation matrix will be integrated into the IMU stream data
-            pose ex = { {  1.f,     0.f,    0.f,
-                           0.f,     1.f,    0.f,
-                           0.f,     0.f,    1.f},
-                        { 0.00552f, -0.0051f, -0.01174f}};
+            pose ex{};
+            try
+            {
+                auto extr = _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
+                ex = { { extr.rotation[0], extr.rotation[1], extr.rotation[2],
+                         extr.rotation[3], extr.rotation[4], extr.rotation[5],
+                         extr.rotation[6], extr.rotation[7], extr.rotation[8]},
+                       { extr.translation[0], extr.translation[1], extr.translation[2]} };
+            }
+            catch (const std::exception &exc)
+            {
+                LOG_INFO("IMU Extrinsic calibration is provided by Librealsense: " << exc.what());
+                // BMI055 assembly transformation based on mechanical drawing (mm)
+                //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
+                //      [  0.  ,   1.  ,   0.  ,   5.1 ],
+                //      [  0.  ,   0.  ,  -1.  , -11.74],
+                //      [  0.  ,   0.  ,   0.  ,   1.  ]])
+                // The orientation matrix will be integrated into the IMU stream data
+                ex = { {1.f,     0.f,    0.f,
+                        0.f,     1.f,    0.f,
+                        0.f,     0.f,    1.f},
+                    { 0.00552f, -0.0051f, -0.01174f} };
+            }
 
             return from_pose(ex);
         });
