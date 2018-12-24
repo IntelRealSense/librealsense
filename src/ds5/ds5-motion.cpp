@@ -294,6 +294,28 @@ namespace librealsense
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
         if (hid_ep)
         {
+            // Perform basic IMU transformation to align orientation with Depth sensor CS.
+            auto align_imu_axis = [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
+            {
+                if (fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
+                {
+                    auto xyz = (float*)(fr->get_frame_data());
+
+                    // Evgeni TODO
+                    /*if (stream == RS2_STREAM_ACCEL)
+                    {
+                        for (int i = 0; i < 3; i++)
+                            xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
+                    }
+
+                    if (stream == RS2_STREAM_GYRO)
+                    {
+                        for (int i = 0; i < 3; i++)
+                            xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
+                    }*/
+                }
+            };
+
             _motion_module_device_idx = add_sensor(hid_ep);
 
             try
@@ -302,11 +324,16 @@ namespace librealsense
                     std::make_shared<enable_motion_correction>(hid_ep.get(),
                         *_accel_intrinsic,
                         *_gyro_intrinsic,
+                        _depth_to_imu,
+                        align_imu_axis,
                         option_range{ 0, 1, 1, 1 }));
             }
             catch (const std::exception& ex)
             {
-                LOG_INFO("No Motion Module calibration is available, report: " << ex.what());
+                LOG_INFO("Motion Module calibration is not available, report: " << ex.what());
+
+                // Assign default IMU axis transformation routine
+                hid_ep->register_on_before_frame_callback(align_imu_axis);
             }
 
             if (!motion_module_fw_version.empty())
