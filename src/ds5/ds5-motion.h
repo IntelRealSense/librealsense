@@ -12,7 +12,6 @@ namespace librealsense
     public:
         virtual rs2_extrinsics get_extrinsic_to(rs2_stream) = 0;    // Extrinsics are referenced to the Depth stream, except for TM1
         virtual ds::imu_intrinsic get_intrinsic(rs2_stream) = 0;    // With extrinsic from FE<->IMU only
-        //const std::vector<uint8_t>& get_raw_data()  = 0;
     };
 
     class tm1_imu_calib_parser : public mm_calib_parser
@@ -102,8 +101,7 @@ namespace librealsense
                 default:
                     std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
             }
-            
-            //ds::imu_intrinsic out_intr{ in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
+
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
         }
 
@@ -140,7 +138,6 @@ namespace librealsense
         ds::imu_intrinsic get_intrinsic(rs2_stream);
         rs2_extrinsics get_extrinsic(rs2_stream);       // The extrinsic defined as Depth->Stream rigid-body transfom.
         const std::vector<uint8_t> get_fisheye_calib_raw();
-        //const std::vector<uint8_t>& get_fisheye_calib();
 
     private:
         std::shared_ptr<hw_monitor> _hw_monitor;
@@ -148,16 +145,6 @@ namespace librealsense
         lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
         std::vector<uint8_t>            get_imu_eeprom_raw() const;
         lazy<std::vector<uint8_t>>      _fisheye_calibration_table_raw;
-        /*optional_value<uint8_t> _fisheye_device_idx;
-        optional_value<uint8_t> _motion_module_device_idx;*/
-        //lazy<std::vector<uint8_t>>      _tm1_eeprom_raw;
-        //lazy<ds::tm1_eeprom>            _tm1_eeprom;
-        //lazy<ds::eeprom_imu_table>      _imu_eeprom;
-        //std::shared_ptr<lazy<rs2_extrinsics>> _fisheye_to_imu;
-        //std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_imu;
-        //ds::tm1_eeprom                get_tm1_eeprom() const;
-        //std::vector<uint8_t>          get_tm1_eeprom_raw() const;
-        //auto                            get_imu_eeprom();
     };
 
     class ds5_motion : public virtual ds5_device
@@ -175,9 +162,6 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep,
                                                                                 const platform::extension_unit* fisheye_xu);
 
-        //const std::vector<uint8_t>&   get_fisheye_raw_calib(void) const { return _mm_calib->get_fisheye_raw(); };
-        //ds::imu_intrinsic get_intrinsic(rs2_stream stream) const { return _mm_calib.get_intrinsic(stream); };
-
     private:
 
         friend class ds5_fisheye_sensor;
@@ -188,25 +172,11 @@ namespace librealsense
         optional_value<uint8_t> _fisheye_device_idx;
         optional_value<uint8_t> _motion_module_device_idx;
 
-        //mutable mm_calib_handler                    _mm_calib;
         std::shared_ptr<mm_calib_handler>        _mm_calib;
         lazy<ds::imu_intrinsic>                 _accel_intrinsic;
         lazy<ds::imu_intrinsic>                 _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;
-        
-        ////lazy<std::vector<uint8_t>>      _tm1_eeprom_raw;
-        //lazy<std::vector<uint8_t>>      _imu_eeprom_raw;
-        //lazy<ds::tm1_eeprom>            _tm1_eeprom;
-        ////lazy<ds::eeprom_imu_table>      _imu_eeprom;
-        
-        //std::shared_ptr<lazy<rs2_extrinsics>> _fisheye_to_imu;
-        
-        //ds::tm1_eeprom                get_tm1_eeprom() const;
-        //std::vector<uint8_t>          get_tm1_eeprom_raw() const;
-        /*std::vector<uint8_t>            get_imu_eeprom_raw() const;
-        auto                            get_imu_eeprom();*/
-        
 
 #ifdef _WIN32
         // Bandwidth parameters from BOSCH BMI 055 spec'
