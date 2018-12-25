@@ -172,7 +172,9 @@ namespace librealsense
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
-        if (camera_fw_version >= firmware_version(custom_sensor_fw_ver))
+        uint16_t pid = static_cast<uint16_t>(std::stoul(all_hid_infos.front().pid, nullptr, 16));
+
+        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID })))
         {
             hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
                                     std::make_shared<motion_module_temperature_option>(*hid_ep));
@@ -218,7 +220,6 @@ namespace librealsense
                                                                                         std::map<float, std::string>{{50.f, "50Hz"},
                                                                                                                      {60.f, "60Hz"}}));
 
-
         uvc_ep->register_option(RS2_OPTION_GAIN,
                                     std::make_shared<auto_disabling_control>(
                                     gain_option,
@@ -257,31 +258,21 @@ namespace librealsense
         // D435i to use predefined values extrinsics
         _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
-            pose ex{};
             try
             {
+                pose ex{};
                 auto extr = _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
                 ex = { { extr.rotation[0], extr.rotation[1], extr.rotation[2],
                          extr.rotation[3], extr.rotation[4], extr.rotation[5],
                          extr.rotation[6], extr.rotation[7], extr.rotation[8]},
                        { extr.translation[0], extr.translation[1], extr.translation[2]} };
+                return from_pose(ex);
             }
             catch (const std::exception &exc)
             {
-                LOG_INFO("IMU Extrinsic calibration is provided by Librealsense: " << exc.what());
-                // BMI055 assembly transformation based on mechanical drawing (mm)
-                //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
-                //      [  0.  ,   1.  ,   0.  ,   5.1 ],
-                //      [  0.  ,   0.  ,  -1.  , -11.74],
-                //      [  0.  ,   0.  ,   0.  ,   1.  ]])
-                // The orientation matrix will be integrated into the IMU stream data
-                ex = { {1.f,     0.f,    0.f,
-                        0.f,     1.f,    0.f,
-                        0.f,     0.f,    1.f},
-                    { 0.00552f, -0.0051f, -0.01174f} };
+                LOG_ERROR("IMU Extrinsic table " << exc.what());
+                throw;
             }
-
-            return from_pose(ex);
         });
 
         // Make sure all MM streams are positioned with the same extrinsics
@@ -294,29 +285,30 @@ namespace librealsense
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
         if (hid_ep)
         {
-            // Perform basic IMU transformation to align orientation with Depth sensor CS.
-            auto align_imu_axis = [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-            {
-                if (fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                {
-                    auto xyz = (float*)(fr->get_frame_data());
-
-                    // Evgeni TODO
-                    /*if (stream == RS2_STREAM_ACCEL)
-                    {
-                        for (int i = 0; i < 3; i++)
-                            xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
-                    }
-
-                    if (stream == RS2_STREAM_GYRO)
-                    {
-                        for (int i = 0; i < 3; i++)
-                            xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
-                    }*/
-                }
-            };
-
             _motion_module_device_idx = add_sensor(hid_ep);
+
+            std::function<void(rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)> align_imu_axes  = nullptr;
+
+            // Perform basic IMU transformation to align orientation with Depth sensor CS.
+            float3x3 rotation{ {1,0,0}, {0,1,0}, {0,0,1} };
+            try
+            {
+                librealsense::copy(&rotation, &(*_depth_to_imu)->rotation, sizeof(float3x3));
+                align_imu_axes = [rotation](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
+                {
+                    if (fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
+                    {
+                        auto xyz = (float3*)(fr->get_frame_data());
+
+                        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
+                        //Reference spec : Bosch BMI055
+                        *xyz = rotation * (*xyz);
+                    }
+                };
+            }
+            catch (...){
+                std::cout << "No depth->imu extrinsic" << std::endl;
+            }
 
             try
             {
@@ -325,15 +317,15 @@ namespace librealsense
                         *_accel_intrinsic,
                         *_gyro_intrinsic,
                         _depth_to_imu,
-                        align_imu_axis,
+                        align_imu_axes, // The motion correction callback also includes the axes rotation routine
                         option_range{ 0, 1, 1, 1 }));
             }
             catch (const std::exception& ex)
             {
                 LOG_INFO("Motion Module calibration is not available, report: " << ex.what());
 
-                // Assign default IMU axis transformation routine
-                hid_ep->register_on_before_frame_callback(align_imu_axis);
+                // transform IMU axes if supported
+                hid_ep->register_on_before_frame_callback(align_imu_axes);
             }
 
             if (!motion_module_fw_version.empty())
@@ -464,7 +456,6 @@ namespace librealsense
 
     ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
     {
-
         return (*_calib_parser)->get_intrinsic(stream);
     }
 

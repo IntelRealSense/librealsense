@@ -71,7 +71,6 @@ namespace librealsense
         enable_motion_correction(sensor_base* mm_ep,
                                  const ds::imu_intrinsic& accel,
                                  const ds::imu_intrinsic& gyro,
-                                 //const rs2_extrinsics& depth_to_imu,
                                  std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
                                  on_before_frame_callback frame_callback,
                                  const option_range& opt_range);

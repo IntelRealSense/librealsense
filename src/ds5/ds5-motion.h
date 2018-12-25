@@ -4,6 +4,8 @@
 #pragma once
 
 #include "ds5-device.h"
+#include <fstream>
+#include <iostream>
 
 namespace librealsense
 {
@@ -27,7 +29,7 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream) && !(RS2_STREAM_FISHEYE == stream))
-                std::runtime_error(to_string() << "TM1 Calibration does not provide extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error(to_string() << "TM1 Calibration does not provide extrinsic for : " << rs2_stream_to_string(stream) << " !");
 
             auto fe_calib = calib_table.calibration_table.calib_model.fe_calibration;
 
@@ -53,12 +55,12 @@ namespace librealsense
             case RS2_STREAM_GYRO:
                 in_intr = calib_table.calibration_table.imu_calib_table.gyro_intrinsics; break;
             default:
-                std::runtime_error(to_string() << "TM1 IMU Calibration does not support intrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error(to_string() << "TM1 IMU Calibration does not support intrinsic for : " << rs2_stream_to_string(stream) << " !");
             }
             ds::imu_intrinsic out_intr{};
             for (auto i = 0; i < 3; i++)
             {
-                out_intr.sensitivity(i,i)  = in_intr.bias[i];
+                out_intr.sensitivity(i,i)   = in_intr.scale[i];
                 out_intr.bias[i]            = in_intr.bias[i];
             }
             return out_intr;
@@ -81,25 +83,48 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
-                std::runtime_error(to_string() << "TM1 Calibration does not provide extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error(to_string() << "Depth Module V2 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
 
-            // The extrinsic is stored as array of floats / little-endian
             rs2_extrinsics extr;
-            librealsense::copy(&extr, &calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            if (1 == calib_table.module_info.dm_v2_calib_table.extrinsic_valid)
+            {
+                // The extrinsic is stored as array of floats / little-endian
+                librealsense::copy(&extr, &calib_table.module_info.dm_v2_calib_table.depth_to_imu, sizeof(rs2_extrinsics));
+            }
+            else
+            {
+                LOG_INFO("IMU Extrinsic table error, switch to default calubration");
+                // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
+                //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
+                //      [  0.  ,   1.  ,   0.  ,   5.1 ],
+                //      [  0.  ,   0.  ,  -1.  , -11.74],
+                //      [  0.  ,   0.  ,   0.  ,   1.  ]])
+                // The orientation matrix will be integrated into the IMU stream data
+                extr = { {-1.f,     0.f,    0.f,
+                           0.f,     1.f,    0.f,
+                           0.f,     0.f,   -1.f},
+                    { 0.00552f, -0.0051f, -0.01174f} };
+            }
             return extr;
         };
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
         {
+            if (1!=calib_table.module_info.dm_v2_calib_table.intrinsic_valid)
+                throw std::runtime_error(to_string() << "Depth Module V2 intrinsic invalidated : " << rs2_stream_to_string(stream) << " !");
+
             ds::dm_v2_imu_intrinsic in_intr;
             switch (stream)
             {
                 case RS2_STREAM_ACCEL:
-                    in_intr = calib_table.module_info.dm_v2_calib_table.accel_intrinsic; break;
+                    in_intr = calib_table.module_info.dm_v2_calib_table.accel_intrinsic;
+                    break;
                 case RS2_STREAM_GYRO:
-                    in_intr = calib_table.module_info.dm_v2_calib_table.gyro_intrinsic; break;
+                    in_intr = calib_table.module_info.dm_v2_calib_table.gyro_intrinsic;
+                    in_intr.bias = in_intr.bias * static_cast<float>(d2r);        // The gyro bias is calculated in Deg/sec
+                    break;
                 default:
-                    std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+                    throw std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
             }
 
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
@@ -117,17 +142,18 @@ namespace librealsense
             _hw_monitor(hw_monitor)
         {
             _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+
             _calib_parser = [this]() {
                 auto calib_header = reinterpret_cast<const ds::table_header*>((*_imu_eeprom_raw).data());
                 std::shared_ptr<mm_calib_parser> prs = nullptr;
                 switch (calib_header->version)
                 {
-                    case 1:
-                        prs = std::make_shared<tm1_imu_calib_parser>(*_imu_eeprom_raw);
-                    case 2:
-                        prs = std::make_shared<dm_v2_imu_calib_parser>(*_imu_eeprom_raw);
+                    case 0x101: // DM V2 id
+                        prs = std::make_shared<dm_v2_imu_calib_parser>(*_imu_eeprom_raw); break;
+                    case 0x200:// TM1 id
+                        prs = std::make_shared<tm1_imu_calib_parser>(*_imu_eeprom_raw); break;
                     default:
-                        std::runtime_error(to_string() << "Motion Intrinsics unresolved, type: " << calib_header->version <<  " !");
+                        LOG_WARNING("Motion Intrinsics unresolved, type: " << calib_header->version <<  " !");
                 }
                 return prs;
             };
