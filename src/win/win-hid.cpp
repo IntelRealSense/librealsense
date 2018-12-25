@@ -145,19 +145,30 @@ namespace librealsense
                     rawY *= accelerator_transform_factor;
                     rawZ *= accelerator_transform_factor;
                 }
-                else
+                else if (type == SENSOR_TYPE_GYROMETER_3D)
                 {
                     // Raw X
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
-                    rawX = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND, &var));
+                    rawX = var.dblVal;
 
                     // Raw Y
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
-                    rawY = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND, &var));
+                    rawY = var.dblVal;
 
                     // Raw Z
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
-                    rawZ = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
+                    rawZ = var.dblVal;
+
+                    static constexpr double gyro_transform_factor = 10.0;
+
+                    rawX *= gyro_transform_factor;
+                    rawY *= gyro_transform_factor;
+                    rawZ *= gyro_transform_factor;
+                }
+                else
+                {
+                    /* Unsupported sensor */
+                    return S_FALSE;
                 }
 
                 PropVariantClear(&var);
