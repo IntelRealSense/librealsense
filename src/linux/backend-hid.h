@@ -135,6 +135,7 @@ namespace librealsense
 
             bool has_metadata();
 
+            static bool set_fs_attribute(std::string path, int val);
             static bool sort_hids(hid_input* first, hid_input* second);
 
             void create_channel_array();
@@ -168,6 +169,7 @@ namespace librealsense
             hid_callback _callback;
             std::atomic<bool> _is_capturing;
             std::unique_ptr<std::thread> _hid_thread;
+            std::unique_ptr<std::thread> _pm_thread;    // Delayed initialization due to power-up sequence
         };
 
         class v4l_hid_device : public hid_device
