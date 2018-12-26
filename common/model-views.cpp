@@ -2615,6 +2615,70 @@ namespace rs2
         }
     }
 
+    void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, rs2_stream stream_type)
+    {
+            const auto precision = 3;
+            auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+
+            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+            ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
+
+            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+            ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+            std::string label = to_string() << "IMU Stream Info of " << profile.unique_id();
+            ImGui::Begin(label.c_str(), nullptr, flags);
+
+            struct motion_data {
+                std::string name;
+                float coordinate;
+                ImVec4 colorFg;
+                ImVec4 colorBg;
+            };
+
+            std::vector<motion_data> motion_vector = {{ "X", axis.x, from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true) },
+                                                      { "Y", axis.y, from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true) },
+                                                      { "Z", axis.z, from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true) }};
+
+            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" }, { RS2_STREAM_ACCEL, "Meter/Sec^2" } };
+
+            int line_h = 18;
+            for (auto&& motion : motion_vector)
+            {
+                auto rc = ImGui::GetCursorPos();
+                ImGui::SetCursorPos({ rc.x + 12, rc.y + 4});                
+                ImGui::PushStyleColor(ImGuiCol_Text, motion.colorFg);
+                ImGui::Text("%s:", motion.name.c_str());
+                ImGui::PopStyleColor(1);
+
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
+
+                ImGui::SetCursorPos({ rc.x + 30, rc.y + 1 });
+                std::string label = to_string() << "##" << motion.name.c_str();
+                std::string coordinate = to_string() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
+                ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+
+                ImGui::SetCursorPos({ rc.x + 80, rc.y + 4});
+                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
+                ImGui::Text("(%s)", motion_unit[stream_type].c_str());
+
+                ImGui::PopStyleColor(3);
+                ImGui::SetCursorPos({rc.x, rc.y + line_h});
+            }
+
+            ImGui::End();
+            ImGui::PopStyleColor(6);
+            ImGui::PopStyleVar(2);
+        }
+
     void stream_model::snapshot_frame(const char* filename, viewer_model& viewer) const
     {
         std::stringstream ss;
@@ -3624,6 +3688,11 @@ namespace rs2
             top_y_ruler = s_model.curr_info_rect.y + s_model.curr_info_rect.h + ruler_distance_offset;
         }
 
+        if (paused || s_model.dev->_is_being_recorded)
+        {
+            bottom_y_ruler -= 30;
+        }
+
         static const auto left_x_colored_ruler_offset = 50;
         static const auto colored_ruler_width = 20;
         const auto left_x_colored_ruler = stream_width - left_x_colored_ruler_offset;
@@ -3810,12 +3879,13 @@ namespace rs2
             stream_mv.show_frame(stream_rect, mouse, error_message);
 
             auto p = stream_mv.dev->dev.as<playback>();
-            float pos = stream_rect.x + 5;
+            float posX = stream_rect.x + stream_rect.w - 40;
+            float posY = stream_rect.y + stream_rect.h - 40;
 
             if (stream_mv.dev->_is_being_recorded)
             {
-                show_recording_icon(font2, static_cast<int>(pos), static_cast<int>(stream_rect.y + 5), stream_mv.profile.unique_id(), alpha);
-                pos += 23;
+                show_recording_icon(font2, static_cast<int>(posX), static_cast<int>(posY), stream_mv.profile.unique_id(), alpha);
+                posX -= 23;
             }
 
             if (!stream_mv.is_stream_alive())
@@ -3830,10 +3900,22 @@ namespace rs2
             }
 
             if (stream_mv.dev->is_paused() || (p && p.current_status() == RS2_PLAYBACK_STATUS_PAUSED))
-                show_paused_icon(font2, static_cast<int>(pos), static_cast<int>(stream_rect.y + 5), stream_mv.profile.unique_id());
+                show_paused_icon(font2, static_cast<int>(posX), static_cast<int>(posY), stream_mv.profile.unique_id());
 
             stream_mv.show_stream_header(font1, stream_rect, *this);
             stream_mv.show_stream_footer(font1, stream_rect, mouse);
+
+            auto stream_type = stream_mv.profile.stream_type();
+
+            if (streams[stream].is_stream_visible() && (stream_type == RS2_STREAM_GYRO || stream_type == RS2_STREAM_ACCEL))
+            {
+                auto motion = streams[stream].texture->get_last_frame().as<motion_frame>();
+                if (motion.get())
+                {
+                    auto axis = motion.get_motion_data();
+                    stream_mv.show_stream_imu(font1, stream_rect, axis, stream_type);
+                }
+            }
 
             glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
             stream_rect.y -= 32;
