@@ -50,7 +50,7 @@ public:
 
     }
 
-    size_t ReadPipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 10) {
+    size_t ReadPipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 1000) {
         using namespace std::chrono;
         int bytes_copied = 0;
         // Wait until pipe gets data
@@ -60,7 +60,7 @@ public:
             lk.unlock();
             return -1;
         }
-        auto res = cv.wait_for(lk, chrono::seconds(5), [&] {
+        auto res = cv.wait_for(lk, chrono::milliseconds(timeout_ms), [&] {
             auto itInner = _requests_filled.find(buffer);
             return (itInner != _requests_filled.end());
         });
@@ -73,7 +73,6 @@ public:
             usb_request_cancel(request);
             bytes_copied = -1;
         }
-        //TODO: check this*/
         lk.unlock();
 
         return bytes_copied;

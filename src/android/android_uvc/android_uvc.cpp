@@ -288,7 +288,8 @@ uvc_error_t uvc_parse_vc(
     return ret;
 }
 
-uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device_info_t *info, int InterfaceNumber) {
+uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device_info_t *info,
+                                     int InterfaceNumber) {
     usb_interface_descriptor *if_desc;
     uvc_error_t parse_ret, ret;
     int interface_idx;
@@ -301,9 +302,10 @@ uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device
     for (interface_idx = 0; interface_idx < MAX_USB_INTERFACES; ++interface_idx) {
         if_desc = &info->interfaces->iface[interface_idx].desc;
 
-        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1 && if_desc->bInterfaceNumber == InterfaceNumber) // Video, Control
+        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1 &&
+            if_desc->bInterfaceNumber == InterfaceNumber) // Video, Control
             break;
-            //std::cout<<"";
+        //std::cout<<"";
 
         if_desc = NULL;
     }
@@ -912,18 +914,18 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
             }
         }
     });
-    LOGD("Transfer thread started...");
-    usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
+    LOGD("Transfer thread started for endpoint address: %2x", strctx->endpoint);
+    usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
     do {
         //auto res=usb_device_bulk_transfer(dev->GetHandle(),strctx->endpoint,buffer,buffer_size,10);
-        int res = pipe->ReadPipe(strctx->stream->outbuf , LIBUVC_XFER_BUF_SIZE,0);
-        if (res>0) {
+        int res = pipe->ReadPipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
+        if (res > 0) {
             strctx->stream->got_bytes = res;
             lock_guard<mutex> lock_guard(m);
             usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
-        } else if (res<0){
-            LOGE("Readpipe returned error and was clear halted ERROR: %s",strerror(errno));
-            res=usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
+        } else if (res < 0) {
+            LOGE("Readpipe returned error and was clear halted ERROR: %s", strerror(errno));
+            res = usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
             continue;
         }
     } while (strctx->stream->running);
@@ -937,7 +939,8 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     archive.wait_until_empty();
     keep_sending_callbacks = false;
     t.join();
-    usb_endpoint_reset(dev->GetHandle(),strctx->endpoint);
+    usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
+    LOGD("Transfer thread stopped for endpoint address: %02x",strctx->endpoint);
 };
 
 uvc_error_t usbhost_uvc_stream_start(
@@ -1003,7 +1006,6 @@ uvc_error_t usbhost_uvc_stream_stop(usbhost_uvc_stream_handle_t *strmh) {
 
     strmh->running = false;
     strmh->cb_thread.join();
-
     return UVC_SUCCESS;
 }
 
@@ -1143,7 +1145,7 @@ usbhost_uvc_query_stream_ctrl(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
     } while (err < 0 && retries++ < 5);
 
     if (err <= 0) {
-        LOGE("Probe-commit control transfer failed with errno: %d - %s",errno,strerror(errno));
+        LOGE("Probe-commit control transfer failed with errno: %d - %s", errno, strerror(errno));
         return (uvc_error_t) err;
     }
 
@@ -1500,13 +1502,13 @@ uvc_error_t usbhost_get_stream_ctrl_format_size_all(
 
 
 void poll_interrupts(shared_ptr<UsbDevice> device_handle, int ep, uint16_t timeout) {
-    auto pipe=device_handle->GetPipe(ep);
-    static const unsigned short interrupt_buf_size = 0x400;
-    uint8_t buffer[interrupt_buf_size];
-    int ret;
-    //* 64 byte transfer buffer  - dedicated channel*//*
-    ret = pipe->ReadPipe(buffer,interrupt_buf_size,timeout);
-    //LOGD("Received interrupt of %d bytes",ret);
+    //auto pipe = device_handle->GetPipe(ep);
+    //    static const unsigned short interrupt_buf_size = 0x400;
+    //    uint8_t buffer[interrupt_buf_size];
+    //    int ret;
+    //    //* 64 byte transfer buffer  - dedicated channel*//*
+    //    //ret = pipe->ReadPipe(buffer, interrupt_buf_size, timeout);
+    //    //LOGD("Received interrupt of %d bytes",ret);
 }
 
 /**
@@ -1657,7 +1659,7 @@ usbhost_find_devices(int vid, int pid) {
 
     LOGD("Trying to find device with vid:%04x pid:%04x", vid, pid);
     for (auto d: devlist) {
-        if (d->GetVid() == vid ) {
+        if (d->GetVid() == vid) {
             usbhost_uvc_device *usbDevice = new usbhost_uvc_device;
             usbDevice->deviceHandle = d;
             usbDevice->pid = pid;
@@ -1859,10 +1861,10 @@ UsbManager &usbHost = UsbManager::getInstance();
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_libusbhost_RealsenseUsbHostManager_nativeAddUsbDevice(JNIEnv *env,
-                                                                               jobject instance,
-                                                                               jstring deviceName_,
-                                                                               jint fileDescriptor) {
+Java_com_intel_realsense_android_RealsenseUsbHostManager_nativeAddUsbDevice(JNIEnv *env,
+                                                                            jobject instance,
+                                                                            jstring deviceName_,
+                                                                            jint fileDescriptor) {
     const char *deviceName = env->GetStringUTFChars(deviceName_, 0);
     usbHost.AddDevice(deviceName, fileDescriptor);
     env->ReleaseStringUTFChars(deviceName_, deviceName);

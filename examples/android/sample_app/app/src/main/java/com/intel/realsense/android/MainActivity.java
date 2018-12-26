@@ -1,4 +1,4 @@
-package com.intel.realsense.libusbhost;
+package com.intel.realsense.android;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -17,13 +17,14 @@ import java.nio.ByteOrder;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int CAMERA_PERMISSIONS = 1;
+    private static final int VIDEO_PERMISSIONS_REQUEST_CODE = 1;
     private static final String[] VIDEO_PERMISSIONS = {
-            Manifest.permission.CAMERA,
+            Manifest.permission.CAMERA
     };
 
+
     static {
-        System.loadLibrary("usbhost");
+        System.loadLibrary("android_librs_test");
     }
 
     final Handler mHandler = new Handler();
@@ -32,12 +33,15 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnStart;
     private static final int DEPTH_HEIGHT = 480;
-    private static final int DEPTH_WIDTH = 640;
+    private static final int DEPTH_WIDTH = 848;
+    private static final int COLOR_HEIGHT = 1080;
+    private static final int COLOR_WIDTH = 1920;
     private ColorConverter mDepthConverter;
+    private ColorConverter mColorConverter;
+
     private RealsenseUsbHostManager mUsbHostManager;
     private boolean isStreaming = false;
     TextureView mTextureViewDepth;
-    private ColorConverter mColorConferter;
     TextureView mTextureViewColor;
 
 
@@ -48,14 +52,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         depthBuffer = ByteBuffer.allocateDirect(DEPTH_HEIGHT * DEPTH_WIDTH * 2);
         depthBuffer.order(ByteOrder.nativeOrder());
-        colorBuffer = ByteBuffer.allocateDirect(DEPTH_HEIGHT * DEPTH_WIDTH * 4);
+        colorBuffer = ByteBuffer.allocateDirect(COLOR_HEIGHT * COLOR_WIDTH * 4);
         colorBuffer.order(ByteOrder.nativeOrder());
         mDepthConverter = new ColorConverter(this, ConversionType.DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT);
-        mColorConferter = new ColorConverter(this, ConversionType.RGBA, DEPTH_WIDTH, DEPTH_HEIGHT);
+        mColorConverter = new ColorConverter(this, ConversionType.RGBA, COLOR_WIDTH, COLOR_HEIGHT);
+
         mTextureViewDepth = findViewById(R.id.outputDepth);
         mTextureViewDepth.setSurfaceTextureListener(mDepthConverter);
         mTextureViewColor = findViewById(R.id.outputColor);
-        mTextureViewColor.setSurfaceTextureListener(mColorConferter);
+        mTextureViewColor.setSurfaceTextureListener(mColorConverter);
         btnStart = (Button) findViewById(R.id.btnStart);
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,21 +73,21 @@ public class MainActivity extends AppCompatActivity {
                 } else if (isStreaming == false) {
                     btnStart.setText(R.string.stream_stop);
                     startRepeatingTask();
-                    librsStartStreaming(depthBuffer,colorBuffer,DEPTH_WIDTH,DEPTH_HEIGHT);
+                    librsStartStreaming(depthBuffer, colorBuffer, DEPTH_WIDTH, DEPTH_HEIGHT,COLOR_WIDTH,COLOR_HEIGHT);
                     isStreaming = true;
                 }
             }
         });
-        getCameraPermission();
-    }
+        getVideoPermissions();
 
+    }
 
     @Override
     public void onResume() {
         super.onResume();
-        if(isStreaming){
+        if (isStreaming) {
             startRepeatingTask();
-            librsStartStreaming(depthBuffer,colorBuffer,DEPTH_WIDTH,DEPTH_HEIGHT);
+            librsStartStreaming(depthBuffer, colorBuffer, DEPTH_WIDTH, DEPTH_HEIGHT,COLOR_WIDTH,COLOR_HEIGHT);
         }
 
     }
@@ -90,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if(isStreaming)
+        if (isStreaming)
             closeDevice();
     }
 
@@ -98,13 +103,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         mDepthConverter.process(depthBuffer);
                         mTextureViewDepth.invalidate();
-                        mColorConferter.process(colorBuffer);
+                        mColorConverter.process(colorBuffer);
                         mTextureViewColor.invalidate();
                     }
                 });
@@ -116,11 +120,11 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void getCameraPermission() {
+    private void getVideoPermissions() {
         if (hasPermissionsGranted(VIDEO_PERMISSIONS))
             getUsbPermissions();
         else
-            ActivityCompat.requestPermissions(this, VIDEO_PERMISSIONS, CAMERA_PERMISSIONS);
+            ActivityCompat.requestPermissions(this, VIDEO_PERMISSIONS, VIDEO_PERMISSIONS_REQUEST_CODE);
 
     }
 
@@ -133,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
+
     private void getUsbPermissions() {
         if (mUsbHostManager.findDevice()) {
             btnStart.setText(R.string.stream_start);
@@ -143,17 +148,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult");
-        if (requestCode == CAMERA_PERMISSIONS) {
+        if (requestCode == VIDEO_PERMISSIONS_REQUEST_CODE) {
             if (grantResults.length == VIDEO_PERMISSIONS.length) {
                 for (int result : grantResults) {
                     if (result != PackageManager.PERMISSION_GRANTED) {
-                        Log.e(TAG,"Error getting permission!");
+                        Log.e(TAG, "Error getting permission!");
                         return;
                     }
                 }
                 getUsbPermissions();
             } else {
-                Log.e(TAG,"Didnt get all permissions...");
+                Log.e(TAG, "Didnt get all permissions...");
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -165,9 +170,9 @@ public class MainActivity extends AppCompatActivity {
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      *
-     * @param l
+     * @param
      */
-    public native boolean librsStartStreaming(ByteBuffer depthBuffer,ByteBuffer colorBuffer,int w,int h);
+    public native boolean librsStartStreaming(ByteBuffer depthBuffer, ByteBuffer colorBuffer, int dw, int dh,int cw,int ch);
 
     public native boolean librsStopStreaming();
 

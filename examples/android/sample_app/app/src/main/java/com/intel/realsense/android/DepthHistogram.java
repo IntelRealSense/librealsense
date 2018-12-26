@@ -17,12 +17,14 @@ public class DepthHistogram {
                 Type.createX(mRS,
                         Element.RGBA_8888(mRS), max_distance));
         createHistogramColorMap(max_distance);
+        mScriptDepth.set_gMaxValue(max_distance);
         mScriptDepth.set_aHistogramColorMap(allocation);
 
     }
 
     public void DepthToRGBA(Allocation in, Allocation out){
         mScriptDepth.forEach_zImageToDepthHistogram(in,out);
+
     }
     /**
      * this function creates a histogram of the distance
@@ -32,7 +34,7 @@ public class DepthHistogram {
     private void createHistogramColorMap(int max) {
         mHistogramColorMap = new int[max];
 
-        final float HISTOGRAM_VALUE = 0.9f, HISTOGRAM_SATURATION = 0.86f;
+        final float HISTOGRAM_VALUE = 1.0f, HISTOGRAM_SATURATION = 1.0f;
         float[] hsv = new float[3];
         hsv[1] = HISTOGRAM_SATURATION;
         hsv[2] = HISTOGRAM_VALUE;

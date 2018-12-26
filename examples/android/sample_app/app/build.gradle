@@ -9,9 +9,7 @@ android {
         versionCode 3
         versionName "0.1"
         renderscriptTargetApi 24
-        ndk {
-            abiFilters 'armeabi-v7a'
-        }
+
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11 -frtti -fexceptions"
@@ -44,6 +42,13 @@ android {
             jniLibs.srcDirs = ['lib','jni']
         }
     }
+    task ndkClean(type: Delete) {
+        // remove unused archs from build cache
+        delete fileTree('.externalNativeBuild') {
+            exclude defaultConfig.ndk.abiFilters.collect { '**/' + it }
+        }
+    }
+    tasks.findByPath(':clean').dependsOn ndkClean
 }
 
 dependencies {

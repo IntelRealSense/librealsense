@@ -25,27 +25,36 @@ public class ColorConverter implements TextureView.SurfaceTextureListener {
     private Surface mOutputSurface;
     private Surface mCodecSurface;
     ScriptIntrinsicResize mScriptResize;
+    private int mHeight,mWidth;
 
     ColorConverter(Context ctx, ConversionType type, int w, int h) {
+        mWidth=w;
+        mHeight=h;
         mRs = RenderScript.create(ctx);
         mScriptResize = ScriptIntrinsicResize.create(mRs);
         mScriptColorMatrix = ScriptIntrinsicColorMatrix.create(mRs);
         mScriptColorMatrix.setAdd(0, 0, 0, 1.0f);
         mScriptColorMatrix.setColorMatrix(getColorMatrix(type));
-        mDepthHistogram = new DepthHistogram(8 * 1024, mRs);
+        mDepthHistogram = new DepthHistogram(3 * 1024, mRs);
         mType = type;
         mAllocationIn = Allocation.createTyped(mRs, getType(type, w, h));
         mAllocationCodec = Allocation.createTyped(mRs,
                 new Type.Builder(mRs, Element.RGBA_8888(mRs))
                         .setX(w)
                         .setY(h).create(),
-                Allocation.USAGE_SCRIPT);
+                Allocation.USAGE_SCRIPT );
         mScriptResize.setInput(mAllocationCodec);
     }
 
     public void setCodecSurface(Surface codecSurface){
-        /*mCodecSurface=codecSurface;
-        mAllocationCodec.setSurface(mCodecSurface);*/
+        mAllocationCodec = Allocation.createTyped(mRs,
+                new Type.Builder(mRs, Element.RGBA_8888(mRs))
+                        .setX(mWidth)
+                        .setY(mHeight).create(),
+                Allocation.USAGE_SCRIPT | Allocation.USAGE_IO_OUTPUT);
+        mScriptResize.setInput(mAllocationCodec);
+        mCodecSurface=codecSurface;
+        mAllocationCodec.setSurface(mCodecSurface);
     }
     void process(ByteBuffer buffer) {
         if (mAllocationOut == null)
@@ -71,7 +80,7 @@ public class ColorConverter implements TextureView.SurfaceTextureListener {
                     break;
             }
             if(mCodecSurface!=null) {
-                //mAllocationCodec.ioSend();
+                mAllocationCodec.ioSend();
             }
             if(mAllocationOut!=null && mAllocationCodec!=null)
             {
@@ -172,5 +181,16 @@ public class ColorConverter implements TextureView.SurfaceTextureListener {
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
+    }
+
+    public Surface getCodecSurface() {
+        return mOutputSurface;
+    }
+
+    public int getWidth() {
+        return mWidth;
+    }
+    public int getHeight() {
+        return mHeight;
     }
 }

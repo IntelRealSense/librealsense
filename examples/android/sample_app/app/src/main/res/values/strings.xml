@@ -4,4 +4,5 @@
     <string name="stream_stop">Stop stream</string>
     <string name="stream_start">Start stream</string>
     <string name="permission_request">Can we record video?</string>
+    <string name="start_record">Record</string>
 </resources>

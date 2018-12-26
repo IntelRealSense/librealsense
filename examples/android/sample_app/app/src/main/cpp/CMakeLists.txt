@@ -11,7 +11,7 @@ file(GLOB_RECURSE HEADERS include/*.h)
 # refer to app/build.gradle, jniLibs section for that purpose.
 # ${ANDROID_ABI} is handy for our purpose here. Probably this ${ANDROID_ABI} is
 # the most valuable thing of this sample, the rest are pretty much normal cmake
-set(librs_bin_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../librealsense_module/src/main/jniLibs)
+set(librs_bin_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../librealsense_module/src/main/jniLibs/${ANDROID_ABI}/)
 add_library(realsense2 SHARED IMPORTED)
 set_target_properties(realsense2 PROPERTIES IMPORTED_LOCATION
         ${librs_bin_DIR}/librealsense2.so)

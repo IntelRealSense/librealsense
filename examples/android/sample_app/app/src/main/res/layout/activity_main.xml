@@ -8,33 +8,48 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/btnStart"
+        android:layout_below="@id/buttonPanel"
         android:orientation="vertical">
 
         <TextureView
             android:id="@+id/outputColor"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="0.5"
-            />
+            android:layout_weight="0.5" />
+
         <TextureView
             android:id="@+id/outputDepth"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="0.5"
-            />
+            android:layout_weight="0.5" />
 
 
     </LinearLayout>
 
-
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/btnStart"
+    <android.support.v7.widget.LinearLayoutCompat
+        android:id="@+id/buttonPanel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="false"
-        android:layout_alignParentTop="true"
-        android:enabled="false"
-        android:text="@string/no_device" />
+        android:orientation="horizontal"
+        android:layout_height="wrap_content">
+
+        <ToggleButton
+            android:id="@+id/toggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_weight="0.2"
+            android:text="@string/start_record" />
+
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/btnStart"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_toStartOf="@+id/toggleButton"
+            android:layout_weight="0.8"
+            android:enabled="false"
+            android:text="@string/no_device" />
+    </android.support.v7.widget.LinearLayoutCompat>
+
 
 </RelativeLayout>

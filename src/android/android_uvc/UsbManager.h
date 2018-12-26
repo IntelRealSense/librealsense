@@ -30,9 +30,9 @@ protected:
 
         usb_descriptor_header *h = usb_descriptor_iter_next(&it);
         usb_descriptor_header *prev;
-        if (h->bDescriptorType == USB_DT_DEVICE && h != nullptr) {
+        if (h != nullptr && h->bDescriptorType == USB_DT_DEVICE) {
             h = usb_descriptor_iter_next(&it);
-            if (h->bDescriptorType == USB_DT_CONFIG && h != nullptr) {
+            if (h != nullptr && h->bDescriptorType == USB_DT_CONFIG) {
                 do {
                     usb_config_descriptor *config_descriptor = (usb_config_descriptor *) h;
                     UsbConfiguration configuration(config_descriptor);
@@ -60,7 +60,7 @@ protected:
 
                     device->AddConfiguration(configuration);
 
-                } while ((h->bDescriptorType == USB_DT_CONFIG) && h != nullptr);
+                } while (h != nullptr && (h->bDescriptorType == USB_DT_CONFIG));
             } else {
                 return;
             }

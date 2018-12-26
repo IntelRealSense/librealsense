@@ -322,8 +322,8 @@ namespace librealsense {
 
 
         void android_uvc_device::poll_interrupts() {
-            sleep(1);
             while (_keep_pulling_interrupts) {
+                sleep(1);
                 ::poll_interrupts(_device->deviceHandle,
                                   _device->deviceData.ctrl_if.bEndpointAddress, 100);
             }

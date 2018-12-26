@@ -5,9 +5,6 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 28
-        ndk {
-            abiFilters 'armeabi-v7a'
-        }
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11 -frtti -fexceptions"
@@ -17,7 +14,6 @@ android {
         renderscriptTargetApi 24
         renderscriptSupportModeEnabled true
         renderscriptNdkModeEnabled true
-
     }
     buildTypes {
         release {
@@ -33,6 +29,13 @@ android {
         cmake {
             path "CMakeLists.txt"
         }
+    }
+
+    packagingOptions {
+        pickFirst 'lib/armeabi-v7a/librealsense2.so'
+        pickFirst 'lib/arm64-v8a/librealsense2.so'
+        pickFirst 'lib/x86/librealsense2.so'
+        pickFirst 'lib/x86_64/librealsense2.so'
     }
 }
 
