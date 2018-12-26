@@ -671,7 +671,7 @@ namespace librealsense
             virtual std::shared_ptr<time_service> create_time_service() const = 0;
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
-            
+
             virtual std::string get_device_serial(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid) const
             {
                 std::string empty_str;

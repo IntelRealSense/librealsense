@@ -276,7 +276,7 @@ namespace librealsense
 
         if (_equalize)
             make_equalized_histogram(f, ret);
-        else 
+        else
             make_value_cropped_frame(f, ret);
 
         return ret;

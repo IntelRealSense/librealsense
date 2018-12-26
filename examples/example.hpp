@@ -562,7 +562,7 @@ private:
         }
 
         return rv;
-    } 
+    }
 };
 
 // Struct for managing rotation of pointcloud view

@@ -452,7 +452,7 @@ namespace librealsense
         inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
             rs2_motion_device_intrinsic result;
-            
+
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
@@ -463,8 +463,6 @@ namespace librealsense
             }
             return result;
         }
-
-
 
 #pragma pack(pop)
 

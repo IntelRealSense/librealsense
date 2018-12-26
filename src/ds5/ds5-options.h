@@ -243,8 +243,8 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual const char* get_description() const override 
-        { 
+        virtual const char* get_description() const override
+        {
             return "Emitter On/Off Mode: 0:disabled(default), 1:enabled(emitter toggles between on and off). Can only be set before streaming";
         }
         virtual void enable_recording(std::function<void(const option &)> record_action) {_record_action = record_action;}

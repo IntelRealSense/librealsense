@@ -479,7 +479,7 @@ namespace librealsense
                     std::string uid = "";
                     std::wstring ws(detail_data->DevicePath);
                     std::string path(ws.begin(), ws.end());
-                    
+
                     /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
                     parse_usb_path_multiple_interface(vid, pid, mi, uid, path);
                     if (uid.empty())

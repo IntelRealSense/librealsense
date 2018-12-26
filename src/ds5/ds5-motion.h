@@ -219,7 +219,7 @@ namespace librealsense
                                                             {RS2_STREAM_GYRO, {{200,  500},
                                                                                {400,  250}}}};
 
-#else                                                                  
+#else
         // Bandwidth parameters from BOSCH BMI 055 spec'
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
         {{"gyro_3d",  {RS2_STREAM_GYRO,  0, 1, 1, 200,  RS2_FORMAT_MOTION_XYZ32F}},
