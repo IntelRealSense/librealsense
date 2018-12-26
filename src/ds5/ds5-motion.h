@@ -5,7 +5,6 @@
 
 #include "ds5-device.h"
 #include <fstream>
-#include <iostream>
 
 namespace librealsense
 {

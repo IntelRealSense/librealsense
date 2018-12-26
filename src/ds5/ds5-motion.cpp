@@ -270,7 +270,7 @@ namespace librealsense
             }
             catch (const std::exception &exc)
             {
-                LOG_ERROR("IMU Extrinsic table " << exc.what());
+                LOG_INFO("IMU EEPROM extrinsic is not available" << exc.what());
                 throw;
             }
         });
@@ -306,8 +306,8 @@ namespace librealsense
                     }
                 };
             }
-            catch (...){
-                std::cout << "No depth->imu extrinsic" << std::endl;
+            catch (const std::exception& ex){
+                LOG_INFO("Motion Module extrinsic calibration  is not available, report: " << ex.what());
             }
 
             try
@@ -322,7 +322,7 @@ namespace librealsense
             }
             catch (const std::exception& ex)
             {
-                LOG_INFO("Motion Module calibration is not available, report: " << ex.what());
+                LOG_INFO("Motion Module intrinsic calibration is not available, report: " << ex.what());
 
                 // transform IMU axes if supported
                 hid_ep->register_on_before_frame_callback(align_imu_axes);
