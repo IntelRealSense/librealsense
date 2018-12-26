@@ -172,7 +172,7 @@ namespace librealsense
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
-        uint16_t pid = static_cast<uint16_t>(std::stoul(all_hid_infos.front().pid, nullptr, 16));
+        uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
 
         if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID })))
         {
