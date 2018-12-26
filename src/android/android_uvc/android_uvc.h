@@ -636,7 +636,7 @@ std::vector<usbhost_uvc_device*>
 usbhost_find_devices(int vid, int pid);
 
 // Open a WinUSB device
-uvc_error_t usbhost_open(usbhost_uvc_device *device);
+uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber);
 
 // Close a WinUSB device
 uvc_error_t usbhost_close(usbhost_uvc_device *device);

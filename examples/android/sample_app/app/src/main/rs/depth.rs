@@ -1,5 +1,5 @@
 #pragma version(1)
-#pragma rs java_package_name(com.intel.realsense.libusbhost)
+#pragma rs java_package_name(com.intel.realsense.android)
 #pragma rs_fp_relaxed
 
 rs_allocation aHistogramColorMap;

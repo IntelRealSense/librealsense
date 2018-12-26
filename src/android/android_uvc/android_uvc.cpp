@@ -288,7 +288,7 @@ uvc_error_t uvc_parse_vc(
     return ret;
 }
 
-uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device_info_t *info) {
+uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device_info_t *info, int InterfaceNumber) {
     usb_interface_descriptor *if_desc;
     uvc_error_t parse_ret, ret;
     int interface_idx;
@@ -301,8 +301,9 @@ uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device
     for (interface_idx = 0; interface_idx < MAX_USB_INTERFACES; ++interface_idx) {
         if_desc = &info->interfaces->iface[interface_idx].desc;
 
-        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1) // Video, Control
+        if (if_desc->bInterfaceClass == 14 && if_desc->bInterfaceSubClass == 1 && if_desc->bInterfaceNumber == InterfaceNumber) // Video, Control
             break;
+            //std::cout<<"";
 
         if_desc = NULL;
     }
@@ -1740,7 +1741,7 @@ usbhost_get_descriptor(usb_device_handle *pDevice, int descriptor_type, int desc
     return h;
 }
 
-uvc_error_t usbhost_open(usbhost_uvc_device *device) {
+uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     usbhost_uvc_interfaces *interfaces = NULL;
     usb_config_descriptor *cfgDesc = NULL;
     byte *descriptors = NULL;
@@ -1784,7 +1785,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device) {
     //LOGD("usbhost_open() usbhost_uvc_scan_control");
 
     // Fill fields of uvc_device_info on device
-    ret = usbhost_uvc_scan_control(device, &device->deviceData);
+    ret = usbhost_uvc_scan_control(device, &device->deviceData, InterfaceNumber);
     if (ret != UVC_SUCCESS) {
         LOGE("uvc_scan_control failed\n");
         goto fail;
@@ -1851,6 +1852,20 @@ bool read_all_uvc_descriptors(usbhost_uvc_device *device, PUCHAR buffer, int buf
     memcpy(buffer, device->deviceHandle->GetHandle()->desc, len);
     *lengthReturned = len;
     return true;
+}
+
+
+UsbManager &usbHost = UsbManager::getInstance();
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_libusbhost_RealsenseUsbHostManager_nativeAddUsbDevice(JNIEnv *env,
+                                                                               jobject instance,
+                                                                               jstring deviceName_,
+                                                                               jint fileDescriptor) {
+    const char *deviceName = env->GetStringUTFChars(deviceName_, 0);
+    usbHost.AddDevice(deviceName, fileDescriptor);
+    env->ReleaseStringUTFChars(deviceName_, deviceName);
 }
 
 #endif

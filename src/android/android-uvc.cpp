@@ -334,13 +334,13 @@ namespace librealsense {
 
             if (state == D0 && _power_state == D3) {
                 // Return list of all connected IVCAM devices from uvc_interface name
-                uint16_t vid = 0x8086, pid = 0x0b07, mi = 0;
+                uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
 
                 auto devs = usbhost_find_devices(vid, pid); //TODO: change from hard coded
 
                 for (auto device: devs) {
                     // initializing and filling all fields of winsub_device device_list[0]
-                    usbhost_open(device);
+                    usbhost_open(device, mi);
                     opened = true;
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {

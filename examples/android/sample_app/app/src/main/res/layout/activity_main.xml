@@ -7,23 +7,24 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@+id/btnStart"
         android:orientation="vertical">
 
         <TextureView
-            android:id="@+id/outputDepth"
-            android:layout_width="1280px"
-            android:layout_height="720px"
-            />
-
-        <TextureView
             android:id="@+id/outputColor"
-            android:layout_width="1280px"
-            android:layout_height="720px"
-
-
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
             />
+        <TextureView
+            android:id="@+id/outputDepth"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            />
+
+
     </LinearLayout>
 
 

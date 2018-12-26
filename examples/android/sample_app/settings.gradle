@@ -1,1 +1,1 @@
-include ':app', ':uvchost'
+include ':app', ':librealsense_module'

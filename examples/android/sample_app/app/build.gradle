@@ -9,21 +9,46 @@ android {
         versionCode 3
         versionName "0.1"
         renderscriptTargetApi 24
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11 -frtti -fexceptions"
+                // Specify the toolchain which was used to cross compile libdynamic.so because Android Studio assumes that you used clang
+                //arguments '-DANDROID_TOOLCHAIN=gcc'
+            }
+        }
+        sourceSets {
+            main {
+                jniLibs.srcDirs = ['lib','jni']
+            }
+        }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    productFlavors {
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
     }
     buildToolsVersion '28.0.3'
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['lib','jni']
+        }
+    }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
-    implementation project(':uvchost')
+    implementation project(':librealsense_module')
     implementation 'com.android.support:appcompat-v7:28.0.0'
 }
