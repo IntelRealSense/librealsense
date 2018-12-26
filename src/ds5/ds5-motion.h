@@ -4,7 +4,6 @@
 #pragma once
 
 #include "ds5-device.h"
-#include <fstream>
 
 namespace librealsense
 {
@@ -72,9 +71,11 @@ namespace librealsense
     class dm_v2_imu_calib_parser : public mm_calib_parser
     {
     public:
-        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data)
+        dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, bool valid = true)
         {
-            calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
+            // default parser to be applied when no FW calibration is available
+            if (valid)
+                calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
         };
         dm_v2_imu_calib_parser(const dm_v2_imu_calib_parser&);
         ~dm_v2_imu_calib_parser() {};
@@ -133,30 +134,10 @@ namespace librealsense
         ds::dm_v2_eeprom  calib_table;
     };
 
-
     class mm_calib_handler
     {
     public:
-        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor) :
-            _hw_monitor(hw_monitor)
-        {
-            _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
-
-            _calib_parser = [this]() {
-                auto calib_header = reinterpret_cast<const ds::table_header*>((*_imu_eeprom_raw).data());
-                std::shared_ptr<mm_calib_parser> prs = nullptr;
-                switch (calib_header->version)
-                {
-                    case 0x101: // DM V2 id
-                        prs = std::make_shared<dm_v2_imu_calib_parser>(*_imu_eeprom_raw); break;
-                    case 0x200:// TM1 id
-                        prs = std::make_shared<tm1_imu_calib_parser>(*_imu_eeprom_raw); break;
-                    default:
-                        LOG_WARNING("Motion Intrinsics unresolved, type: " << calib_header->version <<  " !");
-                }
-                return prs;
-            };
-        };
+        mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor);
         mm_calib_handler(const mm_calib_handler&);
         ~mm_calib_handler() {};
 

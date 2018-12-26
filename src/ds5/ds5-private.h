@@ -419,6 +419,12 @@ namespace librealsense
 
         constexpr size_t eeprom_imu_table_size = sizeof(eeprom_imu_table);
 
+        enum imu_eeprom_id : uint16_t
+        {
+            dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
+            tm1_eeprom_id       = 0x0002
+        };
+
         struct depth_table_control
         {
             uint32_t depth_units;

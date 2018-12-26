@@ -446,6 +446,43 @@ namespace librealsense
         //});
     }
 
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor) :  _hw_monitor(hw_monitor)
+    {
+        _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
+
+        _calib_parser = [this]() {
+
+            std::vector<uint8_t> raw(ds::tm1_eeprom_size);
+            uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
+            bool valid = false;
+
+            try
+            {
+                raw = *_imu_eeprom_raw;
+                calib_id = *reinterpret_cast<uint16_t*>(raw.data());
+                valid = true;
+            }
+            catch(const std::exception& exc)
+            {
+                LOG_INFO("IMU EEPROM Read error: " << exc.what());
+            }
+
+            std::shared_ptr<mm_calib_parser> prs = nullptr;
+            switch (calib_id)
+            {
+                case ds::dm_v2_eeprom_id: // DM V2 id
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw,valid); break;
+                case ds::tm1_eeprom_id:// TM1 id
+                    prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
+                default:
+                    throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
+                                << ((valid)? "device is not calibrated" : "invalid calib type "),
+                                RS2_EXCEPTION_TYPE_BACKEND);
+            }
+            return prs;
+        };
+    }
+
     std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
     {
         const int offset = 0;

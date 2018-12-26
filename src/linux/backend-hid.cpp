@@ -681,8 +681,8 @@ namespace librealsense
             std::fstream sysfs_stream(path);
             if (!sysfs_stream.is_open())
             {
-                 throw linux_backend_exception(to_string() << "The specified sysfs entry "
-                            << path << " is not valid");
+                LOG_DEBUG("The specified sysfs entry "  << path << " is not valid");
+                 return res;
             }
 
             try

@@ -44,8 +44,8 @@ const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+D
 static const double pi = std::acos(-1);
 static const double d2r = pi / 180;
 static const double r2d = 180 / pi;
-template<typename T> T deg2rad(T val) { return T(val * d2r); };
-template<typename T> T rad2deg(T val) { return T(val * r2d); };
+template<typename T> T deg2rad(T val) { return T(val * d2r); }
+template<typename T> T rad2deg(T val) { return T(val * r2d); }
 
 #pragma warning(disable: 4250)
 
