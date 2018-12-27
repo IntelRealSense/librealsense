@@ -138,7 +138,7 @@ public:
         unsigned long long fw;
         unsigned long long host;
         unsigned long long hostCorrelated;
-    } loadTime;
+    } loadTime = { 0,0,0 };
 
     UtilTimeStamps(TrackingData::TimestampedData timeStampData)
     {

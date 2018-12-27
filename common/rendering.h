@@ -1309,7 +1309,7 @@ namespace rs2
             draw_circle(1, 0, 0, 0, 0, 1);
 
             const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
+            const auto vec_threshold = 0.2f;
             if (norm < vec_threshold)
             {
                 const auto radius = 0.05;
@@ -1350,12 +1350,8 @@ namespace rs2
                 std::ostringstream s1;
                 const auto precision = 3;
 
-                s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
-                print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
-
-                std::ostringstream s2;
-                s2 << std::setprecision(precision) << norm;
-                print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+                s1 << std::setprecision(precision) << norm;
+                print_text_in_3d(x / 2, y / 2, z / 2, s1.str().c_str(), true, model, proj, 1 / norm);
             }
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 768, 768, 0);

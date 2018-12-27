@@ -673,6 +673,36 @@ namespace librealsense
             iio_device_file.close();
         }
 
+        // Zero -delay will suspend immedeately, Negaive - prevent suspend/resume
+        bool iio_hid_sensor::set_fs_attribute(std::string path, int input)
+        {
+            bool res = false;
+
+            std::fstream sysfs_stream(path);
+            if (!sysfs_stream.is_open())
+            {
+                 throw linux_backend_exception(to_string() << "The specified sysfs entry "
+                            << path << " is not valid");
+            }
+
+            try
+            {
+                // Read/Modify/Confirm
+                int rval = 0;
+                sysfs_stream >> std::dec >> rval;
+
+                if (rval!=input)
+                {
+                    sysfs_stream << input;
+                    sysfs_stream >> std::dec >> rval;
+                }
+                res = (rval==input);
+            }
+            catch (std::exception&){ /*The sysfs may not respond during internal power-up"*/ }
+
+            return res;
+        }
+
         void iio_hid_sensor::signal_stop()
         {
             char buff[1];
@@ -754,6 +784,27 @@ namespace librealsense
             set_frequency(frequency);
             write_integer_to_param("buffer/length", buf_len);
             write_integer_to_param("buffer/enable", 1);
+
+#ifdef PREVENT_HID_SUSPEND
+            // Prevent the power-management to control suspended mode
+            // HID resume (power up) prodices ~2 sec latency per each sensor.
+            // During the peridod the sysfs HAL node is lazy initialized, requiring async assignment
+            // Note that this setting applies for non-HID sensors as well
+            std::string path = _iio_device_path + "/../power/autosuspend_delay_ms";
+            _pm_thread = std::unique_ptr<std::thread>(new std::thread([path](){
+                while (true)
+                {
+                    try{
+                        if (set_fs_attribute(path,-1))
+                            break;
+                        else
+                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    }
+                    catch(...){ break; } // Device disconnect
+                }
+            }));
+            _pm_thread->detach();
+#endif //  PREVENT_HID_SUSPEND
         }
 
         // calculate the storage size of a scan
