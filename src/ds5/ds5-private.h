@@ -70,7 +70,12 @@ namespace librealsense
             ds::RS420_MM_PID,
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID
+            ds::RS435_RGB_PID,
+            ds::RS435I_PID
+        };
+
+        static const std::set<std::uint16_t> hid_sensors_pid = {
+            ds::RS435I_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {

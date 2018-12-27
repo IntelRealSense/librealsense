@@ -2638,37 +2638,46 @@ namespace rs2
             struct motion_data {
                 std::string name;
                 float coordinate;
+                std::string units;
+                std::string toolTip;
                 ImVec4 colorFg;
                 ImVec4 colorBg;
+                int nameExtraSpace;
             };
 
-            std::vector<motion_data> motion_vector = {{ "X", axis.x, from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true) },
-                                                      { "Y", axis.y, from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true) },
-                                                      { "Z", axis.z, from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true) }};
+            float norm = std::sqrt((axis.x*axis.x) + (axis.y*axis.y) + (axis.z*axis.z));
 
-            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" }, { RS2_STREAM_ACCEL, "Meter/Sec^2" } };
+            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" },{ RS2_STREAM_ACCEL, "Meter/Sec^2" } };
+            std::vector<motion_data> motion_vector = {{ "X", axis.x, motion_unit[stream_type].c_str(), "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
+                                                      { "Y", axis.y, motion_unit[stream_type].c_str(), "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
+                                                      { "Z", axis.z, motion_unit[stream_type].c_str(), "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
+                                                      { "N", norm, "Norm", "||V|| = SQRT(X^2 + Y^2 + Z^2)",from_rgba(255, 255, 255, 255, true) , from_rgba(255, 255, 255, 255, true), 0}};
 
             int line_h = 18;
             for (auto&& motion : motion_vector)
             {
                 auto rc = ImGui::GetCursorPos();
-                ImGui::SetCursorPos({ rc.x + 12, rc.y + 4});                
+                ImGui::SetCursorPos({ rc.x + 12, rc.y + 4});
                 ImGui::PushStyleColor(ImGuiCol_Text, motion.colorFg);
                 ImGui::Text("%s:", motion.name.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip(motion.toolTip.c_str());
+                }
                 ImGui::PopStyleColor(1);
 
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
 
-                ImGui::SetCursorPos({ rc.x + 30, rc.y + 1 });
+                ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
                 std::string label = to_string() << "##" << motion.name.c_str();
                 std::string coordinate = to_string() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
                 ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
-                ImGui::SetCursorPos({ rc.x + 80, rc.y + 4});
+                ImGui::SetCursorPos({ rc.x + 80 + motion.nameExtraSpace, rc.y + 4});
                 ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
-                ImGui::Text("(%s)", motion_unit[stream_type].c_str());
+                ImGui::Text("(%s)", motion.units.c_str());
 
                 ImGui::PopStyleColor(3);
                 ImGui::SetCursorPos({rc.x, rc.y + line_h});
