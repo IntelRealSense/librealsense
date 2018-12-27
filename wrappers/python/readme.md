@@ -4,6 +4,7 @@
 * [Installation](#installation)
 * [Building from source](#building-from-source)
 * [Examples](#examples)
+* [Tools](#tools)
 
 ## Installation
 
@@ -100,3 +101,12 @@ depth = frames.get_depth_frame()
 depth_data = depth.as_frame().get_data()
 np_image = np.asanyarray(depth_data)
 ```
+
+## Tools
+
+#### calibrate-six-pose.py
+
+Usage: calibrate-six-pose.py <accel.txt> <gyro.txt> [serial_no]
+
+This tool is used to calibrate the camera. Obtaining the <accel.txt>, <gyro.txt> files is done by following the instructions in "Intel RealSense Depth Module D435i IMU Intrinsic Calibration White Paper.docx" up to and including section 4.4.
+The current version of calibrate-six-pose.py encapsulates the process of writing to the device, i.e. Section 4.6 in the White Paper.
