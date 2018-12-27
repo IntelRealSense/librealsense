@@ -88,7 +88,6 @@ namespace librealsense
                     if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, path)) continue;
 
                     auto device_serial = get_device_serial(vid, pid, unique_id);
-
                     usb_device_info info{ path, vid, pid, mi, unique_id, device_serial, usb_undefined };
 
                     result.push_back(info);

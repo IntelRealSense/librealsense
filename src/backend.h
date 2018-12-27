@@ -253,8 +253,8 @@ namespace librealsense
             uint16_t vid;
             uint16_t pid;
             uint16_t mi;
-            std::string unique_id = "";
-            std::string serial = "";
+            std::string unique_id;
+            std::string serial;
             usb_spec conn_spec;
 
             operator std::string()
