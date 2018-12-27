@@ -59,6 +59,18 @@ endif()
 # set library version
 set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 
+# NCS1 is reset by realsense-viewer since TM2 device has the same VID/PID with NCS1.
+# Workaround is to build realsense-viewer tool without "BUILD_WITH_TM2".
+# Fix issue: https://github.com/IntelRealSense/librealsense/issues/2924
+if(${ROS_BUILD_TYPE})
+    set(BUILD_WITH_TM2 OFF)
+endif()
+
+# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
+if(BUILD_WITH_TM2)
+    include(CMake/tm2_connectivity_check.cmake)
+endif()
+
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
