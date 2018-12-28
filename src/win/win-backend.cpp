@@ -54,9 +54,11 @@ namespace librealsense
         {
             std::vector<uvc_device_info> devices;
 
-            auto action = [&devices](const uvc_device_info& info, IMFActivate*)
+            auto action = [&devices, this](const uvc_device_info& info, IMFActivate*)
             {
-                devices.push_back(info);
+                uvc_device_info device_info = info;
+                device_info.serial = this->get_device_serial(info.vid, info.pid, info.unique_id);
+                devices.push_back(device_info);
             };
 
             wmf_uvc_device::foreach_uvc_device(action);
@@ -85,7 +87,8 @@ namespace librealsense
                     uint16_t vid, pid, mi; std::string unique_id;
                     if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, path)) continue;
 
-                    usb_device_info info{ path, vid, pid, mi, unique_id, usb_undefined };
+                    auto device_serial = get_device_serial(vid, pid, unique_id);
+                    usb_device_info info{ path, vid, pid, mi, unique_id, device_serial, usb_undefined };
 
                     result.push_back(info);
                 }

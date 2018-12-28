@@ -206,6 +206,7 @@ namespace librealsense
             uint16_t mi = 0;
             std::string unique_id = "";
             std::string device_path = "";
+            std::string serial = "";
             usb_spec conn_spec = usb_undefined;
             uint32_t uvc_capabilities = 0;
             bool has_metadata_node = false;
@@ -253,6 +254,7 @@ namespace librealsense
             uint16_t pid;
             uint16_t mi;
             std::string unique_id;
+            std::string serial;
             usb_spec conn_spec;
 
             operator std::string()
