@@ -291,9 +291,6 @@ namespace librealsense
             }
         });
 
-        for (int i = 0; i < 9; i++)
-            std::cout << (**_depth_to_imu_aligned).rotation[i] << " ";
-        std::cout << std::endl;
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu_aligned);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
