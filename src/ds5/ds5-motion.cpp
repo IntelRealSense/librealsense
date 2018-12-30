@@ -275,8 +275,27 @@ namespace librealsense
             }
         });
 
+        _depth_to_imu_aligned = std::make_shared<lazy<rs2_extrinsics>>([this]()
+        {
+            try
+            {
+                rs2_extrinsics extr = **_depth_to_imu;
+                float rot[9] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
+                librealsense::copy(&extr.rotation, &rot, arr_size_bytes(rot));
+                return extr;
+            }
+            catch (const std::exception &exc)
+            {
+                LOG_INFO("IMU EEPROM Aligned extrinsic is not available" << exc.what());
+                throw;
+            }
+        });
+
+        for (int i = 0; i < 9; i++)
+            std::cout << (**_depth_to_imu_aligned).rotation[i] << " ";
+        std::cout << std::endl;
         // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu_aligned);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
