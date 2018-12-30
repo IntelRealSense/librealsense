@@ -462,13 +462,14 @@ namespace librealsense
 
         inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
-            rs2_motion_device_intrinsic result;
+            rs2_motion_device_intrinsic result{};
 
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
                     result.data[i][j] = data.sensitivity(i,j);
 
+                result.data[i][3] = data.bias[i];
                 result.bias_variances[i] = data.bias_variances[i];
                 result.noise_variances[i] = data.noise_variances[i];
             }

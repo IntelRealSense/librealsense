@@ -51,7 +51,7 @@ void print(const rs2_motion_device_intrinsic& intrinsics)
     for (auto i = 0 ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
     {
         for (auto j = 0 ; j < sizeof(intrinsics.data[0])/sizeof(intrinsics.data[0][0]) ; ++j)
-            ss << std::fixed << std::setw(13) << setprecision(10) << intrinsics.data[i][j] << "  ";
+            ss << std::right << std::setw(13) << setprecision(6) << intrinsics.data[i][j] << "  ";
         ss << "\n";
     }
 
