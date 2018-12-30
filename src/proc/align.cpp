@@ -180,7 +180,7 @@ namespace librealsense
         //process composite frame only if it contains both a depth frame and the requested texture frame
         bool has_tex = false, has_depth = false;
         set.foreach([this, &has_tex](const rs2::frame& frame) { if (frame.get_profile().stream_type() == _to_stream_type) has_tex = true; });
-        set.foreach([&has_depth](const rs2::frame& frame) 
+        set.foreach([&has_depth](const rs2::frame& frame)
             { if (frame.get_profile().stream_type() == RS2_STREAM_DEPTH && frame.get_profile().format() == RS2_FORMAT_Z16) has_depth = true; });
         if (!has_tex || !has_depth)
             return false;

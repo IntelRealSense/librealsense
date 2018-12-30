@@ -51,7 +51,7 @@ namespace librealsense
                 {
                     sync_set.push_back(s.second.clone());
                     // send only the synchronized frames to the user callback
-                    if (std::find(_streams_to_sync_ids.begin(), _streams_to_sync_ids.end(), 
+                    if (std::find(_streams_to_sync_ids.begin(), _streams_to_sync_ids.end(),
                         s.second->get_stream()->get_unique_id()) != _streams_to_sync_ids.end())
                         async_set.push_back(s.second.clone());
                 }

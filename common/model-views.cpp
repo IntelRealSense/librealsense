@@ -580,7 +580,7 @@ namespace rs2
                                 if (value >= 0)
                                     value = (loffset < roffset) ? value - loffset : value + roffset;
                                 else
-                                    value = (loffset < roffset) ? value + loffset : value - roffset; 
+                                    value = (loffset < roffset) ? value + loffset : value - roffset;
                                 value = (value < range.min) ? range.min : value;
                                 value = (value > range.max) ? range.max : value;
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
@@ -5257,7 +5257,7 @@ namespace rs2
         }
     }
 
-    // Load viewer configuration for stereo module (depth/infrared streams) only 
+    // Load viewer configuration for stereo module (depth/infrared streams) only
     void device_model::load_viewer_configurations(const std::string& json_str)
     {
         json j = json::parse(json_str);

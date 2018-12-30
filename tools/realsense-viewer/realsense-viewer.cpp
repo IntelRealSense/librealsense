@@ -446,7 +446,7 @@ int main(int argv, const char** argc) try
                     viewer_model.ppf.stop();
                 }
             }
-           
+
             if (device_to_remove)
             {
                 if (auto p = device_to_remove->dev.as<playback>())

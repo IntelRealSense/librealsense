@@ -168,7 +168,7 @@ namespace rs2
         void save(frame data, frame_source& source, bool do_signal=true)
         {
             software_device dev;
-            
+
             std::vector<std::tuple<software_sensor, stream_profile, int>> sensors;
             if (auto fs = data.as<frameset>()) {
                 int uid = 0;

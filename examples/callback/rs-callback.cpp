@@ -42,7 +42,7 @@ int main(int argc, char * argv[]) try
     // Start streaming through the callback with default recommended configuration
     // The default video configuration contains Depth and Color streams
     // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-    // 
+    //
     rs2::pipeline_profile profiles = pipe.start(callback);
 
     // Collect the enabled streams names
