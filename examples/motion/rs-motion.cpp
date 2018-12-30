@@ -1,4 +1,3 @@
-
 #include <librealsense2/rs.hpp>
 #include <algorithm>
 #include <iostream>
@@ -148,7 +147,7 @@ int main()
 
     window app(1280, 720, "RealSense Motion Example");
     // Construct an object to manage view state
-    glfw_state app_state;
+    glfw_state app_state(0.0, 0.0);
     // register callbacks to allow manipulation of the pointcloud
     register_glfw_callbacks(app, app_state);
 

@@ -567,7 +567,7 @@ private:
 
 // Struct for managing rotation of pointcloud view
 struct glfw_state {
-    glfw_state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
+    glfw_state(float yaw = 15.0, float pitch = 15.0) : yaw(yaw), pitch(pitch), last_x(0.0), last_y(0.0),
         ml(false), offset_x(2.f), offset_y(2.f), tex() {}
     double yaw;
     double pitch;
