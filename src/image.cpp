@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include "image.h"
 #include "image_avx.h"
 #include "types.h"
@@ -104,16 +102,7 @@ namespace librealsense
         using namespace librealsense;
         auto hid = (hid_data*)(source);
 
-        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
-        // Note that the implementation follows D435i installation pose and will require refactoring for other designs
-        // Reference spec: Bosch BMI055
         auto res= float3{ float(hid->x), float(hid->y), float(hid->z)} * float(factor);
-
-        if (RS2_FORMAT_MOTION_XYZ32F==FORMAT)
-        {
-            float3x3 rot = {{-1,0,0},{0,1,0},{0,0,-1}};
-            res=rot*res;
-        }
 
         librealsense::copy(dest[0], &res, sizeof(float3));
     }
@@ -132,8 +121,7 @@ namespace librealsense
     // Librealsense output format: floating point 32bit. units rad/sec,
     template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
-        static constexpr double deg2rad = M_PI / 180.;
-        static const double gyro_transform_factor = 0.1 * deg2rad;
+        static const double gyro_transform_factor = deg2rad(0.1);
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor);
     }

@@ -927,7 +927,7 @@ namespace rs2
             else
             {
                 foreach([&f, index](const frame& frm) {
-                    if (frm.get_profile().stream_type() == RS2_STREAM_INFRARED && 
+                    if (frm.get_profile().stream_type() == RS2_STREAM_INFRARED &&
                         frm.get_profile().stream_index() == index) f = frm;
                 });
             }

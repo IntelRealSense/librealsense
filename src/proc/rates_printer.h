@@ -4,7 +4,6 @@
 #pragma once
 #include "synthetic-stream.h"
 #include <iomanip>
-#include <iostream>
 #include <map>
 
 namespace librealsense

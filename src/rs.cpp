@@ -1499,7 +1499,7 @@ rs2_pipeline_profile* rs2_pipeline_start_with_config_and_callback_cpp(rs2_pipeli
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(callback);
 
-    return new rs2_pipeline_profile{ pipe->pipeline->start(config->config, 
+    return new rs2_pipeline_profile{ pipe->pipeline->start(config->config,
         { callback, [](rs2_frame_callback* p) { p->release(); } }) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config, callback)
