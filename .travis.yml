@@ -13,7 +13,7 @@ matrix:
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
-        - ./live-test.exe -d yes -i [software-device]
+        - powershell "./live-test.exe -d yes -i [software-device]"
 
     - name: "Windows - cpp"
       os: windows
