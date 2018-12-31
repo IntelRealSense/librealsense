@@ -41,7 +41,7 @@ matrix:
     - name: "Windows Testing - cpp"
       os: windows
       language: cpp
-      env: VS15=true RS_CPP_TEST=true
+      env: VS17=true RS_CPP_TEST=true
       script:
         - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
         - powershell "Dism /online /get-features" 
@@ -50,9 +50,11 @@ matrix:
         - cd $LRS_BUILD_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
-        
-install:
 
+before_install:
+  - mkdir build && cd build
+  
+install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       if [[ "$VS15" == "true" ]]; then
         choco install -y vcbuildtools --version 2015.4 --force;
