@@ -9,32 +9,19 @@ matrix:
       env: VS15=true RS_CPP_TEST=true
       script:
         - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
-        - powershell "Dism /online /get-features"
-        - cmake .. -G "Visual Studio 14 2015" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
-        - cd $LRS_BUILD_CONFIG
-        - ls
-        - ./live-test.exe -d yes -i [software-device]
-
-    - name: "Windows Testing - cpp"
-      os: windows
-      language: cpp
-      env: VS15=true RS_CPP_TEST=true
-      script:
-        - cmake .. -G "Visual Studio 15 2017" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
-        - cd $LRS_BUILD_CONFIG
-        - ls
-        - ./live-test.exe -d yes -i [software-device]
-
-    - name: "Windows Testing - cpp"
-      os: windows
-      language: cpp
-      env: VS15=true RS_CPP_TEST=true
-      script:
-        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
         - powershell "Dism /online /get-features"        
-        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - cd $LRS_BUILD_CONFIG
+        - ls
+        - ./live-test.exe -d yes -i [software-device]
+
+    - name: "Windows Testing - cpp"
+      os: windows
+      language: cpp
+      env: VS17=true RS_CPP_TEST=true
+      script:
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
@@ -44,20 +31,7 @@ matrix:
       os: windows
       language: cpp
       env: VS15=true RS_CPP_TEST=true
-      script:
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
-        - cd $LRS_BUILD_CONFIG
-        - ls
-        - ./live-test.exe -d yes -i [software-device]
-
-    - name: "Windows Testing - cpp"
-      os: windows
-      language: cpp
-      env: VS15=true RS_CPP_TEST=true
-      script:
-        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
-        - powershell "Dism /online /get-features"        
+      script:       
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
@@ -69,60 +43,18 @@ matrix:
       language: cpp
       env: VS15=true RS_CPP_TEST=true
       script:
+        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
+        - powershell "Dism /online /get-features" 
         - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
         
-before_install:
-  - cd scripts && ./api_check.sh && cd ..
-  - if [[ "$LRS_BUILD_NODEJS" == "true" ]]; then
-      nvm use 6;
-      npm install -g node-gyp;
-      npm install -g mocha;
-      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
-      export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
-      cd wrappers/nodejs/tools && npm install && cd ..;
-      node ./tools/linter.js;
-      export PATH=$OLDPATH && unset OLDPATH && cd ../../;
-    fi
-  - if [[ "$LRS_BUILD_ANDROID" == "true" ]]; then
-      wget https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip;
-      unzip -q android-ndk-r16b-linux-x86_64.zip -d ./;
-    fi
-  - mkdir build && cd build
-  - if [[ "$RS_CPP_TEST" == "true" ]]; then
-      export LRS_LOG_LEVEL="DEBUG";
-      url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
-      records_name="records.txt";
-      url_records_list=$url_records_path$records_name;
-      wget $url_records_path$records_name;
-      tests_list=`cat $records_name`;
-      for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
-    fi
-
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
-      sudo apt-get update;
-      sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
-      sudo apt-get install -qq libusb-1.0-0-dev;
-      sudo apt-get install -qq libgtk-3-dev;
-      sudo apt-get install gcc-5 g++-5;
-      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
-      sudo apt-get install libglfw3-dev libglfw3;
-    fi
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       if [[ "$VS15" == "true" ]]; then
         choco install -y vcbuildtools --version 2015.4 --force;
       fi
-    fi
-
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew uninstall xctool;
-      brew install xctool --HEAD;
-      brew install homebrew/core/glfw3;
-      brew list libusb || brew install libusb;
     fi
