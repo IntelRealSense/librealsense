@@ -6,10 +6,9 @@ matrix:
     - name: "Windows Testing - cpp"
       os: windows
       language: cpp
-      env: VS17=true RS_CPP_TEST=true
+      env: VS15=true RS_CPP_TEST=true
       script:
-        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - pwd
@@ -19,6 +18,7 @@ matrix:
     - name: "Windows - cpp"
       os: windows
       language: cpp
+      env: VS15=true
       script:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
@@ -27,6 +27,7 @@ matrix:
     - name: "Windows - Win USB (Win7)"
       os: windows
       language: cpp
+      env: VS15=true
       script:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false -DFORCE_WINUSB_UVC=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
@@ -35,6 +36,7 @@ matrix:
     - name: "Windows - C#"
       os: windows
       language: cpp
+      env: VS15=true
       script:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
@@ -142,7 +144,12 @@ install:
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      choco install -y vcbuildtools --version 2015.4 --force;
+      if [[ "$VS15" == "true" ]]; then
+        choco install -y vcbuildtools --version 2015.4 --force;
+      fi
+      if [[ "$RS_CPP_TEST" == "true" ]]; then
+        powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart";
+      fi
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
