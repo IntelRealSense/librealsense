@@ -14,7 +14,7 @@ matrix:
         - pwd
         - ls
         - ./live-test.exe -d yes -i [software-device]
-        
+
     - name: "Windows - cpp"
       os: windows
       language: cpp
@@ -41,16 +41,6 @@ matrix:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - ls $LRS_BUILD_CONFIG
-
-    - name: "Mac - cpp"
-      os: osx
-      language: cpp
-      sudo: required
-      osx_image: xcode7
-      script:
-        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - ls
 
     - name: "Linux Testing - cpp"
       os: linux
@@ -91,6 +81,16 @@ matrix:
         - cd ../wrappers/nodejs/test
         - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec
         - mocha test-functional.js --playback nodejs_record.rec
+
+    - name: "Mac - cpp"
+      os: osx
+      language: cpp
+      sudo: required
+      osx_image: xcode7
+      script:
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ls
 
     - name: "Android - cpp"
       os: linux
@@ -145,10 +145,10 @@ install:
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       if [[ "$VS15" == "true" ]]; then
-        choco install -y vcbuildtools --version 2015.4 --force;
+        - choco install -y vcbuildtools --version 2015.4 --force
       fi
       if [[ "$RS_CPP_TEST" == "true" ]]; then
-        powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart";
+        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
       fi
     fi
 
