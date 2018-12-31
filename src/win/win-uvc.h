@@ -44,10 +44,32 @@ namespace librealsense
         };
 
         typedef std::function<void(const uvc_device_info&, IMFActivate*)>
-                enumeration_callback;
+            enumeration_callback;
+
+        typedef struct frame_rate {
+            unsigned int denominator;
+            unsigned int numerator;
+        } frame_rate;
+
+        typedef struct mf_profile {
+            uint32_t index;
+            frame_rate min_rate;
+            frame_rate max_rate;
+            stream_profile profile;
+        } mf_profile;
+
+        template <class T>
+        static void safe_release(T &ppT)
+        {
+            if (ppT)
+            {
+                ppT.Release();
+                ppT = NULL;
+            }
+        }
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
-                               public uvc_device
+            public uvc_device
         {
         public:
             wmf_uvc_device(const uvc_device_info& info, std::shared_ptr<const wmf_backend> backend);
@@ -79,20 +101,8 @@ namespace librealsense
 
             std::string get_device_location() const override { return _location; }
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
-
-            IAMVideoProcAmp* get_video_proc() const
-            {
-                if (!_video_proc.p)
-                    throw std::runtime_error("The device does not support adjusting the qualities of an incoming video signal, such as brightness, contrast, hue, saturation, gamma, and sharpness.");
-                return _video_proc.p;
-            }
-
-            IAMCameraControl* get_camera_control() const
-            {
-                if (!_camera_control.p)
-                    throw std::runtime_error("The device does not support camera settings such as zoom, pan, aperture adjustment, or shutter speed.");
-                return _camera_control.p;
-            }
+            IAMVideoProcAmp* get_video_proc() const;
+            IAMCameraControl* get_camera_control() const;
 
         private:
             friend class source_reader_callback;
@@ -102,16 +112,18 @@ namespace librealsense
             void flush(int sIndex);
             void check_connection() const;
             IKsControl* get_ks_control(const extension_unit& xu) const;
-            std::vector<std::pair<stream_profile, int>> get_stream_profiles_and_indexes() const;
-            int get_stream_index_by_profile(const stream_profile& profile) const;
+            CComPtr<IMFAttributes> create_device_attrs();
+            CComPtr<IMFAttributes> create_reader_attrs();
+            void foreach_profile(std::function<void(const mf_profile& profile, CComPtr<IMFMediaType> media_type, bool& quit)> action) const;
+
+            void set_d0();
+            void set_d3();
 
             const uvc_device_info                   _info;
             power_state                             _power_state = D3;
 
-            CComPtr<source_reader_callback>         _callback = nullptr;
             CComPtr<IMFSourceReader>                _reader = nullptr;
             CComPtr<IMFMediaSource>                 _source = nullptr;
-            CComPtr<IMFActivate>                    _activate = nullptr;
             CComPtr<IMFAttributes>                  _device_attrs = nullptr;
             CComPtr<IMFAttributes>                  _reader_attrs = nullptr;
 
@@ -132,10 +144,12 @@ namespace librealsense
             named_mutex                             _systemwide_lock;
             std::string                             _location;
             usb_spec                                _device_usb_spec;
+            std::string                             _device_serial;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = false;
+            std::wstring                            _device_id;
         };
 
         class source_reader_callback : public IMFSourceReaderCallback

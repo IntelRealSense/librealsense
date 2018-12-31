@@ -20,6 +20,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_export.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
 #include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
@@ -192,7 +193,6 @@ PYBIND11_MODULE(NAME, m) {
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     /* rs2_types.hpp */
-
     py::class_<rs2::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
@@ -300,9 +300,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("was_added", &rs2::event_information::was_added, "Check if "
             "specific device was added.", "dev"_a)
         .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
-            "list of all newly connected devices")
-        .def("get_removed_devices", &rs2::event_information::get_removed_devices, "Returns a "
-            "list of all newly removed devices");
+            "list of all newly connected devices");
 
     py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
     tm2.def(py::init<rs2::device>(), "device"_a)
@@ -314,7 +312,6 @@ PYBIND11_MODULE(NAME, m) {
 
 
     /* rs2_frame.hpp */
-
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
@@ -376,6 +373,25 @@ PYBIND11_MODULE(NAME, m) {
         .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.");
+
+
+    py::class_<rs2_vector> vector(m, "vector");
+    vector.def(py::init<>())
+        .def_readwrite("x", &rs2_vector::x)
+        .def_readwrite("y", &rs2_vector::y)
+        .def_readwrite("z", &rs2_vector::z)
+        .def("__repr__", [](const rs2_vector& self)
+    {
+        std::stringstream ss;
+        ss << "x: " << self.x << ", ";
+        ss << "y: " << self.y << ", ";
+        ss << "z: " << self.z;
+        return ss.str();
+    });
+
+    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame");
+    motion_frame.def(py::init<rs2::frame>())
+        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Returns motion info of frame.");
 
     py::class_<rs2::vertex> vertex(m, "vertex");
     vertex.def_readwrite("x", &rs2::vertex::x)
@@ -575,6 +591,14 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
+    /* rs_export.hpp */
+    py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
+    save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud());
+    //TODO - Fix Linux/Python3_6 .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
+
+    py::class_<rs2::save_single_frameset, rs2::filter> save_single_frameset(m, "save_single_frameset");
+    save_single_frameset.def(py::init<std::string>(), "filename"_a = "RealSense Frameset ");
+
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
     playback.def(py::init<rs2::device>(), "device"_a)
@@ -606,6 +630,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("clone", &rs2::stream_profile::clone, "type"_a, "index"_a, "format"_a)
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
+        .def(BIND_DOWNCAST(stream_profile, motion_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name)
         .def("is_default", &rs2::stream_profile::is_default)
         .def("__nonzero__", &rs2::stream_profile::operator bool)
@@ -715,8 +740,6 @@ PYBIND11_MODULE(NAME, m) {
         .def("__nonzero__", &rs2::depth_sensor::operator bool);
 
     /* rs2_pipeline.hpp */
-
-
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
         .def(py::init([]() { return rs2::pipeline(rs2::context()); }))
@@ -748,7 +771,6 @@ PYBIND11_MODULE(NAME, m) {
 
     py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
-    /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
     pipeline_profile.def(py::init<>())
         .def("get_streams", &rs2::pipeline_profile::get_streams)

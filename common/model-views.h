@@ -493,6 +493,7 @@ namespace rs2
 
         void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
+        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, rs2_stream stream_type);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 

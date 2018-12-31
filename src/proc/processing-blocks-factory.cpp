@@ -8,10 +8,10 @@
 namespace librealsense
 {
 #ifdef RS2_USE_CUDA
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)                                                               
-    { 
+    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
+    {
         return std::make_shared<librealsense::align_cuda>(align_to);
-    } 
+    }
 #else
 #ifdef __SSSE3__
     std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)

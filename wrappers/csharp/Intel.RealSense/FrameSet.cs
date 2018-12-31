@@ -251,7 +251,10 @@ namespace Intel.RealSense
 
         public void Release(FrameSet t)
         {
-            stack.Push(t);
+            lock (locker)
+            {
+                stack.Push(t);
+            }
         }
     }
 

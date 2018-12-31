@@ -34,6 +34,7 @@ namespace perc {
         LOCALIZATION_DATA_STREAM_EVENT_FRAME_COMPLETE_TASK = 14,
         ERROR_COMPLETE_TASK = 15,
         CONTROLLER_LED_COMPLETE_TASK = 16,
+        RELOCALIZATION_EVENT_COMPLETE_TASK = 17,
     };
 
     class CompleteTask
@@ -615,6 +616,28 @@ namespace perc {
         std::shared_ptr<uint8_t> mFrame;
         FrameBuffersOwner* mFrameBufferOwner;
         TrackingData::LocalizationDataFrame mLocalizationFrame;
+    };
+
+    class RelocalizationEventFrameCompleteTask : public CompleteTask
+    {
+    public:
+        RelocalizationEventFrameCompleteTask(TrackingDevice::Listener* l, const interrupt_message_slam_relocalization_event* relocalizationEvent, TrackingDevice* owner) :
+            mListener(l), CompleteTask(RELOCALIZATION_EVENT_COMPLETE_TASK, owner)
+        {
+            mRelocalizationEvent.timestamp = relocalizationEvent->llNanoseconds;
+            mRelocalizationEvent.sessionId = relocalizationEvent->wSessionId;
+        }
+
+        virtual void complete() override
+        {
+            if (mListener)
+            {
+                mListener->onRelocalizationEvent(mRelocalizationEvent);
+            }
+        }
+    private:
+        TrackingDevice::Listener* mListener;
+        TrackingData::RelocalizationEvent mRelocalizationEvent;
     };
 
     class FWUpdateCompleteTask : public CompleteTask

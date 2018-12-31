@@ -5,6 +5,7 @@ project(librealsense2 LANGUAGES CXX C)
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
+
 config_cxx_flags()
 
 # include os specific macros
@@ -44,11 +45,17 @@ os_target_config()
 # global project configuration
 # macro definition located at "CMake/global_config.cmake"
 global_target_config()
+option(BUILD_CV_KINFU_EXAMPLE "Build OpenCV KinectFusion example" OFF)
 
 add_subdirectory(wrappers)
 
-if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES) AND WIN32)
-  add_subdirectory(third-party/glfw)
+if((BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES))
+  if(WIN32)
+    add_subdirectory(third-party/glfw)
+    add_library(glfw ALIAS glfw3)
+  else()
+    find_package(glfw3 REQUIRED)
+  endif()
 endif()
 
 if(BUILD_EXAMPLES)

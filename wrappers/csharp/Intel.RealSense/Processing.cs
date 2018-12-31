@@ -392,9 +392,15 @@ namespace Intel.RealSense
 
         static void ProcessingBlockCallback(IntPtr f, IntPtr src, IntPtr u)
         {
-            var callback = GCHandle.FromIntPtr(u).Target as FrameProcessorCallback;
-            using (var frame = Frame.CreateFrame(f))
-                callback(frame, new FrameSource(new HandleRef(frame, src)));
+            try
+            {
+                var callback = GCHandle.FromIntPtr(u).Target as FrameProcessorCallback;
+                using (var frame = Frame.CreateFrame(f))
+                    callback(frame, new FrameSource(new HandleRef(frame, src)));
+            }
+            // ArgumentException: GCHandle value belongs to a different domain
+            // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
+            catch (ArgumentException) { }
         }
 
         public void ProcessFrame(Frame f)
@@ -447,9 +453,15 @@ namespace Intel.RealSense
         readonly frame_callback m_frameCallback = new frame_callback(ProcessingBlockFrameCallback);
         static void ProcessingBlockFrameCallback(IntPtr f, IntPtr u)
         {
-            var callback = GCHandle.FromIntPtr(u).Target as FrameCallback;
-            using (var frame = Frame.CreateFrame(f))
-                callback(frame);
+            try
+            {
+                var callback = GCHandle.FromIntPtr(u).Target as FrameCallback;
+                using (var frame = Frame.CreateFrame(f))
+                    callback(frame);
+            }
+            // ArgumentException: GCHandle value belongs to a different domain
+            // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
+            catch (ArgumentException) { }
         }
 
         private GCHandle frameCallbackHandle;

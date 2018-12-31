@@ -11,6 +11,10 @@
 
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
+#include <cmath>                            // For acos
 #include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -24,6 +28,8 @@
 #include <condition_variable>
 #include <functional>
 #include <utility>                          // For std::forward
+
+
 #include "backend.h"
 #include "concurrency.h"
 #if BUILD_EASYLOGGINGPP
@@ -37,6 +43,13 @@ const int RS2_USER_QUEUE_SIZE = 128;
 #ifndef DBL_EPSILON
 const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
 #endif
+
+// Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
+static const double pi = std::acos(-1);
+static const double d2r = pi / 180;
+static const double r2d = 180 / pi;
+template<typename T> T deg2rad(T val) { return T(val * d2r); }
+template<typename T> T rad2deg(T val) { return T(val * r2d); }
 
 #pragma warning(disable: 4250)
 
@@ -91,6 +104,19 @@ namespace librealsense
             }
         }
         return sizem * sizen;
+    }
+
+    // Comparing parameter against a range of values of the same type
+    // https://stackoverflow.com/questions/15181579/c-most-efficient-way-to-compare-a-variable-to-multiple-values
+    template <typename T>
+    bool val_in_range(const T& val, const std::initializer_list<T>& list)
+    {
+        for (const auto& i : list) {
+            if (val == i) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void copy(void* dst, void const* src, size_t size);
@@ -373,6 +399,12 @@ namespace librealsense
         return sz;
     }
 
+    template<typename T, int sz>
+    int arr_size_bytes(T(&)[sz])
+    {
+        return sz*sizeof(T);
+    }
+
     template<typename T>
     std::string array2str(T& data)
     {
@@ -428,9 +460,11 @@ namespace librealsense
 #pragma pack(pop)
     inline bool operator == (const float3 & a, const float3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator + (const float3 & a, const float3 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
+    inline float3 operator - (const float3 & a, const float3 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
     inline float3 operator * (const float3 & a, float b) { return{ a.x*b, a.y*b, a.z*b }; }
     inline bool operator == (const float4 & a, const float4 & b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
     inline float4 operator + (const float4 & a, const float4 & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
+    inline float4 operator - (const float4 & a, const float4 & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
     inline bool operator == (const float3x3 & a, const float3x3 & b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
     inline float3 operator * (const float3x3 & a, const float3 & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
     inline float3x3 operator * (const float3x3 & a, const float3x3 & b) { return{ a*b.x, a*b.y, a*b.z }; }
@@ -659,6 +693,9 @@ namespace librealsense
 
         firmware_version(int major, int minor, int patch, int build, bool is_any = false)
             : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
+
+        // CTO experimental firmware versions are marked with build >= 90
+        bool experimental() const { return m_build >= 90; }
 
         static firmware_version any()
         {
