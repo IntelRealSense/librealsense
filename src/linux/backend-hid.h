@@ -42,6 +42,8 @@ namespace librealsense
 {
     namespace platform
     {
+        const uint32_t hid_buf_len = 128;
+
         struct hid_input_info
         {
             std::string input = "";
@@ -58,6 +60,35 @@ namespace librealsense
             uint64_t mask;
             // TODO: parse 'offset' and 'scale'
         };
+
+        template<typename T>
+        inline bool write_fs(const std::string& path, const T& val)
+        {
+            bool res = false;
+            std::fstream fs_handle(path);
+
+            if (!fs_handle.good())
+            {
+                LOG_DEBUG("The specified path "  << path << " is not valid");
+                return res;
+            }
+
+            try // Read/Modify/Confirm
+            {
+                T cval = 0;
+                fs_handle >> cval;
+
+                if (cval!=val)
+                {
+                    fs_handle << val;
+                    fs_handle >> cval;
+                }
+                res = (cval==val);
+            }
+            catch (std::exception&){ }
+
+            return res;
+        }
 
         // manage an IIO input. or what is called a scan.
         class hid_input
@@ -135,8 +166,9 @@ namespace librealsense
 
             bool has_metadata();
 
-            static bool set_fs_attribute(std::string path, int val);
             static bool sort_hids(hid_input* first, hid_input* second);
+            // configure hid device via fd
+            void write_param(const std::string& param,int value);
 
             void create_channel_array();
 
@@ -154,10 +186,6 @@ namespace librealsense
             // read the IIO device inputs.
             void read_device_inputs();
 
-            // configure hid device via fd
-            void write_integer_to_param(const std::string& param,int value);
-
-            static const uint32_t buf_len = 128; // TODO
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
             int _iio_device_number;
@@ -170,6 +198,7 @@ namespace librealsense
             std::atomic<bool> _is_capturing;
             std::unique_ptr<std::thread> _hid_thread;
             std::unique_ptr<std::thread> _pm_thread;    // Delayed initialization due to power-up sequence
+            dispatcher                  _pm_dispatcher; // Asynchronous power management
         };
 
         class v4l_hid_device : public hid_device
