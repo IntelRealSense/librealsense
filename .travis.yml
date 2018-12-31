@@ -2,6 +2,19 @@ env:
   - LRS_BUILD_CONFIG=Debug
 matrix:
   include:
+    - name: "Windows Testing - cpp"
+      os: windows
+      language: cpp
+      env: VS17=true RS_CPP_TEST=true
+      script:
+        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - cd $LRS_BUILD_CONFIG
+        - pwd
+        - ls
+        - ./live-test.exe -d yes -i [software-device]
+        
     - name: "Windows - cpp"
       os: windows
       language: cpp
@@ -10,7 +23,7 @@ matrix:
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - ls $LRS_BUILD_CONFIG
 
-    - name: "Windows - Win USB(Win7)"
+    - name: "Windows - Win USB (Win7)"
       os: windows
       language: cpp
       script:
