@@ -8,13 +8,13 @@ matrix:
       language: cpp
       env: VS15=true RS_CPP_TEST=true
       script:
-        - powershell "Dism /online /get-features"
         - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
+        - powershell "Dism /online /get-features"
         - cmake .. -G "Visual Studio 14 2015" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
-        - powershell "./live-test.exe -d yes -i [software-device]"
+        - ./live-test.exe -d yes -i [software-device]
 
     - name: "Windows Testing - cpp"
       os: windows
@@ -25,20 +25,20 @@ matrix:
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
-        - powershell "./live-test.exe -d yes -i [software-device]"
+        - ./live-test.exe -d yes -i [software-device]
 
     - name: "Windows Testing - cpp"
       os: windows
       language: cpp
       env: VS15=true RS_CPP_TEST=true
       script:
-        - powershell "Dism /online /get-features"
         - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
+        - powershell "Dism /online /get-features"        
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
-        - powershell "./live-test.exe -d yes -i [software-device]"
+        - ./live-test.exe -d yes -i [software-device]
 
     - name: "Windows Testing - cpp"
       os: windows
@@ -49,7 +49,8 @@ matrix:
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
         - ls
-        - powershell "./live-test.exe -d yes -i [software-device]"        
+        - ./live-test.exe -d yes -i [software-device]
+
 before_install:
   - cd scripts && ./api_check.sh && cd ..
   - if [[ "$LRS_BUILD_NODEJS" == "true" ]]; then
