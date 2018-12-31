@@ -2662,7 +2662,7 @@ namespace rs2
                 ImGui::Text("%s:", motion.name.c_str());
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip(motion.toolTip.c_str());
+                    ImGui::SetTooltip("%s", motion.toolTip.c_str());
                 }
                 ImGui::PopStyleColor(1);
 
