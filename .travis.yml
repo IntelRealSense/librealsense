@@ -8,6 +8,7 @@ matrix:
       language: cpp
       env: VS15=true RS_CPP_TEST=true
       script:
+        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - cd $LRS_BUILD_CONFIG
@@ -145,10 +146,7 @@ install:
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       if [[ "$VS15" == "true" ]]; then
-        - choco install -y vcbuildtools --version 2015.4 --force
-      fi
-      if [[ "$RS_CPP_TEST" == "true" ]]; then
-        - powershell "Dism /online /enable-feature /FeatureName:ServerMediaFoundation /NoRestart"
+        choco install -y vcbuildtools --version 2015.4 --force;
       fi
     fi
 
