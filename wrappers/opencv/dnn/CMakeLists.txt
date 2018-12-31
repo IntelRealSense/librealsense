@@ -23,7 +23,7 @@ set_target_properties (rs-dnn PROPERTIES
 )
 
 set(PROTOTEXT_FILE "MobileNetSSD_deploy.prototxt")
-set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/MobileNetSSD_deploy.prototxt")
+set(PROTOTEXT_URL "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/f5d072ccc7e3dcddaa830e9805da4bf1000b2836/MobileNetSSD_deploy.prototxt")
 set(PROTOTEXT_PATH "${CMAKE_CURRENT_BINARY_DIR}/${PROTOTEXT_FILE}")
 
 set(MODEL_FILE "MobileNetSSD_deploy.caffemodel")

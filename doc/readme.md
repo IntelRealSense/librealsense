@@ -19,7 +19,8 @@
   * [Latest Doxygen Output](http://intelrealsense.github.io/librealsense/doxygen/annotated.html)
   * To build documentation locally from sources, on Ubuntu run the following commands:
     * `sudo apt-get install doxygen`
-    * `doxygen doc/doxygen/doxyfile`
+    * `cd doc/doxygen`
+    * `doxygen doxyfile`
   * Please also refer to [API How-To](https://github.com/IntelRealSense/librealsense/wiki/API-How-To) for further doc how to use the APIs
 * [Frame Management](frame_lifetime.md) - Frame Memory Management, Threading Model and Synchronization
 * [Frame Metadata](frame_metadata.md) - Support for frame-metadata attributes
