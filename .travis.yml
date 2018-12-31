@@ -1,5 +1,6 @@
 env:
-  - LRS_BUILD_CONFIG=Debug
+  global:
+    - LRS_BUILD_CONFIG=Debug
 matrix:
   include:
     - name: "Windows Testing - cpp"
