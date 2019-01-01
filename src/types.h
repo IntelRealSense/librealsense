@@ -11,6 +11,10 @@
 
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
+#include <cmath>                            // For acos
 #include <stdint.h>
 #include <cassert>                          // For assert
 #include <cstring>                          // For memcmp
@@ -393,6 +397,12 @@ namespace librealsense
     int arr_size(T(&)[sz])
     {
         return sz;
+    }
+
+    template<typename T, int sz>
+    int arr_size_bytes(T(&)[sz])
+    {
+        return sz*sizeof(T);
     }
 
     template<typename T>

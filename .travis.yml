@@ -10,6 +10,14 @@ matrix:
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - ls $LRS_BUILD_CONFIG
 
+    - name: "Windows - Win USB(Win7)"
+      os: windows
+      language: cpp
+      script:
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false -DFORCE_WINUSB_UVC=true
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - ls $LRS_BUILD_CONFIG
+
     - name: "Windows - C#"
       os: windows
       language: cpp
@@ -17,7 +25,7 @@ matrix:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
         - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
         - ls $LRS_BUILD_CONFIG
-        
+
     - name: "Mac - cpp"
       os: osx
       language: cpp

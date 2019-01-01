@@ -182,7 +182,8 @@ namespace librealsense
         lazy<ds::imu_intrinsic>                 _accel_intrinsic;
         lazy<ds::imu_intrinsic>                 _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;
+        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
+        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu_aligned;          // Translation component
 
 #ifdef _WIN32
         // Bandwidth parameters from BOSCH BMI 055 spec'
