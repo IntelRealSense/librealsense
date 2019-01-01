@@ -16,7 +16,7 @@ init:
 
       echo "Script started on $startTime"
       
-      Dism "/online /get-features"
+      Dism /online /get-features
 - cmd: 
 install:
 - ps: Install-Product node $env:nodejs_version
