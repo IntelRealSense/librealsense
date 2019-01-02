@@ -62,14 +62,14 @@ namespace librealsense
         };
 
         template<typename T>
-        inline bool write_fs(const std::string& path, const T& val)
+        inline bool write_fs_arithmetic(const std::string& path, const T& val)
         {
+            static_assert((std::is_arithmetic<T>::value), "write_arithmetic_fs incompatible type");
             bool res = false;
             std::fstream fs_handle(path);
-
             if (!fs_handle.good())
             {
-                LOG_DEBUG("The specified path "  << path << " is not valid");
+                LOG_WARNING(__FUNCTION__ <<" with " << val << " failed. The specified path "  << path << " is not valid");
                 return res;
             }
 
@@ -81,11 +81,18 @@ namespace librealsense
                 if (cval!=val)
                 {
                     fs_handle << val;
-                    fs_handle >> cval;
+                    fs_handle.flush();
+                    std::ifstream vnv_handle(path);
+                    vnv_handle >> cval;
+                    res = (cval==val);
+                    if (!res)
+                        LOG_WARNING(__FUNCTION__ << " Could not change " << cval << " to " << val << " : path " << path);
                 }
-                res = (cval==val);
             }
-            catch (std::exception&){ }
+            catch (const std::exception& exc)
+            {
+                LOG_WARNING(__FUNCTION__ << " with  " << path << " failed: " << exc.what());
+            }
 
             return res;
         }
@@ -161,6 +168,7 @@ namespace librealsense
             void clear_buffer();
 
             void set_frequency(uint32_t frequency);
+            void set_power(bool on);
 
             void signal_stop();
 

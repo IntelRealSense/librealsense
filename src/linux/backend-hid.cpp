@@ -463,7 +463,7 @@ namespace librealsense
               _sampling_frequency_name(""),
               _callback(nullptr),
               _is_capturing(false),
-              _pm_dispatcher(10)    // queue for async power management commands
+              _pm_dispatcher(16)    // queue for async power management commands
         {
             init(frequency);
         }
@@ -472,8 +472,8 @@ namespace librealsense
         {
             try
             {
-                write_fs(_iio_device_path + "/buffer/enable", 0);
-                _pm_dispatcher.stop();
+                // Ensure PM sync
+                _pm_dispatcher.flush();
                 stop_capture();
 
                 clear_buffer();
@@ -490,6 +490,7 @@ namespace librealsense
             if (_is_capturing)
                 return;
 
+            set_power(true);
             std::ostringstream iio_read_device_path;
             iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;
 
@@ -606,6 +607,7 @@ namespace librealsense
                 return;
 
             _is_capturing = false;
+            set_power(false);
             signal_stop();
             _hid_thread->join();
             _callback = NULL;
@@ -675,34 +677,23 @@ namespace librealsense
             iio_device_file.close();
         }
 
-//        bool iio_hid_sensor::set_fs_attribute(std::string path, int input)
-//        {
-//            bool res = false;
+        // Asynchronous power management
+        void iio_hid_sensor::set_power(bool on)
+        {
+            auto path = _iio_device_path + "/buffer/enable";
 
-//            std::fstream sysfs_stream(path);
-//            if (!sysfs_stream.is_open())
-//            {
-//                LOG_DEBUG("The specified sysfs entry "  << path << " is not valid");
-//                 return res;
-//            }
+            // Enqueue power management change
+            _pm_dispatcher.invoke([path,on](dispatcher::cancellable_timer t)
+            {
+                auto st = std::chrono::high_resolution_clock::now();
 
-//            try
-//            {
-//                // Read/Modify/Confirm
-//                int rval = 0;
-//                sysfs_stream >> std::dec >> rval;
-
-//                if (rval!=input)
-//                {
-//                    sysfs_stream << input;
-//                    sysfs_stream >> std::dec >> rval;
-//                }
-//                res = (rval==input);
-//            }
-//            catch (std::exception&){ /*The sysfs may not respond during internal power-up"*/ }
-
-//            return res;
-//        }
+                if (!write_fs_arithmetic(path, on))
+                {
+                    auto tt = std::chrono::high_resolution_clock::now().time_since_epoch().count() * 0.000001;
+                    LOG_WARNING(std::fixed << tt << " Power " << int(on) << " failed for " << path);
+                }
+            },true);
+        }
 
         void iio_hid_sensor::signal_stop()
         {
@@ -785,20 +776,7 @@ namespace librealsense
                 input->enable(true);
 
             set_frequency(frequency);
-            write_fs(_iio_device_path + "/buffer/length", hid_buf_len);
-            //write_integer_to_param("buffer/length", buf_len);
-
-            auto path = _iio_device_path + "/buffer/enable";
-            std::thread enable_thread = std::thread([path]()
-            {
-                auto st = std::chrono::high_resolution_clock::now();
-                //this->write_integer_to_param("buffer/enable", 1);
-                write_fs(path, 1);
-                auto duration = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - st);
-                std::cout << "Async enable for " << path << " took " << duration.count() << " msec" << std::endl;
-            });
-            enable_thread.detach();
-            //write_fs(path, 1);
+            write_fs_arithmetic(_iio_device_path + "/buffer/length", hid_buf_len);
 
 #ifdef PREVENT_HID_SUSPEND
             // Prevent the power-management to control suspended mode
