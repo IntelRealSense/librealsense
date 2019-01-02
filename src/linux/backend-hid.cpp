@@ -778,27 +778,6 @@ namespace librealsense
             set_frequency(frequency);
             write_fs_arithmetic(_iio_device_path + "/buffer/length", hid_buf_len);
 
-#ifdef PREVENT_HID_SUSPEND
-            // Prevent the power-management to control suspended mode
-            // HID resume (power up) prodices ~2 sec latency per each sensor.
-            // During the period the sysfs HAL node is lazy initialized, requiring async assignment
-            // Note that this setting applies for non-HID sensors as well
-            std::string path = _iio_device_path + "/../power/autosuspend_delay_ms";
-            _pm_thread = std::unique_ptr<std::thread>(new std::thread([path](){
-                while (true)
-                {
-                    try{
-                        // Zero -delay will suspend immedeately, Negaive - prevent suspend/resume
-                        if (set_fs_attribute(path,-1))
-                            break;
-                        else
-                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                    }
-                    catch(...){ break; } // Device disconnect
-                }
-            }));
-            _pm_thread->detach();
-#endif //  PREVENT_HID_SUSPEND
         }
 
         // calculate the storage size of a scan
