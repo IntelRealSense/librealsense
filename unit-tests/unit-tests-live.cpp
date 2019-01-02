@@ -5008,7 +5008,7 @@ TEST_CASE("software-device motion stream", "[software-device]")
 
 }
 
-TEST_CASE("Record software-device", "[software-device][record]")
+TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
 {
     const int W = 640;
     const int H = 480;
