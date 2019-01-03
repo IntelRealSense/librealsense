@@ -175,8 +175,6 @@ namespace librealsense
             bool has_metadata();
 
             static bool sort_hids(hid_input* first, hid_input* second);
-            // configure hid device via fd
-            void write_param(const std::string& param,int value);
 
             void create_channel_array();
 

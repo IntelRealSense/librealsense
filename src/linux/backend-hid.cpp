@@ -689,8 +689,7 @@ namespace librealsense
 
                 if (!write_fs_arithmetic(path, on))
                 {
-                    auto tt = std::chrono::high_resolution_clock::now().time_since_epoch().count() * 0.000001;
-                    LOG_WARNING(std::fixed << tt << " Power " << int(on) << " failed for " << path);
+                    LOG_WARNING("HID set_power " << int(on) << " failed for " << path);
                 }
             },true);
         }
