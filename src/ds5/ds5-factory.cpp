@@ -515,7 +515,7 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> results;
 
         auto valid_pid = filter_by_product(group.uvc_devices, ds::rs400_sku_pid);
-        auto group_devices = group_devices_and_hids_by_unique_id(ctx, group_devices_by_unique_id(valid_pid), group.hid_devices);
+        auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
 
         for (auto& g : group_devices)
         {
@@ -524,6 +524,7 @@ namespace librealsense
 
             bool all_sensors_present = mi_present(devices, 0);
 
+            // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
             auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::multi_sensors_pid), std::end(ds::multi_sensors_pid), pid) != std::end(ds::multi_sensors_pid); };
             bool is_device_multisensor = false;
             for (auto&& uvc : devices)
@@ -535,6 +536,22 @@ namespace librealsense
             if(is_device_multisensor)
             {
                 all_sensors_present = all_sensors_present && mi_present(devices, 3);
+            }
+
+
+            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::hid_sensors_pid), std::end(ds::hid_sensors_pid), pid) != std::end(ds::hid_sensors_pid); };
+            bool is_device_hid_sensor = false;
+            for (auto&& uvc : devices)
+            {
+                if (is_pid_of_hid_sensor_device(uvc.pid))
+                    is_device_hid_sensor = true;
+            }
+
+            // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
+            // Assuming that hids amount of 2 and above guarantee that gyro and accelerometer are present
+            if (is_device_hid_sensor)
+            {
+                all_sensors_present &= (hids.capacity() >= 2);
             }
 
             if (!devices.empty() && all_sensors_present)

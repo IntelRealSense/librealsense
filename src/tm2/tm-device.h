@@ -37,7 +37,7 @@ namespace librealsense
     private:
         static const char* tm2_device_name()
         {
-            return "Intel RealSense T260";
+            return "Intel RealSense T265";
         }
         std::shared_ptr<perc::TrackingManager> _manager;
         perc::TrackingDevice* _dev;

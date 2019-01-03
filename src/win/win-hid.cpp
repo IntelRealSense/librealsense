@@ -119,17 +119,57 @@ namespace librealsense
                 CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE2, &var));
                 auto customTimestampHigh = var.ulVal;
 
-                // Raw X
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
-                auto rawX = var.iVal;
+                /* Retrieve sensor type - Sensor types are more specific groupings than sensor categories. Sensor type IDs are GUIDs that are defined in Sensors.h */
 
-                // Raw Y
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
-                auto rawY = var.iVal;
+                SENSOR_TYPE_ID type{};
 
-                // Raw Z
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
-                auto rawZ = var.iVal;
+                CHECK_HR(pSensor->GetType(&type));
+
+                double rawX, rawY, rawZ;
+
+
+                if (type == SENSOR_TYPE_ACCELEROMETER_3D)
+                {
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_X_G, &var));
+                    rawX = var.dblVal;
+
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_Y_G, &var));
+                    rawY = var.dblVal;
+
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_Z_G, &var));
+                    rawZ = var.dblVal;
+
+                    static constexpr double accelerator_transform_factor = 1000.0;
+
+                    rawX *= accelerator_transform_factor;
+                    rawY *= accelerator_transform_factor;
+                    rawZ *= accelerator_transform_factor;
+                }
+                else if (type == SENSOR_TYPE_GYROMETER_3D)
+                {
+                    // Raw X
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND, &var));
+                    rawX = var.dblVal;
+
+                    // Raw Y
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND, &var));
+                    rawY = var.dblVal;
+
+                    // Raw Z
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
+                    rawZ = var.dblVal;
+
+                    static constexpr double gyro_transform_factor = 10.0;
+
+                    rawX *= gyro_transform_factor;
+                    rawY *= gyro_transform_factor;
+                    rawZ *= gyro_transform_factor;
+                }
+                else
+                {
+                    /* Unsupported sensor */
+                    return S_FALSE;
+                }
 
                 PropVariantClear(&var);
 
@@ -300,7 +340,6 @@ namespace librealsense
 
         void wmf_hid_device::foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action)
         {
-            //return;
             /* Enumerate all HID devices and run action function on each device */
             try
             {

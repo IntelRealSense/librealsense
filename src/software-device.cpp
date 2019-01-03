@@ -21,6 +21,12 @@ namespace librealsense
         return *sensor;
     }
 
+    void software_device::register_extrinsic(const stream_interface& stream, uint32_t groupd_index)
+    {
+        register_stream_to_extrinsic_group(stream, groupd_index);
+    }
+
+
     software_sensor& software_device::get_software_sensor(int index)
     {
         if (index >= _software_sensors.size())
@@ -39,6 +45,7 @@ namespace librealsense
         : sensor_base(name, owner)
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
+        _unique_id = unique_id::generate_id();
     }
 
     std::shared_ptr<matcher> software_device::create_matcher(const frame_holder& frame) const
@@ -225,6 +232,9 @@ namespace librealsense
         frame->attach_continuation(frame_continuation{ [=]() {
             software_frame.deleter(software_frame.pixels);
         }, software_frame.pixels });
+
+        auto sd = dynamic_cast<software_device*>(_owner);
+        sd->register_extrinsic(*vid_profile, _unique_id);
         _source.invoke_callback(frame);
     }
 

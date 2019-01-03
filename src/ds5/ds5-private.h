@@ -70,7 +70,12 @@ namespace librealsense
             ds::RS420_MM_PID,
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID
+            ds::RS435_RGB_PID,
+            ds::RS435I_PID
+        };
+
+        static const std::set<std::uint16_t> hid_sensors_pid = {
+            ds::RS435I_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
@@ -130,6 +135,8 @@ namespace librealsense
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
             SETRGBAEROI     = 0x75,     // set RGB auto-exposure region of interest
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
+            SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
+            GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -286,6 +293,15 @@ namespace librealsense
             float scale[3];
         };
 
+        // Note that the intrinsic definition follows rs2_motion_device_intrinsic with different data layout
+        struct imu_intrinsic
+        {
+            float3x3    sensitivity;
+            float3      bias;
+            float3      noise_variances;  /**< Variance of noise for X, Y, and Z axis */
+            float3      bias_variances;   /**< Variance of bias for X, Y, and Z axis */
+        };
+
         struct fisheye_calibration_table
         {
             table_header        header;
@@ -363,6 +379,57 @@ namespace librealsense
 
         constexpr size_t tm1_eeprom_size = sizeof(tm1_eeprom);
 
+        struct dm_v2_imu_intrinsic
+        {
+            float3x3            sensitivity;
+            float3              bias;
+        };
+
+        struct dm_v2_calibration_table
+        {
+            table_header            header;
+            uint8_t                 extrinsic_valid;
+            uint8_t                 intrinsic_valid;
+            uint8_t                 reserved[2];
+            extrinsics_table        depth_to_imu;       // The extrinsic parameters of IMU persented in Depth sensor's CS
+            dm_v2_imu_intrinsic     accel_intrinsic;
+            dm_v2_imu_intrinsic     gyro_intrinsic;
+            uint8_t                 reserved1[96];
+        };
+
+        constexpr size_t dm_v2_calibration_table_size = sizeof(dm_v2_calibration_table);
+
+        struct dm_v2_calib_info
+        {
+            table_header            header;
+            dm_v2_calibration_table dm_v2_calib_table;
+            tm1_serial_num_table    serial_num_table;
+        };
+
+        constexpr size_t dm_v2_calib_info_size = sizeof(dm_v2_calib_info);
+
+        // Depth Module V2 IMU EEPROM ver 0.52
+        struct dm_v2_eeprom
+        {
+            table_header            header;
+            dm_v2_calib_info        module_info;
+        };
+
+        constexpr size_t dm_v2_eeprom_size = sizeof(dm_v2_eeprom);
+
+        union eeprom_imu_table {
+            tm1_eeprom      tm1_table;
+            dm_v2_eeprom    dm_v2_table;
+        };
+
+        constexpr size_t eeprom_imu_table_size = sizeof(eeprom_imu_table);
+
+        enum imu_eeprom_id : uint16_t
+        {
+            dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
+            tm1_eeprom_id       = 0x0002
+        };
+
         struct depth_table_control
         {
             uint32_t depth_units;
@@ -393,19 +460,21 @@ namespace librealsense
         };
 
 
-        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsics data)
+        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
-            rs2_motion_device_intrinsic result;
-            memset(&result, 0, sizeof(result));
+            rs2_motion_device_intrinsic result{};
+
             for (int i = 0; i < 3; i++)
             {
+                for (int j = 0; j < 3; j++)
+                    result.data[i][j] = data.sensitivity(i,j);
+
                 result.data[i][3] = data.bias[i];
-                result.data[i][i] = data.scale[i];
+                result.bias_variances[i] = data.bias_variances[i];
+                result.noise_variances[i] = data.noise_variances[i];
             }
             return result;
         }
-
-
 
 #pragma pack(pop)
 
@@ -482,8 +551,8 @@ namespace librealsense
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps);
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height, uint32_t fps);
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);

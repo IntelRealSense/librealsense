@@ -36,7 +36,7 @@ void perc::UsbPlugListener::onTimeout(uintptr_t timerId, const Message & msg)
 
 bool perc::UsbPlugListener::identifyDevice(libusb_device_descriptor* desc)
 {
-    if ((desc->idProduct == TM2_DEV_PID) && (desc->idVendor == TM2_DEV_VID) && (desc->bcdUSB >= USB_2_0))
+    if ((desc->idProduct == TM2_T260_PID || desc->idProduct == TM2_T265_PID) && (desc->idVendor == TM2_DEV_VID) && (desc->bcdUSB >= USB_2_0))
     {
         return true;
     }
@@ -107,7 +107,7 @@ void perc::UsbPlugListener::EnumerateDevices()
 
             if (mDeviceToPortMap.find(devicePort) == mDeviceToPortMap.end())
             {
-                LOGD("Found USB device %s on port %d: VID 0x%04X, PID 0x%04X, %s",(desc.idVendor == TM2_UDF_DEV_VID)?"Movidius":"T250", devicePort.portChain[0], desc.idVendor, desc.idProduct, usbSpeed(desc.bcdUSB));
+                LOGD("Found USB device %s on port %d: VID 0x%04X, PID 0x%04X, %s",(desc.idVendor == TM2_UDF_DEV_VID)?"Movidius":(desc.idProduct == TM2_T265_PID)?"T265":"T260", devicePort.portChain[0], desc.idVendor, desc.idProduct, usbSpeed(desc.bcdUSB));
                 st = mOwner.onAttach(device);
             }
 

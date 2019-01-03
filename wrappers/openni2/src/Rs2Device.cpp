@@ -241,6 +241,14 @@ OniStatus Rs2Device::startPipeline()
 			break;
 		}
 
+		rsLogDebug("rs2_config_enable_device %s", m_info.uri);
+		rs2_config_enable_device(m_config, m_info.uri, &e);
+		if (!e.success())
+		{
+			rsTraceError("rs2_config_enable_device failed: %s", e.get_message());
+			break;
+		}
+
 		rs2_config_disable_all_streams(m_config, &e);
 
 		{

@@ -176,7 +176,6 @@ namespace librealsense
     // Helper functions for device list manipulation:
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list);
     std::vector<std::pair<std::vector<platform::uvc_device_info>, std::vector<platform::hid_device_info>>> group_devices_and_hids_by_unique_id(
-        std::shared_ptr<context> ctx,
         const std::vector<std::vector<platform::uvc_device_info>>& devices,
         const std::vector<platform::hid_device_info>& hids);
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices);

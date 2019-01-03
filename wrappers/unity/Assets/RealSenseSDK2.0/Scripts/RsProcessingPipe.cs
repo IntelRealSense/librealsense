@@ -1,4 +1,4 @@
-﻿using Intel.RealSense;
+using Intel.RealSense;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,7 +17,6 @@ public sealed class ProcessingBlockDataAttribute : System.Attribute
     {
         this.blockClass = blockClass;
     }
-
 }
 
 
@@ -30,6 +29,7 @@ public class RsProcessingPipe : RsFrameProvider
     public override event Action OnStop;
     public override event Action<Frame> OnNewSample;
     private CustomProcessingBlock _block;
+    private object _locker = new object();
 
     void Awake()
     {
@@ -52,12 +52,17 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnSourceStop()
     {
-        if (_block != null)
-            Source.OnNewSample -= _block.ProcessFrame;
-        Streaming = false;
-        var h = OnStop;
-        if (h != null)
-            h();
+        lock (_locker)
+        {
+            if (!Streaming)
+                return;
+            if (_block != null)
+                Source.OnNewSample -= _block.ProcessFrame;
+            Streaming = false;
+            var h = OnStop;
+            if (h != null)
+                h();
+        }
     }
 
     private void OnFrame(Frame f)
@@ -69,10 +74,14 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnDestroy()
     {
-        if (_block != null)
+        lock (_locker)
         {
-            _block.Dispose();
-            _block = null;
+            OnSourceStop();
+            if (_block != null)
+            {
+                _block.Dispose();
+                _block = null;
+            }
         }
     }
 
@@ -80,30 +89,40 @@ public class RsProcessingPipe : RsFrameProvider
     {
         try
         {
-            Frame f = frame;
-
-            if (profile != null)
+            lock (_locker)
             {
-                var filters = profile.ToArray();
-                // foreach (var pb in profile)
-                foreach (var pb in filters)
-                {
-                    if (pb == null || !pb.Enabled)
-                        continue;
+                if (!Streaming)
+                    return;
 
-                    var r = pb.Process(f, src);
-                    if (r != f)
+                Frame f = frame;
+
+                if (profile != null)
+                {
+                    var filters = profile.ToArray();
+
+                    foreach (var pb in filters)
                     {
-                        f.Dispose();
-                        f = r;
+                        if (pb == null || !pb.Enabled)
+                            continue;
+
+                        var r = pb.Process(f, src);
+                        if (r != f)
+                        {
+                            // Prevent from disposing the original frame during post-processing
+                            if (f != frame)
+                            {
+                                f.Dispose();
+                            }
+                            f = r;
+                        }
                     }
                 }
+
+                src.FrameReady(f);
+
+                if (f != frame)
+                    f.Dispose();
             }
-
-            src.FrameReady(f);
-
-            if (f != frame)
-                f.Dispose();
         }
         catch (Exception e)
         {
