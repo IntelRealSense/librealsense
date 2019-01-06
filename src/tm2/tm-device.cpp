@@ -994,7 +994,7 @@ namespace librealsense
             throw io_exception("Failed to get device info");
         }
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << info.serialNumber);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << std::hex << (info.serialNumber >> 16));
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.version.fw.major << "." << info.version.fw.minor << "." << info.version.fw.patch << "." << info.version.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, to_string() << info.usbDescriptor.idProduct);
         std::string device_path =
