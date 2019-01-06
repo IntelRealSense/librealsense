@@ -28,6 +28,7 @@ set (unit_tests_sources
     unit-tests-post-processing.h
     unit-tests-main.cpp
     unit-tests-common.h
+    unit-tests-post-processing-from-bag.cpp
 )
 
 add_executable(live-test ${unit_tests_sources})
@@ -158,4 +159,19 @@ foreach(i ${PP_Tests_List})
       endif()
     endforeach(idx)
   endforeach(ext)
+endforeach(i)
+
+list(APPEND PP_Rosbag_Recordings_List  
+    [aligned_2c]_all_combinations_depth_color.bag
+    [aligned_2d]_all_combinations_depth_color.bag
+    all_combinations_depth_color.bag
+    [pointcloud]_all_combinations_depth_color.bag
+    single_depth_color_640x480.bag
+)
+ set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
+foreach(i ${PP_Rosbag_Recordings_List})
+    if(NOT EXISTS "${Deployment_Location}${i}")
+        message(STATUS "Downloading ${PP_Rosbag_Recordings_URL}${i}")
+        file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
+    endif()
 endforeach(i)
