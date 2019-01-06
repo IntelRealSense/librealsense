@@ -62,6 +62,7 @@ static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
+static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
 
 inline ImVec4 blend(const ImVec4& c, float a)
 {
@@ -494,6 +495,8 @@ namespace rs2
         void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
         void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, rs2_stream stream_type);
+        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, rs2_stream stream_type);
+
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 

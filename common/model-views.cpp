@@ -1042,7 +1042,7 @@ namespace rs2
     bool subdevice_model::is_there_common_fps()
     {
         std::vector<int> first_fps_group;
-        auto group_index = 0;
+        size_t group_index = 0;
         for (; group_index < fps_values_per_stream.size(); ++group_index)
         {
             if (!fps_values_per_stream[(rs2_stream)group_index].empty())
@@ -1052,7 +1052,7 @@ namespace rs2
             }
         }
 
-        for (int i = group_index + 1; i < fps_values_per_stream.size(); ++i)
+        for (size_t i = group_index + 1; i < fps_values_per_stream.size(); ++i)
         {
             auto fps_group = fps_values_per_stream[(rs2_stream)i];
             if (fps_group.empty())
@@ -1413,7 +1413,7 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "Starting streaming of ";
-        for (int i = 0; i < profiles.size(); i++)
+        for (size_t i = 0; i < profiles.size(); i++)
         {
             ss << profiles[i].stream_type();
             if (i < profiles.size() - 1) ss << ", ";
@@ -2617,76 +2617,176 @@ namespace rs2
 
     void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, rs2_stream stream_type)
     {
-            const auto precision = 3;
-            auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+        const auto precision = 3;
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
-            ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
 
-            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-            ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
-            std::string label = to_string() << "IMU Stream Info of " << profile.unique_id();
-            ImGui::Begin(label.c_str(), nullptr, flags);
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+        std::string label = to_string() << "IMU Stream Info of " << profile.unique_id();
+        ImGui::Begin(label.c_str(), nullptr, flags);
 
-            struct motion_data {
-                std::string name;
-                float coordinate;
-                std::string units;
-                std::string toolTip;
-                ImVec4 colorFg;
-                ImVec4 colorBg;
-                int nameExtraSpace;
-            };
+        struct motion_data {
+            std::string name;
+            float coordinate;
+            std::string units;
+            std::string toolTip;
+            ImVec4 colorFg;
+            ImVec4 colorBg;
+            int nameExtraSpace;
+        };
 
-            float norm = std::sqrt((axis.x*axis.x) + (axis.y*axis.y) + (axis.z*axis.z));
+        float norm = std::sqrt((axis.x*axis.x) + (axis.y*axis.y) + (axis.z*axis.z));
 
-            std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" },{ RS2_STREAM_ACCEL, "Meter/Sec^2" } };
-            std::vector<motion_data> motion_vector = {{ "X", axis.x, motion_unit[stream_type].c_str(), "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
-                                                      { "Y", axis.y, motion_unit[stream_type].c_str(), "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
-                                                      { "Z", axis.z, motion_unit[stream_type].c_str(), "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
-                                                      { "N", norm, "Norm", "||V|| = SQRT(X^2 + Y^2 + Z^2)",from_rgba(255, 255, 255, 255, true) , from_rgba(255, 255, 255, 255, true), 0}};
+        std::map<rs2_stream, std::string> motion_unit = { { RS2_STREAM_GYRO, "Radians/Sec" },{ RS2_STREAM_ACCEL, "Meter/Sec^2" } };
+        std::vector<motion_data> motion_vector = { { "X", axis.x, motion_unit[stream_type].c_str(), "Vector X", from_rgba(233, 0, 0, 255, true) , from_rgba(233, 0, 0, 255, true), 0},
+                                                   { "Y", axis.y, motion_unit[stream_type].c_str(), "Vector Y", from_rgba(0, 255, 0, 255, true) , from_rgba(2, 100, 2, 255, true), 0},
+                                                   { "Z", axis.z, motion_unit[stream_type].c_str(), "Vector Z", from_rgba(85, 89, 245, 255, true) , from_rgba(0, 0, 245, 255, true), 0},
+                                                   { "N", norm, "Norm", "||V|| = SQRT(X^2 + Y^2 + Z^2)",from_rgba(255, 255, 255, 255, true) , from_rgba(255, 255, 255, 255, true), 0} };
 
-            int line_h = 18;
-            for (auto&& motion : motion_vector)
+        int line_h = 18;
+        for (auto&& motion : motion_vector)
+        {
+            auto rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
+            ImGui::PushStyleColor(ImGuiCol_Text, motion.colorFg);
+            ImGui::Text("%s:", motion.name.c_str());
+            if (ImGui::IsItemHovered())
             {
-                auto rc = ImGui::GetCursorPos();
-                ImGui::SetCursorPos({ rc.x + 12, rc.y + 4});
-                ImGui::PushStyleColor(ImGuiCol_Text, motion.colorFg);
-                ImGui::Text("%s:", motion.name.c_str());
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip(motion.toolTip.c_str());
-                }
-                ImGui::PopStyleColor(1);
+                ImGui::SetTooltip(motion.toolTip.c_str());
+            }
+            ImGui::PopStyleColor(1);
 
-                ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, motion.colorBg);
 
-                ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
-                std::string label = to_string() << "##" << motion.name.c_str();
-                std::string coordinate = to_string() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
-                ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::SetCursorPos({ rc.x + 27 + motion.nameExtraSpace, rc.y + 1 });
+            std::string label = to_string() << "##" << motion.name.c_str();
+            std::string coordinate = to_string() << std::fixed << std::setprecision(precision) << std::showpos << motion.coordinate;
+            ImGui::InputText(label.c_str(), (char*)coordinate.c_str(), coordinate.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
-                ImGui::SetCursorPos({ rc.x + 80 + motion.nameExtraSpace, rc.y + 4});
-                ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
-                ImGui::Text("(%s)", motion.units.c_str());
+            ImGui::SetCursorPos({ rc.x + 80 + motion.nameExtraSpace, rc.y + 4 });
+            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
+            ImGui::Text("(%s)", motion.units.c_str());
 
-                ImGui::PopStyleColor(3);
-                ImGui::SetCursorPos({rc.x, rc.y + line_h});
+            ImGui::PopStyleColor(3);
+            ImGui::SetCursorPos({ rc.x, rc.y + line_h });
+        }
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar(2);
+    }
+
+    void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect, const  rs2_pose& pose_frame, rs2_stream stream_type)
+    {
+        const auto precision = 3;
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
+
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+        std::string label = to_string() << "Pose Stream Info of " << profile.unique_id();
+        ImGui::Begin(label.c_str(), nullptr, flags);
+        
+        struct pose_data {
+            std::string name;
+            float data[4];
+            std::string units;
+            std::string toolTip;
+            int nameExtraSpace;
+        };
+
+        std::vector<pose_data> pose_vector = {
+            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 0},
+            { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 0 },
+            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 0 },
+            { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 0 },
+            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 0 },
+            { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 0 },
+        };
+
+        int line_h = 18;
+        for (auto&& pose : pose_vector)
+        {
+            auto rc = ImGui::GetCursorPos();
+            ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
+            ImGui::Text("%s:", pose.name.c_str());
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip(pose.toolTip.c_str());
             }
 
-            ImGui::End();
-            ImGui::PopStyleColor(6);
-            ImGui::PopStyleVar(2);
+            switch (pose_frame.tracker_confidence) //color the line according to confidence
+            {
+            case 3: // High confidence - Green
+                ImGui::PushStyleColor(ImGuiCol_Text, green);
+                break;
+            case 2: // Medium confidence - Yellow
+                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                break;
+            case 1: // Low confidence - Red
+                ImGui::PushStyleColor(ImGuiCol_Text, red);
+                break;
+            case 0: // failed confidence - Grey
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                break;
+            }
+
+            ImGui::SetCursorPos({ rc.x + 150 + pose.nameExtraSpace, rc.y + 1 });
+            std::string label = to_string() << "##" << pose.name.c_str();
+
+            std::string data = "[";
+            std::string comma = "";
+            UINT i = 0;
+            while ((pose.data[i] != FLT_MAX) && (i<4))
+            {
+                
+                data += to_string() << std::fixed << std::setprecision(precision) << std::showpos << comma << pose.data[i];
+                comma = ", ";
+                i++;
+            }
+            data += "]";
+
+            auto textSize = ImGui::CalcTextSize((char*)data.c_str(), (char*)data.c_str() + data.size() + 1);
+            ImGui::PushItemWidth(textSize.x);
+            ImGui::InputText(label.c_str(), (char*)data.c_str(), data.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::PopItemWidth();
+
+            ImGui::PopStyleColor(1);
+
+            ImGui::SetCursorPos({ rc.x + 350 + pose.nameExtraSpace, rc.y + 4 });
+            ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
+            ImGui::Text("%s", pose.units.c_str());
+            ImGui::PopStyleColor(1);
+
+            ImGui::SetCursorPos({ rc.x, rc.y + line_h });
         }
+
+        ImGui::End();
+        ImGui::PopStyleColor(6);
+        ImGui::PopStyleVar(2);
+    }
 
     void stream_model::snapshot_frame(const char* filename, viewer_model& viewer) const
     {
@@ -3551,7 +3651,7 @@ namespace rs2
         else
         {
             // Go over all available fx(something) layouts
-            for (int f = 1; f <= active_streams.size(); f++)
+            for (size_t f = 1; f <= active_streams.size(); f++)
             {
                 auto l = generate_layout(r, top_bar_height, f,
                     active_streams, stream_index);
@@ -3574,7 +3674,7 @@ namespace rs2
         std::map<int, frame> last_frames;
         try
         {
-            auto index = 0;
+            size_t index = 0;
             while (ppf.resulting_queue.poll_for_frame(&f) && ++index < ppf.resulting_queue_max_size)
             {
                 last_frames[f.get_profile().unique_id()] = f;
@@ -3790,7 +3890,7 @@ namespace rs2
         auto last_y = bottom_y_ruler;
         auto last_depth_value = 0.f;
         auto last_index = 0;
-        for (auto i = 1; i < rgb_per_distance_vec.size(); ++i)
+        for (size_t i = 1; i < rgb_per_distance_vec.size(); ++i)
         {
             auto curr_depth = rgb_per_distance_vec[i].depth_val;
             if ((((curr_depth - last_depth_value) < sensitivity) && (i != rgb_per_distance_vec.size() - 1)))
@@ -3916,13 +4016,35 @@ namespace rs2
 
             auto stream_type = stream_mv.profile.stream_type();
 
-            if (streams[stream].is_stream_visible() && (stream_type == RS2_STREAM_GYRO || stream_type == RS2_STREAM_ACCEL))
+            if (streams[stream].is_stream_visible())
             {
-                auto motion = streams[stream].texture->get_last_frame().as<motion_frame>();
-                if (motion.get())
+                switch (stream_type)
                 {
-                    auto axis = motion.get_motion_data();
-                    stream_mv.show_stream_imu(font1, stream_rect, axis, stream_type);
+                    case RS2_STREAM_GYRO: /* Fall Through */
+                    case RS2_STREAM_ACCEL:
+                    {
+                        auto motion = streams[stream].texture->get_last_frame().as<motion_frame>();
+                        if (motion.get())
+                        {
+                            auto axis = motion.get_motion_data();
+                            stream_mv.show_stream_imu(font1, stream_rect, axis, stream_type);
+                        }
+                        break;
+                    }
+                    case RS2_STREAM_POSE:
+                    {
+                        if ((*this).fullscreen == true)
+                        {
+                            auto pose = streams[stream].texture->get_last_frame().as<pose_frame>();
+                            if (pose.get())
+                            {
+                                auto pose_data = pose.get_pose_data();
+                                stream_mv.show_stream_pose(font1, stream_rect, pose_data, stream_type);
+                            }
+                        }
+  
+                        break;
+                    }
                 }
             }
 
@@ -4155,7 +4277,7 @@ namespace rs2
             if (!render_quads)
             {
                 glBegin(GL_POINTS);
-                for (int i = 0; i < last_points.size(); i++)
+                for (size_t i = 0; i < last_points.size(); i++)
                 {
                     if (vertices[i].z)
                     {
@@ -5381,7 +5503,7 @@ namespace rs2
                     sub->stream_enabled[uid] = true;
 
                     //Find format
-                    int format_id = 0;
+                    size_t format_id = 0;
                     rs2_format requested_format = kvp.second.format;
                     for (; format_id < sub->format_values[uid].size(); format_id++)
                     {
@@ -5396,7 +5518,7 @@ namespace rs2
 
                     //Find fps
                     int requested_fps = kvp.second.fps;
-                    int fps_id = 0;
+                    size_t fps_id = 0;
                     for (; fps_id < sub->shared_fps_values.size(); fps_id++)
                     {
                         if (sub->shared_fps_values[fps_id] == requested_fps)
@@ -5410,7 +5532,7 @@ namespace rs2
 
                     //Find Resolution
                     std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
-                    int res_id = 0;
+                    size_t res_id = 0;
                     for (; res_id < sub->res_values.size(); res_id++)
                     {
                         if (sub->res_values[res_id] == requested_res)
@@ -5448,7 +5570,7 @@ namespace rs2
         std::vector<int> curr_values = fw_version_to_int_vec(fw_version);
         std::vector<int> min_values = fw_version_to_int_vec(min_fw_version);
 
-        for (int i = 0; i < curr_values.size(); i++)
+        for (size_t i = 0; i < curr_values.size(); i++)
         {
             if (i >= min_values.size())
             {
@@ -6734,7 +6856,7 @@ namespace rs2
             m.timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
             pending_notifications.push_back(m);
 
-            if (pending_notifications.size() > MAX_SIZE)
+            if (pending_notifications.size() > (size_t)MAX_SIZE)
                 pending_notifications.erase(pending_notifications.begin());
         }
 

@@ -210,7 +210,7 @@ namespace rs2
     {
         std::vector<float> angles;
         angles.reserve(4);
-        for (int i = 0; i < p.size(); i++)
+        for (size_t i = 0; i < p.size(); i++)
         {
             auto p1 = p[i];
             auto p2 = p[(i+1) % p.size()];
@@ -404,7 +404,7 @@ namespace rs2
         int max_distance_index = 0;
         float distance_limit = 0.01f; //1 centimeter
         // Find the point with the maximum distance from the 2 end points of the vector
-        for (int i = 1; i < points.size() - 1; i++)
+        for (size_t i = 1; i < points.size() - 1; i++)
         {
             float d = point_to_line_dist(points[0], points.back(), points[i]);
             if (d > max_distance)
@@ -1366,7 +1366,7 @@ namespace rs2
         void draw_grid()
         {
             glBegin(GL_LINES);
-            glColor4f(0.4f, 0.4f, 0.4f, 0.8f);
+            glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
             glLineWidth(1);
             float step = 0.1f;
             for (float x = -1.5; x < 1.5; x += step)
@@ -1415,9 +1415,6 @@ namespace rs2
 
             // remove model matrix from the rest of the render
             glPopMatrix();
-
-            const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
 
