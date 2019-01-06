@@ -32,7 +32,7 @@
 #define MAX_EEPROM_CONFIGURATION_SIZE 1200
 #define MAX_GUID_LENGTH 128
 #define MAX_FW_UPDATE_FILE_COUNT 6
-#define MAX_SLAM_APPEND_CALIBRATION 10000
+#define MAX_SLAM_CALIBRATION_SIZE 10000
 
 namespace perc
 {
@@ -1081,17 +1081,31 @@ namespace perc
     /**
     * @brief Bulk SLAM override calibration Message
     *
-    * Override current SLAM calibration
+    * Append current SLAM calibration
     */
     typedef struct {
-        bulk_message_request_header header;                        /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_APPEND_CALIBRATION */
-        uint8_t calibration_append_string[MAX_SLAM_APPEND_CALIBRATION]; /**< Calibration string                                                                     */
+        bulk_message_request_header header;                           /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_APPEND_CALIBRATION */
+        uint8_t calibration_append_string[MAX_SLAM_CALIBRATION_SIZE]; /**< Calibration string                                                                   */
     } bulk_message_request_slam_append_calibration;
 
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLength = 8 byte, wMessageID = SLAM_APPEND_CALIBRATION */
     } bulk_message_response_slam_append_calibration;
 
+
+    /**
+    * @brief Bulk SLAM calibration Message
+    *
+    * Override current SLAM calibration
+    */
+    typedef struct {
+        bulk_message_request_header header;                    /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_CALIBRATION */
+        uint8_t calibration_string[MAX_SLAM_CALIBRATION_SIZE]; /**< Calibration string                                                            */
+    } bulk_message_request_slam_calibration;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLength = 8 byte, wMessageID = SLAM_CALIBRATION */
+    } bulk_message_response_slam_calibration;
 
     /**
     * @brief Bulk Set 6DoF Interrupt Rate Message

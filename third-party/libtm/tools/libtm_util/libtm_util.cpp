@@ -228,7 +228,8 @@ public:
 
         for (uint8_t i = 0; i < SixDofProfileMax; i++)
         {
-            sixdof[i] = false;
+            sixdof[i].enabled = false;
+            sixdof[i].mode = SIXDOF_MODE_MAX;
         }
 
         for (uint8_t i = 0; i < ProfileTypeMax; i++)
@@ -270,6 +271,14 @@ public:
     };
 
     Localization localization[LocalizationTypeMax];
+
+    class Calibration {
+    public:
+        CalibrationType type;
+        std::string filename;
+    };
+
+    Calibration calibration;
 
     TrackingData::GeoLocalization geoLocation;
     bool geoLocationEnabled;
@@ -332,7 +341,13 @@ public:
     Enable accelerometer[AccelerometerProfileMax];
     uint8_t accelerometerCount;
 
-    bool sixdof[SixDofProfileMax];
+    class Sixdof {
+    public:
+        bool enabled;
+        uint8_t mode;
+    };
+
+    Sixdof sixdof[SixDofProfileMax];
     uint8_t sixdofCount;
 
     std::string controllerFWFile;
@@ -628,25 +643,25 @@ public:
 
         for (uint8_t i = 0; i < VideoProfileMax; i++)
         {
-            LOGD(" Video[%01d]                 | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > VideoProfile1) ? "Low Exposure " : "High Exposure",
+            LOGD(" Video[%01d]                 | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > VideoProfile1) ? "Low Exposure " : "High Exposure",
                 video[i].frameRate, video[i].enabled, video[i].outputMode, (video[i].frames > 0) ? (video[i].totalLatency / video[i].frames) : 0, runTime[HMD].diffMsec, (video[i].frameRate * video[i].enabled * video[i].outputMode *  runTime[HMD].diffMsec) / 1000, video[i].frames);
         }
 
         for (uint8_t i = 0; i < GyroProfileMax; i++)
         {
-            LOGD(" Gyro[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > GyroProfile0) ? ((i > GyroProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Gyro[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > GyroProfile0) ? ((i > GyroProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 gyro[i].frameRate, gyro[i].enabled, gyro[i].outputMode, (gyro[i].frames > 0) ? (gyro[i].totalLatency / gyro[i].frames) : 0, runTime[i].diffMsec, (gyro[i].frameRate * gyro[i].enabled * gyro[i].outputMode * runTime[i].diffMsec) / 1000, gyro[i].frames);
         }
 
         for (uint8_t i = 0; i < AccelerometerProfileMax; i++)
         {
-            LOGD(" Accelerometer[%01d]         | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > AccelerometerProfile0) ? ((i > AccelerometerProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Accelerometer[%01d]         | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > AccelerometerProfile0) ? ((i > AccelerometerProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 accelerometer[i].frameRate, accelerometer[i].enabled, accelerometer[i].outputMode, (accelerometer[i].frames > 0) ? (accelerometer[i].totalLatency / accelerometer[i].frames) : 0, runTime[i].diffMsec, (accelerometer[i].frameRate * accelerometer[i].enabled * accelerometer[i].outputMode * runTime[i].diffMsec) / 1000, accelerometer[i].frames);
         }
 
         for (uint8_t i = 0; i < VelocimeterProfileMax; i++)
         {
-            LOGD(" Velocimeter[%01d]           | External Sensor   |        | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d |          | %d", i,
+            LOGD(" Velocimeter[%01d]           | External Sensor   |        | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d |          | %d", i, 
                 velocimeter[i].enabled, velocimeter[i].outputMode, (velocimeter[i].frames > 0) ? (velocimeter[i].totalLatency / velocimeter[i].frames) : 0, runTime[HMD].diffMsec, velocimeter[i].frames);
         }
 
@@ -659,7 +674,7 @@ public:
                 poseRunTimeMsec = (runTime[i].diffMsec - MAX_FIRST_POSE_DELAY_MSEC);
             }
 
-            LOGD(" Pose[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10" PRId64" | %-8d | %-8d | %d", i, (i > SixDofProfile0) ? ((i > SixDofProfile1) ? "Controller 2" : "Controller 1") : "HMD",
+            LOGD(" Pose[%01d]                  | %-17s | %-6d | 0x%01X     | 0x%01X    | %-10"PRId64" | %-8d | %-8d | %d", i, (i > SixDofProfile0) ? ((i > SixDofProfile1) ? "Controller 2" : "Controller 1") : "HMD",
                 pose[i].frameRate, pose[i].enabled, pose[i].outputMode, (pose[i].frames > 0) ? (pose[i].totalLatency / pose[i].frames) : 0, runTime[i].diffMsec, (pose[i].frameRate * pose[i].enabled * pose[i].outputMode * poseRunTimeMsec) / 1000, pose[i].frames);
         }
 
@@ -2087,9 +2102,9 @@ void showArguments()
     printf("libtm_util version %d.%d\n", LIBTM_UTIL_VERSION_MAJOR, LIBTM_UTIL_VERSION_MINOR);
     printf("Usage: libtm_util [-h] [-y] [-reset <count> (optional)] [-time <time>] [-loop <count>] [-check <Exit on Error[0-1]>] [-video  <SensorIndex[0-3]> <Output [0-1]> <Width Height (Optional)>]\n");
     printf("       [-gyro <SensorIndex[0-2]> <Output [0-1]> <FPS (Optional)>] [-accl <SensorIndex[0-2]> <Output [0-1]> <FPS (Optional)>]\n");
-    printf("       [-6dof <Source [0-2]>] [-enable_all] [-controller <controller index [1-2]> <MacAddress [AABBCCDDEEFF]> <Calibrate [0-1]>]\n");
+    printf("       [-6dof <Source [0-2]> <Mode [0|1|2|4] (Optional)>] [-enable_all] [-controller <controller index [1-2]> <MacAddress [AABBCCDDEEFF]> <Calibrate [0-1]>]\n");
     printf("       [-rssi <controller [1-2]> <Time (Sec)>] [-exposure <SensorIndex[0-3]> <integration time (uSec)> <gain>] [-fw <filename>] [-statistics] [-image] [-tum <type [1-2]>]\n");
-    printf("       [-log <Source [fw/host]> <Verbosity [0-6]> <Mode [0-1]> <OutputMode [0-1]>] [-map <reset/set/get> <filename>] [-jtag]\n");
+    printf("       [-log <Source [fw/host]> <Verbosity [0-6]> <Mode [0-1]> <OutputMode [0-1]>] [-calibrate <Type [new/append]> <filename>] [-map <reset/set/get> <filename>] [-jtag]\n");
     printf("       [-temperature <get/set> <sensor [VPU, IMU, BLE] (Optional)> <threshold (optional)>] [-geo <latitude> <longitude> <altitude>] [-gpio <controlBitMask>] [-velocimeter <filename>]\n");
     printf("       [-controller_data <filename>] [-node <filename>] [-burn <type [bl/app]> <filename> <force (optional)>] \n\n");
 
@@ -2113,6 +2128,7 @@ void showArguments()
     printf("    -tum .............Save 6dof (pose) statistics in Tum format [-tum -h for more info]\n");
     printf("    -image............Output video images to files [-image -h for more info]\n");
     printf("    -log .............Set FW/Host log verbosity, rollover mode and output mode [-log -h for more info]\n");
+    printf("    -calibrate .......Calibrate device [-calibrate -h for more info]\n");
     printf("    -map .............Set/Get Localization Map [-map -h for more info]\n");
     printf("    -jtag ............Load FW from JTAG [-jtag -h for more info]\n");
     printf("    -temperature .....Get/Set temperature sensors [-temperature -h for more info]\n");
@@ -2364,12 +2380,13 @@ int parseArguments(int argc, char *argv[])
             bool parseError = true;
 
             /* Make sure we aren't at the end of argv */
+            /* -6dof 0 */
             if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
             {
                 uint8_t index = atoi(argv[++i]);
                 if (index < SixDofProfileMax)
                 {
-                    gConfiguration.sixdof[index] = true;
+                    gConfiguration.sixdof[index].enabled = true;
                     gConfiguration.sixdofCount++;
                     if (index > SixDofProfile0)
                     {
@@ -2377,15 +2394,43 @@ int parseArguments(int argc, char *argv[])
                     }
 
                     parseError = false;
+
+                    /* -6dof 0 6 */
+                    if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+                    {
+                        uint8_t mode = atoi(argv[++i]);
+                        if (mode < SIXDOF_MODE_MAX)
+                        {
+                            gConfiguration.sixdof[index].mode = mode;
+                        }
+                        else
+                        {
+                            parseError = true;
+                        }
+                    }
+                    else
+                    {
+                        TrackingData::Profile profile; /* using default values */
+                        gConfiguration.sixdof[index].mode = profile.sixDof[index].mode;
+                    }
                 }
             }
 
             if (parseError == true)
             {
                 printf("-6dof : Enable 6Dof stream per source (HMD/Controllers)\n");
-                printf("        Parameters: <Source [0-2]>\n");
+                printf("        Parameters: <Source [0-2]> <Mode [0|1|2|4] (Optional)>\n");
+                printf("        Source: 0 - Enable 6dof of HMD\n");
+                printf("                1 - Enable 6dof of Controller 1\n");
+                printf("                2 - Enable 6dof of Controller 2\n");
+                printf("        Mode: 0 - Normal mode\n");
+                printf("              1 - Fast playback mode\n");
+                printf("              2 - Enable mapping mode\n");
+                printf("              4 - Enable relocalization mode\n");
+                printf("              1|2|4 - Any combination of modes above\n");
                 printf("        Example: \"libtm_util.exe -6dof 0\" : Enable 6dof for HMD\n");
                 printf("        Example: \"libtm_util.exe -6dof 1 -6dof 2\" : Enable 6dof for Controller 1 + 2\n");
+                printf("        Example: \"libtm_util.exe -6dof 0 6\" : Enable 6dof for HMD with mapping and relocalization modes enabled\n");
                 return -1;
             }
         }
@@ -2393,14 +2438,14 @@ int parseArguments(int argc, char *argv[])
         {
             if ((i + 1 < argc) && (strncmp("-h", argv[i + 1], 2) == 0))
             {
-                printf("libtm_util.exe -enable_all : Enable all sensors (Video, Gyro, Accelerometer) and all 6dofs\n");
+                printf("libtm_util.exe -enable_all : Enable all HMD sensors (Video, Gyro, Accelerometer) and all HMD 6dofs\n");
                 return -1;
             }
             else
             {
                 uint8_t index = 0;
 
-                for (index = VideoProfile0; index < VideoProfileMax; index++)
+                for (index = VideoProfile0; index < VideoProfile2; index++)
                 {
                     gConfiguration.video[index].enabled = true;
                     gConfiguration.video[index].outputEnabled = true;
@@ -2410,7 +2455,7 @@ int parseArguments(int argc, char *argv[])
                     gConfiguration.videoCount++;
                 }
 
-                for (index = GyroProfile0; index < GyroProfileMax; index++)
+                for (index = GyroProfile0; index < GyroProfile1; index++)
                 {
                     gConfiguration.gyro[index].enabled = true;
                     gConfiguration.gyro[index].outputEnabled = true;
@@ -2422,7 +2467,7 @@ int parseArguments(int argc, char *argv[])
                     }
                 }
 
-                for (index = AccelerometerProfile0; index < AccelerometerProfileMax; index++)
+                for (index = AccelerometerProfile0; index < AccelerometerProfile1; index++)
                 {
                     gConfiguration.accelerometer[index].enabled = true;
                     gConfiguration.accelerometer[index].outputEnabled = true;
@@ -2434,9 +2479,10 @@ int parseArguments(int argc, char *argv[])
                     }
                 }
 
-                for (index = SixDofProfile0; index < SixDofProfileMax; index++)
+                for (index = SixDofProfile0; index < SixDofProfile1; index++)
                 {
-                    gConfiguration.sixdof[index] = true;
+                    gConfiguration.sixdof[index].enabled = true;
+                    gConfiguration.sixdof[index].mode = (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION);
                     gConfiguration.sixdofCount++;
                     if (index > SixDofProfile0)
                     {
@@ -2676,6 +2722,36 @@ int parseArguments(int argc, char *argv[])
                 return -1;
             }
         }
+        else if ((arg == "-calibrate"))
+        {
+            bool parseError = true;
+
+            /* Make sure we aren't at the end of argv */
+            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+            {
+                if (strncmp("new", argv[++i], 3) == 0)
+                {
+                    gConfiguration.calibration.type = CalibrationTypeNew;
+                    gConfiguration.calibration.filename = argv[++i];
+                    parseError = false;
+                }
+                else if (strncmp("append", argv[i], 6) == 0)
+                {
+                    gConfiguration.calibration.type = CalibrationTypeAppend;
+                    gConfiguration.calibration.filename = argv[++i];
+                    parseError = false;
+                }
+            }
+
+            if (parseError == true)
+            {
+                printf("-calibrate : Set new or append calibration from an external file\n");
+                printf("             Parameters: <new/append> <filename>\n");
+                printf("             Example: \"libtm_util.exe -calibrate new calibration_file.json\"    : set new calibration from file calibration_file.json\n");
+                printf("             Example: \"libtm_util.exe -calibrate append calibration_file.json\" : append calibration from file calibration_file.json\n");
+                return -1;
+            }
+        }
         else if ((arg == "-map"))
         {
             bool parseError = true;
@@ -2711,8 +2787,8 @@ int parseArguments(int argc, char *argv[])
                 printf("       On multiple call, the order will be:  Get, Set, Reset\n");
                 printf("       Parameters: <reset/set/get> <filename>\n");
                 printf("       Example: \"libtm_util.exe -map reset\"                            : reset localization map\n");
-                printf("       Example: \"libtm_util.exe-map set localization_map_input_file\"  : set localization from file localization_map_input_file\n");
-                printf("       Example: \"libtm_util.exe-map get localization_map_output_file\" : get localization to a new file localization_map_output_file \n");
+                printf("       Example: \"libtm_util.exe -map set localization_map_input_file\"  : set localization from file localization_map_input_file\n");
+                printf("       Example: \"libtm_util.exe -map get localization_map_output_file\" : get localization to a new file localization_map_output_file\n");
                 printf("       Notice:  To get localization map, 6dof must be enabled\n");
                 return -1;
             }
@@ -2974,7 +3050,7 @@ int parseArguments(int argc, char *argv[])
     if (gConfiguration.controllers[Controller1].burn.configure > ControllerBurnDisabled)
     {
         printf(" - Controller %sburn %s image = %s %s\n", (gConfiguration.controllers[Controller1].burn.configure == ControllerBurnForce)?"Force ":"", gConfiguration.controllerFWFileType.c_str(), gConfiguration.controllerFWFile.c_str(),
-            (!std::ifstream(gConfiguration.controllerFWFile.c_str())) ? "(Warning: file not found)" : (gConfiguration.sixdof[SixDofProfile1] | gConfiguration.sixdof[SixDofProfile2]) ? "" : "(Warning: All controller sensors are disabled (Gyro, Accelerometer, 6dof))");
+            (!std::ifstream(gConfiguration.controllerFWFile.c_str())) ? "(Warning: file not found)" : (gConfiguration.sixdof[SixDofProfile1].enabled | gConfiguration.sixdof[SixDofProfile2].enabled) ? "" : "(Warning: All controller sensors are disabled (Gyro, Accelerometer, 6dof))");
     }
 
     printf(" - Streaming mode = %s\n", gConfiguration.mode.c_str());
@@ -2985,6 +3061,11 @@ int parseArguments(int argc, char *argv[])
             printf(" - %s Log: verbosity = 0x%X, mode = %sRollover, log to %s\n", (i == LogSourceHost) ? "Host" : "FW",
                 gConfiguration.logConfiguration[i].logVerbosity, (gConfiguration.logConfiguration[i].logRolloverMode == false) ? "No " : "", ((gConfiguration.logConfiguration[i].logOutputMode == LogOutputModeScreen) ? "Screen" : "Buffer"));
         }
+    }
+
+    if (gConfiguration.calibration.filename.empty() == false)
+    {
+        printf(" - Calibration = Type: %s, Input File: %s %s\n", (gConfiguration.calibration.type == CalibrationTypeNew)?"New":"Append", gConfiguration.calibration.filename.c_str(), (!std::ifstream(gConfiguration.calibration.filename.c_str())) ? "(Warning: file not found)" : "");
     }
 
     printf(" - JTAG = %s\n", (gConfiguration.jtag ? "True" : "False"));
@@ -3019,7 +3100,7 @@ int parseArguments(int argc, char *argv[])
         {
             printf(" - Localization map %s %s %s %s\n",
                 ((i == LocalizationTypeGet) ? "Get to" : (i == LocalizationTypeSet) ? "Set from" : "Reset"),
-                ((i == LocalizationTypeGet) ? "output file" : (i == LocalizationTypeSet) ? "input file" : ""),
+                ((i == LocalizationTypeGet) ? "output file:" : (i == LocalizationTypeSet) ? "input file:" : ""),
                 gConfiguration.localization[i].filename.c_str(),
                 ((i == LocalizationTypeGet) && (std::ifstream(gConfiguration.localization[i].filename.c_str()))) ? "(Warning: file already exists)" :
                 ((i == LocalizationTypeSet) && (!std::ifstream(gConfiguration.localization[i].filename.c_str()))) ? "(Warning: file not found)" : "");
@@ -3078,10 +3159,10 @@ int parseArguments(int argc, char *argv[])
 
     if (gConfiguration.videoCount + gConfiguration.gyroCount + gConfiguration.accelerometerCount + gConfiguration.sixdofCount + gConfiguration.rssiCount + gConfiguration.velocimeterCount> 0)
     {
-        printf("---+---------------+--------+---------+---------+---------+--------\n");
-        printf(" # |    Enabled    | Sensor | Frames  |  Width  | Height  | Output \n");
-        printf("   |    Sensors    | Index  | PerSec  |         |         | Mode   \n");
-        printf("---+---------------+--------+---------+---------+---------+--------\n");
+        printf("---+---------------+--------+---------+--------+---------+---------+--------\n");
+        printf(" # |    Enabled    | Sensor | Frames  |  Mode  |  Width  | Height  | Output \n");
+        printf("   |    Sensors    | Index  | PerSec  |        |         |         | Mode   \n");
+        printf("---+---------------+--------+---------+--------+---------+---------+--------\n");
     }
 
     std::string width = "Default";
@@ -3105,7 +3186,7 @@ int parseArguments(int argc, char *argv[])
                 fps = "Default";
             }
 
-            printf("%02d | Video         |   %01d    | %-7s | %-7s | %-7s | %-5d\n", 
+            printf("%02d | Video         |   %01d    | %-7s |        | %-7s | %-7s | %-5d\n", 
                 totalProfiles, i, fps.c_str(), width.c_str(), height.c_str(), gConfiguration.video[i].outputEnabled);
             totalProfiles++;
         }       
@@ -3124,7 +3205,7 @@ int parseArguments(int argc, char *argv[])
                 fps = "Default";
             }
 
-            printf("%02d | Gyro          |   %01d    | %-7s |         |         | %-5d\n", totalProfiles, i, fps.c_str(), gConfiguration.gyro[i].outputEnabled);
+            printf("%02d | Gyro          |   %01d    | %-7s |        |         |         | %-5d\n", totalProfiles, i, fps.c_str(), gConfiguration.gyro[i].outputEnabled);
             totalProfiles++;
         }
     }
@@ -3133,7 +3214,7 @@ int parseArguments(int argc, char *argv[])
     {
         if (gConfiguration.velocimeter[i].enabled)
         {
-            printf("%02d | velocimeter   |   %01d    |         |         |         | %-5d\n", totalProfiles, i, gConfiguration.velocimeter[i].outputEnabled);
+            printf("%02d | velocimeter   |   %01d    |         |        |         |         | %-5d\n", totalProfiles, i, gConfiguration.velocimeter[i].outputEnabled);
             totalProfiles++;
         }
     }
@@ -3151,16 +3232,16 @@ int parseArguments(int argc, char *argv[])
                 fps = "Default";
             }
 
-            printf("%02d | Accelerometer |   %01d    | %-7s |         |         | %-5d\n", totalProfiles, i, fps.c_str(), gConfiguration.accelerometer[i].outputEnabled);
+            printf("%02d | Accelerometer |   %01d    | %-7s |        |         |         | %-5d\n", totalProfiles, i, fps.c_str(), gConfiguration.accelerometer[i].outputEnabled);
             totalProfiles++;
         }
     }
 
     for (uint8_t i = 0; i < SixDofProfileMax; i++)
     {
-        if (gConfiguration.sixdof[i] == true)
+        if (gConfiguration.sixdof[i].enabled == true)
         {
-            printf("%02d | Pose          |   %01d    |         |         |         | 1\n", totalProfiles, i);
+            printf("%02d | 6Dof          |   %01d    |         |  0x%02X  |         |         | 1\n", totalProfiles, i, gConfiguration.sixdof[i].mode);
             totalProfiles++;
         }
     }
@@ -3169,7 +3250,7 @@ int parseArguments(int argc, char *argv[])
     {
         if (gConfiguration.rssi[i].time != 0)
         {
-            printf("%02d | RSSI          |   %01d    |         |         |         | 1\n", totalProfiles, i);
+            printf("%02d | RSSI          |   %01d    |         |        |         |         | 1\n", totalProfiles, i);
             totalProfiles++;
         }
     }
@@ -3177,11 +3258,11 @@ int parseArguments(int argc, char *argv[])
 
     if (gConfiguration.videoCount + gConfiguration.gyroCount + gConfiguration.accelerometerCount + gConfiguration.sixdofCount + gConfiguration.rssiCount + gConfiguration.velocimeterCount == 0)
     {
-        printf("-------------------------------------------------------------------\n");
+        printf("----------------------------------------------------------------------------\n");
     }
     else
     {
-        printf("---+---------------+--------+---------+---------+---------+--------\n");
+        printf("---+---------------+--------+---------+--------+---------+---------+--------\n");
     }
 
     if (gConfiguration.verifyConfiguration == true)
@@ -3498,7 +3579,12 @@ void configureProfile(TrackingData::Profile& profile)
     for (uint8_t i = 0; i < SixDofProfileMax; i++)
     {
         TrackingData::SixDofProfile sixDof = profile.sixDof[i];
-        profile.set(sixDof, gConfiguration.sixdof[i]);
+        profile.set(sixDof, gConfiguration.sixdof[i].enabled);
+        if (gConfiguration.sixdof[i].mode != SIXDOF_MODE_MAX)
+        {
+            profile.sixDof->mode = gConfiguration.sixdof[i].mode;
+        }
+
         gStatistics.configure(sixDof, profile.sixDof[i].enabled, totalFrameRate[i]);
     }
 
@@ -3653,6 +3739,25 @@ int main(int argc, char *argv[])
     {
         LOGE("Got %d error events, exiting", gStatistics.error.count);
         goto cleanup;
+    }
+
+    if (gConfiguration.calibration.filename.empty() == false)
+    {
+        std::ifstream calibrationFile(gConfiguration.calibration.filename);
+        std::string str((std::istreambuf_iterator<char>(calibrationFile)), std::istreambuf_iterator<char>());
+        char* s_ptr = &str[0];
+
+        TrackingData::CalibrationData calibrationData;
+        calibrationData.length = (uint32_t)str.length();
+        calibrationData.buffer = (uint8_t*)s_ptr;
+        calibrationData.type = gConfiguration.calibration.type;
+
+        status = gDevice->SetCalibration(calibrationData);
+        if (status != Status::SUCCESS)
+        {
+            LOGE("Failed setting calibration, status = %s (0x%X)", statusToString(status).c_str(), status);
+            goto cleanup;
+        }
     }
 
     if (gConfiguration.temperature.check == true)
