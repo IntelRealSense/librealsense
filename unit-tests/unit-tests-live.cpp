@@ -4530,7 +4530,7 @@ TEST_CASE("Pipeline stream with callback", "[live][pipeline][using_pipeline]")
     REQUIRE(frame_from_queue);
 }
 
-TEST_CASE("Syncer sanity with software-device device", "[live][software-device]") {
+TEST_CASE("Syncer sanity with software-device device", "[live][software-device][!mayfail]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -4859,12 +4859,13 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
 TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
-    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
     std::string folder_name = get_folder_path(special_folder::temp_folder);
     const std::string filename = folder_name + "single_depth_color_640x480.bag";
     REQUIRE(file_exists(filename));
     auto dev = ctx.load_device(filename);
+    dev.set_real_time(false);
 
     syncer sync;
     std::vector<sensor> sensors = dev.query_sensors();
@@ -5008,7 +5009,7 @@ TEST_CASE("software-device motion stream", "[software-device]")
 
 }
 
-TEST_CASE("Record software-device", "[software-device][record]")
+TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
 {
     const int W = 640;
     const int H = 480;

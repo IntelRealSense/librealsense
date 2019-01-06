@@ -1,51 +1,49 @@
 env:
-  - LRS_BUILD_CONFIG=Debug
+  global:
+    - LRS_BUILD_CONFIG=Debug
+    - LRS_RUN_CONFIG=Release
 matrix:
   include:
+    - name: "Windows Testing - cpp, Win USB (Win7)"
+      os: windows
+      language: cpp
+      env: VS15=false RS_CPP_TEST=true
+      script:
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_WINUSB_UVC=true
+        - cmake --build . --config $LRS_RUN_CONFIG -- -m
+        - cd $LRS_RUN_CONFIG
+        - ls
+        - ./live-test.exe -d yes -i [software-device]
+        - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam] from "$i"; done
+        - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam] from "$i"; done
+        
     - name: "Windows - cpp"
       os: windows
       language: cpp
+      env: VS15=true
       script:
-        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
-        - ls $LRS_BUILD_CONFIG
-
-    - name: "Windows - Win USB(Win7)"
-      os: windows
-      language: cpp
-      script:
-        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DBUILD_WITH_TM2=false -DFORCE_WINUSB_UVC=true
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
 
     - name: "Windows - C#"
       os: windows
       language: cpp
+      env: VS15=true
       script:
         - cmake .. -G "Visual Studio 14 2015 Win64" -DBUILD_EXAMPLES=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5"
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -m:4
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -m
         - ls $LRS_BUILD_CONFIG
-
-    - name: "Mac - cpp"
-      os: osx
-      language: cpp
-      sudo: required
-      osx_image: xcode7
-      script:
-        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - ls
 
     - name: "Linux Testing - cpp"
       os: linux
       language: cpp
       sudo: required
       dist: xenial
-      env:
-        RS_CPP_TEST=true
+      env: RS_CPP_TEST=true
       script:
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false
-        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - cmake --build . --config $LRS_RUN_CONFIG -- -j4
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
         - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
@@ -67,8 +65,7 @@ matrix:
       dist: xenial
       python: "2.7"
       node_js: "6"
-      env:
-        - LRS_BUILD_NODEJS=true
+      env: LRS_BUILD_NODEJS=true
       script:
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
@@ -76,13 +73,22 @@ matrix:
         - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec
         - mocha test-functional.js --playback nodejs_record.rec
 
+    - name: "Mac - cpp"
+      os: osx
+      language: cpp
+      sudo: required
+      osx_image: xcode7
+      script:
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false
+        - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+        - ls
+
     - name: "Android - cpp"
       os: linux
       language: cpp
       sudo: required
       dist: xenial
-      env:
-        - LRS_BUILD_ANDROID=true
+      env: LRS_BUILD_ANDROID=true
       script:
         - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
@@ -128,7 +134,9 @@ install:
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      choco install -y vcbuildtools --version 2015.4 --force;
+      if [[ "$VS15" == "true" ]]; then
+        choco install -y vcbuildtools --version 2015.4 --force;
+      fi
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
