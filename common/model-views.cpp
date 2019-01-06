@@ -2758,7 +2758,7 @@ namespace rs2
 
             std::string data = "[";
             std::string comma = "";
-            UINT i = 0;
+            usigned int i = 0;
             while ((pose.data[i] != FLT_MAX) && (i<4))
             {
                 
