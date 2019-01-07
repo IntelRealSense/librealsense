@@ -21,7 +21,7 @@ cmake version 3.7.2
 ```
 
 ### Add swap
-Initila value is 100MB, but we need to build libraries so initial value isn't enough for that.
+Initial value is 100MB, but we need to build libraries so initial value isn't enough for that.
 In this case, need to switch from 100 to `2048` (2GB).  
 ```
 $ sudo vim /etc/dphys-swapfile
