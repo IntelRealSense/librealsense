@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# from __future__ import print_function
+from __future__ import print_function
 import numpy as np
 import sys
 import json
@@ -14,9 +14,9 @@ import enum
 import threading
 import signal
 
-max_float = struct.unpack('f','\xff\xff\xff\xff')[0]
-max_int = struct.unpack('i','\xff\xff\xff\xff')[0]
-max_uint8 = struct.unpack('B', '\xff')[0]
+max_float = struct.unpack('f',b'\xff\xff\xff\xff')[0]
+max_int = struct.unpack('i',b'\xff\xff\xff\xff')[0]
+max_uint8 = struct.unpack('B', b'\xff')[0]
 
 g = 9.80665 # SI Gravity page 52 of https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication330e2008.pdf
 
@@ -94,7 +94,7 @@ class imu_wrapper:
                         sys.stdout.write(COLOR_RESET)
 
                     if is_moving:
-                        print 'WARNING: MOVING'
+                        print('WARNING: MOVING')
                         self.status = self.Status.rotate
                         return
 
@@ -139,7 +139,7 @@ class imu_wrapper:
                         return
                 return
             except Exception as e:
-                print 'ERROR?' + e.message
+                print('ERROR?' + str(e))
                 self.thread.acquire()
                 self.status = self.Status.idle
                 self.thread.notify()
@@ -150,7 +150,7 @@ class imu_wrapper:
         for i, bucket in enumerate(buckets):
             self.crnt_bucket = np.array(bucket)
             self.crnt_direction = np.array(bucket) / np.linalg.norm(np.array(bucket))
-            print 'Align to direction: ', self.crnt_direction
+            print('Align to direction: ', self.crnt_direction)
             self.status = self.Status.rotate
             self.thread.acquire()
             self.thread.wait()
@@ -164,7 +164,7 @@ class imu_wrapper:
         try:
             self.pipeline.start(cfg)
         except Exception as e:
-            print 'ERROR: ', e.message
+            print('ERROR: ', str(e))
             return False
 
         # self.sync_imu_by_this_stream = rs.stream.any
@@ -239,25 +239,25 @@ def parse_buffer(buffer):
     buffer.dtype=np.uint32    
     tab1_size = buffer[3]
     buffer.dtype=np.uint8
-    print 'tab1_size (all_data): ', tab1_size
+    print('tab1_size (all_data): ', tab1_size)
 
     tab1 = buffer[cmd_size:cmd_size+tab1_size]  # 520 == epprom++
     tab1.dtype=np.uint32
     tab2_size = tab1[1]
     tab1.dtype=np.uint8
-    print 'tab2_size (calibration_table): ', tab2_size
+    print('tab2_size (calibration_table): ', tab2_size)
 
     tab2 = tab1[header_size:header_size+tab2_size] # calibration table
     tab2.dtype=np.uint32
     tab3_size = tab2[1]
     tab2.dtype=np.uint8
-    print 'tab3_size (calibration_table): ', tab3_size
+    print('tab3_size (calibration_table): ', tab3_size)
 
     tab3 = tab2[header_size:header_size+tab3_size]  # D435 IMU Calib Table
     tab3.dtype=np.uint32
     tab4_size = tab3[1]
     tab3.dtype=np.uint8
-    print 'tab4_size (D435_IMU_Calib_Table): ', tab4_size
+    print('tab4_size (D435_IMU_Calib_Table): ', tab4_size)
 
     tab4 = tab3[header_size:header_size+tab4_size]  # calibration data
     return tab1, tab2, tab3, tab4
@@ -371,16 +371,16 @@ def write_eeprom_to_camera(eeprom, serial_no=''):
 
     debug = get_debug_device(serial_no)
     if not debug:
-        print 'Error getting RealSense Device.'
+        print('Error getting RealSense Device.')
         return
     # tab1, tab2, tab3, tab4 = parse_buffer(buffer)
 
     rcvBuf = debug.send_and_receive_raw_data(bytearray(buffer))
     if rcvBuf[0] == buffer[4]:
-        print 'SUCCESS: saved calibration to camera.'
+        print('SUCCESS: saved calibration to camera.')
     else:
-        print 'FAILED: failed to save calibration to camera.'
-        print rcvBuf
+        print('FAILED: failed to save calibration to camera.')
+        print(rcvBuf)
 
 
 def get_debug_device(serial_no):
@@ -392,7 +392,7 @@ def get_debug_device(serial_no):
             found_dev = True
             break
     if not found_dev:
-        print 'No RealSense device found' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no)
+        print('No RealSense device found' + str('.' if len(serial_no) == 0 else ' with serial number: '+serial_no))
         return 0
 
     # set to advance mode:
@@ -400,11 +400,11 @@ def get_debug_device(serial_no):
     if not advanced.is_enabled():
         advanced.toggle_advanced_mode(True)
 
-    # print a few basic information about the device
-    print '  Device PID: ',  dev.get_info(rs.camera_info.product_id)
-    print '  Device name: ',  dev.get_info(rs.camera_info.name)
-    print '  Serial number: ',  dev.get_info(rs.camera_info.serial_number)
-    print '  Firmware version: ',  dev.get_info(rs.camera_info.firmware_version)
+    # print(a few basic information about the device)
+    print('  Device PID: ',  dev.get_info(rs.camera_info.product_id))
+    print('  Device name: ',  dev.get_info(rs.camera_info.name))
+    print('  Serial number: ',  dev.get_info(rs.camera_info.serial_number))
+    print('  Firmware version: ',  dev.get_info(rs.camera_info.firmware_version))
     debug = rs.debug_protocol(dev)
     return debug
 
@@ -418,21 +418,21 @@ def check_X(X, accel, show_graph):
         pylab.hold(True)
         pylab.plot(norm_fdata, '.g')
         pylab.show()
-    print 'norm (data      ): %f' % np.mean(norm_data)
-    print 'norm (fixed data): %f' % np.mean(norm_fdata)
+    print ('norm (data      ): %f' % np.mean(norm_data))
+    print ('norm (fixed data): %f' % np.mean(norm_fdata))
 
 
 def main():
     if any([help_str in sys.argv for help_str in ['-h', '--help', '/?']]):
         print("Usage:", sys.argv[0], "[Options]")
         print
-        print '[Options]:'
-        print '-i : /path/to/accel.txt [/path/to/gyro.txt]'
-        print '-s : serial number of device to calibrate.'
-        print '-g : show graph of norm values - original values in blue and corrected in green.'
+        print('[Options]:')
+        print('-i : /path/to/accel.txt [/path/to/gyro.txt]')
+        print('-s : serial number of device to calibrate.')
+        print('-g : show graph of norm values - original values in blue and corrected in green.')
         print
-        print 'If -i option is given, calibration is done using previosly saved files'
-        print 'Otherwise, an interactive process is followed.'
+        print('If -i option is given, calibration is done using previosly saved files')
+        print('Otherwise, an interactive process is followed.')
         sys.exit(1)
 
     accel_file = None
@@ -461,7 +461,7 @@ def main():
             gyro = gyro[gyro[:, 0] < gyro[0, 0]+4000, :]
 
             gyro_bais = np.mean(gyro[:, 1:], axis=0)
-            print 'gyro_bias:', gyro_bais
+            print(gyro_bais)
 
         #compute accel intrinsic parameters
         max_norm = np.linalg.norm(np.array([0.5, 0.5, 0.5]))
@@ -479,12 +479,12 @@ def main():
                         is_ok = True
                         measurements[i].append(M)
                 rnum += 1
-        print 'read %d rows.' % rnum
+        print('read %d rows.' % rnum)
     else:
-        print 'Start interactive mode:'
+        print('Start interactive mode:')
         imu = imu_wrapper()
         if not imu.enable_imu_device(serial_no):
-            print 'Failed to enable device.'
+            print('Failed to enable device.')
             return -1
         measurements, gyro = imu.get_measurements(buckets)
         con_mm = np.concatenate(measurements)
@@ -493,11 +493,11 @@ def main():
         if header:
             accel_file = 'accel_%s.txt' % header
             gyro_file = 'gyro_%s.txt' % header
-            print 'Writing files:\n%s\n%s' % (accel_file, gyro_file)
+            print('Writing files:\n%s\n%s' % (accel_file, gyro_file))
             np.savetxt(accel_file, con_mm, delimiter=',', fmt='%s')
             np.savetxt(gyro_file, gyro, delimiter=',', fmt='%s')
         else:
-            print 'Not writing to files.'
+            print('Not writing to files.')
         # remove times from measurements:
         measurements = [mm[:,1:] for mm in measurements]
 
@@ -506,7 +506,7 @@ def main():
 
     mlen =  np.array([len(meas) for meas in measurements])
     print(mlen)
-    print 'using %d measurements.' % mlen.sum()
+    print('using %d measurements.' % mlen.sum())
 
     nrows = mlen.sum()
     w = np.zeros([nrows, 4])
@@ -527,9 +527,9 @@ def main():
         params = {'rcond': None}
     X, residuals, rank, singular = np.linalg.lstsq(w, Y, **params)
     print(X)
-    print "residuals:", residuals
-    print "rank:", rank
-    print "singular:", singular
+    print("residuals:", residuals)
+    print("rank:", rank)
+    print("singular:", singular)
     check_X(X, w[:,:3], show_graph)
 
     calibration = {}
@@ -565,18 +565,18 @@ def main():
     is_write = raw_input('Write the results to eeprom? (Y/N)')
     is_write = 'Y' in is_write.upper()
     if is_write:
-        print 'Writing calibration to device.'
+        print('Writing calibration to device.')
         write_eeprom_to_camera(eeprom, serial_no)
-        print 'Done.'
+        print('Done.')
     else:
-        print 'Abort writing to device'
+        print('Abort writing to device')
 
     """
     wtw = dot(transpose(w),w)
     wtwi = np.linalg.inv(wtw)
-    print wtwi
+    print(wtwi)
     X = dot(wtwi, Y)
-    print X
+    print(X)
     """
 if __name__ == '__main__':
     main()
