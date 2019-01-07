@@ -1,0 +1,59 @@
+# rs-calibration Tool:
+
+## Goal
+The tool is intended to calibrate the IMU built in D435i cameras
+
+## Description
+D435i cameras arrive from the factory without IMU calibration. Hence the values may be slightly off.
+In order to improve accuracy, a calibration procedure should be done.
+The rs-calibration tool walks you through the calibration steps and saves the calibration coefficient to the EEPROM, to be used applied automatically by the driver.
+
+## Command Line Parameters
+
+|Flag   |Description   |Default|
+|-----|---|---|
+|`-h `|Show help. ||
+|`-i <accel_filename> [gyro_filename]`| Load previously saved results to EEPROM| |
+|`-s serial_no`| calibrate device with given serial_no| calibrate first found device|
+|`-g `|show graph of data before and after calibration| ||
+
+# Calibration Procedure:
+Running:
+
+`python calibrate-six-pose.py`
+
+The script runs you through the 6 main orientations of the camera.
+For each direction there are the following steps:
+*	**Rotation:**<br>
+  *	The script prints the following line, describing how to orient the camera:<br>
+`Align to direction:  [ 1.  0.  0.]`<br>
+  *	Then it prints the status (rotate) and the difference from the desired orientation:<br>
+  `Status.rotate:           [ 1.0157 -0.1037  0.9945]:                 [False False False]`<br>
+  *	You have to bring the numbers to [0,0,0] and then you are in the right direction and the script moves on to the next status.<br><br>
+
+*	**Wait to Stablize:**<br>
+  *	The script waits for you to be stable for 3 seconds. Meanwhile there is a countdown message:<br>
+  `Status.wait_to_stable: 2.8 (secs)`<br>
+  *	When waited for 3 seconds, the script begin to <b>collect data:<br><br>
+
+*	**Collecting data:**<br>
+  *	Status line is a line of dots. When reaching 20 dots, enough data is collected and script carries on to next orientation.<br>
+  *	If camera is no longer in the precise orientation, data is not collected.
+  *	If camera is moved too much, going back to <b>Rotation status.
+
+When done all 6 orientations, the following message appears, suggesting you to save the raw data gathered:<br>
+`Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)`<br>
+`Enter nothing to avoid writing. >`<br>
+
+Either press “Enter” not to save or an ending (like 2 or <serial_no>_1) to save the accel.txt, gyro.txt.<br>
+
+The files can be loaded using the “-i” option.
+
+Then the script will ask to save the data to the Device.<br>
+Choose Y (or any other combination with Y or y in it) to save.
+
+That’s it. At the end a confirmation message appears:<br>
+`SUCCESS: saved calibration to camera.`
+
+**NOTICE:**<br>
+CTRL-C isn’t working so press CTRL-Z and then `kill -9 %1` if you want to terminate in the middle…
