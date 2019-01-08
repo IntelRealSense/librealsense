@@ -359,7 +359,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
         .def(BIND_DOWNCAST(frame, video_frame))
-        .def(BIND_DOWNCAST(frame, depth_frame));
+        .def(BIND_DOWNCAST(frame, depth_frame))
+        .def(BIND_DOWNCAST(frame, motion_frame));
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
