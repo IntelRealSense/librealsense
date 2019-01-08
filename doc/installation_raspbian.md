@@ -40,10 +40,14 @@ $ sudo apt-get install libglu1-mesa libglu1-mesa-dev mesa-utils mesa-utils-extra
 ```
 
 ### update udev rule
+Now we need to get librealsense from the repo(https://github.com/IntelRealSense/librealsense).
 ```
-$ cd /etc/udev/rules.d/
-$ sudo wget https://raw.githubusercontent.com/IntelRealSense/librealsense/master/config/99-realsense-libusb.rules
-$ sudo udevadm control --reload-rules && udevadm trigger
+$ cd ~
+$ git clone https://github.com/IntelRealSense/librealsense.git
+$ cd librealsense
+$ sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/ 
+$ sudo udevadm control --reload-rules && udevadm trigger 
+
 ```
 
 ### update `cmake` version (if your cmake is 3.7.2 or before 3.11.4)
@@ -114,9 +118,8 @@ $ sudo ldconfig
 
 ### install `RealSense` SDK/librealsense
 ```
-$ cd ~
-$ git clone https://github.com/IntelRealSense/librealsense.git
-$ cd ~/librealsense;mkdir build;cd build
+$ cd ~/librealsense
+$ mkdir  build  && cd build
 $ cmake .. -DBUILD_EXAMPLES=true -DCMAKE_BUILD_TYPE=Release -DFORCE_LIBUVC=true
 $ make -j1
 $ sudo make install
