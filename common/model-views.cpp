@@ -2688,7 +2688,7 @@ namespace rs2
         ImGui::PopStyleVar(2);
     }
 
-    void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect, const  rs2_pose& pose_frame, rs2_stream stream_type)
+    void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect, const  rs2_pose& pose_frame, rs2_stream stream_type, bool fullScreen)
     {
         const auto precision = 3;
 
@@ -2715,20 +2715,26 @@ namespace rs2
             std::string units;
             std::string toolTip;
             int nameExtraSpace;
+            bool showOnNonFullScreen;
         };
 
         std::vector<pose_data> pose_vector = {
-            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 0},
-            { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 0 },
-            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 0 },
-            { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 0 },
-            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 0 },
-            { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 0 },
+            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 50, false},
+            { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 50, false},
+            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 50, false},
+            { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 50, false},
+            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 50, true},
+            { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 50, true},
         };
 
         int line_h = 18;
         for (auto&& pose : pose_vector)
         {
+            if ((fullScreen == false) && (pose.showOnNonFullScreen == false))
+            {
+                continue;
+            }
+
             auto rc = ImGui::GetCursorPos();
             ImGui::SetCursorPos({ rc.x + 12, rc.y + 4 });
             ImGui::Text("%s:", pose.name.c_str());
@@ -2739,21 +2745,22 @@ namespace rs2
 
             switch (pose_frame.tracker_confidence) //color the line according to confidence
             {
-            case 3: // High confidence - Green
-                ImGui::PushStyleColor(ImGuiCol_Text, green);
-                break;
-            case 2: // Medium confidence - Yellow
-                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-                break;
-            case 1: // Low confidence - Red
-                ImGui::PushStyleColor(ImGuiCol_Text, red);
-                break;
-            case 0: // failed confidence - Grey
-                ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                break;
+                case 3: // High confidence - Green
+                    ImGui::PushStyleColor(ImGuiCol_Text, green);
+                    break;
+                case 2: // Medium confidence - Yellow
+                    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                    break;
+                case 1: // Low confidence - Red
+                    ImGui::PushStyleColor(ImGuiCol_Text, red);
+                    break;
+                case 0: // Failed confidence - Grey
+                default: // Fall thourgh
+                    ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                    break;
             }
 
-            ImGui::SetCursorPos({ rc.x + 150 + pose.nameExtraSpace, rc.y + 1 });
+            ImGui::SetCursorPos({ rc.x + 100 + (fullScreen?pose.nameExtraSpace:0), rc.y + 1 });
             std::string label = to_string() << "##" << pose.name.c_str();
 
             std::string data = "[";
@@ -2775,7 +2782,7 @@ namespace rs2
 
             ImGui::PopStyleColor(1);
 
-            ImGui::SetCursorPos({ rc.x + 350 + pose.nameExtraSpace, rc.y + 4 });
+            ImGui::SetCursorPos({ rc.x + 300 + (fullScreen?pose.nameExtraSpace:0), rc.y + 4 });
             ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
             ImGui::Text("%s", pose.units.c_str());
             ImGui::PopStyleColor(1);
@@ -4033,14 +4040,11 @@ namespace rs2
                     }
                     case RS2_STREAM_POSE:
                     {
-                        if ((*this).fullscreen == true)
+                        auto pose = streams[stream].texture->get_last_frame().as<pose_frame>();
+                        if (pose.get())
                         {
-                            auto pose = streams[stream].texture->get_last_frame().as<pose_frame>();
-                            if (pose.get())
-                            {
-                                auto pose_data = pose.get_pose_data();
-                                stream_mv.show_stream_pose(font1, stream_rect, pose_data, stream_type);
-                            }
+                            auto pose_data = pose.get_pose_data();
+                            stream_mv.show_stream_pose(font1, stream_rect, pose_data, stream_type, (*this).fullscreen);
                         }
   
                         break;
