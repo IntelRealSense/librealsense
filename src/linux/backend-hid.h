@@ -62,9 +62,10 @@ namespace librealsense
         };
 
         template<typename T>
-        inline bool write_fs_arithmetic(const std::string& path, const T& val)
+        inline bool write_fs_attribute(const std::string& path, const T& val)
         {
-            static_assert((std::is_arithmetic<T>::value), "write_arithmetic_fs incompatible type");
+            static_assert(((std::is_arithmetic<T>::value)||(std::is_same<T,std::string>::value)),
+                "write_fs_attribute supports arithmetic and std::string types only");
             bool res = false;
             std::fstream fs_handle(path);
             if (!fs_handle.good())
@@ -75,7 +76,7 @@ namespace librealsense
 
             try // Read/Modify/Confirm
             {
-                T cval = 0;
+                T cval{};
                 fs_handle >> cval;
 
                 if (cval!=val)
