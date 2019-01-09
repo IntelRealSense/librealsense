@@ -68,7 +68,7 @@ namespace perc
         virtual Status EepromRead(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual);
         virtual Status EepromWrite(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual, bool verify = false);
         virtual Status Reset(void);
-        virtual Status AppendCalibration(const TrackingData::CalibrationData& calibrationData);
+        virtual Status SetCalibration(const TrackingData::CalibrationData& calibrationData);
         virtual Status SendFrame(const TrackingData::VelocimeterFrame& frame);
         virtual Status SendFrame(const TrackingData::VideoFrame& frame);
         virtual Status SendFrame(const TrackingData::GyroFrame& frame);
