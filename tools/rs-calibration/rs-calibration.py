@@ -145,12 +145,12 @@ class imu_wrapper:
                 self.thread.notify()
                 self.thread.release()
 
-    def get_measurements(self, buckets):
+    def get_measurements(self, buckets, bucket_labels):
         measurements = []
-        for i, bucket in enumerate(buckets):
+        for bucket,bucket_label  in zip(buckets, bucket_labels):
             self.crnt_bucket = np.array(bucket)
             self.crnt_direction = np.array(bucket) / np.linalg.norm(np.array(bucket))
-            print('Align to direction: ', self.crnt_direction)
+            print('\nAlign to direction: ', self.crnt_direction, ' ', bucket_label)
             self.status = self.Status.rotate
             self.thread.acquire()
             self.thread.wait()
@@ -418,8 +418,8 @@ def check_X(X, accel, show_graph):
         pylab.hold(True)
         pylab.plot(norm_fdata, '.g')
         pylab.show()
-    print ('norm (data      ): %f' % np.mean(norm_data))
-    print ('norm (fixed data): %f' % np.mean(norm_fdata))
+    print ('norm (raw data  ): %f' % np.mean(norm_data))
+    print ('norm (fixed data): %f' % np.mean(norm_fdata), "A good calibration will be near %f" % g)
 
 
 def main():
@@ -446,10 +446,12 @@ def main():
                 gyro_file = sys.argv[idx+2]
         if sys.argv[idx] == '-s':
             serial_no = sys.argv[idx+1]
-    
-    buckets = [[g, 0, 0], [-g, 0, 0],
-            [0, g, 0], [0, -g, 0],
-            [0, 0, g], [0, 0, -g]]
+
+    buckets = [[0, -g,  0], [ g,  0, 0],
+               [0,  g,  0], [-g,  0, 0],
+               [0,  0, -g], [ 0,  0, g]]
+
+    buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
 
     gyro_bais = np.zeros(3, np.float32)
     if accel_file:
@@ -486,10 +488,10 @@ def main():
         if not imu.enable_imu_device(serial_no):
             print('Failed to enable device.')
             return -1
-        measurements, gyro = imu.get_measurements(buckets)
+        measurements, gyro = imu.get_measurements(buckets, buckets_labels)
         con_mm = np.concatenate(measurements)
 
-        header = raw_input('Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to avoid writing. >')
+        header = raw_input('\nWould you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to not save raw data to disk. >')
         if header:
             accel_file = 'accel_%s.txt' % header
             gyro_file = 'gyro_%s.txt' % header
@@ -562,7 +564,7 @@ def main():
     with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
         outfile.write(eeprom.astype('f').tostring())
 
-    is_write = raw_input('Write the results to eeprom? (Y/N)')
+    is_write = raw_input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
     is_write = 'Y' in is_write.upper()
     if is_write:
         print('Writing calibration to device.')
