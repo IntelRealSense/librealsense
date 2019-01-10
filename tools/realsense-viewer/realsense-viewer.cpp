@@ -239,8 +239,6 @@ int main(int argv, const char** argc) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-    periodic_timer update_readonly_options_timer(std::chrono::seconds(6));
-
     window.on_file_drop = [&](std::string filename)
     {
         std::string error_message{};
@@ -287,8 +285,6 @@ int main(int argv, const char** argc) try
             viewer_model.popup_if_ui_not_aligned(window.get_font());
         }
         refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
-
-        bool update_read_only_options = update_readonly_options_timer;
 
         auto output_height = viewer_model.get_output_height();
 
@@ -429,10 +425,7 @@ int main(int argv, const char** argc) try
             for (auto&& dev_model : *device_models)
             {
                 dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
-                    window,
-                    error_message, device_to_remove, viewer_model, windows_width,
-                    update_read_only_options,
-                    draw_later);
+                    window, error_message, device_to_remove, viewer_model, windows_width, draw_later);
             }
             if (viewer_model.ppf.is_rendering())
             {

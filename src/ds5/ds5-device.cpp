@@ -464,7 +464,11 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
-        if (_fw_version >= firmware_version("5.10.9.0") &&
+        if (_fw_version >= firmware_version("5.11.0.44"))
+        {
+            depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &depth_ep));
+        }
+        else if (_fw_version >= firmware_version("5.10.9.0") &&
             _fw_version.experimental()) // Not yet available in production firmware
         {
             depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &depth_ep));

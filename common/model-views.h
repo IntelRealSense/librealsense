@@ -432,7 +432,7 @@ namespace rs2
 
         frame_queues queues;
         std::mutex _queue_lock;
-        bool options_invalidated = false;
+        bool _options_invalidated = false;
         int next_option = RS2_OPTION_COUNT;
         bool streaming = false;
 
@@ -554,7 +554,6 @@ namespace rs2
             std::string& error_message,
             device_model*& device_to_remove,
             viewer_model& viewer, float windows_width,
-            bool update_read_only_options,
             std::vector<std::function<void()>>& draw_later,
             bool load_json_if_streaming = false,
             json_loading_func json_loading = [](std::function<void()> load) {load(); },
@@ -612,6 +611,7 @@ namespace rs2
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
+        periodic_timer      _update_readonly_options_timer;
     };
 
     struct notification_data

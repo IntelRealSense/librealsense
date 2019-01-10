@@ -472,4 +472,33 @@ namespace librealsense
     {
         return *_range;
     }
+
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void alternating_emitter_option::set(float value)
+    {
+        std::vector<uint8_t> pattern{};
+        if (static_cast<int>(value))
+            pattern = ds::alternating_emitter_pattern;
+
+        command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
+        cmd.data = pattern;
+        auto res = _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float alternating_emitter_option::query() const
+    {
+        command cmd(ds::GETSUBPRESET);
+        auto res = _hwm.send(cmd);
+
+        return (res == ds::alternating_emitter_pattern);
+    }
 }

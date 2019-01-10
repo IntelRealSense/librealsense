@@ -137,6 +137,8 @@ namespace librealsense
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            SETSUBPRESET    = 0x7B,     // Download sub-preset
+            GETSUBPRESET    = 0x7C      // Upload the current sub-preset
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -622,6 +624,10 @@ namespace librealsense
         };
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
+
+        const std::vector<uint8_t> alternating_emitter_pattern { 0x19, 0,
+            0x41, 0x6c, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x45, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x72, 0,
+            0, 0x2, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0, 0, 0, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0x1, 0, 0, 0 };
 
     } // librealsense::ds
 } // namespace librealsense
