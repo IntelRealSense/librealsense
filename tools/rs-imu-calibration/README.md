@@ -1,4 +1,4 @@
-# rs-calibration Tool:
+# rs-imu-calibration Tool:
 
 ## Goal
 The tool is intended to calibrate the IMU built in D435i cameras
@@ -6,7 +6,7 @@ The tool is intended to calibrate the IMU built in D435i cameras
 ## Description
 D435i cameras arrive from the factory without IMU calibration. Hence the values may be slightly off.
 In order to improve accuracy, a calibration procedure should be done.
-The rs-calibration tool walks you through the calibration steps and saves the calibration coefficient to the EEPROM, to be used applied automatically by the driver.
+The rs-imu-calibration tool walks you through the calibration steps and saves the calibration coefficient to the EEPROM, to be used applied automatically by the driver.
 
 ## Command Line Parameters
 
@@ -20,13 +20,13 @@ The rs-calibration tool walks you through the calibration steps and saves the ca
 # Calibration Procedure:
 Running:
 
-`python calibrate-six-pose.py`
+`python rs-imu-calibration.py`
 
 The script runs you through the 6 main orientations of the camera.
 For each direction there are the following steps:
 *	**Rotation:**<br>
   *	The script prints the following line, describing how to orient the camera:<br>
-`Align to direction:  [ 1.  0.  0.]`<br>
+`Align to direction:  [ 0. -1.  0.]   Upright facing out`<br>
   *	Then it prints the status (rotate) and the difference from the desired orientation:<br>
   `Status.rotate:           [ 1.0157 -0.1037  0.9945]:                 [False False False]`<br>
   *	You have to bring the numbers to [0,0,0] and then you are in the right direction and the script moves on to the next status.<br><br>
@@ -42,8 +42,8 @@ For each direction there are the following steps:
   *	If camera is moved too much, going back to <b>Rotation status.
 
 When done all 6 orientations, the following message appears, suggesting you to save the raw data gathered:<br>
-`Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)`<br>
-`Enter nothing to avoid writing. >`<br>
+`Would you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)`<br>
+`Enter nothing to not save raw data to disk. >`<br>
 
 Either press “Enter” not to save or an ending (like 2 or <serial_no>_1) to save the accel.txt, gyro.txt.<br>
 
