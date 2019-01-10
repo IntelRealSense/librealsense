@@ -6,7 +6,7 @@ The tool is intended to calibrate the IMU built in D435i cameras
 ## Description
 D435i cameras arrive from the factory without IMU calibration. Hence the values may be slightly off.
 In order to improve accuracy, a calibration procedure should be done.
-The rs-imu-calibration tool walks you through the calibration steps and saves the calibration coefficient to the EEPROM, to be used applied automatically by the driver.
+The rs-imu-calibration tool walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
 
 ## Command Line Parameters
 
@@ -57,3 +57,28 @@ That’s it. At the end a confirmation message appears:<br>
 
 **NOTICE:**<br>
 CTRL-C isn’t working so press CTRL-Z and then `kill -9 %1` if you want to terminate in the middle…
+
+**Appendix A:**<br>
+I found it a little challenging to hold the camera in the precise 90 degrees angle needed.
+Therefor I used my original camera's box as a camera holder.
+I cut a little piece so the cord may come out, and that's it:<br>
+***open box image:***<br>
+![open box image](images/IMG_4918.jpg)<br>
+
+***camera in box:***<br>
+![camera in box](images/IMG_4919.jpg)<br>
+
+***face down position:***<br>
+![face down position](images/IMG_4920.jpg)<br>
+
+***cord up position:***<br>
+![cord up position](images/IMG_4921.jpg)<br>
+
+***upright facing out (or upside down facing out, depends on which side the cord is..):***<br>
+![upright facing out](images/IMG_4922.jpg)<br>
+
+***cord down position:***<br>
+![cord down position](images/IMG_4923.jpg)<br>
+
+***upside down (or upright) facing out:***<br>
+![upside down facing out](images/IMG_4924.jpg)
