@@ -5,7 +5,7 @@ ExternalProject_Add(
     libusb
 
     GIT_REPOSITORY "https://github.com/libusb/libusb.git"
-    GIT_TAG "master"
+    GIT_TAG "v1.0.22"
 
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
