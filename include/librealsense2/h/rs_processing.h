@@ -43,6 +43,17 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
+* Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
+* YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
+* without signficant quality drop. YUY representation can be converted back to more usable RGB form,
+* but this requires somewhat costly conversion.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
+
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function to be applied to every frame entering the block
