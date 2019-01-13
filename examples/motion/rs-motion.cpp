@@ -69,7 +69,7 @@ public:
         uncompress_d435_obj(positions, normals, indexes);
     }
 
-    // Takes the calculated angle as input and rotates the 3D camera accordignly
+    // Takes the calculated angle as input and rotates the 3D camera model accordignly
     void render_camera(float3 theta)
     {
 
@@ -112,12 +112,14 @@ class rotation_estimator
     float3 theta;
     std::mutex theta_mtx;
     /* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight to gyro, but too high
-    values cause drift; lower alpha gives more weight to accelerometer, which is less responsive to quick movements */
+    values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to disturbances */
     float alpha = 0.98;
     bool first = true;
+    // Keeps the arrival time of previous gyro frame
+    double last_ts_gyro = 0;
 public:
-    // Function to calculate the angle of motion based on data from gyro, 
-    void process_gyro(rs2_vector gyro_data, double dt_gyro)
+    // Function to calculate the change in angle of motion based on data from gyro
+    void process_gyro(rs2_vector gyro_data, double ts)
     {
         if (first) // On the first iteration, use only data from accelerometer to set the camera's initial position
             return;
@@ -128,6 +130,10 @@ public:
         gyro_angle.x = gyro_data.x * 0.5; // Pitch
         gyro_angle.y = gyro_data.y * 0.3; // Yaw
         gyro_angle.z = gyro_data.z * 0.5; // Roll
+
+        // Compute the difference between arrival times of previous and current gyro frames
+        double dt_gyro = (ts - last_ts_gyro) / 1000.0;
+        last_ts_gyro = ts;
 
         // Change in angle equals gyro measures * time passed since last measurement
         gyro_angle = gyro_angle * dt_gyro;
@@ -195,11 +201,7 @@ int main()
     cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
     cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
 
-    // Define variable to keep track of previous arrival time of frames from gyro stream and a mutex to protect it
-    double last_ts_gyro = 0;
-    std::mutex time_mtx;
-
-    // Declare object for rendering of camera motion
+    // Declare object for rendering camera motion
     camera_renderer camera;
     // Declare object that handles camera pose calculations
     rotation_estimator algo;
@@ -213,16 +215,12 @@ int main()
         // If casting succeeded and the arrived frame is from gyro stream
         if (motion && motion.get_profile().stream_type() == RS2_STREAM_GYRO && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
         {
-            // Compute the difference between arrival times of previous and current gyro frames
+            // Get the timestamp of the current frame
             double ts = motion.get_timestamp();
-            time_mtx.lock();
-            double dt_gyro = (ts - last_ts_gyro)/1000.0;
-            last_ts_gyro = ts;
-            time_mtx.unlock();
             // Get gyro measures
             rs2_vector gyro_data = motion.get_motion_data();
             // Call function that computes the angle of motion based on the retrieved measures
-            algo.process_gyro(gyro_data, dt_gyro);
+            algo.process_gyro(gyro_data, ts);
         }
         // If casting succeeded and the arrived frame is from accelerometer stream
         if (motion && motion.get_profile().stream_type() == RS2_STREAM_ACCEL && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
