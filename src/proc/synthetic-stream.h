@@ -29,7 +29,8 @@ namespace librealsense
 
         frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) override;
 
-        frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original) override;
+        frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, 
+            frame_interface* original, rs2_extension frame_type = RS2_EXTENSION_POINTS) override;
 
         void frame_ready(frame_holder result) override;
 
@@ -40,7 +41,7 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class processing_block : public processing_block_interface, public options_container
+    class EXTENSION_API processing_block : public processing_block_interface, public options_container
     {
     public:
         processing_block();
@@ -121,7 +122,7 @@ namespace librealsense
         }
     };
 
-    class stream_filter_processing_block : public generic_processing_block
+    class EXTENSION_API stream_filter_processing_block : public generic_processing_block
     {
     public:
         stream_filter_processing_block();

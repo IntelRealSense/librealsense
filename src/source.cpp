@@ -63,6 +63,8 @@ namespace librealsense
         {
             _archive[type] = make_archive(type, &_max_publish_list_size, _ts, metadata_parsers);
         }
+
+        _metadata_parsers = metadata_parsers;
     }
 
     callback_invocation_holder frame_source::begin_callback()
@@ -79,6 +81,7 @@ namespace librealsense
         {
             kvp.second.reset();
         }
+        _metadata_parsers.reset();
     }
 
     frame_interface* frame_source::alloc_frame(rs2_extension type, size_t size, frame_additional_data additional_data, bool requires_memory) const

@@ -82,7 +82,7 @@ namespace librealsense
         std::string _desc;
     };
 
-    class option_base : public option
+    class EXTENSION_API option_base : public option
     {
     public:
         option_base(const option_range& opt_range)
@@ -101,7 +101,7 @@ namespace librealsense
     };
 
     template<class T>
-    class ptr_option : public option_base
+    class EXTENSION_API ptr_option : public option_base
     {
     public:
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
@@ -159,7 +159,7 @@ namespace librealsense
         std::function<void(float)> _on_set;
     };
 
-    class float_option : public option_base
+    class EXTENSION_API float_option : public option_base
     {
     public:
         float_option(option_range range) : option_base(range), _value(range.def) {}

@@ -3,11 +3,13 @@
 
 #pragma once
 #include "../include/librealsense2/hpp/rs_frame.hpp"
+#include "synthetic-stream.h"
+
 namespace librealsense
 {
     class occlusion_filter;
 
-    class pointcloud : public stream_filter_processing_block
+    class EXTENSION_API pointcloud : public stream_filter_processing_block
     {
     public:
         pointcloud();

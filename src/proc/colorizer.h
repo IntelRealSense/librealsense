@@ -13,7 +13,7 @@ namespace rs2
 
 namespace librealsense {
 
-    class color_map
+    class EXTENSION_API color_map
     {
     public:
         color_map(std::map<float, float3> map, int steps = 4000) : _map(map)
@@ -42,6 +42,8 @@ namespace librealsense {
 
         float min_key() const { return _min; }
         float max_key() const { return _max; }
+
+        const std::vector<float3>& get_cache() const { return _cache; }
 
     private:
         inline float3 lerp(const float3& a, const float3& b, float t) const
@@ -93,19 +95,26 @@ namespace librealsense {
         size_t _size; float3* _data;
     };
 
-    class colorizer : public stream_filter_processing_block
+    class EXTENSION_API colorizer : public stream_filter_processing_block
     {
     public:
         colorizer();
 
+        static void update_histogram(int* hist, const uint16_t* depth_data, int w, int h);
+        static const int MAX_DEPTH = 0x10000;
+
     protected:
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
-    private:
         float _min, _max;
         bool _equalize;
+
         std::vector<color_map*> _maps;
         int _map_index = 0;
+
+        std::vector<int> _histogram;
+        int* _hist_data;
+
         int _preset = 0;
         rs2::stream_profile _target_stream_profile;
         rs2::stream_profile _source_stream_profile;

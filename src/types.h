@@ -9,6 +9,12 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+#ifdef WIN32
+#define EXTENSION_API __declspec(dllexport)
+#else
+#define EXTENSION_API
+#endif
+
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
 #ifndef _USE_MATH_DEFINES
@@ -197,7 +203,7 @@ namespace librealsense
         rs2_exception_type _exception_type;
     };
 
-    class recoverable_exception : public librealsense_exception
+    class EXTENSION_API recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
@@ -499,6 +505,17 @@ namespace librealsense
             for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
+    }
+    inline bool operator==(const rs2_extrinsics& a, const rs2_extrinsics& b)
+    {
+        for (int i = 0; i < 3; i++) 
+            if (a.translation[i] != b.translation[i]) 
+                return false;
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                if (a.rotation[j * 3 + i] != b.rotation[j * 3 + i]) 
+                    return false;
+        return true;
     }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 
