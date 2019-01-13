@@ -2041,6 +2041,8 @@ void ImGui::NewFrame()
 {
     ImGuiContext& g = *GImGui;
 
+    if (g.IO.DeltaTime < 0.0f) g.IO.DeltaTime = 0.0f;
+
     // Check user data
     IM_ASSERT(g.IO.DeltaTime >= 0.0f);               // Need a positive DeltaTime (zero is tolerated but will cause some timing issues)
     IM_ASSERT(g.IO.DisplaySize.x >= 0.0f && g.IO.DisplaySize.y >= 0.0f);
