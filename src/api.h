@@ -15,13 +15,7 @@ struct rs2_raw_data_buffer
     std::vector<uint8_t> buffer;
 };
 
-struct rs2_error
-{
-    std::string message;
-    const char* function;
-    std::string args;
-    rs2_exception_type exception_type;
-};
+typedef struct rs2_error rs2_error;
 
 struct rs2_notification
 {
@@ -37,6 +31,8 @@ struct rs2_device
     std::shared_ptr<librealsense::device_info> info;
     std::shared_ptr<librealsense::device_interface> device;
 };
+
+rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type);
 
 namespace librealsense
 {
@@ -107,12 +103,14 @@ namespace librealsense
         stream_args(out, names, rest...);
     }
 
+
+
     static void translate_exception(const char * name, std::string args, rs2_error ** error)
     {
         try { throw; }
-        catch (const librealsense_exception& e) { if (error) *error = new rs2_error{ e.what(), name, move(args), e.get_exception_type() }; }
-        catch (const std::exception& e) { if (error) *error = new rs2_error{ e.what(), name, move(args) }; }
-        catch (...) { if (error) *error = new rs2_error{ "unknown error", name, move(args) }; }
+        catch (const librealsense_exception& e) { if (error) *error = rs2_create_error(e.what(), name, args.c_str(), e.get_exception_type() ); }
+        catch (const std::exception& e) { if (error) *error = rs2_create_error(e.what(), name, args.c_str(), RS2_EXCEPTION_TYPE_COUNT); }
+        catch (...) { if (error) *error = rs2_create_error("unknown error", name, args.c_str(), RS2_EXCEPTION_TYPE_COUNT); }
     }
 
 #ifdef TRACE_API
@@ -433,4 +431,59 @@ return __p.invoke(func);\
                 throw std::runtime_error("Object does not support \"" #T "\" interface! " );    \
             return p;                                                                           \
         })()
+}
+
+inline int major(int version)
+{
+    return version / 10000;
+}
+inline int minor(int version)
+{
+    return (version % 10000) / 100;
+}
+inline int patch(int version)
+{
+    return (version % 100);
+}
+
+inline std::string api_version_to_string(int version)
+{
+    if (major(version) == 0) return librealsense::to_string() << version;
+    return librealsense::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+}
+
+inline void report_version_mismatch(int runtime, int compiletime)
+{
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "API version mismatch: librealsense.so was compiled with API version "
+        << api_version_to_string(runtime) << " but the application was compiled with "
+        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
+}
+
+inline void verify_version_compatibility(int api_version)
+{
+    rs2_error* error = nullptr;
+    auto runtime_api_version = rs2_get_api_version(&error);
+    if (error)
+        throw librealsense::invalid_value_exception(rs2_get_error_message(error));
+
+    if ((runtime_api_version < 10) || (api_version < 10))
+    {
+        // when dealing with version < 1.0.0 that were still using single number for API version, require exact match
+        if (api_version != runtime_api_version)
+            report_version_mismatch(runtime_api_version, api_version);
+    }
+    else if ((major(runtime_api_version) == 1 && minor(runtime_api_version) <= 9)
+        || (major(api_version) == 1 && minor(api_version) <= 9))
+    {
+        // when dealing with version < 1.10.0, API breaking changes are still possible without minor version change, require exact match
+        if (api_version != runtime_api_version)
+            report_version_mismatch(runtime_api_version, api_version);
+    }
+    else
+    {
+        // starting with 1.10.0, versions with same patch are compatible
+        if ((major(api_version) != major(runtime_api_version))
+            || (minor(api_version) != minor(runtime_api_version)))
+            report_version_mismatch(runtime_api_version, api_version);
+    }
 }
