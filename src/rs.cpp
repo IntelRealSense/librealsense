@@ -25,7 +25,7 @@
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
 #include "proc/hole-filling-filter.h"
-#include "proc/rates_printer.h"
+#include "proc/rates-printer.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
 #include "../include/librealsense2/h/rs_types.h"
