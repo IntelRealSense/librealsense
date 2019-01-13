@@ -21,7 +21,32 @@
 // Basic Data Types         //
 //////////////////////////////
 
-struct float3 { float x, y, z; };
+struct float3 { 
+    float x, y, z; 
+    float3 operator*(float t)
+    {
+        return { x * t, y * t, z * t };
+    }
+
+    float3 operator-(float t)
+    {
+        return { x - t, y - t, z - t };
+    }
+
+    void operator*=(float t)
+    {
+        x = x * t;
+        y = y * t;
+        z = z * t;
+    }
+
+    void operator=(float3 other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+    }
+};
 struct float2 { float x, y; };
 
 struct rect
