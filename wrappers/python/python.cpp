@@ -591,8 +591,8 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
 
-    py::class_<rs2::save_to_ply, rs2::filter> yuy_decoder(m, "yuy_decoder");
-    yuy_decoder.def(py::init<std::string, rs2::yuy_decoder>());
+    py::class_<rs2::yuy_decoder, rs2::filter> yuy_decoder(m, "yuy_decoder");
+    yuy_decoder.def(py::init<>());
 
     /* rs_export.hpp */
     py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
