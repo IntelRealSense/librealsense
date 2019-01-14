@@ -443,11 +443,14 @@ namespace librealsense
                     auto&& unpacker = *mode.unpacker;
                     for (auto&& output : unpacker.outputs)
                     {
-                        LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.stream_desc.type) << "," << std::dec << frame_counter
-                            << "," << output.stream_desc.index << "," << frame_counter
-                            << ",Arrived," << std::fixed << f.backend_time << " " << std::fixed << system_time<<" diff - "<< system_time- f.backend_time << " "
+                        LOG_DEBUG("FrameAccepted," << librealsense::get_string(output.stream_desc.type)
+                            << ",Counter," << std::dec << frame_counter
+                            << ",Index," << output.stream_desc.index
+                            << ",BackEndTS," << std::fixed << f.backend_time
+                            << ",SystemTime," << std::fixed << system_time
+                            <<" ,diff_ts[Sys-BE],"<< system_time- f.backend_time
                             << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
-                            <<" last_frame_number "<< last_frame_number<<" last_timestamp "<< last_timestamp);
+                            <<",last_frame_number,"<< last_frame_number<<",last_timestamp,"<< last_timestamp);
 
                         std::shared_ptr<stream_profile_interface> request = nullptr;
                         for (auto&& original_prof : mode.original_requests)
@@ -883,8 +886,10 @@ namespace librealsense
 
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
+        unsigned long long last_frame_number = 0;
+        rs2_time_t last_timestamp = 0;
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
-        _hid_device->start_capture([this](const platform::sensor_data& sensor_data)
+        _hid_device->start_capture([this,last_frame_number,last_timestamp](const platform::sensor_data& sensor_data) mutable
         {
             auto system_time = environment::get_instance().get_time_service()->get_time();
             auto timestamp_reader = _hid_iio_timestamp_reader.get();
@@ -928,18 +933,24 @@ namespace librealsense
             // Determine the timestamp for this HID frame
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
+            auto ts_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
 
             frame_additional_data additional_data{};
 
             additional_data.timestamp = timestamp;
             additional_data.frame_number = frame_counter;
-            additional_data.timestamp_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
+            additional_data.timestamp_domain = ts_domain;
             additional_data.system_time = system_time;
-            LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type()) << "," << std::dec << frame_counter
-                      << ",Arrived," << std::fixed << system_time
-                      << ",TS," << std::fixed << timestamp
-                      << ",TS_Domain," << rs2_timestamp_domain_to_string(additional_data.timestamp_domain));
+            LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type())
+                    << ",Counter," << std::dec << frame_counter << ",Index,0"
+                    << ",BackEndTS," << std::fixed << sensor_data.fo.backend_time
+                    << ",SystemTime," << std::fixed << system_time
+                    <<" ,diff_ts[Sys-BE],"<< system_time- sensor_data.fo.backend_time
+                    << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(ts_domain)
+                    <<",last_frame_number,"<< last_frame_number<<",last_timestamp,"<< last_timestamp);
 
+            last_frame_number = frame_counter;
+            last_timestamp = timestamp;
             auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, additional_data, true);
             if (!frame)
             {
