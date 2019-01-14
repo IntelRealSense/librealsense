@@ -71,6 +71,7 @@ int main(int argc, char * argv[]) try
 
     // Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+    rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
     rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
     rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noise
 
@@ -84,6 +85,7 @@ int main(int argc, char * argv[]) try
 
     // The following order of emplacement will dictate the orders in which filters are applied
     filters.emplace_back("Decimate", dec_filter);
+    filters.emplace_back("Threshold", thr_filter);
     filters.emplace_back(disparity_filter_name, depth_to_disparity);
     filters.emplace_back("Spatial", spat_filter);
     filters.emplace_back("Temporal", temp_filter);
@@ -113,10 +115,11 @@ int main(int argc, char * argv[]) try
             /* Apply filters.
             The implemented flow of the filters pipeline is in the following order:
             1. apply decimation filter
-            2. transform the scence into disparity domain
-            3. apply spatial filter
-            4. apply temporal filter
-            5. revert the results back (if step Disparity filter was applied
+            2. apply threshold filter
+            3. transform the scence into disparity domain
+            4. apply spatial filter
+            5. apply temporal filter
+            6. revert the results back (if step Disparity filter was applied
             to depth domain (each post processing block is optional and can be applied independantly).
             */
             bool revert_disparity = false;
@@ -255,7 +258,7 @@ void render_ui(float w, float h, std::vector<filter_options>& filters)
     // Using ImGui library to provide slide controllers for adjusting the filter options
     const float offset_x = w / 4;
     const int offset_from_checkbox = 120;
-    float offset_y = h / 2 + 20;
+    float offset_y = h / 2;
     float elements_margin = 45;
     for (auto& filter : filters)
     {
@@ -353,9 +356,11 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
     filter(flt),
     is_enabled(true)
 {
-    const std::array<rs2_option, 3> possible_filter_options = {
+    const std::array<rs2_option, 5> possible_filter_options = {
         RS2_OPTION_FILTER_MAGNITUDE,
         RS2_OPTION_FILTER_SMOOTH_ALPHA,
+        RS2_OPTION_MIN_DISTANCE,
+        RS2_OPTION_MAX_DISTANCE,
         RS2_OPTION_FILTER_SMOOTH_DELTA
     };
 
@@ -372,7 +377,7 @@ filter_options::filter_options(const std::string name, rs2::filter& flt) :
             std::string opt_name = rs2_option_to_string(opt);
             supported_options[opt].name = name + "_" + opt_name;
             std::string prefix = "Filter ";
-            supported_options[opt].label = name + " " + opt_name.substr(prefix.length());
+            supported_options[opt].label = opt_name;
         }
     }
 }
