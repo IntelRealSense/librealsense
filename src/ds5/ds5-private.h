@@ -138,7 +138,8 @@ namespace librealsense
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
             SETSUBPRESET    = 0x7B,     // Download sub-preset
-            GETSUBPRESET    = 0x7C      // Upload the current sub-preset
+            GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
+            GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
         };
 
         const int etDepthTableControl = 9; // Identifier of the depth table control

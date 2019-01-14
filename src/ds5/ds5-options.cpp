@@ -496,9 +496,12 @@ namespace librealsense
 
     float alternating_emitter_option::query() const
     {
-        command cmd(ds::GETSUBPRESET);
+        command cmd(ds::GETSUBPRESETNAME);
         auto res = _hwm.send(cmd);
+        if (res.size()>20)
+            throw invalid_value_exception("HWMON::GETSUBPRESETNAME invalid size");
 
-        return (res == ds::alternating_emitter_pattern);
+        static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
+        return (alt_emitter_name == res);
     }
 }

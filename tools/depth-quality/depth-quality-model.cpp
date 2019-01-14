@@ -484,7 +484,6 @@ namespace rs2
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
-                    _update_readonly_options_timer,
                     draw_later, true,
                     [&](std::function<void()>func)
                     {

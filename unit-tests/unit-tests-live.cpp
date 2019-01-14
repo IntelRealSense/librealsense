@@ -4041,7 +4041,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                             {
                                 if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
-                                    even = !even;
+                                    even = !even;  // Alternating odd/even frame number is sufficient to avoid duplicates
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
                                     emitter_state.push_back(val);
                                 }
