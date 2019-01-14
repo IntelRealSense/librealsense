@@ -3987,45 +3987,173 @@ TEST_CASE("Alternating Emitter", "[live][options]")
         disable_sensitive_options_for(dev);
         dev_type PID = get_PID(dev);
         CAPTURE(PID.first);
+        const size_t record_frames = 60;
 
-        if (librealsense::val_in_range(PID.first, { std::string("D435"),std::string("D435i") }))
+        // D400 Global Shutter only models
+        if (!librealsense::val_in_range(PID.first, { std::string("0B3A"),std::string("0B07") }))
         {
             WARN("Skipping test - the Alternating Emitter feature is not supported for device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
         }
         else
         {
+            auto depth_sensor = profile.get_device().first<rs2::depth_sensor>();
+            REQUIRE(depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED));
+            REQUIRE(depth_sensor.supports(RS2_OPTION_EMITTER_ON_OFF));
+
             GIVEN("Success scenario"){
+
+                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+                // FW Limitation - the control status update is asynchronous
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+                REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+
                 WHEN("Sequence=[idle->:laser_on->: emitter_toggle_on->:streaming]") {
 
+                    REQUIRE(false==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
                     THEN("The emitter is alternating on/off") {
 
                         std::vector<int> emitter_state;
-                        emitter_state.reserve(100);
+                        emitter_state.reserve(record_frames);
 
                         REQUIRE_NOTHROW(pipe.start(cfg));
-                        while (emitter_state.size() < 100)
+                        REQUIRE(true ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+
+                        // Warmup - the very first depth frames may not include the alternating pattern
+                        frameset fs;
+                        for (int i=0; i<10; )
                         {
-                            frameset fs;
+                            REQUIRE_NOTHROW(fs = pipe.wait_for_frames());
+                            if (auto f = fs.get_depth_frame())
+                                i++;
+                        }
+
+                        bool even=true;
+                        while (emitter_state.size() < record_frames)
+                        {
                             size_t last_fn = 0;
                             REQUIRE_NOTHROW(fs = pipe.wait_for_frames());
 
                             if (auto f = fs.get_depth_frame())
                             {
-                                if ((f.get_frame_number() != last_fn) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
+                                    even = !even;
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
-                                    last_fn = f.get_frame_number();
-                                    emitter_state.push_back(val);           // TODO - check whether the flicker is assigned from frame 0
+                                    emitter_state.push_back(val);
+                                }
+                            }
+                        }
+
+                        // Reject Laser off command while subpreset is active
+                        REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED)));
+                        REQUIRE_THROWS(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+
+                        // Allow Laser off command when subpreset is removed
+                        REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+                        // FW Limitation - the control status update is asynchronous
+                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                        REQUIRE(false==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+
+                        // Re-enable alternating emitter to test stream stop scenario
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
+
+                        REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED)));
+                        REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+
+                        REQUIRE_NOTHROW(pipe.stop());
+                        // FW Limitation - the control status update is asynchronous
+                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                        REQUIRE(false ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+                        std::stringstream emitter_results;
+                        std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
+                        CAPTURE(emitter_results.str().c_str());
+
+                        // Verify that the laser state is constantly alternating
+                        REQUIRE(std::adjacent_find(emitter_state.begin(), emitter_state.end()) == emitter_state.end());
+                    }
+                }
+
+                WHEN("Sequence=[idle->:streaming-:laser_on->: emitter_toggle_on]") {
+
+                    THEN("The emitter is alternating on/off") {
+
+                        std::vector<int> emitter_state;
+                        emitter_state.reserve(record_frames);
+
+                        REQUIRE_NOTHROW(pipe.start(cfg));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
+                        REQUIRE(true ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
+
+                        // Warmup - the very first depth frames may not include the alternating pattern
+                        frameset fs;
+                        for (int i=0; i<10; )
+                        {
+                            REQUIRE_NOTHROW(fs = pipe.wait_for_frames());
+                            if (auto f = fs.get_depth_frame())
+                                i++;
+                        }
+
+                        bool even=true;
+                        while (emitter_state.size() < record_frames)
+                        {
+                            size_t last_fn = 0;
+                            REQUIRE_NOTHROW(fs = pipe.wait_for_frames());
+
+                            if (auto f = fs.get_depth_frame())
+                            {
+                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                {
+                                    even = !even;
+                                    auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
+                                    emitter_state.push_back(val);
                                 }
                             }
                         }
                         REQUIRE_NOTHROW(pipe.stop());
-
+                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                        REQUIRE(false ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
                         std::stringstream emitter_results;
                         std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
                         CAPTURE(emitter_results.str().c_str());
+
                         // Verify that the laser state is constantly alternating
-                        REQUIRE(emitter_state.end() == std::adjacent_find(emitter_state.begin(), emitter_state.end()));
+                        REQUIRE(std::adjacent_find(emitter_state.begin(), emitter_state.end()) == emitter_state.end());
+                    }
+                }
+
+            }
+
+            GIVEN("Negative scenario"){
+
+                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+                // FW Limitation - the control status update is asynchronous
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+
+                CAPTURE(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                CAPTURE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+                REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+
+                WHEN("Sequence=[idle->:laser_off->: emitter_toggle_on]") {
+                    THEN ("Cannot set alternating emitter when laser is set off") {
+                        REQUIRE_THROWS(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
+                    }
+                }
+
+                WHEN("Sequence=[idle->:laser_on->:emitter_toggle_on->:laser_off]") {
+                    THEN ("Cannot turn_off laser while the alternating emitter option is on") {
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
+                        REQUIRE_THROWS(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
                     }
                 }
             }
