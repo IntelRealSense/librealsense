@@ -15,15 +15,17 @@ namespace librealsense
 {
     yuy2rgb::yuy2rgb()
     {
-        
+        _stream_filter.stream = RS2_STREAM_ANY;
+        _stream_filter.format = RS2_FORMAT_YUYV;
     }
 
     rs2::frame yuy2rgb::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        if (f.get_profile().get() != _source_stream_profile.get())
+        auto p = f.get_profile();
+        if (p.get() != _source_stream_profile.get())
         {
-            _source_stream_profile = f.get_profile();
-            _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8);
+            _source_stream_profile = p;
+            _target_stream_profile = p.clone(p.stream_type(), p.stream_index(), RS2_FORMAT_RGB8);
         }
         
         rs2::frame ret;
