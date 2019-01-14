@@ -2665,7 +2665,7 @@ namespace rs2
             ImGui::Text("%s:", motion.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(motion.toolTip.c_str());
+                ImGui::SetTooltip("%s",motion.toolTip.c_str());
             }
             ImGui::PopStyleColor(1);
 
@@ -2743,7 +2743,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(pose.toolTip.c_str());
+                ImGui::SetTooltip("%s",pose.toolTip.c_str());
             }
 
             switch (pose_frame.tracker_confidence) //color the line according to confidence
