@@ -563,7 +563,7 @@ PYBIND11_MODULE(NAME, m) {
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::threshold, rs2::filter> threshold(m, "threshold");
-    threshold.def(py::init<>())
+    threshold.def(py::init<>());
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
