@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
-#include "rates_printer.h"
+#include "rates-printer.h"
 
 namespace librealsense
 {

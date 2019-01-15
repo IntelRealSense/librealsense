@@ -3,7 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "image_avx.h"
+#include "image-avx.h"
 
 //#include "../include/librealsense2/rsutil.h" // For projection/deprojection logic
 
