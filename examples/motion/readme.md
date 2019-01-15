@@ -37,8 +37,9 @@ The first iteration needs separate handling and therfore `first` is defined.
 // theta is the angle of camera rotation in x, y and z components
 float3 theta;
 std::mutex theta_mtx;
-/* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight to gyro, but too high
-values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to disturbances */
+/* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight
+to gyro, but too high values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to
+disturbances */
 float alpha = 0.98;
 bool first = true;
 // Keeps the arrival time of previous gyro frame
@@ -97,13 +98,15 @@ void process_accel(rs2_vector accel_data)
 
 If it is the first time we handle accelerometer data, we intiailize `theta` with the angles computed above. `theta` in Y direction is set to `PI`, facing the user.
 ```cpp
-    // If it is the first iteration, set initial pose of camera according to accelerometer data (note the different handling for Y axis)
+    // If it is the first iteration, set initial pose of camera according to accelerometer data
+    // (note the different handling for Y axis)
     std::lock_guard<std::mutex> lock(theta_mtx);
     if (first)
     {
         first = false;
         theta = accel_angle;
-        // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion for the initial pose
+        // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion for
+        // the initial pose
         theta.y = PI;
     }
 ```
@@ -115,9 +118,10 @@ Otherwise, we use an approximate version of Complementary Filter to balance gyro
         {
             /* 
             Apply Complementary Filter:
-                - "high-pass filter" = theta * alpha:  allows short-duration signals to pass through while filtering out signals
-                  that are steady over time, is used to cancel out drift.
-                - "low-pass filter" = accel * (1- alpha): lets through long term changes, filtering out short term fluctuations 
+                - "high-pass filter" = theta * alpha:  allows short-duration signals to pass through while filtering
+                  out signals that are steady over time, is used to cancel out drift.
+                - "low-pass filter" = accel * (1- alpha): lets through long term changes, filtering out short term
+                  fluctuations 
             */
             theta.x = theta.x * alpha + accel_angle.x * (1 - alpha);
             theta.z = theta.z * alpha + accel_angle.z * (1 - alpha);
@@ -155,7 +159,8 @@ auto profile = pipe.start(cfg, [&](rs2::frame frame)
     // Cast the frame that arrived to motion frame
     auto motion = frame.as<rs2::motion_frame>();
     // If casting succeeded and the arrived frame is from gyro stream
-    if (motion && motion.get_profile().stream_type() == RS2_STREAM_GYRO && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
+    if (motion && motion.get_profile().stream_type() == RS2_STREAM_GYRO && 
+    	motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
     {
         // Get the timestamp of the current frame
         double ts = motion.get_timestamp();
@@ -165,7 +170,8 @@ auto profile = pipe.start(cfg, [&](rs2::frame frame)
         algo.process_gyro(gyro_data, ts);
     }
     // If casting succeeded and the arrived frame is from accelerometer stream
-    if (motion && motion.get_profile().stream_type() == RS2_STREAM_ACCEL && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
+    if (motion && motion.get_profile().stream_type() == RS2_STREAM_ACCEL && 
+    	motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
     {
         // Get accelerometer measures
         rs2_vector accel_data = motion.get_motion_data();

@@ -46,6 +46,13 @@ struct float3 {
         y = other.y;
         z = other.z;
     }
+
+    void add(float t1, float t2, float t3)
+    {
+        x += t1;
+        y += t2;
+        z += t3;
+    }
 };
 struct float2 { float x, y; };
 

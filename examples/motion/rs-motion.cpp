@@ -121,14 +121,18 @@ public:
     // Function to calculate the change in angle of motion based on data from gyro
     void process_gyro(rs2_vector gyro_data, double ts)
     {
+        
         if (first) // On the first iteration, use only data from accelerometer to set the camera's initial position
+        {
+            last_ts_gyro = ts;
             return;
+        }
         // Holds the change in angle, as calculated from gyro
         float3 gyro_angle;
 
         // Multiply the gyro measures by constants to fit them to angles in reality
         gyro_angle.x = gyro_data.x * 0.5; // Pitch
-        gyro_angle.y = gyro_data.y * 0.3; // Yaw
+        gyro_angle.y = gyro_data.y; // Yaw
         gyro_angle.z = gyro_data.z * 0.5; // Roll
 
         // Compute the difference between arrival times of previous and current gyro frames
@@ -140,15 +144,14 @@ public:
 
         // Apply the calculated change of angle to the current angle (theta)
         std::lock_guard<std::mutex> lock(theta_mtx);
-        theta.x -= gyro_angle.z;
-        theta.y -= gyro_angle.y;
-        theta.z += gyro_angle.x;
+        theta.add(-gyro_angle.z, -gyro_angle.y, gyro_angle.x);
     }
 
     void process_accel(rs2_vector accel_data)
     {
         // Holds the angle as calculated from accelerometer data
         float3 accel_angle;
+
         // Calculate rotation angle from accelerometer data
         accel_angle.z = atan2(accel_data.y, accel_data.z);
         accel_angle.x = atan2(accel_data.x, sqrt(accel_data.y * accel_data.y + accel_data.z * accel_data.z));
