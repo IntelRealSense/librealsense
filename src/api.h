@@ -433,23 +433,23 @@ return __p.invoke(func);\
         })()
 }
 
-inline int major(int version)
+inline int lrs_major(int version)
 {
     return version / 10000;
 }
-inline int minor(int version)
+inline int lrs_minor(int version)
 {
     return (version % 10000) / 100;
 }
-inline int patch(int version)
+inline int lrs_patch(int version)
 {
     return (version % 100);
 }
 
 inline std::string api_version_to_string(int version)
 {
-    if (major(version) == 0) return librealsense::to_string() << version;
-    return librealsense::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+    if (lrs_major(version) == 0) return librealsense::to_string() << version;
+    return librealsense::to_string() << lrs_major(version) << "." << lrs_minor(version) << "." << lrs_patch(version);
 }
 
 inline void report_version_mismatch(int runtime, int compiletime)
@@ -472,8 +472,8 @@ inline void verify_version_compatibility(int api_version)
         if (api_version != runtime_api_version)
             report_version_mismatch(runtime_api_version, api_version);
     }
-    else if ((major(runtime_api_version) == 1 && minor(runtime_api_version) <= 9)
-        || (major(api_version) == 1 && minor(api_version) <= 9))
+    else if ((lrs_major(runtime_api_version) == 1 && lrs_minor(runtime_api_version) <= 9)
+        || (lrs_major(api_version) == 1 && lrs_minor(api_version) <= 9))
     {
         // when dealing with version < 1.10.0, API breaking changes are still possible without minor version change, require exact match
         if (api_version != runtime_api_version)
@@ -482,8 +482,8 @@ inline void verify_version_compatibility(int api_version)
     else
     {
         // starting with 1.10.0, versions with same patch are compatible
-        if ((major(api_version) != major(runtime_api_version))
-            || (minor(api_version) != minor(runtime_api_version)))
+        if ((lrs_major(api_version) != lrs_major(runtime_api_version))
+            || (lrs_minor(api_version) != lrs_minor(runtime_api_version)))
             report_version_mismatch(runtime_api_version, api_version);
     }
 }
