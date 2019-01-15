@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "image.h"
-#include "image_avx.h"
+#include "image-avx.h"
 #include "types.h"
 
 #ifdef RS2_USE_CUDA
