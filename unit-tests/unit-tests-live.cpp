@@ -4003,11 +4003,36 @@ TEST_CASE("Alternating Emitter", "[live][options]")
             GIVEN("Success scenario"){
 
                 REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
-                // FW Limitation - the control status update is asynchronous
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
                 REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
                 REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+
+                WHEN("Sequence - idle - flickering on/off")
+                {
+                    THEN("Stress test succeed")
+                    {
+                        for (int i=0 ;i<30; i++)
+                        {
+                            //std::cout << "iteration " << i << " off";
+                            // Revert to original state
+                            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+                            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+                            REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+                            REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                            //std::cout << " - on\n";
+                            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,1));
+                            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,1));
+                            REQUIRE(1 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                            REQUIRE(1 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+                        }
+
+                        // Revert
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+                        REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+                        REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+                        REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
+                    }
+                }
 
                 WHEN("Sequence=[idle->:laser_on->: emitter_toggle_on->:streaming]") {
 
@@ -4150,6 +4175,12 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                     }
                 }
             }
+
+            // Revert to original state
+            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
+            REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
+            REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
+            REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
         }
     }
 }

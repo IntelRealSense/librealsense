@@ -292,6 +292,10 @@ namespace librealsense
             val |= d400_caps::CAP_IMU_SENSOR;
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
+        if (0x1 == gvd_buf[depth_sensor_type])
+            val |= d400_caps::CAP_ROLLING_SHUTTER;  // Standard depth
+        if (0x2 == gvd_buf[depth_sensor_type])
+            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // Wide depth
 
         return val;
     }
@@ -464,7 +468,9 @@ namespace librealsense
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
 
-        if (_fw_version >= firmware_version("5.11.0.44"))
+        // Alternating laser pattern is applicable for global shutter/active SKUs
+        auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+        if ((_fw_version >= firmware_version("5.11.0.44")) && ((_device_capabilities & mask) == mask))
         {
             depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &depth_ep));
         }

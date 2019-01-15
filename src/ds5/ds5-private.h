@@ -200,6 +200,8 @@ namespace librealsense
             CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
             CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
             CAP_IMU_SENSOR              = (1u << 3),
+            CAP_GLOBAL_SHUTTER          = (1u << 4),
+            CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_MAX
         };
 
@@ -208,7 +210,9 @@ namespace librealsense
             { d400_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
             { d400_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
             { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
-            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        }
+            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
+            { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
+            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   }
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -229,7 +233,8 @@ namespace librealsense
         inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
         {
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
-                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR})
+                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
+                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER })
             {
                 if (i==(i&cap))
                     stream << d400_capabilities_names.at(i) << " ";
@@ -523,6 +528,7 @@ namespace librealsense
             module_serial_offset            = 48,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
+            depth_sensor_type               = 166,
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
