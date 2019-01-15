@@ -15,7 +15,7 @@
 #include <iostream>
 
 #ifdef RS2_USE_CUDA
-#include "../cuda/cuda-pointcloud.cuh"
+#include "proc/cuda/cuda-pointcloud.h"
 #endif
 #ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
@@ -40,11 +40,7 @@ namespace librealsense
     const float3 * pointcloud::depth_to_points(rs2::points output, uint8_t* image, 
         const rs2_intrinsics &depth_intrinsics, const uint16_t * depth_image, float depth_scale)
     {
-#ifdef RS2_USE_CUDA
-        rscuda::deproject_depth_cuda(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, depth_scale);
-#else
         deproject_depth(reinterpret_cast<float *>(image), depth_intrinsics, depth_image, [depth_scale](uint16_t z) { return depth_scale * z; });
-#endif
         return reinterpret_cast<float3 *>(image);
     }
 
@@ -314,10 +310,14 @@ namespace librealsense
 
     std::shared_ptr<pointcloud> pointcloud::create()
     {
+        #ifdef RS2_USE_CUDA
+            return std::make_shared<librealsense::pointcloud_cuda>();
+        #else
         #ifdef __SSSE3__
             return std::make_shared<librealsense::pointcloud_sse>();
         #else
             return std::make_shared<librealsense::pointcloud>();
+        #endif
         #endif
     }
 }
