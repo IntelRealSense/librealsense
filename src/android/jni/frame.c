@@ -58,3 +58,9 @@ Java_com_intel_realsense_librealsense_VideoFrame_nGetBitsPerPixel(JNIEnv *env, j
     rs2_error *e = NULL;
     return rs2_get_frame_bits_per_pixel(handle, &e);
 }
+
+JNIEXPORT jint JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetNumber(JNIEnv *env, jclass type, jlong handle) {
+    rs2_error *e = NULL;
+    return rs2_get_frame_number(handle, &e);
+}

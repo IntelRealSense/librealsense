@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.StreamFormat;
@@ -69,12 +70,11 @@ public class MainActivity extends AppCompatActivity {
             try {
                 try(FrameSet frameset = mPipeline.waitForFrames())
                 {
-                    try(VideoFrame f = frameset.first(StreamType.COLOR).as(VideoFrame.class)) {
-                        mColorFrameViewer.show(MainActivity.this, f);
+                    try(Frame f = frameset.first(StreamType.COLOR)) {
+                        mColorFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
                     }
-
-                    try(VideoFrame f = frameset.first(StreamType.DEPTH).as(VideoFrame.class)) {
-                        mDepthFrameViewer.show(MainActivity.this, f);
+                    try(Frame f = frameset.first(StreamType.DEPTH)) {
+                        mDepthFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
                     }
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());

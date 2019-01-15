@@ -27,7 +27,11 @@ public class FrameViewer {
             default: return null;
         }
     }
+
     public void show(Activity activity, VideoFrame f){
+        if(f == null)
+            return;
+
         if(mBitmap == null){
             mBitmap = Bitmap.createBitmap(f.getWidth(), f.getHeight(), getBitmapFormat(f));
             mBuffer = ByteBuffer.allocateDirect(mBitmap.getByteCount());

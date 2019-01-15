@@ -24,6 +24,10 @@ public class Frame extends LrsClass {
         return (T) this;
     }
 
+    public int getNumber(){
+        return nGetNumber(mHandle);
+    }
+
     @Override
     public void close() throws Exception {
         nRelease(mHandle);
@@ -34,4 +38,5 @@ public class Frame extends LrsClass {
     private static native void nRelease(long handle);
     protected static native long nGetStreamProfile(long handle);
     private static native void nGetData(long handle, byte[] data);
+    private static native int nGetNumber(long handle);
 }

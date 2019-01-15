@@ -33,7 +33,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/jni/stream_profile.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/frame.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/frameset.c"
-        "${CMAKE_CURRENT_LIST_DIR}/jni/pipe.cpp"
 
 )
 
