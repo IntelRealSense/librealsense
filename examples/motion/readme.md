@@ -25,21 +25,17 @@ We define 3 auxilary functions: `draw_axes` and `draw_floor`, which draw axes an
 Next, we define an auxilary class for rendering, `camera_renderer`. This class holds 3 vectors: `positions`, `normals` and `indexes`, and they define the 3D model of the camera. `render_camera` is the function that actually draws the camera, rotated by the computed angle `theta`.
 
 Calculation of the rotation angle, based on gyroscope and accelerometer data, is handled by the class `rotation_estimator`.
-
-The class holds `theta` itself, which is updated on each IMU frame. We will process IMU frame asynchronously and therefore a mutex `theta_mtx` is needed.
-
+The class holds `theta` itself, which is updated on each IMU frame. We will process IMU frames asynchronously and therefore a mutex `theta_mtx` is needed.
 `rotation_estimator` also holds the parameter `alpha`, which is used to aggregate both gyroscope and accelerometer data in the calculation of theta.
-
 The first iteration needs separate handling and therfore `first` is defined.
-
 `last_ts_gyro` is needed to calculate the time elapsed between arrival of subsequent frames from gyroscope stream.
 ```cpp
 // theta is the angle of camera rotation in x, y and z components
 float3 theta;
 std::mutex theta_mtx;
-/* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more weight
-to gyro, but too high values cause drift; lower alpha gives more weight to accelerometer, which is more sensitive to
-disturbances */
+/* alpha indicates the part that gyro and accelerometer take in computation of theta; higher alpha gives more
+weight to gyro, but too high values cause drift; lower alpha gives more weight to accelerometer, which is more
+sensitive to disturbances */
 float alpha = 0.98;
 bool first = true;
 // Keeps the arrival time of previous gyro frame
@@ -47,9 +43,9 @@ double last_ts_gyro = 0;
 ```
 
 
-The function `process_gyro` computes the change in rotation angle, based on gyroscope measures. It accepts `gyro_data`, an `rs2_vector` containing measures retrieved from gyroscope, and `ts`, the timestamp of the previous frame from gyroscope.
+The function `process_gyro` computes the change in rotation angle, based on gyroscope measures. It accepts `gyro_data`, an `rs2_vector` containing measures retrieved from gyroscope, and `ts`, the timestamp of the current frame from gyroscope stream.
 
-In order to compute the change in direction of motion, we multiply gyroscope measures by the length of the time period they correspond to. Then, we add or substract the retrieved difference from the current theta. The sign is determined by the defined axis positive direction.
+In order to compute the change in the direction of motion, we multiply gyroscope measures by the length of the time period they correspond to (which equals the time passed since we processed the previous gyro frame). Then, we add or subtract from the current theta the retrieved angle difference. The sign is determined by the defined positive direction of the axis.
 
 Note that gyroscope data is ignored until accelerometer data arrives, since the initial position is retrieved from the accelerometer (and afterwards, gyroscope allows us to calculate the direction of motion ).
 
@@ -57,13 +53,16 @@ Note that gyroscope data is ignored until accelerometer data arrives, since the 
 void process_gyro(rs2_vector gyro_data, double ts)
 {
     if (first) // On the first iteration, use only data from accelerometer to set the camera's initial position
+    {
+        last_ts_gyro = ts;
         return;
+    }
     // Holds the change in angle, as calculated from gyro
     float3 gyro_angle;
 
     // Multiply the gyro measures by constants to fit them to angles in reality
     gyro_angle.x = gyro_data.x * 0.5; // Pitch
-    gyro_angle.y = gyro_data.y * 0.3; // Yaw
+    gyro_angle.y = gyro_data.y; // Yaw
     gyro_angle.z = gyro_data.z * 0.5; // Roll
 
     // Compute the difference between arrival times of previous and current gyro frames
@@ -75,14 +74,12 @@ void process_gyro(rs2_vector gyro_data, double ts)
 
     // Apply the calculated change of angle to the current angle (theta)
     std::lock_guard<std::mutex> lock(theta_mtx);
-    theta.x -= gyro_angle.z;
-    theta.y -= gyro_angle.y;
-    theta.z += gyro_angle.x;
+	theta.add(-gyro_angle.z, -gyro_angle.y, gyro_angle.x);
 }
 ```
 
 
-The function `process_accel` computes the rotation angle from accelerometer data and updates the current theta. `accel_data` is and `rs2_vector` that hold the measures retreived from the accelerometer stream.
+The function `process_accel` computes the rotation angle from accelerometer data and updates the current theta. `accel_data` is an `rs2_vector` that holds the measures retrieved from the accelerometer stream.
 
 The angles in the z and x axis are computed from acclerometer data, using trigonometric calculations. Note that motion around Y axis cannot be estimated using accelerometer.
 ```cpp
@@ -105,14 +102,14 @@ If it is the first time we handle accelerometer data, we intiailize `theta` with
     {
         first = false;
         theta = accel_angle;
-        // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion for
-        // the initial pose
+        // Since we can't infer the angle around Y axis using accelerometer data, we'll use PI as a convetion
+        // for the initial pose
         theta.y = PI;
     }
 ```
 
 
-Otherwise, we use an approximate version of Complementary Filter to balance gyroscope and accelerometer results. Gyroscope gives generally accurate motion data, but it tends to drift, not returning to zero when the system went back to its original position. Accelerometer, on the other hand, doesn't have this problem, but it's signals are not as smooth and are easily affected by noises and disturbances. We use `alpha` to aggregate the data. New `theta` is a combination of the previous angle adjusted by difference computed from gyroscope measures, with the angle calculated from accelerometer measures. Note that this calculation does not apply to the Y component of `theta`, since it is measured by gyroscope only.
+Otherwise, we use an approximate version of Complementary Filter to balance gyroscope and accelerometer results. Gyroscope gives generally accurate motion data, but it tends to drift, not returning to zero when the system went back to its original position. Accelerometer, on the other hand, doesn't have this problem, but its signals are not as smooth and are easily affected by noises and disturbances. We use `alpha` to aggregate the data. New `theta` is a combination of the previous angle adjusted by difference computed from gyroscope measures, and the angle calculated from accelerometer measures. Note that this calculation does not apply to the Y component of `theta`, since it is measured by gyroscope only.
 ```cpp
         else
         {
@@ -131,7 +128,7 @@ Otherwise, we use an approximate version of Complementary Filter to balance gyro
 
 
 The main function handels frames arriving from IMU streams.
-First, declare pipeline and configure it with `RS2_STREAM_ACCEL` and `RS2_STREAM_GYRO`.
+First, we declare the pipeline and configure it with `RS2_STREAM_ACCEL` and `RS2_STREAM_GYRO`.
 ```cpp
 // Declare RealSense pipeline, encapsulating the actual device and sensors
 rs2::pipeline pipe;
@@ -152,7 +149,7 @@ rotation_estimator algo;
 ```
 
 
-To process frames from gyroscope and accelerometer streams asynchronously, we'll use pipeline's callback. When a frame arrives, we cast it to `rs2::motion_frame`. If it's a gyro frame, we find its timestamp using `motion.get_timestamp()`. Then, we can get its IMU data and call the matching function to calculate rotation angle.
+To process frames from gyroscope and accelerometer streams asynchronously, we'll use pipeline's callback. When a frame arrives, we cast it to `rs2::motion_frame`. If it's a gyro frame, we also find its timestamp using `motion.get_timestamp()`. Then, we can get the IMU data and call the corresponding function to calculate rotation angle.
 ```cpp
 auto profile = pipe.start(cfg, [&](rs2::frame frame)
 {
@@ -182,7 +179,7 @@ auto profile = pipe.start(cfg, [&](rs2::frame frame)
 ```
 
 
-The main loop renders the camera, retrieving the current `theta` in each iteration.
+The main loop renders the camera model, retrieving the current `theta` from the `algo` object in each iteration.
 ```cpp
 while (app)
 {
