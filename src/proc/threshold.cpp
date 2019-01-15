@@ -13,9 +13,12 @@
 
 namespace librealsense
 {
-    threshold::threshold() : _min(0.15f), _max(4.f)
+    threshold::threshold() : _min(0.1f), _max(4.f)
     {
-        auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.15f, &_min, "Min range in meters");
+        _stream_filter.format = RS2_FORMAT_Z16;
+        _stream_filter.stream = RS2_STREAM_DEPTH;
+        
+        auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.1f, &_min, "Min range in meters");
         register_option(RS2_OPTION_MIN_DISTANCE, min_opt);
 
         auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 4.f, &_max, "Max range in meters");

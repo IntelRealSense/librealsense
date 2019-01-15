@@ -116,7 +116,7 @@ int main(int argc, char * argv[]) try
             The implemented flow of the filters pipeline is in the following order:
             1. apply decimation filter
             2. apply threshold filter
-            3. transform the scence into disparity domain
+            3. transform the scene into disparity domain
             4. apply spatial filter
             5. apply temporal filter
             6. revert the results back (if step Disparity filter was applied
