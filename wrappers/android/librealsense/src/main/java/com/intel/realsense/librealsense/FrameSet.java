@@ -4,25 +4,19 @@ public class FrameSet extends LrsClass {
     private int mSize = 0;
     public FrameSet(long handle) {
         mHandle = handle;
-        int error = 0;
-//        nAddRef(mHandle, error);
-        mSize = nFrameCount(mHandle, error);
+        mSize = nFrameCount(mHandle);
     }
 
-    public Frame first(StreamType type){
+    public Frame first(StreamType type) throws Exception {
         return first(type, StreamFormat.ANY);
     }
 
-    public Frame first(StreamType type, StreamFormat format){
-        int error = 0;
+    public Frame first(StreamType type, StreamFormat format) throws Exception {
         for(int i = 0; i < mSize; i++) {
-            Frame f = new Frame(nExtractFrame(mHandle, i, error));
-            if(f.getProfile().getType() == type && (f.getProfile().getFormat() == format || format == StreamFormat.ANY))
-                return f;
-            try {
-                f.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            Frame f = Frame.create(nExtractFrame(mHandle, i));
+            try(StreamProfile p = f.getProfile()){
+                if(p.getType() == type && (p.getFormat() == format || format == StreamFormat.ANY))
+                    return f;
             }
         }
         return null;
@@ -35,8 +29,8 @@ public class FrameSet extends LrsClass {
         nRelease(mHandle);
     }
 
-    private native void nAddRef(long handle, int error);
+    private native void nAddRef(long handle);
     private native void nRelease(long handle);
-    private native long nExtractFrame(long handle, int index, int error);
-    private native int nFrameCount(long handle, int error);
+    private native long nExtractFrame(long handle, int index);
+    private native int nFrameCount(long handle);
 }

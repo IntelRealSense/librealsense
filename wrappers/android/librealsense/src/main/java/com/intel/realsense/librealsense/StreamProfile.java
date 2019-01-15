@@ -6,16 +6,15 @@ public class StreamProfile extends LrsClass {
 
     private ProfileParams mPp;
 
-    public class ProfileParams {
+    private class ProfileParams {
         public int type;
         public int format;
         public int index;
         public int uniqueId;
         public int frameRate;
-        public int error;
     }
 
-    StreamProfile(long handle){
+    protected StreamProfile(long handle){
         mHandle = handle;
         mPp = new ProfileParams();
         nGetProfile(mHandle, mPp);
@@ -43,14 +42,15 @@ public class StreamProfile extends LrsClass {
         return mPp.frameRate;
     }
 
-    public VideoStreamProfile asVideoProfile() {
-        return new VideoStreamProfile(mHandle);
+    public <T extends StreamProfile> T as(Class<T> type) {
+        return (T) this;
     }
 
     @Override
     public void close() throws Exception {
-
+//        nDelete(mHandle);
     }
 
-    protected native void nGetProfile(long handle, ProfileParams params);
+    private static native void nGetProfile(long handle, ProfileParams params);
+    private static native void nDelete(long handle);
 }

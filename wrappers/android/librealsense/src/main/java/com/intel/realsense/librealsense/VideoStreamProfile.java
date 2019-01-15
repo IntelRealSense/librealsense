@@ -1,23 +1,26 @@
 package com.intel.realsense.librealsense;
 
 public class VideoStreamProfile extends StreamProfile {
+    ResolutionParams mResolutionParams;
 
-    private int mWidth;
-    private int mHeight;
+    private class ResolutionParams {
+        public int width;
+        public int height;
+    }
 
     VideoStreamProfile(long handle) {
         super(handle);
-        int error = 0;
-        nGetResolution(mHandle, mWidth, mHeight, error);
+        mResolutionParams = new ResolutionParams();
+        nGetResolution(mHandle, mResolutionParams);
     }
 
     public int getWidth() {
-        return mWidth;
+        return mResolutionParams.width;
     }
 
     public int getHeight() {
-        return mHeight;
+        return mResolutionParams.height;
     }
 
-    private native void nGetResolution(long handle, int width, int height, int error);
+    private static native void nGetResolution(long handle, ResolutionParams params);
 }

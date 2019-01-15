@@ -1,38 +1,33 @@
 package com.intel.realsense.capture;
 
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
 import com.intel.realsense.librealsense.Config;
-import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.StreamFormat;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.UsbHostManager;
-
-import java.nio.ByteBuffer;
+import com.intel.realsense.librealsense.VideoFrame;
 
 public class MainActivity extends AppCompatActivity {
-    private android.content.Context mContext = this;
-    private ImageView mColorImageView;
-    private ImageView mDepthImageView;
-    private Button mStartStopButton;
+    private static final String TAG = "lrs capture example";
 
-    private Integer mWidth = 640;
-    private Integer mHeight = 480;
-    private final Bitmap mColorBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-    private final Bitmap mDepthBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.RGB_565);
-    private ByteBuffer mColorBuff = ByteBuffer.allocateDirect(mWidth * mHeight * 4);
-    private ByteBuffer mDepthBuff = ByteBuffer.allocateDirect(mWidth * mHeight * 2);
+    private android.content.Context mContext = this;
+    private Button mStartStopButton;
 
     private boolean mIsStreaming = false;
     private final Handler mHandler = new Handler();
+
+    private FrameViewer mColorFrameViewer;
+    private FrameViewer mDepthFrameViewer;
+
     private Config mConfig = new Config();
     private Pipeline mPipeline;
 
@@ -44,8 +39,9 @@ public class MainActivity extends AppCompatActivity {
         UsbHostManager.init(mContext);
         UsbHostManager.addListener(mListener);
 
-        mColorImageView = findViewById(R.id.colorImageView);
-        mDepthImageView = findViewById(R.id.depthImageView);
+        mColorFrameViewer = new FrameViewer((ImageView) findViewById(R.id.colorImageView));
+        mDepthFrameViewer = new FrameViewer((ImageView) findViewById(R.id.depthImageView));
+
         mStartStopButton = findViewById(R.id.btnStart);
 
         mStartStopButton.setOnClickListener(new View.OnClickListener() {
@@ -63,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mConfig.enable_stream(StreamType.DEPTH, mWidth, mHeight);
-        mConfig.enable_stream(StreamType.COLOR, mWidth, mHeight, StreamFormat.RGBA8);
+        mConfig.enable_stream(StreamType.DEPTH, 640, 480);
+        mConfig.enable_stream(StreamType.COLOR, 640, 480, StreamFormat.RGBA8);
     }
 
     Runnable updateBitmap = new Runnable() {
@@ -73,27 +69,15 @@ public class MainActivity extends AppCompatActivity {
             try {
                 try(FrameSet frameset = mPipeline.waitForFrames())
                 {
-                    try(Frame cf = frameset.first(StreamType.COLOR)) {
-                        cf.getData(mColorBuff.array());
+                    try(VideoFrame f = frameset.first(StreamType.COLOR).as(VideoFrame.class)) {
+                        mColorFrameViewer.show(MainActivity.this, f);
                     }
-                    mColorBuff.rewind();
-                    mColorBitmap.copyPixelsFromBuffer(mColorBuff);
 
-                    try(Frame df = frameset.first(StreamType.DEPTH)) {
-                        df.getData(mDepthBuff.array());
+                    try(VideoFrame f = frameset.first(StreamType.DEPTH).as(VideoFrame.class)) {
+                        mDepthFrameViewer.show(MainActivity.this, f);
                     }
-                    mDepthBuff.rewind();
-                    mDepthBitmap.copyPixelsFromBuffer(mDepthBuff);
-
-                    runOnUiThread(new Runnable(){
-                        public void run() {
-                            mColorImageView.setImageBitmap(mColorBitmap);
-                            mDepthImageView.setImageBitmap(mDepthBitmap);
-                        }
-                    });
-
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e(TAG, e.getMessage());
                 }
             } finally {
                 mHandler.post(updateBitmap);
