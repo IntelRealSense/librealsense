@@ -26,6 +26,15 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/android_uvc/UsbHost.h"
         "${CMAKE_CURRENT_LIST_DIR}/android_uvc/UsbInterfaceAssociation.h"
         "${CMAKE_CURRENT_LIST_DIR}/android_uvc/UsbPipe.h"
+        
+        "${CMAKE_CURRENT_LIST_DIR}/jni/context.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/pipeline.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/config.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/stream_profile.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/frame.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/frameset.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/pipe.cpp"
+
 )
 
 message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")

@@ -1861,13 +1861,19 @@ UsbManager &usbHost = UsbManager::getInstance();
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_android_RealsenseUsbHostManager_nativeAddUsbDevice(JNIEnv *env,
-                                                                            jobject instance,
-                                                                            jstring deviceName_,
-                                                                            jint fileDescriptor) {
+Java_com_intel_realsense_librealsense_UsbHostManager_nAddUsbDevice(JNIEnv *env, jobject instance,
+                                                                   jstring deviceName_,
+                                                                   jint fileDescriptor) {
     const char *deviceName = env->GetStringUTFChars(deviceName_, 0);
     usbHost.AddDevice(deviceName, fileDescriptor);
     env->ReleaseStringUTFChars(deviceName_, deviceName);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_UsbHostManager_nRemoveUsbDevice(JNIEnv *env, jobject instance,
+                                                                      jint fileDescriptor) {
+    usbHost.RemoveDevice(fileDescriptor);
 }
 
 #endif

@@ -1,0 +1,5 @@
+include ':librealsense'
+include ':capture'
+
+project(':capture').projectDir = new File('librealsense')
+project(':capture').projectDir = new File('examples/capture')

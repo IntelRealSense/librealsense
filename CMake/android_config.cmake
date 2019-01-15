@@ -23,7 +23,7 @@ macro(os_set_flags)
     #set(LIBUSB1_LIBRARIES ${LIBUSB1_LIBRARIES} log)
 endmacro()
 
-macro(os_target_config)      
+macro(os_target_config)
     if(BUILD_SHARED_LIBS)
         find_library(log-lib log)
         target_link_libraries(${LRS_TARGET} PRIVATE log)

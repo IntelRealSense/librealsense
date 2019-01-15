@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">RS Capture</string>
+    <string name="no_device">Connect Realsense Camera!</string>
+    <string name="stream_stop">Stop</string>
+    <string name="stream_start">Start</string>
+    <string name="permission_request">Can we record video?</string>
+    <string name="start_record">Record</string>
+
+    <string name="title_activity_deatched">DeatchedActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="title_activity_detached">DetachedActivity</string>
+    <string name="connect_tracking_device">Connect\nRealSense\nDevice</string>
+    <string name="action_reset">Reset Device</string>
+</resources>
