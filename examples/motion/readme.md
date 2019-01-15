@@ -2,7 +2,10 @@
 
 ## Overview
 This sample demonstrates how to use measures from gyroscope and accelerometer to compute the rotation angle, `theta`, of the camera.
+
 The example is based on [code](https://github.com/GruffyPuffy/imutest) by GruffyPuffy.
+
+In this example, we use complemetary filter to aggregate data from gyroscope and accelerometer. For more information, you can look at this [tutorial](http://www.pieter-jan.com/node/11) by Pieter-Jan or this [presentation](https://github.com/jcarrus/MakeMITSelfBalancingRobot/blob/master/segspecs/filter.pdf) by Shane Colton, among other sources available online.
 
 ## Expected Output
 The application should open a window with a 3D image of the camera, rotating according to it's physical motion. In addition, you should be able to interact with the camera using your mouse, rotating, zooming, and panning.
@@ -115,10 +118,10 @@ Otherwise, we use an approximate version of Complementary Filter to balance gyro
         {
             /* 
             Apply Complementary Filter:
-                - "high-pass filter" = theta * alpha:  allows short-duration signals to pass through while filtering
-                  out signals that are steady over time, is used to cancel out drift.
-                - "low-pass filter" = accel * (1- alpha): lets through long term changes, filtering out short term
-                  fluctuations 
+                - "high-pass filter" = theta * alpha:  allows short-duration signals to pass through while
+                  filtering out signals that are steady over time, is used to cancel out drift.
+                - "low-pass filter" = accel * (1- alpha): lets through long term changes, filtering out short
+                  term fluctuations 
             */
             theta.x = theta.x * alpha + accel_angle.x * (1 - alpha);
             theta.z = theta.z * alpha + accel_angle.z * (1 - alpha);
