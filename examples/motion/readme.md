@@ -136,7 +136,7 @@ Otherwise, we use an approximate version of Complementary Filter to balance gyro
 
 The main function handels frames arriving from IMU streams.
 
-First, we check that a device that supports IMU is connected by calling the function `check_imu_is_supported`. This function queries all sensors from all devices and checks if their profiles support IMU streams. If a device that supports the streams `RS2_STREAM_ACCEL` and `RS2_STREAM_ACCEL` is not found, we return an error code.
+First, we check that a device that supports IMU is connected by calling the function `check_imu_is_supported`. This function queries all sensors from all devices and checks if their profiles support IMU streams. If a device that supports the streams `RS2_STREAM_GYRO` and `RS2_STREAM_ACCEL` is not found, we return an error code.
 
 If the check passed successfully, we start the example. We declare the pipeline and configure it with `RS2_STREAM_ACCEL` and `RS2_STREAM_GYRO`.
 ```cpp
