@@ -4055,8 +4055,6 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                         // Allow Laser off command when subpreset is removed
                         REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
                         REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
-                        // FW Limitation - the control status update is asynchronous
-                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
                         REQUIRE(false==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
                         REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
 
@@ -4068,8 +4066,6 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                         REQUIRE(static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
 
                         REQUIRE_NOTHROW(pipe.stop());
-                        // FW Limitation - the control status update is asynchronous
-                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
                         REQUIRE(false ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
                         std::stringstream emitter_results;
                         std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
@@ -4118,7 +4114,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                             }
                         }
                         REQUIRE_NOTHROW(pipe.stop());
-                        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
                         REQUIRE(false ==static_cast<bool>(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF)));
                         std::stringstream emitter_results;
                         std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
@@ -4134,10 +4130,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
             GIVEN("Negative scenario"){
 
                 REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF,0));
-                // FW Limitation - the control status update is asynchronous
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED,0));
-
                 CAPTURE(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));
                 CAPTURE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF));
                 REQUIRE(0 == depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED));

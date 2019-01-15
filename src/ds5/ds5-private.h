@@ -142,6 +142,40 @@ namespace librealsense
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
         };
 
+        #define TOSTRING(arg) #arg
+        #define VAR_ARG_STR(x) TOSTRING(x)
+        #define ENUM2STR(x) case(x):return VAR_ARG_STR(x);
+
+        inline std::string fw_cmd2str(const fw_cmd state)
+        {
+          switch(state)
+          {
+            ENUM2STR(GLD);
+            ENUM2STR(GVD);
+            ENUM2STR(GETINTCAL);
+            ENUM2STR(OBW);
+            ENUM2STR(SET_ADV);
+            ENUM2STR(GET_ADV);
+            ENUM2STR(EN_ADV);
+            ENUM2STR(UAMG);
+            ENUM2STR(SETAEROI);
+            ENUM2STR(GETAEROI);
+            ENUM2STR(MMER);
+            ENUM2STR(GET_EXTRINSICS);
+            ENUM2STR(SET_CAM_SYNC);
+            ENUM2STR(GET_CAM_SYNC);
+            ENUM2STR(SETRGBAEROI);
+            ENUM2STR(GETRGBAEROI);
+            ENUM2STR(SET_PWM_ON_OFF);
+            ENUM2STR(GET_PWM_ON_OFF);
+            ENUM2STR(SETSUBPRESET);
+            ENUM2STR(GETSUBPRESET);
+            ENUM2STR(GETSUBPRESETNAME);
+            default:
+              return (to_string() << "Unrecognized FW command " << state);
+          }
+        }
+
         const int etDepthTableControl = 9; // Identifier of the depth table control
 
         enum advanced_query_mode
