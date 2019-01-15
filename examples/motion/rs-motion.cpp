@@ -121,7 +121,6 @@ public:
     // Function to calculate the change in angle of motion based on data from gyro
     void process_gyro(rs2_vector gyro_data, double ts)
     {
-        
         if (first) // On the first iteration, use only data from accelerometer to set the camera's initial position
         {
             last_ts_gyro = ts;
@@ -186,8 +185,43 @@ public:
     }
 };
 
-int main()
+
+bool check_imu_is_supported()
 {
+    bool found_gyro = false;
+    bool found_accel = false;
+    rs2::context ctx;
+    for (auto dev : ctx.query_devices())
+    {
+        // The same device should support gyro and accel
+        found_gyro = false;
+        found_accel = false;
+        for (auto sensor : dev.query_sensors())
+        {
+            for (auto profile : sensor.get_stream_profiles())
+            {
+                if (profile.stream_type() == RS2_STREAM_GYRO)
+                    found_gyro = true;
+
+                if (profile.stream_type() == RS2_STREAM_ACCEL)
+                    found_accel = true;
+            }
+        }
+        if (found_gyro && found_accel)
+            break;
+    }
+    return found_gyro && found_accel;
+}
+
+int main(int argc, char * argv[]) try
+{
+    // Before running the example, check that a device supporting IMU is connected
+    if (!check_imu_is_supported())
+    {
+        std::cerr << "Device supporting IMU (D435i) not found";
+        return EXIT_FAILURE;
+    }
+
     // Initialize window for rendering
     window app(1280, 720, "RealSense Motion Example");
     // Construct an object to manage view state
@@ -246,5 +280,15 @@ int main()
     // Stop the pipeline
     pipe.stop();
 
-    return 0;
+    return EXIT_SUCCESS;
+}
+catch (const rs2::error & e)
+{
+    std::cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const std::exception& e)
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
 }

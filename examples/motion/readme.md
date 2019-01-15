@@ -5,9 +5,13 @@ This sample demonstrates how to use measures from gyroscope and accelerometer to
 
 The example is based on [code](https://github.com/GruffyPuffy/imutest) by GruffyPuffy.
 
-In this example, we use complemetary filter to aggregate data from gyroscope and accelerometer. For more information, you can look at this [tutorial](http://www.pieter-jan.com/node/11) by Pieter-Jan or this [presentation](https://github.com/jcarrus/MakeMITSelfBalancingRobot/blob/master/segspecs/filter.pdf) by Shane Colton, among other sources available online.
+In this example, we use complemetary filter to aggregate data from gyroscope and accelerometer. For more information, you can look at this [tutorial](http://www.pieter-jan.com/node/11) by Pieter-Jan or this [presentation](https://github.com/jcarrus/MakeMITSelfBalancingRobot/blob/master/segspecs/filter.pdf) by Shane Colton, among other resources available online.
+
+> In order to run this example, a device supporting IMU (D435i) is required.
 
 ## Expected Output
+![expected output](https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/imu.gif)
+
 The application should open a window with a 3D image of the camera, rotating according to it's physical motion. In addition, you should be able to interact with the camera using your mouse, rotating, zooming, and panning.
 
 ## Code Overview
@@ -131,7 +135,10 @@ Otherwise, we use an approximate version of Complementary Filter to balance gyro
 
 
 The main function handels frames arriving from IMU streams.
-First, we declare the pipeline and configure it with `RS2_STREAM_ACCEL` and `RS2_STREAM_GYRO`.
+
+First, we check that a device that supports IMU is connected by calling the function `check_imu_is_supported`. This function queries all sensors from all devices and checks if their profiles support IMU streams. If a device that supports the streams `RS2_STREAM_ACCEL` and `RS2_STREAM_ACCEL` is not found, we return an error code.
+
+If the check passed successfully, we start the example. We declare the pipeline and configure it with `RS2_STREAM_ACCEL` and `RS2_STREAM_GYRO`.
 ```cpp
 // Declare RealSense pipeline, encapsulating the actual device and sensors
 rs2::pipeline pipe;
