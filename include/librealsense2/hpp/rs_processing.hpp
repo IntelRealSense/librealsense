@@ -435,6 +435,38 @@ namespace rs2
             return block;
         }
     };
+  
+  class threshold_filter : public filter
+    {
+    public:
+        /**
+        * Creates depth thresholding processing block
+        * By controlling min and max options on the block, one could filter out depth values
+        * that are either too large or too small, as a software post-processing step
+        */
+        threshold_filter(float min_dist = 0.15f, float max_dist = 4.f) 
+            : filter(init(), 1) 
+        { 
+            set_option(RS2_OPTION_MIN_DISTANCE, min_dist);
+            set_option(RS2_OPTION_MAX_DISTANCE, max_dist);
+        }
+
+    protected:
+        threshold_filter(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+        
+    private:
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_threshold(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+        
 
     class asynchronous_syncer : public processing_block
     {

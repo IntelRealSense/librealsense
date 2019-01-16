@@ -20,6 +20,7 @@
 #include "proc/processing-blocks-factory.h"
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
+#include "proc/threshold.h"
 #include "proc/disparity-transform.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
@@ -1823,6 +1824,12 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_processing_block { std::make_shared<yuy2rgb>() };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_threshold(rs2_error** error) BEGIN_API_CALL
+{
+    return new rs2_processing_block { std::make_shared<threshold>() };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
