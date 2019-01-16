@@ -18,6 +18,7 @@ public class FrameSet extends LrsClass {
                 if(p.getType() == type && (p.getFormat() == format || format == StreamFormat.ANY))
                     return f;
             }
+            f.close();
         }
         return null;
     }

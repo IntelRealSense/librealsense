@@ -49,13 +49,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (mIsStreaming) {
-                    mStartStopButton.setText(R.string.stream_start);
-                    stopRepeatingTask();
-                    mIsStreaming = false;
+                    stop();
                 } else {
-                    mIsStreaming = true;
-                    mStartStopButton.setText(R.string.stream_stop);
-                    startRepeatingTask();
+                    start();
                 }
             }
         });
@@ -93,9 +89,25 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onUsbDeviceDetach() {
-
+            stop();
         }
     };
+
+    synchronized void start(){
+        if(mIsStreaming)
+            return;
+        mIsStreaming = true;
+        mStartStopButton.setText(R.string.stream_stop);
+        startRepeatingTask();
+    }
+
+    synchronized void stop(){
+        if(mIsStreaming == false)
+            return;
+        mStartStopButton.setText(R.string.stream_start);
+        stopRepeatingTask();
+        mIsStreaming = false;
+    }
 
     void startRepeatingTask() {
         mPipeline.start(mConfig);
