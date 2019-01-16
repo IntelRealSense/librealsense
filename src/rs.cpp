@@ -46,15 +46,6 @@ struct rs2_stream_profile_list
     std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
-struct rs2_options
-{
-    rs2_options(librealsense::options_interface* options) : options(options) { }
-
-    librealsense::options_interface* options;
-
-    virtual ~rs2_options() = default;
-};
-
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor(rs2_device parent,
@@ -109,78 +100,23 @@ struct rs2_frame_queue
     single_consumer_frame_queue<librealsense::frame_holder> queue;
 };
 
-struct rs2_processing_block : public rs2_options
-{
-    rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
-        : rs2_options((librealsense::options_interface*)block.get()),
-        block(block) { }
-
-    std::shared_ptr<librealsense::processing_block_interface> block;
-
-    rs2_processing_block& operator=(const rs2_processing_block&) = delete;
-    rs2_processing_block(const rs2_processing_block&) = delete;
-};
-
 struct rs2_sensor_list
 {
     rs2_device dev;
 };
 
-int major(int version)
+struct rs2_error
 {
-    return version / 10000;
-}
-int minor(int version)
-{
-    return (version % 10000) / 100;
-}
-int patch(int version)
-{
-    return (version % 100);
-}
+    std::string message;
+    std::string function;
+    std::string args;
+    rs2_exception_type exception_type;
+};
 
-std::string api_version_to_string(int version)
+rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type)
 {
-    if (major(version) == 0) return librealsense::to_string() << version;
-    return librealsense::to_string() << major(version) << "." << minor(version) << "." << patch(version);
+    return new rs2_error{ what, name, args, type };
 }
-
-void report_version_mismatch(int runtime, int compiletime)
-{
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "API version mismatch: librealsense.so was compiled with API version "
-        << api_version_to_string(runtime) << " but the application was compiled with "
-        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
-}
-
-void verify_version_compatibility(int api_version)
-{
-    rs2_error* error = nullptr;
-    auto runtime_api_version = rs2_get_api_version(&error);
-    if (error)
-        throw librealsense::invalid_value_exception(rs2_get_error_message(error));
-
-    if ((runtime_api_version < 10) || (api_version < 10))
-    {
-        // when dealing with version < 1.0.0 that were still using single number for API version, require exact match
-        if (api_version != runtime_api_version)
-            report_version_mismatch(runtime_api_version, api_version);
-    }
-    else if ((major(runtime_api_version) == 1 && minor(runtime_api_version) <= 9)
-        || (major(api_version) == 1 && minor(api_version) <= 9))
-    {
-        // when dealing with version < 1.10.0, API breaking changes are still possible without minor version change, require exact match
-        if (api_version != runtime_api_version)
-            report_version_mismatch(runtime_api_version, api_version);
-    }
-    else
-    {
-        // starting with 1.10.0, versions with same patch are compatible
-        if ((major(api_version) != major(runtime_api_version))
-            || (minor(api_version) != minor(runtime_api_version)))
-            report_version_mismatch(runtime_api_version, api_version);
-    }
-}
-
 
 void notifications_processor::raise_notification(const notification n)
 {
@@ -545,7 +481,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
 int rs2_is_option_read_only(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    VALIDATE_OPTION(options, option);
     return options->options->get_option(option).is_read_only();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options, option)
@@ -1065,7 +1000,7 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, min_x, min_y, max_x, max_y)
 
 void rs2_free_error(rs2_error* error) { if (error) delete error; }
-const char* rs2_get_failed_function(const rs2_error* error) { return error ? error->function : nullptr; }
+const char* rs2_get_failed_function(const rs2_error* error) { return error ? error->function.c_str() : nullptr; }
 const char* rs2_get_failed_args(const rs2_error* error) { return error ? error->args.c_str() : nullptr; }
 const char* rs2_get_error_message(const rs2_error* error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error* error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }

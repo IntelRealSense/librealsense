@@ -98,6 +98,7 @@ EXPORTS
     rs2_enqueue_frame
     rs2_flush_queue
 
+    rs2_create_error
     rs2_get_failed_function
     rs2_get_failed_args
     rs2_get_error_message
