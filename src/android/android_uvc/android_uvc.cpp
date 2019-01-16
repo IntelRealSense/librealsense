@@ -15,6 +15,7 @@
 #include <atomic>
 #include <android/android-usb.h>
 #include <zconf.h>
+#include <syslog.h>
 
 
 // Data structures for Backend-Frontend queue:
@@ -1587,10 +1588,11 @@ int uvc_set_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
     auto ret = usb_device_control_transfer(
             devh->deviceHandle->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
-            ctrl,
+            ctrl<<8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,
             static_cast<unsigned char *>(data),
             len, 10);
+    int x =errno;
     return ret;
 }
 

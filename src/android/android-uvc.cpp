@@ -322,11 +322,22 @@ namespace librealsense {
 
 
         void android_uvc_device::poll_interrupts() {
-            while (_keep_pulling_interrupts) {
-                sleep(1);
+            sleep(1);
+
+            if (_device->deviceData.ctrl_if.bEndpointAddress == 0)
+            {
+                _keep_pulling_interrupts = false;
+                return;
+            }
+
+
+
+
+               do
+                   {
                 ::poll_interrupts(_device->deviceHandle,
                                   _device->deviceData.ctrl_if.bEndpointAddress, 100);
-            }
+            }while (_keep_pulling_interrupts);
         }
 
         void android_uvc_device::set_power_state(power_state state) {
@@ -364,17 +375,12 @@ namespace librealsense {
                             _extension_unit = eu->bUnitID;
                         }
 
-                        _keep_pulling_interrupts = false;
+                        _keep_pulling_interrupts = true;
+
                         _interrupt_polling_thread = std::shared_ptr<std::thread>(
                                 new std::thread([this]() {
                                     poll_interrupts();
-                                }), [this](std::thread *ptr) {
-                                    if (ptr) {
-                                        _keep_pulling_interrupts = false;
-                                        ptr->join();
-                                        delete ptr;
-                                    }
-                                });
+                                }));
 
                         _power_state = D0;
                         //LOGD("Device opened!");
@@ -387,6 +393,8 @@ namespace librealsense {
                 throw std::runtime_error("Device not found!");
             }
             if (state == D3 && _power_state == D0) {
+                _keep_pulling_interrupts = false;
+                _interrupt_polling_thread->join();
                 _interrupt_polling_thread.reset();
                 _device.reset();
                 _power_state = D3;
