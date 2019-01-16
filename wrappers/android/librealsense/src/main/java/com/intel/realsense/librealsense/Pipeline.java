@@ -33,10 +33,10 @@ public class Pipeline extends LrsClass{
         mHandle = 0;
     }
 
-    private native long nCreate(long context);
-    private native void nDelete(long handle);
-    private native void nStart(long handle);
-    private native void nStartWithConfig(long handle, long configHandle);
-    private native void nStop(long handle);
-    private native long nWaitForFrames(long handle, int timeout);
+    private static native long nCreate(long context);
+    private static native void nDelete(long handle);
+    private static native void nStart(long handle);
+    private static native void nStartWithConfig(long handle, long configHandle);
+    private static native void nStop(long handle);
+    private static native long nWaitForFrames(long handle, int timeout);
 }

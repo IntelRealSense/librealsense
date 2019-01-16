@@ -27,7 +27,7 @@ public class Config extends LrsClass {
         nDelete(mHandle);
     }
 
-    private native long nCreate();
-    private native void nDelete(long handle);
-    private native void nEnableStream(long handle, int type, int index, int width, int height, int format, int framerate);
+    private static native long nCreate();
+    private static native void nDelete(long handle);
+    private static native void nEnableStream(long handle, int type, int index, int width, int height, int format, int framerate);
 }

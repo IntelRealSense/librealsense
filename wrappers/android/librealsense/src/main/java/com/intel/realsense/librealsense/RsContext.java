@@ -1,7 +1,6 @@
 package com.intel.realsense.librealsense;
 
 public class RsContext extends LrsClass{
-    private native long nCreate();
 
     public RsContext() {
         mHandle = nCreate();
@@ -11,4 +10,7 @@ public class RsContext extends LrsClass{
     public void close() throws Exception {
 
     }
+
+    private static native long nCreate();
+    private static native void nDelete(long handle);
 }

@@ -30,8 +30,8 @@ public class FrameSet extends LrsClass {
         nRelease(mHandle);
     }
 
-    private native void nAddRef(long handle);
-    private native void nRelease(long handle);
-    private native long nExtractFrame(long handle, int index);
-    private native int nFrameCount(long handle);
+    private static native void nAddRef(long handle);
+    private static native void nRelease(long handle);
+    private static native long nExtractFrame(long handle, int index);
+    private static native int nFrameCount(long handle);
 }
