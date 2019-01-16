@@ -70,6 +70,7 @@ class imu_wrapper:
         self.max_norm = np.linalg.norm(np.array([0.5, 0.5, 0.5]))
         self.line_length = 20
         self.is_done = False
+        self.is_data = False
 
     def escape_handler(self):
         self.thread.acquire()
@@ -80,6 +81,9 @@ class imu_wrapper:
         sys.exit(-1)
 
     def imu_callback(self, frame):
+        if not self.is_data:
+            self.is_data = True
+
         with self.callback_lock:
             try:
                 if is_data():
@@ -179,7 +183,10 @@ class imu_wrapper:
             print('\nAlign to direction: ', self.crnt_direction, ' ', bucket_label)
             self.status = self.Status.rotate
             self.thread.acquire()
-            self.thread.wait()
+            while (not self.is_done and self.status != self.Status.idle):
+                self.thread.wait(3)
+                if not self.is_data:
+                    raise Exception('No IMU data. Check connectivity.')
             if self.is_done:
                 raise Exception('User Abort.')
             measurements.append(np.array(self.collected_data_accel))
