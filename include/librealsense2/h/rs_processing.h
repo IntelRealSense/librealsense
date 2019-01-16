@@ -43,6 +43,14 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
+* Creates depth thresholding processing block
+* By controlling min and max options on the block, one could filter out depth values
+* that are either too large or too small, as a software post-processing step
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_threshold(rs2_error** error);
+
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function to be applied to every frame entering the block
