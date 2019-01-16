@@ -29,7 +29,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
   * **Note:** Use `sudo apt-get dist-upgrade`, instead of `sudo apt-get upgrade`, in case you have an older Ubuntu 14.04 version
 2. Install Python and its development files via apt-get (Python 2 and 3 both work)
   * `sudo apt-get install python python-dev` or `sudo apt-get install python3 python3-dev`
-  * **Note:** The project will only use Python2 if it can't use Python3
+  * **Note:** The project will only use Python 2 if it can't use Python 3
 3. Run the top level CMake command with the following additional flag `-DBUILD_PYTHON_BINDINGS=bool:true`:
   * `mkdir build`
   * `cd build`
@@ -41,6 +41,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 4. update your PYTHONPATH environment variable to add the path to the pyrealsense library
   * `export PYTHONPATH=$PYTHONPATH:/usr/local/lib`
 5. Alternatively, copy the build output (`librealsense2.so` and `pyrealsense2.so`) next to your script.
+  * **Note:** Python 3 module filenames may contain additional information, e.g. `pyrealsense2.cpython-35m-arm-linux-gnueabihf.so`)
 
 
 
@@ -49,7 +50,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 2. When running `cmake-gui`, select the `BUILD_PYTHON_BINDINGS` option
 3. If you have multiple python installations on your machine you can use: `-DPYTHON_EXECUTABLE=<path to python executable>`
 For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
-> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **python2.7**.
+> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **Python 2.7**.
 >The error `ImportError: DLL load failed: The specified module could not be found` might indicate versions mismatch or architecture (x86 vs x64) mismatch.
 
 4. Open `librealsense2.sln` that was created in the previous step, and build the `pyrealsense2` project
