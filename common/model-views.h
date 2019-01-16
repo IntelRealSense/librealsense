@@ -7,9 +7,11 @@
 #include "rendering.h"
 #include "ux-window.h"
 #include "parser.hpp"
+#include "rs-config.h"
 
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
+#include "opengl3.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <map>
@@ -22,18 +24,6 @@
 #include "../third-party/json.hpp"
 
 #include "realsense-ui-advanced-mode.h"
-#ifdef _WIN32
-#include <windows.h>
-#include <wchar.h>
-#include <KnownFolders.h>
-#include <shlobj.h>
-#endif
-
-#if defined __linux__ || defined __APPLE__
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#endif
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -53,6 +43,7 @@ static const ImVec4 dark_grey = from_rgba(30, 30, 30, 255);
 static const ImVec4 sensor_header_light_blue = from_rgba(80, 99, 115, 0xff);
 static const ImVec4 sensor_bg = from_rgba(36, 44, 51, 0xff);
 static const ImVec4 redish = from_rgba(255, 46, 54, 255, true);
+static const ImVec4 light_red = from_rgba(255, 146, 154, 255, true);
 static const ImVec4 dark_red = from_rgba(200, 46, 54, 255, true);
 static const ImVec4 button_color = from_rgba(62, 77, 89, 0xff);
 static const ImVec4 header_window_bg = from_rgba(36, 44, 54, 0xff);
@@ -71,7 +62,11 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
+    void prepare_config_file();
+
     bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
+
+    void open_issue(std::string body);
 
     struct textual_icon
     {
@@ -90,6 +85,49 @@ namespace rs2
     inline std::ostream& operator<<(std::ostream& os, const textual_icon& i)
     {
         return os << static_cast<const char*>(i);
+    }
+
+    namespace configurations
+    {
+        namespace record
+        {
+            static const char* file_save_mode      { "record.file_save_mode" };
+            static const char* default_path        { "record.default_path" };
+            static const char* compression_mode    { "record.compression" };
+        }
+        namespace viewer
+        {
+            static const char* is_3d_view          { "viewer_model.is_3d_view" };
+            static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
+            static const char* settings_tab        { "viewer_model.settings_tab" };
+
+            static const char* log_to_console      { "viewer_model.log_to_console" };
+            static const char* log_to_file         { "viewer_model.log_to_file" };
+            static const char* log_filename        { "viewer_model.log_filename" };
+            static const char* log_severity        { "viewer_model.log_severity" };
+            static const char* post_processing     { "viewer_model.post_processing" };
+        }
+        namespace window
+        {
+            static const char* is_fullscreen       { "window.is_fullscreen" };
+            static const char* saved_pos           { "window.saved_pos" };
+            static const char* position_x          { "window.position_x" };
+            static const char* position_y          { "window.position_y" };
+            static const char* saved_size          { "window.saved_size" };
+            static const char* width               { "window.width" };
+            static const char* height              { "window.height" };
+            static const char* maximized           { "window.maximized" };
+        }
+        namespace performance
+        {
+            static const char* glsl_for_rendering  { "performance.glsl_for_rendering" };
+            static const char* glsl_for_processing { "performance.glsl_for_processing" };
+            static const char* enable_msaa         { "performance.msaa" };
+            static const char* msaa_samples        { "performance.msaa_samples" };
+            static const char* show_fps            { "performance.show_fps" };
+            static const char* vsync               { "performance.vsync" };
+            static const char* font_oversample     { "performance.font_oversample" };
+        }
     }
 
     namespace textual_icons
@@ -134,22 +172,13 @@ namespace rs2
         static const textual_icon braille                  { u8"\uf2a1" };
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
+        static const textual_icon exit                     { u8"\uf011" };
     }
 
     class subdevice_model;
     struct notifications_model;
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18);
-
-    // Helper function to get window rect from GLFW
-    rect get_window_rect(GLFWwindow* window);
-
-    // Helper function to get monitor rect from GLFW
-    rect get_monitor_rect(GLFWmonitor* monitor);
-
-    // Select appropriate scale factor based on the display
-    // that most of the application is presented on
-    int pick_scale_factor(GLFWwindow* window);
 
     // avoid display the following options
     bool static skip_option(rs2_option opt)
@@ -260,17 +289,21 @@ namespace rs2
         std::map<int, int> selected_format_id;
     };
 
-     class viewer_model;
-     class subdevice_model;
+    class viewer_model;
+    class subdevice_model;
+
+    void save_processing_block(const char* name, 
+        std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 
     class processing_block_model
     {
     public:
         processing_block_model(subdevice_model* owner,
             const std::string& name,
-            std::shared_ptr<options> block,
+            std::shared_ptr<rs2::processing_block> block,
             std::function<rs2::frame(rs2::frame)> invoker,
-            std::string& error_message);
+            std::string& error_message,
+            bool enabled = true);
 
         const std::string& get_name() const { return _name; }
 
@@ -278,9 +311,15 @@ namespace rs2
 
         rs2::frame invoke(rs2::frame f) const { return _invoker(f); }
 
-        bool enabled = false;
+        void save()
+        {
+            save_processing_block(_name.c_str(), _block, enabled);
+        }
+
+        bool enabled = true;
+        bool visible = true;
     private:
-        std::shared_ptr<options> _block;
+        std::shared_ptr<rs2::processing_block> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
         std::function<rs2::frame(rs2::frame)> _invoker;
@@ -300,7 +339,11 @@ namespace rs2
             rs2::frame_queue q;
 
            _syncers.push_back({shared_syncer,q});
-           shared_syncer->start(q);
+           shared_syncer->start([this, q](rs2::frame f)
+           {
+               q.enqueue(f);
+               on_frame();
+           });
            start();
            return shared_syncer;
         }
@@ -344,11 +387,11 @@ namespace rs2
             _active.exchange(true);
         }
 
+        std::function<void()> on_frame = []{};
     private:
         std::vector<std::pair<std::shared_ptr<rs2::asynchronous_syncer>, rs2::frame_queue>> _syncers;
         std::mutex _mutex;
         std::atomic<bool> _active;
-
     };
 
 
@@ -408,6 +451,7 @@ namespace rs2
             return false;
         }
 
+        std::function<void()> on_frame = []{};
         std::shared_ptr<sensor> s;
         device dev;
 
@@ -454,27 +498,14 @@ namespace rs2
         bool show_algo_roi = false;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
-        std::shared_ptr<processing_block_model> decimation_filter;
-        std::shared_ptr<processing_block_model> spatial_filter;
-        std::shared_ptr<processing_block_model> temporal_filter;
-        std::shared_ptr<processing_block_model> hole_filling_filter;
-        std::shared_ptr<processing_block_model> depth_to_disparity;
-        std::shared_ptr<processing_block_model> disparity_to_depth;
+        std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
-        bool post_processing_enabled = false;
+        bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
     };
 
     class viewer_model;
-
-    inline bool ends_with(const std::string& s, const std::string& suffix)
-    {
-        auto i = s.rbegin(), j = suffix.rbegin();
-        for (; i != s.rend() && j != suffix.rend() && *i == *j;
-            i++, j++);
-        return j == suffix.rend();
-    }
 
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
@@ -483,7 +514,7 @@ namespace rs2
     {
     public:
         stream_model();
-        texture_buffer* upload_frame(frame&& f);
+        std::shared_ptr<texture_buffer> upload_frame(frame&& f);
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
@@ -502,7 +533,7 @@ namespace rs2
 
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
         rect layout;
-        std::unique_ptr<texture_buffer> texture;
+        std::shared_ptr<texture_buffer> texture;
         float2 size;
         float2 original_size;
         rect get_stream_bounds() const { return { 0, 0, size.x, size.y };}
@@ -547,7 +578,7 @@ namespace rs2
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
-        int draw_playback_panel(ImFont* font, viewer_model& view);
+        int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
         void draw_controls(float panel_width, float panel_height,
             ux_window& window,
@@ -584,9 +615,9 @@ namespace rs2
         std::set<std::string> advanced_mode_settings_file_names;
         std::string selected_file_preset;
     private:
-        void draw_info_icon(const ImVec2& size);
+        void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
-        int draw_playback_controls(ImFont* font, viewer_model& view);
+        int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
         void draw_controllers_panel(ImFont* font, bool is_device_streaming);
@@ -612,6 +643,7 @@ namespace rs2
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         periodic_timer      _update_readonly_options_timer;
+        bool pause_required = false;
     };
 
     struct notification_data
@@ -695,8 +727,6 @@ namespace rs2
         notification_model selected;
     };
 
-    std::string get_file_name(const std::string& path);
-
     class viewer_model;
     class post_processing_filters
     {
@@ -764,14 +794,14 @@ namespace rs2
     private:
         viewer_model& viewer;
         void process(rs2::frame f, const rs2::frame_source& source);
-        std::vector<rs2::frame> handle_frame(rs2::frame f);
+        std::vector<rs2::frame> handle_frame(rs2::frame f, const rs2::frame_source& source);
 
         void map_id(rs2::frame new_frame, rs2::frame old_frame);
         void map_id_frameset_to_frame(rs2::frameset first, rs2::frame second);
         void map_id_frameset_to_frameset(rs2::frameset first, rs2::frameset second);
         void map_id_frame_to_frame(rs2::frame first, rs2::frame second);
 
-        rs2::frame apply_filters(rs2::frame f);
+        rs2::frame apply_filters(rs2::frame f, const rs2::frame_source& source);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
         std::shared_ptr<pointcloud> pc;
@@ -885,23 +915,17 @@ namespace rs2
     public:
         void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
 
+        void update_configuration();
+
         const float panel_width = 340.f;
         const float panel_y = 50.f;
         const float default_log_h = 110.f;
 
-        float get_output_height() const { return (is_output_collapsed ? default_log_h : 20); }
+        float get_output_height() const { return (is_output_collapsed ? default_log_h : 15); }
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
-        viewer_model()
-            : ppf(*this),
-              synchronization_enable(true)
-        {
-            syncer = std::make_shared<syncer_model>();
-            reset_camera();
-            rs2_error* e = nullptr;
-            not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
-        }
+        viewer_model();
 
         ~viewer_model()
         {
@@ -919,7 +943,7 @@ namespace rs2
         bool is_3d_depth_source(frame f);
         bool is_3d_texture_source(frame f);
 
-        texture_buffer* upload_frame(frame&& f);
+        std::shared_ptr<texture_buffer> upload_frame(frame&& f);
 
         std::map<int, rect> calc_layout(const rect& r);
 
@@ -937,12 +961,12 @@ namespace rs2
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
-        void update_3d_camera(const rect& viewer_rect,
-                              mouse_info& mouse, bool force = false);
+        void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
-        void show_top_bar(ux_window& window, const rect& viewer_rect);
+        void show_top_bar(ux_window& window, const rect& viewer_rect, const std::vector<device_model>& devices);
 
-        void render_3d_view(const rect& view_rect, texture_buffer* texture, rs2::points points);
+        void render_3d_view(const rect& view_rect, 
+            std::shared_ptr<texture_buffer> texture, rs2::points points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -964,7 +988,9 @@ namespace rs2
         bool paused = false;
 
 
-        void draw_viewport(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message, texture_buffer* texture, rs2::points  f = rs2::points());
+        void draw_viewport(const rect& viewer_rect, 
+            ux_window& window, int devices, std::string& error_message, 
+            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points());
 
         bool allow_3d_source_change = true;
         bool allow_stream_close = true;
@@ -980,7 +1006,6 @@ namespace rs2
         int selected_tex_source_uid = -1;
 
         float dim_level = 1.f;
-
 
         bool continue_with_ui_not_aligned = false;
     private:
@@ -1021,27 +1046,19 @@ namespace rs2
         GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
 
         rs2::points last_points;
-        texture_buffer* last_texture;
-        texture_buffer texture;
+        std::shared_ptr<texture_buffer> last_texture;
 
+        // Infinite pan / rotate feature:
+        bool manipulating = false;
+        float2 overflow = { 0.f, 0.f };
+
+        // Camera models
+        std::vector<obj_mesh> camera_mesh;
+        const int t265_mesh_id = 3;
+        void render_camera_mesh(int id);
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, frameset points, video_frame texture, bool notify = true);
-
-    // Wrapper for cross-platform dialog control
-    enum file_dialog_mode {
-        open_file       = (1 << 0),
-        save_file       = (1 << 1),
-        open_dir        = (1 << 2),
-        override_file   = (1 << 3)
-    };
-
-    const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name);
-
-    // Encapsulate helper function to resolve linking
-    int save_to_png(const char* filename,
-        size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
-        const void* raster_data, size_t stride_bytes);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool notify = true);
 
     // Auxillary function to save stream data in its internal (raw) format
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame);
@@ -1059,16 +1076,4 @@ namespace rs2
         std::queue<event_information> _changes;
         std::mutex _mtx;
     };
-
-    enum special_folder
-    {
-        user_desktop,
-        user_documents,
-        user_pictures,
-        user_videos,
-        temp_folder
-    };
-
-    std::string get_timestamped_file_name();
-    std::string get_folder_path(special_folder f);
 }
