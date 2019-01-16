@@ -12,7 +12,25 @@ import ctypes
 import time
 import enum
 import threading
-import signal
+
+is_data = None
+get_key = None
+if os.name == 'posix':
+    import select
+    import tty
+    import termios
+
+    is_data = lambda : select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+    get_key = lambda : sys.stdin.read(1)
+
+elif os.name == 'nt':
+    import msvcrt
+    is_data = msvcrt.kbhit
+    get_key = lambda : msvcrt.getch()
+
+else:
+    raise Exception('Unsupported OS: %s' % os.name)
+
 
 max_float = struct.unpack('f',b'\xff\xff\xff\xff')[0]
 max_int = struct.unpack('i',b'\xff\xff\xff\xff')[0]
@@ -51,12 +69,12 @@ class imu_wrapper:
         self.callback_lock = threading.Lock()
         self.max_norm = np.linalg.norm(np.array([0.5, 0.5, 0.5]))
         self.line_length = 20
-        signal.signal(signal.SIGINT, self.ctrl_c_handler)
+        self.is_done = False
 
-    def ctrl_c_handler(self, a, b):
-        print("Signal Number:", a, " Frame: ", b)
+    def escape_handler(self):
         self.thread.acquire()
         self.status = self.Status.idle
+        self.is_done = True
         self.thread.notify()
         self.thread.release()
         sys.exit(-1)
@@ -64,6 +82,11 @@ class imu_wrapper:
     def imu_callback(self, frame):
         with self.callback_lock:
             try:
+                if is_data():
+                    c = get_key()
+                    if c == '\x1b':         # x1b is ESC
+                        self.escape_handler()
+
                 if self.status == self.Status.idle:
                     return
                 pr = frame.get_profile()
@@ -147,13 +170,18 @@ class imu_wrapper:
 
     def get_measurements(self, buckets, bucket_labels):
         measurements = []
-        for bucket,bucket_label  in zip(buckets, bucket_labels):
+        print('-------------------------')
+        print('*** Press ESC to Quit ***')
+        print('-------------------------')
+        for bucket,bucket_label in zip(buckets, bucket_labels):
             self.crnt_bucket = np.array(bucket)
             self.crnt_direction = np.array(bucket) / np.linalg.norm(np.array(bucket))
             print('\nAlign to direction: ', self.crnt_direction, ' ', bucket_label)
             self.status = self.Status.rotate
             self.thread.acquire()
             self.thread.wait()
+            if self.is_done:
+                raise Exception('User Abort.')
             measurements.append(np.array(self.collected_data_accel))
         return np.array(measurements), np.array(self.collected_data_gyro)
 
@@ -175,11 +203,9 @@ class imu_wrapper:
         for sensor in self.pipeline.get_active_profile().get_device().sensors:
             for pr in sensor.get_stream_profiles():
                 if pr.stream_type() == rs.stream.gyro and pr.format() == rs.format.motion_xyz32f:
-                    print('FOUND GYRO with fps=%d' % pr.fps())
                     active_profiles[pr.stream_type()] = pr
                     self.imu_sensor = sensor
                 if pr.stream_type() == rs.stream.accel and pr.format() == rs.format.motion_xyz32f:
-                    print('FOUND ACCEL with fps=%d' % pr.fps())
                     active_profiles[pr.stream_type()] = pr
                     self.imu_sensor = sensor
             if self.imu_sensor:
@@ -187,6 +213,7 @@ class imu_wrapper:
         if not self.imu_sensor:
             print('No IMU sensor found.')
             return False
+        print('\n'.join(['FOUND %s with fps=%s' % (str(ap[0]).split('.')[1].upper(), ap[1].fps()) for ap in active_profiles.items()]))
         active_imu_profiles = active_profiles.values()
         if len(active_imu_profiles) < 2:
             print('Not all IMU streams found.')
@@ -435,143 +462,152 @@ def main():
         print('Otherwise, an interactive process is followed.')
         sys.exit(1)
 
-    accel_file = None
-    gyro_file = None
-    serial_no = ''
-    show_graph = '-g' in sys.argv
-    for idx in range(len(sys.argv)):
-        if sys.argv[idx] == '-i':
-            accel_file = sys.argv[idx+1]
-            if len(sys.argv) > idx+2 and not sys.argv[idx+2].startswith('-'):
-                gyro_file = sys.argv[idx+2]
-        if sys.argv[idx] == '-s':
-            serial_no = sys.argv[idx+1]
+    try:
+        if os.name == 'posix':
+            old_settings = termios.tcgetattr(sys.stdin)
+            tty.setcbreak(sys.stdin.fileno())
+        accel_file = None
+        gyro_file = None
+        serial_no = ''
+        show_graph = '-g' in sys.argv
+        for idx in range(len(sys.argv)):
+            if sys.argv[idx] == '-i':
+                accel_file = sys.argv[idx+1]
+                if len(sys.argv) > idx+2 and not sys.argv[idx+2].startswith('-'):
+                    gyro_file = sys.argv[idx+2]
+            if sys.argv[idx] == '-s':
+                serial_no = sys.argv[idx+1]
 
-    buckets = [[0, -g,  0], [ g,  0, 0],
-               [0,  g,  0], [-g,  0, 0],
-               [0,  0, -g], [ 0,  0, g]]
+        buckets = [[0, -g,  0], [ g,  0, 0],
+                [0,  g,  0], [-g,  0, 0],
+                [0,  0, -g], [ 0,  0, g]]
 
-    buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
+        buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
 
-    gyro_bais = np.zeros(3, np.float32)
-    if accel_file:
-        if gyro_file:
-            #compute gyro bais
+        gyro_bais = np.zeros(3, np.float32)
+        if accel_file:
+            if gyro_file:
+                #compute gyro bais
 
-            #assume the first 4 seconds the device is still
-            gyro = np.loadtxt(gyro_file, delimiter=",")
-            gyro = gyro[gyro[:, 0] < gyro[0, 0]+4000, :]
+                #assume the first 4 seconds the device is still
+                gyro = np.loadtxt(gyro_file, delimiter=",")
+                gyro = gyro[gyro[:, 0] < gyro[0, 0]+4000, :]
+
+                gyro_bais = np.mean(gyro[:, 1:], axis=0)
+                print(gyro_bais)
+
+            #compute accel intrinsic parameters
+            max_norm = np.linalg.norm(np.array([0.5, 0.5, 0.5]))
+
+            measurements = [[], [], [], [], [], []]
+            import csv
+            with open(accel_file, 'r') as csvfile:
+                reader = csv.reader(csvfile)
+                rnum = 0
+                for row in reader:
+                    M = np.array([float(row[1]), float(row[2]), float(row[3])])
+                    is_ok = False
+                    for i in range(0, len(buckets)):
+                        if np.linalg.norm(M - buckets[i]) < max_norm:
+                            is_ok = True
+                            measurements[i].append(M)
+                    rnum += 1
+            print('read %d rows.' % rnum)
+        else:
+            print('Start interactive mode:')
+            imu = imu_wrapper()
+            if not imu.enable_imu_device(serial_no):
+                print('Failed to enable device.')
+                return -1
+            measurements, gyro = imu.get_measurements(buckets, buckets_labels)
+            con_mm = np.concatenate(measurements)
+
+            header = raw_input('\nWould you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to not save raw data to disk. >')
+            if header:
+                accel_file = 'accel_%s.txt' % header
+                gyro_file = 'gyro_%s.txt' % header
+                print('Writing files:\n%s\n%s' % (accel_file, gyro_file))
+                np.savetxt(accel_file, con_mm, delimiter=',', fmt='%s')
+                np.savetxt(gyro_file, gyro, delimiter=',', fmt='%s')
+            else:
+                print('Not writing to files.')
+            # remove times from measurements:
+            measurements = [mm[:,1:] for mm in measurements]
 
             gyro_bais = np.mean(gyro[:, 1:], axis=0)
             print(gyro_bais)
 
-        #compute accel intrinsic parameters
-        max_norm = np.linalg.norm(np.array([0.5, 0.5, 0.5]))
+        mlen =  np.array([len(meas) for meas in measurements])
+        print(mlen)
+        print('using %d measurements.' % mlen.sum())
 
-        measurements = [[], [], [], [], [], []]
-        import csv
-        with open(accel_file, 'r') as csvfile:
-            reader = csv.reader(csvfile)
-            rnum = 0
-            for row in reader:
-                M = np.array([float(row[1]), float(row[2]), float(row[3])])
-                is_ok = False
-                for i in range(0, len(buckets)):
-                    if np.linalg.norm(M - buckets[i]) < max_norm:
-                        is_ok = True
-                        measurements[i].append(M)
-                rnum += 1
-        print('read %d rows.' % rnum)
-    else:
-        print('Start interactive mode:')
-        imu = imu_wrapper()
-        if not imu.enable_imu_device(serial_no):
-            print('Failed to enable device.')
-            return -1
-        measurements, gyro = imu.get_measurements(buckets, buckets_labels)
-        con_mm = np.concatenate(measurements)
+        nrows = mlen.sum()
+        w = np.zeros([nrows, 4])
+        Y = np.zeros([nrows, 3])
+        row = 0
+        for i in range(0, len(buckets)):
+            for m in measurements[i]:
+                w[row, 0] = m[0]
+                w[row, 1] = m[1]
+                w[row, 2] = m[2]
+                w[row, 3] = -1
+                Y[row, 0] = buckets[i][0]
+                Y[row, 1] = buckets[i][1]
+                Y[row, 2] = buckets[i][2]
+                row += 1
+        params = {}
+        if sys.version_info.major > 2:
+            params = {'rcond': None}
+        X, residuals, rank, singular = np.linalg.lstsq(w, Y, **params)
+        print(X)
+        print("residuals:", residuals)
+        print("rank:", rank)
+        print("singular:", singular)
+        check_X(X, w[:,:3], show_graph)
 
-        header = raw_input('\nWould you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to not save raw data to disk. >')
-        if header:
-            accel_file = 'accel_%s.txt' % header
-            gyro_file = 'gyro_%s.txt' % header
-            print('Writing files:\n%s\n%s' % (accel_file, gyro_file))
-            np.savetxt(accel_file, con_mm, delimiter=',', fmt='%s')
-            np.savetxt(gyro_file, gyro, delimiter=',', fmt='%s')
+        calibration = {}
+        calibration["device_type"] = "D435i"
+        calibration["imus"] = list()
+        calibration["imus"].append({})
+        calibration["imus"][0]["accelerometer"] = {}
+        calibration["imus"][0]["accelerometer"]["scale_and_alignment"] = X.flatten()[:9].tolist()
+        calibration["imus"][0]["accelerometer"]["bias"] = X.flatten()[9:].tolist()
+        calibration["imus"][0]["gyroscope"] = {}
+        calibration["imus"][0]["gyroscope"]["scale_and_alignment"] = np.eye(3).flatten().tolist()
+        calibration["imus"][0]["gyroscope"]["bias"] = gyro_bais.tolist()
+        json_data = json.dumps(calibration, indent=4, sort_keys=True)
+
+        directory = os.path.dirname(accel_file) if accel_file else '.'
+
+        #concatinate the two 12 element arrays and save
+        intrinsic_buffer = np.zeros([6,4])
+
+        intrinsic_buffer[:3,:4] = X.T
+        intrinsic_buffer[3:,:3] = np.eye(3)
+        intrinsic_buffer[3:,3] = gyro_bais
+
+        # intrinsic_buffer = ((np.array(range(24),np.float32)+1)/10).reshape([6,4])
+
+        d435_imu_calib_table = get_D435_IMU_Calib_Table(intrinsic_buffer)
+        calibration_table = get_calibration_table(d435_imu_calib_table)
+        eeprom = get_eeprom(calibration_table)
+
+        with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
+            outfile.write(eeprom.astype('f').tostring())
+
+        is_write = raw_input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
+        is_write = 'Y' in is_write.upper()
+        if is_write:
+            print('Writing calibration to device.')
+            write_eeprom_to_camera(eeprom, serial_no)
+            print('Done.')
         else:
-            print('Not writing to files.')
-        # remove times from measurements:
-        measurements = [mm[:,1:] for mm in measurements]
-
-        gyro_bais = np.mean(gyro[:, 1:], axis=0)
-        print(gyro_bais)
-
-    mlen =  np.array([len(meas) for meas in measurements])
-    print(mlen)
-    print('using %d measurements.' % mlen.sum())
-
-    nrows = mlen.sum()
-    w = np.zeros([nrows, 4])
-    Y = np.zeros([nrows, 3])
-    row = 0
-    for i in range(0, len(buckets)):
-        for m in measurements[i]:
-            w[row, 0] = m[0]
-            w[row, 1] = m[1]
-            w[row, 2] = m[2]
-            w[row, 3] = -1
-            Y[row, 0] = buckets[i][0]
-            Y[row, 1] = buckets[i][1]
-            Y[row, 2] = buckets[i][2]
-            row += 1
-    params = {}
-    if sys.version_info.major > 2:
-        params = {'rcond': None}
-    X, residuals, rank, singular = np.linalg.lstsq(w, Y, **params)
-    print(X)
-    print("residuals:", residuals)
-    print("rank:", rank)
-    print("singular:", singular)
-    check_X(X, w[:,:3], show_graph)
-
-    calibration = {}
-    calibration["device_type"] = "D435i"
-    calibration["imus"] = list()
-    calibration["imus"].append({})
-    calibration["imus"][0]["accelerometer"] = {}
-    calibration["imus"][0]["accelerometer"]["scale_and_alignment"] = X.flatten()[:9].tolist()
-    calibration["imus"][0]["accelerometer"]["bias"] = X.flatten()[9:].tolist()
-    calibration["imus"][0]["gyroscope"] = {}
-    calibration["imus"][0]["gyroscope"]["scale_and_alignment"] = np.eye(3).flatten().tolist()
-    calibration["imus"][0]["gyroscope"]["bias"] = gyro_bais.tolist()
-    json_data = json.dumps(calibration, indent=4, sort_keys=True)
-
-    directory = os.path.dirname(accel_file) if accel_file else '.'
-
-    #concatinate the two 12 element arrays and save
-    intrinsic_buffer = np.zeros([6,4])
-
-    intrinsic_buffer[:3,:4] = X.T
-    intrinsic_buffer[3:,:3] = np.eye(3)
-    intrinsic_buffer[3:,3] = gyro_bais
-
-    # intrinsic_buffer = ((np.array(range(24),np.float32)+1)/10).reshape([6,4])
-
-    d435_imu_calib_table = get_D435_IMU_Calib_Table(intrinsic_buffer)
-    calibration_table = get_calibration_table(d435_imu_calib_table)
-    eeprom = get_eeprom(calibration_table)
-
-    with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
-        outfile.write(eeprom.astype('f').tostring())
-
-    is_write = raw_input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
-    is_write = 'Y' in is_write.upper()
-    if is_write:
-        print('Writing calibration to device.')
-        write_eeprom_to_camera(eeprom, serial_no)
-        print('Done.')
-    else:
-        print('Abort writing to device')
+            print('Abort writing to device')
+    except Exception as e:
+        print ('\nDone. %s' % e.message)
+    finally:
+        if os.name == 'posix':
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
     """
     wtw = dot(transpose(w),w)
