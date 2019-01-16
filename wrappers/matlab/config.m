@@ -115,11 +115,11 @@ classdef config < handle
         end
         function disable_stream(this, stream, index)
             narginchk(2, 3);
-            validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 'stream', 2);
+            validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)}, '', 'stream', 2);
             if nargin == 2
                 out = realsense.librealsense_mex('rs2::config', 'disable_stream', this.objectHandle, int64(stream));
             else
-                validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'index', 3);
+                validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 3);
                 out = realsense.librealsense_mex('rs2::config', 'disable_stream', this.objectHandle, int64(stream), int64(index));
             end
             stream = realsense.stream_profile(out{:});
