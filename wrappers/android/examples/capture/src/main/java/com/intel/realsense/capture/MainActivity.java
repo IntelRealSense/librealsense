@@ -1,7 +1,11 @@
 package com.intel.realsense.capture;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -19,6 +23,7 @@ import com.intel.realsense.librealsense.VideoFrame;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "lrs capture example";
+    private static final int MY_PERMISSIONS_REQUEST_CAMERA = 0;
 
     private android.content.Context mContext = this;
     private Button mStartStopButton;
@@ -33,10 +38,28 @@ public class MainActivity extends AppCompatActivity {
     private Pipeline mPipeline;
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSIONS_REQUEST_CAMERA);
+            return;
+        }
+        init();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Android 9 requires also camera permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
+            return;
+        }
+        init();
+    }
+
+    void init(){
         UsbHostManager.init(mContext);
         UsbHostManager.addListener(mListener);
 

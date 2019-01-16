@@ -69,7 +69,7 @@ public class UsbUtilities {
     }
 
     public static UsbDevice getDevice(Context context) {
-        return getUsbDevice(context, 0x8086);//,  0x0b07);
+        return getUsbDevice(context, 0x8086);
     }
 
     public static boolean hasUsbPermission(Context context){
