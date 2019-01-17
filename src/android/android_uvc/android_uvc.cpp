@@ -730,6 +730,8 @@ uvc_error_t usbhost_get_available_formats_all(usbhost_uvc_device *devh, uvc_form
                     cur_format->height = frame_desc->wHeight;
                     cur_format->width = frame_desc->wWidth;
                     cur_format->fourcc = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
+                    if(1496850464 == cur_format->fourcc)
+                        cur_format->fourcc = 1196574041; //TODO
                     cur_format->interfaceNumber = stream_if->bInterfaceNumber;
 
                     cur_format->fps = 10000000 / *interval_ptr;
@@ -1346,8 +1348,12 @@ uvc_error_t usbhost_get_stream_ctrl_format_size(
 
     DL_FOREACH(stream_if->format_descs, format) {
         uvc_frame_desc_t *frame;
+        //TODO
+        auto val = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
+        if(1496850464 == val)
+            val = 1196574041;
 
-        if (SWAP_UINT32(fourcc) != *(const uint32_t *) format->guidFormat)
+        if (fourcc != val)
             continue;
 
         DL_FOREACH(format->frame_descs, frame) {
