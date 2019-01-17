@@ -23,7 +23,8 @@
 #include <string>
 #include <regex>
 #include <sstream>
-
+#include <thread>
+#include <chrono>
 
 
 
@@ -255,7 +256,7 @@ public:
                                 p->QueueFinishedRequest(req);
                             }
                         } else {
-                            sleep(1);
+                            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                         }
                     } while (_pull_requests == true);
                 }));

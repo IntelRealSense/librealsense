@@ -322,7 +322,7 @@ namespace librealsense {
 
 
         void android_uvc_device::poll_interrupts() {
-            sleep(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
             if (_device->deviceData.ctrl_if.bEndpointAddress == 0)
             {
@@ -590,11 +590,9 @@ namespace librealsense {
 
             usbhost_stop_streaming(_device.get());
 
-            std::vector<librealsense::platform::profile_and_callback, std::__ndk1::allocator<librealsense::platform::profile_and_callback>>::iterator
-                    elem = std::find_if(_streams.begin(), _streams.end(),
-                                        [&](const profile_and_callback &pac) {
-                                            return (pac.profile == profile && (pac.callback));
-                                        });
+            auto elem = std::find_if(_streams.begin(), _streams.end(), [&](const profile_and_callback &pac) {
+                return (pac.profile == profile && (pac.callback));
+            });
 
             if (elem == _streams.end() && _frame_callbacks.empty())
                 throw std::runtime_error("Camera is not streaming!");
