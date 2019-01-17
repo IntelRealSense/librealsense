@@ -105,7 +105,7 @@ public class UsbHostManager extends LrsClass {
     }
 
     private void removeDevice(UsbDesc desc) {
-        nRemoveUsbDevice(desc.descriptor);
+        //nRemoveUsbDevice(desc.descriptor); TODO: crash if device wasn't started
         for(Listener listener : mAppDeviceListner)
             listener.onUsbDeviceDetach();
     }

@@ -1,5 +1,7 @@
 include ':librealsense'
 include ':capture'
+include ':native_access'
 
-project(':capture').projectDir = new File('librealsense')
+project(':librealsense').projectDir = new File('librealsense')
 project(':capture').projectDir = new File('examples/capture')
+project(':native_access').projectDir = new File('examples/native_access')

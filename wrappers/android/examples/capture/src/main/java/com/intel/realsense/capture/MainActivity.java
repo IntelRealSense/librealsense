@@ -37,6 +37,18 @@ public class MainActivity extends AppCompatActivity {
     private Config mConfig = new Config();
     private Pipeline mPipeline;
 
+    private UsbHostManager.Listener mListener = new UsbHostManager.Listener() {
+        @Override
+        public void onUsbDeviceAttach() {
+            mPipeline = new Pipeline();
+        }
+
+        @Override
+        public void onUsbDeviceDetach() {
+            stop();
+        }
+    };
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -51,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Android 9 requires also camera permissions
+        // Android 9 also requires camera permissions
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
             return;
@@ -60,7 +72,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void init(){
+        //The UsbHostManager creates a UVC device for any connected RealSense device, it must be initialized before any other API call.
         UsbHostManager.init(mContext);
+
+        //UsbHostManager.Listener provides notifications regarding RealSense devices attach/detach events
         UsbHostManager.addListener(mListener);
 
         mColorFrameViewer = new FrameViewer((ImageView) findViewById(R.id.colorImageView));
@@ -101,18 +116,6 @@ public class MainActivity extends AppCompatActivity {
             } finally {
                 mHandler.post(updateBitmap);
             }
-        }
-    };
-
-    private UsbHostManager.Listener mListener = new UsbHostManager.Listener() {
-        @Override
-        public void onUsbDeviceAttach() {
-            mPipeline = new Pipeline();
-        }
-
-        @Override
-        public void onUsbDeviceDetach() {
-            stop();
         }
     };
 

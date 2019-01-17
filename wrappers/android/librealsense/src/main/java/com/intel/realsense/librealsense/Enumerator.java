@@ -65,7 +65,7 @@ class Enumerator {
             throw new NullPointerException("provided context is null");
         }
 
-        mMessagesHandler = new HandlerThread("Tracking device availability message thread");
+        mMessagesHandler = new HandlerThread("RealSense device availability message thread");
         mMessagesHandler.start();
         mHandler = new MessagesHandler(mMessagesHandler.getLooper());
 
@@ -81,7 +81,6 @@ class Enumerator {
 
     /**
      * Stop listening to the USB events and clean resources.
-     * Must be called at the end of the tracking device notifier usage.
      */
     public synchronized void close() {
         if(mContext != null)
