@@ -31,7 +31,7 @@ if(BUILD_FOR_OTHER_WIN)
 endif()
 
 if(LRS_TRY_USE_AVX)
-    set_source_files_properties(image_avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+    set_source_files_properties(image-avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
 endif()
 
 if(BUILD_SHARED_LIBS)
@@ -53,7 +53,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/image_avx.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/image-avx.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
@@ -79,7 +79,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"
         "${CMAKE_CURRENT_LIST_DIR}/image.h"
-        "${CMAKE_CURRENT_LIST_DIR}/image_avx.h"
+        "${CMAKE_CURRENT_LIST_DIR}/image-avx.h"
         "${CMAKE_CURRENT_LIST_DIR}/source.h"
         "${CMAKE_CURRENT_LIST_DIR}/ivcam/ivcam-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/types.h"

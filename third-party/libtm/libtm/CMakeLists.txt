@@ -13,9 +13,14 @@ set(LIBVERSION ${LIBTM_VERSION_MAJOR}.${LIBTM_VERSION_MINOR}.${LIBTM_VERSION_PAT
 
 # Retrieve Git branch name
 execute_process(COMMAND git rev-parse --abbrev-ref HEAD
-                WORKING_DIRECTORY "${LIBTM_ROOT}"
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
                 OUTPUT_VARIABLE GIT_BRANCH
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET)
+
+if(GIT_BRANCH STREQUAL "")
+    set (GIT_BRANCH "Branch_Unknown")
+endif()
 
 message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
 message(STATUS "Building ${PROJECT_NAME} project on ${OS}, LIBTM version [${LIBTM_VERSION_MAJOR}.${LIBTM_VERSION_MINOR}.${LIBTM_VERSION_PATCH}.${LIBTM_VERSION_BUILD}], API version [${LIBTM_API_VERSION_MAJOR}.${LIBTM_API_VERSION_MINOR}], branch [${GIT_BRANCH}], FW [${FW_VERSION}], Central APP [${CENTRAL_APP_VERSION}], Central BL [${CENTRAL_BL_VERSION}]")

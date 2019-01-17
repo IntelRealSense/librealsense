@@ -20,7 +20,9 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/temporal-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/rates_printer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/yuy2rgb.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/threshold.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rates-printer.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/align.h"
@@ -34,5 +36,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.h"
         "${CMAKE_CURRENT_LIST_DIR}/syncer-processing-block.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.h"
-        "${CMAKE_CURRENT_LIST_DIR}/rates_printer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/yuy2rgb.h"
+        "${CMAKE_CURRENT_LIST_DIR}/threshold.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rates-printer.h"
 )

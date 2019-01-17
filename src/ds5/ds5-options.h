@@ -69,14 +69,17 @@ namespace librealsense
         }
 
         enable_motion_correction(sensor_base* mm_ep,
-                                 const ds::imu_intrinsics& accel,
-                                 const ds::imu_intrinsics& gyro,
+                                 const ds::imu_intrinsic& accel,
+                                 const ds::imu_intrinsic& gyro,
+                                 std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
+                                 on_before_frame_callback frame_callback,
                                  const option_range& opt_range);
 
     private:
-        std::atomic<bool>  _is_enabled;
-        ds::imu_intrinsics _accel;
-        ds::imu_intrinsics _gyro;
+        std::atomic<bool>   _is_enabled;
+        ds::imu_intrinsic   _accel;
+        ds::imu_intrinsic   _gyro;
+        rs2_extrinsics      _depth_to_imu;
     };
 
     class enable_auto_exposure_option : public option_base
@@ -240,8 +243,8 @@ namespace librealsense
         virtual float query() const override;
         virtual option_range get_range() const override;
         virtual bool is_enabled() const override { return true; }
-        virtual const char* get_description() const override 
-        { 
+        virtual const char* get_description() const override
+        {
             return "Emitter On/Off Mode: 0:disabled(default), 1:enabled(emitter toggles between on and off). Can only be set before streaming";
         }
         virtual void enable_recording(std::function<void(const option &)> record_action) {_record_action = record_action;}

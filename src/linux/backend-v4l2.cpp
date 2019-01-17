@@ -68,7 +68,7 @@ int lockf64(int fd, int cmd, off64_t length)
     fl.l_len = length;
 
     if (cmd == F_ULOCK) {
-        fl.l_type == F_UNLCK;
+        fl.l_type = F_UNLCK;
         cmd = F_SETLK64;
         return fcntl(fd, F_SETLK64, &fl);
     }

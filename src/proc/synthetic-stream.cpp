@@ -96,7 +96,7 @@ namespace librealsense
         // in case the input frame is a frameset, create an output frameset from the input frameset and the processed frame by the following heuristic:
         // if one of the input frames has the same stream type and format as the processed frame,
         //     remove the input frame from the output frameset (i.e. temporal filter), otherwise kepp the input frame (i.e. colorizer).
-        // the only exception is in case one of the input frames is z16 or disparity and the result frame is disparity or z16 respectively, 
+        // the only exception is in case one of the input frames is z16 or disparity and the result frame is disparity or z16 respectively,
         // in this case the the input frmae will be removed.
 
         if (results.empty())

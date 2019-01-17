@@ -22,7 +22,7 @@ EXPORTS
     rs2_delete_sensor_list
     rs2_create_sensor
     rs2_delete_sensor
-    
+
     rs2_get_extrinsics
     rs2_register_extrinsics
     rs2_get_motion_intrinsics
@@ -76,7 +76,7 @@ EXPORTS
     rs2_get_option_description
     rs2_get_option_value_description
     rs2_is_option_read_only
-    
+
     rs2_set_region_of_interest
     rs2_get_region_of_interest
 
@@ -98,6 +98,7 @@ EXPORTS
     rs2_enqueue_frame
     rs2_flush_queue
 
+    rs2_create_error
     rs2_get_failed_function
     rs2_get_failed_args
     rs2_get_error_message
@@ -161,6 +162,8 @@ EXPORTS
     rs2_create_sync_processing_block
     rs2_create_pointcloud
     rs2_create_colorizer
+    rs2_create_yuy_decoder
+    rs2_create_threshold
     rs2_create_decimation_filter_block
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block

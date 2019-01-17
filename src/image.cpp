@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include "image.h"
-#include "image_avx.h"
+#include "image-avx.h"
 #include "types.h"
 
 #ifdef RS2_USE_CUDA
@@ -104,16 +102,7 @@ namespace librealsense
         using namespace librealsense;
         auto hid = (hid_data*)(source);
 
-        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
-        // Note that the implementation follows D435i installation pose and will require refactoring for other designs
-        // Reference spec: Bosch BMI055
         auto res= float3{ float(hid->x), float(hid->y), float(hid->z)} * float(factor);
-
-        if (RS2_FORMAT_MOTION_XYZ32F==FORMAT)
-        {
-            float3x3 rot = {{-1,0,0},{0,1,0},{0,0,-1}};
-            res=rot*res;
-        }
 
         librealsense::copy(dest[0], &res, sizeof(float3));
     }
@@ -132,8 +121,7 @@ namespace librealsense
     // Librealsense output format: floating point 32bit. units rad/sec,
     template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height)
     {
-        static constexpr double deg2rad = M_PI / 180.;
-        static const double gyro_transform_factor = 0.1 * deg2rad;
+        static const double gyro_transform_factor = deg2rad(0.1);
 
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor);
     }
@@ -619,6 +607,31 @@ namespace librealsense
     #endif
     }
 
+    void unpack_yuy2_y8(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_Y8>(d, s, w, h);
+    }
+    void unpack_yuy2_y16(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_Y16>(d, s, w, h);
+    }
+    void unpack_yuy2_rgb8(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_RGB8>(d, s, w, h);
+    }
+    void unpack_yuy2_rgba8(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_RGBA8>(d, s, w, h);
+    }
+    void unpack_yuy2_bgr8(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_BGR8>(d, s, w, h);
+    }
+    void unpack_yuy2_bgra8(byte * const d[], const byte * s, int w, int h)
+    {
+        unpack_yuy2<RS2_FORMAT_BGRA8>(d, s, w, h);
+    }
+
     // This templated function unpacks UYVY into RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
     template<rs2_format FORMAT> void unpack_uyvy(byte * const d[], const byte * s, int width, int height)
@@ -986,7 +999,7 @@ namespace librealsense
 
     const native_pixel_format pf_yuy2                     = { 'YUY2', 1, 2, {  { true,                &unpack_yuy2<RS2_FORMAT_RGB8 >,                { { RS2_STREAM_COLOR,          RS2_FORMAT_RGB8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_Y16>,                  { { RS2_STREAM_COLOR,          RS2_FORMAT_Y16 } } },
-                                                                               { false,               &copy_pixels<2>,                               { { RS2_STREAM_COLOR,          RS2_FORMAT_YUYV } } },
+                                                                               { true,                &copy_pixels<2>,                               { { RS2_STREAM_COLOR,          RS2_FORMAT_YUYV } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_RGBA8>,                { { RS2_STREAM_COLOR,          RS2_FORMAT_RGBA8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_yuy2<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_COLOR,          RS2_FORMAT_BGRA8 } } } } };
@@ -1021,7 +1034,7 @@ namespace librealsense
                                                                                                                                                      { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y16 } } } } };
 
     const native_pixel_format pf_uyvyl                    = { 'UYVY', 1, 2, {  { true,                &unpack_uyvy<RS2_FORMAT_RGB8 >,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_RGB8 } } },
-                                                                               { false,               &copy_pixels<2>,                               { { RS2_STREAM_INFRARED,       RS2_FORMAT_UYVY } } },
+                                                                               { true,                &copy_pixels<2>,                               { { RS2_STREAM_INFRARED,       RS2_FORMAT_UYVY } } },
                                                                                { true,                &unpack_uyvy<RS2_FORMAT_RGBA8>,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_RGBA8} } },
                                                                                { true,                &unpack_uyvy<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_uyvy<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_BGRA8} } } } };

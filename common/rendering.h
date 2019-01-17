@@ -210,7 +210,7 @@ namespace rs2
     {
         std::vector<float> angles;
         angles.reserve(4);
-        for (int i = 0; i < p.size(); i++)
+        for (size_t i = 0; i < p.size(); i++)
         {
             auto p1 = p[i];
             auto p2 = p[(i+1) % p.size()];
@@ -404,7 +404,7 @@ namespace rs2
         int max_distance_index = 0;
         float distance_limit = 0.01f; //1 centimeter
         // Find the point with the maximum distance from the 2 end points of the vector
-        for (int i = 1; i < points.size() - 1; i++)
+        for (size_t i = 1; i < points.size() - 1; i++)
         {
             float d = point_to_line_dist(points[0], points.back(), points[i]);
             if (d > max_distance)
@@ -1309,7 +1309,7 @@ namespace rs2
             draw_circle(1, 0, 0, 0, 0, 1);
 
             const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
+            const auto vec_threshold = 0.2f;
             if (norm < vec_threshold)
             {
                 const auto radius = 0.05;
@@ -1350,12 +1350,8 @@ namespace rs2
                 std::ostringstream s1;
                 const auto precision = 3;
 
-                s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
-                print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
-
-                std::ostringstream s2;
-                s2 << std::setprecision(precision) << norm;
-                print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+                s1 << std::setprecision(precision) << norm;
+                print_text_in_3d(x / 2, y / 2, z / 2, s1.str().c_str(), true, model, proj, 1 / norm);
             }
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 768, 768, 0);
@@ -1370,7 +1366,7 @@ namespace rs2
         void draw_grid()
         {
             glBegin(GL_LINES);
-            glColor4f(0.4f, 0.4f, 0.4f, 0.8f);
+            glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
             glLineWidth(1);
             float step = 0.1f;
             for (float x = -1.5; x < 1.5; x += step)
@@ -1419,9 +1415,6 @@ namespace rs2
 
             // remove model matrix from the rest of the render
             glPopMatrix();
-
-            const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
 
