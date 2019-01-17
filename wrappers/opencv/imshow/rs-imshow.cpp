@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
+#include <opencv2/highgui/highgui_c.h>
 
 int main(int argc, char * argv[]) try
 {

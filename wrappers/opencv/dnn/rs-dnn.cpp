@@ -3,6 +3,7 @@
 // Please see https://github.com/opencv/opencv/blob/master/LICENSE
 
 #include <opencv2/dnn.hpp>
+#include <opencv2/highgui/highgui_c.h>
 #include <librealsense2/rs.hpp>
 #include "../cv-helpers.hpp"
 
@@ -124,7 +125,7 @@ int main(int argc, char** argv) try
 
                 rectangle(color_mat, Rect(Point(center.x, center.y - labelSize.height),
                     Size(labelSize.width, labelSize.height + baseLine)),
-                    Scalar(255, 255, 255), CV_FILLED);
+                    Scalar(255, 255, 255), FILLED);
                 putText(color_mat, ss.str(), center,
                         FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
             }

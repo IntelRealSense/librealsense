@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
+#include <opencv2/highgui/highgui_c.h>
 #include "../cv-helpers.hpp"    // Helper functions for conversions between RealSense and OpenCV
 
 int main(int argc, char * argv[]) try
@@ -61,7 +62,7 @@ int main(int argc, char * argv[]) try
 
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
-        cvtColor(near, near, CV_BGR2GRAY);
+        cvtColor(near, near, COLOR_BGR2GRAY);
         // Take just values within range [180-255]
         // These will roughly correspond to near objects due to histogram equalization
         create_mask_from_depth(near, 180, THRESH_BINARY);

@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include <opencv2/highgui/highgui_c.h>
 #include "latency-detector.h"
 
 // This demo is presenting one way to estimate latency without access to special equipment
@@ -43,7 +44,7 @@ int main(int argc, char * argv[]) try
     //sensor.start(pipe);
 
     const auto window_name = "Display Image";
-    namedWindow(window_name, CV_WINDOW_NORMAL);
+    namedWindow(window_name, WINDOW_NORMAL);
     setWindowProperty(window_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
     const int display_w = 1280;
