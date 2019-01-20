@@ -3650,7 +3650,7 @@ namespace rs2
 
     // Generate streams layout, creates a grid-like layout with factor amount of columns
     std::map<int, rect> generate_layout(const rect& r,
-        int top_bar_height, int factor,
+        int top_bar_height, size_t factor,
         const std::set<stream_model*>& active_streams,
         std::map<stream_model*, int>& stream_index
     )
@@ -3961,7 +3961,7 @@ namespace rs2
         // Draw colored ruler
         auto last_y = bottom_y_ruler;
         auto last_depth_value = 0.f;
-        auto last_index = 0;
+        size_t last_index = 0;
         for (size_t i = 1; i < rgb_per_distance_vec.size(); ++i)
         {
             auto curr_depth = rgb_per_distance_vec[i].depth_val;
@@ -4282,14 +4282,14 @@ namespace rs2
         glPopMatrix();
 
 
-        auto x = -M_PI / 2;
+        auto x = static_cast<float>(-M_PI / 2);
         float _rx[4][4] = {
             { 1 , 0, 0, 0 },
             { 0, cos(x), -sin(x), 0 },
             { 0, sin(x), cos(x), 0 },
             { 0, 0, 0, 1 }
         };
-        auto z = M_PI;
+        auto z = static_cast<float>(M_PI);
         float _rz[4][4] = {
             { cos(z), -sin(z),0, 0 },
             { sin(z), cos(z), 0, 0 },
@@ -4643,12 +4643,12 @@ namespace rs2
         }
 
         {
-            int w = window.width() * 0.6f;
-            int h = window.height() * 0.6f;
-            int x0 = window.width() * 0.2f;
-            int y0 = window.height() * 0.2f;
-            ImGui::SetNextWindowPos({ (float)x0, (float)y0 });
-            ImGui::SetNextWindowSize({ (float)w, (float)h });
+            float w  = window.width()  * 0.6f;
+            float h  = window.height() * 0.6f;
+            float x0 = window.width()  * 0.2f;
+            float y0 = window.height() * 0.2f;
+            ImGui::SetNextWindowPos({ x0, y0 });
+            ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
@@ -4974,12 +4974,12 @@ namespace rs2
         }
 
         {
-            int w = 590;
-            int h = 300;
-            int x0 = (window.width() - w) / 2;
-            int y0 = (window.height() - h) / 2;
-            ImGui::SetNextWindowPos({ (float)x0, (float)y0 });
-            ImGui::SetNextWindowSize({ (float)w, (float)h });
+            float w = 590.f;
+            float h = 300.f;
+            float x0 = (window.width() - w) / 2.f;
+            float y0 = (window.height() - h) / 2.f;
+            ImGui::SetNextWindowPos({ x0, y0 });
+            ImGui::SetNextWindowSize({ w, h });
 
             flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
@@ -6337,7 +6337,7 @@ namespace rs2
                     {
                         throw std::runtime_error(to_string() << "No match found for requested format: " << requested_format);
                     }
-                    sub->ui.selected_format_id[uid] = format_id;
+                    sub->ui.selected_format_id[uid] = int(format_id);
 
                     //Find fps
                     int requested_fps = kvp.second.fps;
@@ -6351,7 +6351,7 @@ namespace rs2
                     {
                         throw std::runtime_error(to_string() << "No match found for requested fps: " << requested_fps);
                     }
-                    sub->ui.selected_shared_fps_id = fps_id;
+                    sub->ui.selected_shared_fps_id = int(fps_id);
 
                     //Find Resolution
                     std::pair<int, int> requested_res{ kvp.second.width,kvp.second.height };
@@ -6365,7 +6365,7 @@ namespace rs2
                     {
                         throw std::runtime_error(to_string() << "No match found for requested resolution: " << requested_res.first << "x" << requested_res.second);
                     }
-                    sub->ui.selected_res_id = res_id;
+                    sub->ui.selected_res_id = int(res_id);
                 }
             }
         }

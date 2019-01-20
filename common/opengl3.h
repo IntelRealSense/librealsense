@@ -116,7 +116,7 @@ namespace rs2
     struct float2;
     struct int3;
 
-    class obj_mesh;
+    struct obj_mesh;
 
     class vao
     {

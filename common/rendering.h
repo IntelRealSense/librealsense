@@ -3,7 +3,9 @@
 
 #pragma once
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <glad/glad.h>
 
 #include <librealsense2/rs.hpp>
@@ -428,7 +430,7 @@ namespace rs2
             if (d > max_distance)
             {
                 max_distance = d;
-                max_distance_index = i;
+                max_distance_index = (int)i;
             }
         }
         // If max distance is greater than the limit, recursively simplify
@@ -1671,11 +1673,9 @@ namespace rs2
         flip = !flip;
     }
 
-    #define PI 3.14159265
-
     inline float to_rad(float deg)
     {
-        return deg * PI / 180;
+        return static_cast<float>(deg * (M_PI / 180.f));
     }
 
     inline matrix4 create_perspective_projection_matrix(float width, float height, float fov, float n, float f)

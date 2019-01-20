@@ -8,7 +8,7 @@ static uint32_t t265_obj_data [] { 0x23a304f5,0xcbfbc255,0x48d4c0e0,0x23d7c029,0
 inline void uncompress_t265_obj(std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)
 {
     std::vector<char> uncompressed(0x47760, 0);
-    LZ4_uncompress((const char*)t265_obj_data, uncompressed.data(), 0x47760);
+    LZ4_decompress_fast((const char*)t265_obj_data, uncompressed.data(), 0x47760);
     const int vertex_size = 0x35df * sizeof(float3);
     const int index_size = 0x52d2 * sizeof(short3);
     vertex_data.resize(0x35df);

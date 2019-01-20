@@ -8,7 +8,7 @@ static uint32_t sr300_obj_data [] { 0xb5e610f1,0x1ac8c25e,0x2221c09a,0xc5c8c075,
 inline void uncompress_sr300_obj(std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)
 {
     std::vector<char> uncompressed(0x16074, 0);
-    LZ4_uncompress((const char*)sr300_obj_data, uncompressed.data(), 0x16074);
+    LZ4_decompress_fast((const char*)sr300_obj_data, uncompressed.data(), 0x16074);
     const int vertex_size = 0x11b3 * sizeof(float3);
     const int index_size = 0x1758 * sizeof(short3);
     vertex_data.resize(0x11b3);

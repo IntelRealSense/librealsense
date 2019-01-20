@@ -1,4 +1,6 @@
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <glad/glad.h>
 
 #include "ux-window.h"

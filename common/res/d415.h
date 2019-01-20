@@ -8,7 +8,7 @@ static uint32_t d415_obj_data [] { 0xe2a5fff5,0x40413614,0xc7c117b6,0x4a3fab64,0
 inline void uncompress_d415_obj(std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)
 {
     std::vector<char> uncompressed(0x3ebe0, 0);
-    LZ4_uncompress((const char*)d415_obj_data, uncompressed.data(), 0x3ebe0);
+    LZ4_decompress_fast((const char*)d415_obj_data, uncompressed.data(), 0x3ebe0);
     const int vertex_size = 0x2a70 * sizeof(float3);
     const int index_size = 0x5270 * sizeof(short3);
     vertex_data.resize(0x2a70);
