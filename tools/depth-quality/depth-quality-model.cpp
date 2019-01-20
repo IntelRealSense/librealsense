@@ -484,7 +484,6 @@ namespace rs2
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
-                    _update_readonly_options_timer,
                     draw_later, true,
                     [&](std::function<void()>func)
                     {
@@ -813,7 +812,7 @@ namespace rs2
                 sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
                 sub->depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.3f);
                 sub->depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 2.7f);
-                sub->options_invalidated = true;
+                sub->_options_invalidated = true;
 
                 for (auto&& profile : profiles)
                 {

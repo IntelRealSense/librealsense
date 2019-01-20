@@ -921,6 +921,11 @@ namespace rs2
             return false;
         }
 
+        void signal() const
+        {
+            _last = _time.now() - _delta;
+        }
+
     private:
         timer _time;
         mutable clock::time_point _last;

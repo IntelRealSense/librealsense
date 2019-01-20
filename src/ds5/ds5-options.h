@@ -255,4 +255,26 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };
+
+    class alternating_emitter_option : public option
+    {
+    public:
+        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~alternating_emitter_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override { return *_range; }
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override
+        {
+            return "Alternating Emitter Pattern: 0:disabled(default), 1:enabled( emitter is toggled on/off on per-frame basis)";
+        }
+        virtual void enable_recording(std::function<void(const option &)> record_action) { _record_action = record_action; }
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
 }

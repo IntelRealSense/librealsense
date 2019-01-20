@@ -93,7 +93,7 @@ namespace librealsense
             }
             else
             {
-                LOG_INFO("IMU Extrinsic table error, switch to default calubration");
+                LOG_INFO("IMU Extrinsic table error, switch to default calibration");
                 // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
                 //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
                 //      [  0.  ,   1.  ,   0.  ,   5.1 ],

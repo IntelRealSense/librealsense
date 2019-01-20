@@ -816,7 +816,7 @@ namespace rs2
             << "/" << (long long)this;
 
         subdevice_model::populate_options(options_metadata,
-            ss.str().c_str(),owner , block, owner ? &owner->options_invalidated : nullptr, error_message);
+            ss.str().c_str(),owner , block, owner ? &owner->_options_invalidated : nullptr, error_message);
     }
 
     subdevice_model::subdevice_model(
@@ -934,7 +934,7 @@ namespace rs2
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
-        populate_options(options_metadata, ss.str().c_str(), this, s, &options_invalidated, error_message);
+        populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
 
         try
         {
@@ -1385,6 +1385,8 @@ namespace rs2
 
         s->stop();
 
+        _options_invalidated = true;
+
         queues.foreach([&](frame_queue& q)
         {
             frame f;
@@ -1444,15 +1446,16 @@ namespace rs2
             throw;
         }
 
+        _options_invalidated = true;
         streaming = true;
     }
 
     void subdevice_model::update(std::string& error_message, notifications_model& notifications)
     {
-        if (options_invalidated)
+        if (_options_invalidated)
         {
             next_option = 0;
-            options_invalidated = false;
+            _options_invalidated = false;
         }
         if (next_option < RS2_OPTION_COUNT)
         {
@@ -2662,7 +2665,7 @@ namespace rs2
             ImGui::Text("%s:", motion.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(motion.toolTip.c_str());
+                ImGui::SetTooltip("%s",motion.toolTip.c_str());
             }
             ImGui::PopStyleColor(1);
 
@@ -2740,7 +2743,7 @@ namespace rs2
             ImGui::Text("%s:", pose.name.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip(pose.toolTip.c_str());
+                ImGui::SetTooltip("%s",pose.toolTip.c_str());
             }
 
             switch (pose_frame.tracker_confidence) //color the line according to confidence
@@ -3002,7 +3005,8 @@ namespace rs2
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev),
-          syncer(viewer.syncer)
+          syncer(viewer.syncer),
+           _update_readonly_options_timer(std::chrono::seconds(6))
     {
         for (auto&& sub : dev.query_sensors())
         {
@@ -5887,7 +5891,6 @@ namespace rs2
         std::string& error_message,
         device_model*& device_to_remove,
         viewer_model& viewer, float windows_width,
-        bool update_read_only_options,
         std::vector<std::function<void()>>& draw_later,
         bool load_json_if_streaming,
         json_loading_func json_loading,
@@ -5903,6 +5906,8 @@ namespace rs2
         ImColor device_header_background_color = title_color;
         const float left_space = 3.f;
         const float upper_space = 3.f;
+
+        bool update_read_only_options = _update_readonly_options_timer;
 
         const ImVec2 initial_screen_pos = ImGui::GetCursorScreenPos();
         //Upper Space
@@ -6160,6 +6165,7 @@ namespace rs2
                                     {
                                         viewer.synchronization_enable = false;
                                     }
+                                    _update_readonly_options_timer.signal();
                                     sub->play(profiles, viewer, dev_syncer);
                                 }
                                 catch (const error& e)
@@ -6219,6 +6225,7 @@ namespace rs2
                             }))
                             {
                                 stop_recording = true;
+                                _update_readonly_options_timer.signal();
                             }
                         }
                         if (ImGui::IsItemHovered())
@@ -6307,7 +6314,7 @@ namespace rs2
                 {
                     if (draw_advanced_controls(viewer, window, error_message))
                     {
-                        sub->options_invalidated = true;
+                        sub->_options_invalidated = true;
                         selected_file_preset.clear();
                     }
                 }
