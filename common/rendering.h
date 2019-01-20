@@ -976,12 +976,109 @@ namespace rs2
         timer _t;
     };
 
+
+    typedef enum _grid_step_unit
+    {
+        GRID_STEP_UNIT_METER,
+        GRID_STEP_UNIT_FEET,
+        GRID_STEP_UNIT_COUNT
+    } grid_step_unit;
+
+
+    class pose_grid
+    {
+    public:
+        pose_grid() : step(0.1f), pixelStep(0.1f), unit(GRID_STEP_UNIT_METER), boxHorizontalLength(6), boxVerticalLength(1), boxVerticalAlignment(1) {}
+
+        void set(pose_grid newGrid)
+        {
+            boxHorizontalLength = newGrid.boxHorizontalLength;
+            boxVerticalLength = newGrid.boxVerticalLength;
+            boxVerticalAlignment = newGrid.boxVerticalAlignment;
+            unit = newGrid.unit;
+            step = newGrid.step;
+
+            switch (unit)
+            {
+                case GRID_STEP_UNIT_METER:
+                    pixelStep = step;
+                    break;
+                case GRID_STEP_UNIT_FEET:
+                    pixelStep = step * FeetToMeterMultiplyer;
+                    break;
+            }
+        }
+
+        void set(grid_step_unit newUnit)
+        {
+            unit = newUnit;
+
+            switch (unit)
+            {
+                case GRID_STEP_UNIT_METER:
+                    pixelStep = step;
+                    break;
+                case GRID_STEP_UNIT_FEET:
+                    pixelStep = step * FeetToMeterMultiplyer;
+                    break;
+            }
+        }
+
+        void set(float newStep)
+        {
+            switch (unit)
+            {
+                case GRID_STEP_UNIT_METER:
+                    step = newStep;
+                    pixelStep = step;
+                    break;
+                case GRID_STEP_UNIT_FEET:
+                    step = newStep;
+                    pixelStep = step * FeetToMeterMultiplyer;
+                    break;
+            }
+        }
+
+        std::string getUnitName()
+        {
+            switch (unit)
+            {
+                case GRID_STEP_UNIT_METER:
+                    return "Meter";
+                case GRID_STEP_UNIT_FEET:
+                    return "Feet";
+                default:
+                    return "Unknown";
+            }
+        }
+        
+        float getPixelStep()
+        {
+            return pixelStep;
+        }
+
+
+        float step;
+        uint32_t boxHorizontalLength;
+        uint32_t boxVerticalLength;
+        uint32_t boxVerticalAlignment;
+        grid_step_unit unit;
+
+    private:
+        float pixelStep;
+        float FeetToMeterMultiplyer = 0.3048f;
+    };
+
     class texture_buffer
     {
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
     public:
+
+        pose_grid currentGrid;
+        pose_grid previousGrid;
+
         std::shared_ptr<colorizer> colorize;
         bool zoom_preview = false;
         rect curr_preview_rect{};
@@ -1363,12 +1460,12 @@ namespace rs2
         }
 
 
-        void draw_grid()
+        void draw_grid(float step)
         {
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
             glLineWidth(1);
-            float step = 0.1f;
+            
             for (float x = -1.5; x < 1.5; x += step)
             {
                 for (float y = -1.5; y < 1.5; y += step)
@@ -1398,7 +1495,7 @@ namespace rs2
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
 
-            draw_grid();
+            draw_grid(currentGrid.getPixelStep());
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:

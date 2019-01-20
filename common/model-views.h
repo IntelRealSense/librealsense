@@ -134,6 +134,7 @@ namespace rs2
         static const textual_icon braille                  { u8"\uf2a1" };
         static const textual_icon window_maximize          { u8"\uf2d0" };
         static const textual_icon window_restore           { u8"\uf2d2" };
+        static const textual_icon grid                     { u8"\uf1cb" };
     }
 
     class subdevice_model;
@@ -494,9 +495,8 @@ namespace rs2
 
         void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
-        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, rs2_stream stream_type);
-        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, rs2_stream stream_type, bool fullScreen);
-
+        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis);
+        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, rs2_stream stream_type, bool fullScreen, float y_offset);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
@@ -831,6 +831,9 @@ namespace rs2
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
         press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
+        press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid" };
+        press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay" };
+
 
     private:
         void add_to_trajectory(tracked_point& p);
@@ -942,7 +945,7 @@ namespace rs2
 
         void show_top_bar(ux_window& window, const rect& viewer_rect);
 
-        void render_3d_view(const rect& view_rect, texture_buffer* texture, rs2::points points);
+        void render_3d_view(const rect& view_rect, texture_buffer* texture, rs2::points points, ImFont *font1);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);

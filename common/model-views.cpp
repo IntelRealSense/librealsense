@@ -2097,6 +2097,7 @@ namespace rs2
 
         // Draw pose header if pose stream exists
         bool render_pose = false;
+        uint32_t pose_stream_count = 0;
 
         for (auto&& s : streams)
         {
@@ -2104,6 +2105,7 @@ namespace rs2
                 s.second.profile.stream_type() == RS2_STREAM_POSE)
             {
                 render_pose = true;
+                pose_stream_count++;
             }
         }
 
@@ -2112,7 +2114,12 @@ namespace rs2
         if (render_pose)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
-            const int num_of_pose_buttons = 2; // trajectory, draw camera
+            int num_of_pose_buttons = 3; // trajectory, grid, info
+
+            if (pose_stream_count > 1)
+            {
+                num_of_pose_buttons = 1;
+            }
 
             ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
             ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
@@ -2122,16 +2129,165 @@ namespace rs2
             // Draw selection buttons on the pose header
             ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
 
-            // Draw camera object button
-            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, buttons_heights }))
+            /* not supporting multiple stream at the moment */
+            if (pose_stream_count == 1)
             {
-                tm2.camera_object_button.toggle_button();
-            }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", tm2.camera_object_button.get_tooltip().c_str());
+                bool color_icon = tm2.pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
+                if (color_icon)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                }
 
+                // Draw info object button
+                if (ImGui::Button(tm2.pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
+                {
+                    for (auto&& s : streams)
+                    {
+                        if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
+                        {
+                            if (s.second.show_stream_details)
+                            {
+                                s.second.show_stream_details = false;
+                                tm2.pose_info_object_button.toggle_button();
+                            }
+                            else
+                            {
+                                s.second.show_stream_details = true;
+                                tm2.pose_info_object_button.toggle_button();
+                            }
+                        }
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", tm2.pose_info_object_button.get_tooltip().c_str());
+                }
+                if (color_icon)
+                {
+                    ImGui::PopStyleColor(2);
+                }
+
+
+                // Draw grid object button
+                ImGui::SameLine();
+
+                if (ImGui::Button(tm2.grid_object_button.get_icon().c_str(), { 24, buttons_heights }))
+                {
+                    ImGui::OpenPopup("Grid Configuration");
+                }
+
+                if (ImGui::BeginPopupModal("Grid Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysUseWindowPadding))
+                {
+                    for (auto&& s : streams)
+                    {
+                        if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
+                        {
+                            ImGui::Text(" Unit Scale:");
+                            ImGui::Text("     1 unit =");
+                            ImGui::SameLine();
+
+                            ImGui::PushItemWidth(100);
+                            float currentStep = s.second.texture->currentGrid.step;
+                            if (ImGui::InputFloat("##grid_step", &currentStep, 0.1f, 1.0f, 2))
+                            {
+                                if (currentStep >= 0.01)
+                                {
+                                    s.second.texture->currentGrid.set(currentStep);
+                                }
+                            }
+                            ImGui::PopItemWidth();
+
+                            ImGui::SameLine();
+
+                            ImGui::PushItemWidth(80);
+                            int currentGridUnit = s.second.texture->currentGrid.unit;
+                            if (ImGui::Combo("##grid_scale_combo", &currentGridUnit, "Meter\0Feet\0\0"))
+                            {
+                                s.second.texture->currentGrid.set((grid_step_unit)currentGridUnit);
+                            }
+                            ImGui::PopItemWidth();
+
+
+                            ImGui::Separator();
+
+                            int boxHorizontalLength = s.second.texture->currentGrid.boxHorizontalLength;
+                            int boxVerticalLength = s.second.texture->currentGrid.boxVerticalLength;
+                            int boxVerticaAlignment = s.second.texture->currentGrid.boxVerticalAlignment;
+
+                            ImGui::Text(" Display");
+
+                            ImGui::Columns(2, 0, false);
+                            ImGui::SetColumnOffset(1, 100);
+
+                            ImGui::Text("     Horizontal:");
+                            ImGui::NextColumn();
+                            ImGui::PushItemWidth(148);
+                            if (ImGui::SliderIntWithSteps("##boxHorizontalLength", &boxHorizontalLength, 0, 100, 2))
+                            {
+                                s.second.texture->currentGrid.boxHorizontalLength = boxHorizontalLength;
+                            }
+                            ImGui::PopItemWidth();
+                            ImGui::NextColumn();
+
+                            ImGui::Text("     Vertical:  ");
+                            ImGui::NextColumn();
+                            ImGui::PushItemWidth(148);
+                            if (ImGui::SliderIntWithSteps("##boxVerticalLength", &boxVerticalLength, 1, 99, 2))
+                            {
+                                s.second.texture->currentGrid.boxVerticalLength = boxVerticalLength;
+                            }
+                            ImGui::PopItemWidth();
+                            ImGui::NextColumn();
+
+                            ImGui::Text("     Vertical Alignment:  ");
+                            ImGui::NextColumn();
+                            ImGui::PushItemWidth(148);
+                            if (ImGui::SliderIntWithSteps("##boxVerticalAlignment", &boxVerticaAlignment, -100, 100, 1))
+                            {
+                                s.second.texture->currentGrid.boxVerticalAlignment = boxVerticaAlignment;
+                            }
+                            ImGui::PopItemWidth();
+
+                            ImGui::Columns();
+
+                            if (ImGui::Button("OK", ImVec2(80, 0)))
+                            {
+                                s.second.texture->previousGrid = s.second.texture->currentGrid;
+                                ImGui::CloseCurrentPopup();
+                            }
+
+                            ImGui::SameLine();
+                            if (ImGui::Button("Cancel", ImVec2(80, 0)))
+                            {
+                                s.second.texture->currentGrid.set(s.second.texture->previousGrid);
+                                ImGui::CloseCurrentPopup();
+                            }
+
+                            ImGui::SameLine();
+                            if (ImGui::Button("Reset", ImVec2(80, 0)))
+                            {
+                                pose_grid resetGrid;
+                                s.second.texture->currentGrid.set(resetGrid);
+                                s.second.texture->previousGrid = s.second.texture->currentGrid;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            break;
+                        }
+                    }
+
+                    ImGui::EndPopup();
+                }
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", tm2.grid_object_button.get_tooltip().c_str());
+                }
+
+                ImGui::SameLine();
+            }
             // Draw trajectory button
-            ImGui::SameLine();
+
             bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
             if (color_icon)
             {
@@ -2147,7 +2303,9 @@ namespace rs2
                 ImGui::PopStyleColor(2);
             }
             if (ImGui::IsItemHovered())
+            {
                 ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
+            }
 
             ImGui::End();
         }
@@ -2165,14 +2323,14 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, dark_sensor_bg);
 
-        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 265, stream_rect.y + total_top_bar_height + 5 });
+        ImGui::SetNextWindowPos({ stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 });
         ImGui::SetNextWindowSize({ 260, 65 });
         ImGui::Begin("3D Info box", nullptr, flags);
 
         ImGui::Columns(2, 0, false);
-        ImGui::SetColumnOffset(1, 90);
+        ImGui::SetColumnOffset(1, 60);
 
-        ImGui::Text("Rotate Camera:");
+        ImGui::Text("Rotate:");
         ImGui::NextColumn();
         ImGui::Text("Left Mouse Button");
         ImGui::NextColumn();
@@ -2182,7 +2340,7 @@ namespace rs2
         ImGui::Text("Middle Mouse Button");
         ImGui::NextColumn();
 
-        ImGui::Text("Zoom In/Out:");
+        ImGui::Text("Zoom:");
         ImGui::NextColumn();
         ImGui::Text("Mouse Wheel");
         ImGui::NextColumn();
@@ -2234,6 +2392,7 @@ namespace rs2
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
+        if (RS2_STREAM_POSE == profile.stream_type()) ++num_of_buttons; // Grid button
 
         auto flags = ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
@@ -2388,6 +2547,53 @@ namespace rs2
         }
         ImGui::SameLine();
 
+
+        if (RS2_STREAM_POSE == profile.stream_type())
+        {
+            label = to_string() << textual_icons::grid << "##grid " << profile.unique_id();
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                auto newGrid = this->texture->currentGrid;
+                float switchToStep = 0;
+
+                switch (this->texture->currentGrid.unit)
+                {
+                    case GRID_STEP_UNIT_METER:
+                        newGrid.set(1.0f);
+                        newGrid.set(GRID_STEP_UNIT_FEET);
+                        break;
+                    case GRID_STEP_UNIT_FEET:
+                        newGrid.set(0.1f);
+                        newGrid.set(GRID_STEP_UNIT_METER);
+                        break;
+                }
+
+                this->texture->currentGrid.set(newGrid);
+            }
+
+            if (ImGui::IsItemHovered())
+            {
+                grid_step_unit currentGridUnit = this->texture->currentGrid.unit;
+                std::string switchToUnit = "";
+                float switchToStep = 0;
+                switch (currentGridUnit)
+                {
+                    case GRID_STEP_UNIT_METER:
+                        switchToUnit = "Feet";
+                        switchToStep = 1.0f;
+                        break;
+                    case GRID_STEP_UNIT_FEET:
+                        switchToUnit = "Meter";
+                        switchToStep = 0.1f;
+                        break;
+                }
+
+                ImGui::SetTooltip("Switch to %0.2f %s grid", switchToStep, switchToUnit.c_str());
+            }
+
+            ImGui::SameLine();
+        }
+
         label = to_string() << textual_icons::info_circle << "##Info " << profile.unique_id();
         if (show_stream_details)
         {
@@ -2481,10 +2687,7 @@ namespace rs2
 
         if (show_stream_details)
         {
-            auto flags = ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoTitleBar;
+            auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
             ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
@@ -2495,11 +2698,13 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
-            static const auto width_info_rect = 270.f;
-            static const auto height_info_rect = 45.f;
+
+            static const auto height_info_rect = 10.f;
             static const auto y_offset_info_rect = 5.f;
-            static const auto x_offset_info_rect = 275.f;
-            curr_info_rect = rect{ stream_rect.x + stream_rect.w - x_offset_info_rect,
+            static const auto x_offset_info_rect = 12.0f;
+            auto width_info_rect = stream_rect.w - x_offset_info_rect;
+
+            curr_info_rect = rect{ stream_rect.x + x_offset_info_rect,
                                    stream_rect.y + y_offset_info_rect,
                                    width_info_rect,
                                    height_info_rect };
@@ -2513,6 +2718,11 @@ namespace rs2
                 res = to_string() << size.x << "x" << size.y << ", ";
             label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()),9) << ", FPS:";
             ImGui::Text("%s", label.c_str());
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", rs2_format_to_string(profile.format()));
+            }
+
             ImGui::SameLine();
 
             label = to_string() << std::setprecision(2) << std::fixed << fps.get_fps();
@@ -2521,39 +2731,33 @@ namespace rs2
             {
                 ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
             }
-            ImGui::SameLine();
 
-            label = to_string() << "Frame#" << frame_number;
+            ImGui::SameLine(170);
+
+            label = to_string() << "Frame" << frame_number;
             ImGui::Text("%s", label.c_str());
 
-            ImGui::Columns(2, 0, false);
-            ImGui::SetColumnOffset(1, 160);
-            label = to_string() << "Timestamp: " << std::fixed << std::setprecision(1) << timestamp;
+            ImGui::SameLine(300);
+
+            label = to_string() << "Time: " << std::fixed << std::setprecision(1) << timestamp;
             ImGui::Text("%s", label.c_str());
-            ImGui::NextColumn();
-
-            label = to_string() << rs2_timestamp_domain_to_string(timestamp_domain);
-
-            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            if (ImGui::IsItemHovered())
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 1.0f });
-                ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
                 {
-                    ImGui::SetTooltip("Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to installation.md for mode information");
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(450.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, red);
+                    ImGui::TextUnformatted("Timestamp: SystemTime (Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to installation.md for mode information)");
+                    ImGui::PopStyleColor();
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
                 }
-                ImGui::PopStyleColor();
-            }
-            else
-            {
-                ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+                else
                 {
-                    ImGui::SetTooltip("Specifies the clock-domain for the timestamp (hardware-clock / system-time)");
+                    ImGui::SetTooltip("Timestamp: Hardware clock");
                 }
             }
-
-            ImGui::Columns(1);
 
             ImGui::End();
             ImGui::PopStyleColor(6);
@@ -2615,14 +2819,16 @@ namespace rs2
         }
     }
 
-    void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis, rs2_stream stream_type)
+    void stream_model::show_stream_imu(ImFont* font, const rect &stream_rect, const  rs2_vector& axis)
     {
         const auto precision = 3;
+        rs2_stream stream_type = profile.stream_type();
+
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 0 });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
@@ -2630,7 +2836,13 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
 
-        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
+        float y_offset = 0;
+        if (show_stream_details)
+        {
+            y_offset += 30;
+        }
+
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y+y_offset });
         ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
         std::string label = to_string() << "IMU Stream Info of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
@@ -2688,15 +2900,13 @@ namespace rs2
         ImGui::PopStyleVar(2);
     }
 
-    void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect, const  rs2_pose& pose_frame, rs2_stream stream_type, bool fullScreen)
+    void stream_model::show_stream_pose(ImFont* font, const rect &stream_rect, const  rs2_pose& pose_frame, rs2_stream stream_type, bool fullScreen, float y_offset)
     {
-        const auto precision = 3;
-
         auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
 
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 0 });
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
@@ -2704,30 +2914,44 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, from_rgba(9, 11, 13, 100));
 
-        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y });
-        ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y+ y_offset });
+        ImGui::SetNextWindowSize({ stream_rect.w, std::min(180.0f, stream_rect.h) });
         std::string label = to_string() << "Pose Stream Info of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
         
+        std::string confidenceName[4] = { "Failed", "Low", "Medium", "High" };
         struct pose_data {
             std::string name;
-            float data[4];
+            float floatData[4];
+            std::string strData;
+            uint8_t precision;
+            bool signedNumber;
             std::string units;
             std::string toolTip;
-            int nameExtraSpace;
+            uint32_t nameExtraSpace;
             bool showOnNonFullScreen;
+            bool fixedPlace;
+            bool fixedColor;
         };
 
         std::vector<pose_data> pose_vector = {
-            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 50, false},
-            { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 50, false},
-            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 50, false},
-            { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 50, false},
-            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 50, true},
-            { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 50, true},
+            { "Grid Scale",{ this->texture->currentGrid.step, FLT_MAX , FLT_MAX , FLT_MAX }, "", 2, false,  "(" + this->texture->currentGrid.getUnitName() + ")", "Grid scale in " + this->texture->currentGrid.getUnitName(), 50, true, false, true},
+            { "Confidence",{ FLT_MAX , FLT_MAX , FLT_MAX , FLT_MAX }, confidenceName[pose_frame.tracker_confidence], 3, true, "", "Tracker confidence: High=Green, Medium=Yellow, Low=Red, Failed=Grey", 50, false, true, false },
+            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "", 3, true, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 50, false, true, false},
+            { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "", 3, true, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 50, false, true, false },
+            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "", 3, true, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 50, false, true, false },
+            { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "", 3, true, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 50, false, true, false },
+            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "", 3, true, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 50, true, true, false },
+            { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", 3, true,  "(Quaternion)", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 50, true, true, false },
         };
 
         int line_h = 18;
+        if (fullScreen)
+        {
+            line_h += 2;
+        }
+
         for (auto&& pose : pose_vector)
         {
             if ((fullScreen == false) && (pose.showOnNonFullScreen == false))
@@ -2743,46 +2967,68 @@ namespace rs2
                 ImGui::SetTooltip(pose.toolTip.c_str());
             }
 
-            switch (pose_frame.tracker_confidence) //color the line according to confidence
+            if (pose.fixedColor == false)
             {
-                case 3: // High confidence - Green
-                    ImGui::PushStyleColor(ImGuiCol_Text, green);
-                    break;
-                case 2: // Medium confidence - Yellow
-                    ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-                    break;
-                case 1: // Low confidence - Red
-                    ImGui::PushStyleColor(ImGuiCol_Text, red);
-                    break;
-                case 0: // Failed confidence - Grey
-                default: // Fall thourgh
-                    ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                    break;
+                switch (pose_frame.tracker_confidence) //color the line according to confidence
+                {
+                    case 3: // High confidence - Green
+                        ImGui::PushStyleColor(ImGuiCol_Text, green);
+                        break;
+                    case 2: // Medium confidence - Yellow
+                        ImGui::PushStyleColor(ImGuiCol_Text, yellow);
+                        break;
+                    case 1: // Low confidence - Red
+                        ImGui::PushStyleColor(ImGuiCol_Text, red);
+                        break;
+                    case 0: // Failed confidence - Grey
+                    default: // Fall thourgh
+                        ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                        break;
+                }
             }
 
             ImGui::SetCursorPos({ rc.x + 100 + (fullScreen?pose.nameExtraSpace:0), rc.y + 1 });
             std::string label = to_string() << "##" << pose.name.c_str();
+            std::string data = "";
 
-            std::string data = "[";
-            std::string comma = "";
-            unsigned int i = 0;
-            while ((pose.data[i] != FLT_MAX) && (i<4))
+            if (pose.strData.empty())
             {
-                
-                data += to_string() << std::fixed << std::setprecision(precision) << std::showpos << comma << pose.data[i];
-                comma = ", ";
-                i++;
+                data = "[";
+                std::string comma = "";
+                unsigned int i = 0;
+                while ((pose.floatData[i] != FLT_MAX) && (i<4))
+                {
+
+                    data += to_string() << std::fixed << std::setprecision(pose.precision) << (pose.signedNumber ? std::showpos : std::noshowpos) << comma << pose.floatData[i];
+                    comma = ", ";
+                    i++;
+                }
+                data += "]";
             }
-            data += "]";
+            else
+            {
+                data = pose.strData;
+            }
 
             auto textSize = ImGui::CalcTextSize((char*)data.c_str(), (char*)data.c_str() + data.size() + 1);
             ImGui::PushItemWidth(textSize.x);
             ImGui::InputText(label.c_str(), (char*)data.c_str(), data.size() + 1, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopItemWidth();
 
-            ImGui::PopStyleColor(1);
+            if (pose.fixedColor == false)
+            {
+                ImGui::PopStyleColor(1);
+            }
 
-            ImGui::SetCursorPos({ rc.x + 300 + (fullScreen?pose.nameExtraSpace:0), rc.y + 4 });
+            if (pose.fixedPlace == true)
+            {
+                ImGui::SetCursorPos({ rc.x + 300 + (fullScreen?pose.nameExtraSpace:0), rc.y + 4 });
+            }
+            else
+            {
+                ImGui::SameLine();
+            }
+
             ImGui::PushStyleColor(ImGuiCol_Text, from_rgba(255, 255, 255, 100, true));
             ImGui::Text("%s", pose.units.c_str());
             ImGui::PopStyleColor(1);
@@ -4034,17 +4280,20 @@ namespace rs2
                         if (motion.get())
                         {
                             auto axis = motion.get_motion_data();
-                            stream_mv.show_stream_imu(font1, stream_rect, axis, stream_type);
+                            stream_mv.show_stream_imu(font1, stream_rect, axis);
                         }
                         break;
                     }
                     case RS2_STREAM_POSE:
                     {
-                        auto pose = streams[stream].texture->get_last_frame().as<pose_frame>();
-                        if (pose.get())
+                        if (streams[stream].show_stream_details)
                         {
-                            auto pose_data = pose.get_pose_data();
-                            stream_mv.show_stream_pose(font1, stream_rect, pose_data, stream_type, (*this).fullscreen);
+                            auto pose = streams[stream].texture->get_last_frame().as<pose_frame>();
+                            if (pose.get())
+                            {
+                                auto pose_data = pose.get_pose_data();
+                                stream_mv.show_stream_pose(font1, stream_rect, pose_data, stream_type, (*this).fullscreen, 30.0f);
+                            }
                         }
   
                         break;
@@ -4110,8 +4359,60 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect, texture_buffer* texture, rs2::points points)
+    
+    void draw_3d_grid(pose_grid grid)
     {
+        uint32_t boxHorizontalLength = grid.boxHorizontalLength;
+        uint32_t boxVerticalLength = grid.boxVerticalLength;
+        int32_t boxVerticalAlignment = grid.boxVerticalAlignment;
+        float step = grid.getPixelStep();
+
+        uint32_t horizontal = boxHorizontalLength / 2;
+        uint32_t vertical = (boxVerticalLength-1) / 2;
+
+        glBegin(GL_LINES);
+        glColor4f(0.2f, 0.2f, 0.2f, 0.8f);
+
+        glTranslatef(0, 0, -1);
+
+        // Render box grid
+        float currentYStep = boxVerticalAlignment * step;
+
+        for (uint8_t y = 0; y <= (boxVerticalLength-1); y++)
+        {
+            float currentXZStep = 0;
+            for (uint8_t xz = 0; xz <= boxHorizontalLength; xz++)
+            {
+                glVertex3f(currentXZStep - (horizontal * step), currentYStep - (vertical * step), (-1.0f) * horizontal * step);
+                glVertex3f(currentXZStep - (horizontal * step), currentYStep - (vertical * step), horizontal * step);
+                glVertex3f((-1.0f)* horizontal * (step), currentYStep - (vertical * step), ((-1.0f)*horizontal * step) + currentXZStep);
+                glVertex3f(horizontal * step, currentYStep - (vertical * step), (((-1.0f) * horizontal) * step) + currentXZStep);
+                currentXZStep += step;
+            }
+            currentYStep += step;
+        }
+
+        float currentZStep = 0;
+        for (uint8_t z = 0; z <= boxHorizontalLength; z++)
+        {
+            float currentXStep = 0;
+            for (uint8_t x = 0; x <= boxHorizontalLength; x++)
+            {
+                glVertex3f(currentXStep - (horizontal * step), (boxVerticalAlignment * step) + (-1.0f)*(vertical * step), (((-1.0f) * horizontal) * step) + currentZStep);
+                glVertex3f(currentXStep - (horizontal * step), (boxVerticalAlignment * step) + (vertical * step), (((-1.0f) * horizontal) * step) + currentZStep);
+
+                currentXStep += step;
+            }
+            currentZStep += step;
+        }
+
+        glEnd();
+    }
+
+    void viewer_model::render_3d_view(const rect& viewer_rect, texture_buffer* texture, rs2::points points, ImFont *font1)
+    {
+        auto top_bar_height = 32.f;
+
         if(!paused)
         {
             if(points)
@@ -4132,32 +4433,16 @@ namespace rs2
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
-        gluPerspective(60, (float)viewer_rect.w / viewer_rect.h, 0.001f, 100.0f);
 
+        gluPerspective(60, (float)viewer_rect.w / viewer_rect.h, 0.001f, 100.0f);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadMatrixf(view);
 
         glDisable(GL_TEXTURE_2D);
-
         glEnable(GL_DEPTH_TEST);
-
         glLineWidth(1);
-        glBegin(GL_LINES);
-        glColor4f(0.4f, 0.4f, 0.4f, 1.f);
-
-        glTranslatef(0, 0, -1);
-
-        // Render "floor" grid
-        for (int i = 0; i <= 6; i++)
-        {
-            glVertex3i(i - 3, 1, 0);
-            glVertex3i(i - 3, 1, 6);
-            glVertex3i(-3, 1, i);
-            glVertex3i(3, 1, i);
-        }
-        glEnd();
-
+        
         texture_buffer::draw_axes(0.4f, 1);
 
         if (draw_plane)
@@ -4193,7 +4478,18 @@ namespace rs2
                 if (!pose)
                     continue;
 
+                draw_3d_grid(stream.second.texture->currentGrid);
+
                 rs2_pose pose_data = pose.get_pose_data();
+
+                if (stream.second.show_stream_details)
+                {
+                    auto stream_type = stream.second.profile.stream_type();
+                    auto stream_rect = viewer_rect;
+                    stream_rect.y += 2 * top_bar_height + 5;
+                    stream.second.show_stream_pose(font1, stream_rect, pose_data, stream_type, true, 0);
+                }
+
                 matrix4 pose_trans = tm2_pose_to_world_transformation(pose_data);
                 float model[16];
                 pose_trans.to_column_major(model);
@@ -6589,7 +6885,7 @@ namespace rs2
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
-            render_3d_view(new_rect, texture, points);
+            render_3d_view(new_rect, texture, points, window.get_font());
         }
 
         if (ImGui::IsKeyPressed(' '))
