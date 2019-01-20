@@ -562,6 +562,9 @@ PYBIND11_MODULE(NAME, m) {
         }, "timeout_ms"_a = 5000);
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
+    py::class_<rs2::threshold_filter, rs2::filter> threshold(m, "threshold_filter");
+    threshold.def(py::init<>());
+
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
         .def(py::init<float>(), "color_scheme"_a)
@@ -590,6 +593,9 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
+
+    py::class_<rs2::yuy_decoder, rs2::filter> yuy_decoder(m, "yuy_decoder");
+    yuy_decoder.def(py::init<>());
 
     /* rs_export.hpp */
     py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");

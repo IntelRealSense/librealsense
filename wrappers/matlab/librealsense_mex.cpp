@@ -110,7 +110,7 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
             outv[0] = MatlabParamParser::wrap(bool(thiz));
         });
-        stream_profile_factory.record("get_extrinsics_to", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        stream_profile_factory.record("get_extrinsics_to", 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::stream_profile>(inv[0]);
             auto to = MatlabParamParser::parse<rs2::stream_profile>(inv[1]);
