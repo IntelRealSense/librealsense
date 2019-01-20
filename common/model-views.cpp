@@ -2389,6 +2389,7 @@ namespace rs2
     {
         const auto top_bar_height = 32.f;
         auto num_of_buttons = 4;
+
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
         if (RS2_STREAM_DEPTH == profile.stream_type()) ++num_of_buttons; // Color map ruler button
@@ -2935,14 +2936,27 @@ namespace rs2
             bool fixedColor;
         };
 
+        rs2_vector velocity = pose_frame.velocity;
+        rs2_vector acceleration = pose_frame.acceleration;
+        rs2_vector translation = pose_frame.translation;
+        const float feetTranslator = 3.2808f;
+        std::string unit = this->texture->currentGrid.getUnitName();
+
+        if (this->texture->currentGrid.unit == GRID_STEP_UNIT_FEET)
+        {
+            velocity.x *= feetTranslator; velocity.y *= feetTranslator; velocity.z *= feetTranslator;
+            acceleration.x *= feetTranslator; acceleration.y *= feetTranslator; acceleration.z *= feetTranslator;
+            translation.x *= feetTranslator; translation.y *= feetTranslator; translation.z *= feetTranslator;
+        }
+
         std::vector<pose_data> pose_vector = {
-            { "Grid Scale",{ this->texture->currentGrid.step, FLT_MAX , FLT_MAX , FLT_MAX }, "", 2, false,  "(" + this->texture->currentGrid.getUnitName() + ")", "Grid scale in " + this->texture->currentGrid.getUnitName(), 50, true, false, true},
+            { "Grid Scale",{ this->texture->currentGrid.step, FLT_MAX , FLT_MAX , FLT_MAX }, "", 2, false,  "(" + unit + ")", "Grid scale in " + unit, 50, true, false, true},
             { "Confidence",{ FLT_MAX , FLT_MAX , FLT_MAX , FLT_MAX }, confidenceName[pose_frame.tracker_confidence], 3, true, "", "Tracker confidence: High=Green, Medium=Yellow, Low=Red, Failed=Grey", 50, false, true, false },
-            { "Velocity", {pose_frame.velocity.x, pose_frame.velocity.y , pose_frame.velocity.z , FLT_MAX }, "", 3, true, "(Meter/Sec)", "Velocity: X, Y, Z values of velocity, in Meter/Sec", 50, false, true, false},
+            { "Velocity", {velocity.x, velocity.y , velocity.z , FLT_MAX }, "", 3, true, "(" + unit + "/Sec)", "Velocity: X, Y, Z values of velocity, in " + unit + "/Sec", 50, false, true, false},
             { "Angular Velocity",{ pose_frame.angular_velocity.x, pose_frame.angular_velocity.y , pose_frame.angular_velocity.z , FLT_MAX }, "", 3, true, "(Radians/Sec)", "Angular Velocity: X, Y, Z values of angular velocity, in Radians/Sec", 50, false, true, false },
-            { "Acceleration",{ pose_frame.acceleration.x, pose_frame.acceleration.y , pose_frame.acceleration.z , FLT_MAX }, "", 3, true, "(Meter/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in Meter/Sec^2", 50, false, true, false },
+            { "Acceleration",{ acceleration.x, acceleration.y , acceleration.z , FLT_MAX }, "", 3, true, "(" + unit + "/Sec^2)", "Acceleration: X, Y, Z values of acceleration, in " + unit + "/Sec^2", 50, false, true, false },
             { "Angular Acceleration",{ pose_frame.angular_acceleration.x, pose_frame.angular_acceleration.y , pose_frame.angular_acceleration.z , FLT_MAX }, "", 3, true, "(Radians/Sec^2)", "Angular Acceleration: X, Y, Z values of angular acceleration, in Radians/Sec^2", 50, false, true, false },
-            { "Translation",{ pose_frame.translation.x, pose_frame.translation.y , pose_frame.translation.z , FLT_MAX }, "", 3, true, "(Meter)", "Translation: X, Y, Z values of translation in Meter (relative to initial position)", 50, true, true, false },
+            { "Translation",{ translation.x, translation.y , translation.z , FLT_MAX }, "", 3, true, "(" + unit + ")", "Translation: X, Y, Z values of translation in " + unit + " (relative to initial position)", 50, true, true, false },
             { "Rotation",{ pose_frame.rotation.x, pose_frame.rotation.y , pose_frame.rotation.z , pose_frame.rotation.w }, "", 3, true,  "(Quaternion)", "Rotation: Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)", 50, true, true, false },
         };
 
