@@ -112,7 +112,8 @@ if [ ! -f scripts/ubuntu-retpoline-extract-one ]; then
 	for f in $(find . -name 'retpoline-extract-one'); do cp ${f} scripts/ubuntu-retpoline-extract-one; done;
 	echo $$$
 fi
-sudo make silentoldconfig modules_prepare
+#Reuse current kernel configuration. Assign default values to newly-introduced options.
+sudo make olddefconfig modules_prepare
 
 #Vermagic identity is required
 IFS='.' read -a kernel_version <<< "$LINUX_BRANCH"
