@@ -8,7 +8,7 @@ public class RsContext extends LrsClass{
 
     @Override
     public void close() throws Exception {
-
+        nDelete(mHandle);
     }
 
     private static native long nCreate();

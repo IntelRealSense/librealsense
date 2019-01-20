@@ -6,6 +6,10 @@ public class Config extends LrsClass {
         mHandle = nCreate();
     }
 
+    public void enable_stream(StreamType type) {
+        enable_stream(type, -1, 0, 0, StreamFormat.ANY, 0);
+    }
+
     public void enable_stream(StreamType type, StreamFormat format){
         enable_stream(type, -1, 0, 0, format, 0);
     }

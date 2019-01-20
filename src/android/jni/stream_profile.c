@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <error.h>
+#include "error.h"
 #include "../../../include/librealsense2/rs.h"
 
 JNIEXPORT void JNICALL
@@ -10,10 +10,10 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetProfile(JNIEnv *env, jcl
     int index = -1;
     int uniqueId = -1;
     int frameRate = -1;
-    int e = 0;
+    rs2_error *e = NULL;
 
-    rs2_get_stream_profile_data(handle, &stream_type, &format, &index, &uniqueId, &frameRate, &e);
-
+    rs2_get_stream_profile_data((const rs2_stream_profile *) handle, &stream_type, &format, &index, &uniqueId, &frameRate, &e);
+    handle_error(env, e);
 
     jclass clazz = (*env)->GetObjectClass(env, params);
 
@@ -36,10 +36,10 @@ Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetResolution(JNIEnv *
                                                                         jobject params) {
     int width = -1;
     int height = -1;
-    int e = 0;
+    rs2_error *e = NULL;
 
-    rs2_get_video_stream_resolution(handle, &width, &height, &e);
-
+    rs2_get_video_stream_resolution((const rs2_stream_profile *) handle, &width, &height, &e);
+    handle_error(env, e);
 
     jclass clazz = (*env)->GetObjectClass(env, params);
 
@@ -53,5 +53,5 @@ Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetResolution(JNIEnv *
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_StreamProfile_nDelete(JNIEnv *env, jclass type,
                                                             jlong handle) {
-    rs2_delete_stream_profile(handle);
+    rs2_delete_stream_profile((rs2_stream_profile *) handle);
 }

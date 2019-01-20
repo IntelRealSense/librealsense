@@ -136,8 +136,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void startRepeatingTask() {
-        mPipeline.start(mConfig);
-        updateBitmap.run();
+        try {
+            mPipeline.start(mConfig);
+            updateBitmap.run();
+        } catch (Exception e){
+            Log.e(TAG, e.getMessage());
+        }
     }
 
     void stopRepeatingTask() {
