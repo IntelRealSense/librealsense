@@ -31,6 +31,8 @@ elif os.name == 'nt':
 else:
     raise Exception('Unsupported OS: %s' % os.name)
 
+if sys.version_info[0] < 3:
+    input = raw_input
 
 max_float = struct.unpack('f',b'\xff\xff\xff\xff')[0]
 max_int = struct.unpack('i',b'\xff\xff\xff\xff')[0]
@@ -221,7 +223,7 @@ class imu_wrapper:
             print('No IMU sensor found.')
             return False
         print('\n'.join(['FOUND %s with fps=%s' % (str(ap[0]).split('.')[1].upper(), ap[1].fps()) for ap in active_profiles.items()]))
-        active_imu_profiles = active_profiles.values()
+        active_imu_profiles = list(active_profiles.values())
         if len(active_imu_profiles) < 2:
             print('Not all IMU streams found.')
             return False
@@ -388,7 +390,7 @@ def write_eeprom_to_camera(eeprom, serial_no=''):
     DC_MM_EEPROM_SIZE = eeprom.size
     DS5_CMD_LENGTH = 24
 
-    MMEW_Cmd_bytes = '\x14\x00\xab\xcd\x50\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    MMEW_Cmd_bytes = b'\x14\x00\xab\xcd\x50\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
 
     buffer = np.ones([DC_MM_EEPROM_SIZE + DS5_CMD_LENGTH, ], dtype = np.uint8) * 255
@@ -470,9 +472,6 @@ def main():
         sys.exit(1)
 
     try:
-        if os.name == 'posix':
-            old_settings = termios.tcgetattr(sys.stdin)
-            tty.setcbreak(sys.stdin.fileno())
         accel_file = None
         gyro_file = None
         serial_no = ''
@@ -492,6 +491,7 @@ def main():
         buckets_labels = ["Upright facing out", "USB cable up facing out", "Upside down facing out", "USB cable pointed down", "Viewing direction facing down", "Viewing direction facing up"]
 
         gyro_bais = np.zeros(3, np.float32)
+        old_settings = None
         if accel_file:
             if gyro_file:
                 #compute gyro bais
@@ -522,14 +522,21 @@ def main():
             print('read %d rows.' % rnum)
         else:
             print('Start interactive mode:')
+            if os.name == 'posix':
+                old_settings = termios.tcgetattr(sys.stdin)
+                tty.setcbreak(sys.stdin.fileno())
+
             imu = imu_wrapper()
             if not imu.enable_imu_device(serial_no):
                 print('Failed to enable device.')
                 return -1
             measurements, gyro = imu.get_measurements(buckets, buckets_labels)
             con_mm = np.concatenate(measurements)
+            if os.name == 'posix':
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
-            header = raw_input('\nWould you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to not save raw data to disk. >')
+            header = input('\nWould you like to save the raw data? Enter footer for saving files (accel_<footer>.txt and gyro_<footer>.txt)\nEnter nothing to not save raw data to disk. >')
+            print('\n')
             if header:
                 accel_file = 'accel_%s.txt' % header
                 gyro_file = 'gyro_%s.txt' % header
@@ -544,7 +551,7 @@ def main():
             gyro_bais = np.mean(gyro[:, 1:], axis=0)
             print(gyro_bais)
 
-        mlen =  np.array([len(meas) for meas in measurements])
+        mlen = np.array([len(meas) for meas in measurements])
         print(mlen)
         print('using %d measurements.' % mlen.sum())
 
@@ -562,10 +569,10 @@ def main():
                 Y[row, 1] = buckets[i][1]
                 Y[row, 2] = buckets[i][2]
                 row += 1
-        params = {}
-        if sys.version_info.major > 2:
-            params = {'rcond': None}
-        X, residuals, rank, singular = np.linalg.lstsq(w, Y, **params)
+        np_version = [int(x) for x in np.version.version.split('.')]
+        rcond_val = None if (np_version[1] >= 14 or np_version[0] > 1) else -1
+        X, residuals, rank, singular = np.linalg.lstsq(w, Y, rcond=rcond_val)
+
         print(X)
         print("residuals:", residuals)
         print("rank:", rank)
@@ -602,7 +609,7 @@ def main():
         with open(os.path.join(directory,"calibration.bin"), 'wb') as outfile:
             outfile.write(eeprom.astype('f').tostring())
 
-        is_write = raw_input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
+        is_write = input('Would you like to write the results to the camera\'s eeprom? (Y/N)')
         is_write = 'Y' in is_write.upper()
         if is_write:
             print('Writing calibration to device.')
@@ -611,9 +618,9 @@ def main():
         else:
             print('Abort writing to device')
     except Exception as e:
-        print ('\nDone. %s' % e.message)
+        print ('\nDone. %s' % e)
     finally:
-        if os.name == 'posix':
+        if os.name == 'posix' and old_settings is not None:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
     """
