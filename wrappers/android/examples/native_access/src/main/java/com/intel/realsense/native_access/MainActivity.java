@@ -9,7 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.intel.realsense.librealsense.UsbHostManager;
+import com.intel.realsense.librealsense.DeviceListener;
+import com.intel.realsense.librealsense.DeviceManager;
+import com.intel.realsense.librealsense.UsbHub;
 
 public class MainActivity extends AppCompatActivity {
     // Used to load the 'native-lib' library on application startup.
@@ -21,23 +23,23 @@ public class MainActivity extends AppCompatActivity {
 
     private android.content.Context mContext = this;
 
-    private UsbHostManager.Listener mListener = new UsbHostManager.Listener() {
+    private DeviceListener mListener = new DeviceListener() {
         @Override
-        public void onUsbDeviceAttach() {
+        public void onDeviceAttach() {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(mContext, "RealSense device attached", Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, "DeviceManager device attached", Toast.LENGTH_LONG).show();
                 }
             });
         }
 
         @Override
-        public void onUsbDeviceDetach() {
+        public void onDeviceDetach() {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(mContext, "RealSense device detached", Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, "DeviceManager device detached", Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -66,11 +68,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void init(){
-        //The UsbHostManager creates a UVC device for any connected RealSense device, it must be initialized before any other API call.
-        UsbHostManager.init(mContext);
+        //DeviceManager must be initialized before any interaction with physical RealSense devices.
+        DeviceManager.init(mContext);
 
-        //UsbHostManager.Listener provides notifications regarding RealSense devices attach/detach events
-        UsbHostManager.addListener(mListener);
+        //The UsbHub provides notifications regarding RealSense devices attach/detach events via the DeviceListener.
+        DeviceManager.getUsbHub().addListener(mListener);
 
         // Example of a call to a native method
         TextView tv = (TextView) findViewById(R.id.sample_text);

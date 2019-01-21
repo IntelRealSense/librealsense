@@ -27,6 +27,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/android_uvc/UsbInterfaceAssociation.h"
         "${CMAKE_CURRENT_LIST_DIR}/android_uvc/UsbPipe.h"
         
+        "${CMAKE_CURRENT_LIST_DIR}/jni/usb_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.h"
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/context.c"

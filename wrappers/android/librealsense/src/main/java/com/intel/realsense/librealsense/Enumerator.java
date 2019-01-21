@@ -19,7 +19,7 @@ class Enumerator {
     private static final String TAG = "lrs Enumerator";
 
     private Context mContext;
-    private Listener mListener;
+    private DeviceListener mListener;
     private HandlerThread mMessagesHandler;
     private Handler mHandler;
 
@@ -44,18 +44,13 @@ class Enumerator {
         }
     };
 
-    public interface Listener {
-        void onUsbDeviceAttach();
-        void onUsbDeviceDetach();
-    }
-
     /**
      * In case a device is already available, onUsbDeviceAttach callback will be called.
      * close must be called at the of the usage.
      * @param context application's context.
      * @param listener The listener object which handles the state change.
      */
-    public Enumerator(Context context, Listener listener){
+    public Enumerator(Context context, DeviceListener listener){
         if(listener == null) {
             Log.e(TAG, "Enumerator: provided listener is null");
             throw new NullPointerException("provided listener is null");
@@ -65,7 +60,7 @@ class Enumerator {
             throw new NullPointerException("provided context is null");
         }
 
-        mMessagesHandler = new HandlerThread("RealSense device availability message thread");
+        mMessagesHandler = new HandlerThread("DeviceManager device availability message thread");
         mMessagesHandler.start();
         mHandler = new MessagesHandler(mMessagesHandler.getLooper());
 
@@ -107,7 +102,7 @@ class Enumerator {
         if(mListener != null) {
             Log.i(TAG, "notifyOnAttach");
 
-            mListener.onUsbDeviceAttach();
+            mListener.onDeviceAttach();
         }
     }
 
@@ -115,7 +110,7 @@ class Enumerator {
         if(mListener != null) {
             Log.i(TAG, "notifyOnDetach");
 
-            mListener.onUsbDeviceDetach();
+            mListener.onDeviceDetach();
         }
     }
 

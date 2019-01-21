@@ -106,13 +106,13 @@ namespace librealsense
             bool                                    _streaming = false;
             std::atomic<bool>                       _is_started = {false};
 
-            std::shared_ptr<usbhost_uvc_device>      _device = nullptr;
+            std::shared_ptr<usbhost_uvc_device>     _device = nullptr;
 
             int _input_terminal = 0;
             int _processing_unit = 0;
             int _extension_unit = 0;
-            mutable  std::mutex                           _systemwide_lock;
-            mutable std::mutex                              _power_mutex;
+            mutable std::recursive_mutex            _systemwide_lock;
+            mutable std::mutex                      _power_mutex;
 
             void poll_interrupts();
 

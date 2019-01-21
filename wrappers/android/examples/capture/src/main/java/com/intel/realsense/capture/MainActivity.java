@@ -13,12 +13,13 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.DeviceManager;
 import com.intel.realsense.librealsense.StreamFormat;
 import com.intel.realsense.librealsense.StreamType;
-import com.intel.realsense.librealsense.UsbHostManager;
 import com.intel.realsense.librealsense.VideoFrame;
 
 public class MainActivity extends AppCompatActivity {
@@ -37,14 +38,14 @@ public class MainActivity extends AppCompatActivity {
     private Config mConfig = new Config();
     private Pipeline mPipeline;
 
-    private UsbHostManager.Listener mListener = new UsbHostManager.Listener() {
+    private DeviceListener mListener = new DeviceListener() {
         @Override
-        public void onUsbDeviceAttach() {
+        public void onDeviceAttach() {
             mPipeline = new Pipeline();
         }
 
         @Override
-        public void onUsbDeviceDetach() {
+        public void onDeviceDetach() {
             stop();
         }
     };
@@ -72,11 +73,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void init(){
-        //The UsbHostManager creates a UVC device for any connected RealSense device, it must be initialized before any other API call.
-        UsbHostManager.init(mContext);
+        //DeviceManager must be initialized before any interaction with physical RealSense devices.
+        DeviceManager.init(mContext);
 
-        //UsbHostManager.Listener provides notifications regarding RealSense devices attach/detach events
-        UsbHostManager.addListener(mListener);
+        //The UsbHub provides notifications regarding RealSense devices attach/detach events via the DeviceListener.
+        DeviceManager.getUsbHub().addListener(mListener);
 
         mColorFrameViewer = new FrameViewer((ImageView) findViewById(R.id.colorImageView));
         mDepthFrameViewer = new FrameViewer((ImageView) findViewById(R.id.depthImageView));

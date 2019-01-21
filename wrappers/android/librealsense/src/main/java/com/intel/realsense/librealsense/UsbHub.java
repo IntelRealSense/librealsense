@@ -6,7 +6,6 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.util.Log;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,42 +13,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class UsbHostManager extends LrsClass {
-    private final List<Listener> mAppDeviceListner;
+public class UsbHub extends LrsClass {
+    private final List<DeviceListener> mAppDeviceListener;
 
-    public static void init(Context context){
-        if(mInstance == null)
-            mInstance = new UsbHostManager(context);
+    public void addListener(DeviceListener deviceListener){
+        mAppDeviceListener.add(deviceListener);
     }
 
-    public static void addListener(Listener deviceListener){
-        if(mInstance == null)
-            throw new RuntimeException("UsbHostManager must be initialized before adding a listener");
-        if(mInstance.mAppDeviceListner.contains(deviceListener) || deviceListener == null)
-            return;
-        mInstance.mAppDeviceListner.add(deviceListener);
+    public void removeListener(DeviceListener deviceListener){
+        mAppDeviceListener.remove(deviceListener);
     }
 
-    public static void removeListener(Listener deviceListener){
-        if(mInstance == null)
-            throw new RuntimeException("UsbHostManager must be initialized before removing a listener");
-        if(!mInstance.mAppDeviceListner.contains(deviceListener) || deviceListener == null)
-            return;
-        mInstance.mAppDeviceListner.remove(deviceListener);
-    }
-
-    private static UsbHostManager mInstance;
-
-    private static final String TAG = UsbHostManager.class.getSimpleName();
+    private static final String TAG = UsbHub.class.getSimpleName();
     private final Context mContext;
     private final Enumerator mEnumerator;
 
     private HashMap<String, UsbDesc> mDescriptors = new LinkedHashMap<>();
-
-    public interface Listener {
-        void onUsbDeviceAttach();
-        void onUsbDeviceDetach();
-    }
 
     private class UsbDesc {
         public UsbDesc(UsbDeviceConnection c, String n, int d ) {
@@ -62,22 +41,22 @@ public class UsbHostManager extends LrsClass {
         int descriptor;
     }
 
-    private Enumerator.Listener mListener = new Enumerator.Listener() {
+    private DeviceListener mListener = new DeviceListener() {
         @Override
-        public void onUsbDeviceAttach() {
+        public void onDeviceAttach() {
             invalidateDevices();
         }
 
         @Override
-        public void onUsbDeviceDetach() {
+        public void onDeviceDetach() {
             invalidateDevices();
         }
     };
 
-    private UsbHostManager(Context context){
+    UsbHub(Context context){
         mContext = context;
         mEnumerator = new Enumerator(mContext, mListener);
-        mAppDeviceListner = new ArrayList<>();
+        mAppDeviceListener = new ArrayList<>();
     }
 
     private synchronized void invalidateDevices() {
@@ -106,8 +85,8 @@ public class UsbHostManager extends LrsClass {
 
     private void removeDevice(UsbDesc desc) {
         //nRemoveUsbDevice(desc.descriptor); TODO: crash if device wasn't started
-        for(Listener listener : mAppDeviceListner)
-            listener.onUsbDeviceDetach();
+        for(DeviceListener listener : mAppDeviceListener)
+            listener.onDeviceDetach();
     }
 
     private  void addDevice(UsbDevice device) {
@@ -123,8 +102,8 @@ public class UsbHostManager extends LrsClass {
         UsbDesc desc = new UsbDesc(conn, device.getDeviceName(), conn.getFileDescriptor());
         mDescriptors.put(device.getDeviceName(), desc);
         nAddUsbDevice(desc.name, desc.descriptor);
-        for (Listener listener : mAppDeviceListner)
-            listener.onUsbDeviceAttach();
+        for (DeviceListener listener : mAppDeviceListener)
+            listener.onDeviceAttach();
     }
 
     @Override
@@ -137,6 +116,6 @@ public class UsbHostManager extends LrsClass {
         }
     }
 
-    public native void nAddUsbDevice(String deviceName, int fileDescriptor);
-    public native void nRemoveUsbDevice(int fileDescriptor);
+    private static native void nAddUsbDevice(String deviceName, int fileDescriptor);
+    private static native void nRemoveUsbDevice(int fileDescriptor);
 }
