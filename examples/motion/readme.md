@@ -68,7 +68,7 @@ void process_gyro(rs2_vector gyro_data, double ts)
     // Holds the change in angle, as calculated from gyro
     float3 gyro_angle;
 
-    // Multiply the gyro measurements by constants to fit them to angles in reality
+     // Initialize gyro_angle with data from gyro
     gyro_angle.x = gyro_data.x; // Pitch
     gyro_angle.y = gyro_data.y; // Yaw
     gyro_angle.z = gyro_data.z; // Roll
