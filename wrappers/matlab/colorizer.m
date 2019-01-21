@@ -6,7 +6,7 @@ classdef colorizer < realsense.filter
             if (nargin == 0)
                 out = realsense.librealsense_mex('rs2::colorizer', 'new');
             else
-                validateattributes(color_scheme, {'numeric'}, {'scalar', 'nonnegative', 'real'});
+                validateattributes(color_scheme, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'});
                 out = realsense.librealsense_mex('rs2::colorizer', 'new', double(color_scheme));
             end
             this = this@realsense.filter(out);
