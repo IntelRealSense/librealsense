@@ -1801,6 +1801,196 @@ namespace rs2
         return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
+    void viewer_model::render_pose(rs2::rect stream_rect, uint32_t pose_stream_count, float buttons_heights, ImGuiWindowFlags flags)
+    {
+        int num_of_pose_buttons = 3; // trajectory, grid, info
+
+        if (pose_stream_count > 1)
+        {
+            num_of_pose_buttons = 1; // |Currently supports only single pose view
+        }
+
+        ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
+        ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
+        std::string pose_label = to_string() << "header of 3dviewer - pose";
+        ImGui::Begin(pose_label.c_str(), nullptr, flags);
+
+        // Draw selection buttons on the pose header
+        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
+
+        /* not supporting multiple stream at the moment */
+        if (pose_stream_count == 1)
+        {
+            bool color_icon = tm2.pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
+            if (color_icon)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            }
+
+            // Draw info object button
+            if (ImGui::Button(tm2.pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
+            {
+                for (auto&& s : streams)
+                {
+                    if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
+                    {
+                        s.second.show_stream_details = !s.second.show_stream_details;
+                        tm2.pose_info_object_button.toggle_button();
+                    }
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", tm2.pose_info_object_button.get_tooltip().c_str());
+            }
+            if (color_icon)
+            {
+                ImGui::PopStyleColor(2);
+            }
+
+
+            // Draw grid object button
+            ImGui::SameLine();
+
+            if (ImGui::Button(tm2.grid_object_button.get_icon().c_str(), { 24, buttons_heights }))
+            {
+                ImGui::OpenPopup("Grid Configuration");
+            }
+
+            if (ImGui::BeginPopupModal("Grid Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysUseWindowPadding))
+            {
+                for (auto&& s : streams)
+                {
+                    if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
+                    {
+                        ImGui::Text(" Unit Scale:");
+                        ImGui::Text("     1 unit =");
+                        ImGui::SameLine();
+
+                        ImGui::PushItemWidth(100);
+                        float currentStep = s.second.texture->currentGrid.step;
+                        if (ImGui::InputFloat("##grid_step", &currentStep, 0.1f, 1.0f, 2))
+                        {
+                            if (currentStep >= 0.01)
+                            {
+                                s.second.texture->currentGrid.set(currentStep);
+                            }
+                        }
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+
+                        ImGui::PushItemWidth(80);
+                        int currentGridUnit = s.second.texture->currentGrid.unit;
+                        if (ImGui::Combo("##grid_scale_combo", &currentGridUnit, "Meter\0Feet\0\0"))
+                        {
+                            s.second.texture->currentGrid.set((grid_step_unit)currentGridUnit);
+                        }
+                        ImGui::PopItemWidth();
+
+
+                        ImGui::Separator();
+
+                        int boxHorizontalLength = s.second.texture->currentGrid.boxHorizontalLength;
+                        int boxVerticalLength = s.second.texture->currentGrid.boxVerticalLength;
+                        int boxVerticaAlignment = s.second.texture->currentGrid.boxVerticalAlignment;
+
+                        ImGui::Text(" Display");
+
+                        ImGui::Columns(2, 0, false);
+                        ImGui::SetColumnOffset(1, 100);
+
+                        ImGui::Text("     Horizontal:");
+                        ImGui::NextColumn();
+                        ImGui::PushItemWidth(148);
+                        if (ImGui::SliderIntWithSteps("##boxHorizontalLength", &boxHorizontalLength, 0, 100, 2))
+                        {
+                            s.second.texture->currentGrid.boxHorizontalLength = boxHorizontalLength;
+                        }
+                        ImGui::PopItemWidth();
+                        ImGui::NextColumn();
+
+                        ImGui::Text("     Vertical:  ");
+                        ImGui::NextColumn();
+                        ImGui::PushItemWidth(148);
+                        if (ImGui::SliderIntWithSteps("##boxVerticalLength", &boxVerticalLength, 1, 99, 2))
+                        {
+                            s.second.texture->currentGrid.boxVerticalLength = boxVerticalLength;
+                        }
+                        ImGui::PopItemWidth();
+                        ImGui::NextColumn();
+
+                        ImGui::Text("     Vertical Alignment:  ");
+                        ImGui::NextColumn();
+                        ImGui::PushItemWidth(148);
+                        if (ImGui::SliderIntWithSteps("##boxVerticalAlignment", &boxVerticaAlignment, -100, 100, 1))
+                        {
+                            s.second.texture->currentGrid.boxVerticalAlignment = boxVerticaAlignment;
+                        }
+                        ImGui::PopItemWidth();
+
+                        ImGui::Columns();
+
+                        if (ImGui::Button("OK", ImVec2(80, 0)))
+                        {
+                            s.second.texture->previousGrid = s.second.texture->currentGrid;
+                            ImGui::CloseCurrentPopup();
+                        }
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("Cancel", ImVec2(80, 0)))
+                        {
+                            s.second.texture->currentGrid.set(s.second.texture->previousGrid);
+                            ImGui::CloseCurrentPopup();
+                        }
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("Reset", ImVec2(80, 0)))
+                        {
+                            pose_grid resetGrid;
+                            s.second.texture->currentGrid.set(resetGrid);
+                            s.second.texture->previousGrid = s.second.texture->currentGrid;
+                            ImGui::CloseCurrentPopup();
+                        }
+                        break;
+                    }
+                }
+
+                ImGui::EndPopup();
+            }
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", tm2.grid_object_button.get_tooltip().c_str());
+            }
+
+            ImGui::SameLine();
+        }
+        // Draw trajectory button
+
+        bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
+        if (color_icon)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        }
+        if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
+        {
+            tm2.trajectory_button.toggle_button();
+        }
+        if (color_icon)
+        {
+            ImGui::PopStyleColor(2);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
+        }
+
+        ImGui::End();
+    }
+
     void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
@@ -2096,7 +2286,7 @@ namespace rs2
         ImGui::End();
 
         // Draw pose header if pose stream exists
-        bool render_pose = false;
+        bool pose_render = false;
         uint32_t pose_stream_count = 0;
 
         for (auto&& s : streams)
@@ -2104,210 +2294,17 @@ namespace rs2
             if (s.second.is_stream_visible() &&
                 s.second.profile.stream_type() == RS2_STREAM_POSE)
             {
-                render_pose = true;
+                pose_render = true;
                 pose_stream_count++;
             }
         }
 
         auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
 
-        if (render_pose)
+        if (pose_render)
         {
             total_top_bar_height += top_bar_height; // add additional bar height for pose
-            int num_of_pose_buttons = 3; // trajectory, grid, info
-
-            if (pose_stream_count > 1)
-            {
-                num_of_pose_buttons = 1;
-            }
-
-            ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
-            ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
-            std::string pose_label = to_string() << "header of 3dviewer - pose";
-            ImGui::Begin(pose_label.c_str(), nullptr, flags);
-
-            // Draw selection buttons on the pose header
-            ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
-
-            /* not supporting multiple stream at the moment */
-            if (pose_stream_count == 1)
-            {
-                bool color_icon = tm2.pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
-                if (color_icon)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                }
-
-                // Draw info object button
-                if (ImGui::Button(tm2.pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
-                {
-                    for (auto&& s : streams)
-                    {
-                        if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
-                        {
-                            if (s.second.show_stream_details)
-                            {
-                                s.second.show_stream_details = false;
-                                tm2.pose_info_object_button.toggle_button();
-                            }
-                            else
-                            {
-                                s.second.show_stream_details = true;
-                                tm2.pose_info_object_button.toggle_button();
-                            }
-                        }
-                    }
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", tm2.pose_info_object_button.get_tooltip().c_str());
-                }
-                if (color_icon)
-                {
-                    ImGui::PopStyleColor(2);
-                }
-
-
-                // Draw grid object button
-                ImGui::SameLine();
-
-                if (ImGui::Button(tm2.grid_object_button.get_icon().c_str(), { 24, buttons_heights }))
-                {
-                    ImGui::OpenPopup("Grid Configuration");
-                }
-
-                if (ImGui::BeginPopupModal("Grid Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysUseWindowPadding))
-                {
-                    for (auto&& s : streams)
-                    {
-                        if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
-                        {
-                            ImGui::Text(" Unit Scale:");
-                            ImGui::Text("     1 unit =");
-                            ImGui::SameLine();
-
-                            ImGui::PushItemWidth(100);
-                            float currentStep = s.second.texture->currentGrid.step;
-                            if (ImGui::InputFloat("##grid_step", &currentStep, 0.1f, 1.0f, 2))
-                            {
-                                if (currentStep >= 0.01)
-                                {
-                                    s.second.texture->currentGrid.set(currentStep);
-                                }
-                            }
-                            ImGui::PopItemWidth();
-
-                            ImGui::SameLine();
-
-                            ImGui::PushItemWidth(80);
-                            int currentGridUnit = s.second.texture->currentGrid.unit;
-                            if (ImGui::Combo("##grid_scale_combo", &currentGridUnit, "Meter\0Feet\0\0"))
-                            {
-                                s.second.texture->currentGrid.set((grid_step_unit)currentGridUnit);
-                            }
-                            ImGui::PopItemWidth();
-
-
-                            ImGui::Separator();
-
-                            int boxHorizontalLength = s.second.texture->currentGrid.boxHorizontalLength;
-                            int boxVerticalLength = s.second.texture->currentGrid.boxVerticalLength;
-                            int boxVerticaAlignment = s.second.texture->currentGrid.boxVerticalAlignment;
-
-                            ImGui::Text(" Display");
-
-                            ImGui::Columns(2, 0, false);
-                            ImGui::SetColumnOffset(1, 100);
-
-                            ImGui::Text("     Horizontal:");
-                            ImGui::NextColumn();
-                            ImGui::PushItemWidth(148);
-                            if (ImGui::SliderIntWithSteps("##boxHorizontalLength", &boxHorizontalLength, 0, 100, 2))
-                            {
-                                s.second.texture->currentGrid.boxHorizontalLength = boxHorizontalLength;
-                            }
-                            ImGui::PopItemWidth();
-                            ImGui::NextColumn();
-
-                            ImGui::Text("     Vertical:  ");
-                            ImGui::NextColumn();
-                            ImGui::PushItemWidth(148);
-                            if (ImGui::SliderIntWithSteps("##boxVerticalLength", &boxVerticalLength, 1, 99, 2))
-                            {
-                                s.second.texture->currentGrid.boxVerticalLength = boxVerticalLength;
-                            }
-                            ImGui::PopItemWidth();
-                            ImGui::NextColumn();
-
-                            ImGui::Text("     Vertical Alignment:  ");
-                            ImGui::NextColumn();
-                            ImGui::PushItemWidth(148);
-                            if (ImGui::SliderIntWithSteps("##boxVerticalAlignment", &boxVerticaAlignment, -100, 100, 1))
-                            {
-                                s.second.texture->currentGrid.boxVerticalAlignment = boxVerticaAlignment;
-                            }
-                            ImGui::PopItemWidth();
-
-                            ImGui::Columns();
-
-                            if (ImGui::Button("OK", ImVec2(80, 0)))
-                            {
-                                s.second.texture->previousGrid = s.second.texture->currentGrid;
-                                ImGui::CloseCurrentPopup();
-                            }
-
-                            ImGui::SameLine();
-                            if (ImGui::Button("Cancel", ImVec2(80, 0)))
-                            {
-                                s.second.texture->currentGrid.set(s.second.texture->previousGrid);
-                                ImGui::CloseCurrentPopup();
-                            }
-
-                            ImGui::SameLine();
-                            if (ImGui::Button("Reset", ImVec2(80, 0)))
-                            {
-                                pose_grid resetGrid;
-                                s.second.texture->currentGrid.set(resetGrid);
-                                s.second.texture->previousGrid = s.second.texture->currentGrid;
-                                ImGui::CloseCurrentPopup();
-                            }
-                            break;
-                        }
-                    }
-
-                    ImGui::EndPopup();
-                }
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", tm2.grid_object_button.get_tooltip().c_str());
-                }
-
-                ImGui::SameLine();
-            }
-            // Draw trajectory button
-
-            bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
-            if (color_icon)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            }
-            if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
-            {
-                tm2.trajectory_button.toggle_button();
-            }
-            if (color_icon)
-            {
-                ImGui::PopStyleColor(2);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
-            }
-
-            ImGui::End();
+            render_pose(stream_rect, pose_stream_count, buttons_heights, flags);
         }
 
         ImGui::PopStyleColor(6);
@@ -2749,7 +2746,7 @@ namespace rs2
                     ImGui::BeginTooltip();
                     ImGui::PushTextWrapPos(450.0f);
                     ImGui::PushStyleColor(ImGuiCol_Text, red);
-                    ImGui::TextUnformatted("Timestamp: SystemTime (Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to installation.md for mode information)");
+                    ImGui::TextUnformatted("Timestamp: SystemTime (Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to metadata.md for mode information)");
                     ImGui::PopStyleColor();
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();

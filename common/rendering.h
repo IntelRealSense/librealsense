@@ -14,6 +14,7 @@
 #include <ctype.h>
 #include <memory>
 #include <string>
+#include <cassert>
 #include <sstream>
 #include <iomanip>
 #include <array>
@@ -1006,6 +1007,8 @@ namespace rs2
                 case GRID_STEP_UNIT_FEET:
                     pixelStep = step * FeetToMeterMultiplyer;
                     break;
+                default:
+                    assert(false);
             }
         }
 
@@ -1021,6 +1024,8 @@ namespace rs2
                 case GRID_STEP_UNIT_FEET:
                     pixelStep = step * FeetToMeterMultiplyer;
                     break;
+                default:
+                    assert(false);
             }
         }
 
@@ -1036,6 +1041,8 @@ namespace rs2
                     step = newStep;
                     pixelStep = step * FeetToMeterMultiplyer;
                     break;
+                default:
+                    assert(false);
             }
         }
 
@@ -1048,6 +1055,7 @@ namespace rs2
                 case GRID_STEP_UNIT_FEET:
                     return "Feet";
                 default:
+                    assert(false);
                     return "Unknown";
             }
         }
