@@ -3767,7 +3767,7 @@ namespace rs2
                         }
 
                         if (frame.is<pose_frame>())  // Aggregate the trajectory in pause mode to make the path consistent
-                            tm2.update_model_trajectory(frame.as<pose_frame>());
+                            tm2.update_model_trajectory(frame.as<pose_frame>(), !paused);
 
                         auto texture = upload_frame(std::move(frame));
 
@@ -7872,20 +7872,31 @@ namespace rs2
     }
 
     // Aggregate the trajectory path
-    void tm2_model::update_model_trajectory(const pose_frame& pose)
+    void tm2_model::update_model_trajectory(const pose_frame& pose, bool track)
     {
+        // TODO refactor for multi-cam
+        static bool prev_track = track;
         if (!_trajectory_tracking)
             return;
 
-        rs2_pose pose_data = const_cast<pose_frame&>(pose).get_pose_data();
-        auto t = tm2_pose_to_world_transformation(pose_data);
-        float model[4][4];
-        t.to_column_major((float*)model);
+        if (track)
+        {
+            // Reset the waypoints on stream resume
+            if (!prev_track)
+                reset_trajectory();
 
-        rs2_vector translation{ t.mat[0][3], t.mat[1][3], t.mat[2][3] };
-        tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
-        // register the new waypoint
-        add_to_trajectory(p);
+            rs2_pose pose_data = const_cast<pose_frame&>(pose).get_pose_data();
+            auto t = tm2_pose_to_world_transformation(pose_data);
+            float model[4][4];
+            t.to_column_major((float*)model);
+
+            rs2_vector translation{ t.mat[0][3], t.mat[1][3], t.mat[2][3] };
+            tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
+            // register the new waypoint
+            add_to_trajectory(p);
+        }
+
+        prev_track = track;
     }
 
     void tm2_model::draw_trajectory()
@@ -7893,15 +7904,9 @@ namespace rs2
         if (!trajectory_button.is_pressed())
         {
             record_trajectory(false);
-            if (trajectory.size() > 0)
-            {
-                //cleanup last trajectory
-                trajectory.clear();
-            }
+            reset_trajectory();
             return;
         }
-
-        //add_to_trajectory(p);
 
         glLineWidth(3.0f);
         glBegin(GL_LINE_STRIP);

@@ -862,8 +862,9 @@ namespace rs2
         void draw_controller_pose_object();
         void draw_pose_object();
         void draw_trajectory();
-        void update_model_trajectory(const pose_frame& pose);
+        void update_model_trajectory(const pose_frame& pose, bool track);
         void record_trajectory(bool on) { _trajectory_tracking = on; };
+        void reset_trajectory() { trajectory.clear(); };
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
         press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
