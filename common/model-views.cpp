@@ -2154,6 +2154,7 @@ namespace rs2
             if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.trajectory_button.toggle_button();
+                tm2.record_trajectory(tm2.trajectory_button.is_pressed());
             }
             if (color_icon)
             {
@@ -3740,7 +3741,7 @@ namespace rs2
     {
         std::shared_ptr<texture_buffer> texture_frame = nullptr;
         points p;
-        frame f{}, depth{};
+        frame f{};
 
         std::map<int, frame> last_frames;
         try
@@ -3765,8 +3766,8 @@ namespace rs2
                             continue;
                         }
 
-                        if (frame.is<depth_frame>() && !paused)
-                            depth = frame;
+                        if (frame.is<pose_frame>())  // Aggregate the trajectory in pause mode to make the path consistent
+                            tm2.update_model_trajectory(frame.as<pose_frame>());
 
                         auto texture = upload_frame(std::move(frame));
 
@@ -4325,9 +4326,7 @@ namespace rs2
 
                 glMultMatrixf((float*)_rx);
 
-                rs2_vector translation{ t.mat[0][3], t.mat[1][3], t.mat[2][3] };
-                tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
-                tm2.draw_trajectory(p);
+                tm2.draw_trajectory();
 
                 // remove model matrix from the rest of the render
                 glPopMatrix();
@@ -7872,10 +7871,28 @@ namespace rs2
         }
     }
 
-    void tm2_model::draw_trajectory(tracked_point& p)
+    // Aggregate the trajectory path
+    void tm2_model::update_model_trajectory(const pose_frame& pose)
+    {
+        if (!_trajectory_tracking)
+            return;
+
+        rs2_pose pose_data = const_cast<pose_frame&>(pose).get_pose_data();
+        auto t = tm2_pose_to_world_transformation(pose_data);
+        float model[4][4];
+        t.to_column_major((float*)model);
+
+        rs2_vector translation{ t.mat[0][3], t.mat[1][3], t.mat[2][3] };
+        tracked_point p{ translation , pose_data.tracker_confidence }; //TODO: Osnat - use tracker_confidence or mapper_confidence ?
+        // register the new waypoint
+        add_to_trajectory(p);
+    }
+
+    void tm2_model::draw_trajectory()
     {
         if (!trajectory_button.is_pressed())
         {
+            record_trajectory(false);
             if (trajectory.size() > 0)
             {
                 //cleanup last trajectory
@@ -7883,7 +7900,8 @@ namespace rs2
             }
             return;
         }
-        add_to_trajectory(p);
+
+        //add_to_trajectory(p);
 
         glLineWidth(3.0f);
         glBegin(GL_LINE_STRIP);

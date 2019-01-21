@@ -855,13 +855,15 @@ namespace rs2
     class tm2_model
     {
     public:
-        tm2_model()
+        tm2_model(): _trajectory_tracking(true)
         {   // Render trajectory path by default
             trajectory_button.toggle_button();
         }
         void draw_controller_pose_object();
         void draw_pose_object();
-        void draw_trajectory(tracked_point& p);
+        void draw_trajectory();
+        void update_model_trajectory(const pose_frame& pose);
+        void record_trajectory(bool on) { _trajectory_tracking = on; };
 
         press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
         press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
@@ -911,6 +913,7 @@ namespace rs2
 
         std::vector<tracked_point> trajectory;
         std::vector<float2> boundary;
+        bool                _trajectory_tracking;
 
     };
 
