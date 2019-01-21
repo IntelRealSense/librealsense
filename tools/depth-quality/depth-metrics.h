@@ -120,14 +120,14 @@ namespace rs2
         inline float3 approximate_intersection(const plane& p, const rs2_intrinsics* intrin, float x, float y, float min, float max)
         {
             float3 point;
-            auto far = evaluate_pixel(p, intrin, x, y, max, point);
+            auto f = evaluate_pixel(p, intrin, x, y, max, point);
             if (fabs(max - min) < 1e-3) return point;
-            auto near = evaluate_pixel(p, intrin, x, y, min, point);
-            if (far*near > 0) return{ 0, 0, 0 };
+            auto n = evaluate_pixel(p, intrin, x, y, min, point);
+            if (f*n > 0) return{ 0, 0, 0 };
 
             auto avg = (max + min) / 2;
             auto mid = evaluate_pixel(p, intrin, x, y, avg, point);
-            if (mid*near < 0) return approximate_intersection(p, intrin, x, y, min, avg);
+            if (mid*n < 0) return approximate_intersection(p, intrin, x, y, min, avg);
             return approximate_intersection(p, intrin, x, y, avg, max);
         }
 
