@@ -1398,6 +1398,16 @@ namespace rs2
     {
         viewer.not_model.add_log("Stopping streaming");
 
+        // TODO  - refactor tm2 from viewer to subdevice
+        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](auto& kvp)
+        {
+            if ("Pose" == kvp.second)
+            {
+                viewer.tm2.reset_trajectory();
+                viewer.tm2.record_trajectory(false);
+            }
+        });
+
         streaming = false;
         _pause = false;
 
@@ -1440,6 +1450,13 @@ namespace rs2
         }
         ss << "...";
         viewer.not_model.add_log(ss.str());
+
+        // TODO  - refactor tm2 from viewer to subdevice
+        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](auto& kvp)
+        {
+            if ("Pose" == kvp.second)
+                viewer.tm2.record_trajectory(true);
+        });
 
         s->open(profiles);
 
