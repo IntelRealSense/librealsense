@@ -382,10 +382,10 @@ namespace librealsense
         _recommended_fw_version = firmware_version("5.10.3.0");
         if (_fw_version >= firmware_version("5.10.4.0"))
             _device_capabilities = parse_device_capabilities();
-        auto serial = "";// _hw_monitor->get_module_serial_string(GVD, module_serial_offset); TODO: fix hwmonitor
+        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
-        auto advanced_mode = false;//is_camera_in_advanced_mode();
+        auto advanced_mode = is_camera_in_advanced_mode();
 
         using namespace platform;
         auto _usb_mode = usb3_type;
@@ -411,7 +411,7 @@ namespace librealsense
         std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
-            auto is_locked = false; //_hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            auto is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             is_camera_locked = (is_locked) ? "YES" : "NO";
 
 #ifdef HWM_OVER_XU
