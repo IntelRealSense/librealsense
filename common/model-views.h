@@ -855,6 +855,10 @@ namespace rs2
     class tm2_model
     {
     public:
+        tm2_model()
+        {   // Render trajectory path by default
+            trajectory_button.toggle_button();
+        }
         void draw_controller_pose_object();
         void draw_pose_object();
         void draw_trajectory(tracked_point& p);

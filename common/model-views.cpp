@@ -2135,16 +2135,16 @@ namespace rs2
             // Draw selection buttons on the pose header
             ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
 
-            // Draw camera object button
-            if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, buttons_heights }))
+            // TODO Draw camera object button
+            /*if (ImGui::Button(tm2.camera_object_button.get_icon().c_str(), { 24, buttons_heights }))
             {
                 tm2.camera_object_button.toggle_button();
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", tm2.camera_object_button.get_tooltip().c_str());
+            ImGui::SameLine();*/
 
             // Draw trajectory button
-            ImGui::SameLine();
             bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
             if (color_icon)
             {
