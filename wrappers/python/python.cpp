@@ -423,21 +423,33 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_vertices", [](rs2::points& self, int dims) -> BufData
         {
             auto verts = const_cast<rs2::vertex*>(self.get_vertices());
+            auto profile = self.get_profile().as<rs2::video_stream_profile>();
+            size_t h = profile.height(), w = profile.width();
             switch (dims) {
             case 1:
                 return BufData(verts, sizeof(rs2::vertex), "@fff", self.size());
             case 2:
                 return BufData(verts, sizeof(float), "@f", 3, self.size());
+            case 3:
+                return BufData(verts, sizeof(float), "@f", 3, { h, w, 3 }, { w*3*sizeof(float), 3*sizeof(float), sizeof(float) });
+            default:
+                throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
         }, py::keep_alive<0, 1>(), "dims"_a=1)
         .def("get_texture_coordinates", [](rs2::points& self, int dims) -> BufData
         {
             auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
+            auto profile = self.get_profile().as<rs2::video_stream_profile>();
+            size_t h = profile.height(), w = profile.width();
             switch (dims) {
             case 1:
                 return BufData(tex, sizeof(rs2::texture_coordinate), "@ff", self.size());
             case 2:
                 return BufData(tex, sizeof(float), "@f", 2, self.size());
+            case 3:
+                return BufData(tex, sizeof(float), "@f", 2, { h, w, 2 }, { w*2*sizeof(float), 2*sizeof(float), sizeof(float) });
+            default:
+                throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
         }, py::keep_alive<0, 1>(), "dims"_a=1)
         .def("export_to_ply", &rs2::points::export_to_ply)
