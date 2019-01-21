@@ -129,10 +129,10 @@ public:
         // Holds the change in angle, as calculated from gyro
         float3 gyro_angle;
 
-        // Multiply the gyro measures by constants to fit them to angles in reality
-        gyro_angle.x = gyro_data.x * 0.5; // Pitch
+        // Initialize gyro_angle with data from gyro
+        gyro_angle.x = gyro_data.x; // Pitch
         gyro_angle.y = gyro_data.y; // Yaw
-        gyro_angle.z = gyro_data.z * 0.5; // Roll
+        gyro_angle.z = gyro_data.z; // Roll
 
         // Compute the difference between arrival times of previous and current gyro frames
         double dt_gyro = (ts - last_ts_gyro) / 1000.0;
