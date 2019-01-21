@@ -2910,7 +2910,7 @@ namespace rs2
         }
 
         ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y+y_offset });
-        ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h });
+        ImGui::SetNextWindowSize({ stream_rect.w, stream_rect.h- y_offset });
         std::string label = to_string() << "IMU Stream Info of " << profile.unique_id();
         ImGui::Begin(label.c_str(), nullptr, flags);
 
@@ -4576,8 +4576,6 @@ namespace rs2
 
             glEnd();
         }
-        glPopMatrix();
-
 
         auto x = static_cast<float>(-M_PI / 2);
         float _rx[4][4] = {
@@ -4603,7 +4601,9 @@ namespace rs2
             {
                 auto f = stream.second.texture->get_last_frame();
                 if (!f.is<pose_frame>())
+                {
                     continue;
+                }
 
                 draw_3d_grid(stream.second.texture->currentGrid);
 
@@ -4640,11 +4640,28 @@ namespace rs2
             }
         }
 
+        glPopMatrix();
+
         if (!pose)
         {
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
             glLoadMatrixf(r1 * view_mat);
+            glLineWidth(1);	        glLineWidth(1);
+            glBegin(GL_LINES);
+            glColor4f(0.4f, 0.4f, 0.4f, 1.f);
+
+            glTranslatef(0, 0, -1);
+
+            // Render "floor" grid
+            for (int i = 0; i <= 6; i++)
+            {
+                glVertex3i(i - 3, 1, 0);
+                glVertex3i(i - 3, 1, 6);
+                glVertex3i(-3, 1, i);
+                glVertex3i(3, 1, i);
+            }
+            glEnd();
             texture_buffer::draw_axes(0.4f, 1);
             glPopMatrix();
         }
