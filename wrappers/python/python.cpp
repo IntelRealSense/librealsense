@@ -359,7 +359,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
         .def(BIND_DOWNCAST(frame, video_frame))
-        .def(BIND_DOWNCAST(frame, depth_frame));
+        .def(BIND_DOWNCAST(frame, depth_frame))
+        .def(BIND_DOWNCAST(frame, motion_frame));
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
@@ -598,9 +599,9 @@ PYBIND11_MODULE(NAME, m) {
     yuy_decoder.def(py::init<>());
 
     /* rs_export.hpp */
-    py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
-    save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud());
-    //TODO - Fix Linux/Python3_6 .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
+    // py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
+    // save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
+    //            .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
 
     py::class_<rs2::save_single_frameset, rs2::filter> save_single_frameset(m, "save_single_frameset");
     save_single_frameset.def(py::init<std::string>(), "filename"_a = "RealSense Frameset ");
