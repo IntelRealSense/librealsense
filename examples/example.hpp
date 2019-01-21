@@ -61,7 +61,7 @@ inline void draw_text(int x, int y, const char * text)
 
 void set_viewport(const rect& r)
 {
-    glViewport(r.x, r.y, r.w, r.h);
+    glViewport( (int)r.x, (int)r.y, (int)r.w, (int)r.h);
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glOrtho(0, r.w, r.h, 0, -1, +1);
@@ -137,7 +137,7 @@ public:
         glEnd();
         glDisable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
-        draw_text(0.05 * r.w, r.h - 0.05*r.h, rs2_stream_to_string(stream));
+        draw_text(int(0.05f * r.w), int(r.h - 0.05f*r.h), rs2_stream_to_string(stream));
     }
 
     GLuint get_gl_handle() { return gl_handle; }
@@ -162,7 +162,7 @@ private:
             glGenTextures(1, &_gl_handle);
 
         set_viewport(r);
-        draw_text(0.05 * r.w, r.h - 0.1*r.h, f.get_profile().stream_name().c_str());
+        draw_text(int(0.05f * r.w), int(r.h - 0.1f*r.h), f.get_profile().stream_name().c_str());
 
         auto md = f.get_motion_data();
         auto x = md.x;
@@ -515,7 +515,7 @@ private:
         }
     }
 
-    rect calc_grid(rect r, int streams)
+    rect calc_grid(rect r, size_t streams)
     {
         if (r.w <= 0 || r.h <= 0 || streams <= 0)
             throw std::runtime_error("invalid window configuration request, failed to calculate window grid");
