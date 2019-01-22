@@ -1014,7 +1014,7 @@ namespace rs2
     class pose_grid
     {
     public:
-        pose_grid() : step(0.1f), pixelStep(0.1f), unit(GRID_STEP_UNIT_METER), boxHorizontalLength(6), boxVerticalLength(1), boxVerticalAlignment(1) {}
+        pose_grid() : step(1.f), pixelStep(1.f), unit(GRID_STEP_UNIT_METER), boxHorizontalLength(12), boxVerticalLength(1), boxVerticalAlignment(1) {}
 
         void set(pose_grid newGrid)
         {
