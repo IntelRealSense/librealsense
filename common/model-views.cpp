@@ -1398,6 +1398,16 @@ namespace rs2
     {
         viewer.not_model.add_log("Stopping streaming");
 
+        // TODO  - refactor tm2 from viewer to subdevice
+        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        {
+            if ("Pose" == kvp.second)
+            {
+                viewer.tm2.reset_trajectory();
+                viewer.tm2.record_trajectory(false);
+            }
+        });
+
         streaming = false;
         _pause = false;
 
@@ -1440,6 +1450,13 @@ namespace rs2
         }
         ss << "...";
         viewer.not_model.add_log(ss.str());
+
+        // TODO  - refactor tm2 from viewer to subdevice
+        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        {
+            if ("Pose" == kvp.second)
+                viewer.tm2.record_trajectory(true);
+        });
 
         s->open(profiles);
 
@@ -2055,7 +2072,8 @@ namespace rs2
             {
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
                 {
-                    selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
+                    if (streams.find(streams_origin[s.second.profile.unique_id()]) != streams.end())
+                        selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
                 }
                 if (streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid)
                 {
@@ -2152,7 +2170,9 @@ namespace rs2
 
             ImGui::PushItemWidth(combo_box_width);
             draw_combo_box("##Tex Source", tex_sources_str, selected_tex_source);
-            selected_tex_source_uid = tex_sources[selected_tex_source];
+            if (streams.find(tex_sources[selected_tex_source]) != streams.end())
+                selected_tex_source_uid = tex_sources[selected_tex_source];
+
             ImGui::PopItemWidth();
 
             ImGui::SameLine();
@@ -2625,11 +2645,11 @@ namespace rs2
                 switch (this->texture->currentGrid.unit)
                 {
                     case GRID_STEP_UNIT_METER:
-                        newGrid.set(1.0f);
+                        newGrid.set(1.f);
                         newGrid.set(GRID_STEP_UNIT_FEET);
                         break;
                     case GRID_STEP_UNIT_FEET:
-                        newGrid.set(0.1f);
+                        newGrid.set(1.f);
                         newGrid.set(GRID_STEP_UNIT_METER);
                         break;
                 }
@@ -2650,7 +2670,7 @@ namespace rs2
                         break;
                     case GRID_STEP_UNIT_FEET:
                         switchToUnit = "Meter";
-                        switchToStep = 0.1f;
+                        switchToStep = 1.f;
                         break;
                 }
 
@@ -2781,31 +2801,31 @@ namespace rs2
 
             std::string res;
             if (profile.as<rs2::video_stream_profile>())
-                res = to_string() << size.x << "x" << size.y << ", ";
-            label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()),9) << ", FPS:";
+                res = to_string() << size.x << "x" << size.y << ",  ";
+            label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()),9) << ", ";
             ImGui::Text("%s", label.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", rs2_format_to_string(profile.format()));
+                ImGui::SetTooltip("%s","Stream Resolution, Format");
             }
 
             ImGui::SameLine();
 
-            label = to_string() << std::setprecision(2) << std::fixed << fps.get_fps();
+            label = to_string() << "FPS: " << std::setprecision(2) << std::setw(7) <<  std::fixed << fps.get_fps();
             ImGui::Text("%s", label.c_str());
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("FPS is calculated based on timestamps and not viewer time");
+                ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
             }
 
-            ImGui::SameLine(170);
+            ImGui::SameLine();
 
-            label = to_string() << "Frame" << frame_number;
+            label = to_string() << " Frame: " << std::left <<  frame_number;
             ImGui::Text("%s", label.c_str());
 
-            ImGui::SameLine(300);
+            ImGui::SameLine(290);
 
-            label = to_string() << "Time: " << std::fixed << std::setprecision(1) << timestamp;
+            label = to_string() << "Time: " << std::left << std::fixed << std::setprecision(1) << timestamp;
             ImGui::Text("%s", label.c_str());
             if (ImGui::IsItemHovered())
             {
@@ -2814,7 +2834,7 @@ namespace rs2
                     ImGui::BeginTooltip();
                     ImGui::PushTextWrapPos(450.0f);
                     ImGui::PushStyleColor(ImGuiCol_Text, red);
-                    ImGui::TextUnformatted("Timestamp: SystemTime (Hardware Timestamp unavailable! This is often an indication of improperly applied Kernel patch.\nPlease refer to metadata.md for mode information)");
+                    ImGui::TextUnformatted("Timestamp: SystemTime (Hardware Timestamp unavailable.\nPlease refer to frame_metadata.md for mode information)");
                     ImGui::PopStyleColor();
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
@@ -4448,12 +4468,13 @@ namespace rs2
         uint32_t horizontal = boxHorizontalLength / 2;
         uint32_t vertical = (boxVerticalLength-1) / 2;
 
+        glPushAttrib(GL_CURRENT_BIT);
+        glPushAttrib(GL_LINE_BIT);
+        glLineWidth(1.f);
+        glColor4f(0.4f, 0.4f, 0.4f, 1.f);
         glBegin(GL_LINES);
-        glColor4f(0.2f, 0.2f, 0.2f, 0.8f);
 
-        glTranslatef(0, 0, -1);
-
-        // Render box grid
+        // Render the box grid
         float currentYStep = boxVerticalAlignment * step;
 
         for (uint8_t y = 0; y <= (boxVerticalLength-1); y++)
@@ -4483,8 +4504,9 @@ namespace rs2
             }
             currentZStep += step;
         }
-
         glEnd();
+        glPopAttrib(); // color
+        glPopAttrib(); // line width
     }
 
      void viewer_model::render_camera_mesh(int id)
@@ -4492,7 +4514,6 @@ namespace rs2
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
-        
 
         glBegin(GL_TRIANGLES);
         auto& mesh = camera_mesh[id];
@@ -4548,13 +4569,12 @@ namespace rs2
 
         glEnable(GL_DEPTH_TEST);
 
-        glLineWidth(1);
-
         auto r1 = matrix4::identity();
         auto r2 = matrix4::identity();
 
         if (draw_plane)
         {
+            glPushAttrib(GL_LINE_BIT);
             glLineWidth(2);
             glBegin(GL_LINES);
 
@@ -4575,6 +4595,7 @@ namespace rs2
             }
 
             glEnd();
+            glPopAttrib();
         }
 
         auto x = static_cast<float>(-M_PI / 2);
@@ -4640,20 +4661,13 @@ namespace rs2
             }
         }
 
-        glPopMatrix();
-
         if (!pose)
         {
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(r1 * view_mat);
-            glLineWidth(1);	        glLineWidth(1);
+             // Render "floor" grid
+            glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.4f, 0.4f, 0.4f, 1.f);
-
             glTranslatef(0, 0, -1);
-
-            // Render "floor" grid
             for (int i = 0; i <= 6; i++)
             {
                 glVertex3i(i - 3, 1, 0);
@@ -4662,6 +4676,10 @@ namespace rs2
                 glVertex3i(3, 1, i);
             }
             glEnd();
+
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadMatrixf(r1 * view_mat);
             texture_buffer::draw_axes(0.4f, 1);
             glPopMatrix();
         }
@@ -4805,6 +4823,8 @@ namespace rs2
             render_camera_mesh(t265_mesh_id);
             glPopMatrix();
         }
+
+        glPopMatrix();
 
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
