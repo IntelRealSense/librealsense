@@ -30,6 +30,9 @@
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
 const uint8_t HID_METADATA_SIZE = 8; // bytes
+// Windows Filetime is represented in 64 - bit number of 100 - nanosecond intervals since midnight Jan 1, 1601
+// To convert to the Unix epoch, subtract 116444736000000000LL to reach Jan 1, 1970.
+constexpr uint64_t WIN_FILETIME_2_UNIX_SYSTIME = 116444736000000000LL;
 
 namespace librealsense
 {
@@ -105,9 +108,10 @@ namespace librealsense
                     return E_INVALIDARG;
                 }
 
-                BSTR fName{};
-                SYSTEMTIME time;
-                report->GetTimestamp(&time);
+                BSTR        fName{};
+                SYSTEMTIME  sys_time;
+                FILETIME    file_time;
+                report->GetTimestamp(&sys_time);
 
                 PROPVARIANT var = {};
                 // Custom timestamp low
@@ -145,19 +149,30 @@ namespace librealsense
                     rawY *= accelerator_transform_factor;
                     rawZ *= accelerator_transform_factor;
                 }
-                else
+                else if (type == SENSOR_TYPE_GYROMETER_3D)
                 {
                     // Raw X
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
-                    rawX = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_X_DEGREES_PER_SECOND, &var));
+                    rawX = var.dblVal;
 
                     // Raw Y
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
-                    rawY = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Y_DEGREES_PER_SECOND, &var));
+                    rawY = var.dblVal;
 
                     // Raw Z
-                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
-                    rawZ = var.iVal;
+                    CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_ANGULAR_VELOCITY_Z_DEGREES_PER_SECOND, &var));
+                    rawZ = var.dblVal;
+
+                    static constexpr double gyro_transform_factor = 10.0;
+
+                    rawX *= gyro_transform_factor;
+                    rawY *= gyro_transform_factor;
+                    rawZ *= gyro_transform_factor;
+                }
+                else
+                {
+                    /* Unsupported sensor */
+                    return S_FALSE;
                 }
 
                 PropVariantClear(&var);
@@ -165,9 +180,9 @@ namespace librealsense
                 sensor_data d;
                 hid_sensor_data data;
 
-                data.x = rawX;
-                data.y = rawY;
-                data.z = rawZ;
+                data.x = static_cast<int16_t>(rawX);
+                data.y = static_cast<int16_t>(rawY);
+                data.z = static_cast<int16_t>(rawZ);
                 data.ts_low = customTimestampLow;
                 data.ts_high = customTimestampHigh;
 
@@ -178,6 +193,13 @@ namespace librealsense
                 d.fo.metadata = &data.ts_low;
                 d.fo.metadata_size = HID_METADATA_SIZE;
                 d.fo.frame_size = sizeof(data);
+                d.fo.backend_time = 0;
+                if (SystemTimeToFileTime(&sys_time, &file_time))
+                {
+                    auto ll_now = (LONGLONG)file_time.dwLowDateTime + ((LONGLONG)(file_time.dwHighDateTime) << 32LL) - WIN_FILETIME_2_UNIX_SYSTIME;
+                    d.fo.backend_time = ll_now * 0.0001; //100 nano-sec to millisec
+                }
+
                 _callback(d);
 
                 return S_OK;

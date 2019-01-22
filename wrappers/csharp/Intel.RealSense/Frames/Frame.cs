@@ -1,4 +1,4 @@
-﻿using Intel.RealSense.Profiles;
+﻿using Intel.RealSense.StreamProfiles;
 using Intel.RealSense.Types;
 using System;
 using System.Runtime.InteropServices;

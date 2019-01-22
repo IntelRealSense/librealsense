@@ -143,3 +143,25 @@ namespace librealsense
         bool should_process(const rs2::frame& frame) override;
     };
 }
+
+// API structures
+struct rs2_options
+{
+    rs2_options(librealsense::options_interface* options) : options(options) { }
+
+    librealsense::options_interface* options;
+
+    virtual ~rs2_options() = default;
+};
+
+struct rs2_processing_block : public rs2_options
+{
+    rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
+        : rs2_options((librealsense::options_interface*)block.get()),
+        block(block) { }
+
+    std::shared_ptr<librealsense::processing_block_interface> block;
+
+    rs2_processing_block& operator=(const rs2_processing_block&) = delete;
+    rs2_processing_block(const rs2_processing_block&) = delete;
+};

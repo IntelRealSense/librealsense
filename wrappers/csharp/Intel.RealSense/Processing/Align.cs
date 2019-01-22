@@ -1,4 +1,5 @@
-﻿using Intel.RealSense.Types;
+﻿using Intel.RealSense.Frames;
+using Intel.RealSense.Types;
 using System;
 using System.Runtime.InteropServices;
 

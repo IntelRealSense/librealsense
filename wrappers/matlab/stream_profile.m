@@ -38,9 +38,9 @@ classdef stream_profile < handle
         end
         function profile = clone(this, type, index, fmt)
             narginchk(4, 4);
-            validateattributes(type, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 'type', 2);
+            validateattributes(type, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)}, '', 'type', 2);
             validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'index', 3);
-            validateattributes(fmt, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'fmt', 4);
+            validateattributes(fmt, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'fmt', 4);
             out = realsense.librealsense_mex('rs2::stream_profile', 'clone', this.objectHandle, int64(type), int64(index), int64(fmt));
             profile = realsense.stream_profile(out{:});
         end

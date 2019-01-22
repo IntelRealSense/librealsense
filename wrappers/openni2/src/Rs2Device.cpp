@@ -1,4 +1,6 @@
 #include "Rs2Driver.h"
+#include "Rs2Commands.h"
+#include <librealsense2/rsutil.h>
 
 #define WORKER_THREAD_IDLE_MS 500
 #define WORKER_THREAD_STOP_TIMEOUT_MS 5000
@@ -197,11 +199,34 @@ void Rs2Device::destroyStream(StreamBase* streamBase)
 
 OniStatus Rs2Device::invoke(int commandId, void* data, int dataSize)
 {
+	if (commandId == RS2_PROJECT_POINT_TO_PIXEL && data && dataSize == sizeof(Rs2PointPixel))
+	{
+		for (auto iter = m_createdStreams.begin(); iter != m_createdStreams.end(); ++iter)
+		{
+			Rs2Stream* stream = *iter;
+			if (stream->getOniType() == ONI_SENSOR_DEPTH)
+			{
+				auto pp = (Rs2PointPixel*)data;
+				rs2_project_point_to_pixel(pp->pixel, &stream->m_intrinsics, pp->point);
+				return ONI_STATUS_OK;
+			}
+		}
+		return ONI_STATUS_NO_DEVICE;
+	}
+
+	#if defined(RS2_TRACE_NOT_SUPPORTED_CMDS)
+		rsTraceError("Not supported: commandId=%d", commandId);
+	#endif
 	return ONI_STATUS_NOT_SUPPORTED;
 }
 
 OniBool Rs2Device::isCommandSupported(int commandId)
 {
+	switch (commandId)
+	{
+		case RS2_PROJECT_POINT_TO_PIXEL: return true;
+	}
+
 	return false;
 }
 
@@ -241,7 +266,16 @@ OniStatus Rs2Device::startPipeline()
 			break;
 		}
 
+		rsLogDebug("rs2_config_enable_device %s", m_info.uri);
+		rs2_config_enable_device(m_config, m_info.uri, &e);
+		if (!e.success())
+		{
+			rsTraceError("rs2_config_enable_device failed: %s", e.get_message());
+			break;
+		}
+
 		rs2_config_disable_all_streams(m_config, &e);
+		bool enableStreamError = false;
 
 		{
 			Rs2ScopedMutex lock(m_streamsMx);
@@ -263,9 +297,19 @@ OniStatus Rs2Device::startPipeline()
 					if (!e.success())
 					{
 						rsTraceError("rs2_config_enable_stream failed: %s", e.get_message());
+						enableStreamError = true;
+						break;
 					}
+
+					stream->onStreamStarted();
 				}
 			}
+		}
+
+		if (enableStreamError)
+		{
+			rsTraceError("enable_stream error");
+			break;
 		}
 
 		// pipeline

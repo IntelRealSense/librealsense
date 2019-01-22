@@ -3,6 +3,6 @@
     public enum TimestampDomain
     {
         HardwareClock = 0,
-        SystemTime = 1,
+        SystemTime = 1
     }
 }

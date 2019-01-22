@@ -1,5 +1,5 @@
 ﻿using Intel.RealSense.Frames;
-using Intel.RealSense.Profiles;
+using Intel.RealSense.StreamProfiles;
 using Intel.RealSense.Types;
 using System;
 using System.Collections.Generic;

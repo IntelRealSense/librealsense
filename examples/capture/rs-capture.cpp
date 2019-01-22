@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) try
 
     // Start streaming with default recommended configuration
     // The default video configuration contains Depth and Color streams
-    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default 
+    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
     pipe.start();
 
     while (app) // Application still alive?

@@ -18,6 +18,6 @@
         AdvancedMode = 13,
         Record = 14,
         VideoProfile = 15,
-        Playback = 16,        
+        Playback = 16        
     }
 }

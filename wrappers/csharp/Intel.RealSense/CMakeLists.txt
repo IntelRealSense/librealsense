@@ -2,92 +2,40 @@ cmake_minimum_required( VERSION 3.8.0 )
 
 project(Intel.RealSense)
 
+set(LRS_DOTNET_TARGET ${PROJECT_NAME})
+
 add_library(${PROJECT_NAME}
-    Config.cs
     Context.cs
     DisposableExtensions.cs
-    FrameEnumerator.cs
-    FrameExtension.cs
-    FrameQueue.cs
-    FrameSet.cs
-    FrameSetExtension.cs
-    FrameSetMarshaler.cs
-    FrameSetPool.cs
-    FramesReleaser.cs
     Helpers.cs
     ICompositeDisposable.cs
-    Intel.RealSense.csproj
-    IOptions.cs
-    IOptionsContainer.cs
     Log.cs
     NativeMethods.cs
-    Option.cs
-    Pipeline.cs
-    PipelineProfile.cs
-    Sensor.cs
-    SensorList.cs
-    SoftwareSensor.cs
     StreamComparer.cs
-    .nuget\Intel.RealSense.targets
-    Devices\AdvancedDevice.cs
-    Devices\Device.cs
-    Devices\DeviceList.cs
-    Devices\PlaybackDevice.cs
-    Devices\RecordDevice.cs
-    Devices\SoftwareDevice.cs
-    Frames\DepthFrame.cs
-    Frames\Frame.cs
-    Frames\FramePool.cs
-    Frames\Points.cs
-    Frames\VideoFrame.cs
-    Processing\Align.cs
-    Processing\Colorizer.cs
-    Processing\CustomProcessingBlock.cs
-    Processing\DecimationFilter.cs
-    Processing\DisparityTransform.cs
-    Processing\FrameSource.cs
-    Processing\HoleFillingFilter.cs
-    Processing\IProcessingBlock.cs
-    Processing\PointCloud.cs
-    Processing\ProcessingBlock.cs
-    Processing\SpatialFilter.cs
-    Processing\Syncer.cs
-    Processing\TemporalFilter.cs
-    Profiles\ProfilePool.cs
-    Profiles\StreamProfile.cs
-    Profiles\StreamProfileList.cs
-    Profiles\VideoStreamProfile.cs
-    Types\CameraInfo.cs
-    Types\Delegates.cs
-    Types\Distortion.cs
-    Types\ExceptionType.cs
-    Types\Extension.cs
-    Types\Extrinsics.cs
-    Types\Format.cs
-    Types\FrameMetadataValue.cs
-    Types\Intrinsics.cs
-    Types\LogSeverity.cs
-    Types\Matchers.cs
-    Types\NotificationCategory.cs
-    Types\Option.cs
-    Types\PlaybackStatus.cs
-    Types\RecordingMode.cs
-    Types\Rs400VisualPreset.cs
-    Types\SoftwareVideoFrame.cs
-    Types\SoftwareVideoStream.cs
-    Types\Sr300VisualPreset.cs
-    Types\Stream.cs
-    Types\TimestampDomain.cs
-    Types\VideoStream.cs
-    
+
     Properties/AssemblyInfo.cs
+    .nuget/Intel.RealSense.targets
 )
+
+include(Devices/CMakeLists.txt)
+include(Frames/CMakeLists.txt)
+include(Pipelines/CMakeLists.txt)
+include(Processing/CMakeLists.txt)
+include(Sensors/CMakeLists.txt)
+include(StreamProfiles/CMakeLists.txt)
+include(Types/CMakeLists.txt)
 
 csharp_set_designer_cs_properties(
     .nuget/Intel.RealSense.targets
 )
 
 if(BUILD_UNITY_BINDINGS)
+	string(REPLACE "/" "\\" CMAKE_BINARY_WIN_DIR ${CMAKE_BINARY_DIR})
+	string(REPLACE "/" "\\" CMAKE_SOURCE_WIN_DIR ${CMAKE_SOURCE_DIR})
+	file(MAKE_DIRECTORY ${CMAKE_BINARY_WIN_DIR}/wrappers)
+	if(NOT EXISTS ${CMAKE_BINARY_WIN_DIR}/wrappers/unity)
+		execute_process(COMMAND cmd "/C mklink /D ${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity ${CMAKE_SOURCE_WIN_DIR}\\wrappers\\unity")
+	endif()
     add_custom_command(TARGET ${PROJECT_NAME}
                POST_BUILD
                COMMAND XCOPY /y /s "$(OutDir)Intel.RealSense.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"

@@ -7,6 +7,6 @@
         Hand = 2,
         HighAccuracy = 3,
         HighDensity = 4,
-        MediumDensity = 5,
+        MediumDensity = 5
     }
 }

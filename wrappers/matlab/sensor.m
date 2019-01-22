@@ -20,12 +20,12 @@ classdef sensor < realsense.options
         end
         function value = supports_camera_info(this, info)
             narginchk(2, 2)
-            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             value = realsense.librealsense_mex('rs2::sensor', 'supports#rs2_camera_info', this.objectHandle, int64(info));
         end
         function value = get_info(this, info)
             narginchk(2, 2)
-            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'},{'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             value = realsense.librealsense_mex('rs2::sensor', 'get_info', this.objectHandle, int64(info));
         end
         function close(this)

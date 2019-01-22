@@ -16,6 +16,7 @@ extern "C" {
 
 #include "rs_types.h"
 #include "rs_sensor.h"
+#include "rs_option.h"
 
 /**
 * Creates Depth-Colorizer processing block that can be used to quickly visualize the depth data
@@ -42,6 +43,25 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
+* Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
+* YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
+* without signficant quality drop. YUY representation can be converted back to more usable RGB form,
+* but this requires somewhat costly conversion.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
+
+ /**
+* Creates depth thresholding processing block
+* By controlling min and max options on the block, one could filter out depth values
+* that are either too large or too small, as a software post-processing step
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_threshold(rs2_error** error);
+
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function to be applied to every frame entering the block
@@ -59,6 +79,20 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 * \return           new processing block, to be released by rs2_delete_processing_block
 */
 rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error);
+
+/**
+* This method adds a custom option to a custom processing block. This is a simple float that can be accessed via rs2_set_option and rs2_get_option
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as save_to_ply, etc..
+* \param[in] block      Processing block
+* \param[in] option_id  an int ID for referencing the option
+* \param[in] min     the minimum value which will be accepted for this option
+* \param[in] max     the maximum value which will be accepted for this option
+* \param[in] step    the granularity of options which accept discrete values, or zero if the option accepts continuous values
+* \param[in] def     the default value of the option. This will be the initial value.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if adding the option succeeds. false if it fails e.g. an option with this id is already registered
+*/
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2_option option_id, float min, float max, float step, float def, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object

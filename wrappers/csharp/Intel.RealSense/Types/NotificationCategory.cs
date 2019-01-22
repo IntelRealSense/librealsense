@@ -5,6 +5,6 @@
         FramesTimeout = 0,
         FrameCorrupted = 1,
         HardwareError = 2,
-        UnknownError = 3,
+        UnknownError = 3
     }
 }

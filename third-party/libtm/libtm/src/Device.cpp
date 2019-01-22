@@ -1354,8 +1354,16 @@ namespace perc {
         mDispatcher->sendMessage(&mFsm, msg);
         if (msg.Result != toUnderlying(Status::SUCCESS))
         {
-            DEVICELOGE("USB Error (0x%X)", msg.Result);
-            return Status::ERROR_USB_TRANSFER;
+            if (msg.Result == toUnderlying(Status::FEATURE_UNSUPPORTED))
+            {
+                DEVICELOGE("FEATURE_UNSUPPORTED (0x%X)", msg.Result);
+                return Status::FEATURE_UNSUPPORTED;
+            }
+            else
+            {
+                DEVICELOGE("USB Error (0x%X)", msg.Result);
+                return Status::ERROR_USB_TRANSFER;
+            }
         }
 
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
@@ -1855,30 +1863,44 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
-    Status Device::AppendCalibration(const TrackingData::CalibrationData& calibrationData)
+    Status Device::SetCalibration(const TrackingData::CalibrationData& calibrationData)
     {
-        if (calibrationData.length > MAX_SLAM_APPEND_CALIBRATION)
+        if (calibrationData.length > MAX_SLAM_CALIBRATION_SIZE)
         {
-            DEVICELOGE("Error: Buffer length (%d) is too big, max length = %d", calibrationData.length, MAX_SLAM_APPEND_CALIBRATION);
+            DEVICELOGE("Error: Buffer length (%d) is too big, max length = %d", calibrationData.length, MAX_SLAM_CALIBRATION_SIZE);
             return Status::ERROR_PARAMETER_INVALID;
         }
 
-        DEVICELOGD("Appending calibration (length %d)", calibrationData.length);
+        if (calibrationData.type >= CalibrationTypeMax)
+        {
+            DEVICELOGE("Error: Calibration type (0x%X) is unsupported", calibrationData.type);
+            return Status::ERROR_PARAMETER_INVALID;
+        }
+
+        DEVICELOGD("%s calibration (length %d)", (calibrationData.type == CalibrationTypeNew)?"Set new":"Append", calibrationData.length);
 
         std::vector<uint8_t> buf;
         buf.resize(calibrationData.length + sizeof(bulk_message_request_header));
 
         bulk_message_request_slam_append_calibration* msg = (bulk_message_request_slam_append_calibration*)buf.data();
-        msg->header.wMessageID = SLAM_APPEND_CALIBRATION;
         msg->header.dwLength = (uint32_t)buf.size();
-
         perc::copy(buf.data() + sizeof(bulk_message_request_header), calibrationData.buffer, calibrationData.length);
+        
+        switch (calibrationData.type)
+        {
+            case CalibrationTypeNew:
+                msg->header.wMessageID = SLAM_CALIBRATION;
+                break;
+            case CalibrationTypeAppend:
+                msg->header.wMessageID = SLAM_APPEND_CALIBRATION;
+                break;
+        }
 
         int actual;
         auto rc = libusb_bulk_transfer(mDevice, mStreamEndpoint | TO_DEVICE, buf.data(), (int)buf.size(), &actual, USB_TRANSFER_MEDIUM_TIMEOUT_MS);
         if (rc != 0 || actual == 0)
         {
-            DEVICELOGE("Error while sending frame to device: %d", rc);
+            DEVICELOGE("Error while sending calibration buffer to device: 0x%X", rc);
             return Status::ERROR_USB_TRANSFER;
         }
 
@@ -3854,14 +3876,19 @@ namespace perc {
             return;
         }
 
-        if (res->wStatus != toUnderlying(MESSAGE_STATUS::SUCCESS))
+        if (res->wStatus == toUnderlying(MESSAGE_STATUS::SUCCESS))
+        {
+            msg.Result = toUnderlying(Status::SUCCESS);
+        }
+        else if (res->wStatus == toUnderlying(MESSAGE_STATUS::UNSUPPORTED))
         {
             DEVICELOGE("MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
-            msg.Result = toUnderlying(Status::COMMON_ERROR);
+            msg.Result = toUnderlying(Status::FEATURE_UNSUPPORTED);
         }
         else
         {
-            msg.Result = toUnderlying(Status::SUCCESS);
+            DEVICELOGE("MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
+            msg.Result = toUnderlying(Status::COMMON_ERROR);
         }
     }
 

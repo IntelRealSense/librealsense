@@ -70,7 +70,12 @@ namespace librealsense
             ds::RS420_MM_PID,
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
-            ds::RS435_RGB_PID
+            ds::RS435_RGB_PID,
+            ds::RS435I_PID
+        };
+
+        static const std::set<std::uint16_t> hid_sensors_pid = {
+            ds::RS435I_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
@@ -132,7 +137,44 @@ namespace librealsense
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            SETSUBPRESET    = 0x7B,     // Download sub-preset
+            GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
+            GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
         };
+
+        #define TOSTRING(arg) #arg
+        #define VAR_ARG_STR(x) TOSTRING(x)
+        #define ENUM2STR(x) case(x):return VAR_ARG_STR(x);
+
+        inline std::string fw_cmd2str(const fw_cmd state)
+        {
+          switch(state)
+          {
+            ENUM2STR(GLD);
+            ENUM2STR(GVD);
+            ENUM2STR(GETINTCAL);
+            ENUM2STR(OBW);
+            ENUM2STR(SET_ADV);
+            ENUM2STR(GET_ADV);
+            ENUM2STR(EN_ADV);
+            ENUM2STR(UAMG);
+            ENUM2STR(SETAEROI);
+            ENUM2STR(GETAEROI);
+            ENUM2STR(MMER);
+            ENUM2STR(GET_EXTRINSICS);
+            ENUM2STR(SET_CAM_SYNC);
+            ENUM2STR(GET_CAM_SYNC);
+            ENUM2STR(SETRGBAEROI);
+            ENUM2STR(GETRGBAEROI);
+            ENUM2STR(SET_PWM_ON_OFF);
+            ENUM2STR(GET_PWM_ON_OFF);
+            ENUM2STR(SETSUBPRESET);
+            ENUM2STR(GETSUBPRESET);
+            ENUM2STR(GETSUBPRESETNAME);
+            default:
+              return (to_string() << "Unrecognized FW command " << state);
+          }
+        }
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
 
@@ -158,6 +200,8 @@ namespace librealsense
             CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
             CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
             CAP_IMU_SENSOR              = (1u << 3),
+            CAP_GLOBAL_SHUTTER          = (1u << 4),
+            CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_MAX
         };
 
@@ -166,7 +210,9 @@ namespace librealsense
             { d400_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
             { d400_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
             { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
-            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        }
+            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
+            { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
+            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   }
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -187,7 +233,8 @@ namespace librealsense
         inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
         {
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
-                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR})
+                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
+                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER })
             {
                 if (i==(i&cap))
                     stream << d400_capabilities_names.at(i) << " ";
@@ -288,6 +335,15 @@ namespace librealsense
             float scale[3];
         };
 
+        // Note that the intrinsic definition follows rs2_motion_device_intrinsic with different data layout
+        struct imu_intrinsic
+        {
+            float3x3    sensitivity;
+            float3      bias;
+            float3      noise_variances;  /**< Variance of noise for X, Y, and Z axis */
+            float3      bias_variances;   /**< Variance of bias for X, Y, and Z axis */
+        };
+
         struct fisheye_calibration_table
         {
             table_header        header;
@@ -365,6 +421,57 @@ namespace librealsense
 
         constexpr size_t tm1_eeprom_size = sizeof(tm1_eeprom);
 
+        struct dm_v2_imu_intrinsic
+        {
+            float3x3            sensitivity;
+            float3              bias;
+        };
+
+        struct dm_v2_calibration_table
+        {
+            table_header            header;
+            uint8_t                 extrinsic_valid;
+            uint8_t                 intrinsic_valid;
+            uint8_t                 reserved[2];
+            extrinsics_table        depth_to_imu;       // The extrinsic parameters of IMU persented in Depth sensor's CS
+            dm_v2_imu_intrinsic     accel_intrinsic;
+            dm_v2_imu_intrinsic     gyro_intrinsic;
+            uint8_t                 reserved1[96];
+        };
+
+        constexpr size_t dm_v2_calibration_table_size = sizeof(dm_v2_calibration_table);
+
+        struct dm_v2_calib_info
+        {
+            table_header            header;
+            dm_v2_calibration_table dm_v2_calib_table;
+            tm1_serial_num_table    serial_num_table;
+        };
+
+        constexpr size_t dm_v2_calib_info_size = sizeof(dm_v2_calib_info);
+
+        // Depth Module V2 IMU EEPROM ver 0.52
+        struct dm_v2_eeprom
+        {
+            table_header            header;
+            dm_v2_calib_info        module_info;
+        };
+
+        constexpr size_t dm_v2_eeprom_size = sizeof(dm_v2_eeprom);
+
+        union eeprom_imu_table {
+            tm1_eeprom      tm1_table;
+            dm_v2_eeprom    dm_v2_table;
+        };
+
+        constexpr size_t eeprom_imu_table_size = sizeof(eeprom_imu_table);
+
+        enum imu_eeprom_id : uint16_t
+        {
+            dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
+            tm1_eeprom_id       = 0x0002
+        };
+
         struct depth_table_control
         {
             uint32_t depth_units;
@@ -395,19 +502,21 @@ namespace librealsense
         };
 
 
-        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsics data)
+        inline rs2_motion_device_intrinsic create_motion_intrinsics(imu_intrinsic data)
         {
-            rs2_motion_device_intrinsic result;
-            memset(&result, 0, sizeof(result));
+            rs2_motion_device_intrinsic result{};
+
             for (int i = 0; i < 3; i++)
             {
+                for (int j = 0; j < 3; j++)
+                    result.data[i][j] = data.sensitivity(i,j);
+
                 result.data[i][3] = data.bias[i];
-                result.data[i][i] = data.scale[i];
+                result.bias_variances[i] = data.bias_variances[i];
+                result.noise_variances[i] = data.noise_variances[i];
             }
             return result;
         }
-
-
 
 #pragma pack(pop)
 
@@ -419,6 +528,7 @@ namespace librealsense
             module_serial_offset            = 48,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
+            depth_sensor_type               = 166,
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
@@ -555,6 +665,10 @@ namespace librealsense
         };
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
+
+        const std::vector<uint8_t> alternating_emitter_pattern { 0x19, 0,
+            0x41, 0x6c, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x45, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x72, 0,
+            0, 0x2, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0, 0, 0, 0, 0x5, 0, 0x1, 0x1, 0, 0, 0, 0x1, 0, 0, 0 };
 
     } // librealsense::ds
 } // namespace librealsense

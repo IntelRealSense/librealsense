@@ -155,6 +155,5 @@ namespace perc
         std::mutex mCompleteQMutex;
         Event mEvent;
         std::map<Device*, TrackingData::DeviceInfo> mTrackingDeviceInfoMap;
-
     };
 }

@@ -18,7 +18,7 @@ namespace perc {
     int Semaphore::get(nsecs_t timeoutNs)
     {
         DWORD timeoutMs;
-        
+
         timeoutMs = ns2ms(timeoutNs);
 
         auto ret = WaitForSingleObject(mData->m_Semaphore, timeoutMs);
@@ -33,8 +33,8 @@ namespace perc {
     Semaphore::Semaphore(unsigned int initValue) : mData(new CheshireCat())
     {
         mData->m_Semaphore = CreateSemaphore(
-            NULL,                    // default security attributes
-            initValue,                // initial count
+            NULL,                   // default security attributes
+            initValue,              // initial count
             MAX_SEMAPHORE_COUNT,    // maximum count
             NULL);
 

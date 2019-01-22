@@ -9,6 +9,6 @@
         WrongApiCallSequence = 4,
         NotImplemented = 5,
         DeviceInRecoveryMode = 6,
-        Io = 7,
+        Io = 7
     }
 }

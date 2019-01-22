@@ -21,7 +21,7 @@ namespace Intel.RealSense.Processing
         public FrameSet WaitForFrames(uint timeoutMs = 5000) 
             => FrameSet.Pool.Get(NativeMethods.rs2_wait_for_frame(queue.Instance.Handle, timeoutMs, out var error));
 
-        public bool PollForFrames(out FrameSet result, FramesReleaser releaser = null)
+        public bool PollForFrames(out FrameSet result)
         {
             result = null;
 

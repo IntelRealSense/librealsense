@@ -12,7 +12,7 @@ namespace Intel.RealSense.Types
     //fram_processor_callback
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void frame_deleter(IntPtr frame, IntPtr user_data);
+    public delegate void frame_deleter(IntPtr frame);
     
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void rs2_devices_changed_callback(IntPtr removed, IntPtr added, IntPtr user_data);       

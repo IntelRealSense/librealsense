@@ -175,31 +175,31 @@ namespace librealsense
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsics& accel,
-                                                       const ds::imu_intrinsics& gyro,
+                                                       const ds::imu_intrinsic& accel,
+                                                       const ds::imu_intrinsic& gyro,
+                                                       std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
+                                                       on_before_frame_callback frame_callback,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro)
+        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro), _depth_to_imu(**depth_to_imu)
     {
         mm_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-        {
-            if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
+            [this, frame_callback](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
             {
-                auto xyz = (float*)(fr->get_frame_data());
-
-                if (stream == RS2_STREAM_ACCEL)
+                if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
                 {
-                    for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _accel.scale[i] - _accel.bias[i];
+                    auto xyz = (float3*)(fr->get_frame_data());
+
+                    if (stream == RS2_STREAM_ACCEL)
+                        *xyz = (_accel.sensitivity * (*xyz)) - _accel.bias;
+
+                    if (stream == RS2_STREAM_GYRO)
+                        *xyz = _gyro.sensitivity * (*xyz) - _gyro.bias;
                 }
 
-                if (stream == RS2_STREAM_GYRO)
-                {
-                    for (int i = 0; i < 3; i++)
-                        xyz[i] = xyz[i] * _gyro.scale[i] - _gyro.bias[i];
-                }
-            }
-        });
+                // Align IMU axes to the established Coordinates System
+                if (frame_callback)
+                    frame_callback(stream, fr, std::move(callback));
+            });
     }
 
     void enable_auto_exposure_option::set(float value)
@@ -471,5 +471,37 @@ namespace librealsense
     option_range emitter_on_and_off_option::get_range() const
     {
         return *_range;
+    }
+
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void alternating_emitter_option::set(float value)
+    {
+        std::vector<uint8_t> pattern{};
+        if (static_cast<int>(value))
+            pattern = ds::alternating_emitter_pattern;
+
+        command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
+        cmd.data = pattern;
+        auto res = _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float alternating_emitter_option::query() const
+    {
+        command cmd(ds::GETSUBPRESETNAME);
+        auto res = _hwm.send(cmd);
+        if (res.size()>20)
+            throw invalid_value_exception("HWMON::GETSUBPRESETNAME invalid size");
+
+        static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
+        return (alt_emitter_name == res);
     }
 }

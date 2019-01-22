@@ -24,6 +24,7 @@ namespace perc
     #define MAX_LOG_BUFFER_ENTRIES 1024
     #define MAX_LOG_BUFFER_ENTRY_SIZE (256)
     #define MAX_LOG_BUFFER_MODULE_SIZE (32)
+    #define MAX_CALIBRATION_SIZE 10000
     
     enum ProfileType
     {
@@ -113,6 +114,12 @@ namespace perc
         AddressTypePublic = 0x0000, /**< Public Address - Static IEEE assigned Mac Address build from manufacturer assigned ID (24 bits) and unique device ID (24 bits) */
         AddressTypeRandom = 0x0001, /**< Random Address - Randomized temporary Address used for a certain amount of time (48 bits)                                      */
         AddressTypeMax = 0x0002,    /**< Unspecified Address */
+    };
+
+    enum CalibrationType {
+        CalibrationTypeNew = 0x0000,    /**< New calibration overrides previous calibration */
+        CalibrationTypeAppend = 0x0001, /**< Append calibration to previous calibration     */
+        CalibrationTypeMax = 0x0002,    /**< Unspecified calibration type                   */
     };
 
     class TrackingData
@@ -779,9 +786,10 @@ namespace perc
 
         class CalibrationData {
         public:
-            CalibrationData() : length(0), buffer(NULL) { };
-            uint32_t length; /**< The length in bytes of the calibration buffer                                                                                                      */
-            uint8_t* buffer; /**< Calibration data buffer pointer of max size MAX_SLAM_APPEND_CALIBRATION bytes, Data format is algorithm specific and opaque to the USB and host stack */
+            CalibrationData() : type(CalibrationTypeMax), length(0), buffer(NULL) { };
+            CalibrationType type; /**< Type of calibration (New - override previous calibration, Append - join to previous set calibration                                            */
+            uint32_t length;      /**< The length in bytes of the calibration buffer                                                                                                  */
+            uint8_t* buffer;      /**< Calibration data buffer pointer of max size MAX_CALIBRATION_SIZE bytes, Data format is algorithm specific and opaque to the USB and host stack */
         };
 
         class GeoLocalization {
