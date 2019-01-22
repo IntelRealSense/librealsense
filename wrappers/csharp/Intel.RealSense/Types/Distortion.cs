@@ -6,6 +6,6 @@
         ModifiedBrownConrady = 1,
         InverseBrownConrady = 2,
         Ftheta = 3,
-        BrownConrady = 4,
+        BrownConrady = 4
     }
 }

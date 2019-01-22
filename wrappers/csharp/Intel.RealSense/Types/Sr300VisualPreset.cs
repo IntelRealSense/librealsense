@@ -12,6 +12,6 @@
         GrCursor = 7,
         Default = 8,
         MidRange = 9,
-        IrOnly = 10,
+        IrOnly = 10
     }
 }

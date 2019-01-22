@@ -47,14 +47,13 @@ void print(const rs2_motion_device_intrinsic& intrinsics)
     for (auto i = 0 ; i < sizeof(intrinsics.noise_variances)/sizeof(intrinsics.noise_variances[0]) ; ++i)
         ss << setprecision(15) << intrinsics.noise_variances[i] << "  ";
 
-    ss << "\nData: " << std::endl;
+    ss << "\nSensitivity : " << std::endl;
     for (auto i = 0 ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
     {
         for (auto j = 0 ; j < sizeof(intrinsics.data[0])/sizeof(intrinsics.data[0][0]) ; ++j)
-            ss << std::setw(13) << setprecision(10) << intrinsics.data[i][j] << "  ";
+            ss << std::right << std::setw(13) << setprecision(6) << intrinsics.data[i][j] << "  ";
         ss << "\n";
     }
-
 
     cout << ss.str() << endl << endl;
 }

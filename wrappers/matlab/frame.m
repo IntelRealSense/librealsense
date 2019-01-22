@@ -30,12 +30,12 @@ classdef frame < handle
         end
         function metadata = get_frame_metadata(this, frame_metadata)
             narginchk(2, 2);
-            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.frame_metadata_value.count}, '', 'frame_metadata', 2);
+            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.frame_metadata_value.count)}, '', 'frame_metadata', 2);
             metadata = realsense.librealsense_mex('rs2::frame', 'get_frame_metadata', this.objectHandle, int64(frame_metadata));
         end
         function value = supports_frame_metadata(this, frame_metadata)
             narginchk(2, 2);
-            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.frame_metadata_value.count}, '', 'frame_metadata', 2);
+            validateattributes(frame_metadata, {'realsense.frame_metadata_value', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.frame_metadata_value.count)}, '', 'frame_metadata', 2);
             value = realsense.librealsense_mex('rs2::frame', 'supports_frame_metadata', this.objectHandle, int64(frame_metadata));
         end
         function frame_number = get_frame_number(this)

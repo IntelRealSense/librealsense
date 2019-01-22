@@ -11,6 +11,6 @@
         Accel = 6,
         Gpio = 7,
         Pose = 8,
-        Confidence = 9,
+        Confidence = 9
     }
 }

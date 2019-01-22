@@ -25,10 +25,6 @@ namespace Intel.RealSense
             //private static ErrorMarshaler Instance = new ErrorMarshaler();
             private static ErrorMarshaler instance;
 
-            //is needed vor marshalling in .NET
-            public static ICustomMarshaler GetInstance(string v)
-                => Instance;
-
             public void CleanUpManagedData(object ManagedObj)
             {
             }

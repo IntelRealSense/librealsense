@@ -39,7 +39,6 @@ namespace librealsense
             get_depth_sensor().register_pixel_format(pf_rgb888);
         }
 
-  
         get_depth_sensor().unregister_option(RS2_OPTION_EMITTER_ON_OFF);
 
         if ((_fw_version >= firmware_version("5.9.13.6") &&

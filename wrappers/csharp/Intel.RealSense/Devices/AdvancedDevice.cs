@@ -11,7 +11,7 @@ namespace Intel.RealSense.Devices
             get
             {
                 NativeMethods.rs2_is_enabled(Instance, out var enabled, out var error);
-                return enabled == 1 ? true : false;
+                return enabled == 1;
             }
             set
             {

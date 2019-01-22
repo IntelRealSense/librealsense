@@ -11,6 +11,6 @@
         AdvancedMode = 6,
         ProductId = 7,
         CameraLocked = 8,
-        UsbTypeDescriptor = 9,
+        UsbTypeDescriptor = 9
     }
 }

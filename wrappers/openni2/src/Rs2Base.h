@@ -16,6 +16,8 @@
 
 #define ONI_MAX_DEPTH 10000
 #define RS2_EMULATE_PRIMESENSE_HARDWARE // HACK: NiTE only runs on PrimeSense SoC
+
+//#define RS2_TRACE_NOT_SUPPORTED_CMDS
 //#define RS2_TRACE_NOT_SUPPORTED_PROPS
 
 #if 0

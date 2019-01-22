@@ -1,3 +1,4 @@
+using Intel.RealSense.Sensors;
 using Intel.RealSense.Types;
 using System;
 using System.Runtime.InteropServices;

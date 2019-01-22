@@ -20,6 +20,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_export.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
 #include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
@@ -192,7 +193,6 @@ PYBIND11_MODULE(NAME, m) {
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
 
     /* rs2_types.hpp */
-
     py::class_<rs2::option_range> option_range(m, "option_range");
     option_range.def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
@@ -312,7 +312,6 @@ PYBIND11_MODULE(NAME, m) {
 
 
     /* rs2_frame.hpp */
-
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
@@ -360,7 +359,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
         .def(BIND_DOWNCAST(frame, video_frame))
-        .def(BIND_DOWNCAST(frame, depth_frame));
+        .def(BIND_DOWNCAST(frame, depth_frame))
+        .def(BIND_DOWNCAST(frame, motion_frame));
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
@@ -374,6 +374,25 @@ PYBIND11_MODULE(NAME, m) {
         .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.");
+
+
+    py::class_<rs2_vector> vector(m, "vector");
+    vector.def(py::init<>())
+        .def_readwrite("x", &rs2_vector::x)
+        .def_readwrite("y", &rs2_vector::y)
+        .def_readwrite("z", &rs2_vector::z)
+        .def("__repr__", [](const rs2_vector& self)
+    {
+        std::stringstream ss;
+        ss << "x: " << self.x << ", ";
+        ss << "y: " << self.y << ", ";
+        ss << "z: " << self.z;
+        return ss.str();
+    });
+
+    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame");
+    motion_frame.def(py::init<rs2::frame>())
+        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Returns motion info of frame.");
 
     py::class_<rs2::vertex> vertex(m, "vertex");
     vertex.def_readwrite("x", &rs2::vertex::x)
@@ -544,6 +563,9 @@ PYBIND11_MODULE(NAME, m) {
         }, "timeout_ms"_a = 5000);
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
+    py::class_<rs2::threshold_filter, rs2::filter> threshold(m, "threshold_filter");
+    threshold.def(py::init<>());
+
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
         .def(py::init<float>(), "color_scheme"_a)
@@ -572,6 +594,17 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::disparity_transform, rs2::filter> disparity_transform(m, "disparity_transform");
     disparity_transform.def(py::init<bool>(), "transform_to_disparity"_a=true);
+
+    py::class_<rs2::yuy_decoder, rs2::filter> yuy_decoder(m, "yuy_decoder");
+    yuy_decoder.def(py::init<>());
+
+    /* rs_export.hpp */
+    // py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
+    // save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
+    //            .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
+
+    py::class_<rs2::save_single_frameset, rs2::filter> save_single_frameset(m, "save_single_frameset");
+    save_single_frameset.def(py::init<std::string>(), "filename"_a = "RealSense Frameset ");
 
     /* rs2_record_playback.hpp */
     py::class_<rs2::playback, rs2::device> playback(m, "playback");
@@ -604,6 +637,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("clone", &rs2::stream_profile::clone, "type"_a, "index"_a, "format"_a)
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
+        .def(BIND_DOWNCAST(stream_profile, motion_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name)
         .def("is_default", &rs2::stream_profile::is_default)
         .def("__nonzero__", &rs2::stream_profile::operator bool)
@@ -713,8 +747,6 @@ PYBIND11_MODULE(NAME, m) {
         .def("__nonzero__", &rs2::depth_sensor::operator bool);
 
     /* rs2_pipeline.hpp */
-
-
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
         .def(py::init([]() { return rs2::pipeline(rs2::context()); }))
@@ -746,7 +778,6 @@ PYBIND11_MODULE(NAME, m) {
 
     py::implicitly_convertible<rs2::pipeline, pipeline_wrapper>();
 
-    /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline_profile> pipeline_profile(m, "pipeline_profile");
     pipeline_profile.def(py::init<>())
         .def("get_streams", &rs2::pipeline_profile::get_streams)

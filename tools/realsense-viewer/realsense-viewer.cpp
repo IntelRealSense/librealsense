@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include "model-views.h"
+#include "os.h"
 #include "ux-window.h"
 
 #include <cstdarg>
@@ -24,7 +25,8 @@
 using namespace rs2;
 using namespace rs400;
 
-void add_playback_device(context& ctx, std::shared_ptr<std::vector<device_model>> device_models, std::string& error_message, viewer_model& viewer_model, const std::string& file)
+void add_playback_device(context& ctx, std::shared_ptr<std::vector<device_model>> device_models, 
+    std::string& error_message, viewer_model& viewer_model, const std::string& file)
 {
     bool was_loaded = false;
     bool failed = false;
@@ -239,8 +241,6 @@ int main(int argv, const char** argc) try
     std::vector<device> connected_devs;
     std::mutex m;
 
-    periodic_timer update_readonly_options_timer(std::chrono::seconds(6));
-
     window.on_file_drop = [&](std::string filename)
     {
         std::string error_message{};
@@ -275,7 +275,8 @@ int main(int argv, const char** argc) try
 
     window.on_load = [&]()
     {
-        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, 
+            device_names, device_models, viewer_model, error_message);
         return true;
     };
 
@@ -283,12 +284,11 @@ int main(int argv, const char** argc) try
     while (window)
     {
         if (!window.is_ui_aligned())
-        {
-            viewer_model.popup_if_ui_not_aligned(window.get_font());
-        }
-        refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, device_models, viewer_model, error_message);
-
-        bool update_read_only_options = update_readonly_options_timer;
+		{
+			viewer_model.popup_if_ui_not_aligned(window.get_font());
+		}
+        refresh_devices(m, ctx, devices_connection_changes, connected_devs, 
+            device_names, device_models, viewer_model, error_message);
 
         auto output_height = viewer_model.get_output_height();
 
@@ -404,7 +404,7 @@ int main(int argv, const char** argc) try
         ImGui::PopStyleVar();
 
 
-        viewer_model.show_top_bar(window, viewer_rect);
+        viewer_model.show_top_bar(window, viewer_rect, *device_models);
 
         viewer_model.show_event_log(window.get_font(), viewer_model.panel_width,
             window.height() - (viewer_model.is_output_collapsed ? viewer_model.default_log_h : 20),
@@ -429,10 +429,7 @@ int main(int argv, const char** argc) try
             for (auto&& dev_model : *device_models)
             {
                 dev_model.draw_controls(viewer_model.panel_width, viewer_model.panel_y,
-                    window,
-                    error_message, device_to_remove, viewer_model, windows_width,
-                    update_read_only_options,
-                    draw_later);
+                    window, error_message, device_to_remove, viewer_model, windows_width, draw_later);
             }
             if (viewer_model.ppf.is_rendering())
             {
@@ -446,7 +443,7 @@ int main(int argv, const char** argc) try
                     viewer_model.ppf.stop();
                 }
             }
-           
+
             if (device_to_remove)
             {
                 if (auto p = device_to_remove->dev.as<playback>())
@@ -504,7 +501,6 @@ int main(int argv, const char** argc) try
     }
 
     // Stopping post processing filter rendering thread
-
     viewer_model.ppf.stop();
 
     // Stop all subdevices

@@ -1,4 +1,5 @@
-﻿using Intel.RealSense.Types;
+﻿using Intel.RealSense.Sensors;
+using Intel.RealSense.Types;
 using System;
 
 namespace Intel.RealSense.Devices

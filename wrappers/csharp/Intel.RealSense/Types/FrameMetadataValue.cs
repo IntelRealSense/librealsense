@@ -30,6 +30,6 @@
         Gamma = 25,
         ManualWhiteBalance = 26,
         PowerLineFrequency = 27,
-        LowLightCompensation = 28,
+        LowLightCompensation = 28
     }
 }

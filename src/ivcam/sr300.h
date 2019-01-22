@@ -22,6 +22,7 @@
 namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
+    const uint16_t SR300v2_PID = 0x0B48;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 

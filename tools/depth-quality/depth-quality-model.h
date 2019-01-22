@@ -5,6 +5,7 @@
 #include "depth-metrics.h"
 #include "model-views.h"
 #include "ux-window.h"
+#include "os.h"
 
 #include <tuple>
 #include <vector>

@@ -50,7 +50,7 @@ function(readBinHeaderField input_bin_file offset limit output_hex_buffer)
 
         file(READ ${input_bin_file} buffer LIMIT ${limit} OFFSET ${offset} HEX)
         string(TOUPPER "${buffer}" buffer)
-        string(REGEX REPLACE "([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])" "\\4\\3\\2\\1" buffer ${buffer})
+        string(REGEX REPLACE "([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])" "\\4\\3\\2\\1" buffer "${buffer}")
         from_hex("${buffer}" buffer)
 
         # Copy ready buffer to output buffer
@@ -59,7 +59,7 @@ endfunction()
 
 # Creates hex buffer from binary file - binary file must be 4 bytes aligned
 function(bin2h input_bin_file offset output_hex_buffer)
-        message(STATUS "Creating HEX buffer from ${input_bin_file} offset ${offset}")
+        # message(STATUS "Creating HEX buffer from ${input_bin_file} offset ${offset}")
 
         # Read hex data from file
         file(READ ${input_bin_file} buffer OFFSET ${offset} HEX)
@@ -68,10 +68,10 @@ function(bin2h input_bin_file offset output_hex_buffer)
         string(TOUPPER "${buffer}" buffer)
 
         # Convert every 4 bytes from AABBCCDD to 0xDDCCBBAA
-        string(REGEX REPLACE "([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])" "0x\\4\\3\\2\\1," buffer ${buffer})
+        string(REGEX REPLACE "([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])" "0x\\4\\3\\2\\1," buffer "${buffer}")
 
         # Add new line to every 16 columns
-        string(REGEX REPLACE "(0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,)" "\\1\\n" buffer ${buffer})
+        string(REGEX REPLACE "(0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,0x........,)" "\\1\\n" buffer "${buffer}")
 
         # Copy ready buffer to output buffer
         set(${output_hex_buffer} "${buffer}" PARENT_SCOPE)
@@ -85,7 +85,7 @@ if(FW_VERSION)
         file(REMOVE ${LIBTM_RESOURCES_DIR}/target.mvcmd)
         message(STATUS "Downloading FW ${FW_VERSION} from '${FW_ARTIFACTORY_DIR}/${FW_VERSION}/target-${FW_VERSION}.mvcmd'")
         file(DOWNLOAD "${FW_ARTIFACTORY_DIR}/${FW_VERSION}/target-${FW_VERSION}.mvcmd" "${LIBTM_RESOURCES_DIR}/target.mvcmd" TIMEOUT 60 STATUS status LOG log)
-        message(STATUS "Downloading FW ${FW_VERSION} completed - status ${status}")
+        # message(STATUS "Downloading FW ${FW_VERSION} completed - status ${status}")
 
         list (FIND status "\"No error\"" _index)
         if (${_index} EQUAL -1)
@@ -101,7 +101,7 @@ if(FW_VERSION)
 
     if (FW_SOURCE MATCHES "Remote" OR FW_SOURCE MATCHES "Local")
         file(REMOVE ${FW_OUTPUT_FILE})
-        message(STATUS "Converting FW version ${FW_VERSION} ${LIBTM_RESOURCES_DIR}/target.mvcmd to ${FW_OUTPUT_FILE}")
+        message(STATUS "Converting FW version ${FW_VERSION} from target.mvcmd to ${FW_OUTPUT_FILE}")
 
         # Create empty output file
         file(WRITE ${FW_OUTPUT_FILE} "")
@@ -130,13 +130,13 @@ endif(FW_VERSION)
 
 
 if(CENTRAL_APP_VERSION)
-    message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
+    # message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
     if (FW_SOURCE MATCHES "Remote")
         file(REMOVE ${LIBTM_RESOURCES_DIR}/central_app.bin)
         message(STATUS "Downloading Central App ${CENTRAL_APP_VERSION} from '${CENTRAL_APP_ARTIFACTORY_DIR}/${CENTRAL_APP_VERSION}/central_app-${CENTRAL_APP_VERSION}.bin'")   
         file(DOWNLOAD "${CENTRAL_APP_ARTIFACTORY_DIR}/${CENTRAL_APP_VERSION}/central_app-${CENTRAL_APP_VERSION}.bin" "${LIBTM_RESOURCES_DIR}/central_app.bin" TIMEOUT 60 STATUS status LOG log)
-        message(STATUS "Downloading Central App ${CENTRAL_APP_VERSION} completed - status ${status}")
+        # message(STATUS "Downloading Central App ${CENTRAL_APP_VERSION} completed - status ${status}")
         list (FIND status "\"No error\"" _index)
         if (${_index} EQUAL -1)
             message(FATAL_ERROR "Download error ${CENTRAL_APP_ARTIFACTORY_DIR}/${CENTRAL_APP_VERSION}/central_app-${CENTRAL_APP_VERSION}.bin" )
@@ -151,7 +151,7 @@ if(CENTRAL_APP_VERSION)
         
     if (FW_SOURCE MATCHES "Remote" OR FW_SOURCE MATCHES "Local")
         file(REMOVE ${CENTRAL_APP_OUTPUT_FILE})
-        message(STATUS "Converting Central App version ${CENTRAL_APP_VERSION} ${LIBTM_RESOURCES_DIR}/central_app.bin to ${CENTRAL_APP_OUTPUT_FILE}")
+        message(STATUS "Converting Central App version ${CENTRAL_APP_VERSION} from central_app.bin to ${CENTRAL_APP_OUTPUT_FILE}")
 
         STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+\\.[0-9]+" "\\1" central_app_major_version "${CENTRAL_APP_VERSION}")
         STRING(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" central_app_minor_version "${CENTRAL_APP_VERSION}")
@@ -204,12 +204,12 @@ if(CENTRAL_APP_VERSION)
             message(FATAL_ERROR "Wrong Central FW version (${central_app_version_major}.${central_app_version_minor}.${central_app_version_patch}.${central_app_version_build}) VS (${central_app_major_version}.${central_app_minor_version}.${central_app_patch_version}.${central_app_build_version})")
         endif()
 
-        message(STATUS "Central Header:")
-        message(STATUS "- header_size         = ${central_app_header_size}")
-        message(STATUS "- data_size           = ${central_app_data_size}")
-        message(STATUS "- file_format_version = ${central_app_format_ver}")
-        message(STATUS "- version_size        = ${central_app_version_size}")
-        message(STATUS "- version             = ${central_app_version_major}.${central_app_version_minor}.${central_app_version_patch}.${central_app_version_build}")
+        # message(STATUS "Central Header:")
+        # message(STATUS "- header_size         = ${central_app_header_size}")
+        # message(STATUS "- data_size           = ${central_app_data_size}")
+        # message(STATUS "- file_format_version = ${central_app_format_ver}")
+        # message(STATUS "- version_size        = ${central_app_version_size}")
+        # message(STATUS "- version             = ${central_app_version_major}.${central_app_version_minor}.${central_app_version_patch}.${central_app_version_build}")
 
         # Create empty output file
         file(WRITE ${CENTRAL_APP_OUTPUT_FILE} "")
@@ -222,7 +222,6 @@ if(CENTRAL_APP_VERSION)
         file(APPEND ${CENTRAL_APP_OUTPUT_FILE} "#define CENTRAL_APP_VERSION \"${CENTRAL_APP_VERSION}\"\n")
         file(APPEND ${CENTRAL_APP_OUTPUT_FILE} "#define CENTRAL_APP_SIZE ${central_app_data_size}\n\n")
 
-    
         file(APPEND ${CENTRAL_APP_OUTPUT_FILE} "namespace CentralAppFw {\n\n")
         file(APPEND ${CENTRAL_APP_OUTPUT_FILE} "const int Version[] = { ${central_app_major_version}, ${central_app_minor_version}, ${central_app_patch_version}, ${central_app_build_version} };\n")
         file(APPEND ${CENTRAL_APP_OUTPUT_FILE} "const uint32_t Buffer []  = {\n")
@@ -245,13 +244,13 @@ endif(CENTRAL_APP_VERSION)
 
 
 if(CENTRAL_BL_VERSION)
-    message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
+    # message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
     if (FW_SOURCE MATCHES "Remote")
         file(REMOVE ${LIBTM_RESOURCES_DIR}/central_bl.bin)
         message(STATUS "Downloading Central BL ${CENTRAL_BL_VERSION} from '${CENTRAL_BL_ARTIFACTORY_DIR}/${CENTRAL_BL_VERSION}/central_bl-${CENTRAL_BL_VERSION}.bin'")
         file(DOWNLOAD "${CENTRAL_BL_ARTIFACTORY_DIR}/${CENTRAL_BL_VERSION}/central_bl-${CENTRAL_BL_VERSION}.bin" "${LIBTM_RESOURCES_DIR}/central_bl.bin" TIMEOUT 60 STATUS status LOG log)
-        message(STATUS "Downloading Central BL ${CENTRAL_BL_VERSION} completed - status ${status}")
+        # message(STATUS "Downloading Central BL ${CENTRAL_BL_VERSION} completed - status ${status}")
         list (FIND status "\"No error\"" _index)
         if (${_index} EQUAL -1)
            message(FATAL_ERROR "Download error ${CENTRAL_BL_ARTIFACTORY_DIR}/${CENTRAL_BL_VERSION}/central_bl-${CENTRAL_BL_VERSION}.bin" )
@@ -266,7 +265,7 @@ if(CENTRAL_BL_VERSION)
 
     if (FW_SOURCE MATCHES "Remote" OR FW_SOURCE MATCHES "Local")
         file(REMOVE ${CENTRAL_BL_OUTPUT_FILE})
-        message(STATUS "Converting Central BL version ${CENTRAL_BL_VERSION} ${LIBTM_RESOURCES_DIR}/central_bl.bin to ${CENTRAL_BL_OUTPUT_FILE}")
+        message(STATUS "Converting Central BL version ${CENTRAL_BL_VERSION} from central_bl.bin to ${CENTRAL_BL_OUTPUT_FILE}")
 
         STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+\\.[0-9]+" "\\1" central_bl_major_version "${CENTRAL_BL_VERSION}")
         STRING(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" central_bl_minor_version "${CENTRAL_BL_VERSION}")

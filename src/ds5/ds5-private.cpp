@@ -68,7 +68,7 @@ namespace librealsense
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
-                // In case of the special 848x100 resolution adjust the intrinsics 
+                // In case of the special 848x100 resolution adjust the intrinsics
                 if (width == 848 && height == 100)
                 {
                     intrinsics.height = 100;
@@ -85,7 +85,7 @@ namespace librealsense
                 rs2_intrinsics intrinsics;
                 intrinsics.width = width;
                 intrinsics.height = height;
-                
+
                 auto rect_params = static_cast<const float4>(table->rect_params[resolution]);
                 // DS5U - assume ideal intrinsic params
                 if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))

@@ -12,6 +12,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <string>
 #include <sstream>

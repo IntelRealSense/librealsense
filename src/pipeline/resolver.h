@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
-#include <iostream>
 #include "sensor.h"
 #include "types.h"
 #include "stream.h"
