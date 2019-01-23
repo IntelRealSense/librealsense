@@ -2,6 +2,7 @@ package com.intel.realsense.librealsense;
 
 public class FrameSet extends LrsClass {
     private int mSize = 0;
+
     public FrameSet(long handle) {
         mHandle = handle;
         mSize = nFrameCount(mHandle);
@@ -24,6 +25,10 @@ public class FrameSet extends LrsClass {
     }
 
     public int getSize(){ return mSize; }
+
+    public FrameSet applyFilter(FilterInterface filter) {
+        return filter.process(this);
+    }
 
     @Override
     public void close() throws Exception {

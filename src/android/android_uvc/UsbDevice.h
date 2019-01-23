@@ -153,10 +153,10 @@ public:
     }
 
     ~UsbDevice() {
-        _pipes.clear();
         _pull_requests=false;
-
-
+        if(_pull_thread->joinable())
+            _pull_thread->join();
+        _pipes.clear();
     }
 
     shared_ptr<UsbPipe> GetPipe(int ep_address) {

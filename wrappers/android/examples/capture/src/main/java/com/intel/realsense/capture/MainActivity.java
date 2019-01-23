@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.Decimation;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
@@ -38,14 +39,35 @@ public class MainActivity extends AppCompatActivity {
     private Config mConfig = new Config();
     private Pipeline mPipeline;
 
+    private Decimation mDecimation = new Decimation();
+
     private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
             mPipeline = new Pipeline();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mStartStopButton.setVisibility(View.VISIBLE);
+                }
+            });
         }
 
         @Override
         public void onDeviceDetach() {
+            mPipeline = null;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mStartStopButton.setVisibility(View.GONE);
+                }
+            });
+            try {
+                mPipeline.close();
+            } catch (Exception e) {
+                Log.e(TAG, e.getMessage());
+            }
+            mPipeline = null;
             stop();
         }
     };
@@ -95,21 +117,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mConfig.enable_stream(StreamType.DEPTH, 640, 480);
-        mConfig.enable_stream(StreamType.COLOR, 640, 480, StreamFormat.RGBA8);
+        mConfig.enableStream(StreamType.DEPTH, 640, 480);
+        mConfig.enableStream(StreamType.COLOR, 640, 480, StreamFormat.RGBA8);
     }
 
     Runnable updateBitmap = new Runnable() {
         @Override
         public void run() {
             try {
-                try(FrameSet frameset = mPipeline.waitForFrames())
+                try(FrameSet frames = mPipeline.waitForFrames())
                 {
-                    try(Frame f = frameset.first(StreamType.COLOR)) {
-                        mColorFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
-                    }
-                    try(Frame f = frameset.first(StreamType.DEPTH)) {
-                        mDepthFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
+                    try(FrameSet processed = frames.applyFilter(mDecimation)) {
+                        try(Frame f = processed.first(StreamType.COLOR)) {
+                            mColorFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
+                        }
+                        try(Frame f = processed.first(StreamType.DEPTH)) {
+                            mDepthFrameViewer.show(MainActivity.this, f.as(VideoFrame.class));
+                        }
                     }
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
@@ -124,14 +148,24 @@ public class MainActivity extends AppCompatActivity {
         if(mIsStreaming)
             return;
         mIsStreaming = true;
-        mStartStopButton.setText(R.string.stream_stop);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mStartStopButton.setText(R.string.stream_stop);
+            }
+        });
         startRepeatingTask();
     }
 
     synchronized void stop(){
         if(mIsStreaming == false)
             return;
-        mStartStopButton.setText(R.string.stream_start);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mStartStopButton.setText(R.string.stream_start);
+            }
+        });
         stopRepeatingTask();
         mIsStreaming = false;
     }
@@ -147,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
     void stopRepeatingTask() {
         mHandler.removeCallbacks(updateBitmap);
-        mPipeline.stop();
+        if(mPipeline != null)
+            mPipeline.stop();
     }
 }

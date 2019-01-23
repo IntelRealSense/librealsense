@@ -46,7 +46,8 @@
             android:layout_margin="16dp"
             android:background="@color/intel_blue"
             android:text="Start"
-            android:textColor="#ffffff" />
+            android:textColor="#ffffff"
+            android:visibility="gone"/>
     </android.support.v7.widget.LinearLayoutCompat>
 
 

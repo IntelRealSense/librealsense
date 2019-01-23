@@ -31,6 +31,7 @@ class UsbPipe {
         int res=usb_request_queue(req);
         if(res<0) {
             LOGE("Cannot queue request: %s", strerror(errno));
+            usb_request_free(req);
             return nullptr;
         }
         return req;

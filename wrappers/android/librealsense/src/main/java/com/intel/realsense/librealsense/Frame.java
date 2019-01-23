@@ -28,6 +28,10 @@ public class Frame extends LrsClass {
         return nGetNumber(mHandle);
     }
 
+    public Frame applyFilter(FilterInterface filter) {
+        return filter.process(this);
+    }
+
     @Override
     public void close() throws Exception {
         nRelease(mHandle);

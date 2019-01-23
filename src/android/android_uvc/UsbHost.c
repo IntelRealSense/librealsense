@@ -291,7 +291,7 @@ struct usb_device_handle *usb_device_open(const char *dev_name) {
 }
 
 void usb_device_close(struct usb_device_handle *device) {
-    close(device->fd);
+//    close(device->fd);
     free(device);
 }
 

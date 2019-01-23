@@ -24,6 +24,7 @@ public class FrameViewer {
         switch (format){
             case Z16: return Bitmap.Config.RGB_565;
             case RGBA8: return Bitmap.Config.ARGB_8888;
+            case Y8: return Bitmap.Config.ALPHA_8;
             default: return null;
         }
     }

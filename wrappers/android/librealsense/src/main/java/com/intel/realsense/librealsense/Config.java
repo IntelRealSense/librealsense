@@ -6,23 +6,23 @@ public class Config extends LrsClass {
         mHandle = nCreate();
     }
 
-    public void enable_stream(StreamType type) {
-        enable_stream(type, -1, 0, 0, StreamFormat.ANY, 0);
+    public void enableStream(StreamType type) {
+        enableStream(type, -1, 0, 0, StreamFormat.ANY, 0);
     }
 
-    public void enable_stream(StreamType type, StreamFormat format){
-        enable_stream(type, -1, 0, 0, format, 0);
+    public void enableStream(StreamType type, StreamFormat format){
+        enableStream(type, -1, 0, 0, format, 0);
     }
 
-    public void enable_stream(StreamType type, int width, int height) {
-        enable_stream(type, -1, width, height, StreamFormat.ANY, 0);
+    public void enableStream(StreamType type, int width, int height) {
+        enableStream(type, -1, width, height, StreamFormat.ANY, 0);
     }
 
-    public void enable_stream(StreamType type, int width, int height, StreamFormat format){
-        enable_stream(type, -1, width, height, format, 0);
+    public void enableStream(StreamType type, int width, int height, StreamFormat format){
+        enableStream(type, -1, width, height, format, 0);
     }
 
-    public void enable_stream(StreamType type, int index, int width, int height, StreamFormat format, int framerate){
+    public void enableStream(StreamType type, int index, int width, int height, StreamFormat format, int framerate){
         nEnableStream(mHandle, type.value(), index, width, height, format.value(), framerate);
     }
 

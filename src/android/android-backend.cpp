@@ -59,14 +59,6 @@ namespace librealsense {
                         devices.push_back(device_info);
                     }
                 }
-/*                uvc_device_info device_info;
-                device_info.vid = dev.GetVid();
-                device_info.pid = dev.GetPid();
-                device_info.mi = 5;
-                device_info.unique_id = dev.GetHandle()->fd;
-                device_info.device_path = std::string(dev.GetHandle()->dev_name);
-                LOGD("Found UVC Device vid:%04x pid:%04x mi:%02x path: %s",device_info.vid,device_info.pid,device_info.mi,device_info.device_path.c_str());
-                devices.push_back(device_info);*/
             }
             LOGD("UVC Devices found: %d",devices.size());
             return devices;

@@ -927,7 +927,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
             lock_guard<mutex> lock_guard(m);
             usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
         } else if (res < 0) {
-            LOGE("Readpipe returned error and was clear halted ERROR: %s", strerror(errno));
+            LOGE("Read pipe returned error and was clear halted ERROR: %s", strerror(errno));
             res = usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
             continue;
         }

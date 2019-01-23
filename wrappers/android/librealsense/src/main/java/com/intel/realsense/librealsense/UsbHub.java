@@ -84,7 +84,8 @@ public class UsbHub extends LrsClass {
     }
 
     private void removeDevice(UsbDesc desc) {
-        //nRemoveUsbDevice(desc.descriptor); TODO: crash if device wasn't started
+        nRemoveUsbDevice(desc.descriptor);
+        desc.connection.close();
         for(DeviceListener listener : mAppDeviceListener)
             listener.onDeviceDetach();
     }
