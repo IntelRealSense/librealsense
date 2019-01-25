@@ -130,8 +130,9 @@ namespace librealsense
                                    details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
-            throw invalid_value_exception(to_string() << "OpCodes do not match! Sent "
-                << opCodeXmit << " but received " << static_cast<int>(opCodeAsUint32) << "!");
+            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+            throw invalid_value_exception(to_string() << "hwmon command 0x" << std::hex << opCodeXmit << " failed. Error type: "
+                << hwmon_error2str(err_type) << " (" << std::dec <<(int)err_type  << ").");
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,

@@ -43,6 +43,8 @@ endif()
             ../../third-party/imgui/imgui_impl_glfw.cpp
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            ${LZ4_DIR}/lz4.h
+            ${LZ4_DIR}/lz4.c
             ../../common/rendering.h
             ../../common/model-views.h
             ../../common/model-views.cpp
@@ -50,7 +52,16 @@ endif()
             ../../common/ux-window.cpp
             ../../common/ux-alignment.cpp
             ../../common/ux-alignment.h
+            ../../third-party/glad/glad.c
+            ../../common/opengl3.cpp
+            ../../common/opengl3.h
+            ../../common/rs-config.h
+            ../../common/rs-config.cpp
+            ../../common/os.h
+            ../../common/os.cpp
         )
+
+    include_directories(${LZ4_DIR})
 
     # config-ui
     if(WIN32)
@@ -64,16 +75,20 @@ endif()
             ../../third-party/imgui/imgui_draw.cpp
             ../../third-party/imgui/imgui_impl_glfw.cpp
             ../../third-party/imgui/imgui-fonts-karla.hpp
-            ../../third-party/imgui/imgui-fonts-fontawesome.hpp)
+            ../../third-party/imgui/imgui-fonts-fontawesome.hpp
+            )
 
         source_group("Resources" FILES
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)
 
-        include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+        include_directories(realsense-viewer ../../third-party/imgui 
+        ../../third-party/glad ../../common
+        ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
         add_executable(realsense-viewer ${RS_VIEWER_CPP})
-        include_directories(realsense-viewer ../../third-party/imgui ../../common ../../third-party)
+        include_directories(realsense-viewer ../../third-party/imgui 
+        ../../third-party/glad ../../common ../../third-party)
     endif()
 
     target_link_libraries(realsense-viewer ${DEPENDENCIES}

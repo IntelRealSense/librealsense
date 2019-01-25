@@ -55,9 +55,15 @@ protected:
 	OniStatus initialize(class Rs2Device* device, rs2_sensor* sensor, int sensorId, int streamId, std::vector<Rs2StreamProfileInfo>* profiles);
 	void shutdown();
 
+	void onStreamStarted();
 	void onPipelineStarted();
+
+	void updateIntrinsics();
 	Rs2StreamProfileInfo* getCurrentProfile();
 	bool isVideoModeSupported(OniVideoMode* reqMode);
+
+	bool getTable(void* dst, int* size, const std::vector<uint16_t>& table);
+	bool setTable(const void* src, int size, std::vector<uint16_t>& table);
 
 protected:
 
@@ -76,6 +82,9 @@ protected:
 	float m_depthScale;
 	float m_fovX;
 	float m_fovY;
+
+	std::vector<uint16_t> m_s2d;
+	std::vector<uint16_t> m_d2s;
 };
 
 class Rs2DepthStream : public Rs2Stream
