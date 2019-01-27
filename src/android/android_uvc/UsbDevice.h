@@ -249,14 +249,12 @@ public:
             if (_pull_thread == nullptr)
                 _pull_thread = std::unique_ptr<std::thread>(new thread([&] {
                     do {
-                        usb_request *req = usb_request_wait(_handle,1000);
+                        usb_request *req = usb_request_wait(_handle, 1000);
                         if (req != nullptr) {
                             auto p = _pipes[req->endpoint];
                             if (p != nullptr) {
                                 p->QueueFinishedRequest(req);
                             }
-                        } else {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                         }
                     } while (_pull_requests == true);
                 }));

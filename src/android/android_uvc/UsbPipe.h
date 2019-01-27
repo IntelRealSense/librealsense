@@ -51,7 +51,7 @@ public:
 
     }
 
-    size_t ReadPipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 1000) {
+    size_t ReadPipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 100) {
         using namespace std::chrono;
         int bytes_copied = 0;
         // Wait until pipe gets data

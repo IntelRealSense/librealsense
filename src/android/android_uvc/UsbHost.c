@@ -291,7 +291,6 @@ struct usb_device_handle *usb_device_open(const char *dev_name) {
 }
 
 void usb_device_close(struct usb_device_handle *device) {
-//    close(device->fd);
     free(device);
 }
 
@@ -582,14 +581,14 @@ struct usb_request *usb_request_new(struct usb_device_handle *dev,
     struct usbdevfs_urb *urb = calloc(1, sizeof(struct usbdevfs_urb));
     if (!urb)
         return NULL;
-    if ((ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK)
-        urb->type = USBDEVFS_URB_TYPE_BULK;
-    else if ((ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT)
-        urb->type = USBDEVFS_URB_TYPE_INTERRUPT;
-    else {
-        LOGD("Unsupported endpoint type %d", ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK);
-        free(urb);
-        return NULL;
+    int ep = ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
+    switch(ep) {
+        case USB_ENDPOINT_XFER_BULK: urb->type = USBDEVFS_URB_TYPE_BULK; break;
+        case USB_ENDPOINT_XFER_INT: urb->type = USBDEVFS_URB_TYPE_INTERRUPT; break;
+        default:
+            LOGD("Unsupported endpoint type %d", ep);
+            free(urb);
+            return NULL;
     }
     urb->endpoint = ep_desc->bEndpointAddress;
     struct usb_request *req = calloc(1, sizeof(struct usb_request));
