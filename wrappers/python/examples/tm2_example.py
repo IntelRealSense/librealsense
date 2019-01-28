@@ -14,28 +14,13 @@ import pyrealsense2 as rs
 import json
 from time import sleep
 
-def on_notification(n):
-    print (n)
-    if n.category == rs.notification_category.hardware_event:
-        try:
-            event = json.loads(n.serialized_data)
-            if event and event['Event Type'] == 'Controller Event' \
-                and event['Data']['Sub Type'] == 'Discovery':
-                addr = event['Data']['Data']['MAC']
-                print ('Connecting to mac_str...')
-                try:
-                    tm2.connect_controller(addr)  # expecting tm2 = The device as tm2
-                except:
-                    print ('Failed to connect to controller ', mac_str)
-        except:
-            print ('Serialized data is not in JSON format (', \
-                n.serialized_data, ')')
-
-
-# Ignore frames arriving from the sensor (just to showcase controller usage)
-
 def on_frame(f):
-    pass
+    if f.profile.stream_type() == rs.stream.pose:
+        data = f.as_pose_frame().get_pose_data()
+        print("Frame #{}".format(f.frame_number))
+        print("Position: {}".format(data.translation))
+        print("Velocity: {}".format(data.velocity))
+        print("Acceleration: {}\n".format(data.acceleration))
 
 try:
     # Create a context
@@ -48,7 +33,7 @@ try:
     while not found:
         if len(ctx.devices) > 0:
             for d in ctx.devices:
-                if d.get_info(rs.camera_info.product_id) == '2803':
+                if d.get_info(rs.camera_info.product_id) in [str(0x0b37), str(0x0af3)]:
                     tm2 = d.as_tm2()
                     print ('Found TM2 device: ', \
                         d.get_info(rs.camera_info.name), ' ', \
@@ -58,15 +43,12 @@ try:
     # Get the sensor from the device
     s = tm2.sensors[0]
 
-    # Register to notifications (To get notified of controller events)
-    s.set_notifications_callback(on_notification)
-
     # Start the sensor
     s.open(s.profiles)
     s.start(on_frame)
 
     # Sleep for a while
-    sleep(10)
+    sleep(5)
 
     # Stop the sensor
     s.stop()
