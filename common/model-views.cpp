@@ -2039,9 +2039,13 @@ namespace rs2
             {
                 if (selected_depth_source_uid == -1)
                 {
-                    selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
+                    if (streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() &&
+                        streams.find(streams_origin[s.second.profile.unique_id()]) != streams.end())
+                    {
+                        selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
+                    }   
                 }
-                if (streams_origin[s.second.profile.unique_id()] == selected_depth_source_uid)
+                if (streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() && streams_origin[s.second.profile.unique_id()] == selected_depth_source_uid)
                 {
                     selected_depth_source = i;
                 }
@@ -2072,10 +2076,13 @@ namespace rs2
             {
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
                 {
-                    if (streams.find(streams_origin[s.second.profile.unique_id()]) != streams.end())
+                    if (streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() &&
+                        streams.find(streams_origin[s.second.profile.unique_id()]) != streams.end())
+                    {
                         selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
+                    }                         
                 }
-                if (streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid)
+                if ((streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() &&streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid))
                 {
                     selected_tex_source = i;
                 }
@@ -2096,8 +2103,9 @@ namespace rs2
         if (tex_sources_str.size() && depth_sources_str.size())
         {
             combo_boxes++;
-            if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
-                combo_boxes++;
+            if(streams.find(selected_tex_source_uid)!= streams.end())
+                if (RS2_STREAM_COLOR == streams[selected_tex_source_uid].profile.stream_type())
+                    combo_boxes++;
         }
 
         auto top_bar_height = 32.f;
@@ -2179,13 +2187,14 @@ namespace rs2
 
             // Occlusion control for RGB UV-Map uses option's description as label
             // Position is dynamically adjusted to avoid overlapping on resize
-            if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
-            {
-                ImGui::PushItemWidth(combo_box_width);
-                ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
-                    not_model, stream_rect.w < 1000, false);
-                ImGui::PopItemWidth();
-            }
+            if (streams.find(selected_tex_source_uid) != streams.end())
+                if (RS2_STREAM_COLOR==streams[selected_tex_source_uid].profile.stream_type())
+                {
+                    ImGui::PushItemWidth(combo_box_width);
+                    ppf.get_pc_model()->get_option(rs2_option::RS2_OPTION_FILTER_MAGNITUDE).draw(error_message,
+                        not_model, stream_rect.w < 1000, false);
+                    ImGui::PopItemWidth();
+                }
         }
 
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
@@ -2237,7 +2246,7 @@ namespace rs2
 
 
                 frame tex;
-                if (selected_tex_source_uid >= 0)
+                if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
                 {
                     tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
                     if (tex) ppf.update_texture(tex);
