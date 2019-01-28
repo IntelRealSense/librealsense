@@ -4,7 +4,7 @@
 ## Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #####################################################
-##            librealsense TM2 example             ##
+##           librealsense T265 example             ##
 #####################################################
 
 # First import the library
