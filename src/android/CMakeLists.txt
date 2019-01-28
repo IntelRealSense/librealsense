@@ -38,7 +38,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/jni/frameset.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/frame_queue.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/processing.c"
-
+        "${CMAKE_CURRENT_LIST_DIR}/jni/options.c"
 )
 
 message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")

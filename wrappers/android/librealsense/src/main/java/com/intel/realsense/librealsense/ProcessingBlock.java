@@ -1,6 +1,6 @@
 package com.intel.realsense.librealsense;
 
-public abstract class ProcessingBlock extends LrsClass implements ProcessingBlockInterface {
+public abstract class ProcessingBlock extends Options implements ProcessingBlockInterface {
 
     private static native void nDelete(long handle);
 
