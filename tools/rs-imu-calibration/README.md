@@ -66,19 +66,19 @@ I cut a little piece so the cord may come out, and that's it:<br>
 ![open box image](images/IMG_4918.jpg)<br>
 
 ***camera in box:***<br>
-![camera in box](images/IMG_4919.jpg)<br>
+![camera in box](images/IMG_4919.JPG)<br>
 
 ***face down position:***<br>
-![face down position](images/IMG_4920.jpg)<br>
+![face down position](images/IMG_4920.JPG)<br>
 
 ***cord up position:***<br>
-![cord up position](images/IMG_4921.jpg)<br>
+![cord up position](images/IMG_4921.JPG)<br>
 
 ***upright facing out (or upside down facing out, depends on which side the cord is..):***<br>
-![upright facing out](images/IMG_4922.jpg)<br>
+![upright facing out](images/IMG_4922.JPG)<br>
 
 ***cord down position:***<br>
-![cord down position](images/IMG_4923.jpg)<br>
+![cord down position](images/IMG_4923.JPG)<br>
 
 ***upside down (or upright) facing out:***<br>
-![upside down facing out](images/IMG_4924.jpg)
+![upside down facing out](images/IMG_4924.JPG)
