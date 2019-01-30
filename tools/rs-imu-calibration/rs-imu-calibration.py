@@ -305,7 +305,7 @@ def get_D435_IMU_Calib_Table(X):
     
     header_size = header.size()
     data_size = 37*4 + 96
-    size_of_buffer = header_size + data_size    # according to table "D435 IMU Calib Table" in "https://sharepoint.ger.ith.intel.com/sites/3D_project/Shared%20Documents/Arch/D400/FW/D435i_IMU_Calibration_eeprom_0_52.xlsx"
+    size_of_buffer = header_size + data_size    # according to table "D435 IMU Calib Table" here: https://user-images.githubusercontent.com/6958867/50902974-20507500-1425-11e9-8ca5-8bd2ac2d0ea1.png
     assert(size_of_buffer % 4 == 0)
     buffer = np.ones(size_of_buffer, dtype=np.uint8) * 255
 
@@ -451,7 +451,7 @@ def check_X(X, accel, show_graph):
     if show_graph:
         import pylab
         pylab.plot(norm_data, '.b')
-        pylab.hold(True)
+        #pylab.hold(True)
         pylab.plot(norm_fdata, '.g')
         pylab.show()
     print ('norm (raw data  ): %f' % np.mean(norm_data))
