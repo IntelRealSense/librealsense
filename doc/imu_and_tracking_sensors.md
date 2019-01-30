@@ -19,12 +19,12 @@ The following table summarizes the features and capabilities of the two devices:
 
 ## <a name="T265vsD435i"></a>T265 vs D435i
 
-Feature   | D435i   | T265 | Notes
-:-------: | :------------: | :-------: |
+Feature   | D435i   | T265 | Notes |
+:-------: | :------------: | :-------: | :-------: |
 IMU Sensor | Bosch BMI055  | Bosch BMI055 |  
 IMU Bias&Scale Correction | Not provided * | Yes | &ast; Feasible with <a href="#imu_calibration">SDK suite</a>
- 3DOF acceleration | 62.5/250 Hz | 62.5Hz |
-3DOF gyro | 200/400 Hz | 200Hz |
+ 3DOF acceleration | 62.5/250 Hz | 62.5Hz | meter/sec<sup>2</sup>
+3DOF gyro | 200/400 Hz | 200Hz | radian/sec
 6DOF Pose  | N/A | HW-generated at 262 Hz <br>  | Each sample contains:<br>   - Position vector [xyz]<br> -  Orientation quaternion [xyzw] <br> - Linear velocity and acceleration vectors<br> - Angular velocity and acceleration vectors <br> - Tracking confidence [hi/med/low] <br> - Mapping confidence [hi/med/low]
 Additional sensors | Depth/Left+Right IR/RGB identical to D435 | Two Fisheye sensors at 848X800 resolution/ 30FPS |
 Relocalization | N/A | Yes |
