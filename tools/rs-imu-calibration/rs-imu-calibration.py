@@ -593,6 +593,9 @@ def main():
 
         directory = os.path.dirname(accel_file) if accel_file else '.'
 
+        with open(os.path.join(directory,"calibration.json"), 'w') as outfile:
+            outfile.write(json_data)
+
         #concatinate the two 12 element arrays and save
         intrinsic_buffer = np.zeros([6,4])
 
