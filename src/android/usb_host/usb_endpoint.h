@@ -4,25 +4,29 @@
 
 #pragma once
 
-#include "UsbHost.h"
+#include "usb_host.h"
 
-class UsbEndpoint {
-    usb_endpoint_descriptor _desc;
-public:
-    UsbEndpoint(usb_endpoint_descriptor Descriptor) {
-        _desc = Descriptor;
+namespace librealsense
+{
+    namespace usb_host 
+    {
+        class usb_endpoint
+        {
+            usb_endpoint_descriptor _desc;
+        public:
+            usb_endpoint(usb_endpoint_descriptor Descriptor) {
+                _desc = Descriptor;
+            }
+
+            const usb_endpoint_descriptor *get_descriptor() const { return &_desc; }
+
+            int get_max_packet_size() {
+                return __le16_to_cpu(_desc.wMaxPacketSize);
+            }
+
+            uint8_t get_endpoint_address() const {
+                return _desc.bEndpointAddress;
+            }
+        };
     }
-
-    const usb_endpoint_descriptor * GetDescriptor() const { return &_desc; }
-
-    int GetMaxPacketSize() {
-        return __le16_to_cpu(_desc.wMaxPacketSize);
-    }
-
-    uint8_t GetEndpointAddress() {
-        return _desc.bEndpointAddress;
-    }
-
-};
-
-
+}

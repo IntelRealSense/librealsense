@@ -3,35 +3,30 @@
 //
 
 #pragma once
-class UsbInterfaceAssociation {
-    int _mi;
 
-private:
-    usb_interface_assoc_descriptor *_desc;
-    std::vector< unsigned char > _interfaces;
+namespace librealsense
+{
+    namespace usb_host
+    {
+        class usb_interface_association
+        {
+            int _mi;
 
-public:
-    UsbInterfaceAssociation(int interface_index,usb_interface_assoc_descriptor *pDescriptor) {
-        _desc = pDescriptor;
-        _mi=interface_index;
+        private:
+            usb_interface_assoc_descriptor *_desc;
+            std::vector< unsigned char > _interfaces;
+
+        public:
+            usb_interface_association(int interface_index,usb_interface_assoc_descriptor *pDescriptor) {
+                _desc = pDescriptor;
+                _mi=interface_index;
+            }
+
+            const usb_interface_assoc_descriptor * get_descriptor() const { return _desc; }
+
+            int get_mi() const { return _mi; }
+        };
     }
-
-    void AddInterface(__u8 usbInterface) {
-        _interfaces.push_back(usbInterface);
-    }
-
-    int GetNumInterfaces() { return _interfaces.size(); }
-
-    const unsigned char & GetInterface(int interface_index)const {
-        return _interfaces.at(interface_index);
-    }
-
-    const usb_interface_assoc_descriptor * GetDescriptor() const { return _desc; }
-
-    int GetMi() const {
-        return _mi;
-    }
-
-};
+}
 
 
