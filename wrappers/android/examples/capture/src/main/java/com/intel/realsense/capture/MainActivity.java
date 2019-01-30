@@ -94,6 +94,12 @@ public class MainActivity extends AppCompatActivity {
         init();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stop();
+    }
+
     void init(){
         //DeviceManager must be initialized before any interaction with physical RealSense devices.
         DeviceManager.init(mContext);

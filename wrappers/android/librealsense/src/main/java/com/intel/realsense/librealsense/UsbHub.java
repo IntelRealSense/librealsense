@@ -30,16 +30,6 @@ public class UsbHub extends LrsClass {
 
     private HashMap<String, UsbDesc> mDescriptors = new LinkedHashMap<>();
 
-    private class UsbDesc {
-        public UsbDesc(UsbDeviceConnection c, String n, int d ) {
-            connection = c;
-            name = n;
-            descriptor = d;
-        }
-        UsbDeviceConnection connection;
-        String name;
-        int descriptor;
-    }
 
     private DeviceListener mListener = new DeviceListener() {
         @Override
@@ -100,7 +90,7 @@ public class UsbHub extends LrsClass {
             boolean claimed = conn.claimInterface(device.getInterface(i), true);
             Log.d(TAG, "Device Claimed " + i + " success: " + claimed);
         }
-        UsbDesc desc = new UsbDesc(conn, device.getDeviceName(), conn.getFileDescriptor());
+        UsbDesc desc = new UsbDesc(device.getDeviceName(), conn.getFileDescriptor(), conn);
         mDescriptors.put(device.getDeviceName(), desc);
         nAddUsbDevice(desc.name, desc.descriptor);
         for (DeviceListener listener : mAppDeviceListener)

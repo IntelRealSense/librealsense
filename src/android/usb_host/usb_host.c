@@ -34,7 +34,7 @@
 #include <pthread.h>
 #include <linux/usbdevice_fs.h>
 #include <asm/byteorder.h>
-#include "UsbHost.h"
+#include "usb_host.h"
 #include "android_debug.h"
 
 #define DEV_DIR             "/dev"
@@ -656,4 +656,3 @@ int usb_request_cancel(struct usb_request *req) {
 int usb_endpoint_reset(struct usb_device_handle *device, uint8_t endpoint) {
     return ioctl(device->fd, USBDEVFS_CLEAR_HALT, &endpoint);
 }
-

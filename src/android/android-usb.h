@@ -4,13 +4,16 @@
 
 #include "../backend.h"
 
-#include "android_uvc/UsbHost.h"
-#include "android_uvc/android_uvc.h"
+#include "usb_host/usb_host.h"
+#include "usb_host/android_uvc.h"
+#include "usb_host/usb_device.h"
+
 
 #define HW_MONITOR_BUFFER_SIZE   (1024)
 typedef unsigned long ULONG;
 typedef ULONG *PULONG;
 typedef unsigned int DWORD;
+
 namespace librealsense {
     namespace platform {
         enum class pipe_direction {
@@ -61,10 +64,10 @@ namespace librealsense {
             UCHAR _out_pipe_id = 0;
             UCHAR _in_pipe_id = 0;
             UCHAR _interrupt_pipe_id = 0;
-            shared_ptr<UsbDevice> _usbDevice;
+            std::shared_ptr<usb_host::usb_device> _usbDevice;
             const unsigned int IN_PIPE_TIMEOUT = USB3_LPM_U2_MAX_TIMEOUT;
             const unsigned int OUT_PIPE_TIMEOUT = USB3_LPM_U2_MAX_TIMEOUT;
-            Queue<usb_request*> _requests_finished;
+
             std::vector<usb_request*> _requests;
             usb_endpoint_descriptor _ep_desc;
         };
@@ -83,13 +86,13 @@ namespace librealsense {
 
             usb_device_handle * _device_handle;
             std::unique_ptr<usb_interface> _usb_interface;
-            shared_ptr<UsbDevice> _usb_device;
+            std::shared_ptr<usb_host::usb_device> _usb_device;
         public:
             usb_device_handle *get_device_handle() const;
 
             usb_interface &get_usb_interface() const;
 
-            shared_ptr<UsbDevice> get_usb_device() const;
+            std::shared_ptr<usb_host::usb_device> get_usb_device() const;
         };
 
 

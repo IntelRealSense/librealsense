@@ -1,13 +1,12 @@
 #pragma once
 
-#include "UsbHost.h"
-#include "backend.h"
-#include "UsbDevice.h"
+#include "usb_host.h"
+#include "usb_device.h"
+#include "../../backend.h"
 #include <thread>
 
 typedef unsigned char UCHAR;
 typedef  UCHAR* PUCHAR;
-
 
 /** UVC request code (A.8) */
 enum uvc_req_code {
@@ -334,10 +333,12 @@ typedef struct usbhost_uvc_control_interface {
     /** Interface number */
     uint8_t bInterfaceNumber;
 } usbhost_uvc_control_interface_t;
+
 typedef struct usbhost_uvc_interface_handle{
-    shared_ptr<UsbDevice> deviceHandle;
+    std::shared_ptr<librealsense::usb_host::usb_device> device;
     int         interface_index;
 } usbhost_uvc_interface_handle_t;
+
 /** VideoStream interface */
 typedef struct usbhost_uvc_streaming_interface {
     struct usbhost_uvc_device_info *parent;
@@ -514,7 +515,7 @@ typedef struct uvc_format {
 struct usbhost_uvc_device
 {
     usbhost_uvc_device_info_t deviceData;
-    shared_ptr<UsbDevice> deviceHandle;
+    std::shared_ptr<librealsense::usb_host::usb_device> device;
     usbhost_uvc_stream_handle_t *streams;
     int pid, vid;
 };
@@ -590,7 +591,6 @@ do \
     (out) = dl_nth_p; \
           } while (0);
 
-
 typedef struct uvc_frame {
     /** Image data for this frame */
     void *data;
@@ -632,8 +632,7 @@ typedef struct uvc_frame {
 typedef void(usbhost_uvc_frame_callback_t)(struct librealsense::platform::frame_object *frame, void *user_ptr);
 
 // Return list of all connected IVCAM devices
-std::vector<usbhost_uvc_device*>
-usbhost_find_devices(int vid, int pid);
+std::vector<usbhost_uvc_device*> usbhost_find_devices(int vid, int pid);
 
 // Open a WinUSB device
 uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber);
@@ -642,7 +641,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber);
 uvc_error_t usbhost_close(usbhost_uvc_device *device);
 
 // Sending control packet using vendor-defined control transfer directed to WinUSB interface
-int usbhost_SendControl(shared_ptr<UsbDevice> ihandle,int interface_number, int requestType, int request, int value, int index, unsigned char *buffer, int buflen);
+int usbhost_SendControl(std::shared_ptr<librealsense::usb_host::usb_device> ihandle,int interface_number, int requestType, int request, int value, int index, unsigned char *buffer, int buflen);
 
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t usbhost_get_available_formats(usbhost_uvc_device *devh, int interface_idx, uvc_format_t **formats);
@@ -673,5 +672,4 @@ int uvc_set_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
 uvc_error_t uvc_get_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code);
 uvc_error_t uvc_set_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_mode mode);
 
-void poll_interrupts(shared_ptr<UsbDevice> device_handle, int ep, uint16_t timeout);
-
+void poll_interrupts(std::shared_ptr<librealsense::usb_host::usb_device> device_handle, int ep, uint16_t timeout);

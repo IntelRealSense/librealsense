@@ -3,13 +3,15 @@
 
 #define MAX_USBFS_BUFFER_SIZE   16384
 
-
-#include "UsbManager.h"
+#include "android_uvc.h"
+#include "usb_manager.h"
 #include "libuvc/utlist.h"
 
 #include "concurrency.h"
 #include "types.h"
-#include "android_uvc.h"
+
+#include "../../types.h"
+#include "../../libuvc/utlist.h"
 #include <vector>
 #include <thread>
 #include <atomic>
@@ -22,6 +24,8 @@
 struct frame;
 // We keep no more then 2 frames in between frontend and backend
 typedef librealsense::small_heap<frame, 2> frames_archive;
+
+using namespace librealsense::usb_host;
 
 struct frame {
     frame() {}
@@ -632,13 +636,13 @@ uvc_error_t update_stream_if_handle(usbhost_uvc_device *devh, int interface_idx)
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
         if (stream_if->bInterfaceNumber == interface_idx)
-            if (!stream_if->interfaceHandle.deviceHandle && interface_idx < MAX_USB_INTERFACES) {
+            if (!stream_if->interfaceHandle.device && interface_idx < MAX_USB_INTERFACES) {
                 // usbhost_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
                 // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
                 // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
                 // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
                 // For this reason, when calling to usbhost_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-                stream_if->interfaceHandle.deviceHandle = devh->deviceHandle;
+                stream_if->interfaceHandle.device = devh->device;
                 stream_if->interfaceHandle.interface_index = interface_idx;
             }
     }
@@ -646,13 +650,16 @@ uvc_error_t update_stream_if_handle(usbhost_uvc_device *devh, int interface_idx)
 }
 
 /* Return only Video stream interfaces */
-static usbhost_uvc_streaming_interface_t *
-usbhost_uvc_get_stream_if(usbhost_uvc_device *devh, int interface_idx) {
+static usbhost_uvc_streaming_interface_t* usbhost_uvc_get_stream_if(usbhost_uvc_device *devh, int interface_idx)
+{
     usbhost_uvc_streaming_interface_t *stream_if;
 
-    DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
+    DL_FOREACH(devh->deviceData.stream_ifs, stream_if)
+    {
         if (stream_if->bInterfaceNumber == interface_idx)
+        {
             return stream_if;
+        }
     }
 
     return NULL;
@@ -819,79 +826,91 @@ void usbhost_uvc_swap_buffers(usbhost_uvc_stream_handle_t *strmh, size_t leftove
 void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
                                  frames_archive *archive,
                                  frames_queue *queue) {
-    uint8_t header_len;
     uint8_t header_info;
-    size_t data_len;
-    size_t bytes_left;
+    size_t payload_len = strmh->got_bytes;
     uint8_t *payload = strmh->outbuf;
-    header_len = payload[0];
-    data_len = strmh->got_bytes - header_len;
-    if (data_len >= strmh->cur_ctrl.dwMaxVideoFrameSize) {
-        if (header_len < 2) {
-            header_info = 0;
-        } else {
-            /** @todo we should be checking the end-of-header bit */
-            size_t variable_offset = 2;
 
-            header_info = payload[1];
+    /* ignore empty payload transfers */
+    if (payload_len == 0)
+        return;
+    uint8_t header_len = payload[0];
 
-            if (header_info & 0x40) {
-                LOGE("bad packet: error bit set");
-                return;
-            }
+    if (header_len > payload_len)
+    {
+        LOGE("bogus packet: actual_len=%zd, header_len=%d", payload_len, header_len);
+        return;
+    }
 
-            if (strmh->fid != (header_info & 1) && strmh->got_bytes != 0) {
-                /* The frame ID bit was flipped, but we have image data sitting
-                around from prior transfers. This means the camera didn't send
-                an EOF for the last transfer of the previous frame. */
-                //LOGE("complete buffer without EOF : length %zd\n", strmh->got_bytes);
-                //usbhost_uvc_swap_buffers(strmh, 0);
-            }
+    size_t data_len = strmh->got_bytes - header_len;
 
-            strmh->fid = header_info & 1;
+    if (header_len < 2) {
+        header_info = 0;
+    }
+    else {
+        /** @todo we should be checking the end-of-header bit */
+        size_t variable_offset = 2;
 
-            if (header_info & (1 << 2)) {
-                strmh->pts = DW_TO_INT(payload + variable_offset);
-                variable_offset += 4;
-            }
+        header_info = payload[1];
 
-            if (header_info & (1 << 3)) {
-                /** @todo read the SOF token counter */
-                strmh->last_scr = DW_TO_INT(payload + variable_offset);
-                variable_offset += 6;
-            }
+        if (header_info & 0x40) {
+            LOGE("bad packet: error bit set");
+            return;
         }
 
-        if ((data_len > 0) && (strmh->cur_ctrl.dwMaxVideoFrameSize == (data_len))) {
-            /* The EOF bit is set, so publish the complete frame */
+        if (strmh->fid != (header_info & 1) && strmh->got_bytes != 0) {
+            /* The frame ID bit was flipped, but we have image data sitting
+            around from prior transfers. This means the camera didn't send
+            an EOF for the last transfer of the previous frame. */
+            LOGE("complete buffer : length %zd", strmh->got_bytes);
             usbhost_uvc_swap_buffers(strmh);
-            auto frame_p = archive->allocate();
-            if (frame_p) {
-                frame_ptr fp(frame_p, &cleanup_frame);
+        }
 
-                memcpy(fp->pixels.data(), strmh->holdbuf, strmh->hold_bytes);
+        strmh->fid = header_info & 1;
 
-                //LOGD("Passing packet to user CB with size %d", data_len + header_len);
-                librealsense::platform::frame_object fo{strmh->hold_bytes, header_len,
-                                                        fp->pixels.data() + header_len,
-                                                        fp->pixels.data()};
-                fp->fo = fo;
+        if (header_info & (1 << 2)) {
+            strmh->pts = DW_TO_INT(payload + variable_offset);
+            variable_offset += 4;
+        }
 
-                queue->enqueue(std::move(fp));
-            } else {
-                LOGE(
-                        "WinUSB backend is dropping a frame because librealsense wasn't fast enough");
-            }
+        if (header_info & (1 << 3)) {
+            /** @todo read the SOF token counter */
+            strmh->last_scr = DW_TO_INT(payload + variable_offset);
+            variable_offset += 6;
+        }
+    }
+
+    if ((data_len > 0) && (strmh->cur_ctrl.dwMaxVideoFrameSize == (data_len)))
+    {
+        //if (header_info & (1 << 1)) { // Temp patch to allow old firmware
+        /* The EOF bit is set, so publish the complete frame */
+        usbhost_uvc_swap_buffers(strmh);
+
+        auto frame_p = archive->allocate();
+        if (frame_p)
+        {
+            frame_ptr fp(frame_p, &cleanup_frame);
+
+            memcpy(fp->pixels.data(), payload, data_len + header_len);
+
+            LOGD("Passing packet to user CB with size %d:", (data_len + header_len));
+            librealsense::platform::frame_object fo{ data_len, header_len,
+                                                     fp->pixels.data() + header_len , fp->pixels.data() };
+            fp->fo = fo;
+
+            queue->enqueue(std::move(fp));
+        }
+        else
+        {
+            LOGW("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
         }
     }
 }
 
+
 void stream_thread(usbhost_uvc_stream_context *strctx) {
-    size_t buffer_size = static_cast<size_t>(strctx->maxVideoBufferSize * 2);
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    memset(buffer, 0, buffer_size);
-    auto dev = strctx->stream->stream_if->interfaceHandle.deviceHandle;
-    auto pipe = dev->GetPipe(strctx->endpoint);
+
+    auto dev = strctx->stream->stream_if->interfaceHandle.device;
+    auto pipe = dev->get_pipe(strctx->endpoint);
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks(true);
     frames_queue queue;
@@ -904,15 +923,15 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         ptr->owner = &archive;
         frames.push_back(ptr);
     }
+
     for (auto ptr : frames) {
         archive.deallocate(ptr);
     }
-    std::mutex m;
+
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
             if (queue.dequeue(&fp, 50)) {
-                lock_guard<mutex> lock_guard(m);
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -920,21 +939,18 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     LOGD("Transfer thread started for endpoint address: %2x", strctx->endpoint);
     usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
     do {
-        //auto res=usb_device_bulk_transfer(dev->GetHandle(),strctx->endpoint,buffer,buffer_size,10);
-        int res = pipe->ReadPipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
-        if (res > 0) {
-            strctx->stream->got_bytes = res;
-            lock_guard<mutex> lock_guard(m);
-            usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
-        } else if (res < 0) {
+        int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
+        if(res < 0)
+        {
             LOGE("Read pipe returned error and was clear halted ERROR: %s", strerror(errno));
-            res = usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
-            continue;
+            break;
         }
+        strctx->stream->got_bytes = res;
+        usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
     } while (strctx->stream->running);
 
-
-    free(buffer);
+    int ep = strctx->endpoint;
+    pipe->reset();
     free(strctx);
 
     queue.clear();
@@ -942,8 +958,8 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     archive.wait_until_empty();
     keep_sending_callbacks = false;
     t.join();
-    usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
-    LOGD("Transfer thread stopped for endpoint address: %02x",strctx->endpoint);
+
+    LOGD("Transfer thread stopped for endpoint address: %02x", ep);
 };
 
 uvc_error_t usbhost_uvc_stream_start(
@@ -998,7 +1014,6 @@ uvc_error_t usbhost_uvc_stream_start(
     strmh->cb_thread = std::thread(stream_thread, streamctx);
     strmh->user_cb = cb;
 
-
     return UVC_SUCCESS;
 
 }
@@ -1009,6 +1024,7 @@ uvc_error_t usbhost_uvc_stream_stop(usbhost_uvc_stream_handle_t *strmh) {
 
     strmh->running = false;
     strmh->cb_thread.join();
+
     return UVC_SUCCESS;
 }
 
@@ -1026,8 +1042,7 @@ void usbhost_uvc_stream_close(usbhost_uvc_stream_handle_t *strmh) {
     free(strmh);
 }
 
-uvc_error_t
-usbhost_uvc_stream_open_ctrl(usbhost_uvc_device *devh, usbhost_uvc_stream_handle_t **strmhp,
+uvc_error_t usbhost_uvc_stream_open_ctrl(usbhost_uvc_device *devh, usbhost_uvc_stream_handle_t **strmhp,
                              uvc_stream_ctrl_t *ctrl);
 
 uvc_error_t usbhost_start_streaming(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
@@ -1139,7 +1154,7 @@ usbhost_uvc_query_stream_ctrl(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
         //auto str_if = usbhost_uvc_get_stream_if(devh, ctrl->bInterfaceNumber);
         /* do the transfer */
         err = usb_device_control_transfer(
-                devh->deviceHandle->GetHandle(),
+                devh->device->GetHandle(),
                 req == UVC_SET_CUR ? UVC_REQ_TYPE_INTERFACE_SET : UVC_REQ_TYPE_INTERFACE_GET,
                 req,
                 probe ? (UVC_VS_PROBE_CONTROL << 8) : (UVC_VS_COMMIT_CONTROL << 8),
@@ -1507,8 +1522,7 @@ uvc_error_t usbhost_get_stream_ctrl_format_size_all(
     return usbhost_uvc_probe_stream_ctrl(devh, ctrl);
 }
 
-
-void poll_interrupts(shared_ptr<UsbDevice> device_handle, int ep, uint16_t timeout) {
+void poll_interrupts(std::shared_ptr<usb_device> device_handle, int ep, uint16_t timeout) {
     //auto pipe = device_handle->GetPipe(ep);
     //    static const unsigned short interrupt_buf_size = 0x400;
     //    uint8_t buffer[interrupt_buf_size];
@@ -1535,7 +1549,7 @@ int uvc_get_ctrl_len(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
         return UVC_ERROR_NO_DEVICE;
 
     int ret = usb_device_control_transfer(
-            devh->deviceHandle->GetHandle(),
+            devh->device->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_GET,
             UVC_GET_LEN,
             ctrl << 8,
@@ -1568,7 +1582,7 @@ int uvc_get_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
         return UVC_ERROR_NO_DEVICE;
 
     return usb_device_control_transfer(
-            devh->deviceHandle->GetHandle(),
+            devh->device->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_GET, req_code,
             ctrl << 8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,        // XXX saki
@@ -1592,7 +1606,7 @@ int uvc_set_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
     if (!devh)
         return UVC_ERROR_NO_DEVICE;
     auto ret = usb_device_control_transfer(
-            devh->deviceHandle->GetHandle(),
+            devh->device->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
             ctrl<<8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,
@@ -1610,7 +1624,7 @@ uvc_error_t uvc_get_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return UVC_ERROR_NO_DEVICE;
 
     ret = usb_device_control_transfer(
-            devh->deviceHandle->GetHandle(),
+            devh->device->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_GET, req_code,
             UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
             devh->deviceData.ctrl_if.bInterfaceNumber,
@@ -1633,7 +1647,7 @@ uvc_error_t uvc_set_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return UVC_ERROR_NO_DEVICE;
 
     ret = usb_device_control_transfer(
-            devh->deviceHandle->GetHandle(),
+            devh->device->GetHandle(),
             UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
             UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
             devh->deviceData.ctrl_if.bInterfaceNumber,
@@ -1646,34 +1660,29 @@ uvc_error_t uvc_set_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return static_cast<uvc_error_t>(ret);
 }
 
-// Return list of all connected IVCAM devices
-std::vector<usbhost_uvc_device *>
-usbhost_find_devices(int vid, int pid) {
+std::vector<usbhost_uvc_device *> usbhost_find_devices(int vid, int pid) {
     // Intel(R) RealSense(TM) 415 Depth - MI 0
     // bInterfaceNumber 0 video control - endpoint 0x87 (FW->Host)
     // bInterfaceNumber 1 video stream - endpoint 0x82 (FW->Host)
     // bInterfaceNumber 2 video stream - endpoint 0x83 (FW->Host)
-    //const GUID IVCAM_WIN_USB_DEVICE_GUID = { 0xe659c3ec, 0xbf3c, 0x48a5,{ 0x81, 0x92, 0x30, 0x73, 0xe8, 0x22, 0xd7, 0xcd } };
 
     // Intel(R) RealSense(TM) 415 RGB - MI 3
     // bInterfaceNumber 3 video control
     // bInterfaceNumber 4 video stream - endpoint 0x84 (FW->Host)
 
-    auto &usbmanager = UsbManager::getInstance();
-    auto devlist = usbmanager.GetDeviceList();
+    auto devlist = usb_manager::get_device_list();
 
     std::vector<usbhost_uvc_device *> list_internal;
 
 
     LOGD("Trying to find device with vid:%04x pid:%04x", vid, pid);
-    for (auto d: devlist) {
+    for (auto d : devlist) {
         if (d->GetVid() == vid) {
             usbhost_uvc_device *usbDevice = new usbhost_uvc_device;
-            usbDevice->deviceHandle = d;
+            usbDevice->device = d;
             usbDevice->pid = pid;
             usbDevice->vid = vid;
             list_internal.push_back(usbDevice);
-
         }
     }
     LOGD("usbhost_find_devices() found %d devices", list_internal.size());
@@ -1756,6 +1765,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     usb_config_descriptor *cfgDesc = NULL;
     byte *descriptors = NULL;
     uvc_error_t ret = UVC_SUCCESS;
+
     //LOGD("usbhost_open() device: %s", device->deviceHandle->dev_name);
     device->streams = NULL;
 
@@ -1764,7 +1774,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     // will do something not good
     memset(&device->deviceData, 0, sizeof(usbhost_uvc_device_info_t));
 
-    if (device->deviceHandle == NULL) {
+    if (!device->device) {
         LOGE("usb_device_new() failed to create usb device!");
         ret = UVC_ERROR_INVALID_PARAM;
         goto fail;
@@ -1772,7 +1782,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
 
 
     // Returns IVCAM configuration descriptor
-    cfgDesc = (usb_config_descriptor *) usbhost_get_descriptor(device->deviceHandle->GetHandle(),
+    cfgDesc = (usb_config_descriptor *) usbhost_get_descriptor(device->device->GetHandle(),
                                                                USB_DT_CONFIG,
                                                                0);
     if (cfgDesc == NULL) {
@@ -1784,7 +1794,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     //LOGD("usbhost_open() parsing descriptors: %s", device->deviceHandle->dev_name);
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
     usb_descriptor_iter it;
-    usb_descriptor_iter_init(device->deviceHandle->GetHandle(), &it);
+    usb_descriptor_iter_init(device->device->GetHandle(), &it);
     usbhost_uvc_parse_config_descriptors(&it,
                                          &interfaces);
     //LOGD("usbhost_open() parsing descriptors complete found %d interfaces",interfaces->numInterfaces);
@@ -1812,9 +1822,8 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     if (device) {
         usbhost_uvc_free_device_info(&device->deviceData);
 
-        if (device->deviceHandle) {
-            usb_device_close(device->deviceHandle->GetHandle());
-            device->deviceHandle = NULL;
+        if (device->device) {
+            device->device = NULL;
         }
     }
     LOGE("usbhost_open() failed! %d", ret);
@@ -1830,9 +1839,9 @@ uvc_error_t usbhost_close(usbhost_uvc_device *device) {
         memset(&device->deviceData, 0, sizeof(usbhost_uvc_device_info_t));
 
 
-        if (device->deviceHandle != NULL) {
+        if (device->device) {
             //usb_device_close(device->deviceHandle->GetHandle()); //TODO: do we need to do this?
-            device->deviceHandle = NULL;
+            device->device = NULL;
         }
 
         device->streams = NULL;
@@ -1856,10 +1865,10 @@ void usbhost_deinit() {
 bool read_all_uvc_descriptors(usbhost_uvc_device *device, PUCHAR buffer, int bufferLength,
                               int *lengthReturned) {
 
-    int len = device->deviceHandle->GetHandle()->desc_length;
+    int len = device->device->GetHandle()->desc_length;
     if (bufferLength < len || buffer == nullptr)
         return false;
-    memcpy(buffer, device->deviceHandle->GetHandle()->desc, len);
+    memcpy(buffer, device->device->GetHandle()->desc, len);
     *lengthReturned = len;
     return true;
 }

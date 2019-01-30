@@ -4,15 +4,14 @@
 #ifdef RS2_USE_ANDROID_BACKEND
 
 #include <mutex>
-#include <android/android_uvc/UsbManager.h>
 #include "android-usb.h"
+#include "usb_host/usb_manager.h"
+#include "usb_host/usb_device.h"
 
-
-
-
-
-namespace librealsense {
-    namespace platform {
+namespace librealsense
+{
+    namespace platform
+    {
         android_usb_device::android_usb_device(usb_device_handle *usbDevice)
                 : _device_handle(usbDevice),
                   _usb_interface(nullptr) {
@@ -37,7 +36,7 @@ namespace librealsense {
         void android_usb_device::open() {
             if (_device_handle)
                 return;
-            _usb_device = UsbManager::getInstance().GetUsbDeviceFromHandle(_device_handle);
+            _usb_device = usb_host::usb_manager::get_usb_device_from_handle(_device_handle);
             _usb_interface = std::unique_ptr<usb_interface>(new usb_interface(_device_handle, 0));
         }
 
@@ -50,7 +49,7 @@ namespace librealsense {
             return *_usb_interface;
         }
 
-        shared_ptr<UsbDevice> android_usb_device::get_usb_device() const {
+        std::shared_ptr<usb_host::usb_device> android_usb_device::get_usb_device() const {
             return _usb_device;
         }
 
@@ -74,7 +73,7 @@ namespace librealsense {
                 return;
             _interface_handle.device = deviceHandle;
             _interface_handle.interface_index = interface_index;
-            _usbDevice = UsbManager::getInstance().GetUsbDeviceFromHandle(deviceHandle);
+            _usbDevice = usb_host::usb_manager::get_usb_device_from_handle(deviceHandle);
         }
 
         void usb_interface::release() {
@@ -100,14 +99,12 @@ namespace librealsense {
                 throw std::runtime_error("Interface handle is NULL!");
 
             usb_interface_descriptor InterfaceDescriptor;
-            const UsbInterface &interface = _usbDevice->GetConfiguration(0).GetInterface(
-                    _interface_handle.interface_index);
-
+            const usb_host::usb_interface &interface = _usbDevice->get_interface(_interface_handle.interface_index);
 
             for (auto index = static_cast<UCHAR>(0);
                  index < InterfaceDescriptor.bNumEndpoints; ++index) {
-                UsbEndpoint endpoint = interface.GetEndpoint(index);
-                const usb_endpoint_descriptor *ep_desc = endpoint.GetDescriptor();
+                usb_host::usb_endpoint endpoint = interface.get_endpoint(index);
+                const usb_endpoint_descriptor *ep_desc = endpoint.get_descriptor();
                 int xfer_type = ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
                 if (xfer_type == USB_ENDPOINT_XFER_BULK) //BULK transfer
                 {

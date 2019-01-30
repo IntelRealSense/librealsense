@@ -3,20 +3,10 @@
 #pragma once
 
 #include "../backend.h"
-
-//#include "android-helpers.h"
-#include "android_uvc/android_uvc.h"
-
+#include "usb_host/android_uvc.h"
 #include <unordered_map>
 #include <mutex>
 #include <atomic>
-
-static const std::vector<std::string> device_guids =
-{
-    "{08090549-CE78-41DC-A0FB-1BD66694BB0C}",
-    "{E659C3EC-BF3C-48A5-8192-3073E822D7CD}", // Intel(R) RealSense(TM) 415 Depth - MI 0: [Interface 0 video control] [Interface 1 video stream] [Interface 2 video stream]
-    "{50537BC3-2919-452D-88A9-B13BBF7D2459}"  // Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
-};
 
 #define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
 #define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )

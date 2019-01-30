@@ -8,7 +8,8 @@
 #include "android-usb.h"
 #include "../types.h"
 #include "libuvc/utlist.h"
-#include "android_uvc/android_uvc.h"
+#include "usb_host/usb_manager.h"
+#include "../libuvc/utlist.h"
 
 
 #include <limits>
@@ -16,7 +17,6 @@
 
 #define MAX_PINS 5
 
-bool opened = false;
 namespace librealsense {
     namespace platform {
         // we are using standard fourcc codes to represent formats, while MF is using GUIDs
@@ -151,7 +151,7 @@ namespace librealsense {
             int32_t ret = 0;
 
             int status = usb_device_control_transfer(
-                    _device->deviceHandle->GetHandle(),
+                    _device->device->GetHandle(),
                     UVC_REQ_TYPE_INTERFACE_GET,
                     action,
                     control << 8,
@@ -192,7 +192,7 @@ namespace librealsense {
             INT_TO_DW(value, buffer);
 
             int status = usb_device_control_transfer(
-                    _device->deviceHandle->GetHandle(),
+                    _device->device->GetHandle(),
                     UVC_REQ_TYPE_INTERFACE_SET,
                     action,
                     control << 8,
@@ -328,7 +328,7 @@ namespace librealsense {
                 return;
             }
            do {
-                ::poll_interrupts(_device->deviceHandle, _device->deviceData.ctrl_if.bEndpointAddress, 100);
+                ::poll_interrupts(_device->device, _device->deviceData.ctrl_if.bEndpointAddress, 100);
             }while (_keep_pulling_interrupts);
         }
 
@@ -341,14 +341,12 @@ namespace librealsense {
 
                 auto devs = usbhost_find_devices(vid, pid); //TODO: change from hard coded
 
-                for (auto device: devs) {
+                for (auto device : devs) {
                     // initializing and filling all fields of winsub_device device_list[0]
                     usbhost_open(device, mi);
-                    opened = true;
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {
-                        _device = std::shared_ptr<usbhost_uvc_device>(device,
-                                                                      [](usbhost_uvc_device *ptr) {
+                        _device = std::shared_ptr<usbhost_uvc_device>(device, [](usbhost_uvc_device *ptr) {
                                                                           usbhost_close(ptr);
                                                                       });
 
@@ -429,7 +427,8 @@ namespace librealsense {
                                                std::shared_ptr<const android_backend> backend)
                 : _streamIndex(MAX_PINS), _info(info), _backend(std::move(backend)),
                   _location(""), _device_usb_spec(usb3_type), _keep_pulling_interrupts(false),
-                  _interrupt_polling_thread(nullptr) {
+                  _interrupt_polling_thread(nullptr)
+        {
             if (!is_connected(info)) {
                 throw std::runtime_error("Camera not connected!");
             }

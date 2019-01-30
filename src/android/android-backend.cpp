@@ -8,10 +8,9 @@
 #include "android-usb.h"
 #include "android-hid.h"
 #include "../types.h"
+#include "usb_host/usb_manager.h"
 #include <chrono>
 #include <cctype> // std::tolower
-#include <android/android_uvc/UsbManager.h>
-
 
 namespace librealsense {
     namespace platform {
@@ -42,17 +41,15 @@ namespace librealsense {
         std::vector<uvc_device_info> android_backend::query_uvc_devices() const {
             std::vector<uvc_device_info> devices;
             LOGD("Querying USB Devices...");
-            UsbManager &usb_manager = UsbManager::getInstance();
-            auto dev_list = usb_manager.GetDeviceList();
-            for (auto dev: dev_list) {
-                UsbConfiguration config = dev->GetConfiguration(0);
-                for (int ia = 0; ia < config.GetNumInterfaceAssociations(); ia++) {
-                    auto iad = config.GetInterfaceAssociation(ia);
-                    if (iad.GetDescriptor()->bFunctionClass == USB_CLASS_VIDEO) {
+            auto dev_list = usb_host::usb_manager::get_device_list();
+            for (auto dev : dev_list) {
+                for (int ia = 0; ia < dev->get_interfaces_associations_count(); ia++) {
+                    auto iad = dev->get_interface_association(ia);
+                    if (iad.get_descriptor()->bFunctionClass == USB_CLASS_VIDEO) {
                         uvc_device_info device_info;
                         device_info.vid = dev->GetVid();
                         device_info.pid = dev->GetPid();
-                        device_info.mi = iad.GetMi();
+                        device_info.mi = iad.get_mi();
                         device_info.unique_id = dev->GetHandle()->fd;
                         device_info.device_path = std::string(dev->GetHandle()->dev_name);
                         LOGD("Found UVC Device vid:%04x pid:%04x mi:%02x path: %s",device_info.vid,device_info.pid,device_info.mi,device_info.device_path.c_str());
