@@ -592,20 +592,19 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block flow, inherit this class to generate your own "
                                                                      "processing_block. Please refer to the viewer class in examples.hpp for a detailed usage example.");
-    processing_block.def("__init__", [](rs2::processing_block &self, std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
-        new (&self) rs2::processing_block(processing_function);
-    }, "processing_function"_a);
-    processing_block.def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f)
-                         {
-                             self.start(f);
-                         }, "callback"_a)
-                    .def("invoke", &rs2::processing_block::invoke, "f"_a)
-                  /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
+    processing_block.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
+            return new rs2::processing_block(processing_function);
+        }), "processing_function"_a)
+        .def("start", [](rs2::processing_block& self, std::function<void(rs2::frame)> f) {
+            self.start(f);
+        }, "callback"_a)
+        .def("invoke", &rs2::processing_block::invoke, "f"_a)
+        /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
 
     py::class_ <rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter");
-    filter.def("__init__", [](rs2::filter &self, std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size){
-        new (&self) rs2::filter(filter_function, queue_size);
-    }, "filter_function"_a, "queue_size"_a = 1);
+    filter.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size){
+        return new rs2::filter(filter_function, queue_size);
+    }), "filter_function"_a, "queue_size"_a = 1);
 
     // Not binding syncer_processing_block, not in Python API
 
