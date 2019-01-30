@@ -38,7 +38,7 @@ std::string make_pythonic_str(std::string str)
     }
     return str;
 }
-#define BIND_ENUM(module, rs2_enum_type,RS2_ENUM_COUNT)                                                                     \
+#define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT)                                                                    \
     static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
     /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
     py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                               \
@@ -360,7 +360,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, frameset))
         .def(BIND_DOWNCAST(frame, video_frame))
         .def(BIND_DOWNCAST(frame, depth_frame))
-        .def(BIND_DOWNCAST(frame, motion_frame));
+        .def(BIND_DOWNCAST(frame, motion_frame))
+        .def(BIND_DOWNCAST(frame, pose_frame));
 
     py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
     video_frame.def(py::init<rs2::frame>())
@@ -390,9 +391,41 @@ PYBIND11_MODULE(NAME, m) {
         return ss.str();
     });
 
+    py::class_<rs2_quaternion> quaternion(m, "quaternion");
+    quaternion.def(py::init<>())
+        .def_readwrite("x", &rs2_quaternion::x)
+        .def_readwrite("y", &rs2_quaternion::y)
+        .def_readwrite("z", &rs2_quaternion::z)
+        .def_readwrite("w", &rs2_quaternion::w)
+        .def("__repr__", [](const rs2_quaternion& self)
+    {
+        std::stringstream ss;
+        ss << "x: " << self.x << ", ";
+        ss << "y: " << self.y << ", ";
+        ss << "z: " << self.z << ", ";
+        ss << "w: " << self.w;
+        return ss.str();
+    });
+
+
+    py::class_<rs2_pose> pose(m, "pose");
+    pose.def(py::init<>())
+        .def_readwrite("translation",           &rs2_pose::translation)
+        .def_readwrite("velocity",              &rs2_pose::velocity)
+        .def_readwrite("acceleration",          &rs2_pose::acceleration)
+        .def_readwrite("rotation",              &rs2_pose::rotation)
+        .def_readwrite("angular_velocity",      &rs2_pose::angular_velocity)
+        .def_readwrite("angular_acceleration",  &rs2_pose::angular_acceleration)
+        .def_readwrite("tracker_confidence",    &rs2_pose::tracker_confidence)
+        .def_readwrite("mapper_confidence",     &rs2_pose::mapper_confidence);
+
     py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame");
     motion_frame.def(py::init<rs2::frame>())
         .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Returns motion info of frame.");
+
+    py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame");
+    pose_frame.def(py::init<rs2::frame>())
+        .def("get_pose_data", &rs2::pose_frame::get_pose_data);
 
     py::class_<rs2::vertex> vertex(m, "vertex");
     vertex.def_readwrite("x", &rs2::vertex::x)
