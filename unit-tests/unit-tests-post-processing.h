@@ -194,7 +194,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     {
         CAPTURE(base_name);
         CAPTURE(filename.second);
-        fe.emplace_back(file_exists(base_name + filename.second));
+        fe.push_back(file_exists(base_name + filename.second));
         if (!fe.back())
         {
             WARN("A required test file is not present: " << base_name + filename.second << " .Test will be skipped");
