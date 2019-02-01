@@ -161,6 +161,19 @@ namespace rs2
 
             gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
+            // OpenGL 2.1 backward-compatibility fixes.
+            // On macOS, the compatibility profile is OpenGL 2.1 + extensions.
+            if (!GLAD_GL_VERSION_3_0 && !GLAD_GL_ARB_vertex_array_object) {
+                if (GLAD_GL_APPLE_vertex_array_object) {
+                    glBindVertexArray = glBindVertexArrayAPPLE;
+                    glDeleteVertexArrays = glDeleteVertexArraysAPPLE;
+                    glGenVertexArrays = glGenVertexArraysAPPLE;
+                    glIsVertexArray = glIsVertexArrayAPPLE;
+                } else {
+                    throw std::runtime_error("OpenGL 3.0 or ARB_vertex_array_object extension required!");
+                }
+            }
+
             prepare_config_file();
 
             glfwDestroyWindow(ctx);
