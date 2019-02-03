@@ -778,20 +778,23 @@ namespace librealsense
             write_fs_attribute(_iio_device_path + "/buffer/length", hid_buf_len);
             // During the power-up period the sysfs HAL node is lazy initialized, requiring async assignment
             std::string current_trigger = _sensor_name + "-dev" + _iio_device_path.back();
-            //write_fs_attribute(_iio_device_path + "/trigger/current_trigger", current_trigger);
             std::string path = _iio_device_path + "/trigger/current_trigger";
+
+            // Overcome Linux iio kernel driver failing to properly enumerate and map the interrupt triggers
+            // to the accel/gyro kernel modules
             _pm_thread = std::unique_ptr<std::thread>(new std::thread([path,current_trigger](){
-                while (true)
+                bool retry =true;
+                while (retry)
                 {
-                    try{
-                        // Overcome Linux kernel issue failing to properly enumerate and map the interrupt triggers
-                        // to the accel/gyro kernel modules
+                    try
+                    {
                         if (write_fs_attribute(path, current_trigger))
                             break;
                         else
                             std::this_thread::sleep_for(std::chrono::milliseconds(50));
                     }
                     catch(...){ break; } // Device disconnect
+                    retry = false;
                 }
             }));
             _pm_thread->detach();
