@@ -69,6 +69,8 @@ if(WIN32)
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
         endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /source-charset:utf-8")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /source-charset:utf-8")
 endif()
 
 if(ANDROID)
