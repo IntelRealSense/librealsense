@@ -7,41 +7,11 @@
 #include "backend.h"
 #include "types.h"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
-#include <algorithm>
-#include <functional>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <regex>
 #include <thread>
-#include <utility> // for pair
-#include <chrono>
-#include <thread>
-#include <atomic>
 
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
-#include <cmath>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/usb/video.h>
-#include <linux/uvcvideo.h>
-#include <linux/videodev2.h>
-#include <fts.h>
-#include <regex>
-#include <list>
-
-#include <sys/signalfd.h>
-#include <signal.h>
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
