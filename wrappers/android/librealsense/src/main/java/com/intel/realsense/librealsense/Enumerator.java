@@ -98,7 +98,7 @@ class Enumerator {
         super.finalize();
     }
 
-    private synchronized void notifyOnAttach(){
+    private synchronized void notifyOnAttach() throws Exception {
         if(mListener != null) {
             Log.i(TAG, "notifyOnAttach");
 
@@ -106,7 +106,7 @@ class Enumerator {
         }
     }
 
-    private synchronized void notifyOnDetach(){
+    private synchronized void notifyOnDetach() throws Exception {
         if(mListener != null) {
             Log.i(TAG, "notifyOnDetach");
 

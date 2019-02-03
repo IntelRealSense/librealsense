@@ -14,17 +14,23 @@ import java.util.List;
 import java.util.Map;
 
 public class UsbHub extends LrsClass {
+    private static final String TAG = "lrs UsbHub";
+
     private final List<DeviceListener> mAppDeviceListener;
 
-    public void addListener(DeviceListener deviceListener){
-        mAppDeviceListener.add(deviceListener);
+    public synchronized void addListener(DeviceListener deviceListener){
+        if(!mAppDeviceListener.contains(deviceListener))
+            mAppDeviceListener.add(deviceListener);
     }
 
-    public void removeListener(DeviceListener deviceListener){
+    public synchronized void removeListener(DeviceListener deviceListener){
         mAppDeviceListener.remove(deviceListener);
     }
 
-    private static final String TAG = UsbHub.class.getSimpleName();
+    public int getDeviceCount() {
+        return mDescriptors.size();
+    }
+
     private final Context mContext;
     private final Enumerator mEnumerator;
 
@@ -76,8 +82,13 @@ public class UsbHub extends LrsClass {
     private void removeDevice(UsbDesc desc) {
         nRemoveUsbDevice(desc.descriptor);
         desc.connection.close();
-        for(DeviceListener listener : mAppDeviceListener)
-            listener.onDeviceDetach();
+        for(DeviceListener listener : mAppDeviceListener) {
+            try {
+                listener.onDeviceDetach();
+            } catch (Exception e) {
+                Log.e(TAG, e.getMessage());
+            }
+        }
     }
 
     private  void addDevice(UsbDevice device) {
@@ -86,15 +97,18 @@ public class UsbHub extends LrsClass {
 
         UsbManager usbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection conn = usbManager.openDevice(device);
-        for (int i = 0; i < device.getInterfaceCount(); i++) {
-            boolean claimed = conn.claimInterface(device.getInterface(i), true);
-            Log.d(TAG, "Device Claimed " + i + " success: " + claimed);
-        }
         UsbDesc desc = new UsbDesc(device.getDeviceName(), conn.getFileDescriptor(), conn);
         mDescriptors.put(device.getDeviceName(), desc);
         nAddUsbDevice(desc.name, desc.descriptor);
-        for (DeviceListener listener : mAppDeviceListener)
-            listener.onDeviceAttach();
+        Log.d(TAG, "Device: " + desc.name + " opened successfully");
+
+        for (DeviceListener listener : mAppDeviceListener){
+            try {
+                listener.onDeviceAttach();
+            } catch (Exception e){
+                Log.e(TAG, e.getMessage());
+            }
+        }
     }
 
     @Override

@@ -22,6 +22,11 @@ usb_device::usb_device(usb_device_handle *device) :
         _sSerialNumber = toString(
                 usb_device_get_string(device, _usb_device_descriptor->iSerialNumber,TIMEOUT));
         build_tree();
+        foreach_interface([&](usb_interface interface)
+        {
+            usb_device_connect_kernel_driver(_handle, interface.get_descriptor().iInterface, false);
+            usb_device_claim_interface(_handle, interface.get_descriptor().iInterface);
+        });
         start();
     }
 }
@@ -29,7 +34,10 @@ usb_device::usb_device(usb_device_handle *device) :
 usb_device::~usb_device() {
     stop();
     _pipes.clear();
-    usb_device_reset(_handle);
+    foreach_interface([&](usb_interface interface)
+    {
+        usb_device_release_interface(_handle, interface.get_descriptor().iInterface);
+    });
 }
 
 bool usb_device::add_configuration(usb_configuration &usbConfiguration) {

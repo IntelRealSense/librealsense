@@ -1,6 +1,6 @@
 package com.intel.realsense.librealsense;
 
 public interface DeviceListener {
-    void onDeviceAttach();
-    void onDeviceDetach();
+    void onDeviceAttach() throws Exception;
+    void onDeviceDetach() throws Exception;
 }

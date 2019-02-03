@@ -27,7 +27,6 @@ Java_com_intel_realsense_librealsense_UsbHub_nAddUsbDevice(JNIEnv *env, jclass t
     const char *deviceName = env->GetStringUTFChars(deviceName_, 0);
 
     auto handle = usb_device_new(deviceName, fileDescriptor);
-    usb_device_reset(handle);
     if (handle != NULL) {
         auto device = std::make_shared<usb_device>(handle);
         _devices.push_back(device);

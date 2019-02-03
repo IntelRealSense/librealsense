@@ -23,6 +23,6 @@
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="colorPrimaryDark">@color/intel_blue</item>
+        <item name="colorPrimaryDark">@color/black</item>
     </style>
 </resources>
