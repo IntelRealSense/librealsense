@@ -44,6 +44,12 @@ namespace Intel.RealSense
             return extrinsics;
         }
 
+        public void RegisterExtrinsicsTo(StreamProfile other, Extrinsics extrinsics)
+        {
+            object error;
+            NativeMethods.rs2_register_extrinsics(m_instance.Handle, other.m_instance.Handle, extrinsics, out error);
+        }
+
         #region IDisposable Support
         internal bool disposedValue = false; // To detect redundant calls
 
