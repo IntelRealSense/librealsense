@@ -735,6 +735,25 @@ namespace librealsense
 
             _pm_dispatcher.start();
 
+            // HID iio kernel driver async initialization may fail to map the kernel objects hierarchy (iio triggers) properly
+            // The patch will rectify this behaviour
+            std::string current_trigger = _sensor_name + "-dev" + _iio_device_path.back();
+            std::string path = _iio_device_path + "/trigger/current_trigger";
+            _pm_thread = std::unique_ptr<std::thread>(new std::thread([path,current_trigger](){
+                bool retry =true;
+                while (retry) {
+                    try {
+                        if (write_fs_attribute(path, current_trigger))
+                            break;
+                        else
+                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    }
+                    catch(...){} // Device disconnect
+                    retry = false;
+                }
+            }));
+            _pm_thread->detach();
+
             // read all available input of the iio_device
             read_device_inputs();
 
@@ -746,28 +765,6 @@ namespace librealsense
 
             set_frequency(frequency);
             write_fs_attribute(_iio_device_path + "/buffer/length", hid_buf_len);
-            // During the power-up period the sysfs HAL node is lazy initialized, requiring async assignment
-            std::string current_trigger = _sensor_name + "-dev" + _iio_device_path.back();
-            std::string path = _iio_device_path + "/trigger/current_trigger";
-
-            // Overcome Linux iio kernel driver failing to properly enumerate and map the interrupt triggers
-            // to the accel/gyro kernel modules
-            _pm_thread = std::unique_ptr<std::thread>(new std::thread([path,current_trigger](){
-                bool retry =true;
-                while (retry)
-                {
-                    try
-                    {
-                        if (write_fs_attribute(path, current_trigger))
-                            break;
-                        else
-                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                    }
-                    catch(...){ break; } // Device disconnect
-                    retry = false;
-                }
-            }));
-            _pm_thread->detach();
         }
 
         // calculate the storage size of a scan
