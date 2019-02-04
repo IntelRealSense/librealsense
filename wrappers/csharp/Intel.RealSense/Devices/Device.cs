@@ -66,6 +66,12 @@ namespace Intel.RealSense
                 return QuerySensors();
             }
         }
+        
+        public void HardwareReset()
+        {
+                object error;
+                NativeMethods.rs2_hardware_reset(m_instance, out error);
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

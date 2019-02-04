@@ -77,7 +77,7 @@ namespace librealsense
         explicit ds5_depth_sensor(ds5_device* owner,
             std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(0)
+            : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(-1)
         {}
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -166,7 +166,7 @@ namespace librealsense
             return results;
         }
 
-        float get_depth_scale() const override { return _depth_units; }
+        float get_depth_scale() const override { if (_depth_units < 0) _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query(); return _depth_units; }
 
         void set_depth_scale(float val){ _depth_units = val; }
 
@@ -193,7 +193,7 @@ namespace librealsense
         }
     protected:
         const ds5_device* _owner;
-        std::atomic<float> _depth_units;
+        mutable std::atomic<float> _depth_units;
         float _stereo_baseline_mm;
     };
 
@@ -470,7 +470,7 @@ namespace librealsense
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
-        if ((_fw_version >= firmware_version("5.11.0.44")) && ((_device_capabilities & mask) == mask))
+        if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
             depth_ep.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &depth_ep));
         }
