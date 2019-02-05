@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "usb_host.h"
+#include "usbhost.h"
 #include "android_debug.h"
 #include "usb_configuration.h"
-#include "usb_host.h"
+#include "usbhost.h"
 #include "usb_pipe.h"
 
 #include <string>
@@ -23,7 +23,7 @@ namespace librealsense
 {
     namespace usb_host
     {
-        class usb_device {
+        class device {
         private:
             static std::string toString(char *cstr);
             static std::string descriptorTypeToString(uint8_t dt);
@@ -34,32 +34,41 @@ namespace librealsense
             std::shared_ptr<std::thread> _pull_thread;
 
         protected:
-            usb_device_handle *_handle;
+            usb_device *_handle;
             std::vector<usb_configuration> _configurations;
             const usb_device_descriptor *_usb_device_descriptor;
             std::string _sProduct;
             std::string _sManufacturer;
             std::string _sSerialNumber;
+            std::string _name;
+            size_t _desc_length;
 
         public:
-            usb_device();
-            usb_device(usb_device_handle *device);
-            ~usb_device();
+            device(usb_device *device);
+            ~device();
+
+            usb_device* get_handle() const { return _handle; }
+            const usb_device_descriptor *get_descriptor() const { return _usb_device_descriptor; };
+
+            const std::string& get_name() { return _name; }
+            const std::string& get_product() const { return _sProduct; }
+            const std::string& get_manufacturer() const { return _sManufacturer; }
+            const std::string& get_serial_number() const { return _sSerialNumber; }
+            const std::string& get_device_description() const;
+
+            int get_vid() { return usb_device_get_vendor_id(_handle); }
+            int get_pid() { return usb_device_get_product_id(_handle); }
+            int get_file_descriptor() { return usb_device_get_fd(_handle); }
+            int get_descriptor_length() { return _desc_length; }
+
+            int get_interfaces_count() { return _configurations.at(0).get_interfaces_count(); }
+            int get_interfaces_associations_count() { return _configurations.at(0).get_interfaces_associations_count(); }
+            const usb_interface& get_interface(int index) const {  return _configurations.at(0).get_interface(index); }
+            const usb_interface_association & get_interface_association(int index) const { return _configurations.at(0).get_interface_association(index) ; }
+
+            std::shared_ptr<usb_pipe> get_pipe(int ep_address) { return _pipes[ep_address]; }
 
             bool add_configuration(usb_configuration &usbConfiguration);
-            const usb_device_descriptor *get_descriptor() const { return _usb_device_descriptor; };
-            usb_device_handle *GetHandle() const { return _handle; }
-            const std::string &GetStringProduct() const { return _sProduct; }
-            const std::string &GetStringManufacturer() const { return _sManufacturer; }
-            const std::string &GetStringSerialNumber() const { return _sSerialNumber; }
-            std::string get_device_description() const;
-            int GetVid() { return usb_device_get_vendor_id(_handle); }
-            int GetPid() { return usb_device_get_product_id(_handle); }
-            int get_interfaces_count() { return _configurations.at(0).get_interfaces_count(); }
-            const usb_interface& get_interface(int index) const {  return _configurations.at(0).get_interface(index); }
-            int get_interfaces_associations_count() { return _configurations.at(0).get_interfaces_associations_count(); }
-            const usb_interface_association & get_interface_association(int index) const { return _configurations.at(0).get_interface_association(index) ; }
-            std::shared_ptr<usb_pipe> get_pipe(int ep_address) { return _pipes[ep_address]; }
 
         private:
             void start();

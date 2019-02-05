@@ -50,6 +50,12 @@ public class MainActivity extends AppCompatActivity {
         mGlView = findViewById(R.id.glSurfaceView);
         mRenderer = new GLRenderer();
         mGlView.setRenderer(mRenderer);
+
+        // Android 9 also requires camera permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
+            return;
+        }
     }
 
     @Override
@@ -64,14 +70,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        // Android 9 also requires camera permissions
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
-            return;
-        }
-
-        if(!mIsStreaming)
-            init();
+        init();
     }
 
     @Override
@@ -84,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
         //DeviceManager must be initialized before any interaction with physical RealSense devices.
         DeviceManager.init(mAppContext);
 
+        //The UsbHub provides notifications regarding RealSense devices attach/detach events via the DeviceListener.
+        DeviceManager.getUsbHub().addListener(mListener);
+
         mPipeline = new Pipeline();
         mConfig  = new Config();
         mColorizer = new Colorizer();
@@ -91,20 +93,18 @@ public class MainActivity extends AppCompatActivity {
         mConfig.enableStream(StreamType.DEPTH, 640, 480);
         mConfig.enableStream(StreamType.COLOR, 640, 480);
 
-        //The UsbHub provides notifications regarding RealSense devices attach/detach events via the DeviceListener.
-        DeviceManager.getUsbHub().addListener(mListener);
-
         if(DeviceManager.getUsbHub().getDeviceCount() > 0) {
+            showConnectLabel(false);
             start();
         }
     }
 
-    private void setWindowVisibility(final boolean state){
+    private void showConnectLabel(final boolean state){
+        mRenderer.clean();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mBackGroundText.setVisibility(state ? View.GONE : View.VISIBLE);
-                mGlView.setVisibility(state ? View.VISIBLE : View.GONE);
+                mBackGroundText.setVisibility(state ? View.VISIBLE : View.GONE);
             }
         });
     }
@@ -112,11 +112,12 @@ public class MainActivity extends AppCompatActivity {
     private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() throws Exception {
-            start();
+            showConnectLabel(false);
         }
 
         @Override
         public void onDeviceDetach() throws Exception {
+            showConnectLabel(true);
             stop();
         }
     };
@@ -125,22 +126,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames())
+                try(FrameSet frames = mPipeline.waitForFrames(1000))
                 {
                     try(FrameSet processed = frames.applyFilter(mColorizer)) {
-                        try(Frame f = processed.first(StreamType.DEPTH, StreamFormat.RGB8)){
-                            mRenderer.show(f.as(VideoFrame.class));
-                        }
-                        try(Frame f = processed.first(StreamType.COLOR)){
-                            mRenderer.show(f.as(VideoFrame.class));
-                        }
+                        processed.foreach(new FrameSet.FrameCallback() {
+                            @Override
+                            public void onFrame(Frame f) throws Exception {
+                                mRenderer.show(f.as(VideoFrame.class));
+                            }
+                        });
                     }
                 }
                 mHandler.post(mStreaming);
             }
             catch (Exception e) {
                 Log.e(TAG, "streaming, error: " + e.getMessage());
-                stop();
             }
         }
     };
@@ -152,8 +152,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "try start streaming");
             mPipeline.start(mConfig);
             mIsStreaming = true;
-            mStreaming.run();
-            setWindowVisibility(true);
+            mHandler.post(mStreaming);
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to start streaming");
@@ -168,7 +167,6 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
-            setWindowVisibility(false);
             Log.d(TAG, "streaming stopped successfully");
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

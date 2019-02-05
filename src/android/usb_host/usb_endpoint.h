@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "usb_host.h"
+#include "usbhost.h"
 
 namespace librealsense
 {

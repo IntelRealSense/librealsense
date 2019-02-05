@@ -61,17 +61,17 @@ public class GLFrame {
                 GLES10.glTexImage2D(GLES10.GL_TEXTURE_2D, 0, GLES10.GL_RGBA, width, height, 0, GLES10.GL_RGBA, GLES10.GL_UNSIGNED_BYTE, mBuffer);
                 break;
             case Y8:
-                GLES10.glTexImage2D(GLES10.GL_TEXTURE_2D, 0, GLES10.GL_RGB, width, height, 0, GLES10.GL_LUMINANCE, GLES10.GL_UNSIGNED_BYTE, mBuffer);
+                GLES10.glTexImage2D(GLES10.GL_TEXTURE_2D, 0, GLES10.GL_LUMINANCE, width, height, 0, GLES10.GL_LUMINANCE, GLES10.GL_UNSIGNED_BYTE, mBuffer);
                 break;
             default:
                 throw new RuntimeException("The requested format is not supported by the viewer");
         }
 
-        GLES10.glTexParameterf(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_MAG_FILTER, GLES10.GL_LINEAR);
-        GLES10.glTexParameterf(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_MIN_FILTER, GLES10.GL_LINEAR);
-        GLES10.glTexParameterf(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_WRAP_S, GLES10.GL_CLAMP_TO_EDGE);
-        GLES10.glTexParameterf(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_WRAP_T, GLES10.GL_CLAMP_TO_EDGE);
-        GLES10.glPixelStorei(GLES10.GL_UNPACK_ALIGNMENT, 0);
+        GLES10.glTexParameterx(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_MAG_FILTER, GLES10.GL_LINEAR);
+        GLES10.glTexParameterx(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_MIN_FILTER, GLES10.GL_LINEAR);
+        GLES10.glTexParameterx(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_WRAP_S, 0x2900);
+        GLES10.glTexParameterx(GLES10.GL_TEXTURE_2D, GLES10.GL_TEXTURE_WRAP_T, 0x2900);
+        GLES10.glPixelStorei(0x0CF2, 0);
         GLES10.glBindTexture(GLES10.GL_TEXTURE_2D, 0);
     }
 

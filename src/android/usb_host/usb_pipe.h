@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <condition_variable>
-#include "usb_host.h"
+#include "usbhost.h"
 #include "usb_endpoint.h"
 
 namespace librealsense
@@ -21,7 +21,7 @@ namespace librealsense
 
         public:
 
-            usb_pipe(usb_device_handle *usb_device, usb_endpoint endpoint, int buffer_size = 32);
+            usb_pipe(usb_device *usb_device, usb_endpoint endpoint, int buffer_size = 32);
 
             virtual ~usb_pipe();
 
@@ -32,7 +32,7 @@ namespace librealsense
         private:
             bool ready = false;
             bool _received;
-            usb_device_handle *_device;
+            usb_device *_device;
             usb_endpoint _endpoint;
             std::string data;
             std::mutex _mutex;

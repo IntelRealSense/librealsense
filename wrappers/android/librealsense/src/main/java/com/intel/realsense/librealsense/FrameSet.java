@@ -3,6 +3,10 @@ package com.intel.realsense.librealsense;
 public class FrameSet extends LrsClass {
     private int mSize = 0;
 
+    public interface FrameCallback{
+        void onFrame(Frame f) throws Exception;
+    }
+
     public FrameSet(long handle) {
         mHandle = handle;
         mSize = nFrameCount(mHandle);
@@ -22,6 +26,14 @@ public class FrameSet extends LrsClass {
             f.close();
         }
         return null;
+    }
+
+    public void foreach(FrameCallback callback) throws Exception {
+        for(int i = 0; i < mSize; i++) {
+            try(Frame f = Frame.create(nExtractFrame(mHandle, i))){
+                callback.onFrame(f);
+            }
+        }
     }
 
     public int getSize(){ return mSize; }

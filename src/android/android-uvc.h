@@ -105,9 +105,6 @@ namespace librealsense
             mutable std::mutex                      _power_mutex;
 
             void poll_interrupts();
-
-            std::atomic_bool                        _keep_pulling_interrupts;
-            std::shared_ptr<std::thread>            _interrupt_polling_thread;
         };
     }
 }

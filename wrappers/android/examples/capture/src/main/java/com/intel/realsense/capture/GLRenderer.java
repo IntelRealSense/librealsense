@@ -5,6 +5,9 @@ import android.graphics.Rect;
 import android.opengl.GLES10;
 import android.opengl.GLSurfaceView;
 
+import com.intel.realsense.librealsense.Frame;
+import com.intel.realsense.librealsense.FrameSet;
+import com.intel.realsense.librealsense.StreamFormat;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.VideoFrame;
 
@@ -22,8 +25,20 @@ public class GLRenderer implements GLSurfaceView.Renderer{
     private int mWindowWidth = 0;
     private boolean mIsDirty = true;
 
+    public void show(FrameSet frameSet) throws Exception {
+        frameSet.foreach(new FrameSet.FrameCallback() {
+            @Override
+            public void onFrame(Frame f) throws Exception {
+                show(f.as(VideoFrame.class));
+            }
+        });
+    }
+
     public void show(VideoFrame f) throws Exception {
         if(f == null)
+            return;
+
+        if(!isFormatSupported(f.getProfile().getFormat()))
             return;
 
         StreamType stream = f.getProfile().getType();
@@ -35,6 +50,17 @@ public class GLRenderer implements GLSurfaceView.Renderer{
         }
         mFrameLoaders.get(stream).setFrame(f);
     }
+
+    private boolean isFormatSupported(StreamFormat format) {
+        switch (format){
+            case RGB8:
+            case RGBA8:
+            case Y8: return true;
+                default: return false;
+        }
+    }
+
+    public void clean() { mIsDirty = true; }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -51,13 +77,14 @@ public class GLRenderer implements GLSurfaceView.Renderer{
     @Override
     public void onDrawFrame(GL10 gl) {
         synchronized (mFrameLoaders) {
-            if (mFrameLoaders.size() == 0)
-                return;
-
             if (mIsDirty) {
                 GLES10.glViewport(0, 0, mWindowWidth, mWindowHeight);
                 GLES10.glClearColor(0, 0, 0, 1);
+                mIsDirty = false;
             }
+
+            if (mFrameLoaders.size() == 0)
+                return;
 
             int i = 0;
             for (Map.Entry<StreamType, GLFrame> entry : mFrameLoaders.entrySet()) {
@@ -72,7 +99,6 @@ public class GLRenderer implements GLSurfaceView.Renderer{
                 fl.upload(mTextures[0]);
                 fl.show(r, mTextures[0]);
             }
-            mIsDirty = false;
         }
     }
 }

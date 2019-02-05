@@ -2,25 +2,20 @@
 
 using namespace librealsense::usb_host;
 
-usb_device::usb_device()
-{
-}
-
-usb_device::usb_device(usb_device_handle *device) :
+device::device(usb_device *device) :
         _pull_thread(nullptr),
         _pull_requests(true)
 {
     if (device != NULL)
     {
-        int TIMEOUT=10;
+        int TIMEOUT = 10;
         this->_handle = device;
         _usb_device_descriptor = usb_device_get_device_descriptor(device);
-        _sProduct = toString(
-                usb_device_get_string(device, _usb_device_descriptor->iProduct,TIMEOUT));
-        _sManufacturer = toString(
-                usb_device_get_string(device, _usb_device_descriptor->iManufacturer,TIMEOUT));
-        _sSerialNumber = toString(
-                usb_device_get_string(device, _usb_device_descriptor->iSerialNumber,TIMEOUT));
+        _sProduct = toString(usb_device_get_product_name(_handle, TIMEOUT));
+        _sManufacturer = toString(usb_device_get_manufacturer_name(_handle, TIMEOUT));
+        _sSerialNumber = toString(usb_device_get_serial(_handle, TIMEOUT));
+        _name = std::string(usb_device_get_name(_handle));
+        _desc_length = usb_device_get_descriptors_length(_handle);
         build_tree();
         foreach_interface([&](usb_interface interface)
         {
@@ -31,7 +26,7 @@ usb_device::usb_device(usb_device_handle *device) :
     }
 }
 
-usb_device::~usb_device() {
+device::~device() {
     stop();
     _pipes.clear();
     foreach_interface([&](usb_interface interface)
@@ -40,20 +35,20 @@ usb_device::~usb_device() {
     });
 }
 
-bool usb_device::add_configuration(usb_configuration &usbConfiguration) {
+bool device::add_configuration(usb_configuration &usbConfiguration) {
     //LOGD("Usb config type: %s",descriptorTypeToString(usbConfiguration.get_descriptor()->bDescriptorType).c_str());
     _configurations.push_back(usbConfiguration);
     return true;
 }
 
-void usb_device::add_pipe(uint8_t ep_address, std::shared_ptr<usb_pipe> pipe) {
+void device::add_pipe(uint8_t ep_address, std::shared_ptr<usb_pipe> pipe) {
     LOGD("Adding pipe at address %d ", (int) ep_address);
     if (pipe != nullptr) {
         _pipes[ep_address] = pipe;
     }
 }
 
-void usb_device::start()
+void device::start()
 {
     _pull_requests = true;
     if (_pull_thread == nullptr)
@@ -72,7 +67,7 @@ void usb_device::start()
     }
 }
 
-void usb_device::stop()
+void device::stop()
 {
     _pull_requests = false;
     if(_pull_thread != nullptr && _pull_thread->joinable())
@@ -80,7 +75,7 @@ void usb_device::stop()
 }
 
 
-void usb_device::build_tree() {
+void device::build_tree() {
     usb_descriptor_iter it;
     usb_descriptor_iter_init(_handle, &it);
 
@@ -124,7 +119,7 @@ void usb_device::build_tree() {
     }
 }
 
-std::string usb_device::get_device_description() const {
+const std::string& device::get_device_description() const {
     auto desc = _usb_device_descriptor;
     std::stringstream ss;
 
@@ -143,15 +138,15 @@ std::string usb_device::get_device_description() const {
        << "   Product ID: " << (int) __le16_to_cpu(desc->idProduct) << std::endl
        << "   Vendor ID: " << (int) __le16_to_cpu(desc->idVendor) << std::endl
        << "   Product: " << (int) desc->iProduct << " ("
-       << GetStringProduct() << ")\n"
+       << get_product() << ")\n"
        << "   Manufacturer: " << (int) desc->iManufacturer << " ("
-       << GetStringManufacturer() << ")\n"
+       << get_manufacturer() << ")\n"
        << "   Serial num: " << (int) desc->iSerialNumber << " ("
-       << GetStringSerialNumber() << ")\n\n";
+       << get_serial_number() << ")\n\n";
     return ss.str();
 }
     
-std::string usb_device::toString(char *cstr) {
+std::string device::toString(char *cstr) {
     if (cstr == nullptr)
         return "null";
     std::string str(cstr);
@@ -160,7 +155,7 @@ std::string usb_device::toString(char *cstr) {
 }
 
 
-std::string usb_device::descriptorTypeToString(uint8_t dt) {
+std::string device::descriptorTypeToString(uint8_t dt) {
     switch (dt) {
         case USB_DT_DEVICE:
             return "Device";
@@ -213,7 +208,7 @@ std::string usb_device::descriptorTypeToString(uint8_t dt) {
     }
 }
 
-std::string usb_device::classToString(uint8_t cls) {
+std::string device::classToString(uint8_t cls) {
     switch (cls) {
         case USB_CLASS_APP_SPEC:
             return "App. specific";

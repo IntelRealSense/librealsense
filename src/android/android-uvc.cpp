@@ -5,10 +5,9 @@
 
 
 #include "android-uvc.h"
-#include "android-usb.h"
 #include "../types.h"
 #include "libuvc/utlist.h"
-#include "usb_host/usb_manager.h"
+#include "usb_host/device_watcher.h"
 #include "../libuvc/utlist.h"
 
 
@@ -16,6 +15,7 @@
 
 
 #define MAX_PINS 5
+#define INTERRUPT_BUFFER_SIZE 0x400
 
 namespace librealsense {
     namespace platform {
@@ -48,8 +48,9 @@ namespace librealsense {
             int status = uvc_set_ctrl(_device.get(), xu.unit, ctrl, (void *) data, len);
             if (status < 0)
                 LOGE("SetXU result:%d", status);
-            else
-                LOGD("SetXU Sucess!!!!!!");
+
+            poll_interrupts();
+
             return status >= 0;
         }
 
@@ -151,8 +152,8 @@ namespace librealsense {
             int32_t ret = 0;
 
             int status = usb_device_control_transfer(
-                    _device->device->GetHandle(),
-                    UVC_REQ_TYPE_INTERFACE_GET,
+                    _device->device->get_handle(),
+                    UVC_REQ_TYPE_GET,
                     action,
                     control << 8,
                     unit << 8 | (_device->deviceData.ctrl_if.bInterfaceNumber),
@@ -192,8 +193,8 @@ namespace librealsense {
             INT_TO_DW(value, buffer);
 
             int status = usb_device_control_transfer(
-                    _device->device->GetHandle(),
-                    UVC_REQ_TYPE_INTERFACE_SET,
+                    _device->device->get_handle(),
+                    UVC_REQ_TYPE_SET,
                     action,
                     control << 8,
                     unit << 8 | (_device->deviceData.ctrl_if.bInterfaceNumber),
@@ -322,14 +323,11 @@ namespace librealsense {
 
 
         void android_uvc_device::poll_interrupts() {
-            if (_device->deviceData.ctrl_if.bEndpointAddress == 0)
-            {
-                _keep_pulling_interrupts = false;
-                return;
-            }
-           do {
-                ::poll_interrupts(_device->device, _device->deviceData.ctrl_if.bEndpointAddress, 100);
-            }while (_keep_pulling_interrupts);
+            auto pipe = _device->device->get_pipe(_device->deviceData.ctrl_if.bEndpointAddress);
+            uint8_t buffer[INTERRUPT_BUFFER_SIZE];
+
+            //* 64 byte transfer buffer  - dedicated channel*//*
+            pipe->read_pipe(buffer, INTERRUPT_BUFFER_SIZE, 1000);
         }
 
         void android_uvc_device::set_power_state(power_state state) {
@@ -339,16 +337,23 @@ namespace librealsense {
                 // Return list of all connected IVCAM devices from uvc_interface name
                 uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
 
-                auto devs = usbhost_find_devices(vid, pid); //TODO: change from hard coded
+                std::vector<std::shared_ptr<usbhost_uvc_device>> uvc_devices;
+                for(auto&& dev : usb_host::device_watcher::get_device_list())
+                {
+                    std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
+                                                            [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
+                    uvc->device = dev;
+                    uvc->vid = dev->get_vid();
+                    uvc->pid = dev->get_pid();
+                    uvc_devices.push_back(uvc);
+                }
 
-                for (auto device : devs) {
+                for (auto device : uvc_devices) {
                     // initializing and filling all fields of winsub_device device_list[0]
-                    usbhost_open(device, mi);
+                    usbhost_open(device.get(), mi);
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {
-                        _device = std::shared_ptr<usbhost_uvc_device>(device, [](usbhost_uvc_device *ptr) {
-                                                                          usbhost_close(ptr);
-                                                                      });
+                        _device = device;
 
                         for (auto ct = _device->deviceData.ctrl_if.input_term_descs;
                              ct; ct = ct->next) {
@@ -365,27 +370,14 @@ namespace librealsense {
                             _extension_unit = eu->bUnitID;
                         }
 
-                        _keep_pulling_interrupts = true;
-
-                        _interrupt_polling_thread = std::shared_ptr<std::thread>(
-                                new std::thread([this]() {
-                                    poll_interrupts();
-                                }));
-
                         _power_state = D0;
-                        //LOGD("Device opened!");
                         return;
                     }
-
-                    usbhost_close(device);
                 }
 
                 throw std::runtime_error("Device not found!");
             }
             if (state == D3 && _power_state == D0) {
-                _keep_pulling_interrupts = false;
-                _interrupt_polling_thread->join();
-                _interrupt_polling_thread.reset();
                 _device.reset();
                 _power_state = D3;
             }
@@ -426,8 +418,7 @@ namespace librealsense {
         android_uvc_device::android_uvc_device(const uvc_device_info &info,
                                                std::shared_ptr<const android_backend> backend)
                 : _streamIndex(MAX_PINS), _info(info), _backend(std::move(backend)),
-                  _location(""), _device_usb_spec(usb3_type), _keep_pulling_interrupts(false),
-                  _interrupt_polling_thread(nullptr)
+                  _location(""), _device_usb_spec(usb3_type)
         {
             if (!is_connected(info)) {
                 throw std::runtime_error("Camera not connected!");

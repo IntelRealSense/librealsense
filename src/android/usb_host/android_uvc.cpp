@@ -1,10 +1,8 @@
 
 #ifdef RS2_USE_ANDROID_BACKEND
 
-#define MAX_USBFS_BUFFER_SIZE   16384
-
 #include "android_uvc.h"
-#include "usb_manager.h"
+#include "device_watcher.h"
 #include "libuvc/utlist.h"
 
 #include "concurrency.h"
@@ -15,7 +13,6 @@
 #include <vector>
 #include <thread>
 #include <atomic>
-#include <android/android-usb.h>
 #include <zconf.h>
 #include <syslog.h>
 
@@ -861,7 +858,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
             /* The frame ID bit was flipped, but we have image data sitting
             around from prior transfers. This means the camera didn't send
             an EOF for the last transfer of the previous frame. */
-            LOGE("complete buffer : length %zd", strmh->got_bytes);
+            LOGW("complete buffer : length %zd", strmh->got_bytes);
             usbhost_uvc_swap_buffers(strmh);
         }
 
@@ -906,7 +903,6 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
     }
 }
 
-
 void stream_thread(usbhost_uvc_stream_context *strctx) {
 
     auto dev = strctx->stream->stream_if->interfaceHandle.device;
@@ -937,7 +933,6 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         }
     });
     LOGD("Transfer thread started for endpoint address: %2x", strctx->endpoint);
-    usb_endpoint_reset(dev->GetHandle(), strctx->endpoint);
     do {
         int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
@@ -1154,8 +1149,8 @@ usbhost_uvc_query_stream_ctrl(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
         //auto str_if = usbhost_uvc_get_stream_if(devh, ctrl->bInterfaceNumber);
         /* do the transfer */
         err = usb_device_control_transfer(
-                devh->device->GetHandle(),
-                req == UVC_SET_CUR ? UVC_REQ_TYPE_INTERFACE_SET : UVC_REQ_TYPE_INTERFACE_GET,
+                devh->device->get_handle(),
+                req == UVC_SET_CUR ? UVC_REQ_TYPE_SET : UVC_REQ_TYPE_GET,
                 req,
                 probe ? (UVC_VS_PROBE_CONTROL << 8) : (UVC_VS_COMMIT_CONTROL << 8),
                 ctrl->bInterfaceNumber, // When requestType is directed to an interface, WinUsb driver automatically passes the interface number in the low byte of index
@@ -1522,16 +1517,6 @@ uvc_error_t usbhost_get_stream_ctrl_format_size_all(
     return usbhost_uvc_probe_stream_ctrl(devh, ctrl);
 }
 
-void poll_interrupts(std::shared_ptr<usb_device> device_handle, int ep, uint16_t timeout) {
-    //auto pipe = device_handle->GetPipe(ep);
-    //    static const unsigned short interrupt_buf_size = 0x400;
-    //    uint8_t buffer[interrupt_buf_size];
-    //    int ret;
-    //    //* 64 byte transfer buffer  - dedicated channel*//*
-    //    //ret = pipe->ReadPipe(buffer, interrupt_buf_size, timeout);
-    //    //LOGD("Received interrupt of %d bytes",ret);
-}
-
 /**
 * @brief Get the length of a control on a terminal or unit.
 *
@@ -1549,8 +1534,8 @@ int uvc_get_ctrl_len(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl) {
         return UVC_ERROR_NO_DEVICE;
 
     int ret = usb_device_control_transfer(
-            devh->device->GetHandle(),
-            UVC_REQ_TYPE_INTERFACE_GET,
+            devh->device->get_handle(),
+            UVC_REQ_TYPE_GET,
             UVC_GET_LEN,
             ctrl << 8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,
@@ -1582,8 +1567,8 @@ int uvc_get_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
         return UVC_ERROR_NO_DEVICE;
 
     return usb_device_control_transfer(
-            devh->device->GetHandle(),
-            UVC_REQ_TYPE_INTERFACE_GET, req_code,
+            devh->device->get_handle(),
+            UVC_REQ_TYPE_GET, req_code,
             ctrl << 8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,        // XXX saki
             static_cast<unsigned char *>(data),
@@ -1606,8 +1591,8 @@ int uvc_set_ctrl(usbhost_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *dat
     if (!devh)
         return UVC_ERROR_NO_DEVICE;
     auto ret = usb_device_control_transfer(
-            devh->device->GetHandle(),
-            UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
+            devh->device->get_handle(),
+            UVC_REQ_TYPE_SET, UVC_SET_CUR,
             ctrl<<8,
             unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,
             static_cast<unsigned char *>(data),
@@ -1624,8 +1609,8 @@ uvc_error_t uvc_get_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return UVC_ERROR_NO_DEVICE;
 
     ret = usb_device_control_transfer(
-            devh->device->GetHandle(),
-            UVC_REQ_TYPE_INTERFACE_GET, req_code,
+            devh->device->get_handle(),
+            UVC_REQ_TYPE_GET, req_code,
             UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
             devh->deviceData.ctrl_if.bInterfaceNumber,
             (unsigned char *) &mode_char,
@@ -1647,8 +1632,8 @@ uvc_error_t uvc_set_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return UVC_ERROR_NO_DEVICE;
 
     ret = usb_device_control_transfer(
-            devh->device->GetHandle(),
-            UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
+            devh->device->get_handle(),
+            UVC_REQ_TYPE_SET, UVC_SET_CUR,
             UVC_VC_VIDEO_POWER_MODE_CONTROL << 8,
             devh->deviceData.ctrl_if.bInterfaceNumber,
             (unsigned char *) &mode_char,
@@ -1658,35 +1643,6 @@ uvc_error_t uvc_set_power_mode(usbhost_uvc_device *devh, enum uvc_device_power_m
         return UVC_SUCCESS;
     else
         return static_cast<uvc_error_t>(ret);
-}
-
-std::vector<usbhost_uvc_device *> usbhost_find_devices(int vid, int pid) {
-    // Intel(R) RealSense(TM) 415 Depth - MI 0
-    // bInterfaceNumber 0 video control - endpoint 0x87 (FW->Host)
-    // bInterfaceNumber 1 video stream - endpoint 0x82 (FW->Host)
-    // bInterfaceNumber 2 video stream - endpoint 0x83 (FW->Host)
-
-    // Intel(R) RealSense(TM) 415 RGB - MI 3
-    // bInterfaceNumber 3 video control
-    // bInterfaceNumber 4 video stream - endpoint 0x84 (FW->Host)
-
-    auto devlist = usb_manager::get_device_list();
-
-    std::vector<usbhost_uvc_device *> list_internal;
-
-
-    LOGD("Trying to find device with vid:%04x pid:%04x", vid, pid);
-    for (auto d : devlist) {
-        if (d->GetVid() == vid) {
-            usbhost_uvc_device *usbDevice = new usbhost_uvc_device;
-            usbDevice->device = d;
-            usbDevice->pid = pid;
-            usbDevice->vid = vid;
-            list_internal.push_back(usbDevice);
-        }
-    }
-    LOGD("usbhost_find_devices() found %d devices", list_internal.size());
-    return list_internal;
 }
 
 // Iterate over all descriptors and parse all Interface and Endpoint descriptors
@@ -1742,7 +1698,7 @@ void usbhost_uvc_parse_config_descriptors(usb_descriptor_iter *it,
 
 
 usb_descriptor_header *
-usbhost_get_descriptor(usb_device_handle *pDevice, int descriptor_type, int descriptor_index) {
+usbhost_get_descriptor(usb_device *pDevice, int descriptor_type, int descriptor_index) {
     int curr_index = 0;
     usb_descriptor_iter iter;
     usb_descriptor_iter_init(pDevice, &iter);
@@ -1782,7 +1738,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
 
 
     // Returns IVCAM configuration descriptor
-    cfgDesc = (usb_config_descriptor *) usbhost_get_descriptor(device->device->GetHandle(),
+    cfgDesc = (usb_config_descriptor *) usbhost_get_descriptor(device->device->get_handle(),
                                                                USB_DT_CONFIG,
                                                                0);
     if (cfgDesc == NULL) {
@@ -1794,7 +1750,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     //LOGD("usbhost_open() parsing descriptors: %s", device->deviceHandle->dev_name);
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
     usb_descriptor_iter it;
-    usb_descriptor_iter_init(device->device->GetHandle(), &it);
+    usb_descriptor_iter_init(device->device->get_handle(), &it);
     usbhost_uvc_parse_config_descriptors(&it,
                                          &interfaces);
     //LOGD("usbhost_open() parsing descriptors complete found %d interfaces",interfaces->numInterfaces);
@@ -1852,24 +1808,5 @@ uvc_error_t usbhost_close(usbhost_uvc_device *device) {
     }
 
     return ret;
-}
-
-int usbhost_init() {
-    return 0;
-}
-
-void usbhost_deinit() {
-
-}
-
-bool read_all_uvc_descriptors(usbhost_uvc_device *device, PUCHAR buffer, int bufferLength,
-                              int *lengthReturned) {
-
-    int len = device->device->GetHandle()->desc_length;
-    if (bufferLength < len || buffer == nullptr)
-        return false;
-    memcpy(buffer, device->device->GetHandle()->desc, len);
-    *lengthReturned = len;
-    return true;
 }
 #endif

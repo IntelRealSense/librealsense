@@ -5,10 +5,9 @@
 
 #include "android-backend.h"
 #include "android-uvc.h"
-#include "android-usb.h"
 #include "android-hid.h"
 #include "../types.h"
-#include "usb_host/usb_manager.h"
+#include "usb_host/device_watcher.h"
 #include <chrono>
 #include <cctype> // std::tolower
 
@@ -28,41 +27,22 @@ namespace librealsense {
 
         std::shared_ptr<uvc_device> android_backend::create_uvc_device(uvc_device_info info) const {
 
-            LOGD("Creating UVC Device from path: %s",info.device_path.c_str());
+            LOGD("Creating UVC Device from path: %s", info.device_path.c_str());
             return std::make_shared<retry_controls_work_around>(
                     std::make_shared<android_uvc_device>(info, shared_from_this()));
         }
 
-        std::shared_ptr<backend> create_backend() {
-
+        std::shared_ptr<backend> create_backend()
+        {
             return std::make_shared<android_backend>();
         }
 
         std::vector<uvc_device_info> android_backend::query_uvc_devices() const {
-            std::vector<uvc_device_info> devices;
-            LOGD("Querying USB Devices...");
-            auto dev_list = usb_host::usb_manager::get_device_list();
-            for (auto dev : dev_list) {
-                for (int ia = 0; ia < dev->get_interfaces_associations_count(); ia++) {
-                    auto iad = dev->get_interface_association(ia);
-                    if (iad.get_descriptor()->bFunctionClass == USB_CLASS_VIDEO) {
-                        uvc_device_info device_info;
-                        device_info.vid = dev->GetVid();
-                        device_info.pid = dev->GetPid();
-                        device_info.mi = iad.get_mi();
-                        device_info.unique_id = dev->GetHandle()->fd;
-                        device_info.device_path = std::string(dev->GetHandle()->dev_name);
-                        LOGD("Found UVC Device vid:%04x pid:%04x mi:%02x path: %s",device_info.vid,device_info.pid,device_info.mi,device_info.device_path.c_str());
-                        devices.push_back(device_info);
-                    }
-                }
-            }
-            LOGD("UVC Devices found: %d",devices.size());
-            return devices;
+            return usb_host::device_watcher::query_uvc_devices();
         }
 
         std::shared_ptr<usb_device> android_backend::create_usb_device(usb_device_info info) const {
-            throw std::runtime_error("create_hid_device Not supported");
+            throw std::runtime_error("create_usb_device Not supported");
         }
 
         std::vector<usb_device_info> android_backend::query_usb_devices() const {
@@ -88,10 +68,7 @@ namespace librealsense {
 
 
         std::shared_ptr<device_watcher> android_backend::create_device_watcher() const {
-            auto dw=std::make_shared<polling_device_watcher>(this);
-            dw->stop();
-
-            return dw;
+            return std::make_shared<usb_host::device_watcher>();
         }
     }
 }

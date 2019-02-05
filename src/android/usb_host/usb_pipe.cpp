@@ -3,15 +3,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <zconf.h>
-#include "usb_host.h"
+#include "usbhost.h"
 #include "usb_endpoint.h"
 #include <linux/usbdevice_fs.h>
 #include "android_debug.h"
+#include "android_uvc.h"
 #include <chrono>
 
 using namespace librealsense::usb_host;
 
-usb_pipe::usb_pipe(usb_device_handle *usb_device, usb_endpoint endpoint, int buffer_size) :
+usb_pipe::usb_pipe(usb_device *usb_device, usb_endpoint endpoint, int buffer_size) :
         _endpoint(endpoint),
         _device(usb_device)
 {
@@ -25,7 +26,10 @@ usb_pipe::~usb_pipe()
 
 bool usb_pipe::reset()
 {
-    return usb_endpoint_reset(_device, _endpoint.get_endpoint_address()) == 0;
+    return usb_device_control_transfer(_device,
+                                       0x02, //UVC_FEATURE,
+                                       0x01, //CLEAR_FEATURE
+                                       0, _endpoint.get_endpoint_address(), NULL, 0, 10) == UVC_SUCCESS;
 }
 
 size_t usb_pipe::read_pipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms) {
@@ -41,7 +45,7 @@ size_t usb_pipe::read_pipe(uint8_t *buffer, size_t buffer_len, unsigned int time
         bytes_copied = _request->actual_length;
     }
     else {
-        LOGE("Timeout reached waiting for response!");
+        LOGW("Timeout reached waiting for response!");
         usb_request_cancel(_request.get());
     }
     lk.unlock();
