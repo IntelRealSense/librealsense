@@ -73,6 +73,8 @@ namespace librealsense
     public:
         dm_v2_imu_calib_parser(const std::vector<uint8_t>& raw_data, bool valid = true)
         {
+            calib_table.module_info.dm_v2_calib_table.extrinsic_valid = 0;
+            calib_table.module_info.dm_v2_calib_table.intrinsic_valid = 0;
             // default parser to be applied when no FW calibration is available
             if (valid)
                 calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
