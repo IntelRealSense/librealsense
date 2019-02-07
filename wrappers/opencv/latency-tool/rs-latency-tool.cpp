@@ -43,7 +43,7 @@ int main(int argc, char * argv[]) try
     //sensor.start(pipe);
 
     const auto window_name = "Display Image";
-    namedWindow(window_name, CV_WINDOW_NORMAL);
+    namedWindow(window_name, WINDOW_NORMAL);
     setWindowProperty(window_name, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
     const int display_w = 1280;
@@ -55,7 +55,7 @@ int main(int argc, char * argv[]) try
 
     detector d(digits, display_w);
 
-    while (cvGetWindowHandle(window_name))
+    while (getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         // Wait for frameset from the camera
         for (auto f : pipe.wait_for_frames())

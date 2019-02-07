@@ -7,41 +7,11 @@
 #include "backend.h"
 #include "types.h"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
-#include <algorithm>
-#include <functional>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <regex>
 #include <thread>
-#include <utility> // for pair
-#include <chrono>
-#include <thread>
-#include <atomic>
 
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
-#include <cmath>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/usb/video.h>
-#include <linux/uvcvideo.h>
-#include <linux/videodev2.h>
-#include <fts.h>
-#include <regex>
-#include <list>
-
-#include <sys/signalfd.h>
-#include <signal.h>
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
@@ -687,7 +657,7 @@ namespace librealsense
             {
                 auto st = std::chrono::high_resolution_clock::now();
 
-                if (!write_fs_arithmetic(path, on))
+                if (!write_fs_attribute(path, on))
                 {
                     LOG_WARNING("HID set_power " << int(on) << " failed for " << path);
                 }
@@ -765,6 +735,25 @@ namespace librealsense
 
             _pm_dispatcher.start();
 
+            // HID iio kernel driver async initialization may fail to map the kernel objects hierarchy (iio triggers) properly
+            // The patch will rectify this behaviour
+            std::string current_trigger = _sensor_name + "-dev" + _iio_device_path.back();
+            std::string path = _iio_device_path + "/trigger/current_trigger";
+            _pm_thread = std::unique_ptr<std::thread>(new std::thread([path,current_trigger](){
+                bool retry =true;
+                while (retry) {
+                    try {
+                        if (write_fs_attribute(path, current_trigger))
+                            break;
+                        else
+                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    }
+                    catch(...){} // Device disconnect
+                    retry = false;
+                }
+            }));
+            _pm_thread->detach();
+
             // read all available input of the iio_device
             read_device_inputs();
 
@@ -775,8 +764,7 @@ namespace librealsense
                 input->enable(true);
 
             set_frequency(frequency);
-            write_fs_arithmetic(_iio_device_path + "/buffer/length", hid_buf_len);
-
+            write_fs_attribute(_iio_device_path + "/buffer/length", hid_buf_len);
         }
 
         // calculate the storage size of a scan

@@ -21,7 +21,39 @@
 // Basic Data Types         //
 //////////////////////////////
 
-struct float3 { float x, y, z; };
+struct float3 { 
+    float x, y, z; 
+    float3 operator*(float t)
+    {
+        return { x * t, y * t, z * t };
+    }
+
+    float3 operator-(float t)
+    {
+        return { x - t, y - t, z - t };
+    }
+
+    void operator*=(float t)
+    {
+        x = x * t;
+        y = y * t;
+        z = z * t;
+    }
+
+    void operator=(float3 other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+    }
+
+    void add(float t1, float t2, float t3)
+    {
+        x += t1;
+        y += t2;
+        z += t3;
+    }
+};
 struct float2 { float x, y; };
 
 struct rect
@@ -567,7 +599,7 @@ private:
 
 // Struct for managing rotation of pointcloud view
 struct glfw_state {
-    glfw_state() : yaw(15.0), pitch(15.0), last_x(0.0), last_y(0.0),
+    glfw_state(float yaw = 15.0, float pitch = 15.0) : yaw(yaw), pitch(pitch), last_x(0.0), last_y(0.0),
         ml(false), offset_x(2.f), offset_y(2.f), tex() {}
     double yaw;
     double pitch;
