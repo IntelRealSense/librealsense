@@ -47,7 +47,7 @@ public class StreamProfile extends LrsClass {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
 //        nDelete(mHandle);
     }
 

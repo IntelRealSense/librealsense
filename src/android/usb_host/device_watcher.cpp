@@ -46,7 +46,7 @@ std::vector<platform::uvc_device_info> device_watcher::query_uvc_devices() {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_UsbHub_nAddUsbDevice(JNIEnv *env, jclass type,
+Java_com_intel_realsense_librealsense_DeviceWatcher_nAddUsbDevice(JNIEnv *env, jclass type,
                                                            jstring deviceName_,
                                                            jint fileDescriptor) {
     platform::backend_device_group prev;
@@ -68,7 +68,7 @@ Java_com_intel_realsense_librealsense_UsbHub_nAddUsbDevice(JNIEnv *env, jclass t
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_UsbHub_nRemoveUsbDevice(JNIEnv *env, jclass type,
+Java_com_intel_realsense_librealsense_DeviceWatcher_nRemoveUsbDevice(JNIEnv *env, jclass type,
                                                               jint fileDescriptor) {
     platform::backend_device_group prev;
     prev.uvc_devices = device_watcher::query_uvc_devices();

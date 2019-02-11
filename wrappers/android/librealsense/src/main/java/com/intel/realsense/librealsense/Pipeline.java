@@ -8,13 +8,15 @@ public class Pipeline extends LrsClass{
     }
 
     public void start() throws Exception{
-        nStart(mHandle);
+        PipelineProfile rv =  new PipelineProfile(nStart(mHandle));
+        rv.close();//TODO: enable when PipelineProfile is implemented
     }
 
     public void start(Config config) throws Exception {
-        nStartWithConfig(mHandle, config.getHandle());
+        PipelineProfile rv = new PipelineProfile(nStartWithConfig(mHandle, config.getHandle()));
+        rv.close();//TODO: enable when PipelineProfile is implemented
     }
-    public void stop() throws Exception{
+    public void stop() {
         nStop(mHandle);
     }
 
@@ -28,15 +30,14 @@ public class Pipeline extends LrsClass{
     }
 
     @Override
-    public void close() throws Exception {
+    public void close(){
         nDelete(mHandle);
-        mHandle = 0;
     }
 
     private static native long nCreate(long context);
     private static native void nDelete(long handle);
-    private static native void nStart(long handle);
-    private static native void nStartWithConfig(long handle, long configHandle);
+    private static native long nStart(long handle);
+    private static native long nStartWithConfig(long handle, long configHandle);
     private static native void nStop(long handle);
     private static native long nWaitForFrames(long handle, int timeout);
 }

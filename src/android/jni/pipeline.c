@@ -12,11 +12,21 @@ Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,
     return rv;
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStart(JNIEnv *env, jclass type, jlong handle) {
     rs2_error* e = NULL;
-    rs2_pipeline_start(handle, &e);
+    long rv = rs2_pipeline_start(handle, &e);
     handle_error(env, e);
+    return rv;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfig(JNIEnv *env, jclass type,
+                                                                jlong handle, jlong configHandle) {
+    rs2_error *e = NULL;
+    long rv = rs2_pipeline_start_with_config((rs2_pipeline *) handle, configHandle, &e);
+    handle_error(env, e);
+    return rv;
 }
 
 JNIEXPORT void JNICALL
@@ -29,7 +39,6 @@ Java_com_intel_realsense_librealsense_Pipeline_nStop(JNIEnv *env, jclass type, j
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nDelete(JNIEnv *env, jclass type,
                                                        jlong handle) {
-
     rs2_delete_pipeline((rs2_pipeline *) handle);
 }
 
@@ -43,9 +52,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nWaitForFrames(JNIEnv *env, jclas
 }
 
 JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfig(JNIEnv *env, jclass type,
-                                                          jlong handle, jlong configHandle) {
-    rs2_error *e = NULL;
-    rs2_pipeline_start_with_config((rs2_pipeline *) handle, configHandle, &e);
-    handle_error(env, e);
+Java_com_intel_realsense_librealsense_PipelineProfile_nDelete(JNIEnv *env, jclass type,
+                                                              jlong handle) {
+    rs2_delete_pipeline_profile(handle);
 }

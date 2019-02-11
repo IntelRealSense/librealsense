@@ -3,20 +3,16 @@ package com.intel.realsense.librealsense;
 public class FrameSet extends LrsClass {
     private int mSize = 0;
 
-    public interface FrameCallback{
-        void onFrame(Frame f) throws Exception;
-    }
-
     public FrameSet(long handle) {
         mHandle = handle;
         mSize = nFrameCount(mHandle);
     }
 
-    public Frame first(StreamType type) throws Exception {
+    public Frame first(StreamType type) {
         return first(type, StreamFormat.ANY);
     }
 
-    public Frame first(StreamType type, StreamFormat format) throws Exception {
+    public Frame first(StreamType type, StreamFormat format) {
         for(int i = 0; i < mSize; i++) {
             Frame f = Frame.create(nExtractFrame(mHandle, i));
             try(StreamProfile p = f.getProfile()){
@@ -28,7 +24,7 @@ public class FrameSet extends LrsClass {
         return null;
     }
 
-    public void foreach(FrameCallback callback) throws Exception {
+    public void foreach(FrameCallback callback) {
         for(int i = 0; i < mSize; i++) {
             try(Frame f = Frame.create(nExtractFrame(mHandle, i))){
                 callback.onFrame(f);
@@ -43,8 +39,15 @@ public class FrameSet extends LrsClass {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         nRelease(mHandle);
+    }
+
+    @Override
+    public FrameSet clone() {
+        FrameSet rv = new FrameSet(mHandle);
+        nAddRef(mHandle);
+        return rv;
     }
 
     private static native void nAddRef(long handle);

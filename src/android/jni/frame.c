@@ -81,3 +81,20 @@ Java_com_intel_realsense_librealsense_Frame_nGetNumber(JNIEnv *env, jclass type,
     handle_error(env, e);
     return rv;
 }
+
+JNIEXPORT jfloat JNICALL
+Java_com_intel_realsense_librealsense_DepthFrame_nGetDistance(JNIEnv *env, jclass type,
+                                                              jlong handle, jint x, jint y) {
+    rs2_error *e = NULL;
+    float rv = rs2_depth_frame_get_distance((const rs2_frame *) handle, x, y, &e);
+    handle_error(env, e);
+    return rv;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type, jlong handle) {
+    rs2_error *e = NULL;
+    int rv = rs2_get_frame_points_count((const rs2_frame *) handle, &e);
+    handle_error(env, e);
+    return rv;
+}

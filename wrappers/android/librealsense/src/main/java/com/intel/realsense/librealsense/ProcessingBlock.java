@@ -15,7 +15,7 @@ public abstract class ProcessingBlock extends Options implements ProcessingBlock
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         nDelete(mHandle);
     }
 

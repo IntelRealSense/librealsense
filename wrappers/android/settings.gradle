@@ -1,7 +1,13 @@
+//library
 include ':librealsense'
-include ':capture'
-include ':native_access'
-
 project(':librealsense').projectDir = new File('librealsense')
+
+//examples
+include ':capture'
 project(':capture').projectDir = new File('examples/capture')
-project(':native_access').projectDir = new File('examples/native_access')
+
+include ':playback'
+project(':playback').projectDir = new File('examples/playback')
+
+include ':recording'
+project(':recording').projectDir = new File('examples/recording')

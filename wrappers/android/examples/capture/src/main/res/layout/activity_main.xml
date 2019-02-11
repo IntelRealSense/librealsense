@@ -6,7 +6,7 @@
     android:background="@color/black"
     android:orientation="horizontal">
 
-    <android.opengl.GLSurfaceView
+    <com.intel.realsense.librealsense.GLRsSurfaceView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/glSurfaceView"/>

@@ -26,3 +26,28 @@ Java_com_intel_realsense_librealsense_Config_nEnableStream(JNIEnv *env, jclass t
     rs2_config_enable_stream((rs2_config *) handle, type, index, width, height, format, framerate, &e);
     handle_error(env, e);
 }
+
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nEnableDeviceFromFile(JNIEnv *env, jclass type,
+                                                                   jlong handle,
+                                                                   jstring filePath_) {
+    const char *filePath = (*env)->GetStringUTFChars(env, filePath_, 0);
+
+    rs2_error *e = NULL;
+    rs2_config_enable_device_from_file((rs2_config *) handle, filePath, &e);
+    handle_error(env, e);
+
+    (*env)->ReleaseStringUTFChars(env, filePath_, filePath);
+}
+
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nEnableRecordToFile(JNIEnv *env, jclass type,
+                                                                 jlong handle, jstring filePath_) {
+    const char *filePath = (*env)->GetStringUTFChars(env, filePath_, 0);
+
+    rs2_error *e = NULL;
+    rs2_config_enable_record_to_file((rs2_config *) handle, filePath, &e);
+    handle_error(env, e);
+
+    (*env)->ReleaseStringUTFChars(env, filePath_, filePath);
+}

@@ -3,6 +3,9 @@ This document describes how to build an Android application to stream Depth data
 
 > Read about Android support [here](./Android.md).
 
+> **Disclaimer:** There is a limitation in access to the camera from a native code due to Android USB permissions policy. Therefore, building Intel&reg; RealSense&trade; SDK 2.0 for Android devices will run only on [rooted](https://en.wikipedia.org/wiki/Rooting_(Android)) devices.
+> For unrooted devices please see [Intel&reg; RealSense&trade; SDK 2.0 for Android OS](../../wrappers/android/readme.md)
+
 ## Instructions
 1. [Root](https://www.wikihow.tech/Root-Android-Phones) your Android device.
 2. Install [Android Studio](https://developer.android.com/studio/install.html) IDE for Linux.

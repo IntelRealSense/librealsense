@@ -1,12 +1,16 @@
 package com.intel.realsense.librealsense;
 
-public class Frame extends LrsClass {
+public class Frame extends LrsClass implements Cloneable{
 
     protected Frame(long handle){
         mHandle = handle;
     }
 
     public static Frame create(long handle){
+        if (nIsFrameExtendableTo(handle, Extension.POINTS.value()))
+            return new Points(handle);
+        if (nIsFrameExtendableTo(handle, Extension.DEPTH_FRAME.value()))
+            return new DepthFrame(handle);
         if (nIsFrameExtendableTo(handle, Extension.VIDEO_FRAME.value()))
             return new VideoFrame(handle);
         return null;
@@ -33,8 +37,15 @@ public class Frame extends LrsClass {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         nRelease(mHandle);
+    }
+
+    @Override
+    public Frame clone() {
+        Frame rv = Frame.create(mHandle);
+        nAddRef(mHandle);
+        return rv;
     }
 
     private static native boolean nIsFrameExtendableTo(long handle, int extension);

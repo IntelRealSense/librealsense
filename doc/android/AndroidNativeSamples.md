@@ -3,6 +3,9 @@ This document describes how to build the Intel® RealSense™ SDK 2.0 including 
 
 > Read about Android support [here](./Android.md).
 
+> **Disclaimer:** There is a limitation in access to the camera from a native code due to Android USB permissions policy. Therefore, building Intel&reg; RealSense&trade; SDK 2.0 for Android devices will run only on [rooted](https://en.wikipedia.org/wiki/Rooting_(Android)) devices.
+> For unrooted devices please see [Intel&reg; RealSense&trade; SDK 2.0 for Android OS](../../wrappers/android/readme.md)
+
 ## Instructions
 1. [Root](https://www.wikihow.tech/Root-Android-Phones) your Android device.
 2. Download the [Native Development Kit (NDK)](https://developer.android.com/ndk/downloads/index.html) for Linux to your host machine.

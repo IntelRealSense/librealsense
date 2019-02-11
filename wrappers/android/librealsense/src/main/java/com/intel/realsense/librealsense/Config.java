@@ -26,12 +26,22 @@ public class Config extends LrsClass {
         nEnableStream(mHandle, type.value(), index, width, height, format.value(), framerate);
     }
 
+    public void enableRecordToFile(String filePath) {
+        nEnableRecordToFile(mHandle, filePath);
+    }
+
+    public void enableDeviceFromFile(String filePath) {
+        nEnableDeviceFromFile(mHandle, filePath);
+    }
+
     @Override
-    public void close() throws Exception {
+    public void close() {
         nDelete(mHandle);
     }
 
     private static native long nCreate();
     private static native void nDelete(long handle);
     private static native void nEnableStream(long handle, int type, int index, int width, int height, int format, int framerate);
+    private static native void nEnableDeviceFromFile(long handle, String filePath);
+    private static native void nEnableRecordToFile(long handle, String filePath);
 }

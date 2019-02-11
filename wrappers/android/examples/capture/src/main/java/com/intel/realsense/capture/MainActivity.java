@@ -3,7 +3,6 @@ package com.intel.realsense.capture;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
@@ -16,29 +15,28 @@ import android.widget.TextView;
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.DeviceListener;
-import com.intel.realsense.librealsense.DeviceManager;
-import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
+import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
-import com.intel.realsense.librealsense.StreamFormat;
+import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
-import com.intel.realsense.librealsense.VideoFrame;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "lrs capture example";
-    private static final int MY_PERMISSIONS_REQUEST_CAMERA = 0;
+    private static final int PERMISSIONS_REQUEST_CAMERA = 0;
+
+    private boolean mPermissionsGrunted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
-    private GLSurfaceView mGlView;
+    private GLRsSurfaceView mGLSurfaceView;
     private boolean mIsStreaming = false;
     private final Handler mHandler = new Handler();
-
-    private GLRenderer mRenderer;
 
     private Pipeline mPipeline;
     private Config mConfig;
     private Colorizer mColorizer;
+    private RsContext mRsContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,44 +45,57 @@ public class MainActivity extends AppCompatActivity {
 
         mAppContext = getApplicationContext();
         mBackGroundText = findViewById(R.id.connectCameraText);
-        mGlView = findViewById(R.id.glSurfaceView);
-        mRenderer = new GLRenderer();
-        mGlView.setRenderer(mRenderer);
+        mGLSurfaceView = findViewById(R.id.glSurfaceView);
+        mGLSurfaceView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         // Android 9 also requires camera permissions
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
+        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
             return;
         }
+
+        mPermissionsGrunted = true;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSIONS_REQUEST_CAMERA);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
             return;
         }
+        mPermissionsGrunted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        init();
+        if(mPermissionsGrunted)
+            init();
+        else
+            Log.e(TAG, "missing permissions");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        mRsContext.close();
         stop();
     }
 
-    void init(){
-        //DeviceManager must be initialized before any interaction with physical RealSense devices.
-        DeviceManager.init(mAppContext);
+    private void init(){
+        //RsContext.init must be called once in the application lifetime before any interaction with physical RealSense devices.
+        //For multi activities applications use the application context instead of the activity context
+        RsContext.init(mAppContext);
 
-        //The UsbHub provides notifications regarding RealSense devices attach/detach events via the DeviceListener.
-        DeviceManager.getUsbHub().addListener(mListener);
+        //Register to notifications regarding RealSense devices attach/detach events via the DeviceListener.
+        mRsContext = new RsContext();
+        mRsContext.setDevicesChangedCallback(mListener);
 
         mPipeline = new Pipeline();
         mConfig  = new Config();
@@ -93,14 +104,13 @@ public class MainActivity extends AppCompatActivity {
         mConfig.enableStream(StreamType.DEPTH, 640, 480);
         mConfig.enableStream(StreamType.COLOR, 640, 480);
 
-        if(DeviceManager.getUsbHub().getDeviceCount() > 0) {
+        if(mRsContext.getDeviceCount() > 0) {
             showConnectLabel(false);
             start();
         }
     }
 
     private void showConnectLabel(final boolean state){
-        mRenderer.clean();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -111,12 +121,12 @@ public class MainActivity extends AppCompatActivity {
 
     private DeviceListener mListener = new DeviceListener() {
         @Override
-        public void onDeviceAttach() throws Exception {
+        public void onDeviceAttach() {
             showConnectLabel(false);
         }
 
         @Override
-        public void onDeviceDetach() throws Exception {
+        public void onDeviceDetach() {
             showConnectLabel(true);
             stop();
         }
@@ -126,15 +136,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames(1000))
-                {
+                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
                     try(FrameSet processed = frames.applyFilter(mColorizer)) {
-                        processed.foreach(new FrameSet.FrameCallback() {
-                            @Override
-                            public void onFrame(Frame f) throws Exception {
-                                mRenderer.show(f.as(VideoFrame.class));
-                            }
-                        });
+                        mGLSurfaceView.upload(processed);
                     }
                 }
                 mHandler.post(mStreaming);
@@ -150,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         try{
             Log.d(TAG, "try start streaming");
+            mGLSurfaceView.clear();
             mPipeline.start(mConfig);
             mIsStreaming = true;
             mHandler.post(mStreaming);
