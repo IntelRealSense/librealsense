@@ -4,8 +4,8 @@
 `rs-enumerate-devices` tool is a console application providing information about connected devices.
 
 ## Usage
-After installing `librealsense` run ` rs-enumerate-devices` to launch the tool. 
-An example for output for a D415 camera is: 
+After installing `librealsense` run ` rs-enumerate-devices` to launch the tool.
+An example for output for a D415 camera is:
 
 ```
 Name                          :     Intel RealSense 415    
@@ -22,8 +22,6 @@ Product Id                    :     0AD3
 |Flag   |Description   |
 |---|---|
 |`-s`|Provide short summary, one line per device|
-|`-o`|List supported device options|
-|`-m`|List supported stream profiles|
-|`-c`|Provide calibration information|
-
-
+|`-o`|List supported device controls and options|
+|`-c`|Provide calibration (Intrinsic/Extrinsic) information|
+| None| List supported streaming modes|
