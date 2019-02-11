@@ -126,6 +126,7 @@ struct profile
     int width;
     int height;
     int index;
+    int fps;
 
     bool operator==(const profile& other) const
     {
@@ -144,8 +145,15 @@ struct profile
     {
         return stream < other.stream;
     }
-
 };
+
+std::ostream& operator <<(std::ostream& stream, const profile& cap)
+{
+    stream << cap.stream << " " << cap.stream << " " << cap.format << " "
+    << cap.width << " " << cap.height << " " << cap.index << " " << cap.fps;
+    return stream;
+}
+
 struct device_profiles
 {
     std::vector<profile> streams;
@@ -157,13 +165,13 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
 {
     std::vector<profile> all_profiles =
     {
-        { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height, 0 },
-        { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, width, height, 0 },
-        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 1 },
-        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 2 },
-        { RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, width, height, 0 },
-        //        {RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 0},
-        //        {RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0}
+        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,           width, height,    0, fps},
+        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
+        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
+        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
+        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
     };
 
     std::vector<profile> profiles;
@@ -174,19 +182,36 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     {
         if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
         {
-            auto  video = p.as<rs2::video_stream_profile>();
-            if (!video) return false;
-
-            if (p.fps() == fps &&
+            if (auto  video = p.as<rs2::video_stream_profile>())
+            {
+                if (p.fps() == profile.fps &&
                 p.stream_index() == profile.index &&
                 p.stream_type() == profile.stream &&
                 p.format() == profile.format &&
                 video.width() == profile.width &&
                 video.height() == profile.height)
-            {
-                modes.push_back(p);
-                return true;
+                {
+                    modes.push_back(p);
+                    return true;
+                }
             }
+            else
+            {
+                if (auto  motion = p.as<rs2::motion_stream_profile>())
+                {
+                    if (p.fps() == profile.fps &&
+                        p.stream_index() == profile.index &&
+                        p.stream_type() == profile.stream &&
+                        p.format() == profile.format)
+                        {
+                            modes.push_back(p);
+                            return true;
+                        }
+                }
+                else
+                    return false;
+            }
+
             return false;
         }) != all_modes.end())
         {
@@ -201,8 +226,8 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
 
 std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
 {
-    std::vector<profile > profiles;
-    std::vector<sensor > sensors;
+    std::vector<profile> profiles;
+    std::vector<sensor> sensors;
     auto sens = dev.query_sensors();
     for (auto s : sens)
     {
@@ -592,6 +617,60 @@ TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
     }
 }
 
+
+TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbacks]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        for (auto i = 0; i < 5; i++)
+        {
+            std::vector<rs2::device> list;
+            REQUIRE_NOTHROW(list = ctx.query_devices());
+            REQUIRE(list.size());
+
+            auto dev = list[0];
+            CAPTURE(dev.get_info(RS2_CAMERA_INFO_NAME));
+            disable_sensitive_options_for(dev);
+
+            std::mutex m;
+            int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+            std::map<std::string,size_t> frames_per_stream{};
+
+            auto profiles = configure_all_supported_streams(dev,640,480, fps);
+
+            for (auto s : profiles.first)
+            {
+                REQUIRE_NOTHROW(s.start([&m,&frames_per_stream](rs2::frame f)
+                {
+                    std::lock_guard<std::mutex> lock(m);
+                    ++frames_per_stream[f.get_profile().stream_name()];
+                }));
+            }
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Stop & flush all active sensors
+            for (auto s : profiles.first)
+            {
+                REQUIRE_NOTHROW(s.stop());
+                REQUIRE_NOTHROW(s.close());
+            }
+
+            // Verify frames arrived for all the profiles specified
+            std::stringstream active_profiles, streams_arrived;
+            active_profiles << "Profiles requested : " << profiles.second.size() << std::endl;
+            for (auto& pf : profiles.second)
+                active_profiles << pf << std::endl;
+            streams_arrived << "Streams recorded : " << frames_per_stream.size() << std::endl;
+            for (auto& frec : frames_per_stream)
+                streams_arrived << frec.first << ": frames = " << frec.second << std::endl;
+
+            CAPTURE(active_profiles.str().c_str());
+            CAPTURE(streams_arrived.str().c_str());
+            REQUIRE(profiles.second.size() == frames_per_stream.size());
+        }
+    }
+}
 
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
