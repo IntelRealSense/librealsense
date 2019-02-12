@@ -13,7 +13,7 @@ namespace rs2
 
 namespace librealsense {
 
-    class EXTENSION_API color_map
+    class LRS_EXTENSION_API color_map
     {
     public:
         color_map(std::map<float, float3> map, int steps = 4000) : _map(map)
@@ -95,7 +95,7 @@ namespace librealsense {
         size_t _size; float3* _data;
     };
 
-    class EXTENSION_API colorizer : public stream_filter_processing_block
+    class LRS_EXTENSION_API colorizer : public stream_filter_processing_block
     {
     public:
         colorizer();

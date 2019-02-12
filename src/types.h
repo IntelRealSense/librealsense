@@ -9,10 +9,15 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+// Disable declspec(dllexport) warnings:
+// Classes exported via LRS_EXTENSION_API are **not** part of official librealsense API (at least for now)
+// Any extension relying on these APIs must be compiled and distributed together with realsense2.dll
+#pragma warning(disable : 4275)        /* disable: C4275: non dll-interface class used as base for dll-interface class */
+#pragma warning(disable : 4251)        /* disable: C4251: class needs to have dll-interface to be used by clients of class */
 #ifdef WIN32
-#define EXTENSION_API __declspec(dllexport)
+#define LRS_EXTENSION_API __declspec(dllexport)
 #else
-#define EXTENSION_API
+#define LRS_EXTENSION_API
 #endif
 
 #include "../include/librealsense2/hpp/rs_types.hpp"
@@ -34,7 +39,7 @@
 #include <condition_variable>
 #include <functional>
 #include <utility>                          // For std::forward
-
+#include <limits>
 
 #include "backend.h"
 #include "concurrency.h"
@@ -203,7 +208,7 @@ namespace librealsense
         rs2_exception_type _exception_type;
     };
 
-    class EXTENSION_API recoverable_exception : public librealsense_exception
+    class LRS_EXTENSION_API recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
@@ -513,7 +518,8 @@ namespace librealsense
                 return false;
         for (int j = 0; j < 3; j++)
             for (int i = 0; i < 3; i++)
-                if (a.rotation[j * 3 + i] != b.rotation[j * 3 + i]) 
+                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i]) 
+                     > std::numeric_limits<float>::epsilon()) 
                     return false;
         return true;
     }

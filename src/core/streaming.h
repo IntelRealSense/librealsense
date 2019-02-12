@@ -120,7 +120,7 @@ namespace librealsense
         virtual ~frame_interface() = default;
     };
 
-    struct EXTENSION_API frame_holder
+    struct LRS_EXTENSION_API frame_holder
     {
         frame_interface* frame;
 

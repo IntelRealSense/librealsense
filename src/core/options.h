@@ -9,7 +9,7 @@
 
 namespace librealsense
 {
-    struct EXTENSION_API option_range
+    struct LRS_EXTENSION_API option_range
     {
         float min;
         float max;
@@ -17,7 +17,7 @@ namespace librealsense
         float def;
     };
 
-    class EXTENSION_API option : public recordable<option>
+    class LRS_EXTENSION_API option : public recordable<option>
     {
     public:
         virtual void set(float value) = 0;

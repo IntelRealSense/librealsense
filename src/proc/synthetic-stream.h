@@ -41,7 +41,7 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class EXTENSION_API processing_block : public processing_block_interface, public options_container
+    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container
     {
     public:
         processing_block();
@@ -122,7 +122,7 @@ namespace librealsense
         }
     };
 
-    class EXTENSION_API stream_filter_processing_block : public generic_processing_block
+    class LRS_EXTENSION_API stream_filter_processing_block : public generic_processing_block
     {
     public:
         stream_filter_processing_block();

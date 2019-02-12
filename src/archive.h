@@ -89,7 +89,7 @@ namespace librealsense
         std::shared_ptr<metadata_parser_map> parsers);
 
     // Define a movable but explicitly noncopyable buffer type to hold our frame data
-    class EXTENSION_API frame : public frame_interface
+    class LRS_EXTENSION_API frame : public frame_interface
     {
     public:
         std::vector<byte> data;
