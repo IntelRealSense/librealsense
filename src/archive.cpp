@@ -149,6 +149,7 @@ namespace librealsense
         return ijs;
     }
 
+
     std::shared_ptr<archive_interface> make_archive(rs2_extension type,
         std::atomic<uint32_t>* in_max_frame_queue_size,
         std::shared_ptr<platform::time_service> ts,
@@ -289,7 +290,8 @@ namespace librealsense
         auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
         auto callback_duration = timestamp - get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << std::fixed << timestamp);
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << ","
+                    << std::dec << get_frame_number() << ",DispatchedAt," << std::fixed << timestamp);
 
         if (callback_duration > callback_warning_duration)
         {

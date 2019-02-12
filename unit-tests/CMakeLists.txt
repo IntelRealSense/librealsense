@@ -40,9 +40,7 @@ set_target_properties (live-test PROPERTIES
 
 install(
     TARGETS
-
     live-test
-	
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )
@@ -126,6 +124,20 @@ function(produce_sequence_extensions source target)
 
 endfunction()
 
+function(is_file_empty empty filename)
+    set (data "")
+    if(EXISTS ${filename})
+        file(READ ${filename} data [OFFSET 0] [LIMIT 1] [HEX])
+    endif()
+    string(LENGTH "${data}" data_length)
+    #message(STATUS "Read ${data_length}  bytes from  ${Deployment_Location}${i}")
+    set(res TRUE)
+    if (NOT ${data_length} STREQUAL "0")
+        set(res FALSE)
+    endif()
+    set(empty ${res} PARENT_SCOPE)
+endfunction()
+
 set(PP_TESTS_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/post_processing_tests_2018_ww18/)
 message(STATUS "Preparing to download Post-processing tests dataset...\nRemote server: ${PP_TESTS_URL}\nTarget Location: ${Deployment_Location}\n")
 foreach(i ${PP_Tests_List})
@@ -147,7 +159,9 @@ foreach(i ${PP_Tests_List})
       set(source ${PP_TESTS_URL}${Test_File_Name})
       set(destination ${Deployment_Location}${Test_File_Name})
       #message(STATUS "Checking for a required test record ${Test_File_Name}")
-      if(NOT EXISTS "${destination}")
+      set (empty FALSE)
+      is_file_empty(empty, ${destination} )
+      if(NOT EXISTS "${destination}" OR ${empty})
           message(STATUS "Downloading ${source}")
           file(DOWNLOAD "${source}" "${destination}" LOG log STATUS status TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status
           list(GET status 0 op_return_value)
@@ -170,7 +184,10 @@ list(APPEND PP_Rosbag_Recordings_List
 )
  set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
 foreach(i ${PP_Rosbag_Recordings_List})
-    if(NOT EXISTS "${Deployment_Location}${i}")
+    set (empty FALSE)
+    is_file_empty(empty, ${Deployment_Location}${i} )
+    if(NOT EXISTS "${Deployment_Location}${i}" OR ${empty})
+        message(STATUS "Target not exist or empty - ${Deployment_Location}${i}")
         message(STATUS "Downloading ${PP_Rosbag_Recordings_URL}${i}")
         file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
     endif()

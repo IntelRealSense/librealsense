@@ -1,17 +1,142 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <glad/glad.h>
+
 #include "ux-window.h"
 
 #include "model-views.h"
+#include "os.h"
 
 // We use STB image to load the splash-screen from memory
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 // int-rs-splash.hpp contains the PNG image from res/int-rs-splash.png
 #include "res/int-rs-splash.hpp"
+#include "res/icon.h"
 
 #include "ux-alignment.h"
 
+#include <opengl3.h>
+
+#include <iostream>
+
 namespace rs2
 {
+    void prepare_config_file()
+    {
+        config_file::instance().set_default(configurations::window::is_fullscreen, false);
+        config_file::instance().set_default(configurations::window::saved_pos, false);
+        config_file::instance().set_default(configurations::window::saved_size, false);
+
+        config_file::instance().set_default(configurations::viewer::log_filename, get_folder_path(special_folder::user_documents) + "librealsense.log");
+        config_file::instance().set_default(configurations::viewer::log_to_console, true);
+        config_file::instance().set_default(configurations::viewer::log_to_file, false);
+        config_file::instance().set_default(configurations::viewer::log_severity, 2);
+
+        config_file::instance().set_default(configurations::record::compression_mode, 2); // Let the device decide
+        config_file::instance().set_default(configurations::record::default_path, get_folder_path(special_folder::user_documents));
+        config_file::instance().set_default(configurations::record::file_save_mode, 0); // Auto-select name
+
+        config_file::instance().set_default(configurations::performance::show_fps, false);
+        config_file::instance().set_default(configurations::performance::vsync, true);
+
+#ifdef __APPLE__
+        config_file::instance().set_default(configurations::performance::font_oversample, 8);
+        config_file::instance().set_default(configurations::performance::enable_msaa, true);
+        config_file::instance().set_default(configurations::performance::msaa_samples, 4);
+        // On Mac-OS, mixing OpenGL 2 with OpenGL 3 is not supported by the driver
+        // while this can be worked-around, this will take more development time,
+        // so for now Macs should not use the GLSL stuff
+        config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
+        config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
+#endif
+
+        auto vendor = (const char*)glGetString(GL_VENDOR);
+        auto renderer = (const char*)glGetString(GL_RENDERER);
+        auto version = (const char*)glGetString(GL_VERSION);
+        auto glsl = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+        bool use_glsl = false;
+
+        // Absolutely arbitrary list of manufacturers that are likely to benefit from GLSL optimisation
+        if (starts_with(to_lower(vendor), "intel") ||
+            starts_with(to_lower(vendor), "ati") ||
+            starts_with(to_lower(vendor), "nvidia"))
+        {
+            use_glsl = true;
+        }
+
+        // Double-check that GLSL 1.3+ is supported
+        if (starts_with(to_lower(vendor), "1.1") || starts_with(to_lower(vendor), "1.2"))
+        {
+            use_glsl = false;
+        }
+
+        if (use_glsl)
+        {
+            config_file::instance().set_default(configurations::performance::font_oversample, 2);
+            config_file::instance().set_default(configurations::performance::enable_msaa, false);
+            config_file::instance().set_default(configurations::performance::msaa_samples, 2);
+            config_file::instance().set_default(configurations::performance::glsl_for_processing, true);
+            config_file::instance().set_default(configurations::performance::glsl_for_rendering, true);
+        }
+        else
+        {
+            config_file::instance().set_default(configurations::performance::font_oversample, 1);
+            config_file::instance().set_default(configurations::performance::enable_msaa, false);
+            config_file::instance().set_default(configurations::performance::msaa_samples, 2);
+            config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
+            config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
+        }
+    }
+
+    void ux_window::reload()
+    {
+        _reload = true;
+    }
+
+    void ux_window::refresh()
+    {
+        _use_glsl_render = config_file::instance().get(configurations::performance::glsl_for_rendering);
+        _use_glsl_proc = config_file::instance().get(configurations::performance::glsl_for_processing);
+    }
+
+    void ux_window::link_hovered()
+    {
+        _link_hovered = true;
+    }
+
+    void ux_window::setup_icon()
+    {
+        GLFWimage icon[4];
+
+        int x, y, comp;
+
+        auto icon_16 = stbi_load_from_memory(icon_16_png_data, (int)icon_16_png_size, &x, &y, &comp, false);
+        icon[0].width = x; icon[0].height = y;
+        icon[0].pixels = icon_16;
+
+        auto icon_24 = stbi_load_from_memory(icon_24_png_data, (int)icon_24_png_size, &x, &y, &comp, false);
+        icon[1].width = x; icon[1].height = y;
+        icon[1].pixels = icon_24;
+
+        auto icon_64 = stbi_load_from_memory(icon_64_png_data, (int)icon_64_png_size, &x, &y, &comp, false);
+        icon[2].width = x; icon[2].height = y;
+        icon[2].pixels = icon_64;
+
+        auto icon_256 = stbi_load_from_memory(icon_256_png_data, (int)icon_256_png_size, &x, &y, &comp, false);
+        icon[3].width = x; icon[3].height = y;
+        icon[3].pixels = icon_256;
+
+        glfwSetWindowIcon(_win, 4, icon);
+
+        stbi_image_free(icon_16);
+        stbi_image_free(icon_24);
+        stbi_image_free(icon_64);
+        stbi_image_free(icon_256);
+    }
+
     void ux_window::open_window()
     {
         if (_win)
@@ -19,10 +144,56 @@ namespace rs2
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
             ImGui_ImplGlfw_Shutdown();
             glfwDestroyWindow(_win);
+            glfwDestroyCursor(_hand_cursor);
+            glfwTerminate();
         }
+
+        if (!glfwInit())
+            exit(1);
+
+        _hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+
+        {
+            glfwWindowHint(GLFW_VISIBLE, 0);
+            auto ctx = glfwCreateWindow(640, 480, "Offscreen Context", nullptr, nullptr);
+            if (!ctx) throw std::runtime_error("Could not initialize offscreen context!");
+            glfwMakeContextCurrent(ctx);
+
+            gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+            // OpenGL 2.1 backward-compatibility fixes.
+            // On macOS, the compatibility profile is OpenGL 2.1 + extensions.
+            if (!GLAD_GL_VERSION_3_0 && !GLAD_GL_ARB_vertex_array_object) {
+                if (GLAD_GL_APPLE_vertex_array_object) {
+                    glBindVertexArray = glBindVertexArrayAPPLE;
+                    glDeleteVertexArrays = glDeleteVertexArraysAPPLE;
+                    glGenVertexArrays = glGenVertexArraysAPPLE;
+                    glIsVertexArray = glIsVertexArrayAPPLE;
+                } else {
+                    throw std::runtime_error("OpenGL 3.0 or ARB_vertex_array_object extension required!");
+                }
+            }
+
+            prepare_config_file();
+
+            glfwDestroyWindow(ctx);
+        }
+
+        _use_glsl_render = config_file::instance().get(configurations::performance::glsl_for_rendering);
+        _use_glsl_proc = config_file::instance().get(configurations::performance::glsl_for_processing);
+
+        _enable_msaa = config_file::instance().get(configurations::performance::enable_msaa);
+        _msaa_samples = config_file::instance().get(configurations::performance::msaa_samples);
+
+        _fullscreen = config_file::instance().get(configurations::window::is_fullscreen);
 
         rs2_error* e = nullptr;
         _title_str = to_string() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        auto debug = is_debug();
+        if (debug)
+        {
+            _title_str = _title_str + ", DEBUG";
+        }
 
         _width = 1024;
         _height = 768;
@@ -43,6 +214,11 @@ namespace rs2
                 _height = int(mode->height * 0.7f);
             }
         }
+        
+        if (_enable_msaa)
+            glfwWindowHint(GLFW_SAMPLES, _msaa_samples);
+        
+        glfwWindowHint(GLFW_VISIBLE, 0);
 
         // Create GUI Windows
         _win = glfwCreateWindow(_width, _height, _title_str.c_str(),
@@ -50,8 +226,62 @@ namespace rs2
         if (!_win)
             throw std::runtime_error("Could not open OpenGL window, please check your graphic drivers or use the textual SDK tools");
 
+        if (config_file::instance().get(configurations::window::saved_pos))
+        {
+            int x = config_file::instance().get(configurations::window::position_x);
+            int y = config_file::instance().get(configurations::window::position_y);
+
+            int count;
+            GLFWmonitor** monitors = glfwGetMonitors(&count);
+            if (count > 0)
+            {
+                bool legal_position = false;
+                for (int i = 0; i < count; i++)
+                {
+                    auto rect = get_monitor_rect(monitors[i]);
+                    if (rect.contains({ (float)x, (float)y }))
+                    {
+                        legal_position = true;
+                    }
+                }
+                if (legal_position) glfwSetWindowPos(_win, x, y);
+            }
+        }
+
+        if (config_file::instance().get(configurations::window::saved_size))
+        {
+            int w = config_file::instance().get(configurations::window::width);
+            int h = config_file::instance().get(configurations::window::height);
+            glfwSetWindowSize(_win, w, h);
+            
+            if (config_file::instance().get(configurations::window::maximized))
+                glfwMaximizeWindow(_win);
+        }
+
         glfwMakeContextCurrent(_win);
+        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+        glfwSetWindowPosCallback(_win, [](GLFWwindow* w, int x, int y)
+        {
+            config_file::instance().set(configurations::window::saved_pos, true);
+            config_file::instance().set(configurations::window::position_x, x);
+            config_file::instance().set(configurations::window::position_y, y);
+        });
+
+        glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
+        {
+            config_file::instance().set(configurations::window::saved_size, true);
+            config_file::instance().set(configurations::window::width, width);
+            config_file::instance().set(configurations::window::height, height);
+            config_file::instance().set(configurations::window::maximized, glfwGetWindowAttrib(window, GLFW_MAXIMIZED));
+        });
+
+        setup_icon();
+
         ImGui_ImplGlfw_Init(_win, true);
+
+        if (_use_glsl_render)
+            _2d_vis = std::make_shared<visualizer_2d>(std::make_shared<splash_screen_shader>());
 
         // Load fonts to be used with the ImGui - TODO move to RAII
         imgui_easy_theming(_font_14, _font_18);
@@ -89,6 +319,18 @@ namespace rs2
                 data->on_file_drop(paths[i]);
             }
         });
+
+        glfwShowWindow(_win);
+        glfwFocusWindow(_win);
+
+        _show_fps = config_file::instance().get(configurations::performance::show_fps);
+        _vsync = config_file::instance().get(configurations::performance::vsync);
+
+        // Prepare the splash screen and do some initialization in the background
+        int x, y, comp;
+        auto r = stbi_load_from_memory(splash, (int)splash_size, &x, &y, &comp, false);
+        _splash_tex.upload_image(x, y, r);
+        stbi_image_free(r);
     }
 
     ux_window::ux_window(const char* title) :
@@ -97,20 +339,10 @@ namespace rs2
         _first_frame(true), _query_devices(true), _missing_device(false),
         _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title)
     {
-        if (!glfwInit())
-            exit(1);
-
         open_window();
-
-        // Prepare the splash screen and do some initialization in the background
-        int x, y, comp;
-        auto r = stbi_load_from_memory(splash, (int)splash_size, &x, &y, &comp, false);
-        _splash_tex.upload_image(x, y, r);
-        stbi_image_free(r);
 
         // Apply initial UI state
         reset();
-
     }
 
     void ux_window::add_on_load_message(const std::string& msg)
@@ -124,8 +356,27 @@ namespace rs2
     {
         end_frame();
 
+        if (_show_fps)
+        {
+            std::stringstream temp_title;
+            temp_title << _title_str;
+
+            auto fps = ImGui::GetIO().Framerate;
+
+            temp_title << ", FPS: " << fps;
+            glfwSetWindowTitle(_win, temp_title.str().c_str());
+        }
+
         // Yield the CPU
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (!_vsync)
+        {
+            std::this_thread::yield();
+            glfwSwapInterval(0);
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
 
         auto res = !glfwWindowShouldClose(_win);
 
@@ -149,7 +400,7 @@ namespace rs2
         }
 
         // If we are just getting started, render the Splash Screen instead of normal UI
-        while (res && (!_app_ready || _splash_timer.elapsed_ms() < 1500.f))
+        while (res && (!_app_ready || _splash_timer.elapsed_ms() < 2000.f))
         {
             res = !glfwWindowShouldClose(_win);
             glfwPollEvents();
@@ -170,8 +421,24 @@ namespace rs2
             glOrtho(0, _width, _height, 0, -1, +1);
 
             // Fade-in the logo
-            auto opacity = smoothstep(float(_splash_timer.elapsed_ms()), 100.f, 2000.f);
-            _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
+            auto opacity = smoothstep(float(_splash_timer.elapsed_ms()), 100.f, 2500.f);
+            auto ox = 0.7f - smoothstep(float(_splash_timer.elapsed_ms()), 200.f, 1900.f) * 0.4f;
+            auto oy = 0.5f;
+            auto power = std::sin(smoothstep(float(_splash_timer.elapsed_ms()), 150.f, 2200.f) * 3.14f) * 0.96f;
+
+            if (_use_glsl_render)
+            {
+                auto shader = ((splash_screen_shader*)&_2d_vis->get_shader());
+                shader->begin();
+                shader->set_power(power);
+                shader->set_ray_center(float2{ox, oy});
+                shader->end();
+                _2d_vis->draw_texture(_splash_tex.get_gl_handle(), opacity);
+            }
+            else
+            {
+                _splash_tex.show({ 0.f,0.f,float(_width),float(_height) }, opacity);
+            }
 
             std::string hourglass = u8"\uf250";
             static periodic_timer every_200ms(std::chrono::milliseconds(200));
@@ -190,28 +457,29 @@ namespace rs2
 
             hourglass[2] += _hourglass_index;
 
-            bool blink = sin(_splash_timer.elapsed_ms() / 150.f) > -0.3f;
-
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoCollapse |
                 ImGuiWindowFlags_NoTitleBar;
 
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+            auto text_color = light_grey;
+            text_color.w = opacity;
+            ImGui::PushStyleColor(ImGuiCol_Text, text_color);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 5, 5 });
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, transparent);
             ImGui::SetNextWindowPos({ (float)_width / 2 - 150, (float)_height / 2 + 70 });
-            ImGui::PushFont(_font_18);
+            
             ImGui::SetNextWindowSize({ (float)_width, (float)_height });
             ImGui::Begin("Splash Screen Banner", nullptr, flags);
+            ImGui::PushFont(_font_18);
 
             ImGui::Text("%s   Loading %s...", hourglass.c_str(), _title_str.c_str());
 
             {
                 std::lock_guard<std::mutex> lock(_on_load_message_mtx);
-                if (_on_load_message.empty() && blink)
+                if (_on_load_message.empty())
                 {
                     ImGui::Text("%s", _dev_stat_message.c_str());
                 }
@@ -221,7 +489,7 @@ namespace rs2
                     for (auto& msg : _on_load_message)
                     {
                         auto is_last_msg = (msg == _on_load_message.back());
-                        if (is_last_msg && blink)
+                        if (is_last_msg)
                             ImGui::Text("%s", msg.c_str());
                         else if (!is_last_msg)
                             ImGui::Text("%s", msg.c_str());
@@ -229,8 +497,9 @@ namespace rs2
                 }
             }
 
-            ImGui::End();
             ImGui::PopFont();
+            ImGui::End();
+            
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar(2);
 
@@ -245,6 +514,12 @@ namespace rs2
         // reset graphic pipe
         begin_frame();
 
+        if (_link_hovered)
+            glfwSetCursor(_win, _hand_cursor);
+        else
+            glfwSetCursor(_win, nullptr);
+        _link_hovered = false;
+
         return res;
     }
 
@@ -256,9 +531,14 @@ namespace rs2
             _first_load.join();
         }
 
+        end_frame();
+
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();
         glfwDestroyWindow(_win);
+
+        glfwDestroyCursor(_hand_cursor);
+
         glfwTerminate();
     }
 
@@ -276,9 +556,16 @@ namespace rs2
             if (_fullscreen_pressed)
             {
                 _fullscreen = !_fullscreen;
+                config_file::instance().set(configurations::window::is_fullscreen, _fullscreen);
                 open_window();
             }
             _fullscreen_pressed = false;
+        }
+
+        if (_reload)
+        {
+            open_window();
+            _reload = false;
         }
 
         int w = _width; int h = _height;
@@ -324,6 +611,7 @@ namespace rs2
         _mouse.ui_wheel = 0.f;
 
         ImGui_ImplGlfw_NewFrame(_scale_factor);
+        //ImGui::NewFrame();
     }
 
     void ux_window::begin_viewport()
@@ -332,6 +620,10 @@ namespace rs2
         glViewport(0, 0,
             static_cast<int>(ImGui::GetIO().DisplaySize.x * _scale_factor),
             static_cast<int>(ImGui::GetIO().DisplaySize.y * _scale_factor));
+
+        if (_enable_msaa) glEnable(GL_MULTISAMPLE);
+        else glDisable(GL_MULTISAMPLE);
+
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
     }

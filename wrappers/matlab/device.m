@@ -52,13 +52,13 @@ classdef device < handle
         end
         function value = supports(this, info)
             narginchk(2, 2);
-            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             this.do_init();
             value = realsense.librealsense_mex('rs2::device', 'supports', this.objectHandle, int64(info));
         end
         function info = get_info(this, info)
             narginchk(2, 2);
-            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             this.do_init();
             info = realsense.librealsense_mex('rs2::device', 'get_info', this.objectHandle, int64(info));
         end

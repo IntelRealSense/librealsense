@@ -141,7 +141,7 @@ namespace librealsense
                 auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
                 auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
 
-                LOG_DEBUG("CallbackFinished," << rs2_stream_to_string(frame->get_stream()->get_stream_type()) << "," << frame->get_frame_number()
+                LOG_DEBUG("CallbackFinished," << rs2_stream_to_string(frame->get_stream()->get_stream_type()) << "," << std::dec << frame->get_frame_number()
                     << ",DispatchedAt," << callback_ended);
 
                 if (callback_duration > callback_warning_duration)

@@ -12,11 +12,33 @@ namespace librealsense
     class EXTENSION_API pointcloud : public stream_filter_processing_block
     {
     public:
+        static std::shared_ptr<pointcloud> create();
+
         pointcloud();
+
+        virtual const float3 * depth_to_points(
+            rs2::points output,
+            uint8_t* image, 
+            const rs2_intrinsics &depth_intrinsics, 
+            const uint16_t * depth_image, 
+            float depth_scale);
+        virtual void get_texture_map(
+            rs2::points output,
+            const float3* points,
+            const unsigned int width,
+            const unsigned int height,
+            const rs2_intrinsics &other_intrinsics,
+            const rs2_extrinsics& extr,
+            float2* tex_ptr,
+            float2* pixels_ptr);
+        virtual rs2::points allocate_points(const rs2::frame_source& source, const rs2::frame& f);
+        virtual void preprocess() {}
+
     protected:
+
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
-    private:
+
         optional_value<rs2_intrinsics>         _depth_intrinsics;
         optional_value<rs2_intrinsics>         _other_intrinsics;
         optional_value<float>                  _depth_units;
@@ -35,10 +57,6 @@ namespace librealsense
         rs2::frame process_depth_frame(const rs2::frame_source& source, const rs2::depth_frame& depth);
         void set_extrinsics();
 
-        std::vector<float> _pre_compute_map_x;
-        std::vector<float> _pre_compute_map_y;
-
-        void pre_compute_x_y_map();
         stream_filter _prev_stream_filter;
     };
 }

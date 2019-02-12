@@ -16,11 +16,11 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 5. [Streams Alignment](./align) - Show a simple method for dynamic background removal from video.
 6. [Depth Post Processing](./post-processing) - Demonstrating usage of post processing filters for depth images.
 7. [Record and Playback](./record-playback) - Demonstrating usage of the recorder and playback devices.
+8. [Motion](./motion) - Demonstrates how to use data from gyroscope and accelerometer to compute the rotation of the camera.
 #### Advanced
-8. [Software Device](./software-device) - Shows how to create a custom `rs2::device`.
-
-6. [Sensor Control](./sensor-control) -- A tutorial for using the `rs2::sensor` API
-7. [Measure](./measure) - Lets the user measure the dimentions of 3D objects in a stream.
+9. [Software Device](./software-device) - Shows how to create a custom `rs2::device`.
+10. [Sensor Control](./sensor-control) -- A tutorial for using the `rs2::sensor` API
+11. [Measure](./measure) - Lets the user measure the dimentions of 3D objects in a stream.
 
 ### C Examples:
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.
@@ -45,3 +45,4 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 5. [RealSense ROS-bag parser](https://github.com/IntelRealSense/librealsense/issues/2215) - code sample for parsing ROS-bag files by [@marcovs](https://github.com/marcovs)
 6. [OpenCV threaded depth cleaner](https://github.com/juniorxsound/ThreadedDepthCleaner) - RealSense depth-map cleaning and inpainting using OpenCV
 7. [Sample of how to use the IMU of D435i as well as doing PCL rotations based on this](https://github.com/GruffyPuffy/imutest)
+8. [realsense-ir-to-vaapi-h264](https://github.com/bmegli/realsense-ir-to-vaapi-h264) - hardware encode infrared stream to H.264 with Intel VAAPI
