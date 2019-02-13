@@ -22,7 +22,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 10. [Sensor Control](./sensor-control) -- A tutorial for using the `rs2::sensor` API
 11. [Measure](./measure) - Lets the user measure the dimentions of 3D objects in a stream.
 #### Tracking Examples:
-12. [Pose](./pose) - Demonstarates how to obtain data from pose frames
+12. [Pose](./pose) - Demonstarates how to obtain data from pose frames.
 
 ### C Examples:
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.
