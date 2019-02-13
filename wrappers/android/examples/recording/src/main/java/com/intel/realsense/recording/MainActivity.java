@@ -113,7 +113,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        mRsContext.close();
+        if(mRsContext != null)
+            mRsContext.close();
         stop();
     }
 

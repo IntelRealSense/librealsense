@@ -2,6 +2,10 @@
 include ':librealsense'
 project(':librealsense').projectDir = new File('librealsense')
 
+//tools
+include ':camera'
+project(':camera').projectDir = new File('tools/camera')
+
 //examples
 include ':capture'
 project(':capture').projectDir = new File('examples/capture')
