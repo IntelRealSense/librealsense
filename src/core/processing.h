@@ -31,7 +31,9 @@ namespace librealsense
 
         virtual frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) = 0;
 
-        virtual frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original) = 0;
+        virtual frame_interface* allocate_points(std::shared_ptr<stream_profile_interface> stream, 
+            frame_interface* original, 
+            rs2_extension frame_type = RS2_EXTENSION_POINTS) = 0;
 
         virtual void frame_ready(frame_holder result) = 0;
         virtual rs2_source* get_c_wrapper() = 0;
