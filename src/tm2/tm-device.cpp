@@ -962,6 +962,18 @@ namespace librealsense
         }
     }
 
+    bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
+    {
+        LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
+        return false;
+    }
+
+    bool tm2_sensor::import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const
+    {
+        LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
+        return false;
+    }
+
     TrackingData::Temperature tm2_sensor::get_temperature()
     {
         if (!_tm_dev)
@@ -1068,4 +1080,25 @@ namespace librealsense
     {
         _sensor->detach_controller(id);
     }
+
+//    void tm2_device::import_relocalization_map(const std::string& lmap_fname) const
+//    {
+//        _sensor->import_relocalization_map(lmap_fname);
+//    }
+
+//    void tm2_device::export_relocalization_map(const std::string& lmap_fname) const
+//    {
+//        _sensor->export_relocalization_map(lmap_fname);
+//    }
+
+//    // Recording interfaces
+//    void tm2_device::create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const
+//    {
+//        _sensor->create_snapshot(snapshot);
+//    }
+
+//    void tm2_device::enable_recording(std::function<void(const pose_sensor_interface&)> record_action)
+//    {
+//        _sensor->enable_recording(record_action);
+//    }
 }

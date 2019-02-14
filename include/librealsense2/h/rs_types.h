@@ -126,6 +126,8 @@ typedef enum rs2_extension
     RS2_EXTENSION_HOLE_FILLING_FILTER,
     RS2_EXTENSION_ZERO_ORDER_FILTER,
     RS2_EXTENSION_RECOMMENDED_FILTERS,
+    RS2_EXTENSION_POSE,
+    RS2_EXTENSION_POSE_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

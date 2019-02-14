@@ -23,6 +23,47 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
 
+    class pose_sensor_interface : public recordable<pose_sensor_interface>
+    {
+    public:
+        virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual ~pose_sensor_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);
+
+    class pose_sensor_snapshot : /*public pose_sensor_interface,*/ public extension_snapshot
+    {
+    public:
+        void export_relocalization_map(const std::string& lmap_fname) const
+        {
+            LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
+        }
+        void import_relocalization_map(const std::string& lmap_fname) const
+        {
+            LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
+        }
+
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            pose_sensor_snapshot::update(ext);
+            // TODO get localization map
+        }
+
+        void create_snapshot(std::shared_ptr<pose_sensor_snapshot>& snapshot) const
+        {
+            snapshot = std::make_shared<pose_sensor_snapshot>(*this);
+        }
+
+        void enable_recording(std::function<void(const pose_sensor_snapshot&)> recording_function)
+        {
+            //empty
+        }
+
+    private:
+        std::vector<uint8_t> m_localization_map;
+    };
+
     class tm2_extensions
     {
     public:
@@ -35,4 +76,15 @@ namespace librealsense
         virtual ~tm2_extensions() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_TM2, librealsense::tm2_extensions);
+
+//    class pose_sensor : public recordable<pose_sensor>
+//    {
+//    public:
+//        virtual void export_relocalization_map(const std::string& lmap_fname) const = 0;
+//        virtual void import_relocalization_map(const std::string& lmap_fname) const = 0;
+//    };
+
+//    MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor);
+
+
 }

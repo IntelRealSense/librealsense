@@ -1088,7 +1088,9 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_ROI                 : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface)   != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor)           != nullptr;
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
-    case RS2_EXTENSION_SOFTWARE_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
+    case RS2_EXTENSION_SOFTWARE_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor)        != nullptr;
+    case RS2_EXTENSION_POSE_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::pose_sensor_interface)  != nullptr;
+
     default:
         return false;
     }
@@ -2210,4 +2212,29 @@ int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_ca
     return block->block->supports_info(info);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, block, info)
+
+void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(lmap_blob);
+    VALIDATE_RANGE(blob_size,1, std::numeric_limits<uint32_t>::max()/2); // TODO Verify max size with FW. Evgeni
+
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+
+    std::vector<uint8_t> buffer_to_send(lmap_blob, lmap_blob + blob_size);
+    if (!pose_snr->import_relocalization_map(buffer_to_send))
+        throw librealsense::invalid_value_exception(librealsense::to_string() << "import localization failed, map size " << blob_size);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, lmap_blob, blob_size)
+
+const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    std::vector<uint8_t> recv_buffer;
+    pose_snr->export_relocalization_map(recv_buffer);
+    return new rs2_raw_data_buffer{ recv_buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 

@@ -293,7 +293,8 @@ EXPORTS
     rs2_loopback_is_enabled
     rs2_connect_tm2_controller
     rs2_disconnect_tm2_controller
-
+    rs2_import_localization_map
+    rs2_export_localization_map
     rs2_get_processing_block
     rs2_get_recommended_processing_blocks
     rs2_get_recommended_processing_blocks_count

@@ -427,5 +427,73 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
     };
+
+
+    class pose_sensor : public sensor
+    {
+    public:
+        pose_sensor(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_POSE_SENSOR, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+
+        /** Load SLAM localization map from host to device
+        * \return void
+        */
+        void import_localization_map(const std::vector<uint8_t>& lmap_buf) const
+        {
+            rs2_error* e = nullptr;
+            rs2_import_localization_map(_sensor.get(), lmap_buf.data(), lmap_buf.size(), &e);
+            error::handle(e);
+        }
+
+        /** Extract SLAM localization map from device and store on host
+        * \return void
+        */
+        std::vector<uint8_t> export_localization_map() const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> loc_map(
+                    rs2_export_localization_map(_sensor.get(), &e),
+                    rs2_delete_raw_data);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(loc_map.get(), &e);
+            error::handle(e);
+            auto size = rs2_get_raw_data_size(loc_map.get(), &e);
+            error::handle(e);
+
+            std::vector<uint8_t> results(start, start + size);
+            return results;
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+        explicit pose_sensor(std::shared_ptr<rs2_sensor> dev) : pose_sensor(sensor(dev)) {}
+    };
+
+//    class rgb_sensor : public sensor
+//    {
+//    public:
+//        rgb_sensor(sensor s)
+//            : sensor(s.get())
+//        {
+//            rs2_error* e = nullptr;
+//            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_RGB_SENSOR, &e) == 0 && !e)
+//            {
+//                _sensor.reset();
+//            }
+//            error::handle(e);
+//        }
+
+//        operator bool() const { return _sensor.get() != nullptr; }
+//        explicit rgb_sensor(std::shared_ptr<rs2_sensor> dev) : rgb_sensor(sensor(dev)) {}
+//    };
+
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

@@ -35,10 +35,10 @@ namespace librealsense
                     return;
                 }
                 _t = std::thread(&tm2_context::thread_proc, this);
+
+                LOG_INFO("LibTm version 0x" << std::hex << _manager->version());
             }
         }
-        auto version = _manager->version();
-        LOG_INFO("LibTm version 0x" << std::hex << version);
     }
 
     std::shared_ptr<perc::TrackingManager> tm2_context::get_manager() const

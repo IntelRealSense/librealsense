@@ -29,11 +29,18 @@ namespace librealsense
         bool is_enabled() const override;
         void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
         void disconnect_controller(int id) override;
+        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
+        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             return std::vector<tagged_profile>();
         };
         bool compress_while_record() const override { return false; }
+
+//        // Recording interfaces
+//        void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const;
+//        void enable_recording(std::function<void(const pose_sensor_interface&)> record_action);
+
     private:
         static const char* tm2_device_name()
         {
@@ -44,7 +51,8 @@ namespace librealsense
         std::shared_ptr<tm2_sensor> _sensor;
     };
 
-    class tm2_sensor : public sensor_base, public video_sensor_interface, public perc::TrackingDevice::Listener
+    class tm2_sensor : public sensor_base, public video_sensor_interface,
+                       public pose_sensor_interface, public perc::TrackingDevice::Listener
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
@@ -77,6 +85,33 @@ namespace librealsense
         void detach_controller(int id);
         void dispose();
         perc::TrackingData::Temperature get_temperature();
+
+        // Pose interfaces
+        //virtual void export_relocalization_map(const std::string& lmap_fname) const;
+        //virtual void import_relocalization_map(const std::string& lmap_fname) const;
+        virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
+        virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
+
+        // Recording interfaces
+        virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const
+        {
+            //TODOsnapshot = std::make_shared<pose_sensor_interface>(*this);
+        }
+
+        virtual void enable_recording(std::function<void(const pose_sensor_interface&)> record_action) override
+        {
+            //_recording_function = record_action;
+        }
+
+//        void update(std::shared_ptr<extension_snapshot> ext) override
+//        {
+//            auto ctr = As<options_container>(ext);
+//            if (!ctr) return;
+//            for(auto&& opt : ctr->_options)
+//            {
+//                _options[opt.first] = opt.second;
+//            }
+//        }
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);

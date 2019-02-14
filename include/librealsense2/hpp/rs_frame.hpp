@@ -272,7 +272,6 @@ namespace rs2
         * \return rs2_motion_device_intrtinsic - stream motion intrinsics
         */
         rs2_motion_device_intrinsic get_motion_intrinsics() const
-
         {
             rs2_error* e = nullptr;
             rs2_motion_device_intrinsic intrin;
@@ -928,6 +927,28 @@ namespace rs2
             {
                 foreach([&f, index](const frame& frm) {
                     if (frm.get_profile().stream_type() == RS2_STREAM_INFRARED &&
+                        frm.get_profile().stream_index() == index) f = frm;
+                });
+            }
+            return f;
+        }
+
+        /**
+        * Retrieve the fisheye monochrome video frame
+        * \param[in] size_t index
+        * \return video_frame - the fisheye frame denoted by index.
+        */
+        video_frame get_fisheye_frame(const size_t index = 0) const
+        {
+            frame f;
+            if (!index)
+            {
+                f = first_or_default(RS2_STREAM_FISHEYE);
+            }
+            else
+            {
+                foreach([&f, index](const frame& frm) {
+                    if (frm.get_profile().stream_type() == RS2_STREAM_FISHEYE &&
                         frm.get_profile().stream_index() == index) f = frm;
                 });
             }

@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <cstring>
+#include <thread>
 
 #include "tclap/CmdLine.h"
 
@@ -170,12 +171,17 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
-    log_to_console(RS2_LOG_SEVERITY_ERROR);
+    log_to_console(RS2_LOG_SEVERITY_DEBUG);
 
     // Obtain a list of devices currently present on the system
     context ctx;
     auto devices = ctx.query_devices();
     size_t device_count = devices.size();
+    std::cout << " There are " << device_count <<  " devices connected" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    devices = ctx.query_devices();
+    device_count = devices.size();
+    std::cout << " There are " << device_count <<  " devices connected" << std::endl;
     if (!device_count)
     {
         cout <<"No device detected. Is it plugged in?\n";

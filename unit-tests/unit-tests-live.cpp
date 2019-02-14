@@ -5571,3 +5571,59 @@ TEST_CASE("L500 zero order sanity", "[live]") {
         }
     }
 }
+
+TEST_CASE("Positional_Sensors_API", "[live]")
+{
+    rs2::context ctx;
+    auto dev_list = ctx.query_devices();
+    log_to_console(RS2_LOG_SEVERITY_DEBUG);
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // TM2 invocation
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+
+        // TM2 Only
+        if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
+        //if (!librealsense::val_in_range(PID.first, { std::string("0B3A"),std::string("0AFE"),std::string("0B37"),std::string("0AD5")}))
+        {
+            WARN("Skipping test - Positional Tracking sensors are not provided for device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+        }
+        else
+        {
+            CAPTURE(dev);
+            REQUIRE(dev.is<rs2::tm2>());
+            REQUIRE_NOTHROW(auto tmp_pos = dev.first<rs2::pose_sensor>());
+            auto pose_snr = dev.first<rs2::pose_sensor>();
+            CAPTURE(pose_snr);
+            REQUIRE(pose_snr);
+
+            WHEN("Sequence - idle "){
+                THEN("Export/Import relocalization map is successfull")
+                {
+                    std::vector<uint8_t> results, vnv;
+                    REQUIRE_NOTHROW(results=pose_snr.export_localization_map());
+                    //TODO - async API - TODO
+                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    REQUIRE(results.size());
+                    REQUIRE_NOTHROW(pose_snr.import_localization_map(results));
+                    REQUIRE_NOTHROW(vnv=pose_snr.export_localization_map());
+                    //TODO - async API - TODO
+                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    REQUIRE(vnv.size());
+                    REQUIRE(vnv == results);
+                }
+            }
+        }
+    }
+}
