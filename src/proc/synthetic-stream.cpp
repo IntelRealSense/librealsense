@@ -22,7 +22,7 @@ namespace librealsense
         _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
-        _source.init(std::shared_ptr<metadata_parser_map>());
+            _source.init(std::shared_ptr<metadata_parser_map>());
     }
 
     void processing_block::invoke(frame_holder f)
@@ -250,7 +250,7 @@ namespace librealsense
         _actual_source.invoke_callback(std::move(result));
     }
 
-    frame_interface* synthetic_source::allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original)
+    frame_interface* synthetic_source::allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original, rs2_extension frame_type)
     {
         auto vid_stream = dynamic_cast<video_stream_profile_interface*>(stream.get());
         if (vid_stream)
@@ -263,7 +263,7 @@ namespace librealsense
             data.system_time = _actual_source.get_time();
             data.is_blocking = original->is_blocking();
 
-            auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
+            auto res = _actual_source.alloc_frame(frame_type, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);

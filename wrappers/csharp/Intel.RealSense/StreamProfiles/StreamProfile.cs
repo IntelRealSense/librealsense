@@ -9,24 +9,9 @@ namespace Intel.RealSense
     {
         internal HandleRef m_instance;
 
-        internal static readonly ObjectPool Pool = new ObjectPool((obj, ptr) =>
-        {
-            var p = obj as StreamProfile;
-            p.m_instance = new HandleRef(p, ptr);
-            p.disposedValue = false;
-            GC.ReRegisterForFinalize(p);
+        internal static readonly ProfilePool<StreamProfile> Pool = new ProfilePool<StreamProfile>();
 
-            object error;
-            NativeMethods.rs2_get_stream_profile_data(ptr, out p._stream, out p._format, out p._index, out p._uniqueId, out p._framerate, out error);
-
-            if (obj is VideoStreamProfile)
-            {
-                var v = obj as VideoStreamProfile;
-                NativeMethods.rs2_get_video_stream_resolution(ptr, out v.width, out v.height, out error);
-            }
-        });
-
-        internal StreamProfile(IntPtr ptr)
+        public StreamProfile(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
 
@@ -79,8 +64,7 @@ namespace Intel.RealSense
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                m_instance = new HandleRef(this, IntPtr.Zero);
-                Pool.Release(this);
+                Release();
                 disposedValue = true;
             }
         }
@@ -102,28 +86,10 @@ namespace Intel.RealSense
         }
         #endregion
 
-        public bool Is(Extension e)
+        public void Release()
         {
-            object error;
-            return NativeMethods.rs2_stream_profile_is(m_instance.Handle, e, out error) > 0;
-        }
-
-        public T As<T>() where T : StreamProfile
-        {
-            using (this)
-            {
-                return Create<T>(m_instance.Handle);
-            }
-        }
-
-        internal static T Create<T>(IntPtr ptr) where T : StreamProfile
-        {
-            return Pool.Get<T>(ptr);
-        }
-
-        internal static StreamProfile Create(IntPtr ptr)
-        {
-            return Create<StreamProfile>(ptr);
+            m_instance = new HandleRef(this, IntPtr.Zero);
+            Pool.Release(this);
         }
     }
 }

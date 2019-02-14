@@ -5,37 +5,7 @@
 #include "backend.h"
 #include "types.h"
 
-#include <cassert>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
-
-#include <algorithm>
-#include <functional>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <regex>
-#include <thread>
-#include <utility> // for pair
-#include <chrono>
-#include <thread>
-#include <atomic>
-
-#include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <limits.h>
-#include <cmath>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/usb/video.h>
-#include <linux/uvcvideo.h>
-#include <linux/videodev2.h>
-#include <fts.h>
-#include <regex>
 #include <list>
 
 namespace librealsense
@@ -61,10 +31,16 @@ namespace librealsense
             // TODO: parse 'offset' and 'scale'
         };
 
+        // SYSFS or HAL for (IIO) device drivers differs requires a non-standard std::fstream operation mode:
+        // The first in/out operation selects the mode exclusively.
+        // Switching from read to write or vice versa requires fstream's close/open sequence.
+        // Writing/appending to the fstream requires flush synchronization
         template<typename T>
-        inline bool write_fs_arithmetic(const std::string& path, const T& val)
+        inline bool write_fs_attribute(const std::string& path, const T& val)
         {
-            static_assert((std::is_arithmetic<T>::value), "write_arithmetic_fs incompatible type");
+            static_assert(((std::is_arithmetic<T>::value)||(std::is_same<T,std::string>::value)),
+                "write_fs_attribute supports arithmetic and std::string types only");
+
             bool res = false;
             std::fstream fs_handle(path);
             if (!fs_handle.good())
@@ -75,15 +51,18 @@ namespace librealsense
 
             try // Read/Modify/Confirm
             {
-                T cval = 0;
+                T cval{};
                 fs_handle >> cval;
 
                 if (cval!=val)
                 {
+                    fs_handle.close();
+                    fs_handle.open(path);
                     fs_handle << val;
                     fs_handle.flush();
                     std::ifstream vnv_handle(path);
                     vnv_handle >> cval;
+                    fs_handle >> cval;
                     res = (cval==val);
                     if (!res)
                         LOG_WARNING(__FUNCTION__ << " Could not change " << cval << " to " << val << " : path " << path);

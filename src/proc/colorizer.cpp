@@ -123,9 +123,19 @@ namespace librealsense
         { 0, 0, 0 },
         } };
 
-    colorizer::colorizer()
-        : _min(0.f), _max(6.f), _equalize(true), _target_stream_profile()
+    void colorizer::update_histogram(int* hist, const uint16_t* depth_data, int w, int h)
     {
+        memset(hist, 0, MAX_DEPTH * sizeof(int));
+        for (auto i = 0; i < w*h; ++i) ++hist[depth_data[i]];
+        for (auto i = 2; i < MAX_DEPTH; ++i) hist[i] += hist[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+    }
+
+    colorizer::colorizer()
+        : _min(0.f), _max(6.f), _equalize(true), 
+          _target_stream_profile(), _histogram()
+    {
+        _histogram = std::vector<int>(MAX_DEPTH, 0);
+        _hist_data = _histogram.data();
         _stream_filter.stream = RS2_STREAM_DEPTH;
         _stream_filter.format = RS2_FORMAT_Z16;
 
@@ -203,16 +213,12 @@ namespace librealsense
         }
         auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
         {
-            const auto max_depth = 0x10000;
-            static uint32_t histogram[max_depth];
-            memset(histogram, 0, sizeof(histogram));
-
             const auto w = depth.get_width(), h = depth.get_height();
             const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
             auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
 
-            for (auto i = 0; i < w*h; ++i) ++histogram[depth_data[i]];
-            for (auto i = 2; i < max_depth; ++i) histogram[i] += histogram[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+            update_histogram(_hist_data, depth_data, w, h);
+            
             auto cm = _maps[_map_index];
             for (auto i = 0; i < w*h; ++i)
             {
@@ -220,7 +226,7 @@ namespace librealsense
 
                 if (d)
                 {
-                    auto f = histogram[d] / (float)histogram[0xFFFF]; // 0-255 based on histogram location
+                    auto f = _hist_data[d] / (float)_hist_data[MAX_DEPTH-1]; // 0-255 based on histogram location
 
                     auto c = cm->get(f);
                     rgb_data[i * 3 + 0] = (uint8_t)c.x;
