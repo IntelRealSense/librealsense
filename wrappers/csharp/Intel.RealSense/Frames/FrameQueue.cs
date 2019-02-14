@@ -23,7 +23,7 @@ namespace Intel.RealSense
             IntPtr ptr;
             if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out ptr, out error) > 0)
             {
-                frame = Frame.CreateFrame(ptr);
+                frame = Frame.Create<Frame>(ptr);
                 return true;
             }
             frame = null;
@@ -32,16 +32,21 @@ namespace Intel.RealSense
 
         public Frame WaitForFrame(uint timeout_ms = 5000)
         {
+            return WaitForFrame<Frame>(timeout_ms);
+        }
+
+        public T WaitForFrame<T>(uint timeout_ms = 5000) where T : Frame
+        {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
-            return Frame.CreateFrame(ptr);
+            return Frame.Create<T>(ptr);
         }
 
         public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
-            return FrameSet.Pool.Get(ptr);
+            return FrameSet.Create(ptr);
         }
 
         public void Enqueue(Frame f)

@@ -284,15 +284,12 @@ namespace Intel.RealSense
             m_callback = null;
         }
 
-        //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);
-        public delegate void FrameCallback(Frame frame);
-
         public void Start(FrameCallback cb)
         {
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
-                using (var frame = new Frame(f))
+                using (var frame = Frame.Create(f))
                     cb(frame);
             };
             m_callback = cb2;
@@ -339,13 +336,12 @@ namespace Intel.RealSense
                 return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(m_instance, out error));
             }
         }
-
-
+        
         public IEnumerable<VideoStreamProfile> VideoStreamProfiles
         {
             get
             {
-                return StreamProfiles.OfType<VideoStreamProfile>();
+                return StreamProfiles.Where(p => p.Is(Extension.VideoProfile)).Select(p => p.As<VideoStreamProfile>());
             }
         }
 

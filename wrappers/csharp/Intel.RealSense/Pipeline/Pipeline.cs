@@ -5,12 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Pipeline : IDisposable, IEnumerable<Frame>
+    public class Pipeline : IDisposable, IEnumerable<FrameSet>
     {
         internal HandleRef m_instance;
-
-        //public delegate void FrameCallback<Frame, T>(Frame frame);
-        public delegate void FrameCallback(Frame frame);
         private frame_callback m_callback;
 
         public Pipeline(Context ctx)
@@ -47,7 +44,7 @@ namespace Intel.RealSense
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
-                using (var frame = new Frame(f))
+                using (var frame = Frame.Create(f))
                     cb(frame);
             };
             m_callback = cb2;
@@ -61,7 +58,7 @@ namespace Intel.RealSense
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
-                using (var frame = new Frame(f))
+                using (var frame = Frame.Create(f))
                     cb(frame);
             };
             m_callback = cb2;
@@ -80,7 +77,7 @@ namespace Intel.RealSense
         {
             object error;
             var ptr = NativeMethods.rs2_pipeline_wait_for_frames(m_instance.Handle, timeout_ms, out error);
-            return FrameSet.Pool.Get(ptr);
+            return FrameSet.Create(ptr);
         }
 
         public bool PollForFrames(out FrameSet result)
@@ -89,21 +86,19 @@ namespace Intel.RealSense
             IntPtr fs;
             if (NativeMethods.rs2_pipeline_poll_for_frames(m_instance.Handle, out fs, out error) > 0)
             {
-                result = FrameSet.Pool.Get(fs);
+                result = FrameSet.Create(fs);
                 return true;
             }
             result = null;
             return false;
         }
 
-        public IEnumerator<Frame> GetEnumerator()
+        public IEnumerator<FrameSet> GetEnumerator()
         {
             FrameSet frames;
             while (PollForFrames(out frames))
             {
-                using (frames)
-                using (var frame = frames.AsFrame())
-                    yield return frame;
+                yield return frames;
             }
         }
 

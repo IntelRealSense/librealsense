@@ -10,6 +10,7 @@ namespace Intel.RealSense
         public VideoStreamProfile(IntPtr ptr) : base(ptr)
         {
             object error;
+            System.Diagnostics.Debug.Assert(NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0);
             NativeMethods.rs2_get_video_stream_resolution(ptr, out width, out height, out error);
         }
 

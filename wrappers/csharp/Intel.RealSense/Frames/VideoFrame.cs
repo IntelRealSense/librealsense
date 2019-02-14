@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
     public class VideoFrame : Frame
     {
-        public static readonly new FramePool<VideoFrame> Pool = new FramePool<VideoFrame>(ptr => new VideoFrame(ptr));
-
         public VideoFrame(IntPtr ptr) : base(ptr)
         {
+            object error;
+            Debug.Assert(NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0);
         }
 
         public int Width
@@ -104,15 +105,6 @@ namespace Intel.RealSense
         {
             //System.Diagnostics.Debug.Assert(ptr != IntPtr.Zero);
             NativeMethods.memcpy(Data, ptr, Stride * Height);
-        }
-
-        public override void Release()
-        {
-            //base.Release();
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_release_frame(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
-            Pool.Release(this);
         }
     }
 }
