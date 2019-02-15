@@ -20,6 +20,8 @@
   * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode`
 5. Open and build the XCode project
 
+> **Note:** On some Mac systems you might encounter `ld: library not found for -lusb-1.0` error (either in the terminal during make or in XCode) This can be worked-around by setting environment variable: `/bin/launchctl setenv LIBRARY_PATH /usr/local/lib`
+
 ## What works?
 * SR300, D415 and D435 will stream depth, infrared and color at all supported resolutions
 * The Viewer, Depth-Quality Tool and most of the examples should work
