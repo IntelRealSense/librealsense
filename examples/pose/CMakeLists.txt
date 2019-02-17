@@ -1,7 +1,7 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealsenseExamplesMotion)
+project(RealsenseExamplesPose)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -16,9 +16,8 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-motion rs-motion.cpp ../example.hpp ../../common/res/d435.h ${LZ4_DIR}/lz4.c)
-    target_link_libraries(rs-motion ${DEPENDENCIES})
-    include_directories(../ ../../common/res ${LZ4_DIR})
-    set_target_properties (rs-motion PROPERTIES FOLDER Examples)
-    install(TARGETS rs-motion RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    add_executable(rs-pose rs-pose.cpp)
+    target_link_libraries(rs-pose ${DEPENDENCIES})
+    set_target_properties (rs-pose PROPERTIES FOLDER Examples)
+    install(TARGETS rs-pose RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
