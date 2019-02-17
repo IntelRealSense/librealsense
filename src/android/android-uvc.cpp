@@ -47,7 +47,7 @@ namespace librealsense {
 
             int status = uvc_set_ctrl(_device.get(), xu.unit, ctrl, (void *) data, len);
             if (status < 0)
-                LOGE("SetXU result:%d", status);
+                LOG_ERROR("SetXU result:" << status);
 
             poll_interrupts();
 

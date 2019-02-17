@@ -6,16 +6,13 @@
 #include "libuvc/utlist.h"
 
 #include "concurrency.h"
-#include "types.h"
-
 #include "../../types.h"
 #include "../../libuvc/utlist.h"
+
 #include <vector>
 #include <thread>
 #include <atomic>
 #include <zconf.h>
-#include <syslog.h>
-
 
 // Data structures for Backend-Frontend queue:
 struct frame;
@@ -313,7 +310,7 @@ uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device
     }
 
     if (if_desc == NULL) {
-        LOGD("Error uvc scan control invalid device!");
+        LOG_DEBUG("Error uvc scan control invalid device!");
         return UVC_ERROR_INVALID_DEVICE;
     }
 
@@ -338,7 +335,7 @@ uvc_error_t usbhost_uvc_scan_control(usbhost_uvc_device *dev, usbhost_uvc_device
         buffer_left -= block_size;
         buffer += block_size;
     }
-    //LOGD("usbhost_uvc_scan_control() complete!");
+    //LOG_DEBUG("usbhost_uvc_scan_control() complete!");
     return ret;
 }
 
@@ -834,7 +831,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
 
     if (header_len > payload_len)
     {
-        LOGE("bogus packet: actual_len=%zd, header_len=%d", payload_len, header_len);
+        LOG_ERROR("bogus packet: actual_len=" << payload_len << ", header_len=" << header_len);
         return;
     }
 
@@ -850,7 +847,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
         header_info = payload[1];
 
         if (header_info & 0x40) {
-            LOGE("bad packet: error bit set");
+            LOG_ERROR("bad packet: error bit set");
             return;
         }
 
@@ -858,7 +855,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
             /* The frame ID bit was flipped, but we have image data sitting
             around from prior transfers. This means the camera didn't send
             an EOF for the last transfer of the previous frame. */
-            LOGW("complete buffer : length %zd", strmh->got_bytes);
+            LOG_WARNING("complete buffer : length " << strmh->got_bytes);
             usbhost_uvc_swap_buffers(strmh);
         }
 
@@ -889,7 +886,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
 
             memcpy(fp->pixels.data(), payload, data_len + header_len);
 
-            LOGD("Passing packet to user CB with size %d:", (data_len + header_len));
+            LOG_DEBUG("Passing packet to user CB with size " << (data_len + header_len));
             librealsense::platform::frame_object fo{ data_len, header_len,
                                                      fp->pixels.data() + header_len , fp->pixels.data() };
             fp->fo = fo;
@@ -898,7 +895,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
         }
         else
         {
-            LOGW("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
+            LOG_WARNING("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
         }
     }
 }
@@ -932,12 +929,12 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
             }
         }
     });
-    LOGD("Transfer thread started for endpoint address: %2x", strctx->endpoint);
+    LOG_DEBUG("Transfer thread started for endpoint address: " << strctx->endpoint);
     do {
         int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
         {
-            LOGE("Read pipe returned error and was clear halted ERROR: %s", strerror(errno));
+            LOG_ERROR("Read pipe returned error and was clear halted ERROR:" << strerror(errno));
             break;
         }
         strctx->stream->got_bytes = res;
@@ -954,7 +951,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     keep_sending_callbacks = false;
     t.join();
 
-    LOGD("Transfer thread stopped for endpoint address: %02x", ep);
+    LOG_DEBUG("Transfer thread stopped for endpoint address: " << ep);
 };
 
 uvc_error_t usbhost_uvc_stream_start(
@@ -1158,7 +1155,7 @@ usbhost_uvc_query_stream_ctrl(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
     } while (err < 0 && retries++ < 5);
 
     if (err <= 0) {
-        LOGE("Probe-commit control transfer failed with errno: %d - %s", errno, strerror(errno));
+        LOG_ERROR("Probe-commit control transfer failed with errno: " << errno << " - " << strerror(errno));
         return (uvc_error_t) err;
     }
 
@@ -1667,7 +1664,7 @@ void usbhost_uvc_parse_config_descriptors(usb_descriptor_iter *it,
                                             reinterpret_cast<unsigned char *>(prev);
                 curInterface->extra =
                         reinterpret_cast<unsigned char *>(prev) + sizeof(usb_interface_descriptor);
-                //LOGD("Saved extra length in end: %d", curInterface->extraLength);
+                //LOG_DEBUG("Saved extra length in end: %d", curInterface->extraLength);
             }
         } else if (h->bDescriptorType == USB_DT_INTERFACE) {
             curDescriptor = (usb_interface_descriptor *) h;
@@ -1676,23 +1673,23 @@ void usbhost_uvc_parse_config_descriptors(usb_descriptor_iter *it,
                                             reinterpret_cast<unsigned char *>(prev);
                 curInterface->extra =
                         reinterpret_cast<unsigned char *>(prev) + sizeof(usb_interface_descriptor);
-                //LOGD("Saved extra length: %d", curInterface->extraLength);
+                //LOG_DEBUG("Saved extra length: %d", curInterface->extraLength);
             }
             prev = h;
             curInterface = &descInterfaces->iface[curDescriptor->bInterfaceNumber];
             memcpy(&curInterface->desc, curDescriptor, curDescriptor->bLength);
             curInterface->winusbInterfaceNumber = descInterfaces->numInterfaces;
-            //LOGD("Found interface number %d ",curDescriptor->bInterfaceNumber);
+            //LOG_DEBUG("Found interface number %d ",curDescriptor->bInterfaceNumber);
             descInterfaces->numInterfaces++;
         } else if (h->bDescriptorType == USB_DT_ENDPOINT) {
             memcpy(&curInterface->endpoints[curInterface->numEndpoints], h, h->bLength);
-            /*LOGD("Found endpoint: %x for interface number %d ",
+            /*LOG_DEBUG("Found endpoint: %x for interface number %d ",
                  curInterface->endpoints[curInterface->numEndpoints].bEndpointAddress,
                  curInterface->winusbInterfaceNumber);*/
             curInterface->numEndpoints++;
         }
     } while (h);
-    //LOGD("Finished parsing descriptors!");
+    //LOG_DEBUG("Finished parsing descriptors!");
     *interfaces = descInterfaces;
 }
 
@@ -1722,7 +1719,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     byte *descriptors = NULL;
     uvc_error_t ret = UVC_SUCCESS;
 
-    //LOGD("usbhost_open() device: %s", device->deviceHandle->dev_name);
+    //LOG_DEBUG("usbhost_open() device: %s", device->deviceHandle->dev_name);
     device->streams = NULL;
 
     // Start by clearing deviceData, otherwise
@@ -1731,7 +1728,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
     memset(&device->deviceData, 0, sizeof(usbhost_uvc_device_info_t));
 
     if (!device->device) {
-        LOGE("usb_device_new() failed to create usb device!");
+        LOG_ERROR("usb_device_new() failed to create usb device!");
         ret = UVC_ERROR_INVALID_PARAM;
         goto fail;
     }
@@ -1742,28 +1739,28 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
                                                                USB_DT_CONFIG,
                                                                0);
     if (cfgDesc == NULL) {
-        LOGE("usb_device_new() failed cannot get config descriptor!");
+        LOG_ERROR("usb_device_new() failed cannot get config descriptor!");
         ret = UVC_ERROR_INVALID_PARAM;
         goto fail;
     }
     device->deviceData.config = *cfgDesc;
-    //LOGD("usbhost_open() parsing descriptors: %s", device->deviceHandle->dev_name);
+    //LOG_DEBUG("usbhost_open() parsing descriptors: %s", device->deviceHandle->dev_name);
     // Iterate over all descriptors and parse all Interface and Endpoint descriptors
     usb_descriptor_iter it;
     usb_descriptor_iter_init(device->device->get_handle(), &it);
     usbhost_uvc_parse_config_descriptors(&it,
                                          &interfaces);
-    //LOGD("usbhost_open() parsing descriptors complete found %d interfaces",interfaces->numInterfaces);
+    //LOG_DEBUG("usbhost_open() parsing descriptors complete found %d interfaces",interfaces->numInterfaces);
 
     device->deviceData.interfaces = interfaces;
 
 
-    //LOGD("usbhost_open() usbhost_uvc_scan_control");
+    //LOG_DEBUG("usbhost_open() usbhost_uvc_scan_control");
 
     // Fill fields of uvc_device_info on device
     ret = usbhost_uvc_scan_control(device, &device->deviceData, InterfaceNumber);
     if (ret != UVC_SUCCESS) {
-        LOGE("uvc_scan_control failed\n");
+        LOG_ERROR("uvc_scan_control failed\n");
         goto fail;
     }
 
@@ -1782,7 +1779,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber) {
             device->device = NULL;
         }
     }
-    LOGE("usbhost_open() failed! %d", ret);
+    LOG_ERROR("usbhost_open() failed! " << ret);
     return ret;
 }
 

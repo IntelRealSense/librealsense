@@ -1,5 +1,6 @@
 #include "device_watcher.h"
 #include <vector>
+#include <jni.h>
 #include "usb_device.h"
 #include "../../backend.h"
 
@@ -37,7 +38,8 @@ std::vector<platform::uvc_device_info> device_watcher::query_uvc_devices() {
                 device_info.mi = iad.get_mi();
                 device_info.unique_id = dev->get_file_descriptor();
                 device_info.device_path = dev->get_name();
-                LOGD("Found UVC Device vid:%04x pid:%04x mi:%02x path: %s",device_info.vid,device_info.pid,device_info.mi,device_info.device_path.c_str());
+                LOG_DEBUG("Found UVC Device vid: " << device_info.vid << ", pid: " << device_info.pid <<
+                          ", mi: " << device_info.mi << ", path: " << device_info.device_path.c_str());
                 devices.push_back(device_info);
             }
         }

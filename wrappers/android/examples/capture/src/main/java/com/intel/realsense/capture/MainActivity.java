@@ -22,7 +22,7 @@ import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "lrs capture example";
+    private static final String TAG = "librs capture example";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
     private boolean mPermissionsGrunted = false;

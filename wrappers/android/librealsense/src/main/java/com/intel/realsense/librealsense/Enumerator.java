@@ -16,7 +16,7 @@ import android.util.Log;
  * Notify regarding attach/detach events of a realsense device
  */
 class Enumerator {
-    private static final String TAG = "lrs Enumerator";
+    private static final String TAG = "librs Enumerator";
 
     private Context mContext;
     private DeviceListener mListener;

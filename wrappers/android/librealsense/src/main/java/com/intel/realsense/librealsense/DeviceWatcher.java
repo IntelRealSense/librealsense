@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 class DeviceWatcher extends LrsClass {
-    private static final String TAG = "lrs DeviceWatcher";
+    private static final String TAG = "librs DeviceWatcher";
 
     private final List<DeviceListener> mAppDeviceListener;
 

@@ -19,7 +19,7 @@ import com.intel.realsense.librealsense.GLRsSurfaceView;
 
 public class PlaybackActivity extends AppCompatActivity {
 
-    private static final String TAG = "lrs playback example";
+    private static final String TAG = "librs playback example";
     private static final int READ_REQUEST_CODE = 0;
     private Uri mUri;
     private GLRsSurfaceView mGLSurfaceView;

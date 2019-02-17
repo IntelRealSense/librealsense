@@ -15,7 +15,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.RsContext;
 
 public class DetachedActivity extends AppCompatActivity {
-    private static final String TAG = "lrs camera";
+    private static final String TAG = "librs camera";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
     private static final int PERMISSIONS_REQUEST_WRITE = 1;
 

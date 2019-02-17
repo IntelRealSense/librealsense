@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class RecordingActivity extends AppCompatActivity {
-    private static final String TAG = "lrs camera";
+    private static final String TAG = "librs camera";
 
     private GLRsSurfaceView mGLSurfaceView;
     private boolean mIsStreaming = false;
@@ -97,8 +97,6 @@ public class RecordingActivity extends AppCompatActivity {
             mGLSurfaceView.clear();
             Log.d(TAG, "try start streaming");
             try(Config cfg = new Config()) {
-                cfg.enableStream(StreamType.DEPTH, 640, 480);
-                cfg.enableStream(StreamType.COLOR, 640, 480);
                 cfg.enableRecordToFile(getFilePath());
                 mPipeline.start(cfg);
             }

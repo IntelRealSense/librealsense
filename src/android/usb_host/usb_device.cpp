@@ -1,4 +1,5 @@
 #include "usb_device.h"
+#include "../../types.h"
 
 using namespace librealsense::usb_host;
 
@@ -36,13 +37,13 @@ device::~device() {
 }
 
 bool device::add_configuration(usb_configuration &usbConfiguration) {
-    //LOGD("Usb config type: %s",descriptorTypeToString(usbConfiguration.get_descriptor()->bDescriptorType).c_str());
+    //LOG_DEBUG("Usb config type: %s",descriptorTypeToString(usbConfiguration.get_descriptor()->bDescriptorType).c_str());
     _configurations.push_back(usbConfiguration);
     return true;
 }
 
 void device::add_pipe(uint8_t ep_address, std::shared_ptr<usb_pipe> pipe) {
-    LOGD("Adding pipe at address %d ", (int) ep_address);
+    LOG_DEBUG("Adding pipe at address " << (int) ep_address);
     if (pipe != nullptr) {
         _pipes[ep_address] = pipe;
     }

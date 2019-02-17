@@ -6,9 +6,9 @@
 #include "usbhost.h"
 #include "usb_endpoint.h"
 #include <linux/usbdevice_fs.h>
-#include "android_debug.h"
 #include "android_uvc.h"
 #include <chrono>
+#include "../../types.h"
 
 using namespace librealsense::usb_host;
 
@@ -45,7 +45,7 @@ size_t usb_pipe::read_pipe(uint8_t *buffer, size_t buffer_len, unsigned int time
         bytes_copied = _request->actual_length;
     }
     else {
-        LOGW("Timeout reached waiting for response!");
+        LOG_WARNING("Timeout reached waiting for response!");
         usb_request_cancel(_request.get());
     }
     lk.unlock();
@@ -67,6 +67,6 @@ void usb_pipe::submit_request(uint8_t *buffer, size_t buffer_len) {
     _request->buffer_length = buffer_len;
     int res = usb_request_queue(_request.get());
     if(res < 0) {
-        LOGE("Cannot queue request: %s", strerror(errno));
+        LOG_ERROR("Cannot queue request: " << strerror(errno));
     }
 }

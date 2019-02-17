@@ -5,7 +5,6 @@
 #pragma once
 
 #include "usbhost.h"
-#include "android_debug.h"
 #include "usb_configuration.h"
 #include "usbhost.h"
 #include "usb_pipe.h"

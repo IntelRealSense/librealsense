@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UsbUtilities {
-    private static final String TAG = "lrs UsbUtilities";
+    private static final String TAG = "librs UsbUtilities";
     public static final String ACTION_USB_PERMISSION = "USB_CONTROL_PERMISSION";
 
     public static boolean isIntel(UsbDevice usbDevice){
