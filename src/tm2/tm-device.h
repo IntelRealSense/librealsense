@@ -29,8 +29,6 @@ namespace librealsense
         bool is_enabled() const override;
         void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
         void disconnect_controller(int id) override;
-        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
-        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             return std::vector<tagged_profile>();
@@ -77,7 +75,13 @@ namespace librealsense
         void onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame) override;
         void onControllerFrame(perc::TrackingData::ControllerFrame& frame) override;
         void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
- 
+        void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
+
+        virtual perc::Status GetLocalizationData(Listener* listener);
+        virtual perc::Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer);
+//        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
+//        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
+
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
         bool is_loopback_enabled() const;

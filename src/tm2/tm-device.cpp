@@ -844,6 +844,46 @@ namespace librealsense
         }
     }
 
+    void tm2_sensor::onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame)
+    {
+        std::cout << __FUNCTION__ << " index: " << frame.chunkIndex << " is last ? " << std::boolalpha << frame.moreData << std::endl;
+    }
+
+
+    perc::Status tm2_sensor::GetLocalizationData(Listener* listener)
+    {
+//        if (listener == NULL)
+//        {
+//            LOG_ERROR("Error: Invalid parameters: listener = %p, length = %d", listener);
+//            return Status::ERROR_PARAMETER_INVALID;
+//        }
+
+        // Evgeni
+//      MessageON_ASYNC_START setMsg(listener, SLAM_GET_LOCALIZATION_DATA, 0, NULL);
+//      mDispatcher->sendMessage(&mFsm, setMsg);
+//      return setMsg.Result == 0 ? Status::SUCCESS : Status::COMMON_ERROR;
+        return Status::COMMON_ERROR;
+        //return _tm_dev->GetLocalizationData(this);
+    }
+
+    perc::Status tm2_sensor::SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer)
+    {
+        // Evgeni - should not be invoked
+        return Status::COMMON_ERROR;
+
+//        if ((listener == NULL ) || (length <= 0) || (buffer == NULL))
+//        {
+//            LOG_ERROR("Error: Invalid parameters: listener = %p, buffer = %p, length = %d", listener, buffer, length);
+//            return Status::ERROR_PARAMETER_INVALID;
+//        }
+
+//        MessageON_ASYNC_START setMsg(this, SLAM_SET_LOCALIZATION_DATA_STREAM, length, buffer);
+//        mDispatcher->sendMessage(&mFsm, setMsg);
+
+//        return setMsg.Result == 0 ? Status::SUCCESS : Status::COMMON_ERROR;
+    }
+
+
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -964,14 +1004,27 @@ namespace librealsense
 
     bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
     {
-        LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
-        return false;
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("TM2 device is not available");
+
+        Status stat = _tm_dev->GetLocalizationData(this);
+        if (Status::SUCCESS == stat)
+        {
+            LOG_WARNING(__FUNCTION__ << " Started");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            LOG_WARNING(__FUNCTION__ << " Finished");
+        }
+        else
+            LOG_WARNING(__FUNCTION__ << " GetLocalizationData failed, status " << stat);
     }
 
     bool tm2_sensor::import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const
     {
-        LOG_WARNING(__FUNCTION__ << " not implemented, TODO");
-        return false;
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("TM2 device is not available");
+
+        LOG_WARNING(__FUNCTION__ << " in progress");
+       return (Status::SUCCESS == _tm_dev->SetLocalizationData(this,lmap_buf.size(),lmap_buf.data()));
     }
 
     TrackingData::Temperature tm2_sensor::get_temperature()
