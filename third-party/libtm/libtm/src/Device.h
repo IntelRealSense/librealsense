@@ -67,6 +67,7 @@ namespace perc
         virtual Status SetGeoLocation(const TrackingData::GeoLocalization& geoLocation);
         virtual Status EepromRead(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual);
         virtual Status EepromWrite(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual, bool verify = false);
+        virtual Status SetLowPowerMode(bool enable);
         virtual Status Reset(void);
         virtual Status SetCalibration(const TrackingData::CalibrationData& calibrationData);
         virtual Status SendFrame(const TrackingData::VelocimeterFrame& frame);
@@ -95,6 +96,7 @@ namespace perc
         virtual Status DevEepromLock(uint32_t lockValue);
 
         virtual void putBufferBack(SensorId id, std::shared_ptr<uint8_t>& frame);
+        virtual void WakeFW();
 
         // [USB States]
         typedef enum {
@@ -136,9 +138,9 @@ namespace perc
 
         /* The timeout that USB transfer should wait before giving up due to no response being received */
         enum {
-            USB_TRANSFER_FAST_TIMEOUT_MS = 100,    /* Most of the messages uses fast timeout                                               */
-            USB_TRANSFER_MEDIUM_TIMEOUT_MS = 5000, /* All Control messages + Start/Stop/GetTemperature may need medium timeout to complete */
-            USB_TRANSFER_SLOW_TIMEOUT_MS = 16000,  /* Controller connect/disconnect may need slow timeout to complete                      */
+            USB_TRANSFER_FAST_TIMEOUT_MS = 100,    /* Most of the messages uses fast timeout                                                        */
+            USB_TRANSFER_MEDIUM_TIMEOUT_MS = 5000, /* All Control messages + Start/Stop/GetTemperature/LowPower may need medium timeout to complete */
+            USB_TRANSFER_SLOW_TIMEOUT_MS = 16000,  /* Controller connect/disconnect may need slow timeout to complete                               */
         };
 
         // [State] IDLE
@@ -384,6 +386,7 @@ namespace perc
         Status DeviceFlush();
         Status SetDeviceStreamConfig(uint32_t maxSize);
         Status GetInterfaceVersionInternal();
+        Status SetLowPowerModeInternal(bool enable);
         interface_version_libtm_message mFWInterfaceVersion;
         TrackingData::DeviceInfo::UsbConnectionDescriptor mUsbDescriptor;
         Status SyncTime();
@@ -405,6 +408,7 @@ namespace perc
 
         bool mPlaybackIsOn;
         bool mSyncTimeEnabled;
+        uint64_t mWakeFWTime;
         DEVICE_USB_STATE mUsbState;
         Status mDeviceStatus;
 
