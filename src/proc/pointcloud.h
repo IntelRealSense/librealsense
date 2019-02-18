@@ -9,7 +9,7 @@ namespace librealsense
 {
     class occlusion_filter;
 
-    class pointcloud : public stream_filter_processing_block
+    class LRS_EXTENSION_API pointcloud : public stream_filter_processing_block
     {
     public:
         static std::shared_ptr<pointcloud> create();

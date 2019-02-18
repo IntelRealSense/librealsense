@@ -53,7 +53,7 @@ int main(int argc, char** argv) try
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
-    while (cvGetWindowHandle(window_name))
+    while (getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
@@ -124,7 +124,7 @@ int main(int argc, char** argv) try
 
                 rectangle(color_mat, Rect(Point(center.x, center.y - labelSize.height),
                     Size(labelSize.width, labelSize.height + baseLine)),
-                    Scalar(255, 255, 255), CV_FILLED);
+                    Scalar(255, 255, 255), FILLED);
                 putText(color_mat, ss.str(), center,
                         FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
             }
