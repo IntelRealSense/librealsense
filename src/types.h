@@ -40,6 +40,7 @@
 #include <functional>
 #include <utility>                          // For std::forward
 #include <limits>
+#include <iomanip>
 
 #include "backend.h"
 #include "concurrency.h"
@@ -50,10 +51,6 @@
 typedef unsigned char byte;
 
 const int RS2_USER_QUEUE_SIZE = 128;
-
-#ifndef DBL_EPSILON
-const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
-#endif
 
 // Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
 static const double pi = std::acos(-1);
@@ -129,6 +126,37 @@ namespace librealsense
         }
         return false;
     }
+
+    template<class T>
+    std::string hexify(const T& val)
+    {
+        static_assert((std::is_integral<T>::value), "hexify supports integral built-in types only");
+
+        std::ostringstream oss;
+        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << val;
+        return oss.str().c_str();
+    }
+
+
+//    inline std::string hexify1(unsigned char n) // TODO remove Evgeni
+//    {
+//        std::string res;
+
+//        do
+//        {
+//            res += "0123456789ABCDEF"[n % 16];
+//            n >>= 4;
+//        } while (n);
+
+//        reverse(res.begin(), res.end());
+
+//        if (res.size() == 1)
+//        {
+//            res.insert(0, "0");
+//        }
+
+//        return res;
+//    }
 
     void copy(void* dst, void const* src, size_t size);
 

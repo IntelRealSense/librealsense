@@ -16,6 +16,11 @@
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
         return s##T##_##X##_str.c_str(); }
 
+//#ifndef DBL_EPSILON
+//const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
+//#endif
+constexpr double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
+
 namespace librealsense
 {
     std::string make_less_screamy(const char* str)
@@ -473,7 +478,7 @@ namespace librealsense
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));
         double r1 = rot[0], r2 = rot[1], r3 = rot[2];
-        if (theta <= sqrt(DBL_EPSILON)) // identityMatrix
+        if (theta <= SQRT_DBL_EPSILON) // identityMatrix
         {
             rot_mat(0, 0) = rot_mat(1, 1) = rot_mat(2, 2) = 1.0;
             rot_mat(0, 1) = rot_mat(0, 2) = rot_mat(1, 0) = rot_mat(1, 2) = rot_mat(2, 0) = rot_mat(2, 1) = 0.0;

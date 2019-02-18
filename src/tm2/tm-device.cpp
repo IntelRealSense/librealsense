@@ -1006,8 +1006,10 @@ namespace librealsense
             throw io_exception("Failed to get device info");
         }
 
-        std::string vendorIdStr = to_string() << std::hex << info.usbDescriptor.idVendor;
-        std::string productIdStr = to_string() << std::hex << info.usbDescriptor.idProduct;
+        //std::string vendorIdStr = to_string() << std::hex << info.usbDescriptor.idVendor;
+        //std::string productIdStr = to_string() << std::hex << info.usbDescriptor.idProduct;
+        std::string vendorIdStr = hexify(info.usbDescriptor.idVendor);
+        std::string productIdStr = hexify(info.usbDescriptor.idProduct);
 
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << std::hex << (info.serialNumber >> 16));

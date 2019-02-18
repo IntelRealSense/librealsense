@@ -207,7 +207,8 @@ namespace librealsense
         _camer_calib_params = [this]() { return get_calibration(); };
         enable_timestamp(true, true);
 
-        auto pid_hex_str = hexify(color.pid>>8) + hexify(static_cast<uint8_t>(color.pid));
+        //Evgeni auto pid_hex_str = hexify(color.pid>>8) + hexify(static_cast<uint8_t>(color.pid));
+        auto pid_hex_str = hexify(color.pid);
 
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);

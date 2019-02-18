@@ -418,7 +418,8 @@ namespace librealsense
             depth_ep.register_pixel_format(pf_y12i); // L+R - Calibration not rectified
         }
 
-        auto pid_hex_str = hexify(pid >> 8) + hexify(static_cast<uint8_t>(pid));
+        //auto pid_hex_str = hexify(pid >> 8) + hexify(static_cast<uint8_t>(pid));
+        auto pid_hex_str = hexify(pid);
 
         std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
