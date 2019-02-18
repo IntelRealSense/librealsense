@@ -9,6 +9,16 @@
 #include <core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h"
+#include "proc/disparity-transform.h"
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
+#include "ds5/ds5-color.h"
+#include "ds5/ds5-device.h"
+#include "ivcam/sr300.h"
+#include "l500/l500.h"
 
 namespace librealsense
 {
@@ -802,7 +812,157 @@ namespace librealsense
                 }
             }
         }
+        void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name)
+        {
+            if (version == legacy_file_format::file_version())
+            {
+                LOG_DEBUG("Not updating proccesing_blocks from legacy files");
+                return;
+            }
+            auto options_snapshot = sensor_extensions.find(RS2_EXTENSION_OPTIONS);
+            if (options_snapshot == nullptr)
+            {
+                LOG_WARNING("Recorded file does not contain sensor options");
+            }
+            auto options_api = As<options_interface>(options_snapshot);
+            if (options_api == nullptr)
+            {
+                throw invalid_value_exception("Failed to get options interface from sensor snapshots");
+            }
+            auto proccesing_blocks = read_proccesing_blocks(file, { get_device_index(), sensor_index }, time, options_api, file_version, pid, sensor_name);
+            sensor_extensions[RS2_EXTENSION_RECOMMENDED_FILTERS] = proccesing_blocks;
+        }
 
+        bool is_depth_sensor(std::string sensor_name)
+        {
+            if (sensor_name.compare("Stereo Module") == 0 || sensor_name.compare("Coded-Light Depth Sensor") == 0)
+                return true;
+            return false;
+        }
+
+        bool is_color_sensor(std::string sensor_name)
+        {
+            if (sensor_name.compare("RGB Camera") == 0)
+                return true;
+            return false;
+        }
+
+        bool is_ds5_PID(int pid)
+        {
+            using namespace ds;
+
+            std::vector<int> ds5_PIDs =
+            {
+                RS400_PID, RS410_PID, RS415_PID, RS430_PID, RS430_MM_PID,
+                RS_USB2_PID, RS400_IMU_PID, RS420_PID, RS420_MM_PID,
+                RS410_MM_PID, RS400_MM_PID, RS430_MM_RGB_PID, RS460_PID,
+                RS435_RGB_PID, RS405_PID, RS435I_PID
+            };
+
+            for (auto ds5_pid : ds5_PIDs)
+            {
+                if(pid == ds5_pid)
+                    return true;
+            }
+            return false;
+
+        }
+
+        bool is_sr300_PID(int pid)
+        {
+            using namespace ds;
+
+            std::vector<int> sr300_PIDs =
+            {
+                SR300_PID,
+                SR300v2_PID
+            };  
+
+            for (auto sr300_pid : sr300_PIDs)
+            {
+                if (pid == sr300_pid)
+                    return true;
+            }
+            return false;
+        }
+        bool is_l500_PID(int pid)
+        {
+            using namespace ds;
+
+            if (pid == L500_PID)
+                return true;
+            return false;
+        }
+        std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks_for_old_version_file(std::string pid, std::string sensor_name, std::shared_ptr<options_interface> options)
+        {
+            std::stringstream ss;
+            ss << pid;
+            int int_pid;
+            ss >> std::hex >> int_pid;
+
+            if (is_ds5_PID(int_pid))
+            {
+                if (is_depth_sensor(sensor_name))
+                {
+                    return std::make_shared<recommended_proccesing_blocks_snapshot>(get_ds5_depth_recommended_proccesing_blocks());
+                }
+                else if (is_color_sensor(sensor_name))
+                {
+                    return std::make_shared<recommended_proccesing_blocks_snapshot>(ds5_color_sensor::get_ds5_color_recommended_proccesing_blocks());
+                }
+                throw io_exception("Un-recognized sensor name");
+            }
+
+            if (is_sr300_PID(int_pid))
+            {
+                if (is_depth_sensor(sensor_name))
+                {
+                    return std::make_shared<recommended_proccesing_blocks_snapshot>(sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks());
+                }
+                else if (is_color_sensor(sensor_name))
+                {
+                    return std::make_shared<recommended_proccesing_blocks_snapshot>(sr300_camera::sr300_color_sensor::get_sr300_color_recommended_proccesing_blocks());
+                }
+                throw io_exception("Unrecognized sensor name");
+            }
+
+            throw io_exception("Unrecognized device");
+        }
+
+        std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, 
+            std::shared_ptr<options_interface> options, uint32_t file_version, std::string pid, std::string sensor_name)
+        {
+            processing_blocks blocks;
+            std::shared_ptr<recommended_proccesing_blocks_snapshot> res;
+
+            if (file_version <= 2 )
+            {
+                return read_proccesing_blocks_for_old_version_file(pid, sensor_name, options);
+            }
+            else
+            {
+                //Taking all messages from the beginning of the bag until the time point requested
+                std::string proccesing_block_topic = ros_topic::post_processing_blocks_topic(sensor_id);
+                rosbag::View option_view(file, rosbag::TopicQuery(proccesing_block_topic), to_rostime(get_static_file_info_timestamp()), to_rostime(timestamp));
+                auto it = option_view.begin();
+                
+                auto depth_to_disparity = true;
+
+                rosbag::View::iterator last_item;
+                while (it != option_view.end())
+                {
+                    last_item = it++;
+                   
+                    auto block = create_processing_block(*last_item, depth_to_disparity, options);
+                    assert(block);
+                    blocks.push_back(block);
+                }
+                
+                res = std::make_shared<recommended_proccesing_blocks_snapshot>(blocks);
+            }
+            return res;
+        }
+       
         device_snapshot read_device_description(const nanoseconds& time, bool reset = false)
         {
             if (time == get_static_file_info_timestamp())
@@ -847,6 +1007,16 @@ namespace librealsense
                         //Update options
                         update_sensor_options(m_file, sensor_index, time, m_version, sensor_extensions, m_version);
 
+                        std::string pid = "";
+                        std::string sensor_name = "";
+
+                        if (info->supports_info(RS2_CAMERA_INFO_PRODUCT_ID))
+                            pid = info->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+
+                        if(sensor_info->supports_info(RS2_CAMERA_INFO_NAME))
+                            sensor_name = sensor_info->get_info(RS2_CAMERA_INFO_NAME);
+
+                        update_proccesing_blocks(m_file, sensor_index, time, m_version, sensor_extensions, m_version, pid, sensor_name);
                         sensor_descriptions.emplace_back(sensor_index, sensor_extensions, streams_snapshots);
                     }
 
@@ -1167,6 +1337,37 @@ namespace librealsense
             float value = option_value_msg->data;
             std::string description = read_option_description(file, ros_topic::option_description_topic(sensor_id, id));
             return std::make_pair(id, std::make_shared<const_value_option>(description, value));
+        }
+
+        static std::shared_ptr<librealsense::processing_block_interface> create_processing_block(const rosbag::MessageInstance& value_message_instance, bool& depth_to_disparity, std::shared_ptr<options_interface> options)
+        {
+            auto processing_block_msg = instantiate_msg<std_msgs::String>(value_message_instance);
+            rs2_extension id;
+            convert(processing_block_msg->data, id);
+            std::shared_ptr<librealsense::processing_block_interface> disparity;
+            std::shared_ptr<int> zo_point_x;
+            std::shared_ptr<int> zo_point_y;
+
+            switch (id)
+            {
+            case RS2_EXTENSION_DECIMATION_FILTER:
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_DECIMATION_FILTER>::type>();
+            case RS2_EXTENSION_THRESHOLD_FILTER:
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_THRESHOLD_FILTER>::type>();
+            case RS2_EXTENSION_DISPARITY_FILTER:
+                disparity = std::make_shared< ExtensionToType<RS2_EXTENSION_DISPARITY_FILTER>::type>(depth_to_disparity);
+                depth_to_disparity = false;
+                return disparity;
+            case RS2_EXTENSION_SPATIAL_FILTER:
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_SPATIAL_FILTER>::type>();
+            case RS2_EXTENSION_TEMPORAL_FILTER:
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_TEMPORAL_FILTER>::type>();
+            case RS2_EXTENSION_HOLE_FILLING_FILTER:
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
+            default:
+                return nullptr;
+            }
+               
         }
 
         static notification create_notification(const rosbag::Bag& file, const rosbag::MessageInstance& message_instance)

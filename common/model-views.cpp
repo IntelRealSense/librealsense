@@ -861,78 +861,16 @@ namespace rs2
         }
         catch (...) {}
 
-        if (s->is<depth_sensor>())
+        for (auto&& filter : s->get_recommended_filters())
         {
-            auto colorizer = std::make_shared<processing_block_model>(
-                this, "Depth Visualization", depth_colorizer,
-                [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
-            const_effects.push_back(colorizer);
+            auto model = std::make_shared<processing_block_model>(
+                this, filter->get_info(RS2_CAMERA_INFO_NAME), filter,
+                [=](rs2::frame f) { return filter->process(f); }, error_message);
 
-            auto decimate = std::make_shared<rs2::decimation_filter>();
-            auto decimation_filter = std::make_shared<processing_block_model>(
-                this, "Decimation Filter", decimate,
-                [=](rs2::frame f) { return decimate->process(f); },
-                error_message);
-            post_processing.push_back(decimation_filter);
+            if (filter->is<disparity_transform>())
+                model->visible = false;
 
-            auto threshold = std::make_shared<rs2::threshold_filter>();
-            auto threshold_filter = std::make_shared<processing_block_model>(
-                this, "Threshold Filter", threshold,
-                [=](rs2::frame f) { return threshold->process(f); },
-                error_message);
-            post_processing.push_back(threshold_filter);
-
-            auto depth_2_disparity = std::make_shared<rs2::disparity_transform>();
-            auto depth_to_disparity = std::make_shared<processing_block_model>(
-                this, "Depth->Disparity", depth_2_disparity,
-                [=](rs2::frame f) { return depth_2_disparity->process(f); }, error_message);
-            if (s->is<depth_stereo_sensor>())
-            {
-                post_processing.push_back(depth_to_disparity);
-            }
-
-            auto spatial = std::make_shared<rs2::spatial_filter>();
-            auto spatial_filter = std::make_shared<processing_block_model>(
-                this, "Spatial Filter", spatial,
-                [=](rs2::frame f) { return spatial->process(f); },
-                error_message);
-            post_processing.push_back(spatial_filter);
-
-            auto temporal = std::make_shared<rs2::temporal_filter>();
-            auto temporal_filter = std::make_shared<processing_block_model>(
-                this, "Temporal Filter", temporal,
-                [=](rs2::frame f) { return temporal->process(f); }, error_message);
-            post_processing.push_back(temporal_filter);
-
-            auto hole_filling = std::make_shared<rs2::hole_filling_filter>();
-            auto hole_filling_filter = std::make_shared<processing_block_model>(
-                this, "Hole Filling Filter", hole_filling,
-                [=](rs2::frame f) { return hole_filling->process(f); }, error_message, false);
-            post_processing.push_back(hole_filling_filter);
-
-            auto disparity_2_depth = std::make_shared<rs2::disparity_transform>(false);
-            auto disparity_to_depth = std::make_shared<processing_block_model>(
-                this, "Disparity->Depth", disparity_2_depth,
-                [=](rs2::frame f) { return disparity_2_depth->process(f); }, error_message);
-            if (s->is<depth_stereo_sensor>())
-            {
-                // the block will be internally available, but removed from UI
-                disparity_to_depth->visible = false;
-                post_processing.push_back(disparity_to_depth);
-            }
-        }
-        else
-        {
-            rs2_error* e = nullptr;
-            if (rs2_is_sensor_extendable_to(s->get().get(), RS2_EXTENSION_VIDEO, &e) && !e)
-            {
-                auto decimate = std::make_shared<rs2::decimation_filter>();
-                auto decimation_filter = std::make_shared<processing_block_model>(
-                    this, "Decimation Filter", decimate,
-                    [=](rs2::frame f) { return decimate->process(f); },
-                    error_message);
-                post_processing.push_back(decimation_filter);
-            }
+            post_processing.push_back(model);
         }
 
         ss.str("");
@@ -3669,34 +3607,61 @@ namespace rs2
         else
             frames.push_back(f);
 
-        for (auto& f : frames)
+        auto res = f;
+
+        std::set< std::shared_ptr<subdevice_model>> subdevices;
+        for (auto f : frames)
         {
-            for (auto&& s : viewer.streams)
-            {
-                if (!s.second.dev) continue;
-                auto dev = s.second.dev;
+            auto sub = get_frame_releated_sensor(f);
+            if(sub)
+                subdevices.insert(sub);
+        }
 
-                if (s.second.original_profile.unique_id() == f.get_profile().unique_id())
-                {
-                    if (dev->post_processing_enabled)
-                    {
-                        for (auto&& pbm : s.second.dev->post_processing)
-                        {
-                            if (pbm && pbm->enabled)
-                                f = pbm->invoke(f);
-                        }
+        for (auto sub : subdevices)
+        {
+            if (!sub->post_processing_enabled)
+                continue;
 
-                        break;
-                    }
-                }
-            }
+            for(auto pp:sub->post_processing)
+                if (pp->enabled)
+                    res = pp->invoke(res);
         }
 
         // Override the zero pixel in texture frame with black color for occlusion invalidation
         // TODO - this is a temporal solution to be refactored from the app level into the core library
-        for (auto&& f : frames)
+        if (auto set = res.as<frameset>())
         {
-            auto stream_type = f.get_profile().stream_type();
+            for (auto f : set)
+            {
+                zero_occlusion_pixel(f);
+            }
+        }    
+        else
+        {
+            zero_occlusion_pixel(f);
+
+        }     
+        return res;
+    }
+
+    std::shared_ptr<subdevice_model> post_processing_filters::get_frame_releated_sensor(rs2::frame f)
+    {
+        for (auto&& s : viewer.streams)
+        {
+            if (!s.second.dev) continue;
+            auto dev = s.second.dev;
+
+            if (s.second.original_profile.unique_id() == f.get_profile().unique_id())
+            {
+                return dev;
+            }
+        }
+        return nullptr;
+    }
+
+    void post_processing_filters::zero_occlusion_pixel(rs2::frame f)
+    {
+        auto stream_type = f.get_profile().stream_type();
 
             switch (stream_type)
             {
@@ -3717,10 +3682,7 @@ namespace rs2
             break;
             default:
                 break;
-            }
         }
-
-        return source.allocate_composite_frame(frames);
     }
 
     void post_processing_filters::map_id(rs2::frame new_frame, rs2::frame old_frame)

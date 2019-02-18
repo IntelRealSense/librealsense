@@ -88,6 +88,14 @@ namespace librealsense
         }
     }
 
+    inline void convert(const std::string& source, rs2_extension& target)
+    {
+        if (!try_parse(source, target))
+        {
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+        }
+    }
+
     inline void convert(const std::string& source, rs2_frame_metadata_value& target)
     {
         if (!try_parse(source, target))
@@ -278,6 +286,11 @@ namespace librealsense
         static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
             return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "value" });
+        }
+
+        static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
         }
 
         /*version 3 and up*/
@@ -515,7 +528,7 @@ namespace librealsense
     */
     constexpr uint32_t get_file_version()
     {
-        return 3u;
+        return 4u;
     }
 
     constexpr uint32_t get_minimum_supported_file_version()

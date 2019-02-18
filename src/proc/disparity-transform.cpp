@@ -43,6 +43,7 @@ namespace librealsense
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         on_set_mode(_transform_to_disparity);
+        register_info(RS2_CAMERA_INFO_NAME, _transform_to_disparity? "Depth to Disparity": "Disparity to Depth");
     }
 
     bool disparity_transform::should_process(const rs2::frame& frame)

@@ -41,7 +41,7 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container
+    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container, public info_container
     {
     public:
         processing_block();
@@ -66,7 +66,7 @@ namespace librealsense
         virtual ~generic_processing_block() { _source.flush(); }
 
     protected:
-        rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
+        virtual rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
 
         virtual bool should_process(const rs2::frame& frame) = 0;
         virtual rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) = 0;
@@ -157,7 +157,7 @@ struct rs2_options
 
 struct rs2_processing_block : public rs2_options
 {
-    rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
+    rs2_processing_block(std::shared_ptr<librealsense::processing_block_interface> block)
         : rs2_options((librealsense::options_interface*)block.get()),
         block(block) { }
 

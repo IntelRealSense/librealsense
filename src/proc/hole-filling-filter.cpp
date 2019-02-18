@@ -51,7 +51,7 @@ namespace librealsense
         });
 
         register_option(RS2_OPTION_HOLES_FILL, hole_filling_mode);
-
+        register_info(RS2_CAMERA_INFO_NAME, "Hole Filling Filter");
     }
 
     rs2::frame hole_filling_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

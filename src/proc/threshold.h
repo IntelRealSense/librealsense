@@ -26,4 +26,5 @@ namespace librealsense
 
         float _min, _max;
     };
+    MAP_EXTENSION(RS2_EXTENSION_THRESHOLD_FILTER, librealsense::threshold);
 }

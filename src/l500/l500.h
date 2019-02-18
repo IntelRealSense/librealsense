@@ -16,6 +16,11 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "l500-private.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h" 
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -234,6 +239,31 @@ namespace librealsense
                     recording_function(*this);
                 });
             }
+
+            static processing_blocks get_l500_recommended_proccesing_blocks()
+            {
+                processing_blocks res;
+
+                auto dec = std::make_shared<decimation_filter>();
+                if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
+                {
+                    dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
+                    dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
+                    res.push_back(dec);
+                }
+                res.push_back(std::make_shared<threshold>());
+                res.push_back(std::make_shared<spatial_filter>());
+                res.push_back(std::make_shared<temporal_filter>());
+                res.push_back(std::make_shared<hole_filling_filter>());
+                return res;
+            }
+
+            processing_blocks get_recommended_proccesing_blocks() const override
+            {
+                return get_l500_recommended_proccesing_blocks();
+            };
+
+
         private:
             const l500_device* _owner;
             float _depth_units;

@@ -15,7 +15,10 @@ namespace librealsense
     class align : public generic_processing_block
     {
     public:
-        align(rs2_stream to_stream) : _to_stream_type(to_stream), _depth_scale(0){}
+        align(rs2_stream to_stream) : _to_stream_type(to_stream), _depth_scale(0)
+        {
+            register_info(RS2_CAMERA_INFO_NAME, "Align");
+        }
 
     protected:
         bool should_process(const rs2::frame& frame) override;

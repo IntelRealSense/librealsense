@@ -29,11 +29,12 @@ namespace librealsense
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
 
     class sensor_base : public std::enable_shared_from_this<sensor_base>,
-                        public virtual sensor_interface, public options_container, public virtual info_container
+                        public virtual sensor_interface, public options_container, public virtual info_container, public recommended_proccesing_blocks_base
     {
     public:
         explicit sensor_base(std::string name,
-                             device* device);
+                             device* device, 
+                             recommended_proccesing_blocks_interface* owner);
 
         virtual stream_profiles init_stream_profiles() = 0;
 
@@ -76,6 +77,10 @@ namespace librealsense
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
 
+        processing_blocks get_recommended_proccesing_blocks() const
+        {
+            return {};
+        }
     protected:
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);

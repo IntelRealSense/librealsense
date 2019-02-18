@@ -14,6 +14,12 @@
 #include "stream.h"
 #include "rosbag/bag.h"
 #include "ros_file_format.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h"
+#include "proc/disparity-transform.h"
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -443,6 +449,12 @@ namespace librealsense
                 write_streaming_info(timestamp, { device_id, sensor_id }, profile);
                 break;
             }
+            case RS2_EXTENSION_RECOMMENDED_FILTERS:
+            {
+                auto filters = SnapshotAs<RS2_EXTENSION_RECOMMENDED_FILTERS>(snapshot);
+                write_sensor_processing_blocks({ device_id, sensor_id }, timestamp, filters);
+                break;
+            }
             default:
                 throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << librealsense::get_string(type) << "\"");
             }
@@ -503,6 +515,40 @@ namespace librealsense
                 }
             }
         }
+
+        rs2_extension get_processing_block_extendable_to(const std::shared_ptr<processing_block_interface> block)
+        {
+
+            if (Is< ExtensionToType<RS2_EXTENSION_DECIMATION_FILTER>::type>(block)) return RS2_EXTENSION_DECIMATION_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_THRESHOLD_FILTER>::type>(block)) return RS2_EXTENSION_THRESHOLD_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_DISPARITY_FILTER>::type>(block)) return RS2_EXTENSION_DISPARITY_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_SPATIAL_FILTER>::type>(block)) return RS2_EXTENSION_SPATIAL_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_TEMPORAL_FILTER>::type>(block)) return RS2_EXTENSION_TEMPORAL_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>(block)) return RS2_EXTENSION_HOLE_FILLING_FILTER;
+
+            return RS2_EXTENSION_COUNT;
+        }
+
+        void write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks)
+        {
+            for (auto block : proccesing_blocks->get_recommended_proccesing_blocks())
+            {
+                try
+                {
+                    auto ext = get_processing_block_extendable_to(block);
+                    if (ext == RS2_EXTENSION_COUNT)
+                        return;
+                    std_msgs::String processing_block_msg;
+                    processing_block_msg.data = rs2_extension_type_to_string(ext);
+                    write_message(ros_topic::post_processing_blocks_topic(sensor_id), timestamp, processing_block_msg);
+                }
+                catch (std::exception& e)
+                {
+                    LOG_WARNING("Failed to get or write recommended proccesing blocks " << " for sensor " << sensor_id.sensor_index << ". Exception: " << e.what());
+                }
+            }
+        }
+
         template <typename T>
         void write_message(std::string const& topic, nanoseconds const& time, T const& msg)
         {

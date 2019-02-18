@@ -118,6 +118,13 @@ typedef enum rs2_extension
     RS2_EXTENSION_TM2,
     RS2_EXTENSION_SOFTWARE_DEVICE,
     RS2_EXTENSION_SOFTWARE_SENSOR,
+    RS2_EXTENSION_DECIMATION_FILTER,
+    RS2_EXTENSION_THRESHOLD_FILTER,
+    RS2_EXTENSION_DISPARITY_FILTER,
+    RS2_EXTENSION_SPATIAL_FILTER,
+    RS2_EXTENSION_TEMPORAL_FILTER,
+    RS2_EXTENSION_HOLE_FILLING_FILTER,
+    RS2_EXTENSION_RECOMMENDED_FILTERS,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
@@ -155,6 +162,7 @@ typedef struct rs2_pipeline_profile rs2_pipeline_profile;
 typedef struct rs2_config rs2_config;
 typedef struct rs2_device_list rs2_device_list;
 typedef struct rs2_stream_profile_list rs2_stream_profile_list;
+typedef struct rs2_processing_block_list rs2_processing_block_list;
 typedef struct rs2_stream_profile rs2_stream_profile;
 typedef struct rs2_frame_callback rs2_frame_callback;
 typedef struct rs2_log_callback rs2_log_callback;

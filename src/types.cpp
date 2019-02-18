@@ -10,6 +10,7 @@
 #include <numeric>
 #include <fstream>
 #include <cmath>
+#include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
@@ -178,6 +179,14 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
+            CASE(DECIMATION_FILTER)
+            CASE(THRESHOLD_FILTER)
+            CASE(DISPARITY_FILTER)
+            CASE(SPATIAL_FILTER)
+            CASE(TEMPORAL_FILTER)
+            CASE(HOLE_FILLING_FILTER)
+            CASE(RECOMMENDED_FILTERS)
+
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

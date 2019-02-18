@@ -144,6 +144,7 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
         register_option(RS2_OPTION_HOLES_FILL, holes_filling_mode);
+        register_info(RS2_CAMERA_INFO_NAME, "Spatial Filter");
     }
 
     rs2::frame spatial_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

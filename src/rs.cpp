@@ -47,6 +47,11 @@ struct rs2_stream_profile_list
     std::vector<std::shared_ptr<stream_profile_interface>> list;
 };
 
+struct rs2_processing_block_list
+{
+    processing_blocks list;
+};
+
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor(rs2_device parent,
@@ -1099,6 +1104,25 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
+int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(f);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+        
+    case RS2_EXTENSION_DECIMATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::decimation_filter) != nullptr;
+    case RS2_EXTENSION_THRESHOLD_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::threshold) != nullptr;
+    case RS2_EXTENSION_DISPARITY_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::disparity_transform) != nullptr;
+    case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
+    case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
+    case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
+  
+    default:
+        return false;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(f);
@@ -2082,3 +2106,54 @@ void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error**
     tm2->disconnect_controller(id);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    return new rs2_processing_block_list{ sensor->sensor->get_recommended_proccesing_blocks() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
+
+rs2_processing_block* rs2_get_processing_block(const rs2_processing_block_list* list, int index, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
+
+    return new rs2_processing_block(list->list[index]);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
+
+int rs2_get_recommended_processing_blocks_count(const rs2_processing_block_list* list, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    return static_cast<int>(list->list.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, list)
+
+void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+NOEXCEPT_RETURN(, list)
+
+const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_ENUM(info);
+    if (block->block->supports_info(info))
+    {
+        return block->block->get_info(info).c_str();
+    }
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, block, info)
+
+int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_ENUM(info);
+    return block->block->supports_info(info);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, block, info)
+

@@ -6,7 +6,9 @@
 
 #include "rs_types.hpp"
 #include "rs_frame.hpp"
-#include "rs_context.hpp"
+#include <string>
+#include <map>
+#include "rs_options.hpp"
 
 namespace rs2
 {
@@ -204,6 +206,7 @@ namespace rs2
     class processing_block : public options
     {
     public:
+        using options::supports;
         /**
         * Start the processing block with callback function on_frame to inform the application the frame is processed.
         *
@@ -271,6 +274,31 @@ namespace rs2
         operator rs2_options*() const { return (rs2_options*)get(); }
         rs2_processing_block* get() const { return _block.get(); }
 
+        /**
+        * check if specific camera info is supported
+        * \param[in] info    the parameter to check for support
+        * \return                true if the parameter both exist and well-defined for the specific sensor
+        */
+        bool supports(rs2_camera_info info) const
+        {
+            rs2_error* e = nullptr;
+            auto is_supported = rs2_supports_processing_block_info(_block.get(), info, &e);
+            error::handle(e);
+            return is_supported > 0;
+        }
+
+        /**
+        * retrieve camera specific information, like versions of various internal components
+        * \param[in] info     camera info type to retrieve
+        * \return             the requested camera info string, in a format specific to the sensor model
+        */
+        const char* get_info(rs2_camera_info info) const
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_get_processing_block_info(_block.get(), info, &e);
+            error::handle(e);
+            return result;
+        }
     protected:
         void register_simple_option(rs2_option option_id, option_range range) {
             rs2_error * e = nullptr;
@@ -326,10 +354,24 @@ namespace rs2
         {
             start(_queue);
         }
+  
 
         frame_queue get_queue() { return _queue; }
         rs2_processing_block* get() const { return _block.get(); }
 
+        template<class T>
+        bool is() const
+        {
+            T extension(*this);
+            return extension;
+        }
+
+        template<class T>
+        T as() const
+        {
+            T extension(*this);
+            return extension;
+        }
     protected:
         frame_queue _queue;
     };
@@ -450,7 +492,15 @@ namespace rs2
             set_option(RS2_OPTION_MIN_DISTANCE, min_dist);
             set_option(RS2_OPTION_MAX_DISTANCE, max_dist);
         }
-
+        threshold_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_THRESHOLD_FILTER, &e))
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
     protected:
         threshold_filter(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
         
@@ -668,6 +718,16 @@ namespace rs2
             set_option(RS2_OPTION_FILTER_MAGNITUDE, magnitude);
         }
 
+        decimation_filter(filter f):filter(f)
+        {
+             rs2_error* e = nullptr;
+             if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DECIMATION_FILTER, &e))
+             {
+                 _block.reset();
+             }
+             error::handle(e);
+        }
+       
     private:
         friend class context;
 
@@ -720,6 +780,15 @@ namespace rs2
             set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, float(smooth_delta));
         }
 
+        temporal_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_TEMPORAL_FILTER, &e))
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
     private:
         friend class context;
 
@@ -767,6 +836,15 @@ namespace rs2
             set_option(RS2_OPTION_HOLES_FILL, hole_fill);
         }
 
+        spatial_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_SPATIAL_FILTER, &e))
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
     private:
         friend class context;
 
@@ -794,6 +872,15 @@ namespace rs2
         */
         disparity_transform(bool transform_to_disparity = true) : filter(init(transform_to_disparity), 1) { }
 
+        disparity_transform(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DISPARITY_FILTER, &e))
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
     private:
         friend class context;
         std::shared_ptr<rs2_processing_block> init(bool transform_to_disparity)
@@ -833,6 +920,15 @@ namespace rs2
             set_option(RS2_OPTION_HOLES_FILL, float(mode));
         }
 
+        hole_filling_filter(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_HOLE_FILLING_FILTER, &e))
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
     private:
         friend class context;
 

@@ -80,6 +80,11 @@ namespace librealsense
             : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(-1)
         {}
 
+        processing_blocks get_recommended_proccesing_blocks() const override
+        {
+            return get_ds5_depth_recommended_proccesing_blocks();
+        };
+
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
             return get_intrinsic_by_resolution(

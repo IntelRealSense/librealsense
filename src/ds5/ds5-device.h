@@ -10,6 +10,12 @@
 #include "core/debug.h"
 #include "core/advanced_mode.h"
 #include "device.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h"
+#include "proc/disparity-transform.h"
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -97,4 +103,23 @@ namespace librealsense
     public:
         notification decode(int value) override;
     };
+
+    static processing_blocks get_ds5_depth_recommended_proccesing_blocks()
+    {
+        processing_blocks res;
+        auto dec = std::make_shared<decimation_filter>();
+        if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
+        {
+            dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
+            dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
+            res.push_back(dec);
+        }
+        res.push_back(std::make_shared<threshold>());
+        res.push_back(std::make_shared<disparity_transform>(true));
+        res.push_back(std::make_shared<spatial_filter>());
+        res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
+        res.push_back(std::make_shared<disparity_transform>(false));
+        return res;
+    }
 }

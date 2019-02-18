@@ -202,6 +202,7 @@ namespace librealsense
 
         auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
+        register_info(RS2_CAMERA_INFO_NAME, "Depth Visualization");
     }
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)

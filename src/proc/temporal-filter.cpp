@@ -104,6 +104,8 @@ namespace librealsense
         on_set_persistence_control(_persistence_param);
         on_set_delta(_delta_param);
         on_set_alpha(_alpha_param);
+
+        register_info(RS2_CAMERA_INFO_NAME, "Temporal Filter");
     }
 
     rs2::frame temporal_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

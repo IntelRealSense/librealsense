@@ -238,6 +238,7 @@ namespace librealsense
         });
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
+        register_info(RS2_CAMERA_INFO_NAME, "Decimation Filter");
     }
 
     rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
