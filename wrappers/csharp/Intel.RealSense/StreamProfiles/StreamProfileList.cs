@@ -42,13 +42,17 @@ namespace Intel.RealSense
             }
         }
 
+        public T GetProfile<T>(int index) where T : StreamProfile
+        {
+            object error;
+            return StreamProfile.Create<T>(NativeMethods.rs2_get_stream_profile(m_instance, index, out error));
+        }
+
         public StreamProfile this[int index]
         {
             get
             {
-                object error;
-                var ptr = NativeMethods.rs2_get_stream_profile(m_instance, index, out error);
-                return StreamProfile.Create(ptr);
+                return GetProfile<StreamProfile>(index);
             }
         }
 

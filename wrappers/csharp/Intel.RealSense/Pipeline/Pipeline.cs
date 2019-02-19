@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Pipeline : IDisposable, IEnumerable<FrameSet>
+    public class Pipeline : IDisposable
     {
         internal HandleRef m_instance;
         private frame_callback m_callback;
@@ -80,6 +80,15 @@ namespace Intel.RealSense
             return FrameSet.Create(ptr);
         }
 
+        public bool TryWaitForFrames(out FrameSet frames, uint timeout_ms = 5000)
+        {
+            object error;
+            IntPtr ptr;
+            bool res = NativeMethods.rs2_pipeline_try_wait_for_frames(m_instance.Handle, out ptr, timeout_ms, out error) > 0;
+            frames = res ? FrameSet.Create(ptr) : null;
+            return res;
+        }
+
         public bool PollForFrames(out FrameSet result)
         {
             object error;
@@ -93,21 +102,6 @@ namespace Intel.RealSense
             return false;
         }
 
-        public IEnumerator<FrameSet> GetEnumerator()
-        {
-            FrameSet frames;
-            while (PollForFrames(out frames))
-            {
-                yield return frames;
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -118,6 +112,7 @@ namespace Intel.RealSense
                 if (disposing)
                 {
                     // TODO: dispose managed state (managed objects).
+                    m_callback = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -144,7 +139,7 @@ namespace Intel.RealSense
         }
         #endregion
 
-        public void Release()
+        internal void Release()
         {
             if (m_instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_delete_pipeline(m_instance.Handle);

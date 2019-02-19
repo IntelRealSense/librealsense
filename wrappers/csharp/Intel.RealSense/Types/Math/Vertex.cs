@@ -1,4 +1,4 @@
-namespace Intel.RealSense
+namespace Intel.RealSense.Math
 {
     public struct Vertex
     {

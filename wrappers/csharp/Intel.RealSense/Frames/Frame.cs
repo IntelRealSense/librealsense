@@ -28,7 +28,7 @@ namespace Intel.RealSense
             return Create<Frame>(ptr);
         }
 
-        internal static T Create<T>(IntPtr ptr) where T : Frame
+        public static T Create<T>(IntPtr ptr) where T : Frame
         {
             return Pool.Get<T>(ptr);
         }
@@ -118,16 +118,15 @@ namespace Intel.RealSense
             }
         }
 
-        public StreamProfile Profile
+        public T GetProfile<T>() where T : StreamProfile
         {
-            get
-            {
-                object error;
-                var ptr = NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error);
-                return StreamProfile.Create(ptr);
-            }
+            object error;
+            var ptr = NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error);
+            return StreamProfile.Create<T>(ptr);
         }
 
+        public StreamProfile Profile => GetProfile<StreamProfile>();
+  
         public ulong Number
         {
             get

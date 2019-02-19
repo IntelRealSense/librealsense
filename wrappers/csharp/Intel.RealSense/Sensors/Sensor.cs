@@ -22,19 +22,6 @@ namespace Intel.RealSense
             m_instance = sensor;
         }
 
-        public AutoExposureROI AutoExposureSettings
-        {
-            get
-            {
-                object error;
-                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
-                {
-                    return new AutoExposureROI { m_instance = m_instance };
-                }
-                return null;
-            }
-        }
-
         public class CameraInfos
         {
             readonly IntPtr m_sensor;
@@ -297,6 +284,19 @@ namespace Intel.RealSense
             NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
         }
 
+        public void Start<T>(Action<T> cb) where T : Frame
+        {
+            object error;
+            frame_callback cb2 = (IntPtr f, IntPtr u) =>
+            {
+                using (var frame = Frame.Create<T>(f))
+                    cb(frame);
+            };
+            m_callback = cb2;
+            m_queue = null;
+            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
+        }
+
         public void Stop()
         {
             object error;
@@ -314,6 +314,8 @@ namespace Intel.RealSense
             NativeMethods.rs2_close(m_instance, out error);
         }
 
+        #region Extensions
+
         /// <summary>
         /// retrieve mapping between the units of the depth image and meters
         /// </summary>
@@ -327,6 +329,19 @@ namespace Intel.RealSense
             }
         }
 
+        public AutoExposureROI AutoExposureSettings
+        {
+            get
+            {
+                object error;
+                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                {
+                    return new AutoExposureROI { m_instance = m_instance };
+                }
+                return null;
+            }
+        }
+        #endregion
 
         public StreamProfileList StreamProfiles
         {
@@ -334,14 +349,6 @@ namespace Intel.RealSense
             {
                 object error;
                 return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(m_instance, out error));
-            }
-        }
-        
-        public IEnumerable<VideoStreamProfile> VideoStreamProfiles
-        {
-            get
-            {
-                return StreamProfiles.Where(p => p.Is(Extension.VideoProfile)).Select(p => p.As<VideoStreamProfile>());
             }
         }
 

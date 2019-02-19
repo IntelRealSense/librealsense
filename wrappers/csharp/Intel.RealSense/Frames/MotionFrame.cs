@@ -10,11 +10,11 @@ namespace Intel.RealSense
         {
         }
 
-        public Vector MotionData
+        public Math.Vector MotionData
         {
             get
             {
-                Vector xyz;
+                Math.Vector xyz;
                 CopyTo(out xyz);
                 return xyz;
             }
