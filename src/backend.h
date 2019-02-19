@@ -20,6 +20,7 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 
 const uint16_t MAX_RETRIES                = 100;
