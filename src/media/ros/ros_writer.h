@@ -20,6 +20,7 @@
 #include "proc/spatial-filter.h"
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
+#include "proc/zero-order.h"
 
 namespace librealsense
 {
@@ -525,6 +526,7 @@ namespace librealsense
             if (Is< ExtensionToType<RS2_EXTENSION_SPATIAL_FILTER>::type>(block)) return RS2_EXTENSION_SPATIAL_FILTER;
             if (Is< ExtensionToType<RS2_EXTENSION_TEMPORAL_FILTER>::type>(block)) return RS2_EXTENSION_TEMPORAL_FILTER;
             if (Is< ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>(block)) return RS2_EXTENSION_HOLE_FILLING_FILTER;
+            if (Is< ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>(block)) return RS2_EXTENSION_ZERO_ORDER_FILTER;
 
             return RS2_EXTENSION_COUNT;
         }

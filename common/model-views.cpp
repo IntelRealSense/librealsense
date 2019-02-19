@@ -161,7 +161,7 @@ namespace rs2
                 auto val = pb->get_option(opt);
                 std::string key = name;
                 key += ".";
-                key += rs2_option_to_string(opt);
+                key += pb->get_option_name(opt);
                 config_file::instance().set(key.c_str(), val);
             }
         }
@@ -180,7 +180,7 @@ namespace rs2
             {
                 std::string key = name;
                 key += ".";
-                key += rs2_option_to_string(opt);
+                key += pb->get_option_name(opt);
                 if (config_file::instance().contains(key.c_str()))
                 {
                     float val = config_file::instance().get(key.c_str());
@@ -383,6 +383,45 @@ namespace rs2
         throw std::runtime_error(std::string("Failed to match MAC in string: ") + data);
     }
 
+    option_model create_option_model(rs2_option opt,
+        const std::string& opt_base_label,
+        subdevice_model* model,
+        std::shared_ptr<options> options,
+        bool* options_invalidated,
+        std::string& error_message)
+    {
+        option_model option;
+
+        std::stringstream ss;
+
+        ss << opt_base_label << "/" << options->get_option_name(opt);
+        option.id = ss.str();
+        option.opt = opt;
+        option.endpoint = options;
+        option.label = options->get_option_name(opt) + std::string("##") + ss.str();
+        option.invalidate_flag = options_invalidated;
+        option.dev = model;
+
+        option.supported = options->supports(opt);
+        if (option.supported)
+        {
+            try
+            {
+                option.range = options->get_option_range(opt);
+                option.read_only = options->is_option_read_only(opt);
+                if (!option.read_only)
+                    option.value = options->get_option(opt);
+            }
+            catch (const error& e)
+            {
+                option.range = { 0, 1, 0, 0 };
+                option.value = 0;
+                error_message = error_to_string(e);
+            }
+        }
+        return option;
+    }
+
     bool option_model::draw(std::string& error_message, notifications_model& model, bool new_line, bool use_option_name)
     {
         auto res = false;
@@ -427,7 +466,7 @@ namespace rs2
             {
                 if (!is_enum())
                 {
-                    std::string txt = to_string() << rs2_option_to_string(opt) << ":";
+                    std::string txt = to_string() << endpoint->get_option_name(opt) << ":";
                     ImGui::Text("%s", txt.c_str());
 
                     ImGui::SameLine();
@@ -590,7 +629,7 @@ namespace rs2
                 }
                 else
                 {
-                    std::string txt = to_string() << (use_option_name ? rs2_option_to_string(opt) : desc) << ":";
+                    std::string txt = to_string() << (use_option_name ? endpoint->get_option_name(opt) : desc) << ":";
 
                     auto pos_x = ImGui::GetCursorPosX();
 
@@ -717,7 +756,7 @@ namespace rs2
         {
             if (read_only) {
                 auto timestamp = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-                model.add_notification({ to_string() << "Could not refresh read-only option " << rs2_option_to_string(opt) << ": " << e.what(),
+                model.add_notification({ to_string() << "Could not refresh read-only option " << endpoint->get_option_name(opt) << ": " << e.what(),
                     timestamp,
                     RS2_LOG_SEVERITY_WARN,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
@@ -761,37 +800,19 @@ namespace rs2
     {
         for (auto i = 0; i < RS2_OPTION_COUNT; i++)
         {
-            option_model metadata;
             auto opt = static_cast<rs2_option>(i);
 
-            std::stringstream ss;
-            ss << opt_base_label << "/" << rs2_option_to_string(opt);
-            metadata.id = ss.str();
-            metadata.opt = opt;
-            metadata.endpoint = options;
-            metadata.label = rs2_option_to_string(opt) + std::string("##") + ss.str();
-            metadata.invalidate_flag = options_invalidated;
-            metadata.dev = model;
-
-            metadata.supported = options->supports(opt);
-            if (metadata.supported)
-            {
-                try
-                {
-                    metadata.range = options->get_option_range(opt);
-                    metadata.read_only = options->is_option_read_only(opt);
-                    if (!metadata.read_only)
-                        metadata.value = options->get_option(opt);
-                }
-                catch (const error& e)
-                {
-                    metadata.range = { 0, 1, 0, 0 };
-                    metadata.value = 0;
-                    error_message = error_to_string(e);
-                }
-            }
-            opt_container[opt] = metadata;
+            opt_container[opt] = create_option_model(opt, opt_base_label, model, options, options_invalidated, error_message);
         }
+    }
+
+    std::string get_device_sensor_name(subdevice_model* sub)
+    {
+        std::stringstream ss;
+        ss << configurations::viewer::post_processing
+            << "." << sub->dev.get_info(RS2_CAMERA_INFO_NAME)
+            << "." << sub->s->get_info(RS2_CAMERA_INFO_NAME);
+        return ss.str();
     }
 
 
@@ -801,18 +822,51 @@ namespace rs2
         std::shared_ptr<rs2::processing_block> block,
         std::function<rs2::frame(rs2::frame)> invoker,
         std::string& error_message, bool enable)
-        : _name(name), _block(block), _invoker(invoker), enabled(enable)
+        : _owner(owner),_name(name), _block(block), _invoker(invoker), enabled(enable)
     {
         std::stringstream ss;
         ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
             << "/" << ((owner) ? (*owner->s).get_info(RS2_CAMERA_INFO_NAME) : "_")
             << "/" << (long long)this;
 
-        enabled = restore_processing_block(get_name().c_str(), 
+        if (_owner)
+            _full_name = get_device_sensor_name(_owner) + "." + _name;
+        else
+            _full_name = _name;
+
+        enabled = restore_processing_block(_full_name.c_str(),
                                            block, enabled);
 
-        subdevice_model::populate_options(options_metadata,
-            ss.str().c_str(),owner , block, owner ? &owner->_options_invalidated : nullptr, error_message);
+        populate_options(ss.str().c_str(),owner , block, owner ? &owner->_options_invalidated : nullptr, error_message);
+
+        
+    }
+    void processing_block_model::save()
+    {
+        save_processing_block(_full_name.c_str(), _block, enabled);
+    }
+    option_model & processing_block_model::get_option(rs2_option opt)
+    {
+        if (options_metadata.find(opt) != options_metadata.end()) 
+            return options_metadata[opt];
+
+        std::string error_message;
+        options_metadata[opt] = create_option_model(opt, get_name(), _owner, _block, _owner ? &_owner->_options_invalidated : nullptr, error_message);
+        return options_metadata[opt];
+    }
+
+    void processing_block_model::populate_options(const std::string& opt_base_label,
+        subdevice_model* model,
+        std::shared_ptr<options> options,
+        bool* options_invalidated,
+        std::string& error_message)
+    {
+        for (auto opt : _block->get_option_list())
+        {
+            if(options->supports(opt))
+                options_metadata[opt] = create_option_model(opt, opt_base_label, model, options, model ? &model->_options_invalidated : nullptr, error_message);
+
+        }
     }
 
     subdevice_model::subdevice_model(
@@ -1377,8 +1431,29 @@ namespace rs2
         _pause = false;
     }
 
+    void subdevice_model::can_enable_zero_order()
+    {
+            auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_INFRARED);});
+            auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_DEPTH);});
+
+            if (ir != profiles.end() && !stream_enabled[ir->unique_id()] && depth != profiles.end() && !stream_enabled[depth->unique_id()])
+                throw std::runtime_error(to_string() << "Can't apply Zero-Order post processing without IR and depth streams enabled\nPlease turn on the IR and depth streams or disable the zero_order post processing");
+            if (ir != profiles.end() && !stream_enabled[ir->unique_id()])
+                throw std::runtime_error(to_string() << "Can't apply Zero-Order post processing without IR stream enabled\nPlease turn on the IR stream or disable the zero_order post processing");
+            if (depth != profiles.end() && !stream_enabled[depth->unique_id()])
+                throw std::runtime_error(to_string() << "Can't apply Zero-Order post processing without depth stream enabled\nPlease turn on the depth stream or disable the zero_order post processing");
+    }
+
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
+        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_INFRARED);});
+        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_DEPTH);});
+
+        if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->enabled)
+        {
+            can_enable_zero_order();
+        }
+
         std::stringstream ss;
         ss << "Starting streaming of ";
         for (size_t i = 0; i < profiles.size(); i++)
@@ -1401,7 +1476,7 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.synchronization_enable && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f)))
+                if (viewer.synchronization_enable/* && (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f))*/)
                 {
                     syncer->invoke(f);
                 }
@@ -7505,32 +7580,15 @@ namespace rs2
                         if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 27 , pos.y - 1 });
                         else ImGui::SetCursorPos({ windows_width - 34, pos.y - 3 });
 
-                        ImGui::PushFont(window.get_font());
-
-                        ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                        if (!sub->streaming)
+                        try
                         {
-                            if (!sub->post_processing_enabled)
-                            {
-                                std::string label = to_string() << textual_icons::toggle_off;
 
-                                ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                ImGui::TextDisabled("%s", label.c_str());
-                            }
-                            else
-                            {
-                                std::string label = to_string() << textual_icons::toggle_on;
-                                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                ImGui::TextDisabled("%s", label.c_str());
-                            }
-                        }
-                        else
-                        {
+                            ImGui::PushFont(window.get_font());
+
+                            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                            ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
                             if (!sub->post_processing_enabled)
                             {
                                 std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << ",post";
@@ -7538,9 +7596,13 @@ namespace rs2
                                 ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                                if (ImGui::Button(label.c_str(), { 28,24 }))
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
+                                    if (sub->zero_order_artifact_fix && sub->zero_order_artifact_fix->enabled)
+                                        sub->can_enable_zero_order();
                                     sub->post_processing_enabled = true;
+                                    config_file::instance().set(get_device_sensor_name(sub.get()).c_str(),
+                                        sub->post_processing_enabled);
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
@@ -7554,9 +7616,11 @@ namespace rs2
                                 ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                                if (ImGui::Button(label.c_str(), { 28,24 }))
+                                if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
                                     sub->post_processing_enabled = false;
+                                    config_file::instance().set(get_device_sensor_name(sub.get()).c_str(),
+                                        sub->post_processing_enabled);
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
@@ -7564,18 +7628,15 @@ namespace rs2
                                     window.link_hovered();
                                 }
                             }
-
-                            std::stringstream ss;
-                            ss  << configurations::viewer::post_processing 
-                                << "." << sub->dev.get_info(RS2_CAMERA_INFO_NAME)
-                                << "." << sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                            auto key = ss.str();
-                            config_file::instance().set(key.c_str(), 
-                                sub->post_processing_enabled);
+                            ImGui::PopStyleColor(5);
+                            ImGui::PopFont();
                         }
-
-                        ImGui::PopStyleColor(5);
-                        ImGui::PopFont();
+                        catch (...)
+                        {
+                            ImGui::PopStyleColor(5);
+                            ImGui::PopFont();
+                            throw;
+                        }
                     });
 
                     label = to_string() << "Post-Processing##" << id;
@@ -7595,17 +7656,19 @@ namespace rs2
                                 else
                                     ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
 
-                                ImGui::PushFont(window.get_font());
-
-                                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-
-                                if (!sub->streaming || !sub->post_processing_enabled)
+                                try
                                 {
-                                    if (!pb->enabled)
+                                    ImGui::PushFont(window.get_font());
+
+                                    ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+                                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+                                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
+
+                                    if (!sub->post_processing_enabled)
                                     {
-                                        std::string label = to_string() << textual_icons::toggle_off;
+                                        if (!pb->enabled)
+                                        {
+                                            std::string label = to_string() << textual_icons::toggle_off;
 
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
@@ -7628,15 +7691,17 @@ namespace rs2
                                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                                        if (ImGui::Button(label.c_str(), { 30,24 }))
-                                        {
-                                            pb->enabled = true;
-                                            pb->save();
-                                        }
-                                        if (ImGui::IsItemHovered())
-                                        {
-                                            label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip("%s", label.c_str());
+                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            {
+                                                if (pb->get_name().compare("Zero-Order Filter") == 0)
+                                                    sub->can_enable_zero_order();
+                                                pb->enabled = true;
+                                                pb->save();
+                                            }
+                                            if (ImGui::IsItemHovered())
+                                            {
+                                                label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
+                                                ImGui::SetTooltip("%s", label.c_str());
                                             window.link_hovered();
                                         }
                                     }
@@ -7646,28 +7711,36 @@ namespace rs2
                                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
 
-                                        if (ImGui::Button(label.c_str(), { 30,24 }))
-                                        {
-                                            pb->enabled = false;
-                                            pb->save();
-                                        }
-                                        if (ImGui::IsItemHovered())
-                                        {
-                                            label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip("%s", label.c_str());
+                                            if (ImGui::Button(label.c_str(), { 25,24 }))
+                                            {
+                                                pb->enabled = false;
+                                                pb->save();
+                                            }
+                                            if (ImGui::IsItemHovered())
+                                            {
+                                                label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
+                                                ImGui::SetTooltip("%s", label.c_str());
                                             window.link_hovered();
                                         }
                                     }
                                 }
 
-                                ImGui::PopStyleColor(5);
-                                ImGui::PopFont();
+                                    ImGui::PopStyleColor(5);
+                                    ImGui::PopFont();
+                                }
+                                catch (...)
+                                {
+                                    ImGui::PopStyleColor(5);
+                                    ImGui::PopFont();
+                                    throw;
+                                }
                             });
 
                             label = to_string() << pb->get_name() << "##" << id;
                             if (ImGui::TreeNode(label.c_str()))
                             {
-                                for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                                auto options = pb->get_option_list();
+                                for (auto i : options)
                                 {
                                     auto opt = static_cast<rs2_option>(i);
                                     if (skip_option(opt)) continue;

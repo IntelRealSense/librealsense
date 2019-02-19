@@ -15,6 +15,7 @@
 #include "proc/spatial-filter.h"
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
+#include "proc/zero-order.h"
 #include "ds5/ds5-color.h"
 #include "ds5/ds5-device.h"
 #include "ivcam/sr300.h"
@@ -926,6 +927,17 @@ namespace librealsense
                 throw io_exception("Unrecognized sensor name");
             }
 
+            if (is_l500_PID(int_pid))
+            {
+                if (is_depth_sensor(sensor_name))
+                {
+                    auto zo_point_x = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZO_POINT_X), [](option*) {});
+                    auto zo_point_y = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZO_POINT_Y), [](option*) {});
+
+                    return std::make_shared<recommended_proccesing_blocks_snapshot>(l500_device::l500_depth_sensor::get_l500_recommended_proccesing_blocks(zo_point_x, zo_point_y));
+                }
+                throw io_exception("Unrecognized sensor name");
+            }
             throw io_exception("Unrecognized device");
         }
 
@@ -1345,8 +1357,8 @@ namespace librealsense
             rs2_extension id;
             convert(processing_block_msg->data, id);
             std::shared_ptr<librealsense::processing_block_interface> disparity;
-            std::shared_ptr<int> zo_point_x;
-            std::shared_ptr<int> zo_point_y;
+            std::shared_ptr<option> zo_point_x;
+            std::shared_ptr<option> zo_point_y;
 
             switch (id)
             {
@@ -1364,6 +1376,14 @@ namespace librealsense
                 return std::make_shared< ExtensionToType<RS2_EXTENSION_TEMPORAL_FILTER>::type>();
             case RS2_EXTENSION_HOLE_FILLING_FILTER:
                 return std::make_shared< ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
+            case RS2_EXTENSION_ZERO_ORDER_FILTER:
+
+                if(!options->supports_option(RS2_OPTION_ZO_POINT_X) || !options->supports_option(RS2_OPTION_ZO_POINT_Y))
+                    throw io_exception( "Failed to read z0 point");
+
+                zo_point_x = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZO_POINT_X), [](option*) {});
+                zo_point_y = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZO_POINT_Y), [](option*) {});
+                return std::make_shared< ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>(zo_point_x, zo_point_y);
             default:
                 return nullptr;
             }

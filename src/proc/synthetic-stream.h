@@ -155,6 +155,11 @@ struct rs2_options
     virtual ~rs2_options() = default;
 };
 
+struct rs2_options_list
+{
+    std::vector<rs2_option> list;
+};
+
 struct rs2_processing_block : public rs2_options
 {
     rs2_processing_block(std::shared_ptr<librealsense::processing_block_interface> block)

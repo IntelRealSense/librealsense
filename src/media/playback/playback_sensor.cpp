@@ -246,7 +246,7 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
                 auto&& option = options_api->get_option(option_id);
                 float value = option.query();
                 register_option(option_id, std::make_shared<const_value_option>(option.get_description(), option.query()));
-                LOG_DEBUG("Registered " << rs2_option_to_string(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
+                LOG_DEBUG("Registered " << options_api->get_option_name(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
             }
         }
         catch (std::exception& e)

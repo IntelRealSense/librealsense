@@ -25,6 +25,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
+#include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/yuy2rgb.h"
 #include "proc/rates-printer.h"
@@ -507,6 +508,40 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
+rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return new rs2_options_list{ options->options->get_supports_options() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
+
+const char* rs2_get_option_name(const rs2_options* options,rs2_option option, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->options->get_option_name(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
+
+int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->list.size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, options)
+
+rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->list[i];
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options)
+
+void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+NOEXCEPT_RETURN(, list)
 
 int rs2_supports_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
@@ -1117,6 +1152,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
+    case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
   
     default:
         return false;
@@ -1856,6 +1892,14 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::rates_printer>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_zero_order_fix_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::zero_order>();
 
     return new rs2_processing_block{ block };
 }

@@ -229,6 +229,13 @@ rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 
 /**
+* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               zero order fix processing block
+*/
+rs2_processing_block* rs2_create_zero_order_fix_block(rs2_error** error);
+
+/**
 * Retrieve processing block specific information, like name.
 * \param[in]  block     The processing block
 * \param[in]  info      processing block info type to retrieve

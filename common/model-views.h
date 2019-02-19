@@ -308,14 +308,21 @@ namespace rs2
 
         const std::string& get_name() const { return _name; }
 
-        option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
+        option_model& get_option(rs2_option opt);
 
         rs2::frame invoke(rs2::frame f) const { return _invoker(f); }
 
-        void save()
+        void save();
+
+        std::vector<rs2_option> get_option_list()
         {
-            save_processing_block(_name.c_str(), _block, enabled);
+            return _block->get_option_list();
         }
+        void populate_options(const std::string& opt_base_label,
+            subdevice_model* model,
+            std::shared_ptr<options> options,
+            bool* options_invalidated,
+            std::string& error_message);
 
         bool enabled = true;
         bool visible = true;
@@ -323,7 +330,9 @@ namespace rs2
         std::shared_ptr<rs2::processing_block> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
+        std::string _full_name;
         std::function<rs2::frame(rs2::frame)> _invoker;
+        subdevice_model* _owner;
     };
 
     class syncer_model
@@ -395,6 +404,7 @@ namespace rs2
         std::atomic<bool> _active;
     };
 
+    option_model create_option_mode(rs2_option opt, std::shared_ptr<options> options, const std::string& opt_base_label, bool* options_invalidated, std::string& error_message);
 
     class subdevice_model
     {
@@ -427,6 +437,8 @@ namespace rs2
         bool is_paused() const;
         void pause();
         void resume();
+
+        void can_enable_zero_order();
 
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
@@ -500,6 +512,7 @@ namespace rs2
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
+        std::shared_ptr<processing_block_model> zero_order_artifact_fix;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;

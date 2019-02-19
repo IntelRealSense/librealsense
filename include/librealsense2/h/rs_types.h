@@ -124,6 +124,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_SPATIAL_FILTER,
     RS2_EXTENSION_TEMPORAL_FILTER,
     RS2_EXTENSION_HOLE_FILLING_FILTER,
+    RS2_EXTENSION_ZERO_ORDER_FILTER,
     RS2_EXTENSION_RECOMMENDED_FILTERS,
     RS2_EXTENSION_COUNT
 } rs2_extension;
@@ -177,6 +178,7 @@ typedef struct rs2_device_hub rs2_device_hub;
 typedef struct rs2_sensor_list rs2_sensor_list;
 typedef struct rs2_sensor rs2_sensor;
 typedef struct rs2_options rs2_options;
+typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;

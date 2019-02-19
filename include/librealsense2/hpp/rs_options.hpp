@@ -29,7 +29,7 @@ namespace rs2
         * \param[in] option     option id to be checked
         * \return human-readable option description
         */
-        virtual const char* get_option_description(rs2_option option)
+        virtual const char* get_option_description(rs2_option option) const
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_option_description(_options, option, &e);
@@ -38,14 +38,26 @@ namespace rs2
         }
 
         /**
-        * get option description
+        * get option name
         * \param[in] option     option id to be checked
-        * \return human-readable option description
+        * \return human-readable option name
+        */
+        virtual const char* get_option_name(rs2_option option) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_get_option_name(_options, option, &e);
+            error::handle(e);
+            return res;
+        }
+
+        /**
+        * get option description
+        * \
+        * \deprecated API use get_option_name()
         */
         virtual const char* option_to_string(rs2_option option)
         {
-            auto res = rs2_option_to_string(option);
-            return res;
+            return "UNKNOWN";
         }
 
         /**
@@ -113,6 +125,22 @@ namespace rs2
             error::handle(e);
             return res > 0;
         }
+
+        virtual std::vector<rs2_option> get_option_list()
+        {
+            std::vector<rs2_option> res;
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_options_list> options_list(
+                rs2_get_options_list(_options, &e),
+                rs2_delete_options_list);
+        
+
+            for (auto opt = 0; opt < rs2_get_options_list_size(options_list.get(), &e);opt++)
+            {
+                res.push_back(rs2_get_option_from_list(options_list.get(), opt, &e));
+            }
+            return res;
+        };
 
         options& operator=(const options& other)
         {
