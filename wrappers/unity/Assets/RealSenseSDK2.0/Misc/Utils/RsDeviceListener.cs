@@ -33,6 +33,12 @@ public class RsDeviceListener : MonoBehaviour
         yield return null;
 
         e.Set();
+
+        ctx.QueryDevices();
+        yield return new WaitForSeconds(1f);
+        ctx.QueryDevices();
+
+        e.Set();
     }
 
     void Update()
@@ -40,9 +46,9 @@ public class RsDeviceListener : MonoBehaviour
         if (e.WaitOne(0))
         {
             var avail = FindObjectsOfType<RsStreamAvailability>();
-            AutoResetEvent done = new AutoResetEvent(false);
-            Dictionary<RsStreamAvailability, bool> resolvables = new Dictionary<RsStreamAvailability, bool>();
             int tasks = avail.Count();
+            AutoResetEvent done = new AutoResetEvent(false);
+            Dictionary<RsStreamAvailability, bool> resolvables = new Dictionary<RsStreamAvailability, bool>(tasks);
             foreach (var a in avail)
             {
                 ThreadPool.QueueUserWorkItem(state =>
@@ -75,11 +81,13 @@ public class RsDeviceListener : MonoBehaviour
     {
         try
         {
+            foreach (var d in added)
+                Debug.LogFormat("{0} {1}", d.Info[CameraInfo.Name], d.Info[CameraInfo.SerialNumber]);
+
             m_removed.Clear();
 
             foreach (var d in m_added)
             {
-                Debug.Log(d.Info[CameraInfo.SerialNumber]);
                 if (removed.Contains(d))
                     m_removed.Add(d);
             }
