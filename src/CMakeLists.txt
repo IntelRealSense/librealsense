@@ -22,6 +22,10 @@ if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()
 
+if(ANDROID_USB_HOST_UVC)
+    include(${_rel_path}/android/CMakeLists.txt)
+endif()
+
 if(BUILD_FOR_WIN7)
     include(${_rel_path}/win7/CMakeLists.txt)
 endif()
