@@ -5613,13 +5613,18 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                 {
                     std::vector<uint8_t> results, vnv;
                     REQUIRE_NOTHROW(results=pose_snr.export_localization_map());
-                    //TODO - async API - TODO
-                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    CAPTURE(results.size());
                     REQUIRE(results.size());
+                    //std::stringstream emitter_results;
+                    //std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
+                    std::ofstream f("loc_map.raw", std::ios::binary | std::ios::trunc);
+                    if (f)
+                        f.write(reinterpret_cast<char*>(results.data()), results.size());
+
+
                     REQUIRE_NOTHROW(pose_snr.import_localization_map(results));
                     REQUIRE_NOTHROW(vnv=pose_snr.export_localization_map());
-                    //TODO - async API - TODO
-                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
                 }

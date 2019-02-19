@@ -133,7 +133,7 @@ namespace librealsense
         static_assert((std::is_integral<T>::value), "hexify supports integral built-in types only");
 
         std::ostringstream oss;
-        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << val;
+        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << std::hex << val;
         return oss.str().c_str();
     }
 

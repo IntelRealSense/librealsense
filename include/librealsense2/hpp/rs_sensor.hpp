@@ -449,7 +449,7 @@ namespace rs2
         void import_localization_map(const std::vector<uint8_t>& lmap_buf) const
         {
             rs2_error* e = nullptr;
-            rs2_import_localization_map(_sensor.get(), lmap_buf.data(), lmap_buf.size(), &e);
+            rs2_import_localization_map(_sensor.get(), lmap_buf.data(), uint32_t(lmap_buf.size()), &e);
             error::handle(e);
         }
 

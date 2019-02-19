@@ -16,10 +16,7 @@
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
         return s##T##_##X##_str.c_str(); }
 
-//#ifndef DBL_EPSILON
-//const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
-//#endif
-constexpr double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
+const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 
 namespace librealsense
 {

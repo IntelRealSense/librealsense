@@ -24,6 +24,7 @@ namespace librealsense
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
         ~tm2_device();
+
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
         bool is_enabled() const override;
@@ -55,6 +56,8 @@ namespace librealsense
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
         ~tm2_sensor();
+        //tm2_sensor(const tm2_sensor&) = delete;             // no copy ctor - atomic
+        //tm2_sensor& operator=(const tm2_sensor& snr) = delete;  // no assign oper
         // sensor interface
         ////////////////////
         stream_profiles init_stream_profiles() override;
@@ -77,8 +80,8 @@ namespace librealsense
         void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
         void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
 
-        virtual perc::Status GetLocalizationData(Listener* listener);
-        virtual perc::Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer);
+        //virtual perc::Status GetLocalizationData(Listener* listener);
+        //virtual perc::Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer);
 //        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
 //        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
 
@@ -93,8 +96,8 @@ namespace librealsense
         // Pose interfaces
         //virtual void export_relocalization_map(const std::string& lmap_fname) const;
         //virtual void import_relocalization_map(const std::string& lmap_fname) const;
-        virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
-        virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
+        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
+        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
 
         // Recording interfaces
         virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const
@@ -116,6 +119,11 @@ namespace librealsense
 //                _options[opt.first] = opt.second;
 //            }
 //        }
+        enum _async_op_state {  _async_init     = 1 << 0,
+                                _async_progress = 1 << 1,
+                                _async_success  = 1 << 2,
+                                _async_fail     = 1 << 3};
+
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
@@ -123,11 +131,14 @@ namespace librealsense
         void raise_controller_event(const std::string& msg, const std::string& serialized_data, double timestamp);
         void raise_error_notification(const std::string& msg);
 
-        dispatcher _dispatcher;
-        perc::TrackingDevice* _tm_dev;
-        std::mutex _configure_lock;
-        std::shared_ptr<playback_device> _loopback;
-        perc::TrackingData::Profile _tm_supported_profiles;
-        perc::TrackingData::Profile _tm_active_profiles;
+        dispatcher                      _dispatcher;
+        perc::TrackingDevice*           _tm_dev;
+        mutable std::mutex              _tm_op_lock;
+        std::shared_ptr<playback_device>_loopback;
+        perc::TrackingData::Profile     _tm_supported_profiles;
+        perc::TrackingData::Profile     _tm_active_profiles;
+        mutable std::condition_variable _async_op;
+        mutable _async_op_state         _async_op_status;
+        mutable std::vector<uint8_t>    _async_op_res_buffer;
     };
 }
