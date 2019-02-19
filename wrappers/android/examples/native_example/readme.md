@@ -5,7 +5,7 @@ The sample also demonstrates basic streaming using the Pipeline class and how to
 > Read about Android support [here](../../readme.md).
 
 ## Project Configuration
-Before start coding the application requires modifications both to the module [build.gradle file](app/build.gradle) and to the app manifest.
+Before jumping to the code, let's review the required modifications both for the module [build.gradle file](app/build.gradle) and to the app's manifest.
 >
 ### Module Build Gradle
 The app should add RealSense dependency in the module build.gradle which is currently available in a private repo.
@@ -104,7 +104,7 @@ This addition will allow Android to "remember" that the user allowed your app to
 
 ## Example Code
 ### Java Code
-Lets look at the only Java source code file in this example, the [MainActivity](app/src/main/java/com/example/realsense_native_example/MainActivity.java).
+Let's look at the only Java source code file in this example, the [MainActivity](app/src/main/java/com/example/realsense_native_example/MainActivity.java).
 
 #### On Create
 RsContext.init must be called once in the application's lifetime before any interaction with physical RealSense devices.

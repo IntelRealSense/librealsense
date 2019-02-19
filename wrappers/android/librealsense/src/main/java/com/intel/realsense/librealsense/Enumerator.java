@@ -131,7 +131,7 @@ class Enumerator {
     }
 
     private class MessagesHandler extends Handler {
-        private static final String TAG = "libtm MessagesHandler";
+        private static final String TAG = "librs MessagesHandler";
 
         public static final int ON_DEVICE_AVAILABLE = 0;
         public static final int ON_DEVICE_UNAVAILABLE = 1;

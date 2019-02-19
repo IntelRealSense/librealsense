@@ -1,15 +1,24 @@
-# Intel&reg; RealSense&trade; SDK 2.0 for Android OS
+#  Build RealSense SDK for Android OS
+This document describes how to build the Intel® RealSense™ SDK 2.0 including headless tools and examples for Android devices.
 
-Using the Android wrapper allows you to build both native (C/C++) and Java applications for Android.
-In order to do that a RealSense Android App need to include librealsense.aar (Android Archive) in it's dependencies.
-The AAR file is responsible to acquire camera access permissions and it also provides a JNI based RealSense Java API.
+> Read about Android support [here](../../doc/android.md).
 
-## Ingredients
-Before jumping to the instructions section please ensure you have all the required accessories. 
-1. Android target device with Android version >= 7.0 that supports OTG feature.
-2. [Android Studio IDE](https://developer.android.com/studio).
-3. [USB3 OTG](https://en.wikipedia.org/wiki/USB_On-The-Go) cable.
+## Instructions
+### Build With Gradle
+To build the AAR from command line, simply navigate to `<librealsense_root_dir>/wrappers/android`
+and run `gradlew assembleRelease` on Windows host or `./gradlew assembleRelease` on Linux host.
+If the build succeeded, the generated AAR will be located in `<librealsense_root_dir>/wrappers/android/librealsense/build/outputs/aar`
 
-## Build A RealSense Application
-Follow [Java example](examples/java_example/readme.md) or [Native example](examples/native_example/readme.md) in order to learn how to build a RealSense application.
-Those application are using librealsense from Maven ropo but you can also [build RealSense AAR from source](./build_from_source.md) and add it as a dependency as described [here](https://developer.android.com/studio/projects/android-library#AddDependency)
+### Build With Android Studio
+1. Download and install [Android Studio IDE](https://developer.android.com/studio).
+2. Clone the latest [RealSense&trade; SDK 2.0](https://github.com/IntelRealSense/librealsense/releases) to your host machine.
+3. Open Android Studio
+4. Open the Android project: Menu Bar-->File-->Open-->[path to build.gradle](./build.gradle)
+5. In the gradle tasks run :librealsense-->build-->assembleRelease:
+![assemblerelease](https://user-images.githubusercontent.com/18511514/52563751-f7981280-2e0a-11e9-8612-65946e86f6fc.PNG)
+
+The build will take few minutes since the library is built for 4 different ABI configurations.
+If the build succeeded, the generated AAR will be located in `<librealsense_root_dir>/wrappers/android/librealsense/build/outputs/aar`
+
+You can also build and run any of the example apps from this project by selecting it from the 'Configuration box' and run it while your target phone is connected:
+![run_example](https://user-images.githubusercontent.com/18511514/52564272-69bd2700-2e0c-11e9-94dc-8f79c60a6b42.PNG)

@@ -5,10 +5,10 @@ The sample also demonstrates basic streaming using the Pipeline class and how to
 > Read about Android support [here](../../readme.md).
 
 ## Project Configuration
-Before start coding the application requires modifications both to the module [build.gradle file](app/build.gradle) and to the app manifest.
+Before jumping to the code, let's review the required modifications both for the module [`build.gradle file`](app/build.gradle) and to the app's manifest.
 >
 ### Module Build Gradle
-The app should add RealSense dependency in the module build.gradle which is currently available in a private repo.
+The app should add RealSense dependency in the module `build.gradle` which is currently available in a private repo.
 >```java
 >repositories {
 >   maven{
@@ -47,18 +47,18 @@ This addition will allow Android to "remember" that the user allowed your app to
 >    <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" android:resource="@xml/usb_filter" />
 
 ## Example Code
-Lets look at the only source code file in this example, the [MainActivity](app/src/main/java/com/example/realsense_java_example/MainActivity.java).
+Let's look at the only source code file in this example, the [MainActivity](app/src/main/java/com/example/realsense_java_example/MainActivity.java).
 
 > **Note:** Since the SDK is holding-on to native hardware resources, it is critical to make sure you deterministically call `close` on objects, especially those derived from `Frame`. Without releasing resources explicitly the Garbage Collector will not keep-up with new frames being allocated. Take advantage of `try(){}` whenever you work with frames. 
 
 ### On Create
-RsContext.init must be called once in the application's lifetime before any interaction with physical RealSense devices.
+`RsContext.init` must be called once in the application's lifetime before any interaction with physical RealSense devices.
 For multi activities applications use the application context instead of the activity context.
 >```java
 >    RsContext.init(getApplicationContext());
 >```
 
-Register to notifications regarding RealSense devices attach/detach events via the DeviceListener.
+Register to notifications regarding RealSense devices attach/detach events via the `DeviceListener`.
 In this example we start the streaming thread once a device is detected.
 >```java
 >    mRsContext = new RsContext();
