@@ -137,27 +137,6 @@ namespace librealsense
         return oss.str().c_str();
     }
 
-
-//    inline std::string hexify1(unsigned char n) // TODO remove Evgeni
-//    {
-//        std::string res;
-
-//        do
-//        {
-//            res += "0123456789ABCDEF"[n % 16];
-//            n >>= 4;
-//        } while (n);
-
-//        reverse(res.begin(), res.end());
-
-//        if (res.size() == 1)
-//        {
-//            res.insert(0, "0");
-//        }
-
-//        return res;
-//    }
-
     void copy(void* dst, void const* src, size_t size);
 
     std::string make_less_screamy(const char* str);

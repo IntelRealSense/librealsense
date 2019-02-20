@@ -36,10 +36,6 @@ namespace librealsense
         };
         bool compress_while_record() const override { return false; }
 
-//        // Recording interfaces
-//        void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const;
-//        void enable_recording(std::function<void(const pose_sensor_interface&)> record_action);
-
     private:
         static const char* tm2_device_name()
         {
@@ -56,8 +52,7 @@ namespace librealsense
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
         ~tm2_sensor();
-        //tm2_sensor(const tm2_sensor&) = delete;             // no copy ctor - atomic
-        //tm2_sensor& operator=(const tm2_sensor& snr) = delete;  // no assign oper
+
         // sensor interface
         ////////////////////
         stream_profiles init_stream_profiles() override;
@@ -80,11 +75,6 @@ namespace librealsense
         void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
         void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
 
-        //virtual perc::Status GetLocalizationData(Listener* listener);
-        //virtual perc::Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer);
-//        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
-//        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
-
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
         bool is_loopback_enabled() const;
@@ -94,31 +84,21 @@ namespace librealsense
         perc::TrackingData::Temperature get_temperature();
 
         // Pose interfaces
-        //virtual void export_relocalization_map(const std::string& lmap_fname) const;
-        //virtual void import_relocalization_map(const std::string& lmap_fname) const;
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
 
         // Recording interfaces
         virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const
         {
-            //TODOsnapshot = std::make_shared<pose_sensor_interface>(*this);
+            //Empty
         }
 
         virtual void enable_recording(std::function<void(const pose_sensor_interface&)> record_action) override
         {
-            //_recording_function = record_action;
+            //Empty
         }
 
-//        void update(std::shared_ptr<extension_snapshot> ext) override
-//        {
-//            auto ctr = As<options_container>(ext);
-//            if (!ctr) return;
-//            for(auto&& opt : ctr->_options)
-//            {
-//                _options[opt.first] = opt.second;
-//            }
-//        }
+
         enum _async_op_state {  _async_init     = 1 << 0,
                                 _async_progress = 1 << 1,
                                 _async_success  = 1 << 2,

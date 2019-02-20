@@ -5577,7 +5577,7 @@ TEST_CASE("Positional_Sensors_API", "[live]")
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
     log_to_console(RS2_LOG_SEVERITY_DEBUG);
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // TM2 invocation
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
     {
@@ -5593,9 +5593,8 @@ TEST_CASE("Positional_Sensors_API", "[live]")
         dev_type PID = get_PID(dev);
         CAPTURE(PID.first);
 
-        // TM2 Only
+        // T265 Only
         if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
-        //if (!librealsense::val_in_range(PID.first, { std::string("0B3A"),std::string("0AFE"),std::string("0B37"),std::string("0AD5")}))
         {
             WARN("Skipping test - Positional Tracking sensors are not provided for device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
         }
@@ -5615,12 +5614,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE_NOTHROW(results=pose_snr.export_localization_map());
                     CAPTURE(results.size());
                     REQUIRE(results.size());
-                    //std::stringstream emitter_results;
-                    //std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
-                    std::ofstream f("loc_map.raw", std::ios::binary | std::ios::trunc);
-                    if (f)
-                        f.write(reinterpret_cast<char*>(results.data()), results.size());
-
 
                     REQUIRE_NOTHROW(pose_snr.import_localization_map(results));
                     REQUIRE_NOTHROW(vnv=pose_snr.export_localization_map());

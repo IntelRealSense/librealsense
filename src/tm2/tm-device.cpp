@@ -1079,8 +1079,6 @@ namespace librealsense
             throw io_exception("Failed to get device info");
         }
 
-        //std::string vendorIdStr = to_string() << std::hex << info.usbDescriptor.idVendor;
-        //std::string productIdStr = to_string() << std::hex << info.usbDescriptor.idProduct;
         std::string vendorIdStr = hexify(info.usbDescriptor.idVendor);
         std::string productIdStr = hexify(info.usbDescriptor.idProduct);
 

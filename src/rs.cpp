@@ -2217,7 +2217,8 @@ void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* 
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(lmap_blob);
-    VALIDATE_RANGE(blob_size,1, std::numeric_limits<uint32_t>::max()/2); // TODO Verify max size with FW. Evgeni
+    // TODO Max limit pending FW confirmat
+    VALIDATE_RANGE(blob_size,1, std::numeric_limits<uint32_t>::max());
 
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
 
@@ -2233,8 +2234,9 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
 
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
     std::vector<uint8_t> recv_buffer;
-    pose_snr->export_relocalization_map(recv_buffer);
-    return new rs2_raw_data_buffer{ recv_buffer };
+    if (pose_snr->export_relocalization_map(recv_buffer))
+        return new rs2_raw_data_buffer{ recv_buffer };
+    return nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 

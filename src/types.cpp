@@ -180,6 +180,7 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
+            CASE(POSE_SENSOR)
             CASE(DECIMATION_FILTER)
             CASE(THRESHOLD_FILTER)
             CASE(DISPARITY_FILTER)
@@ -191,8 +192,8 @@ namespace librealsense
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
-
     }
+
     const char* get_string(rs2_playback_status value)
     {
 #define CASE(X) STRCASE(PLAYBACK_STATUS, X)
@@ -222,7 +223,6 @@ namespace librealsense
         }
 #undef CASE
     }
-   
 
     const char* get_string(rs2_option value)
     {

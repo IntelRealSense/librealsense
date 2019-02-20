@@ -476,24 +476,5 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
         explicit pose_sensor(std::shared_ptr<rs2_sensor> dev) : pose_sensor(sensor(dev)) {}
     };
-
-//    class rgb_sensor : public sensor
-//    {
-//    public:
-//        rgb_sensor(sensor s)
-//            : sensor(s.get())
-//        {
-//            rs2_error* e = nullptr;
-//            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_RGB_SENSOR, &e) == 0 && !e)
-//            {
-//                _sensor.reset();
-//            }
-//            error::handle(e);
-//        }
-
-//        operator bool() const { return _sensor.get() != nullptr; }
-//        explicit rgb_sensor(std::shared_ptr<rs2_sensor> dev) : rgb_sensor(sensor(dev)) {}
-//    };
-
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP
