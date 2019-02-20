@@ -50,7 +50,11 @@ option(BUILD_CV_KINFU_EXAMPLE "Build OpenCV KinectFusion example" OFF)
 add_subdirectory(wrappers)
 
 if (BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES)
-    add_subdirectory(third-party/glfw)
+    find_package(glfw3 3.3 QUIET)
+    if(NOT TARGET glfw)
+        message(STATUS "GLFW 3.3 not found; using internal version")
+        add_subdirectory(third-party/glfw)
+    endif()
 endif()
 
 if(BUILD_EXAMPLES)
