@@ -2,8 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "device.h"
-#include "archive.h"
+#include "core/streaming.h"
 
 #include <algorithm>
 #include <iomanip>
