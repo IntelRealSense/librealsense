@@ -229,7 +229,7 @@ rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 
 /**
-* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
+* Creates Depth post-processing zero order fix block. The filter invalid pixels that has a wrong value due to zero order effect
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               zero order fix processing block
 */
@@ -245,7 +245,7 @@ rs2_processing_block* rs2_create_zero_order_fix_block(rs2_error** error);
 const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
 
 /**
-* Check if a processing block supports a specific camera info type.
+* Check if a processing block supports a specific info type.
 * \param[in]  block     The processing block to check
 * \param[in]  info      The parameter to check for support
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored

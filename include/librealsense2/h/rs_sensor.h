@@ -430,7 +430,8 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
 /**
- * return the recommended processing blocks list for a specific sensor
+ * return the recommended processing blocks list the for a specific sensor. 
+ * the processing blocks are sorted in the recommended order
  * \param[in] sensor          input sensor
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  * \return list of supported subdevice recommended processing blocks

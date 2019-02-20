@@ -533,7 +533,7 @@ namespace librealsense
 
         void write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks)
         {
-            for (auto block : proccesing_blocks->get_recommended_proccesing_blocks())
+            for (auto block : proccesing_blocks->get_recommended_processing_blocks())
             {
                 try
                 {

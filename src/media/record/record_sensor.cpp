@@ -228,9 +228,9 @@ void record_sensor::disable_recording()
     m_is_recording = false;
 }
 
-processing_blocks librealsense::record_sensor::get_recommended_proccesing_blocks() const
+processing_blocks librealsense::record_sensor::get_recommended_processing_blocks() const
 {
-    return m_sensor.get_recommended_proccesing_blocks();
+    return m_sensor.get_recommended_processing_blocks();
 }
 
 void record_sensor::record_frame(frame_holder frame)

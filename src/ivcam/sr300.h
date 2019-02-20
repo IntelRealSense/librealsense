@@ -271,7 +271,7 @@ namespace librealsense
                 return res;
             }
 
-            processing_blocks get_recommended_proccesing_blocks() const
+            processing_blocks get_recommended_processing_blocks() const
             {
                 return get_sr300_color_recommended_proccesing_blocks();
             }
@@ -355,7 +355,7 @@ namespace librealsense
                 return res;
             };
 
-            processing_blocks get_recommended_proccesing_blocks() const override
+            processing_blocks get_recommended_processing_blocks() const override
             {
                 return get_sr300_depth_recommended_proccesing_blocks();
             };

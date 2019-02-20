@@ -196,7 +196,7 @@ namespace librealsense
         return res;
     }
 
-    processing_blocks ds5_color_sensor::get_recommended_proccesing_blocks() const
+    processing_blocks ds5_color_sensor::get_recommended_processing_blocks() const
     {
         return get_ds5_color_recommended_proccesing_blocks();
     }

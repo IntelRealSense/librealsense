@@ -47,7 +47,7 @@ namespace librealsense
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
         void stop_with_error(const std::string& message);
         void disable_recording();
-        virtual processing_blocks get_recommended_proccesing_blocks() const override;
+        virtual processing_blocks get_recommended_processing_blocks() const override;
 
     private /*methods*/:
         template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);

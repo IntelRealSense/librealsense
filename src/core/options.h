@@ -39,7 +39,7 @@ namespace librealsense
         virtual option& get_option(rs2_option id) = 0;
         virtual const option& get_option(rs2_option id) const = 0;
         virtual bool supports_option(rs2_option id) const = 0;
-        virtual std::vector<rs2_option> get_supports_options() const = 0;
+        virtual std::vector<rs2_option> get_supported_options() const = 0;
         virtual const char* get_option_name(rs2_option) const = 0;
         virtual ~options_interface() = default;
     };
@@ -103,7 +103,7 @@ namespace librealsense
                 _options[opt.first] = opt.second;
             }
         }
-        std::vector<rs2_option> get_supports_options() const override
+        std::vector<rs2_option> get_supported_options() const override
         {
             std::vector<rs2_option> options;
             for (auto option : _options)

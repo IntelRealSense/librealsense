@@ -77,7 +77,7 @@ namespace librealsense
         const std::string& get_info(rs2_camera_info info) const override;
         bool supports_info(rs2_camera_info info) const override;
 
-        processing_blocks get_recommended_proccesing_blocks() const
+        processing_blocks get_recommended_processing_blocks() const
         {
             return {};
         }

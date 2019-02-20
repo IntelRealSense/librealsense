@@ -328,7 +328,7 @@ namespace librealsense
                 return res;
             }
 
-            processing_blocks get_recommended_proccesing_blocks() const override
+            processing_blocks get_recommended_processing_blocks() const override
             {
                 return get_l500_recommended_proccesing_blocks(_zo_point_x_option, _zo_point_y_option);
             };

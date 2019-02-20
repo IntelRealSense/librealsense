@@ -50,7 +50,7 @@ namespace librealsense
         void unregister_before_start_callback(int token) override;
         void raise_notification(const notification& n);
         bool streams_contains_one_frame_or_more();
-        virtual processing_blocks get_recommended_proccesing_blocks() const override
+        virtual processing_blocks get_recommended_processing_blocks() const override
         {
             auto processing_blocks_snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_RECOMMENDED_FILTERS);
             if (processing_blocks_snapshot == nullptr)
@@ -62,7 +62,7 @@ namespace librealsense
             {
                 throw invalid_value_exception("Failed to get options interface from sensor snapshots");
             }
-            return processing_blocks_api->get_recommended_proccesing_blocks();
+            return processing_blocks_api->get_recommended_processing_blocks();
         }
     private:
         void register_sensor_streams(const stream_profiles& vector);

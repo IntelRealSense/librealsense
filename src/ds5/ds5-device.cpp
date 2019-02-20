@@ -80,7 +80,7 @@ namespace librealsense
             : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(-1)
         {}
 
-        processing_blocks get_recommended_proccesing_blocks() const override
+        processing_blocks get_recommended_processing_blocks() const override
         {
             return get_ds5_depth_recommended_proccesing_blocks();
         };

@@ -168,7 +168,7 @@ namespace librealsense
     class recommended_proccesing_blocks_interface
     {
     public:
-        virtual processing_blocks get_recommended_proccesing_blocks() const = 0;
+        virtual processing_blocks get_recommended_processing_blocks() const = 0;
         virtual ~recommended_proccesing_blocks_interface() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_RECOMMENDED_FILTERS, librealsense::recommended_proccesing_blocks_interface);
@@ -179,7 +179,7 @@ namespace librealsense
         recommended_proccesing_blocks_snapshot(const processing_blocks blocks)
             :_blocks(blocks) {}
 
-         virtual processing_blocks get_recommended_proccesing_blocks() const override
+         virtual processing_blocks get_recommended_processing_blocks() const override
         {
             return _blocks;
         }
@@ -196,11 +196,11 @@ namespace librealsense
             :_owner(owner)
         {}
         
-        virtual processing_blocks get_recommended_proccesing_blocks() const override { return _owner->get_recommended_proccesing_blocks(); };
+        virtual processing_blocks get_recommended_processing_blocks() const override { return _owner->get_recommended_processing_blocks(); };
 
         virtual void create_snapshot(std::shared_ptr<recommended_proccesing_blocks_interface>& snapshot) const override
         {
-            snapshot = std::make_shared<recommended_proccesing_blocks_snapshot>(get_recommended_proccesing_blocks());
+            snapshot = std::make_shared<recommended_proccesing_blocks_snapshot>(get_recommended_processing_blocks());
         }
 
         virtual void enable_recording(std::function<void(const recommended_proccesing_blocks_interface&)> recording_function)  override {}

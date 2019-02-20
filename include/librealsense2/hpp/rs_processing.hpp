@@ -903,19 +903,6 @@ namespace rs2
     {
     public:
 
-        enum zero_order_fix_options
-        {
-            RS2_OPTION_FILTER_ZO_IR_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1000), /**< IR min threshold used by zero order filter */
-            RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1001), /**< RTD high threshold used by zero order filter */
-            RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1002), /**< RTD low threshold used by zero order filter */
-            RS2_OPTION_FILTER_ZO_BASELINE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1003), /**< baseline of camera used by zero order filter */
-            RS2_OPTION_FILTER_ZO_PATCH_SIZE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1004), /**< patch size used by zero order filter */
-            RS2_OPTION_FILTER_ZO_MAX_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1005), /**< z max value used by zero order filter */
-            RS2_OPTION_FILTER_ZO_IR_MIN_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1006), /**< ir min value used by zero order filter */
-            RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET = static_cast<rs2_option>(RS2_OPTION_COUNT + 1007), /**< threshold offset used by zero order filter */
-            RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1008) /**< threshold scale used by zero order filter */
-        };
-
         /**
         * Create zero order fix processing block
         * the processing block fix the zero order artifact

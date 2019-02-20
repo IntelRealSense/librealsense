@@ -126,7 +126,7 @@ namespace rs2
             return res > 0;
         }
 
-        virtual std::vector<rs2_option> get_option_list()
+        virtual std::vector<rs2_option> get_options_list()
         {
             std::vector<rs2_option> res;
             rs2_error* e = nullptr;

@@ -245,7 +245,7 @@ namespace rs2
         * get the recommended list of filters by the sensor
         * \return   list of filters that recommended by sensor
         */
-        std::vector<std::shared_ptr<filter>> get_recommended_filters() const
+        std::vector<std::shared_ptr<filter>> get_recommended_processing_blocks() const
         {
             std::vector<std::shared_ptr<filter>> results{};
 

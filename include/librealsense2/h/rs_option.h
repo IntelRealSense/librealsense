@@ -136,8 +136,8 @@ extern "C" {
     void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
 
    /**
-   * get the list of supported options of rs2_options object
-   * \param[in] options    the option object
+   * get the list of supported options of options container
+   * \param[in] options    the options container
    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
    */
     rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error);

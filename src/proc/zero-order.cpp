@@ -9,6 +9,19 @@
 
 namespace librealsense
 {
+    enum zero_order_fix_options
+    {
+        RS2_OPTION_FILTER_ZO_IR_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1000), /**< IR min threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1001), /**< RTD high threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1002), /**< RTD low threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_BASELINE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1003), /**< baseline of camera used by zero order filter */
+        RS2_OPTION_FILTER_ZO_PATCH_SIZE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1004), /**< patch size used by zero order filter */
+        RS2_OPTION_FILTER_ZO_MAX_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1005), /**< z max value used by zero order filter */
+        RS2_OPTION_FILTER_ZO_IR_MIN_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1006), /**< ir min value used by zero order filter */
+        RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET = static_cast<rs2_option>(RS2_OPTION_COUNT + 1007), /**< threshold offset used by zero order filter */
+        RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1008) /**< threshold scale used by zero order filter */
+    };
+
     double get_pixel_rtd(const rs2::vertex v, int baseline)
     {
         auto x = (double)v.x*METER_TO_MM;
@@ -168,7 +181,7 @@ namespace librealsense
 
         });
 
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_IR_THRESHOLD), ir_threshold);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_THRESHOLD), ir_threshold);
 
         auto rtd_high_threshold = std::make_shared<ptr_option<uint16_t>>(
             0,
@@ -185,7 +198,7 @@ namespace librealsense
 
         });
 
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD), rtd_high_threshold);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD), rtd_high_threshold);
 
         auto rtd_low_threshold = std::make_shared<ptr_option<uint16_t>>(
             0,
@@ -202,7 +215,7 @@ namespace librealsense
 
         });
 
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
 
       
 
@@ -220,7 +233,7 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-       register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_BASELINE), baseline);
+       register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_BASELINE), baseline);
     
         auto patch_size = std::make_shared<ptr_option<int>>(
             0,
@@ -236,7 +249,7 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_PATCH_SIZE), patch_size);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_PATCH_SIZE), patch_size);
 
         auto zo_max = std::make_shared<ptr_option<int>>(
             0,
@@ -252,7 +265,7 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_MAX_VALUE), zo_max);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_MAX_VALUE), zo_max);
 
         auto ir_min = std::make_shared<ptr_option<int>>(
             0,
@@ -268,7 +281,7 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_IR_MIN_VALUE), ir_min);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_MIN_VALUE), ir_min);
        
         auto offset = std::make_shared<ptr_option<int>>(
             0,
@@ -284,7 +297,7 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET), offset);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET), offset);
         
         auto scale = std::make_shared<ptr_option<int>>(
             0,
@@ -300,35 +313,34 @@ namespace librealsense
                     << "Unsupported patch size value " << val << " is out of range.");
 
         });
-        register_option(static_cast<rs2_option>(rs2::zero_order_fix::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE), scale);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE), scale);
         register_info(RS2_CAMERA_INFO_NAME, "Zero Order Fix");
     }
 
     const char* zero_order::get_option_name(rs2_option option) const
     {
-        std::string name = options_container::get_option_name(option);
-            if(name.compare(UNKNOWN_VALUE))
-                return name.c_str();
+        if(strcmp(options_container::get_option_name(option),UNKNOWN_VALUE))
+                return options_container::get_option_name(option);
 
         switch (option)
         {
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
             return "Ir Threshold";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD:
             return "Rtd High Threshold";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD:
             return "Rtd Low Threshold";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_BASELINE:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_BASELINE:
             return "Baseline";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_PATCH_SIZE:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_PATCH_SIZE:
             return "Patch size";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_MAX_VALUE:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_MAX_VALUE:
             return "ZO max value";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_MIN_VALUE:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_MIN_VALUE:
             return "IR min value";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET:
             return "Threshold offset";
-        case rs2::zero_order_fix::zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE:
+        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE:
             return "Threshold scale";
         }
         return nullptr;
@@ -468,7 +480,7 @@ namespace librealsense
             composite.foreach([&](rs2::frame f) 
             {
                 if (f.get_profile().stream_type() != RS2_STREAM_DEPTH && f.get_profile().stream_type() != RS2_STREAM_INFRARED && f.get_profile().stream_type() != RS2_STREAM_CONFIDENCE && 
-                    results.size()>0)
+                    results.size() > 0)
                     results.push_back(f);
             });
         }

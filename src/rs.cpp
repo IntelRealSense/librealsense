@@ -511,7 +511,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return new rs2_options_list{ options->options->get_supports_options() };
+    return new rs2_options_list{ options->options->get_supported_options() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
 
@@ -2153,8 +2153,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
-    return new rs2_processing_block_list{ sensor->sensor->get_recommended_proccesing_blocks() };
+    VALIDATE_NOT_NULL(sensor);                            
+    return new rs2_processing_block_list{ sensor->sensor->get_recommended_processing_blocks() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
