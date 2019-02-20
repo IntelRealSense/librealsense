@@ -1,3 +1,5 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
+/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #ifndef WINUSB_UVC_H_
 #define WINUSB_UVC_H_
 
@@ -20,7 +22,7 @@ enum uvc_req_code {
     UVC_REQ_TYPE_INTERFACE_SET = 0x21  // 00100001: Bit [4..0] = 0001: Request directed to interface, Bit [6..5] = 10: Vendor Specific request, Bit [7] = 0: Host to Device
 };
 
-#define LIBUVC_XFER_BUF_SIZE	( 16 * 1024 * 1024 )
+#define LIBUVC_XFER_BUF_SIZE    ( 16 * 1024 * 1024 )
 #define MAX_USB_INTERFACES 20
 
 struct winusb_uvc_interface {
