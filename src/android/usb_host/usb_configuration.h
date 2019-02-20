@@ -1,3 +1,5 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
+/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 //
 // Created by daniel on 10/16/2018.
 //
