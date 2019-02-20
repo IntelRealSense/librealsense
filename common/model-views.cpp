@@ -83,6 +83,59 @@ namespace rs2
         return res;
     }
 
+    template <typename T>
+    std::string safe_call(T t)
+    {
+        try
+        {
+            t();
+            return "";
+        }
+        catch (const error& e)
+        {
+            return error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            return e.what();
+        }
+        catch (...)
+        {
+            return "Unknown error occurred";
+        }
+    }
+
+    std::vector<uint8_t> bytes_from_bin_file(const std::string& filename)
+    {
+        std::ifstream file(filename.c_str(), std::ios::binary);
+        if (!file.good())
+            throw std::runtime_error(to_string() << "Invalid binary file specified " << filename << " verify the source path and location permissions");
+
+        // Determine the file length
+        file.seekg(0, std::ios_base::end);
+        std::size_t size = file.tellg();
+        if (!size)
+            throw std::runtime_error(to_string() << "Invalid binary file " << filename  <<  " provided  - zero-size ");
+        file.seekg(0, std::ios_base::beg);
+
+        // Create a vector to store the data
+        std::vector<uint8_t> v(size);
+
+        // Load the data
+        file.read((char*)&v[0], size);
+
+        return v;
+    }
+
+    // Flush binary stream to file, override previous if exists
+    void bin_file_from_bytes(const std::string& filename, const std::vector<uint8_t> bytes)
+    {
+        std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+        if (!file.good())
+            throw std::runtime_error(to_string() << "Invalid binary file specified " << filename << " verify the target path and location permissions");
+        file.write((char*)bytes.data(), bytes.size());
+    }
+
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18)
     {
         ImGuiStyle& style = ImGui::GetStyle();
@@ -6416,21 +6469,21 @@ namespace rs2
         {
             bool something_to_show = false;
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
-            if (auto loopback = dev.as<rs2::tm2>())
+            if (auto tm2_extensions = dev.as<rs2::tm2>())
             {
                 something_to_show = true;
                 try
                 {
-                    if (!loopback.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (!tm2_extensions.is_loopback_enabled() && ImGui::Selectable("Enable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
                         if (const char* ret = file_dialog_open(file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL))
                         {
-                            loopback.enable_loopback(ret);
+                            tm2_extensions.enable_loopback(ret);
                         }
                     }
-                    if (loopback.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                    if (tm2_extensions.is_loopback_enabled() && ImGui::Selectable("Disable loopback...", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                     {
-                        loopback.disable_loopback();
+                        tm2_extensions.disable_loopback();
                     }
                     if (ImGui::IsItemHovered())
                     {
@@ -6438,6 +6491,57 @@ namespace rs2
                             ImGui::SetTooltip("Stop streaming to use loopback functionality");
                         else
                             ImGui::SetTooltip("Enter the device to loopback mode (inject frames from file to FW)");
+                    }
+
+                    if (auto tm_sensor = dev.first<pose_sensor>())
+                    {
+                        if (ImGui::Selectable("Export Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                        {
+                            if (auto target_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
+                            {
+                                error_message = safe_call([&]()
+                                {
+                                    std::stringstream ss;
+                                    ss << "Exporting localization map to " << target_path << " ... ";
+                                    viewer.not_model.add_log(ss.str());
+                                    bin_file_from_bytes(target_path, tm_sensor.export_localization_map());
+                                    ss.clear();
+                                    ss << "completed";
+                                    viewer.not_model.add_log(ss.str());
+                                });
+                            }
+                        }
+
+                        if (ImGui::IsItemHovered())
+                        {
+                            if (is_streaming)
+                                ImGui::SetTooltip("Stop streaming to Import localization map");
+                            else
+                                ImGui::SetTooltip("Load localization map from host to device");
+                        }
+
+                        if (ImGui::Selectable("Import Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                        {
+                            if (auto source_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
+                            {
+                                error_message = safe_call([&]()
+                                {
+                                    std::stringstream ss;
+                                    ss << "Importing localization map from " << source_path << " ... ";
+                                    tm_sensor.import_localization_map(bytes_from_bin_file(source_path));
+                                    ss << "completed";
+                                    viewer.not_model.add_log(ss.str());
+                                });
+                            }
+                        }
+
+                        if (ImGui::IsItemHovered())
+                        {
+                            if (is_streaming)
+                                ImGui::SetTooltip("Stop streaming to Export localization map");
+                            else
+                                ImGui::SetTooltip("Retrieve and store the localization map from device's memory");
+                        }
                     }
                 }
                 catch (const rs2::error& e)
@@ -6535,28 +6639,6 @@ namespace rs2
         ImGui::PopFont();
 
         return device_panel_height;
-    }
-
-    template <typename T>
-    std::string safe_call(T t)
-    {
-        try
-        {
-            t();
-            return "";
-        }
-        catch (const error& e)
-        {
-            return error_to_string(e);
-        }
-        catch (const std::exception& e)
-        {
-            return e.what();
-        }
-        catch (...)
-        {
-            return "Unknown error occurred";
-        }
     }
 
     void device_model::save_viewer_configurations(std::ofstream& outfile, json& j)
