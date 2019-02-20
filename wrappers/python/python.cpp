@@ -798,6 +798,14 @@ PYBIND11_MODULE(NAME, m) {
             "Retrieves mapping between the units of the depth image and meters.")
         .def("__nonzero__", &rs2::depth_sensor::operator bool);
 
+    py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor");
+    pose_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("import_localization_map", &rs2::pose_sensor::import_localization_map,
+            "Load SLAM localization map from host to device.")
+        .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
+            "Extract SLAM localization map from device and store on host.")
+        .def("__nonzero__", &rs2::pose_sensor::operator bool);
+
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline> pipeline(m, "pipeline");
     pipeline.def(py::init([](rs2::context ctx) { return rs2::pipeline(ctx); }))
