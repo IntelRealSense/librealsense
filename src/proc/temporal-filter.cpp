@@ -32,7 +32,9 @@ namespace librealsense
     const uint8_t temp_delta_default = 20;
     const uint8_t temp_delta_step = 1;
 
-    temporal_filter::temporal_filter() : _persistence_param(persistence_default),
+    temporal_filter::temporal_filter() :
+        depth_processing_block("Temporal Filter"),
+        _persistence_param(persistence_default),
         _alpha_param(temp_alpha_default),
         _one_minus_alpha(1- _alpha_param),
         _delta_param(temp_delta_default),
@@ -104,8 +106,6 @@ namespace librealsense
         on_set_persistence_control(_persistence_param);
         on_set_delta(_delta_param);
         on_set_alpha(_alpha_param);
-
-        register_info(RS2_CAMERA_INFO_NAME, "Temporal Filter");
     }
 
     rs2::frame temporal_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

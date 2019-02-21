@@ -11,7 +11,7 @@ namespace librealsense
     class rates_printer : public generic_processing_block
     {
     public:
-        rates_printer() { register_info(RS2_CAMERA_INFO_NAME, "Rates printer"); }
+        rates_printer() :generic_processing_block("Rates printer"){}
         virtual ~rates_printer() = default;
 
     protected:

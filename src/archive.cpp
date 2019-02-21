@@ -84,6 +84,7 @@ namespace librealsense
                     if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 ||
                         index2reducedIndex.count(d) == 0)
                         continue;
+
                     faces.emplace_back(index2reducedIndex[a], index2reducedIndex[d], index2reducedIndex[b]);
                     faces.emplace_back(index2reducedIndex[d], index2reducedIndex[a], index2reducedIndex[c]);
                 }

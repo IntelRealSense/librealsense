@@ -14,6 +14,7 @@
 namespace librealsense
 {
     yuy2rgb::yuy2rgb()
+        : stream_filter_processing_block("yuy2rgb")
     {
         _stream_filter.stream = RS2_STREAM_ANY;
         _stream_filter.format = RS2_FORMAT_YUYV;

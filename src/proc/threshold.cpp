@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    threshold::threshold() : _min(0.1f), _max(4.f)
+    threshold::threshold() : stream_filter_processing_block("Threshold Filter"),_min(0.1f), _max(4.f)
     {
         _stream_filter.format = RS2_FORMAT_Z16;
         _stream_filter.stream = RS2_STREAM_DEPTH;
@@ -23,7 +23,6 @@ namespace librealsense
 
         auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 4.f, &_max, "Max range in meters");
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
-        register_info(RS2_CAMERA_INFO_NAME, "Threshold Filter");
     }
 
     rs2::frame threshold::process_frame(const rs2::frame_source& source, const rs2::frame& f)

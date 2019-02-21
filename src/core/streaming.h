@@ -185,6 +185,7 @@ namespace librealsense
         }
          
         void update(std::shared_ptr<extension_snapshot> ext) override {}
+
         processing_blocks _blocks;
     };
    
@@ -205,6 +206,7 @@ namespace librealsense
 
         virtual void enable_recording(std::function<void(const recommended_proccesing_blocks_interface&)> recording_function)  override {}
 
+    private:
         recommended_proccesing_blocks_interface* _owner;
     };
 

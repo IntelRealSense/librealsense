@@ -277,6 +277,31 @@ namespace librealsense
         return results;
     }
 
+    processing_blocks get_color_recommended_proccesing_blocks()
+    {
+        processing_blocks res;
+        auto dec = std::make_shared<decimation_filter>();
+        if (!dec->supports_option(RS2_OPTION_STREAM_FILTER))
+            return res;
+        dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_COLOR);
+        dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_ANY);
+        res.push_back(dec);
+        return res;
+    }
+
+    processing_blocks get_depth_recommended_proccesing_blocks()
+    {
+        processing_blocks res;
+        auto dec = std::make_shared<decimation_filter>();
+        if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
+        {
+            dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
+            dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
+            res.push_back(dec);
+        }
+        return res;
+    }
+
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;

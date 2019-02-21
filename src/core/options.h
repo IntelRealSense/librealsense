@@ -111,6 +111,7 @@ namespace librealsense
 
             return options;
         }
+
         virtual const char* get_option_name(rs2_option option) const override
         {
             return get_string(option);

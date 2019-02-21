@@ -229,7 +229,7 @@ rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 
 /**
-* Creates Depth post-processing zero order fix block. The filter invalid pixels that has a wrong value due to zero order effect
+* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               zero order fix processing block
 */
@@ -261,6 +261,7 @@ int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_ca
  * \return non-zero value iff the processing block can be extended to the given extension
  */
 int rs2_is_processing_block_extendable_to(const rs2_processing_block* block, rs2_extension extension_type, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

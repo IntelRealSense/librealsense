@@ -7,8 +7,15 @@
 #include "stream.h"
 #include "l500.h"
 #include "l500-private.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h" 
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
+#include "proc/zero-order.h"
 
 #define MM_TO_METER 1/1000
+#define MIN_ALGO_VERSION 115
 
 namespace librealsense
 {
@@ -61,9 +68,6 @@ namespace librealsense
 
     std::vector<uint8_t> l500_device::get_raw_calibration_table() const
     {
-       /* command cmd(ivcam2::fw_cmd::DPT_INTRINSICS_GET);
-        auto res = _hw_monitor->send(cmd);*/
-
         //WA untill fw will fix DPT_INTRINSICS_GET command
         command cmd_fx(0x01, 0xa00e0804, 0xa00e0808);
         command cmd_fy(0x01, 0xa00e080c, 0xa00e0810);
@@ -93,7 +97,7 @@ namespace librealsense
         _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
     {
         _calib_table_raw = [this]() { return get_raw_calibration_table(); };
-
+        _zo_point = [&]() { return read_zo_point(); };
         static const auto device_name = "Intel RealSense L500";
 
         using namespace ivcam2;
@@ -188,51 +192,32 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
-    bool l500_device::try_read_zo_point_x(int* zo_x)
+    std::pair<int, int>l500_device::read_zo_point()
     {
         if (auto ver = read_algo_version() >= 115)
         {
-            int x, y;
-            read_zo_point(&x, &y);
-            *zo_x = x;
-            return true;
+            const int zo_point_address = 0xa00e1b8c;
+            command cmd(ivcam2::fw_cmd::MRD, zo_point_address, zo_point_address + 4);
+            auto res = _hw_monitor->send(cmd);
+            if (res.size() < 2)
+            {
+                throw std::runtime_error("Invalid result size!");
+            }
+            auto data = (uint16_t*)res.data();
+            return { data[0], data[1] };
         }
-        else
-        {
-            LOG_WARNING("Could not read zo point values the algo version is " << ver);
-            return false;
-        }
-    }
-
-    bool l500_device::try_read_zo_point_y(int * zo_y)
-    {
-        if (auto ver = read_algo_version() >= 115)
-        {
-            int x, y;
-            read_zo_point(&x, &y);
-            *zo_y = y;
-            return true;
-        }
-        else
-        {
-            LOG_WARNING("Could not read zo point values the algo version is " << ver);
-            return false;
-        }
-    }
-
-    void l500_device::read_zo_point(int* zo_x, int* zo_y)
-    {
-        command cmd(1, 0xa00e1b8c, 0xa00e1b90);
-        auto res = _hw_monitor->send(cmd);
-        auto data = (uint16_t*)res.data();
-        *zo_x = data[0];
-        *zo_y = data[1];
+        return { 0, 0 };
     }
 
     int l500_device::read_algo_version()
     {
-        command cmd(1, 0xa0020bd8, 0xa0020bdc);
+        const int algo_version_address = 0xa0020bd8;
+        command cmd(ivcam2::fw_cmd::MRD, algo_version_address, algo_version_address + 4);
         auto res = _hw_monitor->send(cmd);
+        if (res.size() < 2)
+        {
+            throw std::runtime_error("Invalid result size!");
+        }
         auto data = (uint8_t*)res.data();
         auto ver = data[0] + 100* data[1];
         return ver;
@@ -240,15 +225,25 @@ namespace librealsense
 
     float l500_device::read_baseline()
     {
-        command cmd(1, 0xa00e0868, 0xa00e086c);
+        const int baseline_address = 0xa00e0868;
+        command cmd(ivcam2::fw_cmd::MRD, baseline_address, baseline_address + 4);
         auto res = _hw_monitor->send(cmd);
+        if (res.size() < 1)
+        {
+            throw std::runtime_error("Invalid result size!");
+        }
         auto data = (float*)res.data();
         return *data;
     }
 
     float l500_device::read_znorm()
     {
-        auto res = _hw_monitor->send(command(0x01, 0xa00e0b08, 0xa00e0b0c));
+        const int baseline_znorm = 0xa00e0b08;
+        auto res = _hw_monitor->send(command(ivcam2::fw_cmd::MRD, baseline_znorm, baseline_znorm + 4));
+        if (res.size() < 1)
+        {
+            throw std::runtime_error("Invalid result size!");
+        }
         auto znorm = *(float*)res.data();
         return 1/znorm* MM_TO_METER;
     }
@@ -282,6 +277,7 @@ namespace librealsense
         if (has_metadata_fc(fo))
         {
             auto md = (byte*)(fo.metadata);
+            // WA until we will have the struct of metadata
             return ((int*)md)[7];
         }
 
@@ -305,21 +301,23 @@ namespace librealsense
 
     float zo_point_option_x::query() const
     {
-        if (_value == 0)
-        {
-            _owner->try_read_zo_point_x(&_value);
-
-        }
-        return _value;
+        return _zo_point->first;
     }
 
     float zo_point_option_y::query() const
     {
-        if (_value == 0)
-        {
-            _owner->try_read_zo_point_y(&_value);
-
-        }
-        return _value;
+        return _zo_point->second;
+    }
+    processing_blocks l500_device::l500_depth_sensor::get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
+    {
+        processing_blocks res;
+        res.push_back(std::make_shared<zero_order>(zo_point_x, zo_point_y));
+        auto depth_standart = get_depth_recommended_proccesing_blocks();
+        res.insert(res.end(), depth_standart.begin(), depth_standart.end());
+        res.push_back(std::make_shared<threshold>());
+        res.push_back(std::make_shared<spatial_filter>());
+        res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
+        return res;
     }
 }

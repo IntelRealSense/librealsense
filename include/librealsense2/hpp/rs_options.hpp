@@ -51,16 +51,6 @@ namespace rs2
         }
 
         /**
-        * get option description
-        * \
-        * \deprecated API use get_option_name()
-        */
-        virtual const char* option_to_string(rs2_option option)
-        {
-            return "UNKNOWN";
-        }
-
-        /**
         * get option value description (in case specific option value hold special meaning)
         * \param[in] option     option id to be checked
         * \param[in] val      value of the option
@@ -126,7 +116,7 @@ namespace rs2
             return res > 0;
         }
 
-        virtual std::vector<rs2_option> get_options_list()
+        virtual std::vector<rs2_option> get_supported_options()
         {
             std::vector<rs2_option> res;
             rs2_error* e = nullptr;

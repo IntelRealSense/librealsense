@@ -245,9 +245,9 @@ namespace rs2
         * get the recommended list of filters by the sensor
         * \return   list of filters that recommended by sensor
         */
-        std::vector<std::shared_ptr<filter>> get_recommended_processing_blocks() const
+        std::vector<filter> get_recommended_filters() const
         {
-            std::vector<std::shared_ptr<filter>> results{};
+            std::vector<filter> results{};
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_processing_block_list> list(
@@ -260,9 +260,9 @@ namespace rs2
 
             for (auto i = 0; i < size; i++)
             {
-                auto f = std::make_shared<filter>(std::shared_ptr<rs2_processing_block>(
+                auto f = std::shared_ptr<rs2_processing_block>(
                     rs2_get_processing_block(list.get(), i, &e), 
-                    rs2_delete_processing_block));
+                    rs2_delete_processing_block);
                 error::handle(e);
                 results.push_back(f);
             }

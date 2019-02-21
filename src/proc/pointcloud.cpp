@@ -215,6 +215,7 @@ namespace librealsense
     }
 
     pointcloud::pointcloud()
+        :stream_filter_processing_block("Pointcloud")
     {
         _occlusion_filter = std::make_shared<occlusion_filter>();
 
@@ -238,7 +239,6 @@ namespace librealsense
         occlusion_invalidation->set_description(1.f, "Heuristic");
         occlusion_invalidation->set_description(2.f, "Exhaustive");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
-        register_info(RS2_CAMERA_INFO_NAME, "Pointcloud");
     }
 
     bool pointcloud::should_process(const rs2::frame& frame)

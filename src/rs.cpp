@@ -520,7 +520,7 @@ const char* rs2_get_option_name(const rs2_options* options,rs2_option option, rs
     VALIDATE_NOT_NULL(options);
     return options->options->get_option_name(option);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option, options)
 
 int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error)BEGIN_API_CALL
 {
@@ -1088,7 +1088,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_ROI                 : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface)   != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor)           != nullptr;
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
-    case RS2_EXTENSION_SOFTWARE_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
+    case RS2_EXTENSION_SOFTWARE_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
     default:
         return false;
     }
@@ -1145,7 +1145,6 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-        
     case RS2_EXTENSION_DECIMATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::decimation_filter) != nullptr;
     case RS2_EXTENSION_THRESHOLD_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::threshold) != nullptr;
     case RS2_EXTENSION_DISPARITY_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::disparity_transform) != nullptr;
@@ -1159,6 +1158,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
+
 int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(f);
@@ -1646,7 +1646,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, config, pipe)
 
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::processing_block>();
+    auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
 
     return new rs2_processing_block{ block };
@@ -1657,7 +1657,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 {
     VALIDATE_NOT_NULL(proc);
 
-    auto block = std::make_shared<librealsense::processing_block>();
+    auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
 
     block->set_processing_callback({
         new librealsense::internal_frame_processor_fptr_callback(proc, context),
@@ -2189,7 +2189,7 @@ const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2
     {
         return block->block->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "Info " << rs2_camera_info_to_string(info) << " not supported by processing block!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, block, info)
 

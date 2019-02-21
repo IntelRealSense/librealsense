@@ -18,11 +18,6 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -259,22 +254,11 @@ namespace librealsense
                 return results;
             }
 
-            static processing_blocks get_sr300_color_recommended_proccesing_blocks()
-            {
-                processing_blocks res;
-                auto dec = std::make_shared<decimation_filter>();
-                if (!dec->supports_option(RS2_OPTION_STREAM_FILTER))
-                    return res;
-                dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_COLOR);
-                dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_ANY);
-                res.push_back(dec);
-                return res;
-            }
-
             processing_blocks get_recommended_processing_blocks() const
             {
-                return get_sr300_color_recommended_proccesing_blocks();
+                return get_color_recommended_proccesing_blocks();
             }
+
         private:
             const sr300_camera* _owner;
         };
@@ -344,16 +328,7 @@ namespace librealsense
                 });
             }
 
-            static processing_blocks get_sr300_depth_recommended_proccesing_blocks()
-            {
-                processing_blocks res;
-                res.push_back(std::make_shared<decimation_filter>());
-                res.push_back(std::make_shared<threshold>());
-                res.push_back(std::make_shared<spatial_filter>());
-                res.push_back(std::make_shared<temporal_filter>());
-                res.push_back(std::make_shared<hole_filling_filter>());
-                return res;
-            };
+            static processing_blocks get_sr300_depth_recommended_proccesing_blocks();
 
             processing_blocks get_recommended_processing_blocks() const override
             {

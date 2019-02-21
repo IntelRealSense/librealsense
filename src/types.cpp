@@ -187,10 +187,10 @@ namespace librealsense
             CASE(HOLE_FILLING_FILTER)
             CASE(ZERO_ORDER_FILTER)
             CASE(RECOMMENDED_FILTERS)
-
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
+
     }
     const char* get_string(rs2_playback_status value)
     {
@@ -275,8 +275,8 @@ namespace librealsense
             CASE(STREAM_FORMAT_FILTER)
             CASE(STREAM_INDEX_FILTER)
             CASE(EMITTER_ON_OFF)
-            CASE(ZO_POINT_X)
-            CASE(ZO_POINT_Y)
+            CASE(ZERO_ORDER_POINT_X)
+            CASE(ZERO_ORDER_POINT_Y)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

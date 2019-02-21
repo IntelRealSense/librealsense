@@ -153,7 +153,7 @@ namespace rs2
     void save_processing_block_to_config_file(const char* name, 
         std::shared_ptr<rs2::processing_block> pb, bool enable)
     {
-        for (auto opt : pb->get_options_list())
+        for (auto opt : pb->get_supported_options())
         {
             auto val = pb->get_option(opt);
             std::string key = name;
@@ -170,7 +170,7 @@ namespace rs2
     bool restore_processing_block(const char* name, 
         std::shared_ptr<rs2::processing_block> pb, bool enable = true)
     {
-        for (auto opt : pb->get_options_list())
+        for (auto opt : pb->get_supported_options())
         {
             std::string key = name;
             key += ".";
@@ -809,14 +809,13 @@ namespace rs2
         return ss.str();
     }
 
-
     processing_block_model::processing_block_model(
         subdevice_model* owner,
         const std::string& name,
         std::shared_ptr<rs2::filter> block,
         std::function<rs2::frame(rs2::frame)> invoker,
         std::string& error_message, bool enable)
-        : _owner(owner),_name(name), _block(block), _invoker(invoker), enabled(enable)
+        : _owner(owner), _name(name), _block(block), _invoker(invoker), enabled(enable)
     {
         std::stringstream ss;
         ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
@@ -832,14 +831,14 @@ namespace rs2
                                            block, enabled);
 
         populate_options(ss.str().c_str(), owner, owner ? &owner->_options_invalidated : nullptr, error_message);
-
-        
     }
+
     void processing_block_model::save_to_config_file()
     {
         save_processing_block_to_config_file(_full_name.c_str(), _block, enabled);
     }
-    option_model & processing_block_model::get_option(rs2_option opt)
+
+    option_model& processing_block_model::get_option(rs2_option opt)
     {
         if (options_metadata.find(opt) != options_metadata.end()) 
             return options_metadata[opt];
@@ -854,7 +853,7 @@ namespace rs2
         bool* options_invalidated,
         std::string& error_message)
     {
-        for (auto opt : _block->get_options_list())
+        for (auto opt : _block->get_supported_options())
         {
             options_metadata[opt] = create_option_model(opt, opt_base_label, model, _block, model ? &model->_options_invalidated : nullptr, error_message);
         }
@@ -906,16 +905,17 @@ namespace rs2
         }
         catch (...) {}
 
-        for (auto&& filter : s->get_recommended_processing_blocks())
+        for (auto&& f : s->get_recommended_filters())
         {
+            auto shared_filter = std::make_shared<filter>(f);
             auto model = std::make_shared<processing_block_model>(
-                this, filter->get_info(RS2_CAMERA_INFO_NAME), filter,
-                [=](rs2::frame f) { return filter->process(f); }, error_message);
+                this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
+                [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
 
-            if (filter->is<disparity_transform>())
+            if (shared_filter->is<disparity_transform>())
                 model->visible = false;
 
-            if (filter->is<zero_order_fix>())
+            if (shared_filter->is<zero_order_fix>())
                 zero_order_artifact_fix = model;
 
             post_processing.push_back(model);
@@ -1427,13 +1427,10 @@ namespace rs2
 
     bool subdevice_model::can_enable_zero_order()
     {
-        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_INFRARED);});
-        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_DEPTH);});
+        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_INFRARED); });
+        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) { return (p.stream_type() == RS2_STREAM_DEPTH); });
 
-        if (ir == profiles.end() || depth == profiles.end() || !stream_enabled[depth->unique_id()] || !stream_enabled[ir->unique_id()])
-            return false;
-
-        return true;
+        return !(ir == profiles.end() || depth == profiles.end() || !stream_enabled[depth->unique_id()] || !stream_enabled[ir->unique_id()]);
     }
 
     void subdevice_model::verify_zero_order_conditions()
@@ -1442,7 +1439,8 @@ namespace rs2
              throw std::runtime_error(to_string() << "Zero order filter requires both IR and Depth streams turned on.\nPlease rectify the configuration and rerun");
     }
 
-    bool subdevice_model::is_synchronized_frame(viewer_model& viewer, frame f)
+    //The function decides if specific frame should be sent to the syncer
+    bool subdevice_model::is_synchronized_frame(viewer_model& viewer, const frame& f)
     {
         if(zero_order_artifact_fix && zero_order_artifact_fix->enabled && 
             (f.get_profile().stream_type() == RS2_STREAM_DEPTH || f.get_profile().stream_type() == RS2_STREAM_INFRARED || f.get_profile().stream_type() == RS2_STREAM_CONFIDENCE))
@@ -1455,9 +1453,6 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
-        auto ir = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_INFRARED);});
-        auto depth = std::find_if(profiles.begin(), profiles.end(), [&](stream_profile p) {return (p.stream_type() == RS2_STREAM_DEPTH);});
-
         if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->enabled)
         {
             verify_zero_order_conditions();
@@ -3693,7 +3688,9 @@ namespace rs2
 
         auto res = f;
 
-        std::set< std::shared_ptr<subdevice_model>> subdevices;
+        //In order to know what are the processing blocks we need to apply
+        //We should find all the sub devices releted to the frames
+        std::set<std::shared_ptr<subdevice_model>> subdevices;
         for (auto f : frames)
         {
             auto sub = get_frame_origin(f);
@@ -3706,7 +3703,7 @@ namespace rs2
             if (!sub->post_processing_enabled)
                 continue;
 
-            for(auto && pp:sub->post_processing)
+            for(auto&& pp : sub->post_processing)
                 if (pp->enabled)
                     res = pp->invoke(res);
         }
@@ -3717,18 +3714,17 @@ namespace rs2
         {
             for (auto f : set)
             {
-                set_occlusion_marker_color(f);
+                zero_first_pixel(f);
             }
         }    
         else
         {
-            set_occlusion_marker_color(f);
-
+            zero_first_pixel(f);
         }     
         return res;
     }
 
-    std::shared_ptr<subdevice_model> post_processing_filters::get_frame_origin(rs2::frame f)
+    std::shared_ptr<subdevice_model> post_processing_filters::get_frame_origin(const rs2::frame& f)
     {
         for (auto&& s : viewer.streams)
         {
@@ -3745,7 +3741,8 @@ namespace rs2
         return nullptr;
     }
 
-    void post_processing_filters::set_occlusion_marker_color(rs2::frame f)
+    //Zero the first pixel on frame ,used to invalidate the occlusion pixels
+    void post_processing_filters::zero_first_pixel(const rs2::frame& f)
     {
         auto stream_type = f.get_profile().stream_type();
 
@@ -7750,10 +7747,8 @@ namespace rs2
                             label = to_string() << pb->get_name() << "##" << id;
                             if (ImGui::TreeNode(label.c_str()))
                             {
-                                auto options = pb->get_option_list();
-                                for (auto i : options)
+                                for (auto&& opt : pb->get_option_list())
                                 {
-                                    auto opt = static_cast<rs2_option>(i);
                                     if (skip_option(opt)) continue;
                                     pb->get_option(opt).draw_option(
                                         dev.is<playback>() || update_read_only_options,

@@ -131,8 +131,9 @@ namespace librealsense
     }
 
     colorizer::colorizer()
-        : _min(0.f), _max(6.f), _equalize(true), 
-          _target_stream_profile(), _histogram()
+        : stream_filter_processing_block("Depth Visualization"),
+         _min(0.f), _max(6.f), _equalize(true), 
+         _target_stream_profile(), _histogram()
     {
         _histogram = std::vector<int>(MAX_DEPTH, 0);
         _hist_data = _histogram.data();
@@ -202,7 +203,6 @@ namespace librealsense
 
         auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
-        register_info(RS2_CAMERA_INFO_NAME, "Depth Visualization");
     }
 
     rs2::frame colorizer::process_frame(const rs2::frame_source& source, const rs2::frame& f)

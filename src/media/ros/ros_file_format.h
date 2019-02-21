@@ -28,6 +28,14 @@
 #include "types.h"
 #include <vector>
 
+enum ros_file_versions
+{
+    ROS_FILE_VERSION_2 = 2u,
+    ROS_FILE_VERSION_3 = 3u,
+    ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS = 4u
+};
+
+
 namespace librealsense
 {
     inline void convert(rs2_format source, std::string& target)
@@ -84,7 +92,7 @@ namespace librealsense
     {
         if (!try_parse(source, target))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_option");
         }
     }
 
@@ -92,7 +100,7 @@ namespace librealsense
     {
         if (!try_parse(source, target))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_extension");
         }
     }
 
@@ -528,12 +536,12 @@ namespace librealsense
     */
     constexpr uint32_t get_file_version()
     {
-        return 4u;
+        return ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS;
     }
 
     constexpr uint32_t get_minimum_supported_file_version()
     {
-        return 2u;
+        return ROS_FILE_VERSION_2;
     }
 
     constexpr uint32_t get_device_index()

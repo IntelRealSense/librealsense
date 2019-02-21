@@ -16,12 +16,6 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "l500-private.h"
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/zero-order.h"
 
 namespace librealsense
 {
@@ -150,56 +144,50 @@ namespace librealsense
     };
 
     class l500_device;
+
     class zo_point_option_x : public option_base
     {
     public:
-        zo_point_option_x(int min, int max, int step, int def, l500_device* owner, const std::string& desc)
+        zo_point_option_x(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
             : option_base({ static_cast<float>(min),
                            static_cast<float>(max),
                            static_cast<float>(step),
-                           static_cast<float>(def) }), _owner(owner), _value(0)
+                           static_cast<float>(def) }), _owner(owner), _zo_point(zo_point)
         {}
-
         float query() const override;
-
         void set(float value) override
         {
-            _value = static_cast<int>(value);
+            _zo_point->first = static_cast<int>(value);
         }
-
         bool is_enabled() const override { return true; }
         const char* get_description() const override { return _desc.c_str(); }
 
     private:
         l500_device* _owner;
-        mutable int _value = 0;
+        lazy < std::pair<int, int>>& _zo_point;
         std::string _desc;
     };
 
     class zo_point_option_y : public option_base
     {
     public:
-        zo_point_option_y(int min, int max, int step, int def, l500_device* owner, const std::string& desc)
+        zo_point_option_y(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
             : option_base({ static_cast<float>(min),
                            static_cast<float>(max),
                            static_cast<float>(step),
-                           static_cast<float>(def)}), _owner(owner), _value(0)
+                           static_cast<float>(def)}), _owner(owner), _zo_point(zo_point)
         {}
-
         float query() const override;
-
-
         void set(float value) override
         {
-            _value = static_cast<int>(value);
+            _zo_point->second = static_cast<int>(value);
         }
-
         bool is_enabled() const override { return true; }
         const char* get_description() const override { return _desc.c_str(); }
 
     private:
         l500_device* _owner;
-        mutable int _value = 0;
+        lazy < std::pair<int, int>>& _zo_point;
         std::string _desc;
     };
 
@@ -214,16 +202,16 @@ namespace librealsense
                                        std::unique_ptr<frame_timestamp_reader> timestamp_reader)
                 : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
             {
-
                 _zo_point_x_option = std::make_shared<zo_point_option_x>(
                     20,
                     640,
                     1,
                     0,
                     owner,
+                    owner->_zo_point,
                     "zero order point x");
 
-                register_option(static_cast<rs2_option>(RS2_OPTION_ZO_POINT_X), _zo_point_x_option);
+                register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_X), _zo_point_x_option);
 
                 _zo_point_y_option = std::make_shared<zo_point_option_y>(
                     20,
@@ -231,9 +219,10 @@ namespace librealsense
                     1,
                     0,
                     owner,
+                    owner->_zo_point,
                     "zero order point x");
 
-                register_option(static_cast<rs2_option>(RS2_OPTION_ZO_POINT_Y), _zo_point_y_option);
+                register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_Y), _zo_point_y_option);
 
             }
 
@@ -309,24 +298,7 @@ namespace librealsense
                 });
             }
 
-            static processing_blocks get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
-            {
-                processing_blocks res;
-
-                res.push_back(std::make_shared<zero_order>(zo_point_x, zo_point_y));
-                auto dec = std::make_shared<decimation_filter>();
-                if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
-                {
-                    dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
-                    dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
-                    res.push_back(dec);
-                }
-                res.push_back(std::make_shared<threshold>());
-                res.push_back(std::make_shared<spatial_filter>());
-                res.push_back(std::make_shared<temporal_filter>());
-                res.push_back(std::make_shared<hole_filling_filter>());
-                return res;
-            }
+            static processing_blocks get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y);
 
             processing_blocks get_recommended_processing_blocks() const override
             {
@@ -402,9 +374,7 @@ namespace librealsense
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
-        bool try_read_zo_point_x(int* zo_x);
-        bool try_read_zo_point_y(int* zo_y);
-        void read_zo_point(int* zo_x, int* zo_y);
+        std::pair<int, int> read_zo_point();
         int  read_algo_version();
         float  read_baseline();
         float  read_znorm();
@@ -415,9 +385,9 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+        lazy<std::pair<int, int>> _zo_point;
 
         lazy<std::vector<uint8_t>> _calib_table_raw;
-
         void force_hardware_reset() const;
     };
 }

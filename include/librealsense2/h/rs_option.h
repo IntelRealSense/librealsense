@@ -68,12 +68,12 @@ extern "C" {
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
         RS2_OPTION_EMITTER_ON_OFF, /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
-        RS2_OPTION_ZO_POINT_X, /**< zero order point x*/
-        RS2_OPTION_ZO_POINT_Y, /**< zero order point y*/
+        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Zero order point x*/
+        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Zero order point y*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
-    //Deprecated use rs2_get_option_name()
+    // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
     const char* rs2_option_to_string(rs2_option option);
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
@@ -150,12 +150,12 @@ extern "C" {
     int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error);
 
     /**
-     * get option name
-     * \param[in] options     options object
-     * \param[in] option      option id to be checked
-     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-     * \return human-readable option name
-     */
+    * get option name
+    * \param[in] options     options object
+    * \param[in] option      option id to be checked
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return human-readable option name
+    */
     const char* rs2_get_option_name(const rs2_options* options, rs2_option option, rs2_error** error);
 
     /**

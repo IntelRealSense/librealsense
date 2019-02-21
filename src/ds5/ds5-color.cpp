@@ -17,7 +17,6 @@
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 #include "environment.h"
-#include "proc/decimation-filter.h"
 
 namespace librealsense
 {
@@ -184,20 +183,8 @@ namespace librealsense
         return results;
     }
 
-    processing_blocks ds5_color_sensor::get_ds5_color_recommended_proccesing_blocks()
-    {
-        processing_blocks res;
-        auto dec = std::make_shared<decimation_filter>();
-        if (!dec->supports_option(RS2_OPTION_STREAM_FILTER))
-            return res;
-        dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_COLOR);
-        dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_ANY);
-        res.push_back(dec);
-        return res;
-    }
-
     processing_blocks ds5_color_sensor::get_recommended_processing_blocks() const
     {
-        return get_ds5_color_recommended_proccesing_blocks();
+        return get_color_recommended_proccesing_blocks();
     }
 }

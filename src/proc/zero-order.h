@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -7,26 +7,35 @@
 #include "synthetic-stream.h"
 #include "option.h"
 
+#define IR_THRESHOLD 115
+#define RTD_THRESHOLD 200
+#define BASELINE 31
+#define PATCH_SIZE 5
+#define Z_MAX_VALUE 5
+#define IR_MIN_VALUE 75
+#define THRESHOLD_OFFSET 10
+#define THRESHOLD_SCALE 20
+
 namespace librealsense
 {
     struct  zero_order_options
     {
         zero_order_options(): 
-            ir_threshold(115),
-            rtd_high_threshold(200),
-            rtd_low_threshold(200),
-            baseline(31),
-            patch_size(5),
-            z_max(1200),
-            ir_min(75),
-            threshold_offset(10),
-            threshold_scale(20)
+            ir_threshold(IR_THRESHOLD),
+            rtd_high_threshold(RTD_THRESHOLD),
+            rtd_low_threshold(RTD_THRESHOLD),
+            baseline(BASELINE),
+            patch_size(PATCH_SIZE),
+            z_max(Z_MAX_VALUE),
+            ir_min(IR_MIN_VALUE),
+            threshold_offset(THRESHOLD_OFFSET),
+            threshold_scale(THRESHOLD_SCALE)
         {}
 
         uint8_t                 ir_threshold;
         uint16_t                rtd_high_threshold;
         uint16_t                rtd_low_threshold;
-        int                     baseline;
+        float                   baseline;
         bool                    read_baseline;
         int                     patch_size;
         int                     z_max;
@@ -47,7 +56,7 @@ namespace librealsense
         bool should_process(const rs2::frame& frame) override;
         rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results) override;
         const char * get_option_name(rs2_option option) const override;
-        bool try_read_baseline(const rs2::frame& frame, int* baseline);
+        bool try_read_baseline(const rs2::frame& frame);
 
         rs2::stream_profile     _source_profile_depth;
         rs2::stream_profile     _target_profile_depth;
@@ -59,7 +68,7 @@ namespace librealsense
 
         bool                    _first_frame;
 
-        zero_order_options    _options;
+        zero_order_options      _options;
         std::shared_ptr<option> _zo_point_x;
         std::shared_ptr<option> _zo_point_y;
     };

@@ -1,28 +1,28 @@
-#include "zero-order.h"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
+#include "zero-order.h"
 #include <iomanip>
 #include "l500/l500.h"
 
-#define METER_TO_MM 1000
+const double METER_TO_MM = 1000;
 
 namespace librealsense
 {
     enum zero_order_fix_options
     {
-        RS2_OPTION_FILTER_ZO_IR_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1000), /**< IR min threshold used by zero order filter */
-        RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1001), /**< RTD high threshold used by zero order filter */
-        RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1002), /**< RTD low threshold used by zero order filter */
-        RS2_OPTION_FILTER_ZO_BASELINE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1003), /**< baseline of camera used by zero order filter */
-        RS2_OPTION_FILTER_ZO_PATCH_SIZE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1004), /**< patch size used by zero order filter */
-        RS2_OPTION_FILTER_ZO_MAX_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1005), /**< z max value used by zero order filter */
-        RS2_OPTION_FILTER_ZO_IR_MIN_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1006), /**< ir min value used by zero order filter */
-        RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET = static_cast<rs2_option>(RS2_OPTION_COUNT + 1007), /**< threshold offset used by zero order filter */
-        RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE = static_cast<rs2_option>(RS2_OPTION_COUNT + 1008) /**< threshold scale used by zero order filter */
+        RS2_OPTION_FILTER_ZO_IR_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 0), /**< IR min threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1), /**< RTD high threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 2), /**< RTD low threshold used by zero order filter */
+        RS2_OPTION_FILTER_ZO_BASELINE = static_cast<rs2_option>(RS2_OPTION_COUNT + 3), /**< baseline of camera used by zero order filter */
+        RS2_OPTION_FILTER_ZO_PATCH_SIZE = static_cast<rs2_option>(RS2_OPTION_COUNT + 4), /**< patch size used by zero order filter */
+        RS2_OPTION_FILTER_ZO_MAX_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 5), /**< z max value used by zero order filter */
+        RS2_OPTION_FILTER_ZO_IR_MIN_VALUE = static_cast<rs2_option>(RS2_OPTION_COUNT + 6), /**< ir min value used by zero order filter */
+        RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET = static_cast<rs2_option>(RS2_OPTION_COUNT + 7), /**< threshold offset used by zero order filter */
+        RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE = static_cast<rs2_option>(RS2_OPTION_COUNT + 8) /**< threshold scale used by zero order filter */
     };
 
-    double get_pixel_rtd(const rs2::vertex v, int baseline)
+    double get_pixel_rtd(const rs2::vertex& v, int baseline)
     {
         auto x = (double)v.x*METER_TO_MM;
         auto y = (double)v.y*METER_TO_MM;
@@ -32,7 +32,7 @@ namespace librealsense
         return v.z ? rtd : 0;
     }
 
-    void z2rtd(const rs2::vertex * vertices, double * rtd, rs2_intrinsics intrinsics, int baseline)
+    void z2rtd(const rs2::vertex* vertices, double* rtd, const rs2_intrinsics& intrinsics, int baseline)
     {
         for (auto i = 0;i < intrinsics.height*intrinsics.width; i++)
         {
@@ -41,9 +41,11 @@ namespace librealsense
     }
     
     template<typename T>
-    std::vector <T> get_zo_point_values(const T * frame_data_in, rs2_intrinsics intrinsics, int zo_point_x, int zo_point_y, int patch_r)
+    std::vector <T> get_zo_point_values(const T* frame_data_in, const rs2_intrinsics& intrinsics, int zo_point_x, int zo_point_y, int patch_r)
     {
         std::vector<T> values;
+        values.reserve((patch_r + 2) *(patch_r + 2));
+
         for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < intrinsics.height; i++)
         {
             for (auto j = (zo_point_x - 1 - patch_r); j <= (zo_point_x + patch_r) && i < intrinsics.width; j++)
@@ -51,13 +53,12 @@ namespace librealsense
                 values.push_back(frame_data_in[i*intrinsics.width + j]);
             }
         }
-        
 
         return values;
     }
 
     template<typename T>
-    T get_zo_point_value(std::vector <T> values)
+    T get_zo_point_value(std::vector<T>& values)
     {
         std::sort(values.begin(), values.end());
 
@@ -71,8 +72,8 @@ namespace librealsense
         return 0;
     }
 
-    bool try_get_zo_rtd_ir_point_values(const double * rtd, const uint16_t * depth_data_in, const uint8_t * ir_data, 
-        rs2_intrinsics intrinsics, const zero_order_options& options, int zo_point_x, int zo_point_y,
+    bool try_get_zo_rtd_ir_point_values(const double* rtd, const uint16_t* depth_data_in, const uint8_t* ir_data, 
+        const rs2_intrinsics& intrinsics, const zero_order_options& options, int zo_point_x, int zo_point_y,
         double *rtd_zo_value, uint8_t* ir_zo_data)
     {
         if (zo_point_x - options.patch_size < 0 || zo_point_x + options.patch_size >= intrinsics.width ||
@@ -83,26 +84,23 @@ namespace librealsense
         auto values_ir = get_zo_point_values(ir_data, intrinsics, zo_point_x, zo_point_y, options.patch_size);
         auto values_z = get_zo_point_values(depth_data_in, intrinsics, zo_point_x, zo_point_y, options.patch_size);
 
-          for (auto i = 0;i < values_rtd.size();i++)
+        for (auto i = 0; i < values_rtd.size(); i++)
         {
-              if ((double)values_z[i]/ (double)8 > options.z_max || values_ir[i] < options.ir_min)
-              {
-                  values_rtd[i] = 0;  
-                  values_ir[i] = 0;
-              }       
+            if ((values_z[i] / 8.0) > options.z_max || (values_ir[i] < options.ir_min))
+            {
+                values_rtd[i] = 0;  
+                values_ir[i] = 0;
+            }       
         }
-        
-        
+
         values_rtd.erase(std::remove_if(values_rtd.begin(), values_rtd.end(), [](double val)
         {
             return val == 0;
-
         }), values_rtd.end());
 
         values_ir.erase(std::remove_if(values_ir.begin(), values_ir.end(), [](uint8_t val)
         {
             return val == 0;
-
         }), values_ir.end());
 
         if (values_rtd.size() == 0 || values_rtd.size() == 0)
@@ -112,18 +110,16 @@ namespace librealsense
         *ir_zo_data = get_zo_point_value(values_ir);
 
         return true;
-
     }
 
-    void detect_zero_order(const double * rtd, const uint16_t * depth_data_in, const uint8_t * ir_data, std::function<void(int index, bool zero)> zero_pixel,
-        rs2_intrinsics intrinsics, const zero_order_options& options,
+    template<class T>
+    void detect_zero_order(const double * rtd, const uint16_t* depth_data_in, const uint8_t* ir_data, T zero_pixel,
+       const rs2_intrinsics& intrinsics, const zero_order_options& options,
        float zo_value, uint8_t iro_value)
     {
-        int ir_dynamic_range = 256;
-        
-        //auto i_threshold_relative = ((float)ir_threshold / (float)(std::pow(ir_dynamic_range , 2)))*(std::pow((iro_value) , 2));
+        const int ir_dynamic_range = 256;
 
-        auto r = (double)std::exp(((double)ir_dynamic_range / 2 + options.threshold_offset - iro_value) / (double)options.threshold_scale);
+        auto r = (double)std::exp((ir_dynamic_range / 2.0 + options.threshold_offset - iro_value) / (double)options.threshold_scale);
 
         auto res = (1 + r);
         auto i_threshold_relative = (double)options.ir_threshold / res;
@@ -132,18 +128,15 @@ namespace librealsense
             auto rtd_val = rtd[i];
             auto ir_val = ir_data[i];
 
-            if (depth_data_in[i] > 0 && ir_val < i_threshold_relative && rtd_val >(zo_value - options.rtd_low_threshold) && rtd_val < (zo_value + options.rtd_high_threshold))
-            {
-                zero_pixel(i, true);
-            }
-            else
-            {
-                zero_pixel(i, false);
-            }
+            auto zero = (depth_data_in[i] > 0) && (ir_val < i_threshold_relative) &&
+                (rtd_val > (zo_value - options.rtd_low_threshold)) && (rtd_val < (zo_value + options.rtd_high_threshold));
+
+            zero_pixel(i, zero);
         }
     }
 
-    bool zero_order_fix(const uint16_t * depth_data_in, const uint8_t * ir_data, std::function<void(int index, bool zero)> zero_pixel,
+    template<class T>
+    bool zero_order_fix(const uint16_t * depth_data_in, const uint8_t * ir_data, T zero_pixel,
         const rs2::vertex* vertices,
         rs2_intrinsics intrinsics,
         const zero_order_options& options, int zo_point_x, int zo_point_y)
@@ -164,7 +157,7 @@ namespace librealsense
     }
 
     zero_order::zero_order(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
-       : _first_frame(true), _zo_point_x(zo_point_x), _zo_point_y(zo_point_y)
+       : generic_processing_block("Zero Order Fix"), _first_frame(true), _zo_point_x(zo_point_x), _zo_point_y(zo_point_y)
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
             0,
@@ -172,13 +165,12 @@ namespace librealsense
             1,
             115,
             &_options.ir_threshold,
-            "ir threshold");
+            "IR threshold");
         ir_threshold->on_set([ir_threshold](float val)
         {
             if (!ir_threshold->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported ir threshold " << val << " is out of range.");
-
         });
 
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_THRESHOLD), ir_threshold);
@@ -189,13 +181,12 @@ namespace librealsense
             1,
             200,
             &_options.rtd_high_threshold,
-            "rtd high threshold");
+            "RTD high threshold");
         rtd_high_threshold->on_set([rtd_high_threshold](float val)
         {
             if (!rtd_high_threshold->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported rtd high threshold " << val << " is out of range.");
-
         });
 
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD), rtd_high_threshold);
@@ -206,34 +197,30 @@ namespace librealsense
             1,
             200,
             &_options.rtd_low_threshold,
-            "rtd high threshold");
+            "RTD high threshold");
         rtd_low_threshold->on_set([rtd_low_threshold](float val)
         {
             if (!rtd_low_threshold->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported rtd low threshold " << val << " is out of range.");
-
         });
 
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
 
-      
-
-        auto baseline = std::make_shared<ptr_option<int>>(
+        auto baseline = std::make_shared<ptr_option<float>>(
             0,
             50,
             1,
             31,
             &_options.baseline,
-            "baseline");
+            "Baseline");
         baseline->on_set([baseline](float val)
         {
             if (!baseline->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
-       register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_BASELINE), baseline);
+        register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_BASELINE), baseline);
     
         auto patch_size = std::make_shared<ptr_option<int>>(
             0,
@@ -241,13 +228,12 @@ namespace librealsense
             1,
             5,
             &_options.patch_size,
-            "patch size");
+            "Patch size");
         patch_size->on_set([patch_size](float val)
         {
             if (!patch_size->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_PATCH_SIZE), patch_size);
 
@@ -257,13 +243,12 @@ namespace librealsense
             1,
             1200,
             &_options.z_max,
-            "zo max value");
+            "ZO max value");
         zo_max->on_set([zo_max](float val)
         {
             if (!zo_max->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_MAX_VALUE), zo_max);
 
@@ -273,13 +258,12 @@ namespace librealsense
             1,
             75,
             &_options.ir_min,
-            "minimum IR value (saturation)");
+            "Minimum IR value (saturation)");
         ir_min->on_set([ir_min](float val)
         {
             if (!ir_min->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_MIN_VALUE), ir_min);
        
@@ -289,13 +273,12 @@ namespace librealsense
             1,
             10,
             &_options.threshold_offset,
-            "threshold offset");
+            "Threshold offset");
         offset->on_set([offset](float val)
         {
             if (!offset->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET), offset);
         
@@ -305,31 +288,26 @@ namespace librealsense
             1,
             20,
             &_options.threshold_scale,
-            "threshold scale");
+            "Threshold scale");
         scale->on_set([scale](float val)
         {
             if (!scale->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported patch size value " << val << " is out of range.");
-
         });
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE), scale);
-        register_info(RS2_CAMERA_INFO_NAME, "Zero Order Fix");
     }
 
     const char* zero_order::get_option_name(rs2_option option) const
     {
-        if(strcmp(options_container::get_option_name(option),UNKNOWN_VALUE))
-                return options_container::get_option_name(option);
-
         switch (option)
         {
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
-            return "Ir Threshold";
+            return "IR Threshold";
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD:
-            return "Rtd High Threshold";
+            return "RTD high Threshold";
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD:
-            return "Rtd Low Threshold";
+            return "RTD Low Threshold";
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_BASELINE:
             return "Baseline";
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_PATCH_SIZE:
@@ -343,26 +321,26 @@ namespace librealsense
         case zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE:
             return "Threshold scale";
         }
-        return nullptr;
+
+        return options_container::get_option_name(option);
     }
-    bool zero_order::try_read_baseline(const rs2::frame & frame, int* baseline)
+
+    bool zero_order::try_read_baseline(const rs2::frame& frame)
     {
         if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
         {
             auto dev = const_cast<device_interface*>(&(sensor->get_device()));
-            auto debug_dev = dynamic_cast<debug_interface*>(dev);
 
             if (auto l5 = dynamic_cast<l500_device*>(dev))
             {
-                if (*baseline = l5->read_baseline())
-                    return true;
+                _options.baseline = l5->read_baseline();
+                return true;
             }
         }
         return false;
     }
 
-
-    rs2::frame zero_order::process_frame(const rs2::frame_source & source, const rs2::frame & f)
+    rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         std::vector<rs2::frame> result;
 
@@ -370,10 +348,13 @@ namespace librealsense
         {
             if (_zo_point_x == nullptr || _zo_point_y == nullptr)
             {
-                try_get_zo_point(f);
+                if(!try_get_zo_point(f))
+                    LOG_WARNING("Couldn't read the zo point");
             }
-            int baseline;
-            try_read_baseline(f, &baseline);
+
+            if (!try_read_baseline(f))
+                LOG_WARNING("Couldn't read the baseline value");
+
             _first_frame = false;
         }
      
@@ -406,16 +387,23 @@ namespace librealsense
         }
         auto depth_intrinsics = depth_frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
+        auto depth_output = (uint16_t*)depth_out.get_data();
+        uint8_t* confidence_output;
+
+        if (confidence_frame)
+        {
+            confidence_output = (uint8_t*)confidence_out.get_data();
+        }
 
         if (zero_order_fix((const uint16_t*)depth_frame.get_data(),
             (const uint8_t*)ir_frame.get_data(),
             [&](int index, bool zero) 
         {
-            ((uint16_t*)depth_out.get_data())[index] = zero ? 0 : ((uint16_t *)depth_frame.get_data())[index];
+            depth_output[index] = zero ? 0 : ((uint16_t*)depth_frame.get_data())[index];
 
             if (confidence_frame)
             {
-                ((uint8_t*)confidence_out.get_data())[index] = zero ? 0 : ((uint8_t *)confidence_frame.get_data())[index];
+                confidence_output[index] = zero ? 0 : ((uint8_t*)confidence_frame.get_data())[index];
             }
         },
             points.get_vertices(),
@@ -426,9 +414,7 @@ namespace librealsense
             result.push_back(ir_frame);
             if (confidence_frame)
                 result.push_back(confidence_out);
-
         }
-            
         else
         {
             result.push_back(depth_frame);
@@ -450,7 +436,7 @@ namespace librealsense
                 return true;
             }
         }
-        LOG_WARNING("Could not read zo point values ");
+        LOG_WARNING("Could not read zo point values!");
         return false;
     }
 
@@ -464,10 +450,9 @@ namespace librealsense
             }
             auto depth_frame = set.get_depth_frame();
 
-            if (!_first_frame  &&   (_zo_point_x && (_zo_point_x->query() - _options.patch_size < 0 || _zo_point_x->query() + _options.patch_size >= depth_frame.get_width())) ||
-                                    (_zo_point_y && (_zo_point_y->query() - _options.patch_size < 0 || _zo_point_y->query() + _options.patch_size >= depth_frame.get_height())))
+            if (!_first_frame && (_zo_point_x && (_zo_point_x->query() - _options.patch_size < 0 || _zo_point_x->query() + _options.patch_size >= depth_frame.get_width())) ||
+                                 (_zo_point_y && (_zo_point_y->query() - _options.patch_size < 0 || _zo_point_y->query() + _options.patch_size >= depth_frame.get_height())))
                 return false;
-
             return true;
         }
         return false;
@@ -486,5 +471,4 @@ namespace librealsense
         }
         return source.allocate_composite_frame(results);
     }
-   
 };

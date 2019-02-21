@@ -207,7 +207,7 @@ namespace librealsense
 
         platform::usb_spec get_usb_specification() const { return _device->get_usb_specification(); }
         std::string get_device_path() const { return _device->get_device_location(); }
-
+       
     protected:
         stream_profiles init_stream_profiles() override;
 
@@ -255,4 +255,7 @@ namespace librealsense
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
     };
+
+    processing_blocks get_color_recommended_proccesing_blocks();
+    processing_blocks get_depth_recommended_proccesing_blocks();
 }

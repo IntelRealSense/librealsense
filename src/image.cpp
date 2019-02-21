@@ -148,7 +148,7 @@ namespace librealsense
     }
 
     template<size_t SIZE>
-    void rotate_270_degrees_clockwise_optimized(byte * const dest[], const byte * source, int width, int height)
+    void align_l500_image_optimized(byte * const dest[], const byte * source, int width, int height)
     {
         auto width_out = height;
         auto height_out = width;
@@ -178,7 +178,7 @@ namespace librealsense
     }
 
     template<size_t SIZE>
-    void rotate_270_degrees_clockwise(byte * const dest[], const byte * source, int width, int height)
+    void align_l500_image(byte * const dest[], const byte * source, int width, int height)
     {
         auto width_out = height;
         auto height_out = width;
@@ -205,7 +205,7 @@ namespace librealsense
         };
 #pragma pack(pop)
 
-        rotate_270_degrees_clockwise<1>(dest, source, width, height);
+        align_l500_image<1>(dest, source, width, height);
         auto out = dest[0];
         for (int i = (width - 1), out_i = ((width - 1) * 2); i >= 0; --i, out_i-=2)
         {
@@ -1039,9 +1039,9 @@ namespace librealsense
 
     const native_pixel_format pf_confidence_l500          = { 'C   ', 1, 1, {  { true,                &unpack_confidence,                            { { RS2_STREAM_CONFIDENCE,     RS2_FORMAT_RAW8, l500_confidence_resolution } } },
                                                                                { requires_processing, &copy_pixels<1>,                               { { RS2_STREAM_CONFIDENCE,     RS2_FORMAT_RAW8 } } } } };
-    const native_pixel_format pf_z16_l500                 = { 'Z16 ', 1, 2, {  { true,                &rotate_270_degrees_clockwise_optimized<2>,              { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16,  rotate_resolution } } },
+    const native_pixel_format pf_z16_l500                 = { 'Z16 ', 1, 2, {  { true,                &align_l500_image_optimized<2>,              { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16,  rotate_resolution } } },
                                                                                { requires_processing, &copy_pixels<2>,                               { { RS2_STREAM_DEPTH,          RS2_FORMAT_Z16                    } } } } };
-    const native_pixel_format pf_y8_l500                  = { 'GREY', 1, 1, {  { true,                &rotate_270_degrees_clockwise_optimized<1>,              { { RS2_STREAM_INFRARED,       RS2_FORMAT_Y8,   rotate_resolution } } },
+    const native_pixel_format pf_y8_l500                  = { 'GREY', 1, 1, {  { true,                &align_l500_image_optimized<1>,              { { RS2_STREAM_INFRARED,       RS2_FORMAT_Y8,   rotate_resolution } } },
                                                                                { requires_processing, &copy_pixels<1>,                               { { RS2_STREAM_INFRARED,       RS2_FORMAT_Y8 } } } } };
     const native_pixel_format pf_y8                       = { 'GREY', 1, 1, {  { requires_processing, &copy_pixels<1>,                             { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y8  } } } } };
     const native_pixel_format pf_y16                      = { 'Y16 ', 1, 2, {  { true,                &unpack_y16_from_y16_10,                     { { { RS2_STREAM_INFRARED, 1 },  RS2_FORMAT_Y16 } } } } };

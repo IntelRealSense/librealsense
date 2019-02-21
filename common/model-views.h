@@ -316,20 +316,18 @@ namespace rs2
 
         std::vector<rs2_option> get_option_list()
         {
-            return _block->get_options_list();
+            return _block->get_supported_options();
         }
+
         void populate_options(const std::string& opt_base_label,
             subdevice_model* model,
             bool* options_invalidated,
             std::string& error_message);
 
+        std::shared_ptr<rs2::filter> get_block() { return _block; }
+
         bool enabled = true;
         bool visible = true;
-
-        std::shared_ptr<rs2::filter> get_block()
-        {
-            return _block;
-        }
     private:
         std::shared_ptr<rs2::filter> _block;
         std::map<int, option_model> options_metadata;
@@ -427,7 +425,7 @@ namespace rs2
         std::vector<stream_profile> get_selected_profiles();
         void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
-        bool is_synchronized_frame(viewer_model& viewer, frame f);
+        bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
@@ -821,9 +819,9 @@ namespace rs2
         void map_id_frame_to_frame(rs2::frame first, rs2::frame second);
 
         rs2::frame apply_filters(rs2::frame f, const rs2::frame_source& source);
-        std::shared_ptr<subdevice_model> get_frame_origin(rs2::frame f);
+        std::shared_ptr<subdevice_model> get_frame_origin(const rs2::frame& f);
 
-        void set_occlusion_marker_color(rs2::frame f);
+        void zero_first_pixel(const rs2::frame& f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
         std::shared_ptr<pointcloud> pc;

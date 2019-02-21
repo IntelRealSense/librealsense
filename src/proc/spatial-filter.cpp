@@ -49,6 +49,7 @@ namespace librealsense
     const uint8_t holes_fill_def = sp_hf_disabled;
 
     spatial_filter::spatial_filter() :
+        depth_processing_block("Spatial Filter"),
         _spatial_alpha_param(alpha_default_val),
         _spatial_delta_param(delta_default_val),
         _spatial_iterations(filter_iter_def),
@@ -135,7 +136,7 @@ namespace librealsense
                 break;
             default:
                 throw invalid_value_exception(to_string()
-                    << "Unsupported spatial hole filling requested: value " << _holes_filling_mode << " is out of range.");
+                    << "Unsupported spatial hole-filling requested: value " << _holes_filling_mode << " is out of range.");
                 break;
             }
         });
@@ -144,7 +145,6 @@ namespace librealsense
         register_option(RS2_OPTION_FILTER_SMOOTH_DELTA, spatial_filter_delta);
         register_option(RS2_OPTION_FILTER_MAGNITUDE, spatial_filter_iterations);
         register_option(RS2_OPTION_HOLES_FILL, holes_filling_mode);
-        register_info(RS2_CAMERA_INFO_NAME, "Spatial Filter");
     }
 
     rs2::frame spatial_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

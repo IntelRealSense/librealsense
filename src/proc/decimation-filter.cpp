@@ -200,6 +200,7 @@ namespace librealsense
     const uint8_t decimation_step = 1;    // Linear decimation
 
     decimation_filter::decimation_filter() :
+        stream_filter_processing_block("Decimation Filter"),
         _decimation_factor(decimation_default_val),
         _control_val(decimation_default_val),
         _patch_size(decimation_default_val),
@@ -238,7 +239,6 @@ namespace librealsense
         });
 
         register_option(RS2_OPTION_FILTER_MAGNITUDE, decimation_control);
-        register_info(RS2_CAMERA_INFO_NAME, "Decimation Filter");
     }
 
     rs2::frame decimation_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)
