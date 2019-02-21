@@ -13,7 +13,7 @@ namespace Intel.RealSense
             get
             {
                 if (api_version / 10000 == 0) return api_version.ToString();
-                return (api_version / 10000) + "." + (api_version % 10000) / 100 + "." + (api_version % 100);
+                return $"{api_version / 10000}.{(api_version % 10000) / 100}.{api_version % 100}";
             }
         }
 

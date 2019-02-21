@@ -1,26 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
     public class Points : Frame
     {
-        public static readonly new FramePool<Points> Pool = new FramePool<Points>(ptr => new Points(ptr));
-
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        public struct Vertex
-        {
-            public float x;
-            public float y;
-            public float z;
-        }
-        public struct TextureCoordinate
-        {
-            public float u;
-            public float v;
-        }
-
         public Points(IntPtr ptr) : base(ptr)
         {
         }
@@ -44,18 +30,28 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>
-        /// Copy frame data to Vertex array
-        /// </summary>
-        /// <param name="array"></param>
-        public void CopyTo(Vertex[] array)
+
+        void Copy<T>(IntPtr src, IntPtr dst)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            Debug.Assert(src != IntPtr.Zero);
+            Debug.Assert(dst != IntPtr.Zero);
+            NativeMethods.memcpy(dst, src, Count * Marshal.SizeOf(typeof(T)));
+        }
+
+        /// <summary>
+        /// Copy vertex data to managed array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="vertices">Array of size <see cref="Count">Count</see> * 3 * sizeof(float)</param>
+        public void CopyVertices<T>(T[] vertices)
+        {
+            if (vertices == null)
+                throw new ArgumentNullException(nameof(vertices));
+            Debug.Assert(vertices.Length * Marshal.SizeOf(typeof(T)) == Count * 3 * sizeof(float));
+            var handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
             try
             {
-                NativeMethods.memcpy(handle.AddrOfPinnedObject(), VertexData, Count * Marshal.SizeOf(typeof(Vertex)));
+                Copy<T>(VertexData, handle.AddrOfPinnedObject());
             }
             finally
             {
@@ -71,34 +67,26 @@ namespace Intel.RealSense
                 return NativeMethods.rs2_get_frame_texture_coordinates(m_instance.Handle, out error);
             }
         }
+
         /// <summary>
-        /// Copy frame data to TextureCoordinate array
+        /// Copy texture coordinates to managed array
         /// </summary>
-        /// <param name="textureArray"></param>
-        public void CopyTo(TextureCoordinate[] textureArray)
+        /// <typeparam name="T"></typeparam>
+        /// <param name="textureArray">Array of size <see cref="Count">Count</see> * 2 * sizeof(float)</param>
+        public void CopyTextureCoords<T>(T[] textureArray)
         {
             if (textureArray == null)
                 throw new ArgumentNullException(nameof(textureArray));
-
+            Debug.Assert(textureArray.Length * Marshal.SizeOf(typeof(T)) == Count * 2 * sizeof(float));
             var handle = GCHandle.Alloc(textureArray, GCHandleType.Pinned);
             try
             {
-                var size = Count * Marshal.SizeOf(typeof(TextureCoordinate));
-                NativeMethods.memcpy(handle.AddrOfPinnedObject(), TextureData, size);
+                Copy<T>(TextureData, handle.AddrOfPinnedObject());
             }
             finally
             {
                 handle.Free();
             }
-        }
-
-        public override void Release()
-        {
-            //base.Release();
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_release_frame(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
-            Pool.Release(this);
         }
     }
 }

@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _proc_rel_path ${CMAKE_CURRENT_LIST_DIR})
 
 if (BUILD_WITH_CUDA)

@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds5/CMakeLists.txt)
@@ -20,6 +22,10 @@ endif()
 
 if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
+endif()
+
+if(ANDROID_USB_HOST_UVC)
+    include(${_rel_path}/android/CMakeLists.txt)
 endif()
 
 if(BUILD_FOR_WIN7)

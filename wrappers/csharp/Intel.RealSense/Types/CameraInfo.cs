@@ -8,8 +8,8 @@ namespace Intel.RealSense
     {
         Name = 0,
         SerialNumber = 1,
-        RecommendedFirmwareVersion = 2,
-        FirmwareVersion = 3,
+        FirmwareVersion = 2,
+        RecommendedFirmwareVersion = 3,
         PhysicalPort = 4,
         DebugOpCode = 5,
         AdvancedMode = 6,
