@@ -54,6 +54,7 @@ matrix:
       sudo: required
       dist: xenial
       script:
+        - cd ../scripts && ./pr_check.sh && cd ../build
         - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls

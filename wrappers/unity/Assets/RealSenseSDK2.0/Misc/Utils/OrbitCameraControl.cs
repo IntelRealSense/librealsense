@@ -38,8 +38,13 @@ public class OrbitCameraControl : MonoBehaviour
 
     void Update()
     {
+        if (!isActiveAndEnabled)
+            return;
+
         if (!Application.isFocused)
             return;
+
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 
         if (EventSystem.current && EventSystem.current.IsPointerOverGameObject())
             return;
@@ -47,8 +52,6 @@ public class OrbitCameraControl : MonoBehaviour
         var currMousePosition = Input.mousePosition;
         var diff = currMousePosition - prevMousePosition;
         prevMousePosition = currMousePosition;
-
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
 
         // Zoom / FOV
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))

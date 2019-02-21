@@ -9,7 +9,17 @@ You are welcome to propose and discuss enhancements using project [issues](https
 > The `development` branch is the one where all contributions must be merged before being promoted to master.
 > If you plan to propose a patch, please commit into the `development` branch, or its own feature branch. 
 
-We recommend enabling [travis-ci](https://travis-ci.org/) and [AppVeyor](https://www.appveyor.com/) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
+We recommend enabling [travis-ci](https://travis-ci.org/) on your fork of `librealsense` to make sure the changes compile on all platforms and pass unit-tests.
+
+In addition, please run `pr_check.sh` and `api_check.sh` under `scripts` directory. These scripts verify compliance with project's standards:
+
+1. Every example / source file must refer to [LICENSE](https://github.com/IntelRealSense/librealsense/blob/master/LICENSE)
+2. Every example / source file must include correct copyright notice
+3. For indentation we are using spaces and not tabs
+4. Line-endings must be Unix and not DOS style
+5. Every API header file must be able to compile as the first included header (no implicit dependencies)
+
+Most common issues can be automatically resolved by running `./pr_check.sh --fix`
 
 Please familirize yourself with the [Apache License 2.0](https://github.com/IntelRealSense/librealsense/blob/master/LICENSE) before contributing. 
 

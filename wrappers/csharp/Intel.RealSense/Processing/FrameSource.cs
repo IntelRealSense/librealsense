@@ -19,7 +19,7 @@ namespace Intel.RealSense
         {
             object error;
             var fref = NativeMethods.rs2_allocate_synthetic_video_frame(m_instance.Handle, profile.m_instance.Handle, original.m_instance.Handle, bpp, width, height, stride, extension, out error);
-            return Frame.CreateFrame(fref) as T;
+            return Frame.Create<T>(fref);
         }
 
         [Obsolete("This method is obsolete. Use AllocateCompositeFrame with DisposeWith method instead")]
@@ -53,7 +53,7 @@ namespace Intel.RealSense
                 }
 
                 var frame_ref = NativeMethods.rs2_allocate_composite_frame(m_instance.Handle, frame_refs, fl, out error);
-                return FrameSet.Pool.Get(frame_ref);
+                return FrameSet.Create(frame_ref);
             }
             finally
             {

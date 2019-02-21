@@ -7,10 +7,21 @@ namespace Intel.RealSense
 {
     public class FrameSet : ICompositeDisposable, IEnumerable<Frame>
     {
+        readonly static ObjectPool Pool = new ObjectPool((obj, ptr) =>
+        {
+            var fs = obj as FrameSet;
+            fs.m_instance = new HandleRef(fs, ptr);
+            fs.disposedValue = false;
+            object error;
+            fs.m_count = NativeMethods.rs2_embedded_frames_count(fs.m_instance.Handle, out error);
+            fs.m_enum.Reset();
+            fs.disposables.Clear();
+        });
+
+
         internal HandleRef m_instance;
         internal int m_count;
-        internal static readonly FrameSetPool Pool = new FrameSetPool();
-        internal readonly FrameEnumerator m_enum;
+        internal readonly Enumerator m_enum;
 
         public IntPtr NativePtr { get { return m_instance.Handle; } }
 
@@ -18,7 +29,7 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return Frame.CreateFrame(m_instance.Handle);
+            return Frame.Create(m_instance.Handle);
         }
 
         public static FrameSet FromFrame(Frame composite)
@@ -27,7 +38,7 @@ namespace Intel.RealSense
             {
                 object error;
                 NativeMethods.rs2_frame_add_ref(composite.m_instance.Handle, out error);
-                return FrameSet.Pool.Get(composite.m_instance.Handle);
+                return Create(composite.m_instance.Handle);
             }
             throw new ArgumentException("The frame is a not composite frame", nameof(composite));
         }
@@ -49,24 +60,31 @@ namespace Intel.RealSense
 
         public T FirstOrDefault<T>(Stream stream, Format format = Format.Any) where T : Frame
         {
+            return FirstOrDefault(stream, format)?.As<T>();
+        }
+
+        public Frame FirstOrDefault(Stream stream, Format format = Format.Any)
+        {
             for (int i = 0; i < m_count; i++)
             {
                 var frame = this[i];
                 using (var fp = frame.Profile)
                     if (fp.Stream == stream && (format == Format.Any || fp.Format == format))
-                        return frame as T;
+                        return frame;
                 frame.Dispose();
             }
             return null;
         }
 
-        public T FirstOrDefault<T>(Predicate<Frame> predicate) where T : Frame
+        public T FirstOrDefault<T>(Predicate<T> predicate) where T : Frame
         {
+            object error;
             for (int i = 0; i < m_count; i++)
             {
-                var frame = this[i];
+                var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, i, out error);
+                var frame = Frame.Create<T>(ptr);
                 if (predicate(frame))
-                    return frame as T;
+                    return frame;
                 frame.Dispose();
             }
             return null;
@@ -76,7 +94,7 @@ namespace Intel.RealSense
         {
             get
             {
-                return FirstOrDefault<DepthFrame>(Stream.Depth, Format.Z16);
+                return FirstOrDefault(Stream.Depth, Format.Z16)?.As<DepthFrame>();
             }
         }
 
@@ -84,7 +102,7 @@ namespace Intel.RealSense
         {
             get
             {
-                return FirstOrDefault<VideoFrame>(Stream.Color);
+                return FirstOrDefault(Stream.Color)?.As<VideoFrame>();
             }
         }
 
@@ -92,7 +110,7 @@ namespace Intel.RealSense
         {
             get
             {
-                return FirstOrDefault<VideoFrame>(Stream.Infrared);
+                return FirstOrDefault(Stream.Infrared)?.As<VideoFrame>();
             }
         }
 
@@ -122,7 +140,7 @@ namespace Intel.RealSense
             {
                 object error;
                 var ptr = NativeMethods.rs2_extract_frame(m_instance.Handle, index, out error);
-                return Frame.CreateFrame(ptr);
+                return Frame.Create(ptr);
             }
         }
 
@@ -156,7 +174,11 @@ namespace Intel.RealSense
             m_instance = new HandleRef(this, ptr);
             object error;
             m_count = NativeMethods.rs2_embedded_frames_count(m_instance.Handle, out error);
-            m_enum = new FrameEnumerator(this);
+            m_enum = new Enumerator(this);
+        }
+
+        public static FrameSet Create(IntPtr ptr) {
+            return Pool.Get<FrameSet>(ptr);
         }
 
         #region IDisposable Support
@@ -204,13 +226,73 @@ namespace Intel.RealSense
             if (m_instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_release_frame(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
-            Pool.Release(this);
+            FrameSet.Pool.Release(this);
         }
 
         internal readonly List<IDisposable> disposables = new List<IDisposable>();
         public void AddDisposable(IDisposable disposable)
         {
             disposables.Add(disposable);
+        }
+
+        internal sealed class Enumerator : IEnumerator<Frame>
+        {
+            private readonly FrameSet fs;
+            private Frame current;
+            private int index;
+
+            public Enumerator(FrameSet fs)
+            {
+                this.fs = fs;
+                index = 0;
+                current = default(Frame);
+            }
+
+            public Frame Current
+            {
+                get
+                {
+                    return current;
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    if (index == 0 || index == fs.m_count + 1)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                    return Current;
+                }
+            }
+
+            public void Dispose()
+            {
+                // Method intentionally left empty.
+            }
+
+            public bool MoveNext()
+            {
+                if ((uint)index < (uint)fs.m_count)
+                {
+                    object error;
+                    var ptr = NativeMethods.rs2_extract_frame(fs.m_instance.Handle, index, out error);
+                    current = Frame.Create(ptr);
+                    index++;
+                    return true;
+                }
+                index = fs.m_count + 1;
+                current = null;
+                return false;
+            }
+
+            public void Reset()
+            {
+                index = 0;
+                current = null;
+            }
         }
     }
 

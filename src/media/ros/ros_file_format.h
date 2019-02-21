@@ -457,7 +457,7 @@ namespace librealsense
         {
            return  to_string() << "/device_" << stream_id.device_index
                                << "/sensor_" << stream_id.sensor_index
-                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;							   
+                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;                               
         }
 
     private:
@@ -633,7 +633,7 @@ namespace librealsense
             const std::string left_group = R"RE(\s*(0x[0-9a-fA-F]{1,8})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*)RE";
             const std::string right_group = R"RE(\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*)RE";
             const std::string guid_regex_pattern = R"RE(\{)RE" + left_group + R"RE(\{)RE" + right_group + R"RE(\}\s*\})RE";
-            //The GUID pattern looks like this: 	"{ 0x________, 0x____, 0x____, { 0x__, 0x__, 0x__, ... , 0x__ } }"
+            //The GUID pattern looks like this:     "{ 0x________, 0x____, 0x____, { 0x__, 0x__, 0x__, ... , 0x__ } }"
 
             std::regex reg(guid_regex_pattern, std::regex_constants::icase);
             const std::map<rs2_camera_info, const char*> legacy_infos{
