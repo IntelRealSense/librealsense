@@ -62,7 +62,7 @@ namespace Intel.RealSense
 
                 // Allocate bitmaps for rendring.
                 // Since the sample aligns the depth frames to the color frames, both of the images will have the color resolution
-                using (var p = pp.GetStream(Stream.Color) as VideoStreamProfile)
+                using (var p = pp.GetStream(Stream.Color).As<VideoStreamProfile>())
                 {
                     imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
                     imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
@@ -111,7 +111,7 @@ namespace Intel.RealSense
                     using (var frames = FrameSet.FromFrame(f))
                     {
                         var colorFrame = frames.ColorFrame.DisposeWith(frames);
-                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(frames);
+                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].As<VideoFrame>().DisposeWith(frames);
 
                         Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                         Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);

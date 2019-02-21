@@ -29,7 +29,6 @@ public class RsProcessingPipe : RsFrameProvider
     public override event Action OnStop;
     public override event Action<Frame> OnNewSample;
     private CustomProcessingBlock _block;
-    private object _locker = new object();
 
     void Awake()
     {
@@ -52,17 +51,14 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnSourceStop()
     {
-        lock (_locker)
-        {
-            if (!Streaming)
-                return;
-            if (_block != null)
-                Source.OnNewSample -= _block.ProcessFrame;
-            Streaming = false;
-            var h = OnStop;
-            if (h != null)
-                h();
-        }
+        if (!Streaming)
+            return;
+        if (_block != null)
+            Source.OnNewSample -= _block.ProcessFrame;
+        Streaming = false;
+        var h = OnStop;
+        if (h != null)
+            h();
     }
 
     private void OnFrame(Frame f)
@@ -74,14 +70,11 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnDestroy()
     {
-        lock (_locker)
+        OnSourceStop();
+        if (_block != null)
         {
-            OnSourceStop();
-            if (_block != null)
-            {
-                _block.Dispose();
-                _block = null;
-            }
+            _block.Dispose();
+            _block = null;
         }
     }
 
@@ -89,40 +82,37 @@ public class RsProcessingPipe : RsFrameProvider
     {
         try
         {
-            lock (_locker)
+            if (!Streaming)
+                return;
+
+            Frame f = frame;
+
+            if (profile != null)
             {
-                if (!Streaming)
-                    return;
+                var filters = profile._processingBlocks.AsReadOnly();
 
-                Frame f = frame;
-
-                if (profile != null)
+                foreach (var pb in filters)
                 {
-                    var filters = profile.ToArray();
+                    if (pb == null || !pb.Enabled)
+                        continue;
 
-                    foreach (var pb in filters)
+                    var r = pb.Process(f, src);
+                    if (r != f)
                     {
-                        if (pb == null || !pb.Enabled)
-                            continue;
-
-                        var r = pb.Process(f, src);
-                        if (r != f)
+                        // Prevent from disposing the original frame during post-processing
+                        if (f != frame)
                         {
-                            // Prevent from disposing the original frame during post-processing
-                            if (f != frame)
-                            {
-                                f.Dispose();
-                            }
-                            f = r;
+                            f.Dispose();
                         }
+                        f = r;
                     }
                 }
-
-                src.FrameReady(f);
-
-                if (f != frame)
-                    f.Dispose();
             }
+
+            src.FrameReady(f);
+
+            if (f != frame)
+                f.Dispose();
         }
         catch (Exception e)
         {

@@ -156,32 +156,15 @@ public class RsProcessingPipeEditor : Editor
             enterChildren = false;
         }
 
+        iterator.Dispose();
+        obj.Dispose();
+
         return h;
     }
 
     private void DrawListHeader(Rect rect)
     {
         GUI.Label(rect, "Processing Blocks");
-    }
-
-    private static GUIStyle inspectorTitlebar;
-    private static GUIStyle inspectorTitlebarText;
-
-    public static bool InspectorFoldout(Rect position, bool foldout, UnityEngine.Object[] targetObjs)
-    {
-        if (inspectorTitlebar == null)
-        {
-            inspectorTitlebar = "IN Title";
-            inspectorTitlebarText = "IN TitleText";
-        }
-
-        foldout = EditorGUI.Foldout(position, foldout, GUIContent.none, true, inspectorTitlebar);
-
-        position = inspectorTitlebar.padding.Remove(position);
-        if (Event.current.type == EventType.Repaint)
-            inspectorTitlebarText.Draw(position, ObjectNames.GetInspectorTitle(targetObjs[0]), false, false, foldout, false);
-
-        return foldout;
     }
 
     private void DrawListElement(Rect rect, int index, bool isActive, bool isFocused)
@@ -206,6 +189,7 @@ public class RsProcessingPipeEditor : Editor
         if (!item.isExpanded)
         {
             obj.ApplyModifiedProperties();
+            obj.Dispose();
             return;
         }
 
@@ -226,8 +210,8 @@ public class RsProcessingPipeEditor : Editor
             enterChildren = false;
             r.y += r.height + 4f;
         }
-
         obj.ApplyModifiedProperties();
+        obj.Dispose();
     }
 
     protected override bool ShouldHideOpenButton()

@@ -23,5 +23,13 @@ namespace Intel.RealSense
         Record = 14,
         VideoProfile = 15,
         Playback = 16,
+        DepthStereoSensor = 17,
+        DisparityFrame = 18,
+        MotionProfile = 19,
+        PoseFrame = 20,
+        PoseProfile = 21,
+        Tm2 = 22,
+        SoftwareDevice = 23,
+        SoftwareSensor = 24,
     }
 }

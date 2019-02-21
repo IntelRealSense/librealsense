@@ -7,7 +7,7 @@ namespace Intel.RealSense
 {
     public class StreamProfileList : IDisposable, IEnumerable<StreamProfile>
     {
-        IntPtr m_instance;
+        internal IntPtr m_instance;
 
         public StreamProfileList(IntPtr ptr)
         {
@@ -23,11 +23,7 @@ namespace Intel.RealSense
             for (int i = 0; i < deviceCount; i++)
             {
                 var ptr = NativeMethods.rs2_get_stream_profile(m_instance, i, out error);
-
-                if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
-                    yield return VideoStreamProfile.Pool.Get(ptr);
-                else 
-                    yield return StreamProfile.Pool.Get(ptr);
+                yield return StreamProfile.Create(ptr);
             }
         }
 
@@ -46,16 +42,17 @@ namespace Intel.RealSense
             }
         }
 
+        public T GetProfile<T>(int index) where T : StreamProfile
+        {
+            object error;
+            return StreamProfile.Create<T>(NativeMethods.rs2_get_stream_profile(m_instance, index, out error));
+        }
+
         public StreamProfile this[int index]
         {
             get
             {
-                object error;
-                var ptr = NativeMethods.rs2_get_stream_profile(m_instance, index, out error);
-                if (NativeMethods.rs2_stream_profile_is(ptr, Extension.VideoProfile, out error) > 0)
-                    return new VideoStreamProfile(ptr);
-                else
-                    return StreamProfile.Pool.Get(ptr);
+                return GetProfile<StreamProfile>(index);
             }
         }
 
