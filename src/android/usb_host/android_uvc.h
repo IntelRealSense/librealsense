@@ -1,3 +1,5 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
+/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 
 #include "usbhost.h"
@@ -7,7 +9,7 @@
 #include "../../backend.h"
 #include "../../libuvc/uvc_types.h"
 
-#define LIBUVC_XFER_BUF_SIZE	( 4 * 1024 * 1024 )
+#define LIBUVC_XFER_BUF_SIZE    ( 4 * 1024 * 1024 )
 #define MAX_USB_INTERFACES 20
 
 /** Converts an unaligned one-byte integer into an int8 */

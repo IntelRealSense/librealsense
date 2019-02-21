@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 // winusb_uvc.cpp : Defines the entry point for the console application.
 //
 
@@ -1204,8 +1206,8 @@ uvc_error_t winusb_uvc_query_stream_ctrl(winusb_uvc_device *devh, uvc_stream_ctr
             ctrl->bmRateControlModes = DW_TO_INT(buf + 38);
             ctrl->bmLayoutPerStream = QW_TO_QUAD(buf + 40);
         }
-        // 		else
-        // 			ctrl->dwClockFrequency = devh->info->ctrl_if.dwClockFrequency;
+        //         else
+        //             ctrl->dwClockFrequency = devh->info->ctrl_if.dwClockFrequency;
 
         /* fix up block for cameras that fail to set dwMax* */
         if (ctrl->dwMaxVideoFrameSize == 0) {
@@ -1661,7 +1663,7 @@ int uvc_get_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data
         devh->winusbHandle,
         UVC_REQ_TYPE_INTERFACE_GET, req_code,
         ctrl << 8,
-        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,		// XXX saki
+        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,        // XXX saki
         static_cast<unsigned char*>(data),
         len);
 }
@@ -1686,7 +1688,7 @@ int uvc_set_ctrl(winusb_uvc_device *devh, uint8_t unit, uint8_t ctrl, void *data
         devh->winusbHandle,
         UVC_REQ_TYPE_INTERFACE_SET, UVC_SET_CUR,
         ctrl << 8,
-        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,		// XXX saki
+        unit << 8 | devh->deviceData.ctrl_if.bInterfaceNumber,        // XXX saki
         static_cast<unsigned char*>(data),
         len);
 }

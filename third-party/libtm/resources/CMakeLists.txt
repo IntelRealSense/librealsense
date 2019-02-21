@@ -1,3 +1,4 @@
+# License: Apache 2.0. See LICENSE file in root directory.
 cmake_minimum_required(VERSION 2.8)
 project(resources)
 
@@ -125,7 +126,7 @@ if(FW_VERSION)
         file(APPEND ${FW_OUTPUT_FILE_TMP} "};\n")
         file(APPEND ${FW_OUTPUT_FILE_TMP} "#endif\n")
 
-        # Checking if current FW is identical to downloaded FW, and remove new one to avoid libtm recompilation	
+        # Checking if current FW is identical to downloaded FW, and remove new one to avoid libtm recompilation    
         if(EXISTS "${FW_OUTPUT_FILE}")
             # message(STATUS "Local file ${FW_OUTPUT_FILE} already exists, comparing with downloaded FW file")
             execute_process( COMMAND ${CMAKE_COMMAND} -E compare_files "${FW_OUTPUT_FILE}" "${FW_OUTPUT_FILE_TMP}" RESULT_VARIABLE compare_result OUTPUT_QUIET ERROR_QUIET)

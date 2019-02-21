@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #define LOG_TAG "libtmutil"
 #include "Log.h"
 #include "TrackingManager.h"
@@ -506,7 +508,7 @@ public:
     void reset(void)
     {
         count = 0;
-	}
+    }
 
     uint32_t count; /* Number of led events */
 };

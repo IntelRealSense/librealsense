@@ -284,9 +284,9 @@ int main(int argv, const char** argc) try
     while (window)
     {
         if (!window.is_ui_aligned())
-		{
-			viewer_model.popup_if_ui_not_aligned(window.get_font());
-		}
+        {
+            viewer_model.popup_if_ui_not_aligned(window.get_font());
+        }
         refresh_devices(m, ctx, devices_connection_changes, connected_devs, 
             device_names, device_models, viewer_model, error_message);
 

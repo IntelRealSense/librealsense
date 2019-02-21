@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #ifdef RS2_USE_ANDROID_BACKEND
 
@@ -1192,8 +1194,8 @@ usbhost_uvc_query_stream_ctrl(usbhost_uvc_device *devh, uvc_stream_ctrl_t *ctrl,
             ctrl->bmRateControlModes = DW_TO_INT(buf + 38);
             ctrl->bmLayoutPerStream = QW_TO_QUAD(buf + 40);
         }
-        // 		else
-        // 			ctrl->dwClockFrequency = devh->info->ctrl_if.dwClockFrequency;
+        //         else
+        //             ctrl->dwClockFrequency = devh->info->ctrl_if.dwClockFrequency;
 
         /* fix up block for cameras that fail to set dwMax* */
         if (ctrl->dwMaxVideoFrameSize == 0) {
