@@ -857,7 +857,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
             /* The frame ID bit was flipped, but we have image data sitting
             around from prior transfers. This means the camera didn't send
             an EOF for the last transfer of the previous frame. */
-            LOG_DEBUG("complete buffer : length " << strmh->got_bytes);
+//            LOG_DEBUG("complete buffer : length " << strmh->got_bytes);
             usbhost_uvc_swap_buffers(strmh);
         }
 
@@ -939,7 +939,6 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
             LOG_ERROR("Read pipe returned error and was clear halted ERROR:" << strerror(errno));
             pipe->reset();
             continue;
-            break;
         }
         strctx->stream->got_bytes = res;
         usbhost_uvc_process_payload(strctx->stream, &archive, &queue);

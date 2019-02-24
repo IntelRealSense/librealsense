@@ -49,8 +49,6 @@ namespace librealsense {
             if (status < 0)
                 LOG_ERROR("SetXU result:" << status);
 
-            poll_interrupts();
-
             return status >= 0;
         }
 
@@ -319,15 +317,6 @@ namespace librealsense {
             control_range result(min, max, step, def);
 
             return result;
-        }
-
-
-        void android_uvc_device::poll_interrupts() {
-            auto pipe = _device->device->get_pipe(_device->deviceData.ctrl_if.bEndpointAddress);
-            uint8_t buffer[INTERRUPT_BUFFER_SIZE];
-
-            //* 64 byte transfer buffer  - dedicated channel*//*
-            pipe->read_pipe(buffer, INTERRUPT_BUFFER_SIZE, 1000);
         }
 
         void android_uvc_device::set_power_state(power_state state) {
