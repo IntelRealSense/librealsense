@@ -46,3 +46,4 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 6. [OpenCV threaded depth cleaner](https://github.com/juniorxsound/ThreadedDepthCleaner) - RealSense depth-map cleaning and inpainting using OpenCV
 7. [Sample of how to use the IMU of D435i as well as doing PCL rotations based on this](https://github.com/GruffyPuffy/imutest)
 8. [realsense-ir-to-vaapi-h264](https://github.com/bmegli/realsense-ir-to-vaapi-h264) - hardware encode infrared stream to H.264 with Intel VAAPI
+9. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore
