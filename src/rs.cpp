@@ -2217,7 +2217,7 @@ void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* 
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(lmap_blob);
-    // TODO Max limit pending FW confirmat
+    // TODO Max limit pending FW confirmation
     VALIDATE_RANGE(blob_size,1, std::numeric_limits<uint32_t>::max());
 
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);

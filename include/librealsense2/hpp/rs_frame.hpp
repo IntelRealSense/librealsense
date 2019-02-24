@@ -814,7 +814,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the pose data from IMU sensor
+        * Retrieve back the pose data from T2xx position tracking sensor
         * \return rs2_pose - orientation and velocity data.
         */
         rs2_pose get_pose_data()
@@ -954,6 +954,29 @@ namespace rs2
             }
             return f;
         }
+
+        /**
+        * Retrieve the pose frame
+        * \param[in] size_t index
+        * \return pose_frame - the sensor's positional data
+        */
+        pose_frame get_pose_frame(const size_t index = 0) const
+        {
+            frame f;
+            if (!index)
+            {
+                f = first_or_default(RS2_STREAM_POSE);
+            }
+            else
+            {
+                foreach([&f, index](const frame& frm) {
+                    if (frm.get_profile().stream_type() == RS2_STREAM_POSE &&
+                        frm.get_profile().stream_index() == index) f = frm;
+                });
+            }
+            return f.as<pose_frame>();
+        }
+
         /**
         * Return the size of the frameset
         * \return size_t - frameset size.

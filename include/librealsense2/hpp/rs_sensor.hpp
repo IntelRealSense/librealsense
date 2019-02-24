@@ -444,6 +444,7 @@ namespace rs2
         }
 
         /** Load SLAM localization map from host to device
+        * \param[in] lmap_buf   localization map blob
         * \return void
         */
         void import_localization_map(const std::vector<uint8_t>& lmap_buf) const
@@ -454,7 +455,7 @@ namespace rs2
         }
 
         /** Extract SLAM localization map from device and store on host
-        * \return void
+        * \return - localization map blob
         */
         std::vector<uint8_t> export_localization_map() const
         {

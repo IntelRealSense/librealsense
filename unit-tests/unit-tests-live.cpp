@@ -4143,7 +4143,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
 
                             if (auto f = fs.get_depth_frame())
                             {
-                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                if (((bool(f.get_frame_number()%2)) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
                                     even = !even;  // Alternating odd/even frame number is sufficient to avoid duplicates
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
@@ -4209,7 +4209,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
 
                             if (auto f = fs.get_depth_frame())
                             {
-                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                if (((bool(f.get_frame_number()%2) != even)) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
                                     even = !even;
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
@@ -5576,7 +5576,7 @@ TEST_CASE("Positional_Sensors_API", "[live]")
 {
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
-    log_to_console(RS2_LOG_SEVERITY_DEBUG);
+    log_to_console(RS2_LOG_SEVERITY_WARN);
     std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
@@ -5596,7 +5596,7 @@ TEST_CASE("Positional_Sensors_API", "[live]")
         // T265 Only
         if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
         {
-            WARN("Skipping test - Positional Tracking sensors are not provided for device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+            WARN("Skipping test - Applicable for Positional Tracking sensors only. Current device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
         }
         else
         {
@@ -5607,19 +5607,49 @@ TEST_CASE("Positional_Sensors_API", "[live]")
             CAPTURE(pose_snr);
             REQUIRE(pose_snr);
 
-            WHEN("Sequence - idle "){
-                THEN("Export/Import relocalization map is successfull")
+            WHEN("Sequence - idle.")
+            {
+                THEN("Export/Import Success")
                 {
                     std::vector<uint8_t> results, vnv;
-                    REQUIRE_NOTHROW(results=pose_snr.export_localization_map());
+                    REQUIRE_NOTHROW(results = pose_snr.export_localization_map());
                     CAPTURE(results.size());
                     REQUIRE(results.size());
 
                     REQUIRE_NOTHROW(pose_snr.import_localization_map(results));
-                    REQUIRE_NOTHROW(vnv=pose_snr.export_localization_map());
+                    REQUIRE_NOTHROW(vnv = pose_snr.export_localization_map());
                     CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
+                }
+            }
+
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Export/Import must Fail")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto pose_snr = d.first<rs2::pose_sensor>();
+                    CAPTURE(pose_snr);
+                    REQUIRE(pose_snr);
+
+                    rs2::frameset frames;
+                    // The frames are required to generate some initial localization map
+                    for (auto i = 0; i < 300; i++)
+                    {
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                    }
+
+                    std::vector<uint8_t> results{}, vnv{};
+                    REQUIRE_THROWS(results = pose_snr.export_localization_map());
+                    CAPTURE(results.size());
+                    REQUIRE(0 == results.size());
+                    REQUIRE_THROWS(pose_snr.import_localization_map({ 0, 1, 2, 3, 4 }));
+                    REQUIRE_NOTHROW(pipe.stop());
                 }
             }
         }
