@@ -258,7 +258,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_depth_control(amc.depth_controls.vals[0]);
+            try
+            {
+                advanced.set_depth_control(amc.depth_controls.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -280,7 +288,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rsm(amc.rsm.vals[0]);
+            try
+            {
+                advanced.set_rsm(amc.rsm.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -307,7 +323,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rau_support_vector_control(amc.rsvc.vals[0]);
+            try
+            {
+                advanced.set_rau_support_vector_control(amc.rsvc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -330,7 +354,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_color_control(amc.color_control.vals[0]);
+            try
+            {
+                advanced.set_color_control(amc.color_control.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -351,7 +383,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rau_thresholds_control(amc.rctc.vals[0]);
+            try
+            {
+                advanced.set_rau_thresholds_control(amc.rctc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -372,7 +412,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_slo_color_thresholds_control(amc.sctc.vals[0]);
+            try
+            {
+                advanced.set_slo_color_thresholds_control(amc.sctc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -396,7 +444,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_slo_penalty_control(amc.spc.vals[0]);
+            try
+            {
+                advanced.set_slo_penalty_control(amc.spc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -419,7 +475,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_hdad(amc.hdad.vals[0]);
+            try
+            {
+                advanced.set_hdad(amc.hdad.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -449,7 +513,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_color_correction(amc.cc.vals[0]);
+            try
+            {
+                advanced.set_color_correction(amc.cc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -472,7 +544,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_depth_table(amc.depth_table.vals[0]);
+            try
+            {
+                advanced.set_depth_table(amc.depth_table.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -491,7 +571,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_ae_control(amc.ae.vals[0]);
+            try
+            {
+                advanced.set_ae_control(amc.ae.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -511,7 +599,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_census(amc.census.vals[0]);
+            try
+            {
+                advanced.set_census(amc.census.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 

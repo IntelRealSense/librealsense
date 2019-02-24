@@ -6212,9 +6212,9 @@ namespace rs2
                     }
                 }
             }
-            catch (...)
+            catch (const std::exception& ex)
             {
-                ImGui::TextColored(redish, "Couldn't fetch Advanced Mode settings");
+                error_message = ex.what();
             }
 
             ImGui::TreePop();
