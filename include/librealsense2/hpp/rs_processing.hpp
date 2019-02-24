@@ -382,7 +382,7 @@ namespace rs2
             set_option(RS2_OPTION_STREAM_FILTER, float(mapped.get_profile().stream_type()));
             set_option(RS2_OPTION_STREAM_FORMAT_FILTER, float(mapped.get_profile().format()));
             set_option(RS2_OPTION_STREAM_INDEX_FILTER, float(mapped.get_profile().stream_index()));
-            invoke(mapped);
+            process(mapped);
         }
 
     protected:
