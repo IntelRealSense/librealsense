@@ -35,7 +35,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(uvc, { L500_PID });
+        auto correct_pid = filter_by_product(uvc, { L500_PID, L500_PID2});
         auto group_devices = group_devices_by_unique_id(correct_pid);
         for (auto& group : group_devices)
         {
