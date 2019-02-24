@@ -6610,22 +6610,29 @@ namespace rs2
         {
             assert(it.value().is_string());
             std::string formatstr = it.value();
-            if (formatstr == "R8L8")
+
+            bool found = false;
+            for (int i = 0; i < RS2_FORMAT_COUNT; i++)
             {
-                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
-                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
+                auto format = (rs2_format)i;
+                if (ends_with(rs2_format_to_string(format), formatstr))
+                {
+                    requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = format;
+                    found = true;
+                }
             }
-            else if (formatstr == "Y8")
+
+            if (!found)
             {
-                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
-            }
-            else if (formatstr == "UYVY")
-            {
-                requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_UYVY;
-            }
-            else
-            {
-                throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
+                if (formatstr == "R8L8")
+                {
+                    requested_streams[std::make_pair(RS2_STREAM_INFRARED, 1)].format = RS2_FORMAT_Y8;
+                    requested_streams[std::make_pair(RS2_STREAM_INFRARED, 2)].format = RS2_FORMAT_Y8;
+                }
+                else
+                {
+                    throw std::runtime_error(to_string() << "Unsupported stream-ir-format: " << formatstr);
+                }
             }
 
             // Disable infrared stream on all sub devices
