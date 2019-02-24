@@ -100,12 +100,6 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             {
                 error_message = "Invalid numeric input!";
             }
-            else if (new_value < min || new_value > max)
-            {
-                error_message = rs2::to_string() << new_value
-                    << " is out of bounds [" << min << ", "
-                    << max << "]";
-            }
             else
             {
                 val->*field = static_cast<S>(new_value);
@@ -161,12 +155,6 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             if (!string_to_int(buff, new_value))
             {
                 error_message = "Invalid numeric input!";
-            }
-            else if (new_value < min || new_value > max)
-            {
-                error_message = rs2::to_string() << new_value
-                    << " is out of bounds [" << min << ", "
-                    << max << "]";
             }
             else
             {
