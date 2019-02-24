@@ -103,8 +103,6 @@ namespace librealsense
             int _extension_unit = 0;
             mutable std::recursive_mutex            _systemwide_lock;
             mutable std::mutex                      _power_mutex;
-
-            void poll_interrupts();
         };
     }
 }
