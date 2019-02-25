@@ -984,40 +984,58 @@ namespace librealsense
         }
     }
 
+    enum async_op_state {
+        _async_init     = 1 << 0,
+        _async_progress = 1 << 1,
+        _async_success  = 1 << 2,
+        _async_fail     = 1 << 3,
+        _async_max      = 1 << 4
+    };
+
+    std::string async_op_to_string(tm2_sensor::async_op_state val)
+    {
+        switch (val)
+        {
+            case _async_init:       return "Init";
+            case _async_progress:   return "In Progress";
+            case _async_success:    return "Success";
+            case _async_fail:       return "Fail";
+            default: return (to_string() << " Unsupported type: " << val);
+        }
+    }
+
     tm2_sensor::async_op_state tm2_sensor::perform_async_transfer(std::function<perc::Status()> transfer_activator,
         std::function<void()> on_success, const std::string& op_description) const
     {
-        const uint32_t tm2_async_op_timeout = 10; //sec
+        const uint32_t tm2_async_op_timeout_sec = 10;
         async_op_state res = async_op_state::_async_fail;
         auto ret = false;
 
         std::unique_lock<std::mutex> lock(_tm_op_lock);
-        _async_op_status = _async_progress;
         auto stat = transfer_activator();
         if (Status::SUCCESS == stat)
         {
+            _async_op_status = _async_progress;
             LOG_INFO(op_description << " in progress");
-            ret = _async_op.wait_for(lock, std::chrono::seconds(tm2_async_op_timeout), [&]() { return _async_op_status & (_async_success | _async_fail); });
+            ret = _async_op.wait_for(lock, std::chrono::seconds(tm2_async_op_timeout_sec), [&]() { return _async_op_status & (_async_success | _async_fail); });
             if (!ret)
                 LOG_WARNING(op_description << " aborted on timeout");
             else
             {
-                // Perform user-defined action if operation concludes successfully
-                on_success();
+                // Perform user-defined action if operation ends successfully
+                if (_async_success == _async_op_status)
+                    on_success();
 
                 if (_async_fail == _async_op_status)
-                {
                     LOG_ERROR(op_description << " aborted by device");
-                    ret = false;
-                }
             }
             res = _async_op_status;
             _async_op_status = _async_init;
             lock.unlock();
-            LOG_DEBUG("Export localization map completed with " << res);
+            LOG_DEBUG(op_description << " completed with " << async_op_to_string(res));
         }
         else
-            LOG_WARNING("GetLocalizationData failed, status " << int(stat));
+            LOG_WARNING(op_description << " activation failed, status " << int(stat));
 
         return (res);
     }

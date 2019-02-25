@@ -18,10 +18,10 @@ cfg = rs.config()
 cfg.enable_stream(rs.stream.pose)
 
 # Start streaming with requested config
-pf = pipe.start(cfg)
+pipe.start(cfg)
 
 try:
-    for _ in range(10):
+    for _ in range(50):
         # Wait for the next set of frames from the camera
         frames = pipe.wait_for_frames()
 
