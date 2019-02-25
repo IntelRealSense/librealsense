@@ -42,7 +42,7 @@ namespace librealsense
     }
 
     software_sensor::software_sensor(std::string name, software_device* owner)
-        : sensor_base(name, owner)
+        : sensor_base(name, owner), _depth_extension([this]() { return depth_extension(this); })
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
         _unique_id = unique_id::generate_id();
@@ -135,6 +135,19 @@ namespace librealsense
         _profiles.push_back(profile);
 
         return profile;
+    }
+
+    bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
+    {
+        if (extension_type == RS2_EXTENSION_DEPTH_SENSOR)
+        {
+            if (supports_option(RS2_OPTION_DEPTH_UNITS))
+            {
+                *ptr = &(*_depth_extension);
+                return true;
+            }
+        }
+        return false;
     }
 
     stream_profiles software_sensor::init_stream_profiles()

@@ -35,7 +35,7 @@ namespace librealsense
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
     };
 
-    class software_sensor : public sensor_base
+    class software_sensor : public sensor_base, public extendable_interface
     {
     public:
         software_sensor(std::string name, software_device* owner);
@@ -43,6 +43,8 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream);
         std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream);
         std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream);
+
+        bool extend_to(rs2_extension extension_type, void** ptr) override;
 
         stream_profiles init_stream_profiles() override;
 
@@ -63,6 +65,23 @@ namespace librealsense
         stream_profiles _profiles;
         std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
         int _unique_id;
+
+        class depth_extension : public depth_sensor 
+        {
+        public:
+            depth_extension(software_sensor* owner) : _owner(owner) {}
+            
+            float get_depth_scale() const override {
+                return _owner->get_option(RS2_OPTION_DEPTH_UNITS).query();
+            }
+
+            void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override {}
+            void enable_recording(std::function<void(const depth_sensor&)> recording_function) override {}
+        private:
+            software_sensor* _owner;
+        };
+
+        lazy<depth_extension> _depth_extension;
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);
