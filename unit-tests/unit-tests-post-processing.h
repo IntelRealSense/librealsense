@@ -231,7 +231,8 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     test_config.output_res_y = output_meta_params.input_res_y;
     test_config.depth_units = input_meta_params.depth_units;
     test_config.focal_length = input_meta_params.focal_length;
-    test_config.stereo_baseline = input_meta_params.stereo_baseline;
+    // In existing XML files stereo baseline is in meters, but software expects it to be in mm:
+    test_config.stereo_baseline = input_meta_params.stereo_baseline * 1000.f;
     test_config.downsample_scale = output_meta_params.downsample_scale;
     test_config.spatial_filter = output_meta_params.spatial_filter;
     test_config.spatial_alpha = output_meta_params.spatial_alpha;

@@ -516,13 +516,13 @@ namespace rs2
             error::handle(e);
         }
 
-        /** Retrieves mapping between the units of the depth image and meters
-        * \return depth in meters corresponding to a depth value of 1
+        /**
+        * Retrieve the stereoscopic baseline value from sensor
         */
         float get_stereo_baseline() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_depth_scale(_sensor.get(), &e);
+            auto res = rs2_get_stereo_baseline(_sensor.get(), &e);
             error::handle(e);
             return res;
         }

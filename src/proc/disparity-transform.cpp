@@ -114,15 +114,6 @@ namespace librealsense
                     _stereo_baseline = dss->get_stereo_baseline_mm()*0.001f;
                 }
             }
-            else if (auto depth_emul = As<librealsense::software_sensor>(snr))
-            {
-                // Software device can obtain these options via Options interface
-                if (depth_emul->supports_option(RS2_OPTION_DEPTH_UNITS))
-                    _depth_units = depth_emul->get_option(RS2_OPTION_DEPTH_UNITS).query();
-                if (depth_emul->supports_option(RS2_OPTION_STEREO_BASELINE))
-                    _stereo_baseline = depth_emul->get_option(RS2_OPTION_STEREO_BASELINE).query();
-                _stereoscopic_depth = true;
-            }
             else // Live sensor
             {
                 _stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
