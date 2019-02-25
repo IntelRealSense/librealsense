@@ -238,10 +238,10 @@ namespace librealsense
                 rs2_intrinsics intrinsics;
                 intrinsics.width = profile.width;
                 intrinsics.height = profile.height;
-                intrinsics.fx = std::abs(intr[0]);
-                intrinsics.fy = std::abs(intr[1]);
-                intrinsics.ppx = std::abs(intr[2]);
-                intrinsics.ppy = std::abs(intr[3]);
+                intrinsics.fx = std::fabs(intr[0]);
+                intrinsics.fy = std::fabs(intr[1]);
+                intrinsics.ppx = std::fabs(intr[2]);
+                intrinsics.ppy = std::fabs(intr[3]);
                 return intrinsics;
             }
 

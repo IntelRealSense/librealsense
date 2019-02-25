@@ -41,28 +41,28 @@ namespace librealsense
             };
 #pragma pack(pop)
 
-            auto res = _hw_monitor->send(command{ 0x6A });
-            auto temperature_data = *(reinterpret_cast<temperatures*>((void*)res.data()));
+            auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
 
-            /*switch (_option)
+            if (res.size() < sizeof(temperatures))
             {
-            case RS2_OPTION_ASIC_TEMPERATURE:
-                field = &temperature::asic_temperature;
-                is_valid_field = &temperature::is_asic_valid;
-                break;
-            case RS2_OPTION_PROJECTOR_TEMPERATURE:
-                field = &temperature::projector_temperature;
-                is_valid_field = &temperature::is_projector_valid;
-                break;
-            default:
-                throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
+                throw std::runtime_error("Invalid result size!");
             }
 
-            if (0 == temperature_data.*is_valid_field)
-                LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
-*/
-            return temperature_data.LLD_temperature;
+            auto temperature_data = *(reinterpret_cast<temperatures*>((void*)res.data()));
+
+            switch (_option)
+            {
+            case RS2_OPTION_LLD_TEMPERATURE:
+                return temperature_data.LLD_temperature;
+            case RS2_OPTION_MC_TEMPERATURE:
+                return temperature_data.MC_temperature;
+            case RS2_OPTION_MA_TEMPERATURE:
+                return temperature_data.MA_temperature;
+            default:
+                throw invalid_value_exception(to_string() << _option << " is not temperature option!");
+            }
         }
+
         l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
             :_hw_monitor(hw_monitor), _option(opt)
         {
