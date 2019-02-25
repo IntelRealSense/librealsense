@@ -74,8 +74,13 @@ EXPORTS
     rs2_supports_option
     rs2_get_option_range
     rs2_get_option_description
+    rs2_get_option_name
     rs2_get_option_value_description
     rs2_is_option_read_only
+    rs2_get_options_list
+    rs2_get_option_from_list
+    rs2_get_options_list_size
+    rs2_delete_options_list
 
     rs2_set_region_of_interest
     rs2_get_region_of_interest
@@ -174,6 +179,7 @@ EXPORTS
     rs2_extract_frame
     rs2_depth_frame_get_distance
     rs2_depth_stereo_frame_get_baseline
+    rs2_create_zero_order_fix_block
 
     rs2_set_depth_control
     rs2_get_depth_control
@@ -284,3 +290,11 @@ EXPORTS
     rs2_loopback_is_enabled
     rs2_connect_tm2_controller
     rs2_disconnect_tm2_controller
+
+    rs2_get_processing_block
+    rs2_get_recommended_processing_blocks
+    rs2_get_recommended_processing_blocks_count
+    rs2_delete_recommended_processing_blocks
+    rs2_get_processing_block_info
+    rs2_supports_processing_block_info
+    rs2_is_processing_block_extendable_to

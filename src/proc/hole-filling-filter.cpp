@@ -20,6 +20,7 @@ namespace librealsense
     const uint8_t hole_fill_def = hf_farest_from_around;
 
     hole_filling_filter::hole_filling_filter() :
+        depth_processing_block("Hole Filling Filter"),
         _width(0), _height(0), _stride(0), _bpp(0),
         _extension_type(RS2_EXTENSION_DEPTH_FRAME),
         _current_frm_size_pixels(0),
@@ -51,7 +52,6 @@ namespace librealsense
         });
 
         register_option(RS2_OPTION_HOLES_FILL, hole_filling_mode);
-
     }
 
     rs2::frame hole_filling_filter::process_frame(const rs2::frame_source& source, const rs2::frame& f)

@@ -22,6 +22,13 @@
 #include "ds5-color.h"
 #include "ds5-rolling-shutter.h"
 
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h"
+#include "proc/disparity-transform.h"
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
+
 namespace librealsense
 {
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
@@ -79,6 +86,11 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
             : uvc_sensor(ds::DEPTH_STEREO, uvc_device, move(timestamp_reader), owner), _owner(owner), _depth_units(-1)
         {}
+
+        processing_blocks get_recommended_processing_blocks() const override
+        {
+            return get_ds5_depth_recommended_proccesing_blocks();
+        };
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
@@ -698,6 +710,18 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_PROJECTOR_TEMPERATURE));
         }
+    }
+
+    processing_blocks get_ds5_depth_recommended_proccesing_blocks()
+    {
+        auto res = get_depth_recommended_proccesing_blocks();
+        res.push_back(std::make_shared<threshold>());
+        res.push_back(std::make_shared<disparity_transform>(true));
+        res.push_back(std::make_shared<spatial_filter>());
+        res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
+        res.push_back(std::make_shared<disparity_transform>(false));
+        return res;
     }
 
 }

@@ -41,7 +41,7 @@ namespace rs2
 inline std::ostream & operator << (std::ostream & o, rs2_stream stream) { return o << rs2_stream_to_string(stream); }
 inline std::ostream & operator << (std::ostream & o, rs2_format format) { return o << rs2_format_to_string(format); }
 inline std::ostream & operator << (std::ostream & o, rs2_distortion distortion) { return o << rs2_distortion_to_string(distortion); }
-inline std::ostream & operator << (std::ostream & o, rs2_option option) { return o << rs2_option_to_string(option); }
+inline std::ostream & operator << (std::ostream & o, rs2_option option) { return o << rs2_option_to_string(option); } // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
 inline std::ostream & operator << (std::ostream & o, rs2_log_severity severity) { return o << rs2_log_severity_to_string(severity); }
 inline std::ostream & operator << (std::ostream & o, rs2_camera_info camera_info) { return o << rs2_camera_info_to_string(camera_info); }
 inline std::ostream & operator << (std::ostream & o, rs2_frame_metadata_value metadata) { return o << rs2_frame_metadata_to_string(metadata); }

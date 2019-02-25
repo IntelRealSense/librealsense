@@ -429,6 +429,37 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
+/**
+ * Returns the list of recommended processing blocks for a specific sensor. 
+ * Order and configuration of the blocks are decided by the sensor
+ * \param[in] sensor          input sensor
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return list of supported sensor recommended processing blocks
+*/
+rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error);
+
+/**
+* Returns specific processing blocks from processing blocks list
+* \param[in] list           the processing blocks list
+* \param[in] index          the requested processing block
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return processing block
+*/
+rs2_processing_block* rs2_get_processing_block(const rs2_processing_block_list* list, int index, rs2_error** error);
+
+/**
+* Returns the processing blocks list size
+* \param[in] list           the processing blocks list
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return the processing block list size
+*/
+int rs2_get_recommended_processing_blocks_count(const rs2_processing_block_list* list, rs2_error** error);
+
+/**
+* Deletes processing blocks list
+* \param[in] list list to delete
+*/
+void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list);
 
 #ifdef __cplusplus
 }

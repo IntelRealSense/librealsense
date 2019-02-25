@@ -149,7 +149,7 @@ namespace librealsense
     }
 
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-        : sensor_base("Tracking Module", owner), _tm_dev(dev), _dispatcher(10)
+        : sensor_base("Tracking Module", owner, this), _tm_dev(dev), _dispatcher(10)
     {
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
