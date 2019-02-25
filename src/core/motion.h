@@ -44,5 +44,4 @@ namespace librealsense
         virtual ~tm2_extensions() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_TM2, librealsense::tm2_extensions);
-
 }

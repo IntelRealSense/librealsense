@@ -984,38 +984,56 @@ namespace librealsense
         }
     }
 
+    tm2_sensor::async_op_state tm2_sensor::perform_async_transfer(std::function<perc::Status()> transfer_activator,
+        std::function<void()> on_success, const std::string& op_description) const
+    {
+        const uint32_t tm2_async_op_timeout = 10; //sec
+        async_op_state res = async_op_state::_async_fail;
+        auto ret = false;
+
+        std::unique_lock<std::mutex> lock(_tm_op_lock);
+        _async_op_status = _async_progress;
+        auto stat = transfer_activator();
+        if (Status::SUCCESS == stat)
+        {
+            LOG_INFO(op_description << " in progress");
+            ret = _async_op.wait_for(lock, std::chrono::seconds(tm2_async_op_timeout), [&]() { return _async_op_status & (_async_success | _async_fail); });
+            if (!ret)
+                LOG_WARNING(op_description << " aborted on timeout");
+            else
+            {
+                // Perform user-defined action if operation concludes successfully
+                on_success();
+
+                if (_async_fail == _async_op_status)
+                {
+                    LOG_ERROR(op_description << " aborted by device");
+                    ret = false;
+                }
+            }
+            res = _async_op_status;
+            _async_op_status = _async_init;
+            lock.unlock();
+            LOG_DEBUG("Export localization map completed with " << res);
+        }
+        else
+            LOG_WARNING("GetLocalizationData failed, status " << int(stat));
+
+        return (res);
+    }
+
     bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
     {
         if (!_tm_dev)
             throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
 
-        auto ret = false;
-        std::unique_lock<std::mutex> lock(_tm_op_lock);
-        _async_op_res_buffer.clear();
-        _async_op_status = _async_progress;
-        Status stat = _tm_dev->GetLocalizationData(const_cast<tm2_sensor*>(this));
-        if (Status::SUCCESS == stat)
-        {
-            LOG_INFO("Export localization map in progress");
-            ret = _async_op.wait_for(lock, std::chrono::seconds(10), [&]() { return _async_op_status & (_async_success | _async_fail); });
-            if (!ret)
-                LOG_WARNING("Export localization map aborted on timeout");
-            else
-            {
-                lmap_buf = _async_op_res_buffer;
-                if (_async_fail == _async_op_status)
-                {
-                    LOG_ERROR("Export localization map aborted by HW");
-                    ret = false;
-                }
-            }
-            _async_op_status = _async_init;
-            lock.unlock();
-        }
-        else
-            LOG_WARNING("GetLocalizationData failed, status " << int(stat));
+        auto res = perform_async_transfer(
+            [&]() { _async_op_res_buffer.clear(); return _tm_dev->GetLocalizationData(const_cast<tm2_sensor*>(this)); },
+            [&](){ lmap_buf = this->_async_op_res_buffer; },
+            "Export localization map");
 
-        return ((Status::SUCCESS == stat) && ret);
+        return (res == async_op_state::_async_success);
+
     }
 
     bool tm2_sensor::import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const
@@ -1023,28 +1041,12 @@ namespace librealsense
         if (!_tm_dev)
             throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
 
-        auto ret = false;
-        std::unique_lock<std::mutex> lock(_tm_op_lock);
-        _async_op_status = _async_progress;
-        Status stat = _tm_dev->SetLocalizationData(const_cast<tm2_sensor*>(this), uint32_t(lmap_buf.size()), lmap_buf.data());
-        if (Status::SUCCESS == stat)
-        {
-            LOG_INFO("Import localization map in progress");
-            ret = _async_op.wait_for(lock, std::chrono::seconds(10), [&]() { return _async_op_status & (_async_success | _async_fail); });
-            if (!ret)
-                LOG_WARNING("Import localization map aborted on timeout");
-            else
-            {
-                if (_async_fail == _async_op_status)
-                    LOG_ERROR("Import localization map aborted by HW");
-            }
-            _async_op_status = _async_init;
-            lock.unlock();
-        }
-        else
-            LOG_WARNING("GetLocalizationData failed, status " << int(stat));
+        auto res = perform_async_transfer(
+            [&]() { return _tm_dev->SetLocalizationData(const_cast<tm2_sensor*>(this), uint32_t(lmap_buf.size()), lmap_buf.data()); },
+            [&]() {}, "Import localization map");
 
-        return ((Status::SUCCESS == stat) && ret);
+        return (res == async_op_state::_async_success);
+
     }
 
     TrackingData::Temperature tm2_sensor::get_temperature()

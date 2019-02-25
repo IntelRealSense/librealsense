@@ -87,6 +87,16 @@ namespace librealsense
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
 
+        enum async_op_state {
+            _async_init = 1 << 0,
+            _async_progress = 1 << 1,
+            _async_success = 1 << 2,
+            _async_fail = 1 << 3
+        };
+
+        // Async operations handler
+        async_op_state perform_async_transfer(std::function<perc::Status()> transfer_activator,
+            std::function<void()> on_success, const std::string& op_description) const;
         // Recording interfaces
         virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const
         {
@@ -97,13 +107,6 @@ namespace librealsense
         {
             //Empty
         }
-
-
-        enum _async_op_state {  _async_init     = 1 << 0,
-                                _async_progress = 1 << 1,
-                                _async_success  = 1 << 2,
-                                _async_fail     = 1 << 3};
-
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
@@ -118,7 +121,7 @@ namespace librealsense
         perc::TrackingData::Profile     _tm_supported_profiles;
         perc::TrackingData::Profile     _tm_active_profiles;
         mutable std::condition_variable _async_op;
-        mutable _async_op_state         _async_op_status;
+        mutable async_op_state          _async_op_status;
         mutable std::vector<uint8_t>    _async_op_res_buffer;
     };
 }

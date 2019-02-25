@@ -503,6 +503,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_color_frame", &rs2::frameset::get_color_frame)
         .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "index"_a = 0)
         .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame)
+        //.def("get_pose_frame", &rs2::frameset::get_pose_frame)
+        .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
         .def("__iter__", [](rs2::frameset& self)
     {
         return py::make_iterator(self.begin(), self.end());
