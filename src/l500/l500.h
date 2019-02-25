@@ -346,8 +346,6 @@ namespace librealsense
                     ivcam2::depth_xu,
                     ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
 
-
-
             return depth_ep;
         }
 

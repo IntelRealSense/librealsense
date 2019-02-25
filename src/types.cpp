@@ -277,6 +277,7 @@ namespace librealsense
             CASE(EMITTER_ON_OFF)
             CASE(ZERO_ORDER_POINT_X)
             CASE(ZERO_ORDER_POINT_Y)
+            CASE(LLD_TEMPERATURE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

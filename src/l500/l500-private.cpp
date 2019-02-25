@@ -27,5 +27,45 @@ namespace librealsense
             }
             return false;
         }
+        float l500_temperature_options::query() const
+        {
+            if (!is_enabled())
+                throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
+
+#pragma pack(push, 1)
+            struct temperatures
+            {
+                double LLD_temperature;
+                double MC_temperature;
+                double MA_temperature;
+            };
+#pragma pack(pop)
+
+            auto res = _hw_monitor->send(command{ 0x6A });
+            auto temperature_data = *(reinterpret_cast<temperatures*>((void*)res.data()));
+
+            /*switch (_option)
+            {
+            case RS2_OPTION_ASIC_TEMPERATURE:
+                field = &temperature::asic_temperature;
+                is_valid_field = &temperature::is_asic_valid;
+                break;
+            case RS2_OPTION_PROJECTOR_TEMPERATURE:
+                field = &temperature::projector_temperature;
+                is_valid_field = &temperature::is_projector_valid;
+                break;
+            default:
+                throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
+            }
+
+            if (0 == temperature_data.*is_valid_field)
+                LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
+*/
+            return temperature_data.LLD_temperature;
+        }
+        l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
+            :_hw_monitor(hw_monitor), _option(opt)
+        {
+        }
     } // librealsense::ivcam2
 } // namespace librealsense
