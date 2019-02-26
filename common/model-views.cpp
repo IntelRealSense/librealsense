@@ -403,8 +403,7 @@ namespace rs2
             {
                 option.range = options->get_option_range(opt);
                 option.read_only = options->is_option_read_only(opt);
-                if (!option.read_only)
-                    option.value = options->get_option(opt);
+                option.value = options->get_option(opt);
             }
             catch (const error& e)
             {
@@ -527,7 +526,7 @@ namespace rs2
                     {
                         if (read_only)
                         {
-                            ImVec2 vec{ 0, 14 };
+                            ImVec2 vec{ 0, 20 };
                             std::string text = (value == (int)value) ? std::to_string((int)value) : std::to_string(value);
                             if (range.min != range.max)
                             {
