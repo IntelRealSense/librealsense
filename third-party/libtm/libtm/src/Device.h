@@ -36,54 +36,55 @@ namespace perc
         virtual ~Device();
 
         // [interface] - TrackingDevice
-        virtual Status GetSupportedProfile(TrackingData::Profile& profile);
-        virtual Status Start(Listener*, TrackingData::Profile* = NULL);
-        virtual Status Stop();
-        virtual Status GetDeviceInfo(TrackingData::DeviceInfo& info);
-        virtual Status GetSupportedRawStreams(TrackingData::VideoProfile* videoProfiles, TrackingData::GyroProfile* gyroProfiles, TrackingData::AccelerometerProfile* accelerometerProfiles, TrackingData::VelocimeterProfile* velocimeterProfiles = nullptr);
-        virtual Status SetFWLogControl(const TrackingData::LogControl& logControl);
-        virtual Status GetFWLog(TrackingData::Log& log);
-        virtual Status GetCameraIntrinsics(SensorId id, TrackingData::CameraIntrinsics& intrinsics);
-        virtual Status SetCameraIntrinsics(SensorId id, const TrackingData::CameraIntrinsics& intrinsics);
-        virtual Status GetMotionModuleIntrinsics(SensorId id, TrackingData::MotionIntrinsics& intrinsics);
-        virtual Status SetMotionModuleIntrinsics(SensorId id, const TrackingData::MotionIntrinsics& intrinsics);
-        virtual Status GetExtrinsics(SensorId id, TrackingData::SensorExtrinsics& extrinsics);
+        virtual Status GetSupportedProfile(TrackingData::Profile& profile) override;
+        virtual Status Start(Listener*, TrackingData::Profile* = NULL) override;
+        virtual Status Stop() override;
+        virtual Status GetDeviceInfo(TrackingData::DeviceInfo& info) override;
+        virtual Status GetSupportedRawStreams(TrackingData::VideoProfile* videoProfiles, TrackingData::GyroProfile* gyroProfiles, TrackingData::AccelerometerProfile* accelerometerProfiles, TrackingData::VelocimeterProfile* velocimeterProfiles = nullptr) override;
+        virtual Status SetFWLogControl(const TrackingData::LogControl& logControl) override;
+        virtual Status GetFWLog(TrackingData::Log& log) override;
+        virtual Status GetCameraIntrinsics(SensorId id, TrackingData::CameraIntrinsics& intrinsics) override;
+        virtual Status SetCameraIntrinsics(SensorId id, const TrackingData::CameraIntrinsics& intrinsics) override;
+        virtual Status GetMotionModuleIntrinsics(SensorId id, TrackingData::MotionIntrinsics& intrinsics) override;
+        virtual Status SetMotionModuleIntrinsics(SensorId id, const TrackingData::MotionIntrinsics& intrinsics) override;
+        virtual Status GetExtrinsics(SensorId id, TrackingData::SensorExtrinsics& extrinsics) override;
         virtual Status SetOccupancyMapControl(uint8_t enable);
         virtual Status GetPose(TrackingData::PoseFrame& pose, uint8_t sourceIndex);
-        virtual Status SetExposureModeControl(const TrackingData::ExposureModeControl& mode);
-        virtual Status SetExposure(const TrackingData::Exposure& exposure);
-        virtual Status GetTemperature(TrackingData::Temperature& temperature);
-        virtual Status SetTemperatureThreshold(const TrackingData::Temperature& temperature, uint32_t token);
-        virtual Status LockConfiguration(LockType type, bool lock, uint16_t tableType);
-        virtual Status PermanentLockConfiguration(LockType type, uint32_t token, uint16_t tableType);
-        virtual Status ReadConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer, uint16_t* actualSize = nullptr);
-        virtual Status WriteConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer);
-        virtual Status DeleteConfiguration(uint16_t tableType);
-        virtual Status GetLocalizationData(Listener* listener);
-        virtual Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer);
-        virtual Status ResetLocalizationData(uint8_t flag);
-        virtual Status SetStaticNode(const char* guid, const TrackingData::RelativePose& relativePose);
-        virtual Status GetStaticNode(const char* guid, TrackingData::RelativePose& relativePose);
-        virtual Status SetGeoLocation(const TrackingData::GeoLocalization& geoLocation);
-        virtual Status EepromRead(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual);
-        virtual Status EepromWrite(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual, bool verify = false);
-        virtual Status Reset(void);
-        virtual Status SetCalibration(const TrackingData::CalibrationData& calibrationData);
-        virtual Status SendFrame(const TrackingData::VelocimeterFrame& frame);
-        virtual Status SendFrame(const TrackingData::VideoFrame& frame);
-        virtual Status SendFrame(const TrackingData::GyroFrame& frame);
-        virtual Status SendFrame(const TrackingData::AccelerometerFrame& frame);
-        virtual Status ControllerConnect(const TrackingData::ControllerDeviceConnect& device, uint8_t& controllerId);
-        virtual Status ControllerDisconnect(uint8_t controllerId);
-        virtual Status ControllerStartCalibration(uint8_t controllerId);
-        virtual Status GetAssociatedDevices(TrackingData::ControllerAssociatedDevices& devices);
-        virtual Status SetAssociatedDevices(const TrackingData::ControllerAssociatedDevices& devices);
-        virtual Status ControllerSendData(const TrackingData::ControllerData& controllerData);
-        virtual Status ControllerRssiTestControl(uint8_t controllerId, bool testControl);
-        virtual Status SetGpioControl(uint8_t gpioControl);
+        virtual Status SetExposureModeControl(const TrackingData::ExposureModeControl& mode) override;
+        virtual Status SetExposure(const TrackingData::Exposure& exposure) override;
+        virtual Status GetTemperature(TrackingData::Temperature& temperature) override;
+        virtual Status SetTemperatureThreshold(const TrackingData::Temperature& temperature, uint32_t token) override;
+        virtual Status LockConfiguration(LockType type, bool lock, uint16_t tableType) override;
+        virtual Status PermanentLockConfiguration(LockType type, uint32_t token, uint16_t tableType) override;
+        virtual Status ReadConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer, uint16_t* actualSize = nullptr) override;
+        virtual Status WriteConfiguration(uint16_t tableType, uint16_t size, uint8_t* buffer) override;
+        virtual Status DeleteConfiguration(uint16_t tableType) override;
+        virtual Status GetLocalizationData(Listener* listener) override;
+        virtual Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer) override;
+        virtual Status ResetLocalizationData(uint8_t flag) override;
+        virtual Status SetStaticNode(const char* guid, const TrackingData::RelativePose& relativePose) override;
+        virtual Status GetStaticNode(const char* guid, TrackingData::RelativePose& relativePose) override;
+        virtual Status SetGeoLocation(const TrackingData::GeoLocalization& geoLocation) override;
+        virtual Status EepromRead(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual) override;
+        virtual Status EepromWrite(uint16_t offset, uint16_t size, uint8_t* buffer, uint16_t& actual, bool verify = false) override;
+        virtual Status SetLowPowerMode(bool enable) override;
+        virtual Status Reset(void) override;
+        virtual Status SetCalibration(const TrackingData::CalibrationData& calibrationData) override;
+        virtual Status SendFrame(const TrackingData::VelocimeterFrame& frame) override;
+        virtual Status SendFrame(const TrackingData::VideoFrame& frame) override;
+        virtual Status SendFrame(const TrackingData::GyroFrame& frame) override;
+        virtual Status SendFrame(const TrackingData::AccelerometerFrame& frame) override;
+        virtual Status ControllerConnect(const TrackingData::ControllerDeviceConnect& device, uint8_t& controllerId) override;
+        virtual Status ControllerDisconnect(uint8_t controllerId) override;
+        virtual Status ControllerStartCalibration(uint8_t controllerId) override;
+        virtual Status GetAssociatedDevices(TrackingData::ControllerAssociatedDevices& devices) override;
+        virtual Status SetAssociatedDevices(const TrackingData::ControllerAssociatedDevices& devices) override;
+        virtual Status ControllerSendData(const TrackingData::ControllerData& controllerData) override;
+        virtual Status ControllerRssiTestControl(uint8_t controllerId, bool testControl) override;
+        virtual Status SetGpioControl(uint8_t gpioControl) override;
         virtual Status ControllerFWUpdate(const TrackingData::ControllerFW& FW) override;
         // [interface] EventHandler
-        virtual void onTimeout(uintptr_t timerId, const Message &msg);
+        virtual void onTimeout(uintptr_t timerId, const Message &msg) override;
 
         bool IsDeviceReady() { return (mUsbState == DEVICE_USB_STATE_READY);  }
 
@@ -94,7 +95,8 @@ namespace perc
         virtual Status DevConfigurationLock(uint32_t lockValue, uint16_t tableType);
         virtual Status DevEepromLock(uint32_t lockValue);
 
-        virtual void putBufferBack(SensorId id, std::shared_ptr<uint8_t>& frame);
+        virtual void putBufferBack(SensorId id, std::shared_ptr<uint8_t>& frame) override;
+        virtual void WakeFW();
 
         // [USB States]
         typedef enum {
@@ -136,9 +138,9 @@ namespace perc
 
         /* The timeout that USB transfer should wait before giving up due to no response being received */
         enum {
-            USB_TRANSFER_FAST_TIMEOUT_MS = 100,    /* Most of the messages uses fast timeout                                               */
-            USB_TRANSFER_MEDIUM_TIMEOUT_MS = 5000, /* All Control messages + Start/Stop/GetTemperature may need medium timeout to complete */
-            USB_TRANSFER_SLOW_TIMEOUT_MS = 16000,  /* Controller connect/disconnect may need slow timeout to complete                      */
+            USB_TRANSFER_FAST_TIMEOUT_MS = 100,    /* Most of the messages uses fast timeout                                                        */
+            USB_TRANSFER_MEDIUM_TIMEOUT_MS = 5000, /* All Control messages + Start/Stop/GetTemperature/LowPower may need medium timeout to complete */
+            USB_TRANSFER_SLOW_TIMEOUT_MS = 16000,  /* Controller connect/disconnect may need slow timeout to complete                               */
         };
 
         // [State] IDLE
@@ -384,6 +386,7 @@ namespace perc
         Status DeviceFlush();
         Status SetDeviceStreamConfig(uint32_t maxSize);
         Status GetInterfaceVersionInternal();
+        Status SetLowPowerModeInternal(bool enable);
         interface_version_libtm_message mFWInterfaceVersion;
         TrackingData::DeviceInfo::UsbConnectionDescriptor mUsbDescriptor;
         Status SyncTime();
