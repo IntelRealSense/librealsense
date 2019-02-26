@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(libtm)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_STANDARD 11)
 
 set(LIBTM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(LIBTM_INCLUDE_DIR "${LIBTM_ROOT}/libtm/include")

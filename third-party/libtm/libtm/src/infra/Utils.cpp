@@ -5,20 +5,26 @@
 #include "Utils.h"
 #include <chrono>
 #include <algorithm>
-#include <math.h>
 
-#ifdef __linux__
+#ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <math.h>
+#ifdef __linux__
 #define gettid() syscall(SYS_gettid)
+#else
+#define gettid() 0L
+#endif
 #else
 #include <windows.h>
 #include <tchar.h>
 #endif
+
+#include "Utils.h"
 
 nsecs_t systemTime()
 {
@@ -94,10 +100,10 @@ HostLocalTime getLocalTime()
 
 uint64_t bytesSwap(uint64_t val)
 {
-#ifdef _WIN32
-    return _byteswap_uint64(val);
-#else
+#ifdef __linux__
     return htobe64(val);
+#else
+    return _byteswap_uint64(val);
 #endif
 }
 
