@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #include "ros_reader.h"
@@ -891,7 +891,8 @@ namespace librealsense
             }
             throw io_exception("Unrecognized sensor name");
         }
-        throw io_exception("Unrecognized device");
+        //Unrecognized sensor
+        return std::make_shared<recommended_proccesing_blocks_snapshot>(processing_blocks{});
     }
 
     std::shared_ptr<recommended_proccesing_blocks_snapshot> ros_reader::read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,
