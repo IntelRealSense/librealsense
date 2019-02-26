@@ -6515,9 +6515,9 @@ namespace rs2
                         if (ImGui::IsItemHovered())
                         {
                             if (is_streaming)
-                                ImGui::SetTooltip("Stop streaming to Import localization map");
+                                ImGui::SetTooltip("Stop streaming to Export localization map");
                             else
-                                ImGui::SetTooltip("Load localization map from host to device");
+                                ImGui::SetTooltip("Retrieve the localization map from device");
                         }
 
                         if (ImGui::Selectable("Import Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
@@ -6538,9 +6538,9 @@ namespace rs2
                         if (ImGui::IsItemHovered())
                         {
                             if (is_streaming)
-                                ImGui::SetTooltip("Stop streaming to Export localization map");
+                                ImGui::SetTooltip("Stop streaming to Import localization map");
                             else
-                                ImGui::SetTooltip("Retrieve and store the localization map from device's memory");
+                                ImGui::SetTooltip("Load localization map from host to device");
                         }
                     }
                 }
