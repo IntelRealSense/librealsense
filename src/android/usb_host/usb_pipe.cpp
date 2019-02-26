@@ -12,13 +12,21 @@
 #include <chrono>
 #include "../../types.h"
 
+#define INTERRUPT_BUFFER_SIZE 1024
+
 using namespace librealsense::usb_host;
 
-usb_pipe::usb_pipe(usb_device *usb_device, usb_endpoint endpoint, int buffer_size) :
+usb_pipe::usb_pipe(usb_device *usb_device, usb_endpoint endpoint) :
         _endpoint(endpoint),
         _device(usb_device)
 {
     _request = std::shared_ptr<usb_request>(usb_request_new(_device, _endpoint.get_descriptor()), [](usb_request* req) {usb_request_free(req);});
+    auto attr = _endpoint.get_descriptor()->bmAttributes;
+    if(attr == USB_ENDPOINT_XFER_INT)
+    {
+        _interrupt_buffer = std::vector<uint8_t>(INTERRUPT_BUFFER_SIZE);
+        queue_interrupt_request();
+    }
 }
 
 usb_pipe::~usb_pipe()
@@ -62,6 +70,8 @@ void usb_pipe::queue_finished_request(usb_request* response) {
     _received = true;
     lk.unlock();
     _cv.notify_all();
+    if(_interrupt_buffer.size() > 0)
+        queue_interrupt_request();
 }
             
 void usb_pipe::submit_request(uint8_t *buffer, size_t buffer_len) {
@@ -71,4 +81,10 @@ void usb_pipe::submit_request(uint8_t *buffer, size_t buffer_len) {
     if(res < 0) {
         LOG_ERROR("Cannot queue request: " << strerror(errno));
     }
+}
+
+void usb_pipe::queue_interrupt_request()
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    submit_request(_interrupt_buffer.data(), _interrupt_buffer.size());
 }
