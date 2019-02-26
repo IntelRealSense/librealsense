@@ -20,7 +20,6 @@
 #define gettid() 0L
 #endif
 #else
-#include <Winsock2.h>
 #include <windows.h>
 #include <tchar.h>
 #endif
@@ -104,7 +103,7 @@ uint64_t bytesSwap(uint64_t val)
 #ifdef __linux__
     return htobe64(val);
 #else
-    return htonll(val);
+    return _byteswap_uint64(val);
 #endif
 }
 
