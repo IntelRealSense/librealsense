@@ -984,22 +984,14 @@ namespace librealsense
         }
     }
 
-    enum async_op_state {
-        _async_init     = 1 << 0,
-        _async_progress = 1 << 1,
-        _async_success  = 1 << 2,
-        _async_fail     = 1 << 3,
-        _async_max      = 1 << 4
-    };
-
     std::string async_op_to_string(tm2_sensor::async_op_state val)
     {
         switch (val)
         {
-            case _async_init:       return "Init";
-            case _async_progress:   return "In Progress";
-            case _async_success:    return "Success";
-            case _async_fail:       return "Fail";
+            case tm2_sensor::_async_init:       return "Init";
+            case tm2_sensor::_async_progress:   return "In Progress";
+            case tm2_sensor::_async_success:    return "Success";
+            case tm2_sensor::_async_fail:       return "Fail";
             default: return (to_string() << " Unsupported type: " << val);
         }
     }

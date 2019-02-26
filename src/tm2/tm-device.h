@@ -88,10 +88,11 @@ namespace librealsense
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
 
         enum async_op_state {
-            _async_init = 1 << 0,
+            _async_init     = 1 << 0,
             _async_progress = 1 << 1,
-            _async_success = 1 << 2,
-            _async_fail = 1 << 3
+            _async_success  = 1 << 2,
+            _async_fail     = 1 << 3,
+            _async_max      = 1 << 4
         };
 
         // Async operations handler
