@@ -27,7 +27,20 @@ namespace librealsense
     private:
 
         template <typename ROS_TYPE>
-        static typename ROS_TYPE::ConstPtr instantiate_msg(const rosbag::MessageInstance& msg);
+        static typename ROS_TYPE::ConstPtr instantiate_msg(const rosbag::MessageInstance& msg)
+        {
+            typename ROS_TYPE::ConstPtr msg_instnance_ptr = msg.instantiate<ROS_TYPE>();
+            if (msg_instnance_ptr == nullptr)
+            {
+                throw io_exception(to_string()
+                    << "Invalid file format, expected "
+                    << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
+                    << " message but got: " << msg.getDataType()
+                    << "(Topic: " << msg.getTopic() << ")");
+            }
+            return msg_instnance_ptr;
+        }
+
         std::shared_ptr<serialized_frame> create_frame(const rosbag::MessageInstance& msg);
         static nanoseconds get_file_duration(const rosbag::Bag& file, uint32_t version);
         static void get_legacy_frame_metadata(const rosbag::Bag& bag,
@@ -36,7 +49,20 @@ namespace librealsense
             frame_additional_data& additional_data);
 
         template <typename T>
-        static bool safe_convert(const std::string& key, T& val);
+        static bool safe_convert(const std::string& key, T& val)
+        {
+            try
+            {
+                convert(key, val);
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR(e.what());
+                return false;
+            }
+            return true;
+        }
+
         static std::map<std::string, std::string> get_frame_metadata(const rosbag::Bag& bag,
             const std::string& topic,
             const device_serializer::stream_identifier& stream_id,
