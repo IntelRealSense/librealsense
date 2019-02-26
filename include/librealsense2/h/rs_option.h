@@ -70,7 +70,9 @@ extern "C" {
         RS2_OPTION_EMITTER_ON_OFF, /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
         RS2_OPTION_ZERO_ORDER_POINT_X, /**< Zero order point x*/
         RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Zero order point y*/
-        RS2_OPTION_LLD_TEMPERATURE,
+        RS2_OPTION_LLD_TEMPERATURE, /**< LLD temperature*/
+        RS2_OPTION_MC_TEMPERATURE, /**< MC temperature*/
+        RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

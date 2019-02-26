@@ -39,7 +39,16 @@ namespace librealsense
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot);
 
         template <rs2_extension E>
-        std::shared_ptr<typename ExtensionToType<E>::type> SnapshotAs(std::shared_ptr<librealsense::extension_snapshot> snapshot);
+        std::shared_ptr<typename ExtensionToType<E>::type> SnapshotAs(std::shared_ptr<librealsense::extension_snapshot> snapshot)
+        {
+            auto as_type = As<typename ExtensionToType<E>::type>(snapshot);
+            if (as_type == nullptr)
+            {
+                throw invalid_value_exception(to_string() << "Failed to cast snapshot to \"" << E << "\" (as \"" << ExtensionToType<E>::to_string() << "\")");
+            }
+            return as_type;
+        }
+
         void write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device);
         void write_vendor_info(const std::string& topic, nanoseconds timestamp, std::shared_ptr<info_interface> info_snapshot);
         void write_sensor_option(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, rs2_option type, const librealsense::option& option);
@@ -48,7 +57,19 @@ namespace librealsense
         void write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks);
 
         template <typename T>
-        void write_message(std::string const& topic, nanoseconds const& time, T const& msg);
+        void write_message(std::string const& topic, nanoseconds const& time, T const& msg)
+        {
+            try
+            {
+                m_bag.write(topic, to_rostime(time), msg);
+                LOG_DEBUG("Recorded: \"" << topic << "\" . TS: " << time.count());
+            }
+            catch (rosbag::BagIOException& e)
+            {
+                throw io_exception(to_string() << "Ros Writer failed to write topic: \"" << topic << "\" to file. (Exception message: " << e.what() << ")");
+            }
+        }
+
         static uint8_t is_big_endian();
         std::map<stream_identifier, geometry_msgs::Transform> m_extrinsics_msgs;
         std::string m_file_path;

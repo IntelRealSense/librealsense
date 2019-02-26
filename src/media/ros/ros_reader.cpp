@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #include "ros_reader.h"
@@ -239,21 +239,6 @@ namespace librealsense
         return m_file_path;
     }
 
-    template <typename ROS_TYPE>
-    typename ROS_TYPE::ConstPtr ros_reader::instantiate_msg(const rosbag::MessageInstance& msg)
-    {
-        typename ROS_TYPE::ConstPtr msg_instnance_ptr = msg.instantiate<ROS_TYPE>();
-        if (msg_instnance_ptr == nullptr)
-        {
-            throw io_exception(to_string()
-                << "Invalid file format, expected "
-                << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
-                << " message but got: " << msg.getDataType()
-                << "(Topic: " << msg.getTopic() << ")");
-        }
-        return msg_instnance_ptr;
-    }
-
     std::shared_ptr<serialized_frame> ros_reader::create_frame(const rosbag::MessageInstance& msg)
     {
         auto next_msg_topic = msg.getTopic();
@@ -355,21 +340,6 @@ namespace librealsense
                 LOG_WARNING("Failed to get timestamp_domain. Error: " << e.what());
             }
         }
-    }
-
-    template <typename T>
-    static bool ros_reader::safe_convert(const std::string& key, T& val)
-    {
-        try
-        {
-            convert(key, val);
-        }
-        catch (const std::exception& e)
-        {
-            LOG_ERROR(e.what());
-            return false;
-        }
-        return true;
     }
 
     std::map<std::string, std::string> ros_reader::get_frame_metadata(const rosbag::Bag& bag,
@@ -921,7 +891,8 @@ namespace librealsense
             }
             throw io_exception("Unrecognized sensor name");
         }
-        throw io_exception("Unrecognized device");
+        //Unrecognized sensor
+        return std::make_shared<recommended_proccesing_blocks_snapshot>(processing_blocks{});
     }
 
     std::shared_ptr<recommended_proccesing_blocks_snapshot> ros_reader::read_proccesing_blocks(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp,

@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #pragma once
 #include "proc/decimation-filter.h"
@@ -370,16 +370,6 @@ namespace librealsense
         write_extension_snapshot(device_id, sensor_id, timestamp, type, snapshot, false);
     }
 
-    template <rs2_extension E>
-    std::shared_ptr<typename ExtensionToType<E>::type> ros_writer::SnapshotAs(std::shared_ptr<librealsense::extension_snapshot> snapshot)
-    {
-        auto as_type = As<typename ExtensionToType<E>::type>(snapshot);
-        if (as_type == nullptr)
-        {
-            throw invalid_value_exception(to_string() << "Failed to cast snapshot to \"" << E << "\" (as \"" << ExtensionToType<E>::to_string() << "\")");
-        }
-        return as_type;
-    }
     void ros_writer::write_extension_snapshot(uint32_t device_id, uint32_t sensor_id, const nanoseconds& timestamp, rs2_extension type, std::shared_ptr<librealsense::extension_snapshot> snapshot, bool is_device)
     {
         switch (type)
@@ -544,20 +534,6 @@ namespace librealsense
             {
                 LOG_WARNING("Failed to get or write recommended proccesing blocks " << " for sensor " << sensor_id.sensor_index << ". Exception: " << e.what());
             }
-        }
-    }
-
-    template <typename T>
-    void ros_writer::write_message(std::string const& topic, nanoseconds const& time, T const& msg)
-    {
-        try
-        {
-            m_bag.write(topic, to_rostime(time), msg);
-            LOG_DEBUG("Recorded: \"" << topic << "\" . TS: " << time.count());
-        }
-        catch (rosbag::BagIOException& e)
-        {
-            throw io_exception(to_string() << "Ros Writer failed to write topic: \"" << topic << "\" to file. (Exception message: " << e.what() << ")");
         }
     }
 
