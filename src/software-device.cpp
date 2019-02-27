@@ -35,6 +35,13 @@ namespace librealsense
         }
         return *_software_sensors[index];
     }
+    
+    std::shared_ptr<software_device_info> software_device::get_info() {
+        if (!_info)
+            _info = std::make_shared<software_device_info>(std::dynamic_pointer_cast< software_device>(shared_from_this()));
+        
+        return _info;
+    }
 
     void software_device::set_matcher_type(rs2_matchers matcher)
     {
@@ -195,6 +202,8 @@ namespace librealsense
 
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
+        if (!_is_streaming) return;
+        
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
