@@ -54,6 +54,14 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
  * @return  A pointer to a device that plays data from the file, or null in case of failure
  */
 rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error);
+    
+/**
+ * Add an instance of software device to the context
+ * \param ctx   The context to which the new device will be added
+ * \param dev   Instance of software device to register into the context
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_error** error);
 
 /**
  * Removes a playback device from the context, if exists

@@ -4,8 +4,6 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <librealsense2/hpp/rs_internal.hpp>
 #include "example.hpp"
-#include "example.hpp"          // Include short list of convenience functions for rendering
-
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>

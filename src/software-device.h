@@ -9,6 +9,7 @@
 namespace librealsense
 {
     class software_sensor;
+    class software_device_info;
 
     class software_device : public device
     {
@@ -20,6 +21,8 @@ namespace librealsense
         software_sensor& get_software_sensor(int index);
 
         void set_matcher_type(rs2_matchers matcher);
+        
+        std::shared_ptr<software_device_info> get_info();
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -33,6 +36,38 @@ namespace librealsense
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
+        std::shared_ptr<software_device_info> _info;
+    };
+    
+    class software_device_info : public device_info
+    {
+        std::weak_ptr<software_device> _dev;
+    public:
+        explicit software_device_info(std::shared_ptr<software_device> dev)
+            : device_info(nullptr), _dev(dev)
+        {
+        }
+        
+        std::shared_ptr<device_interface> create_device(bool) const override
+        {
+            return _dev.lock();
+        }
+        platform::backend_device_group get_device_data() const override
+        {
+            std::stringstream address;
+            address << "software-device://";
+            if (auto dev = _dev.lock())
+            {
+                auto ptr = dev.get();
+                address << (unsigned long long)ptr;
+            }
+            return platform::backend_device_group({ platform::playback_device_info{ address.str() } });
+        }
+        
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
+        {
+            return _dev.lock();
+        }
     };
 
     class software_sensor : public sensor_base, public extendable_interface
