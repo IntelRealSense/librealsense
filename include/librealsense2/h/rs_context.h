@@ -64,6 +64,13 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
 void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error);
 
 /**
+ * Removes tracking module.
+ * query_devices locks the tracking module. 
+ * If the tracking module device is should be removed so that other applications could find it.
+ */
+void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error);
+
+/**
 * create a static snapshot of all connected devices at the time of the call
 * \param context     Object representing librealsense session
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
