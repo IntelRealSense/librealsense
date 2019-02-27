@@ -348,8 +348,11 @@ namespace librealsense
         {
             if (_zo_point_x == nullptr || _zo_point_y == nullptr)
             {
-                if(!try_get_zo_point(f))
+                if (!try_get_zo_point(f))
+                {
                     LOG_WARNING("Couldn't read the zo point");
+                    return f;
+                }
             }
 
             if (!try_read_baseline(f))

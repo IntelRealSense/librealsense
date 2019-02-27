@@ -11,7 +11,7 @@
 #define RTD_THRESHOLD 200
 #define BASELINE 31
 #define PATCH_SIZE 5
-#define Z_MAX_VALUE 5
+#define Z_MAX_VALUE 1200
 #define IR_MIN_VALUE 75
 #define THRESHOLD_OFFSET 10
 #define THRESHOLD_SCALE 20
