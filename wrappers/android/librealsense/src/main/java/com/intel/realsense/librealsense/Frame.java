@@ -32,6 +32,17 @@ public class Frame extends LrsClass implements Cloneable{
         return nGetNumber(mHandle);
     }
 
+    public double getTimestamp(){
+        return nGetTimestamp(mHandle);
+    }
+
+    public TimestampDomain getTimestampDomain() {
+        int rv = nGetTimestampDomain(mHandle);
+        return TimestampDomain.values()[rv];
+    }
+
+    public long getMetadata(FrameMetadata type) { return nGetMetadata(mHandle, type.value());}
+
     public Frame applyFilter(FilterInterface filter) {
         return filter.process(this);
     }
@@ -54,4 +65,7 @@ public class Frame extends LrsClass implements Cloneable{
     protected static native long nGetStreamProfile(long handle);
     private static native void nGetData(long handle, byte[] data);
     private static native int nGetNumber(long handle);
+    private static native double nGetTimestamp(long handle);
+    private static native int nGetTimestampDomain(long handle);
+    private static native long nGetMetadata(long handle, int metadata_type);
 }

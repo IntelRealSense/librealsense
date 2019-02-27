@@ -20,22 +20,19 @@ device::device(usb_device *device) :
         _name = std::string(usb_device_get_name(_handle));
         _desc_length = usb_device_get_descriptors_length(_handle);
         build_tree();
-        foreach_interface([&](usb_interface interface)
-        {
-            usb_device_connect_kernel_driver(_handle, interface.get_descriptor().iInterface, false);
-            usb_device_claim_interface(_handle, interface.get_descriptor().iInterface);
-        });
         start();
     }
+}
+
+void device::claim_interface(int interface)
+{
+    usb_device_connect_kernel_driver(_handle, interface, false);
+    usb_device_claim_interface(_handle, interface);
 }
 
 device::~device() {
     stop();
     _pipes.clear();
-    foreach_interface([&](usb_interface interface)
-    {
-        usb_device_release_interface(_handle, interface.get_descriptor().iInterface);
-    });
 }
 
 bool device::add_configuration(usb_configuration &usbConfiguration) {
@@ -85,6 +82,8 @@ void device::build_tree() {
     usb_descriptor_header *h = usb_descriptor_iter_next(&it);
     usb_descriptor_header *prev;
     if (h != nullptr && h->bDescriptorType == USB_DT_DEVICE) {
+        usb_device_descriptor *device_descriptor = (usb_device_descriptor *) h;
+        _usb_conn_spec = device_descriptor->bcdUSB;
         h = usb_descriptor_iter_next(&it);
         if (h != nullptr && h->bDescriptorType == USB_DT_CONFIG) {
             do {

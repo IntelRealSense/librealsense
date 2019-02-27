@@ -80,6 +80,8 @@ class DeviceWatcher extends LrsClass {
     }
 
     private void removeDevice(UsbDesc desc) {
+        Log.d(TAG, "Removing device: " + desc.name);
+
         nRemoveUsbDevice(desc.descriptor);
         desc.connection.close();
         for(DeviceListener listener : mAppDeviceListener) {
@@ -89,6 +91,7 @@ class DeviceWatcher extends LrsClass {
                 Log.e(TAG, e.getMessage());
             }
         }
+        Log.d(TAG, "Device: " + desc.name + " removed successfully");
     }
 
     private  void addDevice(UsbDevice device) {
@@ -98,9 +101,9 @@ class DeviceWatcher extends LrsClass {
         UsbManager usbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection conn = usbManager.openDevice(device);
         UsbDesc desc = new UsbDesc(device.getDeviceName(), conn.getFileDescriptor(), conn);
+        Log.d(TAG, "Adding device: " + desc.name);
         mDescriptors.put(device.getDeviceName(), desc);
         nAddUsbDevice(desc.name, desc.descriptor);
-        Log.d(TAG, "Device: " + desc.name + " opened successfully");
 
         for (DeviceListener listener : mAppDeviceListener){
             try {
@@ -109,6 +112,7 @@ class DeviceWatcher extends LrsClass {
                 Log.e(TAG, e.getMessage());
             }
         }
+        Log.d(TAG, "Device: " + desc.name + " added successfully");
     }
 
     @Override

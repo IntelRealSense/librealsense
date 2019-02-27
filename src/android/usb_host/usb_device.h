@@ -43,10 +43,13 @@ namespace librealsense
             std::string _sSerialNumber;
             std::string _name;
             size_t _desc_length;
+            uint16_t _usb_conn_spec;
 
         public:
             device(usb_device *device);
             ~device();
+
+            void claim_interface(int interface);
 
             usb_device* get_handle() const { return _handle; }
             const usb_device_descriptor *get_descriptor() const { return _usb_device_descriptor; };
@@ -61,6 +64,7 @@ namespace librealsense
             int get_pid() { return usb_device_get_product_id(_handle); }
             int get_file_descriptor() { return usb_device_get_fd(_handle); }
             int get_descriptor_length() { return _desc_length; }
+            uint16_t get_conn_spec() { return _usb_conn_spec; }
 
             int get_interfaces_count() { return _configurations.at(0).get_interfaces_count(); }
             int get_interfaces_associations_count() { return _configurations.at(0).get_interfaces_associations_count(); }

@@ -40,8 +40,8 @@ std::vector<platform::uvc_device_info> device_watcher::query_uvc_devices() {
                 device_info.mi = iad.get_mi();
                 device_info.unique_id = dev->get_file_descriptor();
                 device_info.device_path = dev->get_name();
-                LOG_DEBUG("Found UVC Device vid: " << device_info.vid << ", pid: " << device_info.pid <<
-                          ", mi: " << device_info.mi << ", path: " << device_info.device_path.c_str());
+                device_info.conn_spec = platform::usb_spec(dev->get_conn_spec());
+                LOG_INFO("Found UVC Device vid: " << std::string(device_info).c_str());
                 devices.push_back(device_info);
             }
         }
