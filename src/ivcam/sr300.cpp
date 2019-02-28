@@ -333,7 +333,6 @@ namespace librealsense
     processing_blocks sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
-        res.push_back(std::make_shared<decimation_filter>());
         res.push_back(std::make_shared<threshold>());
         res.push_back(std::make_shared<spatial_filter>());
         res.push_back(std::make_shared<temporal_filter>());

@@ -1314,8 +1314,17 @@ namespace librealsense
         std::shared_ptr<const_value_option> zo_point_x;
         std::shared_ptr<const_value_option> zo_point_y;
 
-        auto& zo_opt_x = options->get_option(RS2_OPTION_ZERO_ORDER_POINT_X);
-        auto& zo_opt_y = options->get_option(RS2_OPTION_ZERO_ORDER_POINT_Y);
+        float zo_opt_x_val = 0;
+        float zo_opt_y_val = 0;
+
+        if (options->supports_option(RS2_OPTION_ZERO_ORDER_POINT_X))
+        {
+            zo_opt_x_val = options->get_option(RS2_OPTION_ZERO_ORDER_POINT_X).query();
+        }
+        if (options->supports_option(RS2_OPTION_ZERO_ORDER_POINT_Y))
+        {
+            zo_opt_y_val = options->get_option(RS2_OPTION_ZERO_ORDER_POINT_Y).query();
+        }
 
         switch (id)
         {
@@ -1337,8 +1346,8 @@ namespace librealsense
             if (!options->supports_option(RS2_OPTION_ZERO_ORDER_POINT_X) || !options->supports_option(RS2_OPTION_ZERO_ORDER_POINT_Y))
                 throw io_exception("Failed to read zo point");
 
-            zo_point_x = std::make_shared<const_value_option>("", zo_opt_x.query());
-            zo_point_y = std::make_shared<const_value_option>("", zo_opt_y.query());
+            zo_point_x = std::make_shared<const_value_option>("", zo_opt_x_val);
+            zo_point_y = std::make_shared<const_value_option>("", zo_opt_y_val);
             return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>(zo_point_x, zo_point_y);
         default:
             return nullptr;
