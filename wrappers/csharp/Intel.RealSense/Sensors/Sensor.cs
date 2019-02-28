@@ -182,6 +182,7 @@ namespace Intel.RealSense
                     return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
                 }
             }
+
         }
         
         public class SensorOptions : IOptionsContainer
@@ -349,6 +350,15 @@ namespace Intel.RealSense
             {
                 object error;
                 return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(m_instance, out error));
+            }
+        }
+
+        public ProcessingBlockList ProcessingBlocks
+        {
+            get
+            {
+                object error;
+                return new ProcessingBlockList(NativeMethods.rs2_get_recommended_processing_blocks(m_instance, out error));
             }
         }
 

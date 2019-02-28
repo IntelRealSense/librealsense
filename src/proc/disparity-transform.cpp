@@ -16,6 +16,7 @@
 namespace librealsense
 {
     disparity_transform::disparity_transform(bool transform_to_disparity):
+        generic_processing_block(transform_to_disparity ? "Depth to Disparity" : "Disparity to Depth"),
         _transform_to_disparity(transform_to_disparity),
         _update_target(false),
         _stereoscopic_depth(false),

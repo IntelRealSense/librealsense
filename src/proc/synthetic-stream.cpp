@@ -18,11 +18,12 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block() :
+    processing_block::processing_block(std::string name) :
         _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
-            _source.init(std::shared_ptr<metadata_parser_map>());
+        register_info(RS2_CAMERA_INFO_NAME, name);
+        _source.init(std::shared_ptr<metadata_parser_map>());
     }
 
     void processing_block::invoke(frame_holder f)
@@ -44,7 +45,8 @@ namespace librealsense
         }
     }
 
-    generic_processing_block::generic_processing_block()
+    generic_processing_block::generic_processing_block(std::string name)
+        :processing_block(name)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -149,7 +151,8 @@ namespace librealsense
         return source.allocate_composite_frame(results);
     }
 
-    stream_filter_processing_block::stream_filter_processing_block()
+    stream_filter_processing_block::stream_filter_processing_block(std::string name)
+        :generic_processing_block(name)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());

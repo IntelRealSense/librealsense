@@ -50,6 +50,20 @@ namespace librealsense
         void unregister_before_start_callback(int token) override;
         void raise_notification(const notification& n);
         bool streams_contains_one_frame_or_more();
+        virtual processing_blocks get_recommended_processing_blocks() const override
+        {
+            auto processing_blocks_snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_RECOMMENDED_FILTERS);
+            if (processing_blocks_snapshot == nullptr)
+            {
+                throw invalid_value_exception("Recorded file does not contain sensor processing blocks");
+            }
+            auto processing_blocks_api = As<recommended_proccesing_blocks_interface>(processing_blocks_snapshot);
+            if (processing_blocks_api == nullptr)
+            {
+                throw invalid_value_exception("Failed to get options interface from sensor snapshots");
+            }
+            return processing_blocks_api->get_recommended_processing_blocks();
+        }
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
