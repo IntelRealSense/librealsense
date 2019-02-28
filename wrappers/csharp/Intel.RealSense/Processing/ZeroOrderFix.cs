@@ -5,12 +5,12 @@ using System.Linq;
 
 namespace Intel.RealSense
 {
-    public class ZeroOrderFixFilter : ProcessingBlock
+    public class ZeroOrderInvalidationFilter : ProcessingBlock
     {
-        public ZeroOrderFixFilter()
+        public ZeroOrderInvalidationFilter()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_zero_order_fix_block(out error));
+            m_instance = new HandleRef(this, NativeMethods.rs2_create_zero_order_invalidation_block(out error));
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 

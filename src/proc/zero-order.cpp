@@ -9,7 +9,7 @@ const double METER_TO_MM = 1000;
 
 namespace librealsense
 {
-    enum zero_order_fix_options
+    enum zero_order_invalidation_options
     {
         RS2_OPTION_FILTER_ZO_IR_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 0), /**< IR min threshold used by zero order filter */
         RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD = static_cast<rs2_option>(RS2_OPTION_COUNT + 1), /**< RTD high threshold used by zero order filter */
@@ -136,7 +136,7 @@ namespace librealsense
     }
 
     template<class T>
-    bool zero_order_fix(const uint16_t * depth_data_in, const uint8_t * ir_data, T zero_pixel,
+    bool zero_order_invalidation(const uint16_t * depth_data_in, const uint8_t * ir_data, T zero_pixel,
         const rs2::vertex* vertices,
         rs2_intrinsics intrinsics,
         const zero_order_options& options, int zo_point_x, int zo_point_y)
@@ -302,23 +302,23 @@ namespace librealsense
     {
         switch (option)
         {
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
             return "IR Threshold";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD:
             return "RTD high Threshold";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD:
             return "RTD Low Threshold";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_BASELINE:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_BASELINE:
             return "Baseline";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_PATCH_SIZE:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_PATCH_SIZE:
             return "Patch size";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_MAX_VALUE:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_MAX_VALUE:
             return "ZO max value";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_IR_MIN_VALUE:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_IR_MIN_VALUE:
             return "IR min value";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET:
             return "Threshold offset";
-        case zero_order_fix_options::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE:
+        case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE:
             return "Threshold scale";
         }
 
@@ -398,7 +398,7 @@ namespace librealsense
             confidence_output = (uint8_t*)confidence_out.get_data();
         }
 
-        if (zero_order_fix((const uint16_t*)depth_frame.get_data(),
+        if (zero_order_invalidation((const uint16_t*)depth_frame.get_data(),
             (const uint8_t*)ir_frame.get_data(),
             [&](int index, bool zero) 
         {

@@ -233,7 +233,7 @@ rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               zero order fix processing block
 */
-rs2_processing_block* rs2_create_zero_order_fix_block(rs2_error** error);
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
 
 /**
 * Retrieve processing block specific information, like name.

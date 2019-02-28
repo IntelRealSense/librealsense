@@ -196,7 +196,7 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_create_hole_filling_filter_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rs2_create_zero_order_fix_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+        internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
 #endregion
 #region rs_option

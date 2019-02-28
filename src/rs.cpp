@@ -1897,7 +1897,7 @@ rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error) BEGIN_AP
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_zero_order_fix_block(rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::zero_order>();
 

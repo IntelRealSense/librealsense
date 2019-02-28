@@ -901,17 +901,17 @@ namespace rs2
         }
     };
     
-    class zero_order_fix : public filter
+    class zero_order_invalidation : public filter
     {
     public:
         /**
         * Create zero order fix processing block
         * the processing block fix the zero order artifact
         */
-        zero_order_fix() : filter(init())
+        zero_order_invalidation() : filter(init())
         {}
 
-        zero_order_fix(filter f) :filter(f)
+        zero_order_invalidation(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
             if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_ZERO_ORDER_FILTER, &e) && !e)
@@ -928,7 +928,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_zero_order_fix_block(&e),
+                rs2_create_zero_order_invalidation_block(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 

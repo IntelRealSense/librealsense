@@ -645,8 +645,8 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::yuy_decoder, rs2::filter> yuy_decoder(m, "yuy_decoder");
     yuy_decoder.def(py::init<>());
 
-    py::class_<rs2::zero_order_fix, rs2::filter> zero_order_fix(m, "zero_order_fix");
-    zero_order_fix.def(py::init<>());
+    py::class_<rs2::zero_order_invalidation, rs2::filter> zero_order_invalidation(m, "zero_order_invalidation");
+    zero_order_invalidation.def(py::init<>());
 
     /* rs_export.hpp */
     // py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");

@@ -914,7 +914,7 @@ namespace rs2
             if (shared_filter->is<disparity_transform>())
                 model->visible = false;
 
-            if (shared_filter->is<zero_order_fix>())
+            if (shared_filter->is<zero_order_invalidation>())
                 zero_order_artifact_fix = model;
 
             post_processing.push_back(model);
@@ -7700,7 +7700,7 @@ namespace rs2
 
                                         if (ImGui::Button(label.c_str(), { 25,24 }))
                                         {
-                                            if (pb->get_block()->is<zero_order_fix>())
+                                            if (pb->get_block()->is<zero_order_invalidation>())
                                                 sub->verify_zero_order_conditions();
                                             pb->enabled = true;
                                             pb->save_to_config_file();

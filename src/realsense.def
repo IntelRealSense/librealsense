@@ -179,7 +179,7 @@ EXPORTS
     rs2_extract_frame
     rs2_depth_frame_get_distance
     rs2_depth_stereo_frame_get_baseline
-    rs2_create_zero_order_fix_block
+    rs2_create_zero_order_invalidation_block
 
     rs2_set_depth_control
     rs2_get_depth_control
