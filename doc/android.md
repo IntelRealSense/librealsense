@@ -1,5 +1,7 @@
 >:pushpin: The SDK 2.0 delivers cross-platform open source libraries & tools that allow users to develop on multiple Operating Systems & development environments.  Intel has validated SDK2.0 on Windows and Linux platforms. Please check [latest Release](https://github.com/IntelRealSense/librealsense/releases) for the build versions.  While Intel has not explicitly validated SDK2.0 on Android platforms, it is expected to work on Android as well. Please refer to the build instructions in the section below. Calibration and firmware update tools that would be used in production and manufacturing processes are not available on Android at this time.  Please contact your Intel representative for additional information.
 
+>:pushpin: The T265 tracking module is not yet supported on Android via librealsense. Support is planned to be added in a future release.
+
 # Intel&reg; RealSense&trade; SDK 2.0 for Android OS
 
 Using the Android wrapper allows you to build both native (C/C++) and Java applications for Android.

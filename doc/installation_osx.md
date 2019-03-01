@@ -2,6 +2,8 @@
 
 **Note:** macOS support for the full range of functionality offered by the SDK is not yet complete. If you need support for R200 or the ZR300, [legacy librealsense](https://github.com/IntelRealSense/librealsense/tree/legacy) offers a subset of SDK functionality.
 
+**Note:** The T265 tracking module is not yet supported on macOS via librealsense. Support is planned to be added in a future release.
+
 ## Building from Source
 
 1. Install XCode 6.0+ via the AppStore
