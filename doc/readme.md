@@ -31,6 +31,6 @@
   * [D400 at realsense.intel.com/](https://realsense.intel.com/stereo) - Camera specifications
   * [D400 Advanced Mode](rs400/rs400_advanced_mode.md) - Overview of the Advanced Mode APIs
   * [D400 cameras with Raspberry Pi](./RaspberryPi3.md) - Example of low-end system without USB3 interface
-  * [D400 cameras on **rooted** Android device](./android/Android.md) - Instructions of how to build the RealSense SDK for Android OS.
+  * [D400 cameras on **rooted** Android devices](./android.md) - Instructions of how to build the RealSense SDK for Android OS.
   * [IMU and Tracking-enabled devices](./imu_and_tracking_sensors.md) - Introductionary material for D435i and T265 IMU and position tracking sensors.
 * [Record and Playback](../src/media/readme.md) - SDK Record and Playback functionality using ROS-bag file format
