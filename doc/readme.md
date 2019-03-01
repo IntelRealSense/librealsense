@@ -3,7 +3,7 @@
 * [Intel RealSense Community](https://communities.intel.com/community/tech/realsense) - Official support, Q&A and other useful content
 * [Support Site](http://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) - Contains content and web ticket capability for 1:1 interaction
 * [Intel RealSense Stereoscopic Depth Cameras](https://arxiv.org/abs/1705.05548) - A technical paper describing the R200, LR200, SR300 and RS400 in detail. Includes theoretical background, performance expectations, post-processing suggestions, etc.  
-* [Build an Autonomous Mobile Robot with the Intel® RealSense™ Camera, ROS*, and SAWR](https://software.intel.com/en-us/articles/build-an-autonomous-mobile-robot-with-the-intel-realsense-camera-ros-and-sawr)
+* [Build an Autonomous Mobile Robot with the Intel® RealSense™ D400 Series Camera, ROS*, and SAWR](https://software.intel.com/en-us/articles/build-an-autonomous-mobile-robot-with-the-intel-realsense-camera-ros-and-sawr)
 
 ## librealsense Wiki
 * [API How-To](https://github.com/IntelRealSense/librealsense/wiki/API-How-To) - List ot questions and answers related to the camera API
