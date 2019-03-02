@@ -26,6 +26,12 @@ public class Config extends LrsClass {
         nEnableStream(mHandle, type.value(), index, width, height, format.value(), framerate);
     }
 
+    public void disableStream(StreamType type) { nDisableStream(mHandle, type.value()); }
+
+    public void enableAllStreams() { nEnableAllStreams(mHandle); }
+
+    public void disableAllStreams() { nDisableAllStreams(mHandle); }
+
     public void enableRecordToFile(String filePath) {
         nEnableRecordToFile(mHandle, filePath);
     }
@@ -42,6 +48,9 @@ public class Config extends LrsClass {
     private static native long nCreate();
     private static native void nDelete(long handle);
     private static native void nEnableStream(long handle, int type, int index, int width, int height, int format, int framerate);
+    private static native void nDisableStream(long handle, int type);
+    private static native void nEnableAllStreams(long handle);
+    private static native void nDisableAllStreams(long handle);
     private static native void nEnableDeviceFromFile(long handle, String filePath);
     private static native void nEnableRecordToFile(long handle, String filePath);
 }

@@ -36,6 +36,7 @@ public class PlaybackActivity extends AppCompatActivity {
             mStreamer = new Streamer(this, (GLRsSurfaceView) findViewById(R.id.playbackGlSurfaceView), new Streamer.Listener() {
                 @Override
                 public void config(Config config) {
+                    config.enableAllStreams();
                     config.enableDeviceFromFile(mFilePath);
                 }
             });
