@@ -131,6 +131,10 @@ namespace librealsense
 
         std::shared_ptr<device_interface> add_device(const std::string& file);
         void remove_device(const std::string& file);
+#if WITH_TRACKING
+        void unload_tracking_module() {_tm2_context.reset();};
+#endif
+
 
     private:
         void on_device_changed(platform::backend_device_group old,
