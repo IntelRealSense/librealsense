@@ -11,7 +11,7 @@ using namespace librealsense;
 using namespace librealsense::usb_host;
 
 static std::vector<std::shared_ptr<device>> _devices;
-static librealsense::platform::device_changed_callback _callback;
+static librealsense::platform::device_changed_callback _callback = nullptr;
 
 std::vector<std::shared_ptr<device>> device_watcher::get_device_list()
 {
@@ -25,7 +25,7 @@ void device_watcher::start(librealsense::platform::device_changed_callback callb
 
 void device_watcher::stop()
 {
-
+    _callback = nullptr;
 }
 
 std::vector<platform::uvc_device_info> device_watcher::query_uvc_devices() {
@@ -55,7 +55,10 @@ Java_com_intel_realsense_librealsense_DeviceWatcher_nAddUsbDevice(JNIEnv *env, j
                                                            jint fileDescriptor) {
     platform::backend_device_group prev;
     prev.uvc_devices = device_watcher::query_uvc_devices();
+    LOG_DEBUG("AddUsbDevice, previous device count: " << prev.uvc_devices.size());
     const char *deviceName = env->GetStringUTFChars(deviceName_, 0);
+    LOG_DEBUG("AddUsbDevice, adding device: " << deviceName << ", descriptor: " << fileDescriptor);
+
     auto handle = usb_device_new(deviceName, fileDescriptor);
     env->ReleaseStringUTFChars(deviceName_, deviceName);
 
@@ -69,6 +72,8 @@ Java_com_intel_realsense_librealsense_DeviceWatcher_nAddUsbDevice(JNIEnv *env, j
 
     if(_callback)
         _callback(prev, curr);
+
+    LOG_DEBUG("AddUsbDevice, current device count: " << curr.uvc_devices.size());
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -76,15 +81,21 @@ Java_com_intel_realsense_librealsense_DeviceWatcher_nRemoveUsbDevice(JNIEnv *env
                                                               jint fileDescriptor) {
     platform::backend_device_group prev;
     prev.uvc_devices = device_watcher::query_uvc_devices();
+    LOG_DEBUG("RemoveUsbDevice, previous device count: " << prev.uvc_devices.size());
 
     _devices.erase(std::remove_if(_devices.begin(), _devices.end(), [fileDescriptor](std::shared_ptr<device> d)
     {
-        if(fileDescriptor == d->get_file_descriptor())
+        if(fileDescriptor == d->get_file_descriptor()){
+            d->release();
+            LOG_DEBUG("RemoveUsbDevice, removing device: " << d->get_name().c_str() << ", descriptor: " << fileDescriptor);
             return true;
+        }
     }), _devices.end());
 
     platform::backend_device_group curr;
     curr.uvc_devices = device_watcher::query_uvc_devices();
 
-    _callback(prev, curr);
+    if(_callback)
+        _callback(prev, curr);
+    LOG_DEBUG("RemoveUsbDevice, current device count: " << curr.uvc_devices.size());
 }

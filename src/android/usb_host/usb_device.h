@@ -49,6 +49,8 @@ namespace librealsense
             device(usb_device *device);
             ~device();
 
+            void release();
+
             void claim_interface(int interface);
 
             usb_device* get_handle() const { return _handle; }
@@ -80,6 +82,8 @@ namespace librealsense
             void stop();
             void build_tree();
             void add_pipe(uint8_t ep_address, std::shared_ptr<usb_pipe> pipe);
+            void start_interrupt_listener();
+
             int get_configuration_count() { return _configurations.size(); }
             const usb_configuration &get_configuration(int index) { return _configurations.at(index); }
             std::mutex m;

@@ -16,10 +16,14 @@ public class RsContext extends LrsClass{
     }
 
     public synchronized void setDevicesChangedCallback(DeviceListener listener) {
-        if(mListener != null)
-            mDeviceWatcher.removeListener(mListener);
+        removeDevicesChangedCallback();
         mListener = listener;
         mDeviceWatcher.addListener(mListener);
+    }
+
+    public synchronized void removeDevicesChangedCallback() {
+        if(mListener != null)
+            mDeviceWatcher.removeListener(mListener);
     }
 
     public RsContext() {
@@ -28,8 +32,7 @@ public class RsContext extends LrsClass{
 
     @Override
     public void close() {
-        if(mListener != null)
-            mDeviceWatcher.removeListener(mListener);
+        removeDevicesChangedCallback();
         nDelete(mHandle);
     }
 

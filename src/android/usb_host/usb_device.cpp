@@ -21,6 +21,7 @@ device::device(usb_device *device) :
         _desc_length = usb_device_get_descriptors_length(_handle);
         build_tree();
         start();
+        start_interrupt_listener();
     }
 }
 
@@ -30,9 +31,16 @@ void device::claim_interface(int interface)
     usb_device_claim_interface(_handle, interface);
 }
 
-device::~device() {
+device::~device()
+{
+    release();
+}
+
+void device::release()
+{
     stop();
     _pipes.clear();
+    LOG_DEBUG("usb device: " << _name << ", released");
 }
 
 bool device::add_configuration(usb_configuration &usbConfiguration) {
@@ -46,6 +54,22 @@ void device::add_pipe(uint8_t ep_address, std::shared_ptr<usb_pipe> pipe) {
     if (pipe != nullptr) {
         _pipes[ep_address] = pipe;
     }
+}
+
+void device::start_interrupt_listener()
+{
+    foreach_interface([&](const usb_interface& interface)
+      {
+        for(int i = 0; i < interface.get_Endpoint_count(); ++i)
+        {
+            auto ep = interface.get_endpoint(i);
+            auto attr = ep.get_descriptor()->bmAttributes;
+            if(attr == USB_ENDPOINT_XFER_INT){
+                claim_interface(interface.get_descriptor().bInterfaceNumber);
+                _pipes[ep.get_endpoint_address()]->listen_to_interrupts();
+            }
+        }
+      });
 }
 
 void device::start()
