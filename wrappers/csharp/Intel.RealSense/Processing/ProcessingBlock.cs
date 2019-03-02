@@ -11,7 +11,7 @@ namespace Intel.RealSense
         FrameSet Process(FrameSet original);
     }
 
-    public abstract class ProcessingBlock : IProcessingBlock, IDisposable
+    public class ProcessingBlock : IProcessingBlock, IDisposable
     {
         public readonly FrameQueue queue = new FrameQueue(1);
 
@@ -25,6 +25,14 @@ namespace Intel.RealSense
                 return m_options = m_options ?? new Sensor.SensorOptions(m_instance.Handle);
             }
         }
+
+        internal ProcessingBlock(IntPtr ptr)
+        {
+            m_instance = new HandleRef(this, ptr);
+        }
+
+        protected ProcessingBlock()
+        {}
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -99,6 +107,21 @@ namespace Intel.RealSense
             }
             return rv;
         }
+
+        #region Extensions
+
+        /// <summary>
+        /// retrieve mapping between the units of the depth image and meters
+        /// </summary>
+        /// <returns> depth in meters corresponding to a depth value of 1</returns>
+
+        public bool Is(Extension e)
+        {
+            object error;
+            return NativeMethods.rs2_is_processing_block_extendable_to(m_instance.Handle, e, out error) > 0;
+        }
+
+        #endregion
     }
 
     public static class IProcessingBlockExtensions

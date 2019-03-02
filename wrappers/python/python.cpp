@@ -528,7 +528,9 @@ PYBIND11_MODULE(NAME, m) {
             "option is supported by a subdevice", "option"_a)
         .def("get_option_description", &rs2::options::get_option_description, "Get option description.", "option"_a)
         .def("get_option_value_description", &rs2::options::get_option_value_description, "Get option value description "
-            "(In case a specific option value holds special meaning)", "option"_a, "value"_a);
+            "(In case a specific option value holds special meaning)", "option"_a, "value"_a)
+        .def("get_supported_options", &rs2::options::get_supported_options, "Retrieve list of supported options, "
+            "of a supported option");
 
     /* rs2_processing.hpp */
     py::class_<rs2::frame_source> frame_source(m, "frame_source");
@@ -642,6 +644,9 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::yuy_decoder, rs2::filter> yuy_decoder(m, "yuy_decoder");
     yuy_decoder.def(py::init<>());
+
+    py::class_<rs2::zero_order_invalidation, rs2::filter> zero_order_invalidation(m, "zero_order_invalidation");
+    zero_order_invalidation.def(py::init<>());
 
     /* rs_export.hpp */
     // py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply");
@@ -773,6 +778,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
         .def("stop", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.stop(); }, "Stop streaming.")
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
+        .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
+
         .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def(py::init<>())
         .def("__nonzero__", &rs2::sensor::operator bool)

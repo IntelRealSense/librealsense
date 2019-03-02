@@ -10,6 +10,7 @@
 #include <numeric>
 #include <fstream>
 #include <cmath>
+#include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
@@ -178,11 +179,19 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
+            CASE(DECIMATION_FILTER)
+            CASE(THRESHOLD_FILTER)
+            CASE(DISPARITY_FILTER)
+            CASE(SPATIAL_FILTER)
+            CASE(TEMPORAL_FILTER)
+            CASE(HOLE_FILLING_FILTER)
+            CASE(ZERO_ORDER_FILTER)
+            CASE(RECOMMENDED_FILTERS)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
-    }
 
+    }
     const char* get_string(rs2_playback_status value)
     {
 #define CASE(X) STRCASE(PLAYBACK_STATUS, X)
@@ -212,6 +221,7 @@ namespace librealsense
         }
 #undef CASE
     }
+   
 
     const char* get_string(rs2_option value)
     {
@@ -265,6 +275,11 @@ namespace librealsense
             CASE(STREAM_FORMAT_FILTER)
             CASE(STREAM_INDEX_FILTER)
             CASE(EMITTER_ON_OFF)
+            CASE(ZERO_ORDER_POINT_X)
+            CASE(ZERO_ORDER_POINT_Y)
+            CASE(LLD_TEMPERATURE)
+            CASE(MC_TEMPERATURE)
+            CASE(MA_TEMPERATURE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

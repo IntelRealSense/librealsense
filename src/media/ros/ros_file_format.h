@@ -28,6 +28,14 @@
 #include "types.h"
 #include <vector>
 
+enum ros_file_versions
+{
+    ROS_FILE_VERSION_2 = 2u,
+    ROS_FILE_VERSION_3 = 3u,
+    ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS = 4u
+};
+
+
 namespace librealsense
 {
     inline void convert(rs2_format source, std::string& target)
@@ -84,7 +92,15 @@ namespace librealsense
     {
         if (!try_parse(source, target))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_option");
+        }
+    }
+
+    inline void convert(const std::string& source, rs2_extension& target)
+    {
+        if (!try_parse(source, target))
+        {
+            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_extension");
         }
     }
 
@@ -277,13 +293,18 @@ namespace librealsense
         /*version 3 and up*/
         static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "value" });
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", librealsense::get_string(option_type), "value" });
+        }
+
+        static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
         }
 
         /*version 3 and up*/
         static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", librealsense::get_string(option_type), "description" });
         }
 
         static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)
@@ -515,12 +536,12 @@ namespace librealsense
     */
     constexpr uint32_t get_file_version()
     {
-        return 3u;
+        return ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS;
     }
 
     constexpr uint32_t get_minimum_supported_file_version()
     {
-        return 2u;
+        return ROS_FILE_VERSION_2;
     }
 
     constexpr uint32_t get_device_index()

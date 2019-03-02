@@ -41,10 +41,10 @@ namespace librealsense
         std::shared_ptr<rs2_source> _c_wrapper;
     };
 
-    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container
+    class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container, public info_container
     {
     public:
-        processing_block();
+        processing_block(std::string name);
 
         void set_processing_callback(frame_processor_callback_ptr callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
@@ -62,11 +62,11 @@ namespace librealsense
     class generic_processing_block : public processing_block
     {
     public:
-        generic_processing_block();
+        generic_processing_block(std::string name);
         virtual ~generic_processing_block() { _source.flush(); }
 
     protected:
-        rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
+        virtual rs2::frame prepare_output(const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results);
 
         virtual bool should_process(const rs2::frame& frame) = 0;
         virtual rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) = 0;
@@ -125,7 +125,7 @@ namespace librealsense
     class LRS_EXTENSION_API stream_filter_processing_block : public generic_processing_block
     {
     public:
-        stream_filter_processing_block();
+        stream_filter_processing_block(std::string name);
         virtual ~stream_filter_processing_block() { _source.flush(); }
 
     protected:
@@ -137,7 +137,8 @@ namespace librealsense
     class depth_processing_block : public stream_filter_processing_block
     {
     public:
-        depth_processing_block() {}
+        depth_processing_block(std::string name) :stream_filter_processing_block(name)
+        {}
         virtual ~depth_processing_block() { _source.flush(); }
 
     protected:
@@ -155,9 +156,14 @@ struct rs2_options
     virtual ~rs2_options() = default;
 };
 
+struct rs2_options_list
+{
+    std::vector<rs2_option> list;
+};
+
 struct rs2_processing_block : public rs2_options
 {
-    rs2_processing_block(std::shared_ptr<librealsense::processing_block> block)
+    rs2_processing_block(std::shared_ptr<librealsense::processing_block_interface> block)
         : rs2_options((librealsense::options_interface*)block.get()),
         block(block) { }
 

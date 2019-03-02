@@ -23,7 +23,7 @@ public class DetachedActivity extends AppCompatActivity {
     private Button mPlaybackButton;
 
     private Context mAppContext;
-    private static RsContext mRsContext = new RsContext();
+    private RsContext mRsContext = new RsContext();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

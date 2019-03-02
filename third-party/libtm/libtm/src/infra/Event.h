@@ -4,6 +4,7 @@
 #pragma once
 #include "TrackingCommon.h"
 #include "Log.h"
+#include <mutex>
 
 namespace perc 
 {
@@ -22,6 +23,9 @@ namespace perc
 
     private:
         Handle mEvent;
+        Handle mTrigger;
+        std::mutex mMutex;
+        bool mTriggered = false;
 
         void operator= (const Event &) = delete;
         Event(const Event &) = delete;

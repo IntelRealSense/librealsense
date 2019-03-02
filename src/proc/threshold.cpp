@@ -13,7 +13,7 @@
 
 namespace librealsense
 {
-    threshold::threshold() : _min(0.1f), _max(4.f)
+    threshold::threshold() : stream_filter_processing_block("Threshold Filter"),_min(0.1f), _max(4.f)
     {
         _stream_filter.format = RS2_FORMAT_Z16;
         _stream_filter.stream = RS2_STREAM_DEPTH;

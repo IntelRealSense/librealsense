@@ -75,11 +75,11 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
 
         if (0 == temperature_data.*is_valid_field)
-            LOG_ERROR(rs2_option_to_string(_option) << " value is not valid!");
+            LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -103,7 +103,7 @@ namespace librealsense
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
             return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
     }
 

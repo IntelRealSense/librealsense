@@ -7,6 +7,7 @@
 
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
+#include "synthetic-stream.h"
 
 namespace librealsense
 {
@@ -64,4 +65,5 @@ namespace librealsense
         size_t                  _width, _height;
         size_t                  _bpp;
     };
+    MAP_EXTENSION(RS2_EXTENSION_DISPARITY_FILTER, librealsense::disparity_transform);
 }
