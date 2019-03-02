@@ -1,33 +1,31 @@
 package com.intel.realsense.camera;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 
-import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
-import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
-import com.intel.realsense.librealsense.Pipeline;
-import com.intel.realsense.librealsense.StreamType;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class RecordingActivity extends AppCompatActivity {
-    private static final String TAG = "librs camera";
+    private static final String TAG = "librs camera rec";
+    private static final int PERMISSIONS_REQUEST_WRITE = 0;
 
-    private GLRsSurfaceView mGLSurfaceView;
-    private boolean mIsStreaming = false;
-    private final Handler mHandler = new Handler();
+    private Streamer mStreamer;
 
-    private Pipeline mPipeline;
+    private boolean mPermissionsGrunted = false;
 
     private FloatingActionButton mStopRecordFab;
 
@@ -35,8 +33,8 @@ public class RecordingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recording);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        mGLSurfaceView = findViewById(R.id.recordingGlSurfaceView);
         mStopRecordFab = findViewById(R.id.stopRecordFab);
         mStopRecordFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -46,19 +44,46 @@ public class RecordingActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_WRITE);
+            return;
+        }
+
+        mPermissionsGrunted = true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_WRITE);
+            return;
+        }
+
+        mPermissionsGrunted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        init();
+        if(mPermissionsGrunted){
+            mStreamer = new Streamer(this, (GLRsSurfaceView) findViewById(R.id.recordingGlSurfaceView), new Streamer.Listener() {
+                @Override
+                public void config(Config config) {
+                    config.enableRecordToFile(getFilePath());
+                }
+            });
+            mStreamer.start();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        stop();
+
+        if(mStreamer != null)
+            mStreamer.stop();
     }
 
     private String getFilePath(){
@@ -68,58 +93,5 @@ public class RecordingActivity extends AppCompatActivity {
         String currentDateAndTime = sdf.format(new Date());
         File file = new File(folder, currentDateAndTime + ".bag");
         return file.getAbsolutePath();
-    }
-
-    void init(){
-        mPipeline = new Pipeline();
-        start();
-    }
-
-    Runnable mStreaming = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
-                    mGLSurfaceView.upload(frames);
-                }
-                mHandler.post(mStreaming);
-            }
-            catch (Exception e) {
-                Log.e(TAG, "streaming, error: " + e.getMessage());
-            }
-        }
-    };
-
-    private synchronized void start() {
-        if(mIsStreaming)
-            return;
-        try{
-            mGLSurfaceView.clear();
-            Log.d(TAG, "try start streaming");
-            try(Config cfg = new Config()) {
-                cfg.enableRecordToFile(getFilePath());
-                mPipeline.start(cfg);
-            }
-            mIsStreaming = true;
-            mHandler.post(mStreaming);
-            Log.d(TAG, "streaming started successfully");
-        } catch (Exception e) {
-            Log.d(TAG, "failed to start streaming");
-        }
-    }
-
-    private synchronized void stop() {
-        if(!mIsStreaming)
-            return;
-        try {
-            Log.d(TAG, "try stop streaming");
-            mIsStreaming = false;
-            mHandler.removeCallbacks(mStreaming);
-            mPipeline.stop();
-            Log.d(TAG, "streaming stopped successfully");
-        }  catch (Exception e) {
-            Log.d(TAG, "failed to stop streaming");
-            mPipeline = null;
-        }
     }
 }
