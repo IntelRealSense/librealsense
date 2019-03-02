@@ -98,3 +98,29 @@ Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type,
     handle_error(env, e);
     return rv;
 }
+
+JNIEXPORT jdouble JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetTimestamp(JNIEnv *env, jclass type, jlong handle) {
+    rs2_error *e = NULL;
+    double rv = rs2_get_frame_timestamp((const rs2_frame *) handle, &e);
+    handle_error(env, e);
+    return rv;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetTimestampDomain(JNIEnv *env, jclass type,
+                                                                jlong handle) {
+    rs2_error *e = NULL;
+    int rv = rs2_get_frame_timestamp_domain((const rs2_frame *) handle, &e);
+    handle_error(env, e);
+    return rv;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetMetadata(JNIEnv *env, jclass type, jlong handle,
+                                                         jint metadata_type) {
+    rs2_error *e = NULL;
+    long rv = rs2_get_frame_metadata((const rs2_frame *) handle, metadata_type, &e);
+    handle_error(env, e);
+    return rv;
+}
