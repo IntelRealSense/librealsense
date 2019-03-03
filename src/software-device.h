@@ -70,6 +70,18 @@ namespace librealsense
         }
     };
 
+    class software_recommended_proccesing_blocks : public recommended_proccesing_blocks_interface
+    {
+    public:
+        processing_blocks get_recommended_processing_blocks() const override {
+            return _blocks;
+        }
+        ~software_recommended_proccesing_blocks() override {}
+       
+    private:
+        processing_blocks _blocks;
+    };
+
     class software_sensor : public sensor_base, public extendable_interface
     {
     public:
@@ -124,6 +136,8 @@ namespace librealsense
         };
 
         lazy<stereo_extension> _stereo_extension;
+
+        software_recommended_proccesing_blocks _pbs;
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);

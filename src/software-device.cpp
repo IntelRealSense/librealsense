@@ -48,7 +48,7 @@ namespace librealsense
     }
 
     software_sensor::software_sensor(std::string name, software_device* owner)
-        : sensor_base(name, owner), 
+        : sensor_base(name, owner, &_pbs),
           _stereo_extension([this]() { return stereo_extension(this); })
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
