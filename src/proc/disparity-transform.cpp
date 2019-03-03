@@ -16,11 +16,12 @@
 namespace librealsense
 {
     disparity_transform::disparity_transform(bool transform_to_disparity):
+        generic_processing_block(transform_to_disparity ? "Depth to Disparity" : "Disparity to Depth"),
         _transform_to_disparity(transform_to_disparity),
         _update_target(false),
         _stereoscopic_depth(false),
         _focal_lenght_mm(0.f),
-        _stereo_baseline(0.f),
+        _stereo_baseline_meter(0.f),
         _depth_units(0.f),
         _d2d_convert_factor(0.f),
         _width(0), _height(0), _bpp(0)
@@ -111,7 +112,7 @@ namespace librealsense
                 {
                     dss = ptr;
                     _depth_units = dss->get_depth_scale();
-                    _stereo_baseline = dss->get_stereo_baseline_mm()*0.001f;
+                    _stereo_baseline_meter = dss->get_stereo_baseline_mm()*0.001f;
                 }
             }
             else // Live sensor
@@ -121,7 +122,7 @@ namespace librealsense
                 {
                     dss = As<librealsense::depth_stereo_sensor>(snr);
                     _depth_units = dss->get_depth_scale();
-                    _stereo_baseline = dss->get_stereo_baseline_mm()* 0.001f;
+                    _stereo_baseline_meter = dss->get_stereo_baseline_mm()* 0.001f;
                 }
             }
 
@@ -131,7 +132,7 @@ namespace librealsense
                 _focal_lenght_mm    = vp.get_intrinsics().fx;
                 const uint8_t fractional_bits = 5;
                 const uint8_t fractions = 1 << fractional_bits;
-                _d2d_convert_factor = (_stereo_baseline * _focal_lenght_mm * fractions) / _depth_units;
+                _d2d_convert_factor = (_stereo_baseline_meter * _focal_lenght_mm * fractions) / _depth_units;
                 _width = vp.width();
                 _height = vp.height();
                 _update_target = true;

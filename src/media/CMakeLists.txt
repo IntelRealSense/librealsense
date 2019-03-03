@@ -12,5 +12,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/playback/playback_sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/ros/ros_reader.h"
         "${CMAKE_CURRENT_LIST_DIR}/ros/ros_writer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ros/ros_reader.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ros/ros_writer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ros/ros_file_format.h"
 )

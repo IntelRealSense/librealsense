@@ -131,8 +131,9 @@ namespace librealsense
     }
 
     colorizer::colorizer()
-        : _min(0.f), _max(6.f), _equalize(true), 
-          _target_stream_profile(), _histogram()
+        : stream_filter_processing_block("Depth Visualization"),
+         _min(0.f), _max(6.f), _equalize(true), 
+         _target_stream_profile(), _histogram()
     {
         _histogram = std::vector<int>(MAX_DEPTH, 0);
         _hist_data = _histogram.data();

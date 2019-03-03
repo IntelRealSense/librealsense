@@ -65,7 +65,7 @@ namespace librealsense
             void unlock() const override {_systemwide_lock.unlock(); }
 
             std::string get_device_location() const override { return _location; }
-            usb_spec get_usb_specification() const override { return _device_usb_spec; }
+            usb_spec get_usb_specification() const override { return _info.conn_spec; }
 
         private:
             friend class source_reader_callback;
@@ -90,7 +90,6 @@ namespace librealsense
             std::shared_ptr<const android_backend>      _backend;
 
             std::string                             _location;
-            usb_spec                                _device_usb_spec;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
             bool                                    _streaming = false;
@@ -103,8 +102,6 @@ namespace librealsense
             int _extension_unit = 0;
             mutable std::recursive_mutex            _systemwide_lock;
             mutable std::mutex                      _power_mutex;
-
-            void poll_interrupts();
         };
     }
 }

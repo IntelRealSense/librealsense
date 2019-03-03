@@ -49,8 +49,6 @@ namespace librealsense {
             if (status < 0)
                 LOG_ERROR("SetXU result:" << status);
 
-            poll_interrupts();
-
             return status >= 0;
         }
 
@@ -321,20 +319,10 @@ namespace librealsense {
             return result;
         }
 
-
-        void android_uvc_device::poll_interrupts() {
-            auto pipe = _device->device->get_pipe(_device->deviceData.ctrl_if.bEndpointAddress);
-            uint8_t buffer[INTERRUPT_BUFFER_SIZE];
-
-            //* 64 byte transfer buffer  - dedicated channel*//*
-            pipe->read_pipe(buffer, INTERRUPT_BUFFER_SIZE, 1000);
-        }
-
         void android_uvc_device::set_power_state(power_state state) {
             std::lock_guard<std::mutex> lock(_power_mutex);
 
             if (state == D0 && _power_state == D3) {
-                // Return list of all connected IVCAM devices from uvc_interface name
                 uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
 
                 std::vector<std::shared_ptr<usbhost_uvc_device>> uvc_devices;
@@ -349,7 +337,7 @@ namespace librealsense {
                 }
 
                 for (auto device : uvc_devices) {
-                    // initializing and filling all fields of winsub_device device_list[0]
+
                     usbhost_open(device.get(), mi);
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {
@@ -369,6 +357,8 @@ namespace librealsense {
                              eu; eu = eu->next) {
                             _extension_unit = eu->bUnitID;
                         }
+
+                        _device->device->claim_interface(mi);
 
                         _power_state = D0;
                         return;
@@ -418,7 +408,7 @@ namespace librealsense {
         android_uvc_device::android_uvc_device(const uvc_device_info &info,
                                                std::shared_ptr<const android_backend> backend)
                 : _streamIndex(MAX_PINS), _info(info), _backend(std::move(backend)),
-                  _location(""), _device_usb_spec(usb3_type)
+                  _location("")
         {
             if (!is_connected(info)) {
                 throw std::runtime_error("Camera not connected!");

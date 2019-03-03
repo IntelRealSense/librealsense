@@ -39,7 +39,7 @@ namespace librealsense
         virtual rs2_source* get_c_wrapper() = 0;
     };
 
-    class processing_block_interface
+    class processing_block_interface : public virtual options_interface, public virtual info_interface
     {
     public:
         virtual void set_processing_callback(frame_processor_callback_ptr callback) = 0;

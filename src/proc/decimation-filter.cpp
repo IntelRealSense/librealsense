@@ -200,6 +200,7 @@ namespace librealsense
     const uint8_t decimation_step = 1;    // Linear decimation
 
     decimation_filter::decimation_filter() :
+        stream_filter_processing_block("Decimation Filter"),
         _decimation_factor(decimation_default_val),
         _control_val(decimation_default_val),
         _patch_size(decimation_default_val),

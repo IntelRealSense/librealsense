@@ -60,7 +60,7 @@ namespace perc {
         {
             if (rc == LIBUSB_ERROR_NOT_SUPPORTED)
             {
-                DEVICELOGE("Error while opening device (%s), Please install driver for Intel(R) RealSense(TM) T250 device", libusb_error_name(rc));
+                DEVICELOGE("Error while opening device (%s), Please install driver for Intel(R) RealSense(TM) T265 device", libusb_error_name(rc));
             }
             else
             {
@@ -120,6 +120,13 @@ namespace perc {
             DEVICELOGE("Error: Interface version mismatch: Host %d.%d, FW %d.%d", LIBTM_API_VERSION_MAJOR, LIBTM_API_VERSION_MINOR, mFWInterfaceVersion.dwMajor, mFWInterfaceVersion.dwMinor);
             mDispatcher->postMessage(&mFsm, Message(ON_ERROR));
             mDeviceStatus = Status::INIT_FAILED;
+        }
+
+        /* Enable low power mode */
+        status = SetLowPowerModeInternal(true);
+        if (status != Status::SUCCESS)
+        {
+            DEVICELOGE("Error: Failed to enable low power mode (0x%X)", status);
         }
 
         status = GetDeviceInfoInternal();
@@ -294,6 +301,7 @@ namespace perc {
     {
         switch (level)
         {
+            case None:    return "[N]";
             case Error:   return "[E]";
             case Info:    return "[I]";
             case Warning: return "[W]";
@@ -342,6 +350,7 @@ namespace perc {
             case MODULE_PACKET_IO:       return "PACKET_IO";
             case MODULE_DFU:             return "DFU";
             case MODULE_CONFIG_TABLES:   return "CONFIG_TABLE";
+            case MODULE_LAST_VALUE:      break;
         }
         return "UNKNOWN";
     }
@@ -1877,6 +1886,9 @@ namespace perc {
             return Status::ERROR_PARAMETER_INVALID;
         }
 
+        // WA for low power issue - FW may not hear this bulk message on low power, pre-sending control message to wake it
+        WakeFW();
+
         DEVICELOGD("%s calibration (length %d)", (calibrationData.type == CalibrationTypeNew)?"Set new":"Append", calibrationData.length);
 
         std::vector<uint8_t> buf;
@@ -2095,6 +2107,38 @@ namespace perc {
             }
         }
         return st;
+    }
+
+    Status Device::SetLowPowerModeInternal(bool enable)
+    {
+        bulk_message_request_set_low_power_mode request = {0};
+        bulk_message_response_set_low_power_mode response = {0};
+        request.header.dwLength = sizeof(request);
+        request.header.wMessageID = DEV_SET_LOW_POWER_MODE;
+        request.bEnabled = enable;
+
+        DEVICELOGD("Set Low Power mode = %s", enable?"Enabled":"Disabled");
+        Bulk_Message msg((uint8_t*)&request, sizeof(request), (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST, USB_TRANSFER_MEDIUM_TIMEOUT_MS);
+
+        mFsm.fireEvent(msg);
+
+        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
+    }
+
+    Status Device::SetLowPowerMode(bool enable)
+    {
+        bulk_message_request_set_low_power_mode request = { 0 };
+        bulk_message_response_set_low_power_mode response = { 0 };
+        request.header.dwLength = sizeof(request);
+        request.header.wMessageID = DEV_SET_LOW_POWER_MODE;
+        request.bEnabled = enable;
+
+        DEVICELOGD("Set Low Power mode = %s", enable?"Enabled":"Disabled");
+        Bulk_Message msg((uint8_t*)&request, sizeof(request), (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST, USB_TRANSFER_MEDIUM_TIMEOUT_MS);
+
+        mDispatcher->sendMessage(&mFsm, msg);
+
+        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
     Status Device::WriteEepromChunk(uint16_t offset, uint16_t size, uint8_t * buffer, uint16_t& actual, bool verify)
@@ -3821,6 +3865,12 @@ namespace perc {
         perc::copy(buffer, usbMsg.mSrc, usbMsg.srcSize);
         bulk_message_request_header* header = (bulk_message_request_header*)buffer;
 
+        // WA for low power issue - FW may not hear this bulk message on low power, pre-sending control message to wake it
+        if (header->wMessageID != DEV_GET_TIME)
+        {
+            WakeFW();
+        }
+
         int rc = libusb_bulk_transfer(mDevice, usbMsg.mEndpointOut, buffer, BUFFER_SIZE, &actual, usbMsg.mTimeoutInMs);
 
         DEVICELOGV("Sent request - MessageID: 0x%X (%s), Len: %d, UsbLen: %d, Actual: %d, rc: %d (%s)", 
@@ -3897,7 +3947,7 @@ namespace perc {
         Control_Message usbMsg = dynamic_cast<const Control_Message&>(msg);
         control_message_request_header* header = (control_message_request_header*)usbMsg.mSrc;
 
-        DEVICELOGD("Sending Control request - MessageID: 0x%X (%s)", header->bRequest, messageCodeToString(LIBUSB_TRANSFER_TYPE_CONTROL, header->bRequest).c_str());
+        DEVICELOGV("Sending Control request - MessageID: 0x%X (%s)", header->bRequest, messageCodeToString(LIBUSB_TRANSFER_TYPE_CONTROL, header->bRequest).c_str());
         int result = libusb_control_transfer(mDevice, header->bmRequestType, header->bRequest, usbMsg.mValue, usbMsg.mIndex, usbMsg.mDst, usbMsg.dstSize, usbMsg.mTimeoutInMs);
 
         /* Control request Successed if result == expected dstSize or got PIPE error on reset message */
@@ -3909,6 +3959,12 @@ namespace perc {
 
         DEVICELOGE("ERROR %s while control transfer of messageID: 0x%X (%s)", libusb_error_name(result), header->bRequest, messageCodeToString(LIBUSB_TRANSFER_TYPE_CONTROL, header->bRequest).c_str());
         msg.Result = toUnderlying(Status::ERROR_USB_TRANSFER);
+    }
+
+    void Device::WakeFW()
+    {
+        // WA for low power issue - FW may not hear this bulk message on low power, pre-sending control message to wake it
+        GetInterfaceVersionInternal();
     }
 
     void Device::SendLargeMessage(const Message& msg)
@@ -3923,6 +3979,9 @@ namespace perc {
         uint32_t chunkLength = 0;
         uint16_t index = 0;
         int actual = 0;
+
+        // WA for low power issue - FW may not hear this bulk message on low power, pre-sending control message to wake it
+        WakeFW();
 
         DEVICELOGD("Set large message send - Total length %d", length);
 
