@@ -180,7 +180,6 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
-            CASE(POSE_SENSOR)
             CASE(DECIMATION_FILTER)
             CASE(THRESHOLD_FILTER)
             CASE(DISPARITY_FILTER)
@@ -189,6 +188,8 @@ namespace librealsense
             CASE(HOLE_FILLING_FILTER)
             CASE(ZERO_ORDER_FILTER)
             CASE(RECOMMENDED_FILTERS)
+            CASE(POSE)
+            CASE(POSE_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
