@@ -487,6 +487,28 @@ void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* 
 //void rs2_export_localization_map(const rs2_sensor* sensor, const char* lmap_fname, rs2_error** error);
 const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor, rs2_error** error);
 
+/**
+* Create a named location tag
+* \param[in]  sensor    T2xx position-tracking sensor
+* \param[in]  guid      Null-terminated string of up to 127 characters
+* \param[in]  pos       Position in meters, relative to the current tracking session
+* \param[in]  orient    Quaternion orientation, expressed the the coordinate system of the current tracking session
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Non-zero if succeeded, otherwise 0
+*/
+int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector *pos, const rs2_quaternion *orient, rs2_error** error);
+
+/**
+* Create a named location tag
+* \param[in]  sensor    T2xx position-tracking sensor
+* \param[in]  guid      Null-terminated string of up to 127 characters
+* \param[out] pos       Position in meters of the tagged (stored) location
+* \param[out] orient    Quaternion orientation of the tagged (stored) location
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Non-zero if succeeded, otherwise 0
+*/
+int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *pos, rs2_quaternion *orient, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

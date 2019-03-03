@@ -28,6 +28,8 @@ namespace librealsense
     public:
         virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const  = 0;
         virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const = 0;
+        virtual bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const = 0;
         virtual ~pose_sensor_interface() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);

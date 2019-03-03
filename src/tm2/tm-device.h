@@ -87,6 +87,8 @@ namespace librealsense
         // Pose interfaces
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
+        bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const;
+        bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const;
 
         enum async_op_state {
             _async_init     = 1 << 0,

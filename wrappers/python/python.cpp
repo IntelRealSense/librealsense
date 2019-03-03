@@ -809,6 +809,10 @@ PYBIND11_MODULE(NAME, m) {
             "Load SLAM localization map from host to device.", "lmap_buf"_a)
         .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
             "Extract SLAM localization map from device and store on host.")
+        .def("set_static_node", &rs2::pose_sensor::set_static_node,
+            "Create a named reference frame anchored to a specific 3D pose.")
+        .def("get_static_node", &rs2::pose_sensor::get_static_node,
+            "Retrieve a named reference frame anchored to a specific 3D pose.")
         .def("__nonzero__", &rs2::pose_sensor::operator bool);
 
     /* rs2_pipeline.hpp */

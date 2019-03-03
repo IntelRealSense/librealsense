@@ -525,7 +525,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option, options)
 int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error)BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(options);
-    return options->list.size();
+    return int(options->list.size());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, options)
 
@@ -2238,4 +2238,45 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
     return nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
+
+int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector *pos, const rs2_quaternion *orient, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(guid);
+    VALIDATE_NOT_NULL(pos);
+    VALIDATE_NOT_NULL(orient);
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    std::string s_guid(guid);
+    VALIDATE_RANGE(s_guid.size(), 1, 127);      // T2xx spec
+
+    return int(pose_snr->set_static_node(s_guid, { pos->x, pos->y, pos->z }, { orient->x, orient->y, orient->z, orient->w }));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
+
+int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *pos, rs2_quaternion *orient, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(guid);
+    VALIDATE_NOT_NULL(pos);
+    VALIDATE_NOT_NULL(orient);
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    std::string s_guid(guid);
+    VALIDATE_RANGE(s_guid.size(), 1, 127);      // T2xx spec
+
+    float3 t_pos{};
+    float4 t_or {};
+    int ret = 0;
+    if (ret = pose_snr->get_static_node(s_guid, t_pos, t_or))
+    {
+        pos->x = t_pos.x;
+        pos->y = t_pos.y;
+        pos->z = t_pos.z;
+        orient->x = t_or.x;
+        orient->y = t_or.y;
+        orient->z = t_or.z;
+        orient->w = t_or.w;
+    }
+    return ret;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
 

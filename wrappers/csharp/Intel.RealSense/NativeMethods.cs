@@ -502,6 +502,14 @@ namespace Intel.RealSense
         internal static extern void rs2_import_localization_map(IntPtr sensor, IntPtr raw_data_to_send, uint size_of_raw_data_to_send, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_set_static_node(IntPtr sensor, [MarshalAs(UnmanagedType.LPStr)] string guid, Math.Vector pos, Math.Quaternion orient,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_get_static_node(IntPtr sensor, [MarshalAs(UnmanagedType.LPStr)] string guid, out Math.Vector pos, out Math.Quaternion orient,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_motion_intrinsics(IntPtr profile, out MotionDeviceIntrinsics intrinsics, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
 #endregion

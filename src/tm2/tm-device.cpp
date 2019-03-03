@@ -1062,7 +1062,33 @@ namespace librealsense
             [&]() {}, "Import localization map");
 
         return (res == async_op_state::_async_success);
+    }
 
+    bool tm2_sensor::set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const
+    {
+        perc::TrackingData::RelativePose rp;
+        rp.translation  = { pos.x, pos.y, pos.z };
+        rp.rotation     = { orient_quat.x, orient_quat.y, orient_quat.z, orient_quat.w };
+        return (perc::Status::SUCCESS == _tm_dev->SetStaticNode(guid.data(), rp));
+    }
+
+    bool tm2_sensor::get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const
+    {
+        bool ret = false;
+        perc::TrackingData::RelativePose rel_pose;
+        if (perc::Status::SUCCESS == _tm_dev->GetStaticNode(guid.data(), rel_pose))
+        {
+            pos[0] = rel_pose.translation.x;
+            pos[1] = rel_pose.translation.y;
+            pos[2] = rel_pose.translation.z;
+            orient_quat[0] = rel_pose.rotation.i;
+            orient_quat[1] = rel_pose.rotation.j;
+            orient_quat[2] = rel_pose.rotation.k;
+            orient_quat[3] = rel_pose.rotation.r;
+
+            ret = true;
+        }
+        return ret;
     }
 
     TrackingData::Temperature tm2_sensor::get_temperature()
