@@ -920,6 +920,11 @@ namespace rs2
             post_processing.push_back(model);
         }
 
+        auto colorizer = std::make_shared<processing_block_model>(
+            this, "Depth Visualization", depth_colorizer,
+            [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
+        const_effects.push_back(colorizer);
+
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
