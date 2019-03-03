@@ -74,6 +74,7 @@ namespace librealsense
         void onControllerFrame(perc::TrackingData::ControllerFrame& frame) override;
         void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
         void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
+        void onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt) override;
 
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
@@ -112,7 +113,7 @@ namespace librealsense
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
-        void raise_controller_event(const std::string& msg, const std::string& serialized_data, double timestamp);
+        void raise_hardware_event(const std::string& msg, const std::string& serialized_data, double timestamp);
         void raise_error_notification(const std::string& msg);
 
         dispatcher                      _dispatcher;

@@ -816,19 +816,19 @@ namespace librealsense
     void tm2_sensor::onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame)
     {
         std::string msg = to_string() << "Controller discovered with MAC " << frame.macAddress;
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
     {
         std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " disconnected";
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
         std::string msg = to_string() << "Controller #" << (int)frame.sensorIndex << " button ["<< (int)frame.eventId << ", " << (int)frame.instanceId << "]";
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame)
@@ -836,7 +836,7 @@ namespace librealsense
         std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " connected";
         if (frame.status == perc::Status::SUCCESS)
         {
-            raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+            raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
         }
         else
         {
@@ -846,7 +846,7 @@ namespace librealsense
 
     void tm2_sensor::onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame)
     {
-        LOG_DEBUG("Loc_data fragment " << frame.chunkIndex  \
+        LOG_DEBUG("T2xx: Loc_data fragment " << frame.chunkIndex  \
             << " size: " << std::dec << frame.length << " status : " << int(frame.status));
 
         if (Status::SUCCESS == frame.status)
@@ -866,11 +866,17 @@ namespace librealsense
         }
     }
 
+    void tm2_sensor::onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt)
+    {
+        std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << evt.sessionId <<  ", timestamp: " << double(evt.timestamp*0.000000001) << " sec";
+        raise_hardware_event(msg, {}, evt.timestamp);
+    }
+
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
     {
         std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (_is_streaming || _is_opened)
-            throw wrong_api_call_sequence_exception("Cannot enter loopback mode while device is open or streaming");
+            throw wrong_api_call_sequence_exception("T2xx: Cannot enter loopback mode while device is open or streaming");
         _loopback = input;
     }
 
@@ -936,7 +942,7 @@ namespace librealsense
         _source.invoke_callback(std::move(frame));
     }
     
-    void tm2_sensor::raise_controller_event(const std::string& msg, const std::string& json_data, double timestamp)
+    void tm2_sensor::raise_hardware_event(const std::string& msg, const std::string& json_data, double timestamp)
     {
         notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
         controller_event.serialized_data = json_data;
@@ -980,7 +986,7 @@ namespace librealsense
             std::string msg = to_string() << "Disconnected from controller #" << id;
             perc::TrackingData::ControllerDisconnectedEventFrame f;
             f.controllerId = id;
-            raise_controller_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            raise_hardware_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
         }
     }
 
