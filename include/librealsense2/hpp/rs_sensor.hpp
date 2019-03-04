@@ -445,13 +445,14 @@ namespace rs2
 
         /** Load SLAM localization map from host to device
         * \param[in] lmap_buf   localization map blob
-        * \return void
+        * \return true on success
         */
-        void import_localization_map(const std::vector<uint8_t>& lmap_buf) const
+        bool import_localization_map(const std::vector<uint8_t>& lmap_buf) const
         {
             rs2_error* e = nullptr;
-            rs2_import_localization_map(_sensor.get(), lmap_buf.data(), uint32_t(lmap_buf.size()), &e);
+            auto res = rs2_import_localization_map(_sensor.get(), lmap_buf.data(), uint32_t(lmap_buf.size()), &e);
             error::handle(e);
+            return !!res;
         }
 
         /** Extract SLAM localization map from device and store on host
@@ -488,7 +489,7 @@ namespace rs2
         bool set_static_node(const std::string& guid, const rs2_vector& pos, const rs2_quaternion& orient) const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_set_static_node(_sensor.get(), guid.c_str(), &pos, &orient, &e);
+            auto res = rs2_set_static_node(_sensor.get(), guid.c_str(), pos, orient, &e);
             error::handle(e);
             return !!res;
         }
@@ -510,6 +511,51 @@ namespace rs2
 
         operator bool() const { return _sensor.get() != nullptr; }
         explicit pose_sensor(std::shared_ptr<rs2_sensor> dev) : pose_sensor(sensor(dev)) {}
+    };
+
+    class wheel_odometer : public sensor
+    {
+    public:
+        wheel_odometer(sensor s)
+            : sensor(s.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_sensor_extendable_to(_sensor.get(), RS2_EXTENSION_WHEEL_ODOMETER, &e) == 0 && !e)
+            {
+                _sensor.reset();
+            }
+            error::handle(e);
+        }
+
+        /** Load Wheel odometer settings from host to device
+        * \param[in] odometry_config_buf   odometer configuration/calibration blob serialized from jsom file
+        * \return true on success
+        */
+        bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_load_wheel_odometry_config(_sensor.get(), odometry_config_buf.data(), uint32_t(odometry_config_buf.size()), &e);
+            error::handle(e);
+            return !!res;
+        }
+
+        /** Send wheel odometry data for each individual sensor (wheel)
+        * \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
+        * \param[in] frame_num          - Monotonocally increasing frame number, managed per sensor.
+        * \param[in] angular_velocity   - Angular velocity in rad/sec
+        * \param[in] sensor_temperature - Sensor temperature
+        * \return true on success
+        */
+        bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const rs2_vector& angular_velocity, float sensor_temperature)
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_send_wheel_odometry(_sensor.get(), wo_sensor_id, frame_num, angular_velocity, sensor_temperature, &e);
+            error::handle(e);
+            return !!res;
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+        explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
     };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

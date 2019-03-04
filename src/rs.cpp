@@ -1090,6 +1090,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
     case RS2_EXTENSION_SOFTWARE_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor)        != nullptr;
     case RS2_EXTENSION_POSE_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::pose_sensor_interface)  != nullptr;
+    case RS2_EXTENSION_WHEEL_ODOMETER      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::wheel_odometry_interface)!= nullptr;
 
     default:
         return false;
@@ -2213,7 +2214,7 @@ int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_ca
 }
 HANDLE_EXCEPTIONS_AND_RETURN(false, block, info)
 
-void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
+int rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(lmap_blob);
@@ -2222,10 +2223,12 @@ void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* 
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
 
     std::vector<uint8_t> buffer_to_send(lmap_blob, lmap_blob + blob_size);
-    if (!pose_snr->import_relocalization_map(buffer_to_send))
+    int ret = pose_snr->import_relocalization_map(buffer_to_send);
+    if (!ret)
         throw librealsense::invalid_value_exception(librealsense::to_string() << "import localization failed, map size " << blob_size);
+    return ret;
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, lmap_blob, blob_size)
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, lmap_blob, blob_size)
 
 const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
@@ -2239,17 +2242,15 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
-int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector *pos, const rs2_quaternion *orient, rs2_error** error) BEGIN_API_CALL
+int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector pos, const rs2_quaternion orient, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     VALIDATE_NOT_NULL(guid);
-    VALIDATE_NOT_NULL(pos);
-    VALIDATE_NOT_NULL(orient);
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
     std::string s_guid(guid);
     VALIDATE_RANGE(s_guid.size(), 1, 127);      // T2xx spec
 
-    return int(pose_snr->set_static_node(s_guid, { pos->x, pos->y, pos->z }, { orient->x, orient->y, orient->z, orient->w }));
+    return int(pose_snr->set_static_node(s_guid, { pos.x, pos.y, pos.z }, { orient.x, orient.y, orient.z, orient.w }));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
 
@@ -2280,3 +2281,28 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
 
+int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(odometry_blob);
+    VALIDATE_RANGE(blob_size, 1, std::numeric_limits<uint32_t>::max());
+
+    auto wo_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::wheel_odometry_interface);
+
+    std::vector<uint8_t> buffer_to_send(odometry_blob, odometry_blob + blob_size);
+    int ret = wo_snr->load_wheel_odometery_config(buffer_to_send);
+    if (!ret)
+        throw librealsense::wrong_api_call_sequence_exception(librealsense::to_string() << "Load wheel odometry config failed, file size " << blob_size);
+    return ret;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, odometry_blob, blob_size)
+
+int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
+                            const rs2_vector angular_velocity, float sensor_temperature, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto wo_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::wheel_odometry_interface);
+
+    return wo_snr->send_wheel_odometry(wo_sensor_id, frame_num, { angular_velocity.x, angular_velocity.y, angular_velocity.z }, sensor_temperature);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, angular_velocity, sensor_temperature)

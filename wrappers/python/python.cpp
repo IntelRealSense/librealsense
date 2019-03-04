@@ -789,7 +789,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("__nonzero__", &rs2::sensor::operator bool)
         .def(BIND_DOWNCAST(sensor, roi_sensor))
         .def(BIND_DOWNCAST(sensor, depth_sensor))
-        .def(BIND_DOWNCAST(sensor, pose_sensor));
+        .def(BIND_DOWNCAST(sensor, pose_sensor))
+        .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
     py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor");
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
@@ -814,6 +815,15 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_static_node", &rs2::pose_sensor::get_static_node,
             "Retrieve a named reference frame anchored to a specific 3D pose.")
         .def("__nonzero__", &rs2::pose_sensor::operator bool);
+
+    py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer");
+    wheel_odometer.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
+            "odometry_config_buf"_a, "Load Wheel odometer settings from host to device.")
+        .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
+            "wo_sensor_id"_a, "frame_num"_a, "angular_velocity"_a, "sensor_temperature"_a,
+            "Send wheel odometry data for each individual sensor (wheel)")
+        .def("__nonzero__", &rs2::wheel_odometer::operator bool);
 
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline> pipeline(m, "pipeline");

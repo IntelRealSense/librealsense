@@ -297,6 +297,8 @@ EXPORTS
     rs2_export_localization_map
     rs2_set_static_node
     rs2_get_static_node
+    rs2_load_wheel_odometry_config
+    rs2_send_wheel_odometry
     rs2_get_processing_block
     rs2_get_recommended_processing_blocks
     rs2_get_recommended_processing_blocks_count

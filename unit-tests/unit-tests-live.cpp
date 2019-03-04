@@ -5650,44 +5650,14 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     CAPTURE(results.size());
                     REQUIRE(results.size());
 
-                    REQUIRE_NOTHROW(pose_snr.import_localization_map(results));
+                    bool ret = false;
+                    REQUIRE_NOTHROW(ret = pose_snr.import_localization_map(results));
+                    CAPTURE(ret);
+                    REQUIRE(ret);
                     REQUIRE_NOTHROW(vnv = pose_snr.export_localization_map());
                     CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
-
-
-                    rs2_vector init_pose{}, test_pose{ 1,2,3 }, vnv_pose{};
-                    rs2_quaternion init_or{}, test_or{ 4,5,6,7 }, vnv_or{};
-                    auto res = 0;
-                    // TODO  - is not working as advertised
-                    /*REQUIRE_NOTHROW(res = pose_snr.get_static_node("origin", init_pose, init_or));
-                    CAPTURE(init_pose);
-                    CAPTURE(init_or);
-                    CAPTURE(res);
-                    REQUIRE(res != 0);
-                    REQUIRE(init_pose.x != 0 );
-                    REQUIRE(init_pose.y != 0);
-                    REQUIRE(init_pose.z != 0);
-                    REQUIRE(init_or.x != 0);
-                    REQUIRE(init_or.y != 0);
-                    REQUIRE(init_or.z != 0);
-                    REQUIRE(init_or.w != 0);*/
-                    REQUIRE_NOTHROW(res = pose_snr.set_static_node("wp1", test_pose, test_or));
-                    CAPTURE(res);
-                    REQUIRE(res != 0);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                    REQUIRE_NOTHROW(res = pose_snr.get_static_node("wp1", vnv_pose, vnv_or));
-                    CAPTURE(vnv_pose);
-                    CAPTURE(vnv_or);
-                    CAPTURE(res);
-                    REQUIRE(test_pose.x == Approx(vnv_pose.x));
-                    REQUIRE(test_pose.y == Approx(vnv_pose.y));
-                    REQUIRE(test_pose.z == Approx(vnv_pose.z));
-                    REQUIRE(test_or.x == Approx(vnv_or.x));
-                    REQUIRE(test_or.y == Approx(vnv_or.y));
-                    REQUIRE(test_or.z == Approx(vnv_or.z));
-                    REQUIRE(test_or.w == Approx(vnv_or.w));
                 }
             }
 
@@ -5704,8 +5674,8 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE(pose_snr);
 
                     rs2::frameset frames;
-                    // The frames are required to generate some initial localization map
-                    for (auto i = 0; i < 10; i++)
+                    // The frames are required to attain pose with sufficient confidence for static node marker
+                    for (auto i = 0; i < 1000; i++)
                     {
                         REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
                         REQUIRE(frames.size() > 0);
@@ -5714,19 +5684,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     rs2_vector init_pose{}, test_pose{ 1,2,3 }, vnv_pose{};
                     rs2_quaternion init_or{}, test_or{ 4,5,6,7 }, vnv_or{};
                     auto res = 0;
-                    // TODO  - is not working as advertised
-                    /*REQUIRE_NOTHROW(res = pose_snr.get_static_node("origin", init_pose, init_or));
-                    CAPTURE(init_pose);
-                    CAPTURE(init_or);
-                    CAPTURE(res);
-                    REQUIRE(res != 0);
-                    REQUIRE(init_pose.x != 0 );
-                    REQUIRE(init_pose.y != 0);
-                    REQUIRE(init_pose.z != 0);
-                    REQUIRE(init_or.x != 0);
-                    REQUIRE(init_or.y != 0);
-                    REQUIRE(init_or.z != 0);
-                    REQUIRE(init_or.w != 0);*/
                     REQUIRE_NOTHROW(res = pose_snr.set_static_node("wp1", test_pose, test_or));
                     CAPTURE(res);
                     REQUIRE(res != 0);

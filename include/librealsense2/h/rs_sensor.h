@@ -474,8 +474,9 @@ void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list);
 * \param[in]  lmap_blob     Localization map raw buffer, serialized
 * \param[in]  blob_size     The buffer's size in bytes
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   Non-zero if succeeded, otherwise 0
 */
-void rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error);
+int rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error);
 
 /**
 * Extract and store the localization map of tm2 tracking device to file
@@ -496,7 +497,7 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
 * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return               Non-zero if succeeded, otherwise 0
 */
-int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector *pos, const rs2_quaternion *orient, rs2_error** error);
+int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector pos, const rs2_quaternion orient, rs2_error** error);
 
 /**
 * Create a named location tag
@@ -508,6 +509,22 @@ int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_ve
 * \return               Non-zero if succeeded, otherwise 0
 */
 int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *pos, rs2_quaternion *orient, rs2_error** error);
+
+/** Load Wheel odometer settings from host to device
+* \param[in] odometry_config_buf   odometer configuration/calibration blob serialized from jsom file
+* \return true on success
+*/
+int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error);
+
+/** Send wheel odometry data for each individual sensor (wheel)
+* \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
+* \param[in] frame_num          - Monotonocally increasing frame number, managed per sensor.
+* \param[in] angular_velocity   - Angular velocity of the wheel sensor [rad/sec]
+* \param[in] sensor_temperature - Sensor temperature
+* \return true on success
+*/
+int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
+    const rs2_vector angular_velocity, float sensor_temperature, rs2_error** error);
 
 #ifdef __cplusplus
 }

@@ -34,6 +34,15 @@ namespace librealsense
     };
     MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);
 
+    class wheel_odometry_interface : public recordable<wheel_odometry_interface>
+    {
+    public:
+        virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity, float sensor_temperature) const = 0;
+        virtual ~wheel_odometry_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_WHEEL_ODOMETER, librealsense::wheel_odometry_interface);
+
      class tm2_extensions
     {
     public:

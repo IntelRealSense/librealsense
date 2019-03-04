@@ -190,6 +190,7 @@ namespace librealsense
             CASE(RECOMMENDED_FILTERS)
             CASE(POSE)
             CASE(POSE_SENSOR)
+            CASE(WHEEL_ODOMETER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
