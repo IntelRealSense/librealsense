@@ -1183,6 +1183,16 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 
+void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(ctx);
+    VALIDATE_NOT_NULL(dev);
+    auto software_dev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    
+    ctx->ctx->add_device(software_dev->get_info());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, ctx, dev)
+
 void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(ctx);

@@ -33,11 +33,6 @@ int main(int argc, char * argv[]) try
         // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
 
-        auto depth = frames.get_depth_frame();
-
-        // Generate the pointcloud and texture mappings
-        points = pc.calculate(depth);
-
         auto color = frames.get_color_frame();
 
         // For cameras that don't have RGB sensor, we'll map the pointcloud to infrared instead of color
@@ -46,6 +41,11 @@ int main(int argc, char * argv[]) try
 
         // Tell pointcloud object to map to this color frame
         pc.map_to(color);
+
+        auto depth = frames.get_depth_frame();
+
+        // Generate the pointcloud and texture mappings
+        points = pc.calculate(depth);
 
         // Upload the color frame to OpenGL
         app_state.tex.upload(color);
