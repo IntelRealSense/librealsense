@@ -37,7 +37,7 @@ namespace librealsense
     class wheel_odometry_interface : public recordable<wheel_odometry_interface>
     {
     public:
-        virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const = 0;
         virtual bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity, float sensor_temperature) const = 0;
         virtual ~wheel_odometry_interface() = default;
     };
@@ -46,7 +46,6 @@ namespace librealsense
      class tm2_extensions
     {
     public:
-        //Empty for now
         virtual void enable_loopback(const std::string& input) = 0;
         virtual void disable_loopback() = 0;
         virtual bool is_enabled() const = 0;

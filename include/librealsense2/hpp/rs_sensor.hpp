@@ -496,9 +496,9 @@ namespace rs2
 
 
         /** Retrieve a named reference frame anchored to a specific 3D pose
-        * \param[in] guid   String to designate the reference (limited to 127 chars)
-        * \param[in] pos    3D Pose position in meters
-        * \param[in] orient 3D Pose attitude (quaternion)
+        * \param[in] guid       String to designate the reference (limited to 127 chars)
+        * \param[out] pos       3D Pose position in meters
+        * \param[out] orient    3D Pose attitude (quaternion)
         * \return true on success
         */
         bool get_static_node(const std::string& guid, rs2_vector& pos, rs2_quaternion& orient) const

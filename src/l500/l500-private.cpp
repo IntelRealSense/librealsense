@@ -53,11 +53,11 @@ namespace librealsense
             switch (_option)
             {
             case RS2_OPTION_LLD_TEMPERATURE:
-                return temperature_data.LLD_temperature;
+                return float(temperature_data.LLD_temperature);
             case RS2_OPTION_MC_TEMPERATURE:
-                return temperature_data.MC_temperature;
+                return float(temperature_data.MC_temperature);
             case RS2_OPTION_MA_TEMPERATURE:
-                return temperature_data.MA_temperature;
+                return float(temperature_data.MA_temperature);
             default:
                 throw invalid_value_exception(to_string() << _option << " is not temperature option!");
             }

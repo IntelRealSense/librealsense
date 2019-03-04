@@ -514,7 +514,7 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
 * \param[in] odometry_config_buf   odometer configuration/calibration blob serialized from jsom file
 * \return true on success
 */
-int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error);
+int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_config_buf, unsigned int blob_size, rs2_error** error);
 
 /** Send wheel odometry data for each individual sensor (wheel)
 * \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
