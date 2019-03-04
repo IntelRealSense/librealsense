@@ -25,6 +25,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
 #include "proc/spatial-filter.h"
+#include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/yuy2rgb.h"
 #include "proc/rates-printer.h"
@@ -45,6 +46,11 @@ using namespace librealsense;
 struct rs2_stream_profile_list
 {
     std::vector<std::shared_ptr<stream_profile_interface>> list;
+};
+
+struct rs2_processing_block_list
+{
+    processing_blocks list;
 };
 
 struct rs2_sensor : public rs2_options
@@ -502,6 +508,40 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
+rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return new rs2_options_list{ options->options->get_supported_options() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, options)
+
+const char* rs2_get_option_name(const rs2_options* options,rs2_option option, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->options->get_option_name(option);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, option, options)
+
+int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->list.size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, options)
+
+rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(options);
+    return options->list[i];
+}
+HANDLE_EXCEPTIONS_AND_RETURN(RS2_OPTION_COUNT, options)
+
+void rs2_delete_options_list(rs2_options_list* list) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+NOEXCEPT_RETURN(, list)
 
 int rs2_supports_option(const rs2_options* options, rs2_option option, rs2_error** error) BEGIN_API_CALL
 {
@@ -1048,7 +1088,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_ROI                 : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::roi_sensor_interface)   != nullptr;
     case RS2_EXTENSION_DEPTH_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_sensor)           != nullptr;
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::depth_stereo_sensor)    != nullptr;
-    case RS2_EXTENSION_SOFTWARE_SENSOR:  return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
+    case RS2_EXTENSION_SOFTWARE_SENSOR  : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor) != nullptr;
     default:
         return false;
     }
@@ -1093,6 +1133,26 @@ int rs2_is_frame_extendable_to(const rs2_frame* f, rs2_extension extension_type,
     case RS2_EXTENSION_MOTION_FRAME    : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::motion_frame)    != nullptr;
     case RS2_EXTENSION_POSE_FRAME      : return VALIDATE_INTERFACE_NO_THROW((frame_interface*)f, librealsense::pose_frame)      != nullptr;
 
+    default:
+        return false;
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
+
+int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(f);
+    VALIDATE_ENUM(extension_type);
+    switch (extension_type)
+    {
+    case RS2_EXTENSION_DECIMATION_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::decimation_filter) != nullptr;
+    case RS2_EXTENSION_THRESHOLD_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::threshold) != nullptr;
+    case RS2_EXTENSION_DISPARITY_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::disparity_transform) != nullptr;
+    case RS2_EXTENSION_SPATIAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::spatial_filter) != nullptr;
+    case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
+    case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
+    case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
+  
     default:
         return false;
     }
@@ -1596,7 +1656,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, config, pipe)
 
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) BEGIN_API_CALL
 {
-    auto block = std::make_shared<librealsense::processing_block>();
+    auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
     block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
 
     return new rs2_processing_block{ block };
@@ -1607,7 +1667,7 @@ rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callb
 {
     VALIDATE_NOT_NULL(proc);
 
-    auto block = std::make_shared<librealsense::processing_block>();
+    auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
 
     block->set_processing_callback({
         new librealsense::internal_frame_processor_fptr_callback(proc, context),
@@ -1842,6 +1902,14 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::rates_printer>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::zero_order>();
 
     return new rs2_processing_block{ block };
 }
@@ -2092,3 +2160,54 @@ void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error**
     tm2->disconnect_controller(id);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);                            
+    return new rs2_processing_block_list{ sensor->sensor->get_recommended_processing_blocks() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
+
+rs2_processing_block* rs2_get_processing_block(const rs2_processing_block_list* list, int index, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    VALIDATE_RANGE(index, 0, (int)list->list.size() - 1);
+
+    return new rs2_processing_block(list->list[index]);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
+
+int rs2_get_recommended_processing_blocks_count(const rs2_processing_block_list* list, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    return static_cast<int>(list->list.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, list)
+
+void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(list);
+    delete list;
+}
+NOEXCEPT_RETURN(, list)
+
+const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_ENUM(info);
+    if (block->block->supports_info(info))
+    {
+        return block->block->get_info(info).c_str();
+    }
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "Info " << rs2_camera_info_to_string(info) << " not supported by processing block!");
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, block, info)
+
+int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(block);
+    VALIDATE_ENUM(info);
+    return block->block->supports_info(info);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(false, block, info)
+

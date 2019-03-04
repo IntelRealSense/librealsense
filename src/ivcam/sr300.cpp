@@ -4,6 +4,11 @@
 #include "sr300.h"
 #include "metadata.h"
 #include "hw-monitor.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h" 
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -325,4 +330,13 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
 
     }
+    processing_blocks sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks()
+    {
+        auto res = get_depth_recommended_proccesing_blocks();
+        res.push_back(std::make_shared<threshold>());
+        res.push_back(std::make_shared<spatial_filter>());
+        res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
+        return res;
+    };
 }

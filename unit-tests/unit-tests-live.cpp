@@ -5322,3 +5322,173 @@ TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
         pose_frame.timestamp == recorded_pose.get_timestamp()));
 }
 
+void compare(filter first, filter second)
+{
+    CAPTURE(first.get_info(RS2_CAMERA_INFO_NAME));
+    CAPTURE(second.get_info(RS2_CAMERA_INFO_NAME));
+    REQUIRE(strcmp(first.get_info(RS2_CAMERA_INFO_NAME), second.get_info(RS2_CAMERA_INFO_NAME)) == 0);
+
+    auto first_options = first.get_supported_options();
+    auto second_options = second.get_supported_options();
+
+    REQUIRE(first_options.size() == second_options.size());
+
+    REQUIRE(first_options == second_options);
+
+    for (auto i = 0;i < first_options.size();i++)
+    {
+        auto opt = static_cast<rs2_option>(first_options[i]);
+        CAPTURE(opt);
+        CAPTURE(first.get_option(opt));
+        CAPTURE(second.get_option(opt));
+        REQUIRE(first.get_option(opt) == second.get_option(opt));
+    }
+}
+
+void compare(std::vector<filter> first, std::vector<std::shared_ptr<filter>> second)
+{
+    REQUIRE(first.size() == second.size());
+
+    for (auto i = 0;i < first.size();i++)
+    {
+        compare(first[i], (*second[i]));
+    }
+}
+
+TEST_CASE("Sensor get recommended filters", "[live]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+
+    enum sensors
+    {
+        depth,
+        depth_stereo,
+        color
+    };
+
+    std::map<sensors, std::vector<std::shared_ptr<filter>>> sensors_to_filters;
+
+    auto dec_color = std::make_shared<decimation_filter>();
+    dec_color->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_COLOR);
+    dec_color->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_ANY);
+
+    sensors_to_filters[color] = {
+        dec_color
+    };
+
+    auto dec_depth = std::make_shared<decimation_filter>();
+    dec_depth->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_DEPTH);
+    dec_depth->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_Z16);
+
+    auto threshold = std::make_shared<threshold_filter>(0.1f, 4.f);
+    auto spatial = std::make_shared<spatial_filter>();
+    auto temporal = std::make_shared<temporal_filter>();
+    auto hole_filling = std::make_shared<hole_filling_filter>();
+
+    sensors_to_filters[depth] = {
+        dec_depth,
+        threshold,
+        spatial,
+        temporal,
+        hole_filling
+    };
+
+    auto depth2disparity = std::make_shared<disparity_transform>(true);
+    auto disparity2depth = std::make_shared<disparity_transform>(false);
+
+    sensors_to_filters[depth_stereo] = {
+        dec_depth,
+        threshold,
+        depth2disparity,
+        spatial,
+        temporal,
+        hole_filling,
+        disparity2depth
+    };
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> sensors;
+        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
+        REQUIRE(sensors.size() > 0);
+
+        for (auto sensor : sensors)
+        {
+            auto processing_blocks = sensor.get_recommended_filters();
+            auto stream_profiles = sensor.get_stream_profiles();
+            if (sensor.is<depth_stereo_sensor>())
+            {
+                compare(processing_blocks, sensors_to_filters[depth_stereo]);
+            }
+            else if (sensor.is<depth_sensor>())
+            {
+                compare(processing_blocks, sensors_to_filters[depth]);
+            }
+            else if (std::find_if(stream_profiles.begin(), stream_profiles.end(), [](stream_profile profile) { return profile.stream_type() == RS2_STREAM_COLOR;}) != stream_profiles.end())
+            {
+                compare(processing_blocks, sensors_to_filters[color]);
+            }
+        }
+    }
+}
+
+TEST_CASE("L500 zero order sanity", "[live]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+    const int RETRIES = 30;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> sensors;
+        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
+        REQUIRE(sensors.size() > 0);
+
+        for (auto sensor : sensors)
+        {
+            auto processing_blocks = sensor.get_recommended_filters();
+            auto zo = std::find_if(processing_blocks.begin(), processing_blocks.end(), [](filter f)
+            {
+                return f.is<zero_order_invalidation>();
+            });
+
+            if(zo != processing_blocks.end())
+            {
+                rs2::config c;
+                c.enable_stream(RS2_STREAM_DEPTH);
+                c.enable_stream(RS2_STREAM_INFRARED);
+                c.enable_stream(RS2_STREAM_CONFIDENCE);
+
+                rs2::pipeline p;
+                p.start(c);
+                rs2::frame frame;
+
+                std::map<rs2_stream, bool> stream_arrived;
+                stream_arrived[RS2_STREAM_DEPTH] = false;
+                stream_arrived[RS2_STREAM_INFRARED] = false;
+                stream_arrived[RS2_STREAM_CONFIDENCE] = false;
+
+                for (auto i = 0;i < RETRIES;i++)
+                {
+                    REQUIRE_NOTHROW(frame = p.wait_for_frames(15000));
+                    auto res = zo->process(frame);
+                    if (res.is<rs2::frameset>())
+                    {
+                        auto set = res.as<rs2::frameset>();
+                        REQUIRE(set.size() == stream_arrived.size());   // depth, ir, confidance
+                        for (auto&& f : set)
+                        {
+                            stream_arrived[f.get_profile().stream_type()] = true;
+                        }
+                        auto stream_missing = std::find_if(stream_arrived.begin(), stream_arrived.end(), [](std::pair< rs2_stream, bool> item)
+                        {
+                            return !item.second;
+                        });
+
+                        REQUIRE(stream_missing == stream_arrived.end());
+                    }
+                   
+                }
+            }
+        }
+    }
+}

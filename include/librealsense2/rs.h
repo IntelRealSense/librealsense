@@ -27,8 +27,12 @@ extern "C" {
 #define RS2_API_PATCH_VERSION    1
 #define RS2_API_BUILD_VERSION    0
 
+#ifndef STRINGIFY
 #define STRINGIFY(arg) #arg
+#endif
+#ifndef VAR_ARG_STRING
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
+#endif
 
 /* Versioning rules            : For each release at least one of [MJR/MNR/PTCH] triple is promoted                                             */
 /*                             : Versions that differ by RS2_API_PATCH_VERSION only are interface-compatible, i.e. no user-code changes required */

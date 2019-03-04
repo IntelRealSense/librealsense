@@ -31,5 +31,12 @@ namespace Intel.RealSense
         Tm2 = 22,
         SoftwareDevice = 23,
         SoftwareSensor = 24,
+        DecimationFilter = 25,
+        ThresholdFilter = 26,
+        DisparityFilter = 27,
+        SpatialFilter = 28,
+        TemporalFilter = 29,
+        HoleFillingFilter = 30,
+        ZeroOrderFilter = 31
     }
 }

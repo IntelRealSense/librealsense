@@ -215,6 +215,7 @@ namespace librealsense
     }
 
     pointcloud::pointcloud()
+        :stream_filter_processing_block("Pointcloud")
     {
         _occlusion_filter = std::make_shared<occlusion_filter>();
 

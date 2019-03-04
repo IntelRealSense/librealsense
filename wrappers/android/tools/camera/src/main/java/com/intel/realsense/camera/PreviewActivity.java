@@ -14,6 +14,7 @@ import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 import java.io.File;
@@ -32,13 +33,14 @@ public class PreviewActivity extends AppCompatActivity {
 
     private FloatingActionButton mStartRecordFab;
     private FloatingActionButton mPlaybackFab;
-
+    private RsContext mRsContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
 
+        mRsContext = new RsContext();
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
 
         mStartRecordFab = findViewById(R.id.startRecordFab);
@@ -107,7 +109,7 @@ public class PreviewActivity extends AppCompatActivity {
     };
 
     private synchronized void start() {
-        if(mIsStreaming)
+        if(mIsStreaming || mRsContext.getDeviceCount() == 0)
             return;
         try{
             mGLSurfaceView.clear();
@@ -122,7 +124,7 @@ public class PreviewActivity extends AppCompatActivity {
     }
 
     private synchronized void stop() {
-        if(!mIsStreaming)
+        if(!mIsStreaming || mRsContext.getDeviceCount() == 0)
             return;
         try {
             Log.d(TAG, "try stop streaming");

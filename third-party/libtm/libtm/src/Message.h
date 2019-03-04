@@ -78,6 +78,7 @@ namespace perc
         DEV_RESET_CONFIGURATION = 0x0022,
         DEV_LOCK_CONFIGURATION = 0x0023,
         DEV_LOCK_EEPROM = 0x0024,
+        DEV_SET_LOW_POWER_MODE = 0x0025,
 
         /* SLAM messages */
         SLAM_STATUS = 0x1001,
@@ -878,8 +879,8 @@ namespace perc
         bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION or DEV_LOCK_EEPROM                          */
         uint16_t wReserved;                 /**< Reserved = 0                                                                                                                 */
         uint32_t dwLock;                    /**< 0x0 - Unlock, 0x1 - Lock                                                                                                     */
-                                                    /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
-                                                    /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
+                                            /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
+                                            /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
     } bulk_message_request_lock_eeprom;
 
     typedef struct {
@@ -957,6 +958,22 @@ namespace perc
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_TIMEOUT_CONFIGURATION    */
     } bulk_message_response_timeout_configuration;
+
+    
+    /**
+    * @brief Bulk enable low power Message
+    *
+    * enable or disable low power mode of TM2 device
+    */
+    typedef struct {
+        bulk_message_request_header header; /**< Message request header: dwLength = 8, wMessageID = DEV_SET_LOW_POWER_MODE    */
+        uint8_t bEnabled;                   /**< 1 to enable low power mode, 0 to disable                                   */
+        uint8_t bReserved;                  /**< Reserved = 0                                                               */
+    } bulk_message_request_set_low_power_mode;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_SET_LOW_POWER_MODE  */
+    } bulk_message_response_set_low_power_mode;
 
 
     /**

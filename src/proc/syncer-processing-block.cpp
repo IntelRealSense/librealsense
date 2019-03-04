@@ -11,7 +11,7 @@
 namespace librealsense
 {
     syncer_process_unit::syncer_process_unit()
-        : _matcher((new timestamp_composite_matcher({})))
+        : processing_block("syncer"), _matcher((new timestamp_composite_matcher({})))
     {
         _matcher->set_callback([this](frame_holder f, syncronization_environment env)
         {

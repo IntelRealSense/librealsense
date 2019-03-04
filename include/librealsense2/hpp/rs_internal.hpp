@@ -240,6 +240,7 @@ namespace rs2
             return software_sensor(sensor);
         }
         
+<<<<<<< add_software_device
         /**
         * Add software device to existing context
         * Any future queries on the context
@@ -249,6 +250,9 @@ namespace rs2
         * \param[in] ctx   context to add the device to
         */
         void add_to(context& ctx)
+=======
+        void inject_to(context ctx)
+>>>>>>> development
         {
             rs2_error* e = nullptr;
             rs2_context_add_software_device(ctx._context.get(), _dev.get(), &e);

@@ -6,7 +6,8 @@
 
 #include "rs_types.hpp"
 #include "rs_frame.hpp"
-
+#include "rs_processing.hpp"
+#include "rs_options.hpp"
 namespace rs2
 {
 
@@ -97,139 +98,7 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    template<class T>
-    class frame_callback : public rs2_frame_callback
-    {
-        T on_frame_function;
-    public:
-        explicit frame_callback(T on_frame) : on_frame_function(on_frame) {}
 
-        void on_frame(rs2_frame* fref) override
-        {
-            on_frame_function(frame{ fref });
-        }
-
-        void release() override { delete this; }
-    };
-
-    class options
-    {
-    public:
-        /**
-        * check if particular option is supported
-        * \param[in] option     option id to be checked
-        * \return true if option is supported
-        */
-        bool supports(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_supports_option(_options, option, &e);
-            error::handle(e);
-            return res > 0;
-        }
-
-        /**
-        * get option description
-        * \param[in] option     option id to be checked
-        * \return human-readable option description
-        */
-        const char* get_option_description(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option_description(_options, option, &e);
-            error::handle(e);
-            return res;
-        }
-
-        /**
-        * get option value description (in case specific option value hold special meaning)
-        * \param[in] option     option id to be checked
-        * \param[in] val      value of the option
-        * \return human-readable description of a specific value of an option or null if no special meaning
-        */
-        const char* get_option_value_description(rs2_option option, float val) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option_value_description(_options, option, val, &e);
-            error::handle(e);
-            return res;
-        }
-
-        /**
-        * read option's value
-        * \param[in] option   option id to be queried
-        * \return value of the option
-        */
-        float get_option(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_get_option(_options, option, &e);
-            error::handle(e);
-            return res;
-        }
-
-        /**
-        * retrieve the available range of values of a supported option
-        * \return option  range containing minimum and maximum values, step and default value
-        */
-        option_range get_option_range(rs2_option option) const
-        {
-            option_range result;
-            rs2_error* e = nullptr;
-            rs2_get_option_range(_options, option,
-                &result.min, &result.max, &result.step, &result.def, &e);
-            error::handle(e);
-            return result;
-        }
-
-        /**
-        * write new value to the option
-        * \param[in] option     option id to be queried
-        * \param[in] value      new value for the option
-        */
-        void set_option(rs2_option option, float value) const
-        {
-            rs2_error* e = nullptr;
-            rs2_set_option(_options, option, value, &e);
-            error::handle(e);
-        }
-
-        /**
-        * check if particular option is read-only
-        * \param[in] option     option id to be checked
-        * \return true if option is read-only
-        */
-        bool is_option_read_only(rs2_option option) const
-        {
-            rs2_error* e = nullptr;
-            auto res = rs2_is_option_read_only(_options, option, &e);
-            error::handle(e);
-            return res > 0;
-        }
-
-        options& operator=(const options& other)
-        {
-            _options = other._options;
-            return *this;
-        }
-        // if operator= is ok, this should be ok too
-        options(const options& other) : _options(other._options) {}
-
-        virtual ~options() = default;
-   protected:
-       explicit options(rs2_options* o = nullptr) : _options(o) {}
-
-       template<class T>
-       options& operator=(const T& dev)
-       {
-           _options = (rs2_options*)(dev.get());
-           return *this;
-       }
-
-
-    private:
-        rs2_options* _options;
-    };
 
     class sensor : public options
     {
@@ -367,6 +236,35 @@ namespace rs2
                 stream_profile profile(rs2_get_stream_profile(list.get(), i, &e));
                 error::handle(e);
                 results.push_back(profile);
+            }
+
+            return results;
+        }
+
+        /**
+        * get the recommended list of filters by the sensor
+        * \return   list of filters that recommended by sensor
+        */
+        std::vector<filter> get_recommended_filters() const
+        {
+            std::vector<filter> results{};
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_processing_block_list> list(
+                rs2_get_recommended_processing_blocks(_sensor.get(), &e),
+                rs2_delete_recommended_processing_blocks);
+            error::handle(e);
+
+            auto size =  rs2_get_recommended_processing_blocks_count(list.get(), &e);
+            error::handle(e);
+
+            for (auto i = 0; i < size; i++)
+            {
+                auto f = std::shared_ptr<rs2_processing_block>(
+                    rs2_get_processing_block(list.get(), i, &e), 
+                    rs2_delete_processing_block);
+                error::handle(e);
+                results.push_back(f);
             }
 
             return results;
@@ -516,13 +414,13 @@ namespace rs2
             error::handle(e);
         }
 
-        /** Retrieves mapping between the units of the depth image and meters
-        * \return depth in meters corresponding to a depth value of 1
+        /**
+        * Retrieve the stereoscopic baseline value from sensor
         */
         float get_stereo_baseline() const
         {
             rs2_error* e = nullptr;
-            auto res = rs2_get_depth_scale(_sensor.get(), &e);
+            auto res = rs2_get_stereo_baseline(_sensor.get(), &e);
             error::handle(e);
             return res;
         }

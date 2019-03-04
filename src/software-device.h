@@ -70,7 +70,20 @@ namespace librealsense
         }
     };
 
-    class software_sensor : public sensor_base
+    class software_recommended_proccesing_blocks : public recommended_proccesing_blocks_interface
+    {
+    public:
+        processing_blocks get_recommended_processing_blocks() const override {
+            return _blocks;
+        }
+        ~software_recommended_proccesing_blocks() override {}
+       
+    private:
+        processing_blocks _blocks;
+>>>>>>> development
+    };
+
+    class software_sensor : public sensor_base, public extendable_interface
     {
     public:
         software_sensor(std::string name, software_device* owner);
@@ -78,6 +91,8 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream);
         std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream);
         std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream);
+
+        bool extend_to(rs2_extension extension_type, void** ptr) override;
 
         stream_profiles init_stream_profiles() override;
 
@@ -98,6 +113,32 @@ namespace librealsense
         stream_profiles _profiles;
         std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
         int _unique_id;
+
+        class stereo_extension : public depth_stereo_sensor
+        {
+        public:
+            stereo_extension(software_sensor* owner) : _owner(owner) {}
+
+            float get_depth_scale() const override {
+                return _owner->get_option(RS2_OPTION_DEPTH_UNITS).query();
+            }
+
+            float get_stereo_baseline_mm() const override {
+                return _owner->get_option(RS2_OPTION_STEREO_BASELINE).query();
+            }
+
+            void create_snapshot(std::shared_ptr<depth_stereo_sensor>& snapshot) const override {}
+            void enable_recording(std::function<void(const depth_stereo_sensor&)> recording_function) override {}
+
+            void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override {}
+            void enable_recording(std::function<void(const depth_sensor&)> recording_function) override {}
+        private:
+            software_sensor* _owner;
+        };
+
+        lazy<stereo_extension> _stereo_extension;
+
+        software_recommended_proccesing_blocks _pbs;
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);

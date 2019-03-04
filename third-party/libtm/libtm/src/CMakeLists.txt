@@ -48,8 +48,6 @@ set(SOURCE_FILES
     infra/Fsm.cpp
     infra/Utils.h
     infra/Utils.cpp
-    infra/Semaphore.h
-    infra/Semaphore_${OS}.cpp
     infra/Event_${OS}.cpp
 )
 

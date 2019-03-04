@@ -857,7 +857,7 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
             /* The frame ID bit was flipped, but we have image data sitting
             around from prior transfers. This means the camera didn't send
             an EOF for the last transfer of the previous frame. */
-            LOG_DEBUG("complete buffer : length " << strmh->got_bytes);
+//            LOG_DEBUG("complete buffer : length " << strmh->got_bytes);
             usbhost_uvc_swap_buffers(strmh);
         }
 
@@ -903,9 +903,11 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
 }
 
 void stream_thread(usbhost_uvc_stream_context *strctx) {
-
     auto dev = strctx->stream->stream_if->interfaceHandle.device;
+
     auto pipe = dev->get_pipe(strctx->endpoint);
+    pipe->reset();
+
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks(true);
     frames_queue queue;
@@ -937,8 +939,8 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         if(res < 0)
         {
             LOG_ERROR("Read pipe returned error and was clear halted ERROR:" << strerror(errno));
-            pipe->reset();
-            continue;
+            if(pipe->reset())
+                continue;
             break;
         }
         strctx->stream->got_bytes = res;
@@ -953,6 +955,8 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     archive.stop_allocation();
     archive.wait_until_empty();
     keep_sending_callbacks = false;
+
+    LOG_DEBUG("start join stream_thread");
     t.join();
 
     LOG_DEBUG("Transfer thread stopped for endpoint address: " << ep);
@@ -1019,7 +1023,9 @@ uvc_error_t usbhost_uvc_stream_stop(usbhost_uvc_stream_handle_t *strmh) {
         return UVC_ERROR_INVALID_PARAM;
 
     strmh->running = false;
+    LOG_DEBUG("start join cb_thread");
     strmh->cb_thread.join();
+    LOG_DEBUG("cb_thread joined");
 
     return UVC_SUCCESS;
 }

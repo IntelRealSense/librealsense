@@ -1,51 +1,50 @@
-project(realsense-pcl)
-cmake_minimum_required(VERSION 2.8)
-SET(CMAKE_CXX_FLAGS "-std=c++11")
+cmake_minimum_required(VERSION 3.1.0)
 
-# Set StartUp Project
-set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "rs-pcl-color" )
-add_executable (rs-pcl-color rs-pcl-color.cpp)
+project(RealSensePCLColorExample)
 
-# Find Packages
+# Save the command line compile commands in the build output
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-#==========
-# OpenCV
-#==========
-find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
-
-#==============
-# Librealsense
-#==============
-set( realsense2_DIR "C:/Program Files/librealsense2/lib/cmake/realsense2" CACHE PATH "Path to librealsense2 config directory." )
-find_package( realsense2 REQUIRED )
-
-if( realsense2_FOUND )
-  # Additional Include Directories
-  include_directories( ${realsense_INCLUDE_DIR} )
-
-  # Additional Dependencies
-  target_link_libraries( rs-pcl-color ${realsense2_LIBRARY} )
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-#==========
-# PCL v1.8
-#==========
-find_package(PCL 1.8 REQUIRED)
+add_executable (rs-pcl-color rs-pcl-color.cpp)
+
+find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-target_link_libraries(rs-pcl-color ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
-target_link_libraries (rs-pcl-color ${PCL_LIBRARIES})
+target_link_libraries(rs-pcl-color ${DEPENDENCIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
 
-#===================
-# PCL Visualization
-#===================
-find_package(PCL 1.8 REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-target_link_libraries (rs-pcl-color ${PCL_LIBRARIES})
+find_package(OpenCV REQUIRED)
+target_link_libraries(rs-pcl-color ${DEPENDENCIES} ${OpenCV_LIBS})
 
-target_link_libraries (rs-pcl-color ${PCL_LIBRARIES} librealsense2.so ${OpenCV_LIBS})
+set_target_properties (rs-pcl-color PROPERTIES
+    FOLDER "Examples/PCL"
+)
 
+foreach(flag_var
+        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+    if(${flag_var} MATCHES "/MT")
+        string(REGEX REPLACE "/MT" "/MD" ${flag_var} "${${flag_var}}")
+    endif(${flag_var} MATCHES "/MT")
+endforeach(flag_var)
 
+install(
+    TARGETS
+
+    rs-pcl-color
+
+    RUNTIME DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/bin
+)

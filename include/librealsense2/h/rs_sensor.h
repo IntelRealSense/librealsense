@@ -155,11 +155,18 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 /**
-* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
+* Retrieve the stereoscopic baseline value from frame. Applicable to stereo-based depth modules
 * \param[out] float  Stereoscopic baseline in millimeters
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
+
+/**
+* Retrieve the stereoscopic baseline value from sensor. Applicable to stereo-based depth modules
+* \param[out] float  Stereoscopic baseline in millimeters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+float rs2_get_stereo_baseline(rs2_sensor* sensor, rs2_error** error);
 
 /**
  * \brief sets the active region of interest to be used by auto-exposure algorithm
@@ -429,6 +436,37 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
+/**
+ * Returns the list of recommended processing blocks for a specific sensor. 
+ * Order and configuration of the blocks are decided by the sensor
+ * \param[in] sensor          input sensor
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return list of supported sensor recommended processing blocks
+*/
+rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error);
+
+/**
+* Returns specific processing blocks from processing blocks list
+* \param[in] list           the processing blocks list
+* \param[in] index          the requested processing block
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return processing block
+*/
+rs2_processing_block* rs2_get_processing_block(const rs2_processing_block_list* list, int index, rs2_error** error);
+
+/**
+* Returns the processing blocks list size
+* \param[in] list           the processing blocks list
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return the processing block list size
+*/
+int rs2_get_recommended_processing_blocks_count(const rs2_processing_block_list* list, rs2_error** error);
+
+/**
+* Deletes processing blocks list
+* \param[in] list list to delete
+*/
+void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list);
 
 #ifdef __cplusplus
 }

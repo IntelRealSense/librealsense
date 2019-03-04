@@ -26,7 +26,6 @@ namespace librealsense
         register_stream_to_extrinsic_group(stream, groupd_index);
     }
 
-
     software_sensor& software_device::get_software_sensor(int index)
     {
         if (index >= _software_sensors.size())
@@ -49,7 +48,8 @@ namespace librealsense
     }
 
     software_sensor::software_sensor(std::string name, software_device* owner)
-        : sensor_base(name, owner)
+        : sensor_base(name, owner, &_pbs),
+          _stereo_extension([this]() { return stereo_extension(this); })
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
         _unique_id = unique_id::generate_id();
@@ -142,6 +142,28 @@ namespace librealsense
         _profiles.push_back(profile);
 
         return profile;
+    }
+
+    bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
+    {
+        if (extension_type == RS2_EXTENSION_DEPTH_SENSOR)
+        {
+            if (supports_option(RS2_OPTION_DEPTH_UNITS))
+            {
+                *ptr = &(*_stereo_extension);
+                return true;
+            }
+        }
+        else if (extension_type == RS2_EXTENSION_DEPTH_STEREO_SENSOR)
+        {
+            if (supports_option(RS2_OPTION_DEPTH_UNITS) && 
+                supports_option(RS2_OPTION_STEREO_BASELINE))
+            {
+                *ptr = &(*_stereo_extension);
+                return true;
+            }
+        }
+        return false;
     }
 
     stream_profiles software_sensor::init_stream_profiles()
