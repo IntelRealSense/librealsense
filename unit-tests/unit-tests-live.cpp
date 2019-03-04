@@ -8,6 +8,7 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <iostream>
 #include <chrono>
@@ -5607,6 +5608,39 @@ TEST_CASE("Positional_Sensors_API", "[live]")
             CAPTURE(pose_snr);
             REQUIRE(pose_snr);
 
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Export/Import must Fail")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto pose_snr = d.first<rs2::pose_sensor>();
+                    CAPTURE(pose_snr);
+                    REQUIRE(pose_snr);
+
+                    WARN("T2xx Streaming frames started");
+                    rs2::frameset frames;
+                    // The frames are required to generate some initial localization map
+                    for (auto i = 0; i < 10; i++)
+                    {
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                    }
+
+                    std::vector<uint8_t> results{}, vnv{};
+                    WARN("T2xx export map");
+                    REQUIRE_THROWS(results = pose_snr.export_localization_map());
+                    CAPTURE(results.size());
+                    REQUIRE(0 == results.size());
+                    WARN("T2xx import map");
+                    REQUIRE_THROWS(pose_snr.import_localization_map({ 0, 1, 2, 3, 4 }));
+                    REQUIRE_NOTHROW(pipe.stop());
+                    WARN("T2xx import/export finished");
+                }
+            }
+
             WHEN("Sequence - idle.")
             {
                 THEN("Export/Import Success")
@@ -5621,12 +5655,45 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
+
+
+                    rs2_vector init_pose{}, test_pose{ 1,2,3 }, vnv_pose{};
+                    rs2_quaternion init_or{}, test_or{ 4,5,6,7 }, vnv_or{};
+                    auto res = 0;
+                    // TODO  - is not working as advertised
+                    /*REQUIRE_NOTHROW(res = pose_snr.get_static_node("origin", init_pose, init_or));
+                    CAPTURE(init_pose);
+                    CAPTURE(init_or);
+                    CAPTURE(res);
+                    REQUIRE(res != 0);
+                    REQUIRE(init_pose.x != 0 );
+                    REQUIRE(init_pose.y != 0);
+                    REQUIRE(init_pose.z != 0);
+                    REQUIRE(init_or.x != 0);
+                    REQUIRE(init_or.y != 0);
+                    REQUIRE(init_or.z != 0);
+                    REQUIRE(init_or.w != 0);*/
+                    REQUIRE_NOTHROW(res = pose_snr.set_static_node("wp1", test_pose, test_or));
+                    CAPTURE(res);
+                    REQUIRE(res != 0);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    REQUIRE_NOTHROW(res = pose_snr.get_static_node("wp1", vnv_pose, vnv_or));
+                    CAPTURE(vnv_pose);
+                    CAPTURE(vnv_or);
+                    CAPTURE(res);
+                    REQUIRE(test_pose.x == Approx(vnv_pose.x));
+                    REQUIRE(test_pose.y == Approx(vnv_pose.y));
+                    REQUIRE(test_pose.z == Approx(vnv_pose.z));
+                    REQUIRE(test_or.x == Approx(vnv_or.x));
+                    REQUIRE(test_or.y == Approx(vnv_or.y));
+                    REQUIRE(test_or.z == Approx(vnv_or.z));
+                    REQUIRE(test_or.w == Approx(vnv_or.w));
                 }
             }
 
             WHEN("Sequence - Streaming.")
             {
-                THEN("Export/Import must Fail")
+                THEN("Set/Get Static node functionality")
                 {
                     rs2::pipeline_profile pf;
                     REQUIRE_NOTHROW(pf = pipe.start(cfg));
@@ -5638,17 +5705,43 @@ TEST_CASE("Positional_Sensors_API", "[live]")
 
                     rs2::frameset frames;
                     // The frames are required to generate some initial localization map
-                    for (auto i = 0; i < 300; i++)
+                    for (auto i = 0; i < 10; i++)
                     {
                         REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
                         REQUIRE(frames.size() > 0);
                     }
 
-                    std::vector<uint8_t> results{}, vnv{};
-                    REQUIRE_THROWS(results = pose_snr.export_localization_map());
-                    CAPTURE(results.size());
-                    REQUIRE(0 == results.size());
-                    REQUIRE_THROWS(pose_snr.import_localization_map({ 0, 1, 2, 3, 4 }));
+                    rs2_vector init_pose{}, test_pose{ 1,2,3 }, vnv_pose{};
+                    rs2_quaternion init_or{}, test_or{ 4,5,6,7 }, vnv_or{};
+                    auto res = 0;
+                    // TODO  - is not working as advertised
+                    /*REQUIRE_NOTHROW(res = pose_snr.get_static_node("origin", init_pose, init_or));
+                    CAPTURE(init_pose);
+                    CAPTURE(init_or);
+                    CAPTURE(res);
+                    REQUIRE(res != 0);
+                    REQUIRE(init_pose.x != 0 );
+                    REQUIRE(init_pose.y != 0);
+                    REQUIRE(init_pose.z != 0);
+                    REQUIRE(init_or.x != 0);
+                    REQUIRE(init_or.y != 0);
+                    REQUIRE(init_or.z != 0);
+                    REQUIRE(init_or.w != 0);*/
+                    REQUIRE_NOTHROW(res = pose_snr.set_static_node("wp1", test_pose, test_or));
+                    CAPTURE(res);
+                    REQUIRE(res != 0);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    REQUIRE_NOTHROW(res = pose_snr.get_static_node("wp1", vnv_pose, vnv_or));
+                    CAPTURE(vnv_pose);
+                    CAPTURE(vnv_or);
+                    CAPTURE(res);
+                    REQUIRE(test_pose.x == Approx(vnv_pose.x));
+                    REQUIRE(test_pose.y == Approx(vnv_pose.y));
+                    REQUIRE(test_pose.z == Approx(vnv_pose.z));
+                    REQUIRE(test_or.x == Approx(vnv_or.x));
+                    REQUIRE(test_or.y == Approx(vnv_or.y));
+                    REQUIRE(test_or.z == Approx(vnv_or.z));
+                    REQUIRE(test_or.w == Approx(vnv_or.w));
                     REQUIRE_NOTHROW(pipe.stop());
                 }
             }

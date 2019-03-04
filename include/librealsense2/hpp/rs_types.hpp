@@ -165,9 +165,9 @@ namespace rs2
         int max_x;
         int max_y;
     };
-
-    inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
-    inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
 }
+
+inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
+inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
 
 #endif // LIBREALSENSE_RS2_TYPES_HPP

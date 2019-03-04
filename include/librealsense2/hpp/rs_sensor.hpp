@@ -467,10 +467,15 @@ namespace rs2
 
             auto start = rs2_get_raw_data(loc_map.get(), &e);
             error::handle(e);
-            auto size = rs2_get_raw_data_size(loc_map.get(), &e);
-            error::handle(e);
 
-            std::vector<uint8_t> results(start, start + size);
+            std::vector<uint8_t> results;
+            if (start)
+            {
+                auto size = rs2_get_raw_data_size(loc_map.get(), &e);
+                error::handle(e);
+
+                results = std::vector<uint8_t>(start, start + size);
+            }
             return results;
         }
 
