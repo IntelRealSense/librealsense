@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
+    public delegate void FrameCallback(Frame frame);
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void frame_callback(IntPtr frame, IntPtr user_data);
 

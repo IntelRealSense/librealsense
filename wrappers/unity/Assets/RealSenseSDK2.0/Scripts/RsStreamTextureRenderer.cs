@@ -122,7 +122,7 @@ public class RsStreamTextureRenderer : MonoBehaviour
             {
                 using (var fs = FrameSet.FromFrame(frame))
                 // using (var f = fs[_stream, _format, _streamIndex])
-                using (var f = fs.FirstOrDefault<VideoFrame>(matcher))
+                using (var f = fs.FirstOrDefault(matcher))
                 {
                     if (f != null)
                         q.Enqueue(f);
@@ -166,15 +166,12 @@ public class RsStreamTextureRenderer : MonoBehaviour
 
     protected void Update()
     {
-        // if (e.WaitOne(0, false))
-        // return;
-
         if (q != null)
         {
-            Frame frame;
-            if (q.PollForFrame(out frame))
+            VideoFrame frame;
+            if (q.PollForFrame<VideoFrame>(out frame))
                 using (frame)
-                    ProcessFrame(frame as VideoFrame);
+                    ProcessFrame(frame);
         }
     }
 

@@ -26,12 +26,13 @@ namespace Intel.RealSense
             try
             {
                 var callback = GCHandle.FromIntPtr(u).Target as FrameProcessorCallback;
-                using (var frame = Frame.CreateFrame(f))
+                using (var frame = Frame.Create(f))
                     callback(frame, new FrameSource(new HandleRef(frame, src)));
             }
-            // ArgumentException: GCHandle value belongs to a different domain
-            // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
-            catch (ArgumentException) { }
+            catch (ArgumentException) {
+                // ArgumentException: GCHandle value belongs to a different domain
+                // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
+            }
         }
 
         public void ProcessFrame(Frame f)
@@ -66,8 +67,6 @@ namespace Intel.RealSense
             NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
         }
 
-        public delegate void FrameCallback(Frame frame);
-
         /// <summary>
         /// Start the processing block, delivering frames to a callback
         /// </summary>
@@ -87,12 +86,13 @@ namespace Intel.RealSense
             try
             {
                 var callback = GCHandle.FromIntPtr(u).Target as FrameCallback;
-                using (var frame = Frame.CreateFrame(f))
+                using (var frame = Frame.Create(f))
                     callback(frame);
             }
-            // ArgumentException: GCHandle value belongs to a different domain
-            // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
-            catch (ArgumentException) { }
+            catch (ArgumentException) {
+                // ArgumentException: GCHandle value belongs to a different domain
+                // Happens when Unity Editor stop the scene with multiple devices streaming with multiple post-processing filters.
+            }
         }
 
         private GCHandle frameCallbackHandle;

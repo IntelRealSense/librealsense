@@ -25,7 +25,7 @@ namespace Intel.RealSense
         [Obsolete("This method is obsolete. Use Process method instead")]
         public Points Calculate(Frame original, FramesReleaser releaser = null)
         {
-            return Process(original).DisposeWith(releaser) as Points;
+            return Process(original).DisposeWith(releaser).As<Points>();
         }
 
         public void MapTexture(VideoFrame texture)
@@ -35,7 +35,10 @@ namespace Intel.RealSense
                 formatFilter.Value = (float)p.Format;
                 indexFilter.Value = (float)p.Index;
             }
-            using (var f = Process(texture));
+            using (var f = Process(texture))
+            {
+                // Intentionally empty
+            }
         }
     }
 }

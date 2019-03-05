@@ -74,6 +74,7 @@ int Dispatcher::handleEvents(nsecs_t timeout)
     if (n > 0) {
         // process message queues: complete number of messages from message list that was signaled by event
         if (event.handle == mEvent.handle()) {
+            mEvent.reset();
             LOGV("handleEvents(): processMessages");
             ret += processMessages();
         }
@@ -297,7 +298,6 @@ uintptr_t Dispatcher::putTimer(EventHandler *handler, nsecs_t delay, Message *ms
 // ----------------------------------------------------------------------------
 int Dispatcher::processMessages()
 {
-    mEvent.reset();
     // normalize wake-up events counter and real messages number before <onMessage> callback
     int cnt = 0;
     for (int i = 0; i < PRIORITY_MAX; i++) {
@@ -378,7 +378,7 @@ int Dispatcher::processExit()
 {
     m_HoldersGuard.lock();
     Holder *holder;
-    while (holder = (Holder *)m_Holders.RemoveHead()) {
+    while ((holder = (Holder *)m_Holders.RemoveHead())) {
         m_HoldersGuard.unlock();
         holder->Handler->onExit();
         delete holder;

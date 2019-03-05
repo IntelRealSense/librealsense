@@ -25,7 +25,7 @@ namespace Intel.RealSense
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(queue.m_instance.Handle, timeout_ms, out error);
-            return FrameSet.Pool.Get(ptr);
+            return FrameSet.Create(ptr);
         }
 
         public bool PollForFrames(out FrameSet result)
@@ -34,7 +34,7 @@ namespace Intel.RealSense
             IntPtr ptr;
             if (NativeMethods.rs2_poll_for_frame(queue.m_instance.Handle, out ptr, out error) > 0)
             {
-                result = FrameSet.Pool.Get(ptr);
+                result = FrameSet.Create(ptr);
                 return true;
             }
             result = null;

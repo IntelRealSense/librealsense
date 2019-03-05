@@ -228,6 +228,40 @@ rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 */
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 
+/**
+* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               zero order fix processing block
+*/
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
+
+/**
+* Retrieve processing block specific information, like name.
+* \param[in]  block     The processing block
+* \param[in]  info      processing block info type to retrieve
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               The requested processing block info string, in a format specific to the device model
+*/
+const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+* Check if a processing block supports a specific info type.
+* \param[in]  block     The processing block to check
+* \param[in]  info      The parameter to check for support
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               True if the parameter both exist and well-defined for the specific device
+*/
+int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+ * Test if the given processing block can be extended to the requested extension
+ * \param[in] block processing block
+ * \param[in] extension The extension to which the sensor should be tested if it is extendable
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return non-zero value iff the processing block can be extended to the given extension
+ */
+int rs2_is_processing_block_extendable_to(const rs2_processing_block* block, rs2_extension extension_type, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

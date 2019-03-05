@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _proc_rel_path ${CMAKE_CURRENT_LIST_DIR})
 
 if (BUILD_WITH_CUDA)
@@ -23,6 +25,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/yuy2rgb.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/threshold.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rates-printer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/zero-order.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/align.h"
@@ -39,4 +42,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/yuy2rgb.h"
         "${CMAKE_CURRENT_LIST_DIR}/threshold.h"
         "${CMAKE_CURRENT_LIST_DIR}/rates-printer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/zero-order.h"
 )

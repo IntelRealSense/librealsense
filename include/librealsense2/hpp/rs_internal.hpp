@@ -239,6 +239,13 @@ namespace rs2
 
             return software_sensor(sensor);
         }
+        
+        void inject_to(context ctx)
+        {
+            rs2_error* e = nullptr;
+            rs2_context_add_software_device(ctx._context.get(), _dev.get(), &e);
+            error::handle(e);
+        }
 
         /**
         * Set the wanted matcher type that will be used by the syncer

@@ -6,7 +6,6 @@ set(LRS_DOTNET_TARGET ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME}
     Context.cs
-    Helpers.cs
     NativeMethods.cs
     .nuget/Intel.RealSense.targets
 
@@ -20,6 +19,7 @@ include(Processing/CMakeLists.txt)
 include(StreamProfiles/CMakeLists.txt)
 include(Sensors/CMakeLists.txt)
 include(Types/CMakeLists.txt)
+include(Helpers/CMakeLists.txt)
 
 csharp_set_designer_cs_properties(
     .nuget/Intel.RealSense.targets
@@ -67,6 +67,8 @@ set_target_properties (${PROJECT_NAME} PROPERTIES
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
     "System"
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE /define:${CMAKE_SYSTEM_NAME})
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets

@@ -20,6 +20,7 @@
 namespace librealsense
 {
     const uint16_t L500_PID = 0x0b0d;
+    const uint16_t L500_PID2 = 0x0b3d;
 
     class l500_device;
 
@@ -143,17 +144,57 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
+    class l500_device;
+
+    class zo_point_option_x : public option_base
+    {
+    public:
+        zo_point_option_x(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
+            : option_base({ static_cast<float>(min),
+                           static_cast<float>(max),
+                           static_cast<float>(step),
+                           static_cast<float>(def) }), _owner(owner), _zo_point(zo_point)
+        {}
+        float query() const override;
+        void set(float value) override
+        {
+            _zo_point->first = static_cast<int>(value);
+        }
+        bool is_enabled() const override { return true; }
+        const char* get_description() const override { return _desc.c_str(); }
+
+    private:
+        l500_device* _owner;
+        lazy < std::pair<int, int>>& _zo_point;
+        std::string _desc;
+    };
+
+    class zo_point_option_y : public option_base
+    {
+    public:
+        zo_point_option_y(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
+            : option_base({ static_cast<float>(min),
+                           static_cast<float>(max),
+                           static_cast<float>(step),
+                           static_cast<float>(def)}), _owner(owner), _zo_point(zo_point)
+        {}
+        float query() const override;
+        void set(float value) override
+        {
+            _zo_point->second = static_cast<int>(value);
+        }
+        bool is_enabled() const override { return true; }
+        const char* get_description() const override { return _desc.c_str(); }
+
+    private:
+        l500_device* _owner;
+        lazy < std::pair<int, int>>& _zo_point;
+        std::string _desc;
+    };
+
     class l500_device final : public virtual device, public debug_interface
     {
     public:
-        std::vector<tagged_profile> get_profiles_tags() const override
-        {
-            std::vector<tagged_profile> tags;
-            tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
-            return tags;
-        };
 
         class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
         {
@@ -161,7 +202,30 @@ namespace librealsense
             explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
                                        std::unique_ptr<frame_timestamp_reader> timestamp_reader)
                 : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
-            {}
+            {
+                _zo_point_x_option = std::make_shared<zo_point_option_x>(
+                    20,
+                    640,
+                    1,
+                    0,
+                    owner,
+                    owner->_zo_point,
+                    "zero order point x");
+
+                register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_X), _zo_point_x_option);
+
+                _zo_point_y_option = std::make_shared<zo_point_option_y>(
+                    20,
+                    640,
+                    1,
+                    0,
+                    owner,
+                    owner->_zo_point,
+                    "zero order point x");
+
+                register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_Y), _zo_point_y_option);
+
+            }
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
@@ -174,10 +238,10 @@ namespace librealsense
                 rs2_intrinsics intrinsics;
                 intrinsics.width = profile.width;
                 intrinsics.height = profile.height;
-                intrinsics.fx = intr[0];
-                intrinsics.fy = intr[1];
-                intrinsics.ppx = intr[2];
-                intrinsics.ppy = intr[3];
+                intrinsics.fx = std::fabs(intr[0]);
+                intrinsics.fy = std::fabs(intr[1]);
+                intrinsics.ppx = std::fabs(intr[2]);
+                intrinsics.ppy = std::fabs(intr[3]);
                 return intrinsics;
             }
 
@@ -234,9 +298,27 @@ namespace librealsense
                     recording_function(*this);
                 });
             }
+
+            static processing_blocks get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y);
+
+            processing_blocks get_recommended_processing_blocks() const override
+            {
+                return get_l500_recommended_proccesing_blocks(_zo_point_x_option, _zo_point_y_option);
+            };
+
+            std::shared_ptr<option> get_zo_point_x() const
+            {
+                return _zo_point_x_option;
+            }
+            std::shared_ptr<option> get_zo_point_y() const
+            {
+                return _zo_point_y_option;
+            }
         private:
             const l500_device* _owner;
             float _depth_units;
+            std::shared_ptr<option> _zo_point_x_option;
+            std::shared_ptr<option> _zo_point_y_option;
         };
 
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -264,9 +346,6 @@ namespace librealsense
                     ivcam2::depth_xu,
                     ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
 
-            depth_ep->register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() {
-                return 0.000125f; })));
             return depth_ep;
         }
 
@@ -290,18 +369,24 @@ namespace librealsense
 
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
-
+        std::vector<tagged_profile> get_profiles_tags() const override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::pair<int, int> read_zo_point();
+        int  read_algo_version();
+        float  read_baseline();
+        float  read_znorm();
+
     private:
         const uint8_t _depth_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+        lazy<std::pair<int, int>> _zo_point;
 
         lazy<std::vector<uint8_t>> _calib_table_raw;
-
         void force_hardware_reset() const;
     };
 }

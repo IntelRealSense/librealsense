@@ -106,4 +106,5 @@ namespace librealsense
         // encodes whether a particular 8 bit history is good enough for all 8 phases of storage
         std::array<uint8_t, PRESISTENCY_LUT_SIZE> _persistence_map;
     };
+    MAP_EXTENSION(RS2_EXTENSION_TEMPORAL_FILTER, librealsense::temporal_filter);
 }

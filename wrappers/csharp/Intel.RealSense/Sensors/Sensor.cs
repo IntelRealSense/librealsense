@@ -22,19 +22,6 @@ namespace Intel.RealSense
             m_instance = sensor;
         }
 
-        public AutoExposureROI AutoExposureSettings
-        {
-            get
-            {
-                object error;
-                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
-                {
-                    return new AutoExposureROI { m_instance = m_instance };
-                }
-                return null;
-            }
-        }
-
         public class CameraInfos
         {
             readonly IntPtr m_sensor;
@@ -195,6 +182,7 @@ namespace Intel.RealSense
                     return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
                 }
             }
+
         }
         
         public class SensorOptions : IOptionsContainer
@@ -284,15 +272,25 @@ namespace Intel.RealSense
             m_callback = null;
         }
 
-        //public delegate void FrameCallback<Frame, T>(Frame frame, T user_data);
-        public delegate void FrameCallback(Frame frame);
-
         public void Start(FrameCallback cb)
         {
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
-                using (var frame = new Frame(f))
+                using (var frame = Frame.Create(f))
+                    cb(frame);
+            };
+            m_callback = cb2;
+            m_queue = null;
+            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
+        }
+
+        public void Start<T>(Action<T> cb) where T : Frame
+        {
+            object error;
+            frame_callback cb2 = (IntPtr f, IntPtr u) =>
+            {
+                using (var frame = Frame.Create<T>(f))
                     cb(frame);
             };
             m_callback = cb2;
@@ -317,6 +315,8 @@ namespace Intel.RealSense
             NativeMethods.rs2_close(m_instance, out error);
         }
 
+        #region Extensions
+
         /// <summary>
         /// retrieve mapping between the units of the depth image and meters
         /// </summary>
@@ -330,6 +330,19 @@ namespace Intel.RealSense
             }
         }
 
+        public AutoExposureROI AutoExposureSettings
+        {
+            get
+            {
+                object error;
+                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                {
+                    return new AutoExposureROI { m_instance = m_instance };
+                }
+                return null;
+            }
+        }
+        #endregion
 
         public StreamProfileList StreamProfiles
         {
@@ -340,12 +353,12 @@ namespace Intel.RealSense
             }
         }
 
-
-        public IEnumerable<VideoStreamProfile> VideoStreamProfiles
+        public ProcessingBlockList ProcessingBlocks
         {
             get
             {
-                return StreamProfiles.OfType<VideoStreamProfile>();
+                object error;
+                return new ProcessingBlockList(NativeMethods.rs2_get_recommended_processing_blocks(m_instance, out error));
             }
         }
 

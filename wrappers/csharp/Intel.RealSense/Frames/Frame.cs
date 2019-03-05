@@ -7,26 +7,46 @@ namespace Intel.RealSense
     public class Frame : IDisposable
     {
         internal HandleRef m_instance;
-        public static readonly FramePool<Frame> Pool = new FramePool<Frame>(ptr => new Frame(ptr));
+
+        readonly static ObjectPool Pool = new ObjectPool((obj, ptr) =>
+        {
+            var f = obj as Frame;
+            f.m_instance = new HandleRef(f, ptr);
+            f.disposedValue = false;
+            GC.ReRegisterForFinalize(f);
+        });
 
         public IntPtr NativePtr { get { return m_instance.Handle; } }
 
-        public Frame(IntPtr ptr)
+        internal Frame(IntPtr ptr)
         {
             m_instance = new HandleRef(this, ptr);
         }
 
-        internal static Frame CreateFrame(IntPtr ptr)
+        public static Frame Create(IntPtr ptr)
+        {
+            return Create<Frame>(ptr);
+        }
+
+        public static T Create<T>(IntPtr ptr) where T : Frame
+        {
+            return Pool.Get<T>(ptr);
+        }
+
+        public bool Is(Extension e)
         {
             object error;
-            if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.Points, out error) > 0)
-                return Points.Pool.Get(ptr);
-            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.DepthFrame, out error) > 0)
-                return DepthFrame.Pool.Get(ptr);
-            else if (NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0)
-                return VideoFrame.Pool.Get(ptr);
-            else
-                return Frame.Pool.Get(ptr);
+            return NativeMethods.rs2_is_frame_extendable_to(m_instance.Handle, e, out error) > 0;
+        }
+
+        public T As<T>() where T : Frame
+        {
+            using (this)
+            {
+                object error;
+                NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
+                return Create<T>(m_instance.Handle);
+            }
         }
 
         #region IDisposable Support
@@ -43,7 +63,9 @@ namespace Intel.RealSense
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // TODO: set large fields to null.
-                Release();
+                Reset();
+                Pool.Release(this);
+
                 disposedValue = true;
             }
         }
@@ -65,27 +87,25 @@ namespace Intel.RealSense
         }
         #endregion
 
-        public virtual void Release()
+        internal void Reset()
         {
             if (m_instance.Handle != IntPtr.Zero)
                 NativeMethods.rs2_release_frame(m_instance.Handle);
             m_instance = new HandleRef(this, IntPtr.Zero);
-            Pool.Release(this);
         }
 
         public Frame Clone()
         {
             object error;
             NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return CreateFrame(m_instance.Handle);
+            return Create(m_instance.Handle);
         }
 
         public bool IsComposite
         {
             get
             {
-                object error;
-                return NativeMethods.rs2_is_frame_extendable_to(m_instance.Handle, Extension.CompositeFrame, out error) > 0;
+                return Is(Extension.CompositeFrame);
             }
         }
 
@@ -98,15 +118,15 @@ namespace Intel.RealSense
             }
         }
 
-        public StreamProfile Profile
+        public T GetProfile<T>() where T : StreamProfile
         {
-            get
-            {
-                object error;
-                return StreamProfile.Pool.Get(NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error));
-            }
+            object error;
+            var ptr = NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error);
+            return StreamProfile.Create<T>(ptr);
         }
 
+        public StreamProfile Profile => GetProfile<StreamProfile>();
+  
         public ulong Number
         {
             get
@@ -127,7 +147,6 @@ namespace Intel.RealSense
             }
         }
 
-
         public TimestampDomain TimestampDomain
         {
             get
@@ -136,6 +155,25 @@ namespace Intel.RealSense
                 var timestampDomain = NativeMethods.rs2_get_frame_timestamp_domain(m_instance.Handle, out error);
                 return timestampDomain;
             }
+        }
+
+        public long this[FrameMetadataValue frame_metadata]
+        {
+            get {
+                return GetFrameMetadata(frame_metadata);
+            }
+        }
+
+        public long GetFrameMetadata(FrameMetadataValue frame_metadata)
+        {
+            object error;
+            return NativeMethods.rs2_get_frame_metadata(m_instance.Handle, frame_metadata, out error);
+        }
+
+        public bool SupportsFrameMetaData(FrameMetadataValue frame_metadata)
+        {
+            object error;
+            return NativeMethods.rs2_supports_frame_metadata(m_instance.Handle, frame_metadata, out error) != 0;
         }
     }
 }

@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 # ubuntu 16.04 LTS cmake version 3.5.1
 cmake_minimum_required(VERSION 2.8.3)
 

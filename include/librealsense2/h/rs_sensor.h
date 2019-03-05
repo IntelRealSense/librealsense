@@ -155,11 +155,18 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
 
 /**
-* Retrieve the stereoscopic baseline value. Applicable to stereo-based depth modules
+* Retrieve the stereoscopic baseline value from frame. Applicable to stereo-based depth modules
 * \param[out] float  Stereoscopic baseline in millimeters
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error);
+
+/**
+* Retrieve the stereoscopic baseline value from sensor. Applicable to stereo-based depth modules
+* \param[out] float  Stereoscopic baseline in millimeters
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+float rs2_get_stereo_baseline(rs2_sensor* sensor, rs2_error** error);
 
 /**
  * \brief sets the active region of interest to be used by auto-exposure algorithm
@@ -429,8 +436,96 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
 
+/**
+ * Returns the list of recommended processing blocks for a specific sensor. 
+ * Order and configuration of the blocks are decided by the sensor
+ * \param[in] sensor          input sensor
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return list of supported sensor recommended processing blocks
+*/
+rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error);
+
+/**
+* Returns specific processing blocks from processing blocks list
+* \param[in] list           the processing blocks list
+* \param[in] index          the requested processing block
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return processing block
+*/
+rs2_processing_block* rs2_get_processing_block(const rs2_processing_block_list* list, int index, rs2_error** error);
+
+/**
+* Returns the processing blocks list size
+* \param[in] list           the processing blocks list
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return the processing block list size
+*/
+int rs2_get_recommended_processing_blocks_count(const rs2_processing_block_list* list, rs2_error** error);
+
+/**
+* Deletes processing blocks list
+* \param[in] list list to delete
+*/
+void rs2_delete_recommended_processing_blocks(rs2_processing_block_list* list);
+
+/**
+* Imports a localization map from file to tm2 tracking device
+* \param[in]  sensor        TM2 position-tracking sensor
+* \param[in]  lmap_blob     Localization map raw buffer, serialized
+* \param[in]  blob_size     The buffer's size in bytes
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   Non-zero if succeeded, otherwise 0
+*/
+int rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* lmap_blob, unsigned int blob_size, rs2_error** error);
+
+/**
+* Extract and store the localization map of tm2 tracking device to file
+* \param[in]  sensor        TM2 position-tracking sensor
+* \param[in]  lmap_fname    The file name of the localization map
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                   Device's response in a rs2_raw_data_buffer, which should be released by rs2_delete_raw_data
+*/
+//void rs2_export_localization_map(const rs2_sensor* sensor, const char* lmap_fname, rs2_error** error);
+const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor, rs2_error** error);
+
+/**
+* Create a named location tag
+* \param[in]  sensor    T2xx position-tracking sensor
+* \param[in]  guid      Null-terminated string of up to 127 characters
+* \param[in]  pos       Position in meters, relative to the current tracking session
+* \param[in]  orient    Quaternion orientation, expressed the the coordinate system of the current tracking session
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Non-zero if succeeded, otherwise 0
+*/
+int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector pos, const rs2_quaternion orient, rs2_error** error);
+
+/**
+* Create a named location tag
+* \param[in]  sensor    T2xx position-tracking sensor
+* \param[in]  guid      Null-terminated string of up to 127 characters
+* \param[out] pos       Position in meters of the tagged (stored) location
+* \param[out] orient    Quaternion orientation of the tagged (stored) location
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Non-zero if succeeded, otherwise 0
+*/
+int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *pos, rs2_quaternion *orient, rs2_error** error);
+
+/** Load Wheel odometer settings from host to device
+* \param[in] odometry_config_buf   odometer configuration/calibration blob serialized from jsom file
+* \return true on success
+*/
+int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_config_buf, unsigned int blob_size, rs2_error** error);
+
+/** Send wheel odometry data for each individual sensor (wheel)
+* \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
+* \param[in] frame_num          - Monotonocally increasing frame number, managed per sensor.
+* \param[in] angular_velocity   - Angular velocity of the wheel sensor [rad/sec]
+* \return true on success
+*/
+int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
+    const rs2_vector angular_velocity, rs2_error** error);
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif  // LIBREALSENSE_RS2_SENSOR_H

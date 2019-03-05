@@ -7,23 +7,26 @@ using System.Text;
 
 namespace Intel.RealSense
 {
-    public class FrameQueue : IDisposable, IEnumerable<Frame>
+    public class FrameQueue : IDisposable
     {
         internal HandleRef m_instance;
 
         public FrameQueue(int capacity = 1)
         {
             object error;
+            Capacity = capacity;
             m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
-        public bool PollForFrame(out Frame frame)
+        public readonly int Capacity;
+         
+        public bool PollForFrame<T>(out T frame) where T : Frame
         {
             object error;
             IntPtr ptr;
             if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out ptr, out error) > 0)
             {
-                frame = Frame.CreateFrame(ptr);
+                frame = Frame.Create<T>(ptr);
                 return true;
             }
             frame = null;
@@ -32,16 +35,30 @@ namespace Intel.RealSense
 
         public Frame WaitForFrame(uint timeout_ms = 5000)
         {
+            return WaitForFrame<Frame>(timeout_ms);
+        }
+
+        public T WaitForFrame<T>(uint timeout_ms = 5000) where T : Frame
+        {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
-            return Frame.CreateFrame(ptr);
+            return Frame.Create<T>(ptr);
+        }
+
+        public bool TryWaitForFrame<T>(out T frame, uint timeout_ms = 5000) where T : Frame
+        {
+            object error;
+            IntPtr ptr;
+            bool res = NativeMethods.rs2_try_wait_for_frame(m_instance.Handle, timeout_ms, out ptr, out error) > 0;
+            frame = res ? Frame.Create<T>(ptr) : null;
+            return res;
         }
 
         public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
             var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
-            return FrameSet.Pool.Get(ptr);
+            return FrameSet.Create(ptr);
         }
 
         public void Enqueue(Frame f)
@@ -84,20 +101,6 @@ namespace Intel.RealSense
             Dispose(true);
             // TODO: uncomment the following line if the finalizer is overridden above.
             GC.SuppressFinalize(this);
-        }
-
-        public IEnumerator<Frame> GetEnumerator()
-        {
-            Frame frame;
-            while (PollForFrame(out frame))
-            {
-                yield return frame;
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
         #endregion
     }

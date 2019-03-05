@@ -82,7 +82,7 @@ namespace librealsense
         std::string _desc;
     };
 
-    class option_base : public option
+    class LRS_EXTENSION_API option_base : public option
     {
     public:
         option_base(const option_range& opt_range)
@@ -101,7 +101,7 @@ namespace librealsense
     };
 
     template<class T>
-    class ptr_option : public option_base
+    class LRS_EXTENSION_API ptr_option : public option_base
     {
     public:
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
@@ -159,7 +159,7 @@ namespace librealsense
         std::function<void(float)> _on_set;
     };
 
-    class float_option : public option_base
+    class LRS_EXTENSION_API float_option : public option_base
     {
     public:
         float_option(option_range range) : option_base(range), _value(range.def) {}
@@ -286,26 +286,6 @@ namespace librealsense
         std::string         _desciption;
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
-
-    inline std::string hexify(unsigned char n)
-    {
-        std::string res;
-
-        do
-        {
-            res += "0123456789ABCDEF"[n % 16];
-            n >>= 4;
-        } while (n);
-
-        reverse(res.begin(), res.end());
-
-        if (res.size() == 1)
-        {
-            res.insert(0, "0");
-        }
-
-        return res;
-    }
 
     template<class T, class R, class W, class U>
     class struct_field_option : public option

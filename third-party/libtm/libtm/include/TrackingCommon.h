@@ -23,9 +23,9 @@
 #define IN
 #define OUT
 
-#ifdef __unix
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
 #endif
 
@@ -136,7 +136,7 @@ namespace perc {
         SIXDOF_MODE_FAST_PLAYBACK = 0x0001,
         SIXDOF_MODE_ENABLE_MAPPING = 0x0002,
         SIXDOF_MODE_ENABLE_RELOCALIZATION = 0x0004, 
-        SIXDOF_MODE_MAX
+        SIXDOF_MODE_MAX = ((SIXDOF_MODE_FAST_PLAYBACK | SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION) + 1)
     } SIXDOF_MODE;
 
 }

@@ -97,4 +97,6 @@ namespace librealsense
     public:
         notification decode(int value) override;
     };
+
+    processing_blocks get_ds5_depth_recommended_proccesing_blocks();
 }

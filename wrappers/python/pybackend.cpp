@@ -14,6 +14,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
+#include "core/options.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
@@ -417,3 +418,6 @@ PYBIND11_MODULE(NAME, m) {
             return encode_command(static_cast<command>(opcode), p1, p2, p3, p4, data);
         }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
 }
+
+// Workaroud for failure to export template <typename T> class recordable
+void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
