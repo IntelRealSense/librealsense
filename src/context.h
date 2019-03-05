@@ -131,11 +131,7 @@ namespace librealsense
 
         std::shared_ptr<device_interface> add_device(const std::string& file);
         void remove_device(const std::string& file);
-<<<<<<< add_software_device
         void add_software_device(std::shared_ptr<device_info> software_device);
-=======
-        void add_device(std::shared_ptr<device_info> software_device);
->>>>>>> development
 
     private:
         void on_device_changed(platform::backend_device_group old,

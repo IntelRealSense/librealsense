@@ -80,7 +80,6 @@ namespace librealsense
        
     private:
         processing_blocks _blocks;
->>>>>>> development
     };
 
     class software_sensor : public sensor_base, public extendable_interface
