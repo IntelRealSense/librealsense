@@ -9,6 +9,17 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+// Disable declspec(dllexport) warnings:
+// Classes exported via LRS_EXTENSION_API are **not** part of official librealsense API (at least for now)
+// Any extension relying on these APIs must be compiled and distributed together with realsense2.dll
+#pragma warning(disable : 4275)        /* disable: C4275: non dll-interface class used as base for dll-interface class */
+#pragma warning(disable : 4251)        /* disable: C4251: class needs to have dll-interface to be used by clients of class */
+#ifdef WIN32
+#define LRS_EXTENSION_API __declspec(dllexport)
+#else
+#define LRS_EXTENSION_API
+#endif
+
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
 #ifndef _USE_MATH_DEFINES
@@ -28,7 +39,8 @@
 #include <condition_variable>
 #include <functional>
 #include <utility>                          // For std::forward
-
+#include <limits>
+#include <iomanip>
 
 #include "backend.h"
 #include "concurrency.h"
@@ -39,10 +51,6 @@
 typedef unsigned char byte;
 
 const int RS2_USER_QUEUE_SIZE = 128;
-
-#ifndef DBL_EPSILON
-const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
-#endif
 
 // Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
 static const double pi = std::acos(-1);
@@ -119,6 +127,16 @@ namespace librealsense
         return false;
     }
 
+    template<class T>
+    std::string hexify(const T& val)
+    {
+        static_assert((std::is_integral<T>::value), "hexify supports integral built-in types only");
+
+        std::ostringstream oss;
+        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << std::hex << val;
+        return oss.str().c_str();
+    }
+
     void copy(void* dst, void const* src, size_t size);
 
     std::string make_less_screamy(const char* str);
@@ -132,15 +150,34 @@ namespace librealsense
 
 #if BUILD_EASYLOGGINGPP
 
+#ifdef RS2_USE_ANDROID_BACKEND
+#include <android/log.h>
+
+#define LOG_TAG "librs"
+
+#define LOG_INFO(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_INFO, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_WARNING(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_WARN, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_ERROR(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_FATAL(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
+#ifdef NDEBUG
+#define LOG_DEBUG(...)
+#else
+#define LOG_DEBUG(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_DEBUG, LOG_TAG, ss.str().c_str()); } while(false)
+#endif
+
+#else //RS2_USE_ANDROID_BACKEND
+
 #define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
 
+#endif // RS2_USE_ANDROID_BACKEND
+
 #else // BUILD_EASYLOGGINGPP
 
-#define LOG_DEBUG(...)   do { ; } while(false)
+    #define LOG_DEBUG(...)   do { ; } while(false)
 #define LOG_INFO(...)    do { ; } while(false)
 #define LOG_WARNING(...) do { ; } while(false)
 #define LOG_ERROR(...)   do { ; } while(false)
@@ -197,7 +234,7 @@ namespace librealsense
         rs2_exception_type _exception_type;
     };
 
-    class recoverable_exception : public librealsense_exception
+    class LRS_EXTENSION_API recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
@@ -499,6 +536,18 @@ namespace librealsense
             for (int i = 0; i < 3; i++)
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
+    }
+    inline bool operator==(const rs2_extrinsics& a, const rs2_extrinsics& b)
+    {
+        for (int i = 0; i < 3; i++) 
+            if (a.translation[i] != b.translation[i]) 
+                return false;
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i]) 
+                     > std::numeric_limits<float>::epsilon()) 
+                    return false;
+        return true;
     }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
 

@@ -7,6 +7,14 @@ namespace Intel.RealSense
 {
     public class VideoStreamProfile : StreamProfile
     {
+        protected override void Initialize()
+        {
+            base.Initialize();
+            //Console.WriteLine($"{GetType()}.VideoStreamProfile::Initialize");
+            object error;
+            NativeMethods.rs2_get_video_stream_resolution(m_instance.Handle, out width, out height, out error);
+        }
+
         public VideoStreamProfile(IntPtr ptr) : base(ptr)
         {
             object error;

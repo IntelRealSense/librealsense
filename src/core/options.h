@@ -9,7 +9,7 @@
 
 namespace librealsense
 {
-    struct option_range
+    struct LRS_EXTENSION_API option_range
     {
         float min;
         float max;
@@ -17,7 +17,7 @@ namespace librealsense
         float def;
     };
 
-    class option : public recordable<option>
+    class LRS_EXTENSION_API option : public recordable<option>
     {
     public:
         virtual void set(float value) = 0;
@@ -27,7 +27,7 @@ namespace librealsense
         virtual bool is_read_only() const { return false; }
         virtual const char* get_description() const = 0;
         virtual const char* get_value_description(float) const { return nullptr; }
-        virtual void create_snapshot(std::shared_ptr<option>& snapshot) const override;
+        virtual void create_snapshot(std::shared_ptr<option>& snapshot) const;
 
         virtual ~option() = default;
     };
@@ -39,7 +39,8 @@ namespace librealsense
         virtual option& get_option(rs2_option id) = 0;
         virtual const option& get_option(rs2_option id) const = 0;
         virtual bool supports_option(rs2_option id) const = 0;
-
+        virtual std::vector<rs2_option> get_supported_options() const = 0;
+        virtual const char* get_option_name(rs2_option) const = 0;
         virtual ~options_interface() = default;
     };
 
@@ -67,7 +68,7 @@ namespace librealsense
             {
                 throw invalid_value_exception(to_string()
                     << "Device does not support option "
-                    << rs2_option_to_string(id) << "!");
+                    << get_option_name(id) << "!");
             }
             return *it->second;
         }
@@ -101,6 +102,19 @@ namespace librealsense
             {
                 _options[opt.first] = opt.second;
             }
+        }
+        std::vector<rs2_option> get_supported_options() const override
+        {
+            std::vector<rs2_option> options;
+            for (auto option : _options)
+                options.push_back(option.first);
+
+            return options;
+        }
+
+        virtual const char* get_option_name(rs2_option option) const override
+        {
+            return get_string(option);
         }
 
     private:

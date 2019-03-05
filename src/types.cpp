@@ -2,18 +2,20 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "device.h"
-#include "archive.h"
+#include "core/streaming.h"
 
 #include <algorithm>
 #include <iomanip>
 #include <numeric>
 #include <fstream>
 #include <cmath>
+#include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
         return s##T##_##X##_str.c_str(); }
+
+const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 
 namespace librealsense
 {
@@ -178,6 +180,17 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
+            CASE(DECIMATION_FILTER)
+            CASE(THRESHOLD_FILTER)
+            CASE(DISPARITY_FILTER)
+            CASE(SPATIAL_FILTER)
+            CASE(TEMPORAL_FILTER)
+            CASE(HOLE_FILLING_FILTER)
+            CASE(ZERO_ORDER_FILTER)
+            CASE(RECOMMENDED_FILTERS)
+            CASE(POSE)
+            CASE(POSE_SENSOR)
+            CASE(WHEEL_ODOMETER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -265,6 +278,11 @@ namespace librealsense
             CASE(STREAM_FORMAT_FILTER)
             CASE(STREAM_INDEX_FILTER)
             CASE(EMITTER_ON_OFF)
+            CASE(ZERO_ORDER_POINT_X)
+            CASE(ZERO_ORDER_POINT_Y)
+            CASE(LLD_TEMPERATURE)
+            CASE(MC_TEMPERATURE)
+            CASE(MA_TEMPERATURE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -458,7 +476,7 @@ namespace librealsense
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));
         double r1 = rot[0], r2 = rot[1], r3 = rot[2];
-        if (theta <= sqrt(DBL_EPSILON)) // identityMatrix
+        if (theta <= SQRT_DBL_EPSILON) // identityMatrix
         {
             rot_mat(0, 0) = rot_mat(1, 1) = rot_mat(2, 2) = 1.0;
             rot_mat(0, 1) = rot_mat(0, 2) = rot_mat(1, 0) = rot_mat(1, 2) = rot_mat(2, 0) = rot_mat(2, 1) = 0.0;

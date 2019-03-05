@@ -23,10 +23,29 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_POSE_PROFILE, librealsense::pose_stream_profile_interface);
 
-    class tm2_extensions
+    class pose_sensor_interface : public recordable<pose_sensor_interface>
     {
     public:
-        //Empty for now
+        virtual bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const  = 0;
+        virtual bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const = 0;
+        virtual bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const = 0;
+        virtual bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const = 0;
+        virtual ~pose_sensor_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_POSE_SENSOR, librealsense::pose_sensor_interface);
+
+    class wheel_odometry_interface : public recordable<wheel_odometry_interface>
+    {
+    public:
+        virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const = 0;
+        virtual bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity) const = 0;
+        virtual ~wheel_odometry_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_WHEEL_ODOMETER, librealsense::wheel_odometry_interface);
+
+     class tm2_extensions
+    {
+    public:
         virtual void enable_loopback(const std::string& input) = 0;
         virtual void disable_loopback() = 0;
         virtual bool is_enabled() const = 0;

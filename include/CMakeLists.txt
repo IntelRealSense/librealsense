@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rs.hpp"
@@ -23,6 +25,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_processing.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_record_playback.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_sensor.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_options.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_internal.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_pipeline.hpp"
 

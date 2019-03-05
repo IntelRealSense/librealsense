@@ -293,7 +293,7 @@ namespace rs2
     class viewer_model;
     class subdevice_model;
 
-    void save_processing_block(const char* name, 
+    void save_processing_block_to_config_file(const char* name, 
         std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 
     class processing_block_model
@@ -301,29 +301,40 @@ namespace rs2
     public:
         processing_block_model(subdevice_model* owner,
             const std::string& name,
-            std::shared_ptr<rs2::processing_block> block,
+            std::shared_ptr<rs2::filter> block,
             std::function<rs2::frame(rs2::frame)> invoker,
             std::string& error_message,
             bool enabled = true);
 
         const std::string& get_name() const { return _name; }
 
-        option_model& get_option(rs2_option opt) { return options_metadata[opt]; }
+        option_model& get_option(rs2_option opt);
 
         rs2::frame invoke(rs2::frame f) const { return _invoker(f); }
 
-        void save()
+        void save_to_config_file();
+
+        std::vector<rs2_option> get_option_list()
         {
-            save_processing_block(_name.c_str(), _block, enabled);
+            return _block->get_supported_options();
         }
+
+        void populate_options(const std::string& opt_base_label,
+            subdevice_model* model,
+            bool* options_invalidated,
+            std::string& error_message);
+
+        std::shared_ptr<rs2::filter> get_block() { return _block; }
 
         bool enabled = true;
         bool visible = true;
     private:
-        std::shared_ptr<rs2::processing_block> _block;
+        std::shared_ptr<rs2::filter> _block;
         std::map<int, option_model> options_metadata;
         std::string _name;
+        std::string _full_name;
         std::function<rs2::frame(rs2::frame)> _invoker;
+        subdevice_model* _owner;
     };
 
     class syncer_model
@@ -395,6 +406,7 @@ namespace rs2
         std::atomic<bool> _active;
     };
 
+    option_model create_option_mode(rs2_option opt, std::shared_ptr<options> options, const std::string& opt_base_label, bool* options_invalidated, std::string& error_message);
 
     class subdevice_model
     {
@@ -413,6 +425,7 @@ namespace rs2
         std::vector<stream_profile> get_selected_profiles();
         void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
+        bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
         void draw_options(const std::vector<rs2_option>& drawing_order,
                           bool update_read_only_options, std::string& error_message,
@@ -427,6 +440,9 @@ namespace rs2
         bool is_paused() const;
         void pause();
         void resume();
+
+        bool can_enable_zero_order();
+        void verify_zero_order_conditions();
 
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
@@ -500,6 +516,7 @@ namespace rs2
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
+        std::shared_ptr<processing_block_model> zero_order_artifact_fix;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
@@ -802,6 +819,9 @@ namespace rs2
         void map_id_frame_to_frame(rs2::frame first, rs2::frame second);
 
         rs2::frame apply_filters(rs2::frame f, const rs2::frame_source& source);
+        std::shared_ptr<subdevice_model> get_frame_origin(const rs2::frame& f);
+
+        void zero_first_pixel(const rs2::frame& f);
         rs2::frame last_tex_frame;
         rs2::processing_block processing_block;
         std::shared_ptr<pointcloud> pc;

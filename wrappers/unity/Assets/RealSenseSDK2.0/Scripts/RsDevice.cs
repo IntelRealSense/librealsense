@@ -111,9 +111,9 @@ public class RsDevice : RsFrameProvider
 
         if (m_pipeline != null)
         {
-            if (Streaming)
-                m_pipeline.Stop();
-            m_pipeline.Release();
+            // if (Streaming)
+                // m_pipeline.Stop();
+            m_pipeline.Dispose();
             m_pipeline = null;
         }
 
@@ -132,7 +132,7 @@ public class RsDevice : RsFrameProvider
         OnStop = null;
 
         if (m_pipeline != null)
-            m_pipeline.Release();
+            m_pipeline.Dispose();
         m_pipeline = null;
 
         // Instance = null;

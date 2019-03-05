@@ -167,23 +167,28 @@ void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
 // Test file name  , Filters configuraiton
 const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
     // All the tests below include depth-disparity domain transformation
-    // Downsample scales 2/3
-    { "1525186403504",  "D415_DS(2)" },
-{ "1525186407536",  "D415_DS(3)" },
-// Downsample + Hole-Filling modes 0/1/2
-{ "1525072818314",  "D415_DS(1)_HoleFill(0)" },
-{ "1525072823227",  "D415_DS(1)_HoleFill(1)" },
-{ "1524668713358",  "D435_DS(3)_HoleFill(2)" },
-// Downsample + Spatial Filter parameters
-{ "1525267760676",  "D415_DS(2)+Spat(A:0.85/D:32/I:3)" },
+    // Downsample scales 2 and 3 are tested only. scales 4-7 are differ in impementation from the reference code:
+    // In Librealsense for all scales [2-8] the filter is the mean of depth.
+    // I the reference code for [2-3] the filter uses mean of depth, and for 4-7 is switches to man of disparities doe to implementation constrains
+    {"1551257764229", "D435_DS(2)"},
+    {"1551257812956", "D435_DS(3)"},
+    // Downsample + Hole-Filling modes 0/1/2
+    { "1551257880762","D435_DS(2)_HoleFill(0)" },
+    { "1551257882796","D435_DS(2)_HoleFill(1)" },
+    { "1551257884097","D435_DS(2)_HoleFill(2)" },
+    // Downsample + Spatial Filter parameters
+    { "1551257987255",  "D435_DS(2)+Spat(A:0.85/D:32/I:3)" },
+    { "1551259481873",  "D435_DS(2)+Spat(A:0.5/D:15/I:2)" },
 // Downsample + Temporal Filter
-{ "1525266028697",  "D415_DS(2)+Temp(A:0.25/D:15/P:1)" },
-{ "1525265554250",  "D415_DS(2)+Temp(A:0.25/D:15/P:3)" },
-{ "1525266069476",  "D415_DS(2)+Temp(A:0.25/D:15/P:5)" },
-{ "1525266120520",  "D415_DS(3)+Temp(A:0.25/D:15/P:7)" },
+{ "1551261946511",  "D435_DS(2)+Temp(A:0.25/D:15/P:0)" },
+{ "1551262153516",  "D435_DS(2)+Temp(A:0.45/D:25/P:1)" },
+{ "1551262256875",  "D435_DS(2)+Temp(A:0.5/D:30/P:4)" },
+{ "1551262841203",  "D435_DS(2)+Temp(A:0.5/D:30/P:6)" },
+{ "1551262772964",  "D435_DS(2)+Temp(A:0.5/D:30/P:8)" },
+// Downsample + Spatial + Temporal
+{ "1551262971309",  "D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6)" },
 // Downsample + Spatial + Temporal (+ Hole-Filling)
-{ "1525267168585",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)" },
-{ "1525089539880",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)_HoleFill(1)" },
+{ "1551263177558",  "D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6))_HoleFill(1)" },
 };
 
 // The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
@@ -226,7 +231,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
 
             auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
             depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, test_cfg.depth_units);
-            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline);
+            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline_mm);
 
             // Establish the required chain of filters
             dev.create_matcher(RS2_MATCHER_DLR_C);

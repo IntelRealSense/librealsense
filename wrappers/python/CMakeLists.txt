@@ -35,9 +35,9 @@ install(TARGETS pyrealsense2 EXPORT realsense2Targets
 
 set(RAW_RS_CPP ../../src/backend.cpp pybackend_extras.cpp pybackend.cpp
            ../../src/linux/backend-v4l2.cpp ../../src/linux/backend-hid.cpp ../../src/types.cpp
-           ../../src/archive.cpp ../../src/log.cpp ../../src/types.cpp ../../third-party/easyloggingpp/src/easylogging++.cc)
+           ../../src/log.cpp ../../src/types.cpp ../../third-party/easyloggingpp/src/easylogging++.cc)
 set(RAW_RS_HPP ../../src/backend.h ../../src/linux/backend-v4l2.h ../../src/linux/backend-hid.h
-           ../../src/archive.h pybackend_extras.h
+           pybackend_extras.h
            ../../src/types.h ../../third-party/easyloggingpp/src/easylogging++.h)
 
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7

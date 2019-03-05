@@ -43,6 +43,7 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
+        processing_blocks get_recommended_processing_blocks() const override;
 
     private:
         const ds5_color* _owner;

@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 2.8)
 cmake_policy(SET CMP0015 NEW)
 
@@ -46,8 +48,6 @@ set(SOURCE_FILES
     infra/Fsm.cpp
     infra/Utils.h
     infra/Utils.cpp
-    infra/Semaphore.h
-    infra/Semaphore_${OS}.cpp
     infra/Event_${OS}.cpp
 )
 

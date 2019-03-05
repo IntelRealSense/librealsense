@@ -86,7 +86,12 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
-    auto pipe = make_shared<rs2::pipeline>();
+    // Since we are running in blocking "non-real-time" mode,
+    // we don't want to prevent process termination if some of the frames
+    // did not find a match and hence were not serviced
+    auto pipe = std::shared_ptr<rs2::pipeline>(
+        new rs2::pipeline(), [](rs2::pipeline*) {});
+
     rs2::config cfg;
     cfg.enable_device_from_file(inputFilename.getValue());
     pipe->start(cfg);
@@ -98,10 +103,10 @@ int main(int argc, char** argv) try
     auto duration = playback.get_duration();
     int progress = 0;
     auto frameNumber = 0ULL;
-
-    while (true) {
-        auto frameset = pipe->wait_for_frames();
-
+    
+    rs2::frameset frameset;
+    while (pipe->try_wait_for_frames(&frameset, 1000)) 
+    {
         int posP = static_cast<int>(playback.get_position() * 100. / duration.count());
 
         if (posP > progress) {

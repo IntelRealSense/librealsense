@@ -253,6 +253,12 @@ namespace librealsense
 
                 return results;
             }
+
+            processing_blocks get_recommended_processing_blocks() const
+            {
+                return get_color_recommended_proccesing_blocks();
+            }
+
         private:
             const sr300_camera* _owner;
         };
@@ -321,6 +327,14 @@ namespace librealsense
                     recording_function(*this);
                 });
             }
+
+            static processing_blocks get_sr300_depth_recommended_proccesing_blocks();
+
+            processing_blocks get_recommended_processing_blocks() const override
+            {
+                return get_sr300_depth_recommended_proccesing_blocks();
+            };
+
         private:
             const sr300_camera* _owner;
         };

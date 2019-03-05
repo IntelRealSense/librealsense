@@ -57,5 +57,10 @@ namespace Intel.RealSense
                 NativeMethods.rs2_load_json(m_instance, value, (uint)value.ToCharArray().Length, out error);
             }
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            // Intentionally empty, does not own the native device, only wraps it.
+        }
     }
 }
