@@ -85,22 +85,13 @@ Your native app need to link with 'librealsense.so' in order to do that you will
 >```
 
 ### Application Manifest
-Two modifications are required in the [application manifest file](app/src/main/AndroidManifest.xml).
+A modifications is required in the [application manifest file](app/src/main/AndroidManifest.xml).
 
 #### Camera Permissions
 This permission is required by Androis >= 9, for apps that target lower Android version this is not required.
 >```xml
 >    <uses-permission android:name="android.permission.CAMERA"/>
 >```
-
-#### USB Event Filter
-The intent-filter should be added to one of the application's activities.
-This addition will allow Android to "remember" that the user allowed your app to use the RealSense USB device and prevent from the USB permission pop-up to appear on every run.
->```xml
->    <intent-filter>
->        <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
->    </intent-filter>
->    <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" android:resource="@xml/usb_filter" />
 
 ## Example Code
 ### Java Code

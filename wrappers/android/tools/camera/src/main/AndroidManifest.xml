@@ -13,32 +13,31 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DetachedActivity" android:theme="@style/AppTheme.NoActionBar">
-        <intent-filter>
+        <activity
+            android:name=".DetachedActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
-                android:resource="@xml/usb_filter" />
         </activity>
         <activity
             android:name=".PreviewActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"/>
+        <activity
+            android:name=".SettingsActivity"
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".RecordingActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
-            android:name="com.intel.realsense.camera.PlaybackActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:name=".PlaybackActivity"
+            android:theme="@style/AppTheme.NoActionBar"/>
+        <activity
+            android:name=".FileBrowserActivity"
+            android:label="@string/title_activity_file_browser"
+            android:theme="@style/AppTheme.NoActionBar"/>
     </application>
 
 </manifest>

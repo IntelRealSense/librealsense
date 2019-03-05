@@ -1,113 +1,81 @@
 package com.intel.realsense.camera;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.view.WindowManager;
 
-import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
-import com.intel.realsense.librealsense.FrameSet;
-import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 
 public class PlaybackActivity extends AppCompatActivity {
+    private static final String TAG = "librs camera pb";
 
-    private static final String TAG = "librs playback example";
-    private static final int READ_REQUEST_CODE = 0;
-    private Uri mUri;
-    private GLRsSurfaceView mGLSurfaceView;
+    private static final int OPEN_FILE_REQUEST_CODE = 0;
+    private static final String FILE_PATH_KEY = "FILE_PATH_KEY";
+
+    private String mFilePath;
+    private Streamer mStreamer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playback);
-
-        mGLSurfaceView = findViewById(R.id.playbackGlSurfaceView);
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
-            return;
-        }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if(mUri == null){
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            Uri uri = Uri.parse(Environment.getExternalStorageDirectory().getPath() + "/rs_bags/*");
-            intent.setDataAndType(uri,"*/*");
-            startActivityForResult(intent, READ_REQUEST_CODE);
-        } else{
-            init();
+        if(mFilePath == null){
+            Intent intent = new Intent(this, FileBrowserActivity.class);
+            startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
+        }
+        else{
+            mStreamer = new Streamer(this, (GLRsSurfaceView) findViewById(R.id.playbackGlSurfaceView), new Streamer.Listener() {
+                @Override
+                public void config(Config config) {
+                    config.enableAllStreams();
+                    config.enableDeviceFromFile(mFilePath);
+                }
+            });
+            mStreamer.start();
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mStreaming.interrupt();
-        if(mStreaming.isAlive()) {
-            try {
-                mStreaming.join(1000);
-            } catch (InterruptedException e) {
-                Log.e(TAG, e.getMessage());
-            }
-        }
-    }
 
-    private void init(){
-        mStreaming.start();
+        if(mStreamer != null)
+            mStreamer.stop();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == READ_REQUEST_CODE && resultCode == RESULT_OK) {
+        if (requestCode == OPEN_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
             if (data != null) {
-                mUri = data.getData();
+                mFilePath = data.getStringExtra(getString(R.string.intent_extra_file_path));
             }
+        }
+        else{
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            finish();
         }
     }
 
-    Thread mStreaming = new Thread() {
-        @Override
-        public void run() {
-            Colorizer colorizer = new Colorizer();
-            Config config = new Config();
-            String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
-            config.enableDeviceFromFile(filePath);
-            Pipeline pipeline = new Pipeline();
-            try {
-                pipeline.start(config);
-                while (!mStreaming.isInterrupted()) {
-                    try (FrameSet frames = pipeline.waitForFrames(1000)) {
-                        try (FrameSet processed = frames.applyFilter(colorizer)) {
-                            mGLSurfaceView.upload(processed);
-                        }
-                    }
-                }
-                pipeline.stop();
-            }
-            catch (Exception e) {
-                Log.e(TAG, "streaming, error: " + e.getMessage());
-            }
-        }
-    };
+    @Override
+    protected void onSaveInstanceState(final Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(FILE_PATH_KEY, mFilePath);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(final Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mFilePath = savedInstanceState.getString(FILE_PATH_KEY);
+    }
 }

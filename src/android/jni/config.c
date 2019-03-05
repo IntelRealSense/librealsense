@@ -51,3 +51,27 @@ Java_com_intel_realsense_librealsense_Config_nEnableRecordToFile(JNIEnv *env, jc
 
     (*env)->ReleaseStringUTFChars(env, filePath_, filePath);
 }
+
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nDisableStream(JNIEnv *env, jclass type, jlong handle,
+                                                            jint streamType) {
+    rs2_error *e = NULL;
+    rs2_config_disable_stream((rs2_config *) handle, streamType, &e);
+    handle_error(env, e);
+}
+
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nEnableAllStreams(JNIEnv *env, jclass type,
+                                                               jlong handle) {
+    rs2_error *e = NULL;
+    rs2_config_enable_all_stream((rs2_config *) handle, &e);
+    handle_error(env, e);
+}
+
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Config_nDisableAllStreams(JNIEnv *env, jclass type,
+                                                                jlong handle) {
+    rs2_error *e = NULL;
+    rs2_config_disable_all_streams((rs2_config *) handle, &e);
+    handle_error(env, e);
+}

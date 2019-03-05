@@ -26,6 +26,7 @@ namespace librealsense
             size_t read_pipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms = 100);
             void queue_finished_request(usb_request* response);
             bool reset();
+            void listen_to_interrupts();
 
         private:
             void submit_request(uint8_t *buffer, size_t buffer_len);

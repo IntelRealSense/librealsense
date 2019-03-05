@@ -29,22 +29,13 @@ Once the gradle changes are done and the gradle sync was executed, you should be
 It might be required to invalidate caches in case your app is failing to import librealsense (File->Invalidate Caches->Invalidate and restart)
 
 ### Application Manifest
-Two modifications are required in the [application manifest file](app/src/main/AndroidManifest.xml).
+A modifications is required in the [application manifest file](app/src/main/AndroidManifest.xml).
 
 #### Camera Permissions
 This permission is required by Androis >= 9, for apps that target lower Android version this is not required.
 >```xml
 >    <uses-permission android:name="android.permission.CAMERA"/>
 >```
-
-#### USB Event Filter
-The intent-filter should be added to one of the application's activities.
-This addition will allow Android to "remember" that the user allowed your app to use the RealSense USB device and prevent from the USB permission pop-up to appear on every run.
->```xml
->    <intent-filter>
->        <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
->    </intent-filter>
->    <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" android:resource="@xml/usb_filter" />
 
 ## Example Code
 Let's look at the only source code file in this example, the [MainActivity](app/src/main/java/com/example/realsense_java_example/MainActivity.java).
