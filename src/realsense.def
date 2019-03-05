@@ -222,6 +222,7 @@ EXPORTS
 
     rs2_context_add_device
     rs2_context_remove_device
+    rs2_context_unload_tracking_module
 
     rs2_playback_device_get_file_path
     rs2_playback_get_duration

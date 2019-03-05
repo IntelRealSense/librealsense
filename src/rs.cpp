@@ -1204,6 +1204,15 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx, file)
 
+void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error) BEGIN_API_CALL
+{
+#if WITH_TRACKING
+    VALIDATE_NOT_NULL(ctx);
+    ctx->ctx->unload_tracking_module();
+#endif
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, ctx)
+
 const char* rs2_playback_device_get_file_path(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
