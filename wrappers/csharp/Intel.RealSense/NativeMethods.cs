@@ -513,7 +513,7 @@ namespace Intel.RealSense
         internal static extern int rs2_load_wheel_odometry_config(IntPtr sensor, IntPtr wheel_odometry_cfg_buf, uint size_of_buf, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern int rs2_send_wheel_odometry(IntPtr sensor, byte wo_sensor_id, uint frame_num, Math.Vector angular_velocity, Single temperature,
+        internal static extern int rs2_send_wheel_odometry(IntPtr sensor, byte wo_sensor_id, uint frame_num, Math.Vector angular_velocity,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]

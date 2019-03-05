@@ -520,11 +520,10 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
 * \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
 * \param[in] frame_num          - Monotonocally increasing frame number, managed per sensor.
 * \param[in] angular_velocity   - Angular velocity of the wheel sensor [rad/sec]
-* \param[in] sensor_temperature - Sensor temperature
 * \return true on success
 */
 int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
-    const rs2_vector angular_velocity, float sensor_temperature, rs2_error** error);
+    const rs2_vector angular_velocity, rs2_error** error);
 
 #ifdef __cplusplus
 }

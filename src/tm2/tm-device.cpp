@@ -1048,8 +1048,11 @@ namespace librealsense
             [&](){ lmap_buf = this->_async_op_res_buffer; },
             "Export localization map");
 
+        if (res != async_op_state::_async_success)
+        {
+            LOG_ERROR("Export localization map failed");
+        }
         return (res == async_op_state::_async_success);
-
     }
 
     bool tm2_sensor::import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const
@@ -1061,22 +1064,38 @@ namespace librealsense
             [&]() { return _tm_dev->SetLocalizationData(const_cast<tm2_sensor*>(this), uint32_t(lmap_buf.size()), lmap_buf.data()); },
             [&]() {}, "Import localization map");
 
+        if (res != async_op_state::_async_success)
+        {
+            LOG_ERROR("Import localization map failed");
+        }
         return (res == async_op_state::_async_success);
     }
 
     bool tm2_sensor::set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const
     {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
         perc::TrackingData::RelativePose rp;
         rp.translation  = { pos.x, pos.y, pos.z };
         rp.rotation     = { orient_quat.x, orient_quat.y, orient_quat.z, orient_quat.w };
-        return (perc::Status::SUCCESS == _tm_dev->SetStaticNode(guid.data(), rp));
+
+        auto status = _tm_dev->SetStaticNode(guid.data(), rp);
+        if (status != Status::SUCCESS)
+        {
+            LOG_WARNING("Set static node failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
     }
 
     bool tm2_sensor::get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const
     {
-        bool ret = false;
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
         perc::TrackingData::RelativePose rel_pose;
-        if (perc::Status::SUCCESS == _tm_dev->GetStaticNode(guid.data(), rel_pose))
+        auto status = _tm_dev->GetStaticNode(guid.data(), rel_pose);
+        if (status == perc::Status::SUCCESS)
         {
             pos[0] = rel_pose.translation.x;
             pos[1] = rel_pose.translation.y;
@@ -1085,10 +1104,46 @@ namespace librealsense
             orient_quat[1] = rel_pose.rotation.j;
             orient_quat[2] = rel_pose.rotation.k;
             orient_quat[3] = rel_pose.rotation.r;
-
-            ret = true;
         }
-        return ret;
+        else
+        {
+            LOG_WARNING("Get static node failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
+    }
+
+
+    bool tm2_sensor::load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const
+    {
+        TrackingData::CalibrationData calibrationData;
+        calibrationData.length = uint32_t(odometry_config_buf.size());
+        calibrationData.buffer = (uint8_t*)odometry_config_buf.data();
+        calibrationData.type = CalibrationTypeAppend;
+
+        auto status = _tm_dev->SetCalibration(calibrationData);
+        if (status != Status::SUCCESS)
+        {
+            LOG_ERROR("T2xx Load Wheel odometry calibration failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
+    }
+
+    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        perc::TrackingData::VelocimeterFrame vel_fr;
+        vel_fr.sensorIndex  = wo_sensor_id;
+        vel_fr.frameId      = frame_num;
+        vel_fr.angularVelocity = { angular_velocity.x, angular_velocity.y, angular_velocity.z };
+
+        auto status = _tm_dev->SendFrame(vel_fr);
+        if (status != Status::SUCCESS)
+        {
+            LOG_WARNING("Send Wheel odometry failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
     }
 
     TrackingData::Temperature tm2_sensor::get_temperature()

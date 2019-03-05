@@ -5607,6 +5607,9 @@ TEST_CASE("Positional_Sensors_API", "[live]")
             auto pose_snr = dev.first<rs2::pose_sensor>();
             CAPTURE(pose_snr);
             REQUIRE(pose_snr);
+            auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
+            CAPTURE(wheel_odom_snr);
+            REQUIRE(wheel_odom_snr);
 
             WHEN("Sequence - Streaming.")
             {
@@ -5620,10 +5623,10 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     CAPTURE(pose_snr);
                     REQUIRE(pose_snr);
 
-                    WARN("T2xx Streaming frames started");
+                    WARN("T2xx Collecting frames started");
                     rs2::frameset frames;
                     // The frames are required to generate some initial localization map
-                    for (auto i = 0; i < 10; i++)
+                    for (auto i = 0; i < 200; i++)
                     {
                         REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
                         REQUIRE(frames.size() > 0);
@@ -5637,7 +5640,7 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     WARN("T2xx import map");
                     REQUIRE_THROWS(pose_snr.import_localization_map({ 0, 1, 2, 3, 4 }));
                     REQUIRE_NOTHROW(pipe.stop());
-                    WARN("T2xx import/export finished");
+                    WARN("T2xx import/export during streaming finished");
                 }
             }
 
@@ -5658,6 +5661,18 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
+
+                    //Odometry API
+                    std::ifstream calibrationFile("calibration_odometry.json");
+                    if (calibrationFile)
+                    {
+                        const std::string json_str((std::istreambuf_iterator<char>(calibrationFile)),
+                            std::istreambuf_iterator<char>());
+                        const std::vector<uint8_t> wo_calib(json_str.begin(), json_str.end());
+                        bool b;
+                        REQUIRE_NOTHROW(b = wheel_odom_snr.load_wheel_odometery_config(wo_calib));
+                        REQUIRE(b);
+                    }
                 }
             }
 
@@ -5672,10 +5687,13 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     auto pose_snr = d.first<rs2::pose_sensor>();
                     CAPTURE(pose_snr);
                     REQUIRE(pose_snr);
+                    auto wo_snr = d.first<rs2::wheel_odometer>();
+                    CAPTURE(wo_snr);
+                    REQUIRE(wo_snr);
 
                     rs2::frameset frames;
-                    // The frames are required to attain pose with sufficient confidence for static node marker
-                    for (auto i = 0; i < 1000; i++)
+                    // The frames are required to get pose with sufficient confidence for static node marker
+                    for (auto i = 0; i < 100; i++)
                     {
                         REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
                         REQUIRE(frames.size() > 0);
@@ -5699,6 +5717,14 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE(test_or.y == Approx(vnv_or.y));
                     REQUIRE(test_or.z == Approx(vnv_or.z));
                     REQUIRE(test_or.w == Approx(vnv_or.w));
+
+                    //Odometry send data API
+                    bool b;
+                    for (int i = 0; i < 20; i++)
+                    {
+                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,2,3 }));
+                        REQUIRE(b);
+                    }
                     REQUIRE_NOTHROW(pipe.stop());
                 }
             }

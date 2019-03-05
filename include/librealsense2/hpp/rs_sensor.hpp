@@ -543,13 +543,12 @@ namespace rs2
         * \param[in] wo_sensor_id       - Zero-based index of (wheel) sensor with the same type within device
         * \param[in] frame_num          - Monotonocally increasing frame number, managed per sensor.
         * \param[in] angular_velocity   - Angular velocity in rad/sec
-        * \param[in] sensor_temperature - Sensor temperature
         * \return true on success
         */
-        bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const rs2_vector& angular_velocity, float sensor_temperature)
+        bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const rs2_vector& angular_velocity)
         {
             rs2_error* e = nullptr;
-            auto res = rs2_send_wheel_odometry(_sensor.get(), wo_sensor_id, frame_num, angular_velocity, sensor_temperature, &e);
+            auto res = rs2_send_wheel_odometry(_sensor.get(), wo_sensor_id, frame_num, angular_velocity, &e);
             error::handle(e);
             return !!res;
         }
