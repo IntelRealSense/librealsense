@@ -532,7 +532,7 @@ namespace librealsense
         return playback_dev;
     }
     
-    void context::add_device(std::shared_ptr<device_info> dev)
+    void context::add_software_device(std::shared_ptr<device_info> dev)
     {
         auto file = dev->get_device_data().playback_devices.front().file_path;
         

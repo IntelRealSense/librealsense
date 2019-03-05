@@ -271,6 +271,8 @@ namespace librealsense
 
     void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
     {
+        if (!_is_streaming) return;
+
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
@@ -302,6 +304,8 @@ namespace librealsense
 
     void software_sensor::on_pose_frame(rs2_software_pose_frame software_frame)
     {
+        if (!_is_streaming) return;
+
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;

@@ -240,7 +240,15 @@ namespace rs2
             return software_sensor(sensor);
         }
         
-        void inject_to(context ctx)
+        /**
+        * Add software device to existing context
+        * Any future queries on the context
+        * Will return this device
+        * This operation cannot be undone (except for destroying the context)
+        *
+        * \param[in] ctx   context to add the device to
+        */
+        void add_to(context& ctx)
         {
             rs2_error* e = nullptr;
             rs2_context_add_software_device(ctx._context.get(), _dev.get(), &e);
