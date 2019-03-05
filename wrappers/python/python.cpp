@@ -241,6 +241,7 @@ PYBIND11_MODULE(NAME, m) {
             "sharing the same physical parent composite device.")
         .def("first_depth_sensor", [](rs2::device& self) { return self.first<rs2::depth_sensor>(); })
         .def("first_roi_sensor", [](rs2::device& self) { return self.first<rs2::roi_sensor>(); })
+        .def("first_pose_sensor", [](rs2::device& self) { return self.first<rs2::pose_sensor>(); })
         .def("supports", &rs2::device::supports, "Check if specific camera info is supported.", "info"_a)
         .def("get_info", &rs2::device::get_info, "Retrieve camera specific information, "
             "like versions of various internal components", "info"_a)
@@ -271,7 +272,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("__getitem__", [](const rs2::device_list& self, size_t i) {
         if (i >= self.size())
             throw py::index_error();
-        return self[i];
+        return self[uint32_t(i)];
     })
         .def("__len__", &rs2::device_list::size)
         .def("size", &rs2::device_list::size)
@@ -284,7 +285,7 @@ PYBIND11_MODULE(NAME, m) {
             throw py::error_already_set();
         auto *dlist = new std::vector<rs2::device>(slicelength);
         for (size_t i = 0; i < slicelength; ++i) {
-            (*dlist)[i] = self[start];
+            (*dlist)[i] = self[uint32_t(start)];
             start += step;
         }
         return dlist;
@@ -501,6 +502,9 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_depth_frame", &rs2::frameset::get_depth_frame)
         .def("get_color_frame", &rs2::frameset::get_color_frame)
         .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "index"_a = 0)
+        .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame)
+        //.def("get_pose_frame", &rs2::frameset::get_pose_frame)
+        .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
         .def("__iter__", [](rs2::frameset& self)
     {
         return py::make_iterator(self.begin(), self.end());
@@ -784,7 +788,9 @@ PYBIND11_MODULE(NAME, m) {
         .def(py::init<>())
         .def("__nonzero__", &rs2::sensor::operator bool)
         .def(BIND_DOWNCAST(sensor, roi_sensor))
-        .def(BIND_DOWNCAST(sensor, depth_sensor));
+        .def(BIND_DOWNCAST(sensor, depth_sensor))
+        .def(BIND_DOWNCAST(sensor, pose_sensor))
+        .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
     py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor");
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
@@ -797,6 +803,27 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_depth_scale", &rs2::depth_sensor::get_depth_scale,
             "Retrieves mapping between the units of the depth image and meters.")
         .def("__nonzero__", &rs2::depth_sensor::operator bool);
+
+    py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor");
+    pose_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("import_localization_map", &rs2::pose_sensor::import_localization_map,
+            "Load SLAM localization map from host to device.", "lmap_buf"_a)
+        .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
+            "Extract SLAM localization map from device and store on host.")
+        .def("set_static_node", &rs2::pose_sensor::set_static_node,
+            "Create a named reference frame anchored to a specific 3D pose.")
+        .def("get_static_node", &rs2::pose_sensor::get_static_node,
+            "Retrieve a named reference frame anchored to a specific 3D pose.")
+        .def("__nonzero__", &rs2::pose_sensor::operator bool);
+
+    py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer");
+    wheel_odometer.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
+            "odometry_config_buf"_a, "Load Wheel odometer settings from host to device.")
+        .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
+            "wo_sensor_id"_a, "frame_num"_a, "angular_velocity"_a,
+            "Send wheel odometry data for each individual sensor (wheel)")
+        .def("__nonzero__", &rs2::wheel_odometer::operator bool);
 
     /* rs2_pipeline.hpp */
     py::class_<rs2::pipeline> pipeline(m, "pipeline");

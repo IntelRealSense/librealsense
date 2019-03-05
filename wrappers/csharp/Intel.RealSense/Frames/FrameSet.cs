@@ -114,6 +114,22 @@ namespace Intel.RealSense
             }
         }
 
+        public VideoFrame FishEyeFrame
+        {
+            get
+            {
+                return FirstOrDefault(Stream.Fisheye)?.As<VideoFrame>();
+            }
+        }
+
+        public PoseFrame PoseFrame
+        {
+            get
+            {
+                return FirstOrDefault(Stream.Pose)?.As<PoseFrame>();
+            }
+        }
+
         public IEnumerator<Frame> GetEnumerator()
         {
             m_enum.Reset();

@@ -27,7 +27,7 @@ namespace librealsense
         virtual bool is_read_only() const { return false; }
         virtual const char* get_description() const = 0;
         virtual const char* get_value_description(float) const { return nullptr; }
-        virtual void create_snapshot(std::shared_ptr<option>& snapshot) const override;
+        virtual void create_snapshot(std::shared_ptr<option>& snapshot) const;
 
         virtual ~option() = default;
     };
