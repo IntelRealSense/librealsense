@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#ifdef __APPLE__
+
 #include "Event.h"
 #include <unistd.h>
 
@@ -44,3 +46,5 @@ int perc::Event::signal()
     char c = 27;
     return write(mTrigger, &c, 1) == 1;
 }
+
+#endif

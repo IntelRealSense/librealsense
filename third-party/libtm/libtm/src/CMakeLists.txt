@@ -41,14 +41,21 @@ set(SOURCE_FILES
     infra/Fence.h
     infra/EventHandler.h
     infra/Poller.h
-    infra/Poller_${OS}.cpp
+    
     infra/Dispatcher.h
     infra/Dispatcher.cpp
     infra/Fsm.h
     infra/Fsm.cpp
     infra/Utils.h
     infra/Utils.cpp
-    infra/Event_${OS}.cpp
+    
+    infra/Event_lin.cpp
+    infra/Event_bsd.cpp
+    infra/Event_win.cpp
+
+    infra/Poller_lin.cpp
+    infra/Poller_win.cpp
+    infra/Poller_bsd.cpp
 )
 
 #Add versioning to DLL
