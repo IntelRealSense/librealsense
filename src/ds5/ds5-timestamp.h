@@ -67,7 +67,7 @@ namespace librealsense
 
         unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 
     class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
@@ -87,6 +87,6 @@ namespace librealsense
 
         unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 }

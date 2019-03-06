@@ -909,7 +909,7 @@ namespace librealsense
                 return std::make_shared<os_time_service>();
             }
 
-            std::shared_ptr<device_watcher> create_device_watcher() const
+            std::shared_ptr<device_watcher> create_device_watcher() const override
             {
                 return std::make_shared<polling_device_watcher>(this);
             }

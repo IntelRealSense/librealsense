@@ -320,7 +320,7 @@ namespace librealsense
             depth_sensor_snapshot(depth_units),
             m_stereo_baseline_mm(stereo_bl_mm) {}
 
-        float get_stereo_baseline_mm() const
+        float get_stereo_baseline_mm() const override
         {
             return m_stereo_baseline_mm;
         }

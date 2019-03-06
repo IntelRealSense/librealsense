@@ -168,7 +168,7 @@ namespace librealsense
         float query() const override { return _value; }
         bool is_enabled() const override { return true; }
         // TODO: expose this outwards
-        const char* get_description() const { return "A simple custom option for a processing block"; }
+        const char* get_description() const override { return "A simple custom option for a processing block"; }
     private:
         float _value;
     };
@@ -362,18 +362,18 @@ namespace librealsense
             : _polling_error_handler(handler), _value(1)
         {}
 
-        void set(float value);
+        void set(float value) override;
 
-        float query() const;
+        float query() const override;
 
-        option_range get_range() const;
+        option_range get_range() const override;
 
-        bool is_enabled() const;
+        bool is_enabled() const override;
 
 
-        const char* get_description() const;
+        const char* get_description() const override;
 
-        const char* get_value_description(float value) const;
+        const char* get_value_description(float value) const override;
         void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;
