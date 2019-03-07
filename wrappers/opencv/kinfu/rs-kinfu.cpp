@@ -221,13 +221,16 @@ int main(int argc, char **argv)
     auto h = d.get_height();
     Size size = Size(w, h);
 
-    auto intrin = stream_depth.as<rs2::video_stream_profile>().get_intrinsics();
-	
-    // Configure kinfu's parameters
-    params->frameSize = size;
-    params->intr = Matx33f(intrin.fx, 0, intrin.ppx,
-                           0, intrin.fy, intrin.ppy,
-                           0, 0, 1);
+	int decimation_factor = decimation.get_option(RS2_OPTION_FILTER_MAGNITUDE);
+	decimation_factor = 1 << (decimation_factor - 1);
+
+	auto intrin = stream_depth.as<rs2::video_stream_profile>().get_intrinsics();
+
+	// Configure kinfu's parameters
+	params->frameSize = size;
+	params->intr = Matx33f(intrin.fx / decimation_factor, 0, intrin.ppx / decimation_factor,
+		0, intrin.fy / decimation_factor, intrin.ppy / decimation_factor,
+		0, 0, 1);
     params->depthFactor = 1 / depth_scale;
 
     // Initialize KinFu object
