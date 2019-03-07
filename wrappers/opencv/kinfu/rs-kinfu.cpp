@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     Size size = Size(w, h);
 
     auto intrin = stream_depth.as<rs2::video_stream_profile>().get_intrinsics();
-
+	
     // Configure kinfu's parameters
     params->frameSize = size;
     params->intr = Matx33f(intrin.fx, 0, intrin.ppx,
