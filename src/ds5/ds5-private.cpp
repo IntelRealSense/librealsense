@@ -21,7 +21,7 @@ namespace librealsense
             return max_ds5_rect_resolutions;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height, uint32_t fps)
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height)
         {
             auto table = check_calib<ds::coefficients_table>(raw_data);
 
@@ -72,8 +72,7 @@ namespace librealsense
                 if (width == 848 && height == 100)
                 {
                     intrinsics.height = 100;
-                    if (fps <= 90)
-                        intrinsics.ppy -= 190;
+                    intrinsics.ppy -= 190;
                 }
 
                 return intrinsics;
@@ -156,13 +155,13 @@ namespace librealsense
             return calc_intrinsic;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps)
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
             case coefficients_table_id:
             {
-                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height, fps);
+                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
             case fisheye_calibration_id:
             {
@@ -226,6 +225,9 @@ namespace librealsense
                     case RS420_PID:
                     case RS400_IMU_PID:
                         found = (result.mi == 3);
+                        break;
+                    case RS430I_PID:
+                        found = (result.mi == 4);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:

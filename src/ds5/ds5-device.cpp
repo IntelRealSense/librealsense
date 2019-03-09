@@ -97,7 +97,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_coefficients_table_raw,
                 ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height, profile.fps);
+                profile.width, profile.height);
         }
 
         void open(const stream_profiles& requests) override

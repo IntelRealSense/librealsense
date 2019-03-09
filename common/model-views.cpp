@@ -7681,7 +7681,7 @@ namespace rs2
                     const ImVec2 pos = ImGui::GetCursorPos();
 
                     draw_later.push_back([windows_width, &window, sub, pos, &viewer, this]() {
-                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 27 , pos.y - 1 });
+                        if (!sub->streaming) ImGui::SetCursorPos({ windows_width - 34 , pos.y - 3 });
                         else ImGui::SetCursorPos({ windows_width - 34, pos.y - 3 });
 
                         try
@@ -7756,7 +7756,7 @@ namespace rs2
                             const ImVec2 abs_pos = ImGui::GetCursorScreenPos();
 
                             draw_later.push_back([windows_width, &window, sub, pos, &viewer, this, pb]() {
-                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 27, pos.y + 1 });
+                                if (!sub->streaming || !sub->post_processing_enabled) ImGui::SetCursorPos({ windows_width - 35, pos.y -3 });
                                 else
                                     ImGui::SetCursorPos({ windows_width - 35, pos.y - 3 });
 
@@ -7772,62 +7772,62 @@ namespace rs2
                                     {
                                         if (!pb->enabled)
                                         {
-                                            std::string label = to_string() << textual_icons::toggle_off;
+                                            std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
 
-                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-                                        ImGui::TextDisabled("%s", label.c_str());
-                                    }
-                                    else
-                                    {
-                                        std::string label = to_string() << textual_icons::toggle_on;
-                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-                                        ImGui::TextDisabled("%s", label.c_str());
-                                    }
-                                }
-                                else
-                                {
-                                    if (!pb->enabled)
-                                    {
-                                        std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
-
-                                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-
-                                        if (ImGui::Button(label.c_str(), { 25,24 }))
-                                        {
-                                            if (pb->get_block()->is<zero_order_invalidation>())
-                                                sub->verify_zero_order_conditions();
-                                            pb->enabled = true;
-                                            pb->save_to_config_file();
+                                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
                                         }
-                                        if (ImGui::IsItemHovered())
+                                        else
                                         {
-                                            label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
-                                            ImGui::SetTooltip("%s", label.c_str());
-                                        window.link_hovered();
+                                            std::string label = to_string() << " " << textual_icons::toggle_on << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                            ImGui::ButtonEx(label.c_str(), { 25,24 }, ImGuiButtonFlags_Disabled);
                                         }
                                     }
                                     else
                                     {
-                                        std::string label = to_string() << " " << textual_icons::toggle_on << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
-                                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+                                        if (!pb->enabled)
+                                        {
+                                            std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+
+                                            ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
                                             if (ImGui::Button(label.c_str(), { 25,24 }))
                                             {
-                                                pb->enabled = false;
+                                                if (pb->get_block()->is<zero_order_invalidation>())
+                                                    sub->verify_zero_order_conditions();
+                                                pb->enabled = true;
                                                 pb->save_to_config_file();
                                             }
                                             if (ImGui::IsItemHovered())
                                             {
-                                                label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
+                                                label = to_string() << "Enable " << pb->get_name() << " post-processing filter";
                                                 ImGui::SetTooltip("%s", label.c_str());
-                                            window.link_hovered();
+                                                window.link_hovered();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            std::string label = to_string() << " " << textual_icons::toggle_on << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
+                                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+
+                                                if (ImGui::Button(label.c_str(), { 25,24 }))
+                                                {
+                                                    pb->enabled = false;
+                                                    pb->save_to_config_file();
+                                                }
+                                                if (ImGui::IsItemHovered())
+                                                {
+                                                    label = to_string() << "Disable " << pb->get_name() << " post-processing filter";
+                                                    ImGui::SetTooltip("%s", label.c_str());
+                                                window.link_hovered();
+                                            }
                                         }
                                     }
-                                }
 
                                     ImGui::PopStyleColor(5);
                                     ImGui::PopFont();

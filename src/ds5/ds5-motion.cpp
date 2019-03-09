@@ -106,7 +106,7 @@ namespace librealsense
             return get_intrinsic_by_resolution(
                 *_owner->_fisheye_calibration_table_raw,
                 ds::calibration_table_id::fisheye_calibration_id,
-                profile.width, profile.height, profile.fps);
+                profile.width, profile.height);
         }
 
         stream_profiles init_stream_profiles() override
@@ -174,7 +174,7 @@ namespace librealsense
 
         uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
 
-        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID })))
+        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID })))
         {
             hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
                                     std::make_shared<motion_module_temperature_option>(*hid_ep));
