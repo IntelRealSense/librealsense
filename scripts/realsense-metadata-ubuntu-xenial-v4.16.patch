@@ -11,7 +11,7 @@ Subject: [PATCH] D4M metadata enablement w/metanode kernel 4.16
 		This patchs drops the documentation chapter as unnecessary
 
 ---
- drivers/media/usb/uvc/uvc_driver.c | 137 +++++++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c | 146 +++++++++++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvcvideo.h   |   2 +-
  include/uapi/linux/videodev2.h     |   1 +
  3 files changed, 139 insertions(+), 1 deletion(-)
@@ -29,7 +29,7 @@ index fd387bf..3219519 100644
  
  /*
   * The Logitech cameras listed below have their interface class set to
-@@ -2819,6 +2821,159 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2819,6 +2821,168 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= (kernel_ulong_t)&uvc_quirk_force_y8 },
@@ -182,6 +182,15 @@ index fd387bf..3219519 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
 +	  .idProduct		= 0x0b3a,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_META(V4L2_META_FMT_D4XX) },
++	  /* Intel D430i depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b4b,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,

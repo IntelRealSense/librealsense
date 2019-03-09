@@ -338,5 +338,5 @@ namespace librealsense
         res.push_back(std::make_shared<temporal_filter>());
         res.push_back(std::make_shared<hole_filling_filter>());
         return res;
-    };
+    }
 }
