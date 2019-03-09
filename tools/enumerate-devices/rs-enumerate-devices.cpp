@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <cstring>
+#include <thread>
 
 #include "tclap/CmdLine.h"
 
@@ -176,10 +177,12 @@ int main(int argc, char** argv) try
     context ctx;
     auto devices = ctx.query_devices();
     size_t device_count = devices.size();
-    if (!device_count)
+    while (!device_count)
     {
         cout <<"No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        devices = ctx.query_devices();
+        device_count = devices.size();
     }
 
     if (compact_view_arg.getValue())
