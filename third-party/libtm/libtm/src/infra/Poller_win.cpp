@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#ifdef _WIN32
+
 #define LOG_TAG "Poller"
 #define LOG_NDEBUG 1    // controls LOGV only
 #include "Log.h"
@@ -150,3 +152,5 @@ namespace perc
         return 0;
     }
 } // namespace perc
+
+#endif
