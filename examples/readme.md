@@ -23,6 +23,7 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 11. [Measure](./measure) - Lets the user measure the dimentions of 3D objects in a stream.
 #### Tracking Examples:
 12. [Pose](./pose) - Demonstarates how to obtain data from pose frames.
+12. [Pose Prediction](./pose-predict) - Demonstarates how to use tracking camera asynchroniously to implement simple pose prediction.
 
 ### C Examples:
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.
