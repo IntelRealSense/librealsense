@@ -164,9 +164,16 @@ namespace librealsense
 
         if(has_metadata(mode, fo.metadata, fo.metadata_size))
         {
-            auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
+            //  The timestamps conversions path is as follows :
+            //          FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit
+            // This flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends.
+            // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
+            // To revert to the extended 64 bit TS uncomment the next line instead
+            //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
+            auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
+
             // The FW timestamps for HID are converted to Nanosec in Linux kernel. This may produce conflicts with MS API.
-            return static_cast<rs2_time_t>(timestamp) * HID_TIMESTAMP_MULTIPLIER;
+            return static_cast<rs2_time_t>(timestamp * HID_TIMESTAMP_MULTIPLIER);
         }
 
         if (!started)
@@ -227,7 +234,9 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         static const uint8_t timestamp_offset = 17;
 
-        auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
+        // The timewstamp shall be trimmed back to 32 bit to allow HID/UVC intra-stream sync
+        // See ds5_iio_hid_timestamp_reader description
+        auto timestamp = *((uint32_t*)((const uint8_t*)fo.pixels + timestamp_offset));
         // TODO - verify units with custom report
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
