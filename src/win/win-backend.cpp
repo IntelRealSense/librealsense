@@ -264,7 +264,12 @@ namespace librealsense
                         //                            { return info.device_path.substr(0, info.device_path.find_first_of("{")) == path; }), next.usb_devices.end());
                         next.usb_devices = data->_backend->query_usb_devices();
                         next.hid_devices.erase(std::remove_if(next.hid_devices.begin(), next.hid_devices.end(), [&path](const hid_device_info& info)
-                        { return info.device_path.substr(0, info.device_path.find_first_of("{")) == path; }), next.hid_devices.end());
+                        {
+                            auto sub = info.device_path.substr(0, info.device_path.find_first_of("{"));
+                            std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
+                            return sub == path;
+                            
+                        }), next.hid_devices.end());
 
                         /*if (data->_last != next)*/ data->_callback(data->_last, next);
                         data->_last = next;
@@ -335,6 +340,26 @@ namespace librealsense
                     LOG_WARNING("Register UVC events Failed!\n");
                     return FALSE;
                 }
+
+                ////===========================register HID sensor camera events==============================
+                static const GUID GUID_DEVINTERFACE_HID =
+                { 0x4d1e55b2,0xf16f,0x11cf,{0x88,0xcb,0x00,0x11,0x11,0x00,0x00,0x30} };
+
+                DEV_BROADCAST_DEVICEINTERFACE hid_sensor = { 0 };
+                hid_sensor.dbcc_size = sizeof(hid_sensor);
+                hid_sensor.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+                hid_sensor.dbcc_classguid = GUID_DEVINTERFACE_HID;
+
+                data->hdevnotify_sensor = RegisterDeviceNotification(hWnd,
+                    &hid_sensor,
+                    DEVICE_NOTIFY_WINDOW_HANDLE);
+                if (data->hdevnotify_sensor == nullptr)
+                {
+                    UnregisterDeviceNotification(data->hdevnotify_sensor);
+                    LOG_WARNING("Register UVC events Failed!\n");
+                    return FALSE;
+                }
+
                 return TRUE;
             }
         };

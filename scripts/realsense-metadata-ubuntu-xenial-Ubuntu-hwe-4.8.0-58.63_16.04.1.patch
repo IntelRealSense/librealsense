@@ -7,7 +7,7 @@ Subject: [PATCH] added support for uvc metadata
 
 Signed-off-by: Evgeni Raikhel <evgeni.raikhel@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c      | 259 ++++++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvc_driver.c      | 268 ++++++++++++++++++++++++++++++++
  drivers/media/usb/uvc/uvc_video.c       |  20 ++-
  drivers/media/usb/uvc/uvcvideo.h        |  55 ++++++-
  3 files changed, 142 insertions(+), 7 deletions(-)
@@ -16,7 +16,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 04bf350..5fd10f0 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2699,6 +2699,186 @@ static struct usb_device_id uvc_ids[] = {
+@@ -2699,6 +2699,195 @@ static struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_QUIRK_FORCE_Y8 },
@@ -196,6 +196,15 @@ index 04bf350..5fd10f0 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
 +	  .idProduct		= 0x0b17,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel D430i depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b4b,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,

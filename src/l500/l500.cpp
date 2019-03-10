@@ -167,7 +167,7 @@ namespace librealsense
         tags.push_back({ RS2_STREAM_CONFIDENCE, -1, 640, 360, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
         
         return tags;
-    };
+    }
 
     void l500_device::force_hardware_reset() const
     {

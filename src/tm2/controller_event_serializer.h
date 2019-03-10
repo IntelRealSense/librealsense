@@ -62,11 +62,7 @@ namespace librealsense
             std::string serialized_data = to_string() <<
                 "\"status\": \"" << (int)frame.status << "\","
                 "\"controllerId\": " << (int)frame.controllerId << ","
-                "\"manufacturerId\": " << (int)frame.manufacturerId << ","
-                "\"protocol\": \"" << frame.protocol << "\","
-                "\"app\": \"" << frame.app << "\","
-                "\"softDevice\": \"" << frame.softDevice << "\","
-                "\"bootLoader\": \"" << frame.bootLoader << "\"";
+                "\"manufacturerId\": " << (int)frame.manufacturerId << ",";
             return to_json(event_type_frame(), serialized_data);
         }
         

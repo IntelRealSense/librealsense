@@ -474,4 +474,4 @@ namespace librealsense
         }
         return source.allocate_composite_frame(results);
     }
-};
+}
