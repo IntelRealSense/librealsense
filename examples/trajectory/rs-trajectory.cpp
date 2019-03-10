@@ -2,6 +2,11 @@
 #include "example.hpp"          // Include short list of convenience functions for rendering
 #include <thread>
 
+/*
+pointer to member
+transpose initially in constructor
+remove calculating of rotation (set pre-calculated in global)
+*/
 
 struct short3
 {
@@ -16,122 +21,21 @@ struct tracked_point
     unsigned int confidence;
 };
 
-// matrix4 class for operations on 4x4 matrices
-struct matrix4
-{
-    float mat[4][4];
-
-    operator float*() const
-    {
-        return (float*)&mat;
-    }
-
-    matrix4()
-    {
-        std::memset(mat, 0, sizeof(mat));
-    }
-
-    matrix4(const float vals[4][4])
-    {
-        std::memcpy(mat, vals, sizeof(mat));
-    }
-
-    //init rotation matrix from quaternion
-    matrix4(rs2_quaternion q)
-    {
-        mat[0][0] = 1 - 2 * q.y*q.y - 2 * q.z*q.z; mat[0][1] = 2 * q.x*q.y - 2 * q.z*q.w;     mat[0][2] = 2 * q.x*q.z + 2 * q.y*q.w;     mat[0][3] = 0.0f;
-        mat[1][0] = 2 * q.x*q.y + 2 * q.z*q.w;     mat[1][1] = 1 - 2 * q.x*q.x - 2 * q.z*q.z; mat[1][2] = 2 * q.y*q.z - 2 * q.x*q.w;     mat[1][3] = 0.0f;
-        mat[2][0] = 2 * q.x*q.z - 2 * q.y*q.w;     mat[2][1] = 2 * q.y*q.z + 2 * q.x*q.w;     mat[2][2] = 1 - 2 * q.x*q.x - 2 * q.y*q.y; mat[2][3] = 0.0f;
-        mat[3][0] = 0.0f;                          mat[3][1] = 0.0f;                          mat[3][2] = 0.0f;                          mat[3][3] = 1.0f;
-    }
-
-    //init translation matrix from vector
-    matrix4(rs2_vector t)
-    {
-        mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
-        mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;
-        mat[2][0] = 0.0f; mat[2][1] = 0.0f; mat[2][2] = 1.0f; mat[2][3] = t.z;
-        mat[3][0] = 0.0f; mat[3][1] = 0.0f; mat[3][2] = 0.0f; mat[3][3] = 1.0f;
-    }
-
-    void to_column_major(float column_major[16])
-    {
-        column_major[0] = mat[0][0];
-        column_major[1] = mat[1][0];
-        column_major[2] = mat[2][0];
-        column_major[3] = mat[3][0];
-        column_major[4] = mat[0][1];
-        column_major[5] = mat[1][1];
-        column_major[6] = mat[2][1];
-        column_major[7] = mat[3][1];
-        column_major[8] = mat[0][2];
-        column_major[9] = mat[1][2];
-        column_major[10] = mat[2][2];
-        column_major[11] = mat[3][2];
-        column_major[12] = mat[0][3];
-        column_major[13] = mat[1][3];
-        column_major[14] = mat[2][3];
-        column_major[15] = mat[3][3];
-    }
-};
-
-inline matrix4 operator*(matrix4 a, matrix4 b)
-{
-    matrix4 res;
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            float sum = 0.0f;
-            for (int k = 0; k < 4; k++)
-            {
-                sum += a.mat[i][k] * b.mat[k][j];
-            }
-            res.mat[i][j] = sum;
-        }
-    }
-    return res;
-}
-
-
 class tracker
 {
     std::vector<tracked_point> trajectory;
     rs2_vector max_coord;
     rs2_vector min_coord;
 public:
-    matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
+    void calc_transform(rs2_pose& pose_data, float mat[16])
     {
-        // Get rotation and translation matrices from device's pose data
-        matrix4 rotation(pose.rotation);
-        matrix4 translation(pose.translation);
-        // Get the transformation matrix by multiplying translation and rotation
-        matrix4 G_tm2_body_to_tm2_world = translation * rotation;
-        // Rotate view so that the transformation matches the desired axes directions (facing the user)
-        float rotate_180_y[4][4] = { { -1, 0, 0, 0 },
-        { 0, 1, 0, 0 },
-        { 0, 0,-1, 0 },
-        { 0, 0, 0, 1 } };
-        matrix4 G_vr_body_to_tm2_body(rotate_180_y);
-        matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
-
-        float rotate_90_x[4][4] = { { 1, 0, 0, 0 },
-        { 0, 0, -1, 0 },
-        { 0, 1, 0, 0 },
-        { 0, 0, 0, 1 } };
-
-        return  G_vr_body_to_tm2_world;
-    }
-
-    matrix4 calc_transform(rs2_pose& pose_data)
-    {
-        // Calculate the transformation matrix from pose data
-        auto t = tm2_pose_to_world_transformation(pose_data);
-        float model[4][4];
-        t.to_column_major((float*)model);
-        auto m = model;
-        matrix4 r(m);
-        return r;
+        auto q = pose_data.rotation;
+        auto t = pose_data.translation;
+        // Set the matrix as column-major for convenient work with OpenGL and rotate by 180 degress (by negating 1st and 3rd columns)
+        mat[0] = -(1 - 2 * q.y*q.y - 2 * q.z*q.z); mat[4] = 2 * q.x*q.y - 2 * q.z*q.w;     mat[8] = -(2 * q.x*q.z + 2 * q.y*q.w);      mat[12] = t.x;
+        mat[1] = -(2 * q.x*q.y + 2 * q.z*q.w);     mat[5] = 1 - 2 * q.x*q.x - 2 * q.z*q.z; mat[9] = -(2 * q.y*q.z - 2 * q.x*q.w);      mat[13] = t.y;
+        mat[2] = -(2 * q.x*q.z - 2 * q.y*q.w);     mat[6] = 2 * q.y*q.z + 2 * q.x*q.w;     mat[10] = -(1 - 2 * q.x*q.x - 2 * q.y*q.y); mat[14] = t.z;
+        mat[3] = 0.0f;                             mat[7] = 0.0f;                          mat[11] = 0.0f;                             mat[15] = 1.0f;
     }
 
     void update_min_max(rs2_vector point)
@@ -235,14 +139,6 @@ class camera_renderer
 {
     std::vector<float3> positions, normals;
     std::vector<short3> indexes;
-    float x = static_cast<float>(-PI / 2);
-    // Set the initial position of the camera (facing the user)
-    float _rx[4][4] = {
-        { 1 , 0, 0, 0 },
-        { 0, cos(x), -sin(x), 0 },
-        { 0, sin(x), cos(x), 0 },
-        { 0, 0, 0, 1 }
-    };
 public:
     // Initialize renderer with data needed to draw the camera
     camera_renderer()
@@ -273,7 +169,6 @@ public:
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
     }
-
 };
 
 void draw_grid()
@@ -360,6 +255,61 @@ float display_scale(float scale_factor, float x_pos, float y_pos)
     return bar_width;
 }
 
+/*
+// Class for rendering 2d view of the camera and trajectory
+class view
+{
+    float x, y, width, height;
+    float aspect;
+    float scale_threshold_x = 1.0;
+    float scale_threshold_y = 1.0;
+    float scale_factor = 1.0;
+    const float _ry_180[4][4] = {
+        { cos(x * 2) , 0, sin(x * 2) },
+    { 0, 1, 0, 0 },
+    { -sin(x * 2), 0, cos(x * 2), 0 },
+    { 0, 0, 0, 1 }
+    };
+public:
+    view(float x, float y, float width, float height, float aspect) : x(x), y(y), width(width), height(height), aspect(aspect) { }
+    void draw_view(float bar_width, tracker& tracker, camera_renderer& renderer, matrix4& r)
+    {
+        matrix4 ry_180(_ry_180);
+        auto min_borders = tracker.get_min_borders();
+        auto max_borders = tracker.get_max_borders();
+        glViewport(x, y, width, height);
+        glScissor(x, y, width, height);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        gluLookAt(0, 10, -(1e-3f), 0, 0, 0, 0, 1, 0);
+        glPushMatrix();
+        glTranslatef(0.97, 0, -0.97 * aspect);
+        draw_axes();
+        glPopMatrix();
+
+        glBegin(GL_LINES);
+        // draw scale bar
+        glColor3f(1.0f, 1.0f, 1.0f); glVertex3f(-0.8, 0, -0.9 * aspect);  glVertex3f(-0.8 - bar_width, 0, -0.9 * aspect);
+        glEnd();
+
+        glScalef(scale_factor, scale_factor, scale_factor);
+        if (min_borders.x < -scale_threshold_x || max_borders.x > scale_threshold_x
+            || min_borders.z < -scale_threshold_y || max_borders.z > scale_threshold_y)
+        {
+            glScalef(0.5, 0.5, 0.5);
+            scale_factor *= 0.5;
+            scale_threshold_x = scale_threshold_x * 2;
+            scale_threshold_y = scale_threshold_y * 2;
+        }
+        glPushMatrix();
+        glMultMatrixf(ry_180);
+        tracker.draw_trajectory();
+        glMultMatrixf(r);
+        renderer.render_camera();
+        glPopMatrix();
+    }
+};
+*/
 
 class split_screen_renderer
 {
@@ -371,37 +321,10 @@ class split_screen_renderer
     float aspect;
     float x = static_cast<float>(-PI / 2);
 
-    const float _rx_180[4][4] = {
-        { 1 , 0, 0, 0 },
-    { 0, cos(x * 2), -sin(x * 2), 0 },
-    { 0, sin(x * 2), cos(x * 2), 0 },
-    { 0, 0, 0, 1 }
-    };
-
-    const float _ry_180[4][4] = {
-        { cos(x * 2) , 0, sin(x * 2) },
-    { 0, 1, 0, 0 },
-    { -sin(x * 2), 0, cos(x * 2), 0 },
-    { 0, 0, 0, 1 }
-    };
-
-    const float _rx_90[4][4] = {
-        { 1 , 0, 0, 0 },
-    { 0, cos(x), -sin(x), 0 },
-    { 0, sin(x), cos(x), 0 },
-    { 0, 0, 0, 1 }
-    };
-
-    const float _rz_180[4][4] = {
-        { cos(-x * 2) , -sin(-x * 2), 0, 0 },
-    { sin(-x * 2), cos(-x * 2), 0, 0 },
-    { 0, 0, 1, 0 },
-    { 0, 0, 0, 1 }
-    };
-    
+    //view top;
 
 public:
-    split_screen_renderer(float app_width, float app_height)
+    split_screen_renderer(float app_width, float app_height) // : top(0, app_height / 2, app_width / 2, app_height / 2, app_height / app_width)
     {
         width = app_width;
         height = app_height;
@@ -417,7 +340,7 @@ public:
         scale_factor_side = 1;
     }
 
-    void draw_windows(float app_width, float app_height, glfw_state app_state,  tracker& tracker, camera_renderer& renderer, matrix4& r)
+    void draw_windows(float app_width, float app_height, glfw_state app_state,  tracker& tracker, camera_renderer& renderer, float r[16])
     {
         auto min_borders = tracker.get_min_borders();
         auto max_borders = tracker.get_max_borders();
@@ -457,10 +380,7 @@ public:
         glLoadIdentity();
         glOrtho(-1.0, 1.0, -1.0 * aspect, 1.0 * aspect, -50.0, 50.0);
 
-        matrix4 ry_180(_ry_180);
-        matrix4 rx_90(_rx_90);
-        matrix4 rz_180(_rz_180);
-        matrix4 rx_180(_rx_180);
+       // top.draw_view(bar_width_top, tracker, renderer, r);
 
         // Upper left view (TOP VIEW)
         glViewport(0, height / 2, width / 2, height / 2);
@@ -488,7 +408,8 @@ public:
             scale_threshold_top_z = scale_threshold_top_z * 2;
         }
         glPushMatrix();
-        glMultMatrixf(ry_180);
+        // Set initial camera position
+        glRotatef(180, 0, 1, 0);
         tracker.draw_trajectory();
         glMultMatrixf(r);
         renderer.render_camera();
@@ -518,7 +439,7 @@ public:
             scale_threshold_front_y = scale_threshold_front_y * 2;
         }
         glPushMatrix();
-        glMultMatrixf(ry_180);
+        glRotatef(180, 0, 1, 0);
         tracker.draw_trajectory();
         glMultMatrixf(r);
         renderer.render_camera();
@@ -548,7 +469,8 @@ public:
             scale_threshold_side_y = scale_threshold_side_y * 2;
         }
         glPushMatrix();
-        glMultMatrixf(rz_180*rx_180);
+        glRotatef(180, 0, 0, 1);
+        glRotatef(180, 1, 0, 0);
         tracker.draw_trajectory();
         glMultMatrixf(r);
         renderer.render_camera();
@@ -561,7 +483,7 @@ public:
         glLoadIdentity();
         render_scene(app_state);
         glPushMatrix();
-        glMultMatrixf(rx_90);
+        glRotatef(90, 1, 0, 0);
         tracker.draw_trajectory();
         glMultMatrixf(r);
         draw_axes();
@@ -614,9 +536,10 @@ int main(int argc, char * argv[]) try
         // Cast the frame to pose_frame and get its data
         auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
         // Calculate current transformation matrix
-        auto r = tracker.calc_transform(pose_data);
+        float r[16];
+        tracker.calc_transform(pose_data, r);
         // From the matrix we found, get the new location point
-        rs2_vector tr{ r.mat[3][0], r.mat[3][1], r.mat[3][2] };
+        rs2_vector tr{ r[12], r[13], r[14] };
         // Create a new point to be added to the trajectory
         tracked_point p{ tr , pose_data.tracker_confidence };
         // Register the new point
