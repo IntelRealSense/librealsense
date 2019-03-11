@@ -229,7 +229,7 @@ namespace perc
             VelocimeterFrame() : temperature(0), sensorIndex(0), frameId(0) {};
             uint8_t sensorIndex;  /**< Zero based index of sensor with the same type within device         */
             uint32_t frameId;     /**< A running index of frames from every unique sensor, starting from 0 */
-            Axis angularVelocity; /**< X, Y, Z values of velocimeter, in radians/sec                       */
+            Axis translationalVelocity; /**< X, Y, Z values of velocimeter, in meters/sec                       */
             float temperature;    /**< Velocimeter temperature                                             */
         };
 

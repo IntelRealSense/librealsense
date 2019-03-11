@@ -1336,9 +1336,9 @@ namespace perc
         uint32_t dwMetadataLength; /**< Metadata length in bytes (4 bytes)     */
         float_t flTemperature;     /**< velocimeter temperature                */
         uint32_t dwFrameLength;    /**< Length of frame below (12 bytes)       */
-        float_t flVx;              /**< X value of velocimeter, in radians/sec */
-        float_t flVy;              /**< Y value of velocimeter, in radians/sec */
-        float_t flVz;              /**< Z value of velocimeter, in radians/sec */
+        float_t flVx;              /**< X value of velocimeter, in meters/sec */
+        float_t flVy;              /**< Y value of velocimeter, in meters/sec */
+        float_t flVz;              /**< Z value of velocimeter, in meters/sec */
     } bulk_message_velocimeter_stream_metadata;
 
     /**

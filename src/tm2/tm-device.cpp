@@ -1128,7 +1128,7 @@ namespace librealsense
         return (status == Status::SUCCESS);
     }
 
-    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity) const
+    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const
     {
         if (!_tm_dev)
             throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
@@ -1136,7 +1136,7 @@ namespace librealsense
         perc::TrackingData::VelocimeterFrame vel_fr;
         vel_fr.sensorIndex  = wo_sensor_id;
         vel_fr.frameId      = frame_num;
-        vel_fr.angularVelocity = { angular_velocity.x, angular_velocity.y, angular_velocity.z };
+        vel_fr.translationalVelocity = { translational_velocity.x, translational_velocity.y, translational_velocity.z };
 
         auto status = _tm_dev->SendFrame(vel_fr);
         if (status != Status::SUCCESS)
