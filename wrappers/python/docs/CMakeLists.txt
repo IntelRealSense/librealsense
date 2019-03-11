@@ -27,6 +27,9 @@ set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
  
 # HTML output directory
 set(SPHINX_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
+
+# Sphinx Template directory
+set(SPHINX_TEMPLATE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/_templates")
  
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"

@@ -6,16 +6,8 @@
 Welcome to pyrealsense2's documentation!
 ========================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. autosummary::
+   :toctree:
+   :template: module.rst
 
-	pyrealsense2
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   pyrealsense2

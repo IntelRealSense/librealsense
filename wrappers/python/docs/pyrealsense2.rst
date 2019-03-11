@@ -1,1 +1,0 @@
-.. automodule:: pyrealsense2
