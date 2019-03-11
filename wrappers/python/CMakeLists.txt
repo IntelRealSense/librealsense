@@ -76,3 +76,7 @@ install(TARGETS pybackend2
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+if (BUILD_PYTHON_DOCS)
+	add_subdirectory(docs)
+endif()
