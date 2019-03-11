@@ -49,29 +49,9 @@
 
 nsecs_t systemTime()
 {
-#ifdef _WIN32
-    /*
-    auto start = std::chrono::high_resolution_clock::now();
-    std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> time_point_ns(start);
-    return time_point_ns.time_since_epoch().count();*/
-    LARGE_INTEGER StartingTime = { 0 };
-    LARGE_INTEGER Frequency = { 0 };
-
-    QueryPerformanceFrequency(&Frequency);
-    QueryPerformanceCounter(&StartingTime);
-
-    StartingTime.QuadPart *= 1000000LL;   // convert to microseconds
-    StartingTime.QuadPart /= Frequency.QuadPart;
-    StartingTime.QuadPart *= 1000;       // Convert to nano seconds
-
-    return StartingTime.QuadPart;
-
-#else
-    struct timespec ts;
-    ts.tv_sec = ts.tv_nsec = 0;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((nsecs_t)(ts.tv_sec)) * 1000000000LL + ts.tv_nsec;
-#endif
+    auto start = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> time_point_ns(start);
+    return time_point_ns.time_since_epoch().count();
 }
 
 
