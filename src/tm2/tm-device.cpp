@@ -95,21 +95,21 @@ namespace librealsense
             }
             if(_type == RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
             {
+                // Note: additional_data.system_time is the arrival time
+                // (backend_time is what we have traditionally called
+                // system_time)
                 if (auto* vf = dynamic_cast<const video_frame*>(&frm))
                 {
-                    const video_frame_metadata* md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(vf->additional_data.system_time);
                 }
                 
                 if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
                 {
-                    const motion_frame_metadata* md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(mf->additional_data.system_time);
                 }
                 if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
                 {
-                    const pose_frame_metadata* md = reinterpret_cast<const pose_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(pf->additional_data.system_time);
                 }
             }
             if (_type == RS2_FRAME_METADATA_TEMPERATURE)
@@ -491,8 +491,8 @@ namespace librealsense
             f.frameLength = vframe->get_height()*vframe->get_stride()* (vframe->get_bpp() / 8);
             f.data = vframe->data.data();
             f.timestamp = to_nanos(vframe->additional_data.timestamp);
-            f.systemTimestamp = to_nanos(vframe->additional_data.system_time);
-            f.arrivalTimeStamp = time_of_arrival;
+            f.systemTimestamp = to_nanos(vframe->additional_data.backend_timestamp);
+            f.arrivalTimeStamp = to_nanos(vframe->additional_data.system_time);
             auto sts = _tm_dev->SendFrame(f);
             if (sts != Status::SUCCESS)
             {
@@ -511,8 +511,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -528,8 +528,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -677,11 +677,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         video_frame_metadata video_md = { 0 };
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
-        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp, 0 ,0, false);
+        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, arrival_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, system_ts_ms.count(), 0 ,0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -762,10 +764,12 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_num++, arrival_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -897,11 +901,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         motion_frame_metadata motion_md = { 0 };
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_number, arrival_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
