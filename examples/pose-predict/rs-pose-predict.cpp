@@ -29,10 +29,8 @@ inline rs2_quaternion quaternion_multiply(rs2_quaternion a, rs2_quaternion b)
     return Q;
 }
 
-rs2_pose predict_pose(rs2_pose & pose, uint64_t dt_us)
+rs2_pose predict_pose(rs2_pose & pose, float dt_s)
 {
-    float dt_s = dt_us * 1e-6f;
-
     rs2_pose P = pose;
     P.translation.x = dt_s * (dt_s/2 * pose.acceleration.x + pose.velocity.x) + pose.translation.x;
     P.translation.y = dt_s * (dt_s/2 * pose.acceleration.y + pose.velocity.y) + pose.translation.y;
@@ -55,8 +53,6 @@ int main(int argc, char * argv[]) try
     // Add pose stream
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
 
-    uint64_t dt_us = 20000; // predict 20ms (20000 microseconds) into the future
-
     // Define frame callback
     // The callback is executed on a sensor thread and can be called simultaneously from multiple sensors
     // Therefore any modification to common memory should be done under lock
@@ -66,11 +62,16 @@ int main(int argc, char * argv[]) try
         std::lock_guard<std::mutex> lock(mutex);
         if (rs2::pose_frame fp = frame.as<rs2::pose_frame>()) {
             rs2_pose pose_data = fp.get_pose_data();
-            rs2_pose predicted_pose = predict_pose(pose_data, dt_us);
-            std::cout << pose_data.tracker_confidence << " : " << std::setprecision(3) << std::fixed << 
+            auto now = std::chrono::system_clock::now().time_since_epoch();
+            double now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            double pose_time_ms = fp.get_timestamp();
+            float dt_s = static_cast<float>(std::max(0., (now_ms - pose_time_ms)/1000.));
+            rs2_pose predicted_pose = predict_pose(pose_data, dt_s);
+            std::cout << "Predicted " << std::fixed << std::setprecision(3) << dt_s*1000 << "ms " <<
+                    "Confidence: " << pose_data.tracker_confidence << " T: " <<
                     predicted_pose.translation.x << " " <<
                     predicted_pose.translation.y << " " <<
-                    predicted_pose.translation.z << " (meters)\r";
+                    predicted_pose.translation.z << " (meters)   \r";
         }
     };
 
