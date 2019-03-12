@@ -2,16 +2,10 @@ cmake_minimum_required (VERSION 3.8.0)
 project (rs2driver)
 
 # DEPS
-set(OPENNI2_DIR "c:/Program Files/OpenNI2" CACHE FILEPATH "OpenNI2 SDK directory")
 set(REALSENSE2_DIR "c:/Program Files (x86)/Intel RealSense SDK 2.0" CACHE FILEPATH "RealSense2 SDK directory")
 
 # INCLUDE DIR
-if (UNIX)
-    include_directories (${OPENNI2_DIR})
-else ()
-    include_directories (${OPENNI2_DIR}/Include)
-endif ()
-
+include_directories (../../third-party/openni2/Include)
 include_directories (${REALSENSE2_DIR}/include)
 include_directories (src)
 
