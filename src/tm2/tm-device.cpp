@@ -631,8 +631,12 @@ namespace librealsense
     rs2_motion_device_intrinsic tm2_sensor::get_motion_intrinsics(const motion_stream_profile_interface& profile) const
     {
         rs2_motion_device_intrinsic result;
-        const TrackingData::MotionIntrinsics tm_intrinsics{};
-        int stream_index = profile.get_stream_index() - 1;
+        TrackingData::MotionIntrinsics tm_intrinsics{};
+        int stream_index = profile.get_stream_index();
+        if (stream_index != 0) //firmware only accepts stream 0
+        {
+            return result;
+        }
         SensorType type = SensorType::Max;
         switch (profile.get_stream_type())
         {
@@ -645,11 +649,11 @@ namespace librealsense
         default:
             throw invalid_value_exception("Invalid motion stream type");
         }
-        //auto status = _tm_dev->GetMotionModuleIntrinsics(tm_intrinsics, SET_SENSOR_ID(type, stream_index));
-        //             if (status != Status::SUCCESS)
-        //             {
-        //                 throw io_exception("Failed to read TM2 intrinsics");
-        //             }
+        auto status = _tm_dev->GetMotionModuleIntrinsics(SET_SENSOR_ID(type, stream_index), tm_intrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
         librealsense::copy_2darray(result.data, tm_intrinsics.data);
         librealsense::copy_array(result.noise_variances, tm_intrinsics.noiseVariances);
         librealsense::copy_array(result.bias_variances, tm_intrinsics.biasVariances);
