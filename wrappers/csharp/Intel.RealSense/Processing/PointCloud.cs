@@ -11,11 +11,16 @@ namespace Intel.RealSense
         private readonly IOption indexFilter;
         private readonly IOption streamFilter;
 
-        public PointCloud()
+        static IntPtr Create()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_pointcloud(out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            return NativeMethods.rs2_create_pointcloud(out error);
+        }
+
+        public PointCloud() : base(Create())
+        {
+            object error;
+            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
 
             streamFilter = Options[Option.StreamFilter];
             formatFilter = Options[Option.StreamFormatFilter];

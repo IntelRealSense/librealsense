@@ -5,25 +5,21 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class DeviceList : IDisposable, IEnumerable<Device>
+    public class DeviceList : Base.Object, IEnumerable<Device>
     {
-        IntPtr m_instance;
-
-        public DeviceList(IntPtr ptr)
+        public DeviceList(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_device_list)
         {
-            m_instance = ptr;
         }
-
 
         public IEnumerator<Device> GetEnumerator()
         {
             object error;
 
-            int deviceCount = NativeMethods.rs2_get_device_count(m_instance, out error);
+            int deviceCount = NativeMethods.rs2_get_device_count(Handle, out error);
             for (int i = 0; i < deviceCount; i++)
             {
-                var ptr = NativeMethods.rs2_create_device(m_instance, i, out error);
-                yield return new Device(ptr);
+                var ptr = NativeMethods.rs2_create_device(Handle, i, out error);
+                yield return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 
@@ -32,68 +28,38 @@ namespace Intel.RealSense
             return GetEnumerator();
         }
 
+        /// <summary>Determines number of devices in a list.</summary>
+        /// <value>Device count</value>
         public int Count
         {
             get
             {
                 object error;
-                int deviceCount = NativeMethods.rs2_get_device_count(m_instance, out error);
+                int deviceCount = NativeMethods.rs2_get_device_count(Handle, out error);
                 return deviceCount;
             }
         }
 
+        /// <summary>Creates a device by index. The device object represents a physical camera and provides the means to manipulate it.</summary>
+        /// <param name="index">The zero based index of device to retrieve</param>
+        /// <returns>The requested device, should be released by rs2_delete_device</returns>
         public Device this[int index]
         {
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_create_device(m_instance, index, out error);
-                return new Device(ptr);
+                var ptr = NativeMethods.rs2_create_device(Handle, index, out error);
+                return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 
+        /// <summary>Checks if a specific device is contained inside a device list.</summary>
+        /// <param name="device">RealSense device to check for</param>
+        /// <returns>True if the device is in the list and false otherwise</returns>
         public bool Contains(Device device)
         {
             object error;
-            return System.Convert.ToBoolean(NativeMethods.rs2_device_list_contains(m_instance, device.m_instance, out error));
+            return System.Convert.ToBoolean(NativeMethods.rs2_device_list_contains(Handle, device.Handle, out error));
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_device_list(m_instance);
-                m_instance = IntPtr.Zero;
-
-                disposedValue = true;
-            }
-        }
-
-        //TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~DeviceList()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

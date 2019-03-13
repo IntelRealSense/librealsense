@@ -7,24 +7,29 @@ namespace Intel.RealSense
 {
     public class Syncer : ProcessingBlock
     {
-        public Syncer()
+        static IntPtr Create()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_sync_processing_block(out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            return NativeMethods.rs2_create_sync_processing_block(out error);
+        }
+
+        public Syncer() : base(Create())
+        {
+            object error;
+            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
         }
 
         public void SubmitFrame(Frame f)
         {
             object error;
-            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, f.m_instance.Handle, out error);
+            NativeMethods.rs2_frame_add_ref(f.Handle, out error);
+            NativeMethods.rs2_process_frame(Handle, f.Handle, out error);
         }
 
         public FrameSet WaitForFrames(uint timeout_ms = 5000)
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(queue.m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(queue.Handle, timeout_ms, out error);
             return FrameSet.Create(ptr);
         }
 
@@ -32,7 +37,7 @@ namespace Intel.RealSense
         {
             object error;
             IntPtr ptr;
-            if (NativeMethods.rs2_poll_for_frame(queue.m_instance.Handle, out ptr, out error) > 0)
+            if (NativeMethods.rs2_poll_for_frame(queue.Handle, out ptr, out error) > 0)
             {
                 result = FrameSet.Create(ptr);
                 return true;

@@ -7,15 +7,17 @@ using System.Text;
 
 namespace Intel.RealSense
 {
-    public class FrameQueue : IDisposable
+    public class FrameQueue : Base.Object
     {
-        internal HandleRef m_instance;
-
-        public FrameQueue(int capacity = 1)
+        internal static IntPtr Create(int capacity = 1)
         {
             object error;
+            return NativeMethods.rs2_create_frame_queue(capacity, out error);
+        }
+
+        public FrameQueue(int capacity = 1) : base(Create(capacity), NativeMethods.rs2_delete_frame_queue)
+        {
             Capacity = capacity;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
         public readonly int Capacity;
@@ -24,7 +26,7 @@ namespace Intel.RealSense
         {
             object error;
             IntPtr ptr;
-            if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out ptr, out error) > 0)
+            if (NativeMethods.rs2_poll_for_frame(Handle, out ptr, out error) > 0)
             {
                 frame = Frame.Create<T>(ptr);
                 return true;
@@ -33,75 +35,39 @@ namespace Intel.RealSense
             return false;
         }
 
-        public Frame WaitForFrame(uint timeout_ms = 5000)
+        public Frame WaitForFrame(uint timeout_ms = 5000u)
         {
             return WaitForFrame<Frame>(timeout_ms);
         }
 
-        public T WaitForFrame<T>(uint timeout_ms = 5000) where T : Frame
+        public T WaitForFrame<T>(uint timeout_ms = 5000u) where T : Frame
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(Handle, timeout_ms, out error);
             return Frame.Create<T>(ptr);
         }
 
-        public bool TryWaitForFrame<T>(out T frame, uint timeout_ms = 5000) where T : Frame
+        public bool TryWaitForFrame<T>(out T frame, uint timeout_ms = 5000u) where T : Frame
         {
             object error;
             IntPtr ptr;
-            bool res = NativeMethods.rs2_try_wait_for_frame(m_instance.Handle, timeout_ms, out ptr, out error) > 0;
+            bool res = NativeMethods.rs2_try_wait_for_frame(Handle, timeout_ms, out ptr, out error) > 0;
             frame = res ? Frame.Create<T>(ptr) : null;
             return res;
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000u)
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(Handle, timeout_ms, out error);
             return FrameSet.Create(ptr);
         }
 
         public void Enqueue(Frame f)
         {
             object error;
-            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
-            NativeMethods.rs2_enqueue_frame(f.m_instance.Handle, m_instance.Handle);
+            NativeMethods.rs2_frame_add_ref(f.Handle, out error);
+            NativeMethods.rs2_enqueue_frame(f.Handle, Handle);
         }
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_frame_queue(m_instance.Handle);
-
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~FrameQueue()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

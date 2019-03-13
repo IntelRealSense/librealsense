@@ -15,7 +15,7 @@ namespace Intel.RealSense
             {
                 object error;
                 Pose pose = new Pose();
-                NativeMethods.rs2_pose_frame_get_pose_data(m_instance.Handle, pose, out error);
+                NativeMethods.rs2_pose_frame_get_pose_data(Handle, pose, out error);
                 return pose;
             }
         }

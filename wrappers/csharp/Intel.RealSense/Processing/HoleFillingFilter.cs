@@ -7,11 +7,16 @@ namespace Intel.RealSense
 {
     public class HoleFillingFilter : ProcessingBlock
     {
-        public HoleFillingFilter()
+        static IntPtr Create()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_hole_filling_filter_block(out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            return NativeMethods.rs2_create_hole_filling_filter_block(out error);
+        }
+
+        public HoleFillingFilter() : base(Create())
+        {
+            object error;
+            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
         }
 
         [Obsolete("This method is obsolete. Use Process method instead")]

@@ -5,16 +5,15 @@ using System.Linq;
 
 namespace Intel.RealSense
 {
-    public class DisparityTransform : ProcessingBlock
+    public class ThresholdFilter : ProcessingBlock
     {
-        static IntPtr Create(bool transform_to_disparity)
+        static IntPtr Create()
         {
             object error;
-            byte transform_direction = transform_to_disparity ? (byte)1 : (byte)0;
-            return NativeMethods.rs2_create_disparity_transform_block(transform_direction, out error);
+            return NativeMethods.rs2_create_threshold(out error);
         }
 
-        public DisparityTransform(bool transform_to_disparity = true) : base(Create(transform_to_disparity))
+        public ThresholdFilter() : base(Create())
         {
             object error;
             NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
@@ -23,7 +22,7 @@ namespace Intel.RealSense
         [Obsolete("This method is obsolete. Use Process method instead")]
         public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            return Process(original).As<VideoFrame>().DisposeWith(releaser);
+            return Process(original).DisposeWith(releaser) as VideoFrame;
         }
     }
 }

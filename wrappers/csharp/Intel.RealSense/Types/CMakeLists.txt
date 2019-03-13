@@ -4,7 +4,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/Math/CMakeLists.txt)
 target_sources(${LRS_DOTNET_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/AutoExposureROI.cs"
-        "${CMAKE_CURRENT_LIST_DIR}/CameraInfo.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Delegates.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Extrinsics.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Intrinsics.cs"

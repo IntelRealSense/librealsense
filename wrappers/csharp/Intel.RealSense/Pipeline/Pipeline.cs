@@ -5,28 +5,33 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Pipeline : IDisposable
+    public class Pipeline : Base.Object
     {
-        internal HandleRef m_instance;
         private frame_callback m_callback;
 
-        public Pipeline(Context ctx)
+        internal static IntPtr Create(Context ctx)
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_pipeline(ctx.m_instance.Handle, out error));
+            return NativeMethods.rs2_create_pipeline(ctx.Handle, out error);
         }
 
-        public Pipeline()
+        public Pipeline(Context ctx) : base(Create(ctx), NativeMethods.rs2_delete_pipeline)
         {
-            var ctx = new Context();
-            object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_pipeline(ctx.m_instance.Handle, out error));
         }
 
+        public Pipeline() : base(Create(new Context()), NativeMethods.rs2_delete_pipeline)
+        {
+        }
+
+        /// <summary>Start the pipeline streaming with its default configuration.</summary>
+        /// <remarks>
+        /// Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+        /// </remarks>
+        /// <returns>The actual pipeline device and streams profile, which was successfully configured to the streaming device.</returns>
         public PipelineProfile Start()
         {
             object error;
-            var res = NativeMethods.rs2_pipeline_start(m_instance.Handle, out error);
+            var res = NativeMethods.rs2_pipeline_start(Handle, out error);
             var prof = new PipelineProfile(res);
             return prof;
         }
@@ -34,7 +39,7 @@ namespace Intel.RealSense
         public PipelineProfile Start(Config cfg)
         {
             object error;
-            var res = NativeMethods.rs2_pipeline_start_with_config(m_instance.Handle, cfg.m_instance.Handle, out error);
+            var res = NativeMethods.rs2_pipeline_start_with_config(Handle, cfg.Handle, out error);
             var prof = new PipelineProfile(res);
             return prof;
         }
@@ -48,7 +53,7 @@ namespace Intel.RealSense
                     cb(frame);
             };
             m_callback = cb2;
-            var res = NativeMethods.rs2_pipeline_start_with_callback(m_instance.Handle, cb2, IntPtr.Zero, out error);
+            var res = NativeMethods.rs2_pipeline_start_with_callback(Handle, cb2, IntPtr.Zero, out error);
             var prof = new PipelineProfile(res);
             return prof;
         }
@@ -62,7 +67,7 @@ namespace Intel.RealSense
                     cb(frame);
             };
             m_callback = cb2;
-            var res = NativeMethods.rs2_pipeline_start_with_config_and_callback(m_instance.Handle, cfg.m_instance.Handle, cb2, IntPtr.Zero, out error);
+            var res = NativeMethods.rs2_pipeline_start_with_config_and_callback(Handle, cfg.Handle, cb2, IntPtr.Zero, out error);
             var prof = new PipelineProfile(res);
             return prof;
         }
@@ -70,21 +75,21 @@ namespace Intel.RealSense
         public void Stop()
         {
             object error;
-            NativeMethods.rs2_pipeline_stop(m_instance.Handle, out error);
+            NativeMethods.rs2_pipeline_stop(Handle, out error);
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000)
+        public FrameSet WaitForFrames(uint timeout_ms = 5000u)
         {
             object error;
-            var ptr = NativeMethods.rs2_pipeline_wait_for_frames(m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_pipeline_wait_for_frames(Handle, timeout_ms, out error);
             return FrameSet.Create(ptr);
         }
 
-        public bool TryWaitForFrames(out FrameSet frames, uint timeout_ms = 5000)
+        public bool TryWaitForFrames(out FrameSet frames, uint timeout_ms = 5000u)
         {
             object error;
             IntPtr ptr;
-            bool res = NativeMethods.rs2_pipeline_try_wait_for_frames(m_instance.Handle, out ptr, timeout_ms, out error) > 0;
+            bool res = NativeMethods.rs2_pipeline_try_wait_for_frames(Handle, out ptr, timeout_ms, out error) > 0;
             frames = res ? FrameSet.Create(ptr) : null;
             return res;
         }
@@ -93,7 +98,7 @@ namespace Intel.RealSense
         {
             object error;
             IntPtr fs;
-            if (NativeMethods.rs2_pipeline_poll_for_frames(m_instance.Handle, out fs, out error) > 0)
+            if (NativeMethods.rs2_pipeline_poll_for_frames(Handle, out fs, out error) > 0)
             {
                 result = FrameSet.Create(fs);
                 return true;
@@ -102,48 +107,17 @@ namespace Intel.RealSense
             return false;
         }
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
+        /// <summary>Return the active device and streams profiles, used by the pipeline.</summary>
+        /// <remarks>The method returns a valid result only when the pipeline is active</remarks>
+        /// <value>The actual pipeline device and streams profile, which was successfully configured to the streaming device on start.</value>
+        public PipelineProfile ActiveProfile
         {
-            if (!disposedValue)
+            get
             {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                    m_callback = null;
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Release();
-                disposedValue = true;
+                object error;
+                var ptr = NativeMethods.rs2_pipeline_get_active_profile(Handle, out error);
+                return new PipelineProfile(ptr);
             }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Pipeline()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        internal void Release()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_delete_pipeline(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
         }
     }
 }

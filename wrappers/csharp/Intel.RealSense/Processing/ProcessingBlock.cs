@@ -2,102 +2,62 @@
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Linq;
+using Intel.RealSense.Base;
 
 namespace Intel.RealSense
 {
     public interface IProcessingBlock : IOptions
     {
         Frame Process(Frame original);
-        FrameSet Process(FrameSet original);
     }
 
-    public abstract class ProcessingBlock : IProcessingBlock, IDisposable
+    public abstract class ProcessingBlock : Base.Object, IProcessingBlock
     {
         public readonly FrameQueue queue = new FrameQueue(1);
 
-        internal HandleRef m_instance;
+        public IOptionsContainer Options { get; private set; }
 
-        Sensor.SensorOptions m_options;
-        public IOptionsContainer Options
+        protected ProcessingBlock(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_processing_block)
         {
-            get
-            {
-                return m_options = m_options ?? new Sensor.SensorOptions(m_instance.Handle);
-            }
-        }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Release();
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~ProcessingBlock()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        public void Release()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_delete_processing_block(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
+            Options = new Sensor.SensorOptions(Handle);
         }
 
         /// <summary>
         /// Process frame and return the result
         /// </summary>
-        /// <param name="original"></param>
-        /// <returns></returns>
+        /// <param name="original">Frame to process</param>
+        /// <returns>Processed frame</returns>
         public Frame Process(Frame original)
         {
+            return Process<Frame>(original);
+        }
+
+        /// <summary>
+        /// Process frame and return the result
+        /// </summary>
+        /// <typeparam name="T">Type of frame to return</typeparam>
+        /// <param name="original">Frame to process</param>
+        /// <returns>Processed frame</returns>
+        public T Process<T>(Frame original) where T : Frame
+        {
             object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            Frame f;
-            if (queue.PollForFrame(out f))
+            NativeMethods.rs2_frame_add_ref(original.Handle, out error);
+            NativeMethods.rs2_process_frame(Handle, original.Handle, out error);
+            T f;
+            if (queue.PollForFrame<T>(out f))
             {
                 return f;
             }
-            return original;
+            // this occurs when the sdk runs out of frame resources and allocate_video_frame fails
+            // sadly, that exception doesn't propagate here...
+            // usually a sign of not properly disposing of frames
+            throw new InvalidOperationException($"Error while running {GetType().Name} processing block, check the log for info");
         }
 
-        public FrameSet Process(FrameSet original)
+        protected override void Dispose(bool disposing)
         {
-            FrameSet rv;
-            using (var singleOriginal = original.AsFrame())
-            {
-                using (var processed = Process(singleOriginal))
-                {
-                    rv = FrameSet.FromFrame(processed);
-                }
-            }
-            return rv;
+            queue.Dispose();
+            base.Dispose(disposing);
         }
     }
 
@@ -106,11 +66,6 @@ namespace Intel.RealSense
         public static Frame ApplyFilter(this Frame frame, IProcessingBlock block)
         {
             return block.Process(frame);
-        }
-
-        public static FrameSet ApplyFilter(this FrameSet frames, IProcessingBlock block)
-        {
-            return block.Process(frames);
         }
     }
 }

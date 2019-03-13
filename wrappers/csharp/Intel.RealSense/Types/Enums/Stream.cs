@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
+    /// <summary>
+    /// Streams are different types of data provided by RealSense devices
+    /// </summary>
     public enum Stream
     {
         Any = 0,

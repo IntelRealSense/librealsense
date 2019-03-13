@@ -2,10 +2,12 @@
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Permissions;
 
 namespace Intel.RealSense
 {
-    //[System.Security.SuppressUnmanagedCodeSecurity]
+    [SuppressUnmanagedCodeSecurity]
+    [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
     internal static class NativeMethods
     {
         const string dllName = "realsense2";
@@ -29,16 +31,7 @@ namespace Intel.RealSense
                     case PlatformID.MacOSX:
                         return unix_memcpy;
                     default:
-                        // Cpblk is portable, but also x10 slower than memcpy
-                        var method = new DynamicMethod("CpBlk", typeof(IntPtr), new[] { typeof(IntPtr), typeof(IntPtr), typeof(int) }, typeof(MemCpy));
-                        var code = method.GetILGenerator();
-                        code.Emit(OpCodes.Ldarg_0);
-                        code.Emit(OpCodes.Ldarg_1);
-                        code.Emit(OpCodes.Ldarg_2);
-                        code.Emit(OpCodes.Cpblk);
-                        code.Emit(OpCodes.Ldarg_0);
-                        code.Emit(OpCodes.Ret);
-                        return (MemCpyDelegate)method.CreateDelegate(typeof(MemCpyDelegate));
+                        throw new PlatformNotSupportedException(System.Environment.OSVersion.ToString());
                 }
             }
         }
@@ -139,6 +132,9 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_start_processing_fptr(IntPtr block, [MarshalAs(UnmanagedType.FunctionPtr)] frame_callback on_frame, IntPtr user, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_processing_block_register_simple_option(IntPtr block, Option option_id, float min, float max, float step, float def, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_start_processing_queue(IntPtr block, IntPtr queue, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
@@ -195,6 +191,8 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_hole_filling_filter_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_threshold([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
 #endregion
 #region rs_option

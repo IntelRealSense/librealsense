@@ -7,17 +7,22 @@ namespace Intel.RealSense
 {
     public class SpatialFilter : ProcessingBlock
     {
-        public SpatialFilter()
+        static IntPtr Create()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_spatial_filter_block(out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            return NativeMethods.rs2_create_spatial_filter_block(out error);
+        }
+
+        public SpatialFilter() : base(Create())
+        {
+            object error;
+            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
         }
 
         [Obsolete("This method is obsolete. Use Process method instead")]
         public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            return Process(original).DisposeWith(releaser) as VideoFrame;
+            return Process(original).As<VideoFrame>().DisposeWith(releaser);
         }
     }
 }

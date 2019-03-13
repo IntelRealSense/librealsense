@@ -5,6 +5,7 @@ project(Intel.RealSense)
 set(LRS_DOTNET_TARGET ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME}
+    Object.cs
     Context.cs
     NativeMethods.cs
     .nuget/Intel.RealSense.targets

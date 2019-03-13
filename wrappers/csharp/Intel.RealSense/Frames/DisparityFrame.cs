@@ -15,7 +15,7 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                return NativeMethods.rs2_depth_stereo_frame_get_baseline(m_instance.Handle, out error);
+                return NativeMethods.rs2_depth_stereo_frame_get_baseline(Handle, out error);
             }
         }
     }

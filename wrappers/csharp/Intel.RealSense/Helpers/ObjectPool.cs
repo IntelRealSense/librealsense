@@ -1,12 +1,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Intel.RealSense
 {
+    using PooledStack = System.Collections.Generic.Stack<Base.PooledObject>;
+    using ObjectFactory = Func<IntPtr, object>;
+
     public class ObjectPool
     {
+
         public class TypeComparer : IEqualityComparer<Type>
         {
             public static readonly TypeComparer Default = new TypeComparer();
@@ -22,55 +27,76 @@ namespace Intel.RealSense
             }
         }
 
-        readonly Dictionary<Type, Stack> pools = new Dictionary<Type, Stack>(TypeComparer.Default);
-        readonly object @lock = new object();
-        readonly Action<object, IntPtr> init;
+        readonly Dictionary<Type, PooledStack> pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
+        readonly Dictionary<Type, ObjectFactory> factories = new Dictionary<Type, ObjectFactory>();
 
-        public ObjectPool(Action<object, IntPtr> init)
+        PooledStack GetPool(Type t)
         {
-            this.init = init;
-        }
-
-        Stack GetPool(Type t)
-        {
-            Stack s;
+            Stack<Base.PooledObject> s;
             if (pools.TryGetValue(t, out s))
                 return s;
-            return pools[t] = new Stack();
+            return pools[t] = new PooledStack();
         }
 
-        private object CreateInstance(Type t, IntPtr ptr)
+        public object CreateInstance(Type t, IntPtr ptr)
         {
-            return Activator.CreateInstance(t,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
-                null,
-                new object[] { ptr },
-                null, null);
+            //Console.WriteLine($"{t.Name}({ptr})");
+
+            Func<IntPtr, object> factory;
+            if (factories.TryGetValue(t, out factory))
+                return factory(ptr);
+
+            var ctorinfo = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                    null, new Type[] { typeof(IntPtr) }, null);
+            var args = new ParameterExpression[] { Expression.Parameter(typeof(IntPtr), "ptr") };
+            var f = factories[t] = Expression.Lambda<ObjectFactory>(Expression.New(ctorinfo, args), args).Compile();
+            return f(ptr);
         }
 
-        public object Get(Type t, IntPtr ptr)
+        //private object CreateInstance(Type t, IntPtr ptr)
+        //{
+        //    return Activator.CreateInstance(t,
+        //        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+        //        null,
+        //        new object[] { ptr },
+        //        null, null);
+        //}
+
+        object Get(Type t, IntPtr ptr)
         {
-            lock (@lock)
+            var stack = GetPool(t);
+            int count; 
+            lock ((stack as ICollection).SyncRoot)
             {
-                var stack = GetPool(t);
-                if (stack.Count == 0)
-                    return CreateInstance(t, ptr);
-                var f = stack.Pop();
-                init?.Invoke(f, ptr);
-                return f;
+                count = stack.Count;
             }
+            if (count > 0)
+            {
+                Base.PooledObject obj;
+                lock ((stack as ICollection).SyncRoot)
+                {
+                    obj = stack.Pop();
+                }
+                obj.m_instance.Reset(ptr);
+                obj.Initialize();
+                return obj;
+            }
+            return CreateInstance(t, ptr);
         }
 
-        public T Get<T>(IntPtr ptr) where T : class
+        public T Get<T>(IntPtr ptr) where T : Base.PooledObject
         {
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
             return Get(typeof(T), ptr) as T;
         }
 
-        public void Release(object obj)
+        public void Release<T>(T obj) where T : Base.PooledObject
         {
-            lock (@lock)
+            var stack = GetPool(obj.GetType());
+            lock ((stack as ICollection).SyncRoot)
             {
-                GetPool(obj.GetType()).Push(obj);
+                stack.Push(obj);
             }
         }
         

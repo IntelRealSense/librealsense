@@ -4,23 +4,17 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Frame : IDisposable
+    /// <summary>
+    /// Base class for multiple frame extensions
+    /// </summary>
+    public class Frame : Base.PooledObject
     {
-        internal HandleRef m_instance;
-
-        readonly static ObjectPool Pool = new ObjectPool((obj, ptr) =>
+        internal override void Initialize()
         {
-            var f = obj as Frame;
-            f.m_instance = new HandleRef(f, ptr);
-            f.disposedValue = false;
-            GC.ReRegisterForFinalize(f);
-        });
+        }
 
-        public IntPtr NativePtr { get { return m_instance.Handle; } }
-
-        internal Frame(IntPtr ptr)
+        internal Frame(IntPtr ptr) : base(ptr, NativeMethods.rs2_release_frame)
         {
-            m_instance = new HandleRef(this, ptr);
         }
 
         public static Frame Create(IntPtr ptr)
@@ -33,74 +27,49 @@ namespace Intel.RealSense
             return Pool.Get<T>(ptr);
         }
 
-        public bool Is(Extension e)
+        public static T Create<T>(Frame other) where T : Frame
         {
             object error;
-            return NativeMethods.rs2_is_frame_extendable_to(m_instance.Handle, e, out error) > 0;
+            NativeMethods.rs2_frame_add_ref(other.Handle, out error);
+            return Pool.Get<T>(other.Handle);
         }
 
+        /// <summary>Test if the given frame can be extended to the requested extension</summary>
+        /// <param name="extension">The extension to which the frame should be tested if it is extendable</param>
+        /// <returns>true iff the frame can be extended to the given extension</returns>
+        public bool Is(Extension extension)
+        {
+            object error;
+            return NativeMethods.rs2_is_frame_extendable_to(Handle, extension, out error) != 0;
+        }
+
+        /// <summary>Cast current instance as the type of another class</summary>
+        /// <typeparam name="T">New frame subtype</typeparam>
+        /// <returns>class instance</returns>
         public T As<T>() where T : Frame
         {
-            using (this)
-            {
-                object error;
-                NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-                return Create<T>(m_instance.Handle);
-            }
-        }
-
-        #region IDisposable Support
-        internal bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Reset();
-                Pool.Release(this);
-
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Frame()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        internal void Reset()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_release_frame(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
+            return Create<T>(this);
         }
 
         public Frame Clone()
         {
             object error;
-            NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return Create(m_instance.Handle);
+            NativeMethods.rs2_frame_add_ref(Handle, out error);
+            return Create(Handle);
         }
 
+        /// <summary>communicate to the library you intend to keep the frame alive for a while
+        /// this will remove the frame from the regular count of the frame pool</summary>
+        /// <remarks>once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling</remarks>
+        public void Keep() {
+            NativeMethods.rs2_keep_frame(Handle);
+        }
+
+        /// <summary>
+        /// Test if frame is composite
+        /// <para>Shorthand for <c>Is(Extension.CompositeFrame)</c></para>
+        /// </summary>
+        /// <value>true if frame is a composite frame and false otherwise</value>
         public bool IsComposite
         {
             get
@@ -109,51 +78,60 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>retrieve data from frame handle</summary>
+        /// <value>pointer to the start of the frame data</value>
         public IntPtr Data
         {
             get
             {
                 object error;
-                return NativeMethods.rs2_get_frame_data(m_instance.Handle, out error);
+                return NativeMethods.rs2_get_frame_data(Handle, out error);
             }
         }
 
         public T GetProfile<T>() where T : StreamProfile
         {
             object error;
-            var ptr = NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error);
+            var ptr = NativeMethods.rs2_get_frame_stream_profile(Handle, out error);
             return StreamProfile.Create<T>(ptr);
         }
 
         public StreamProfile Profile => GetProfile<StreamProfile>();
-  
+
+        /// <summary>retrieve frame number from frame handle</summary>
+        /// <value>the frame nubmer of the frame</value>
         public ulong Number
         {
             get
             {
                 object error;
-                var frameNumber = NativeMethods.rs2_get_frame_number(m_instance.Handle, out error);
-                return frameNumber;
+                return NativeMethods.rs2_get_frame_number(Handle, out error);
             }
         }
 
+        /// <summary>retrieve timestamp from frame handle in milliseconds</summary>
+        /// <value>the timestamp of the frame in milliseconds</value>
         public double Timestamp
         {
             get
             {
                 object error;
-                var timestamp = NativeMethods.rs2_get_frame_timestamp(m_instance.Handle, out error);
-                return timestamp;
+                return NativeMethods.rs2_get_frame_timestamp(Handle, out error);
             }
         }
 
+        /// <summary>retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain</summary>
+        /// <remarks>
+        /// (for example, depth timestamp might come from system time while color timestamp might come from the device)
+        /// this method is used to check if two timestamp values are comparable (generated from the same clock)
+        /// </remarks>
+        /// <value>the timestamp domain of the frame (camera / microcontroller / system time)</value>
         public TimestampDomain TimestampDomain
         {
             get
             {
                 object error;
-                var timestampDomain = NativeMethods.rs2_get_frame_timestamp_domain(m_instance.Handle, out error);
-                return timestampDomain;
+                return NativeMethods.rs2_get_frame_timestamp_domain(Handle, out error);
             }
         }
 
@@ -164,16 +142,22 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>retrieve metadata from frame handle</summary>
+        /// <param name="frame_metadata">the <see cref="FrameMetadataValue">FrameMetadataValue</see> whose latest frame we are interested in</param>
+        /// <returns>the metadata value</returns>
         public long GetFrameMetadata(FrameMetadataValue frame_metadata)
         {
             object error;
-            return NativeMethods.rs2_get_frame_metadata(m_instance.Handle, frame_metadata, out error);
+            return NativeMethods.rs2_get_frame_metadata(Handle, frame_metadata, out error);
         }
 
+        /// <summary>determine device metadata</summary>
+        /// <param name="frame_metadata">the metadata to check for support</param>
+        /// <returns>true if device has this metadata</returns>
         public bool SupportsFrameMetaData(FrameMetadataValue frame_metadata)
         {
             object error;
-            return NativeMethods.rs2_supports_frame_metadata(m_instance.Handle, frame_metadata, out error) != 0;
+            return NativeMethods.rs2_supports_frame_metadata(Handle, frame_metadata, out error) != 0;
         }
     }
 }

@@ -40,5 +40,20 @@ namespace Intel.RealSense
         {
             return $"(width:{width}, height:{height}, ppx:{ppx}, ppy:{ppy}, fx:{fx}, fy:{fy}, model:{model}, coeffs:[{coeffs[0]}, {coeffs[1]}, {coeffs[2]}, {coeffs[3]}, {coeffs[4]}])";
         }
+
+        /// <summary>
+        /// Calculate horizontal and vertical feild of view, based on video intrinsics
+        /// </summary>
+        /// <value>horizontal and vertical field of view in degrees</value>
+        public float[] FOV
+        {
+            get
+            {
+                return new float[] {
+                    (float)(System.Math.Atan2(ppx + 0.5f, fx) + System.Math.Atan2(width - (ppx + 0.5f), fx)) * 57.2957795f,
+                    (float)(System.Math.Atan2(ppy + 0.5f, fy) + System.Math.Atan2(height - (ppy + 0.5f), fy)) * 57.2957795f
+                };
+            }
+        }
     }
 }

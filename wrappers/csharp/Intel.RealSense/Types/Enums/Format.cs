@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
+    /// <summary>
+    /// Format identifies how binary data is encoded within a frame
+    /// </summary>
     public enum Format
     {
         ///<summary>When passed to enable stream, librealsense will try to provide best suited format</summary>

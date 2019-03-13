@@ -6,20 +6,26 @@ using System.Linq;
 
 namespace Intel.RealSense
 {
-    public class Sensor : IOptions, IDisposable
+    public class Sensor : Base.PooledObject, IOptions
     {
-        protected readonly IntPtr m_instance;
-        
-        public IntPtr Instance 
+        internal override void Initialize()
         {
-            get { return m_instance; }
+            Info = new CameraInfos(Handle);
+            Options = new SensorOptions(Handle);
         }
 
-        internal Sensor(IntPtr sensor)
+        private frame_callback m_callback;
+        private FrameQueue m_queue;
+
+        internal static T Create<T>(IntPtr ptr) where T : Sensor
         {
-            //if (sensor == IntPtr.Zero)
-            //    throw new ArgumentNullException();
-            m_instance = sensor;
+            return Pool.Get<T>(ptr);
+        }
+
+        internal Sensor(IntPtr sensor) : base(sensor, NativeMethods.rs2_delete_sensor)
+        {
+            Info = new CameraInfos(Handle);
+            Options = new SensorOptions(Handle);
         }
 
         public class CameraInfos
@@ -27,6 +33,9 @@ namespace Intel.RealSense
             readonly IntPtr m_sensor;
             public CameraInfos(IntPtr sensor) { m_sensor = sensor; }
 
+            /// <summary>retrieve sensor specific information, like versions of various internal components</summary>
+            /// <param name="info">camera info type to retrieve</param>
+            /// <returns>the requested camera info string, in a format specific to the device model</returns>
             public string this[CameraInfo info]
             {
                 get
@@ -39,18 +48,7 @@ namespace Intel.RealSense
             }
         }
 
-        CameraInfos m_info;
-
-        public CameraInfos Info
-        {
-            get
-            {
-                if (m_info == null)
-                    m_info = new CameraInfos(m_instance);
-                return m_info;
-            }
-        }
-
+        public CameraInfos Info { get; private set; }
 
         internal class CameraOption : IOption
         {
@@ -75,6 +73,9 @@ namespace Intel.RealSense
                 }
             }
 
+
+            /// <summary>check if particular option is supported by a subdevice</summary>
+            /// <value>true if option is supported</value>
             public bool Supported
             {
                 get
@@ -99,6 +100,8 @@ namespace Intel.RealSense
                 }
             }
 
+            /// <summary>get option description</summary>
+            /// <value>human-readable option description</value>
             public string Description
             {
                 get
@@ -113,6 +116,9 @@ namespace Intel.RealSense
                 }
             }
 
+
+            /// <summary>Read and write option value</summary>
+            /// <value>value of the option</value>
             public float Value
             {
                 get
@@ -127,6 +133,8 @@ namespace Intel.RealSense
                 }
             }
 
+            /// <summary>get option value description (in case specific option value hold special meaning)</summary>
+            /// <value>human-readable description of a specific value of an option or null if no special meaning</value>
             public string ValueDescription
             {
                 get
@@ -135,6 +143,9 @@ namespace Intel.RealSense
                 }
             }
 
+            /// <summary>get option value description (in case specific option value hold special meaning)</summary>
+            /// <param name="value">value of the option</param>
+            /// <returns>human-readable description of a specific value of an option or null if no special meaning</returns>
             public string GetValueDescription(float value)
             {
                 object error;
@@ -174,6 +185,8 @@ namespace Intel.RealSense
                 }
             }
 
+            /// <summary>check if an option is read-only</summary>
+            /// <value>true if option is read-only</value>
             public bool ReadOnly
             {
                 get
@@ -192,6 +205,9 @@ namespace Intel.RealSense
                 m_sensor = sensor;
             }
 
+            /// <summary>read option value from the sensor</summary>
+            /// <param name="option">option id to be queried</param>
+            /// <value>value of the option</value>
             public IOption this[Option option]
             {
                 get
@@ -229,48 +245,45 @@ namespace Intel.RealSense
             }
         }
 
-        SensorOptions m_options;
-        public IOptionsContainer Options
-        {
-            get
-            {
-                return m_options = m_options ?? new SensorOptions(m_instance);
-            }
-        }
+        public IOptionsContainer Options { get; private set; }
 
-        /// <summary>
-        /// open subdevice for exclusive access, by commiting to a configuration
-        /// </summary>
-        /// <param name="profile"></param>
+        /// <summary>open subdevice for exclusive access, by committing to a configuration</summary>
+        /// <param name="profile">stream profile that defines single stream configuration</param>
         public void Open(StreamProfile profile)
         {
             object error;
-            NativeMethods.rs2_open(m_instance, profile.m_instance.Handle, out error);
+            NativeMethods.rs2_open(Handle, profile.Handle, out error);
 
         }
 
-        /// <summary>
-        /// open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles 
-        /// this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
-        /// </summary>
-        /// <param name="profiles"></param>
+        /// <summary>open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles</summary>
+        /// <remarks>
+        /// this method should be used for interdependent streams, such as depth and infrared, that have to be configured together
+        /// </remarks>
+        /// <param name="profiles">list of stream profiles</param>
         public void Open(params StreamProfile[] profiles)
         {
             object error;
             IntPtr[] handles = new IntPtr[profiles.Length];
             for (int i = 0; i < profiles.Length; i++)
-                handles[i] = profiles[i].m_instance.Handle;
-            NativeMethods.rs2_open_multiple(m_instance, handles, profiles.Length, out error);
+                handles[i] = profiles[i].Handle;
+            NativeMethods.rs2_open_multiple(Handle, handles, profiles.Length, out error);
         }
 
+        /// <summary>
+        /// start streaming from specified configured sensor of specific stream to frame queue
+        /// </summary>
+        /// <param name="queue">frame-queue to store new frames into</param>
         public void Start(FrameQueue queue)
         {
             object error;
-            NativeMethods.rs2_start_queue(m_instance, queue.m_instance.Handle, out error);
+            NativeMethods.rs2_start_queue(Handle, queue.Handle, out error);
             m_queue = queue;
             m_callback = null;
         }
 
+        /// <summary>start streaming from specified configured sensor</summary>
+        /// <param name="cb">delegate to register as per-frame callback</param>
         public void Start(FrameCallback cb)
         {
             object error;
@@ -281,9 +294,11 @@ namespace Intel.RealSense
             };
             m_callback = cb2;
             m_queue = null;
-            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
+            NativeMethods.rs2_start(Handle, cb2, IntPtr.Zero, out error);
         }
 
+        /// <summary>start streaming from specified configured sensor</summary>
+        /// <param name="cb">delegate to register as per-frame callback</param>
         public void Start<T>(Action<T> cb) where T : Frame
         {
             object error;
@@ -294,13 +309,16 @@ namespace Intel.RealSense
             };
             m_callback = cb2;
             m_queue = null;
-            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
+            NativeMethods.rs2_start(Handle, cb2, IntPtr.Zero, out error);
         }
 
+        /// <summary>
+        /// stops streaming from specified configured device
+        /// </summary>
         public void Stop()
         {
             object error;
-            NativeMethods.rs2_stop(m_instance, out error);
+            NativeMethods.rs2_stop(Handle, out error);
             m_callback = null;
             m_queue = null;
         }
@@ -311,7 +329,7 @@ namespace Intel.RealSense
         public void Close()
         {
             object error;
-            NativeMethods.rs2_close(m_instance, out error);
+            NativeMethods.rs2_close(Handle, out error);
         }
 
         #region Extensions
@@ -319,13 +337,13 @@ namespace Intel.RealSense
         /// <summary>
         /// retrieve mapping between the units of the depth image and meters
         /// </summary>
-        /// <returns> depth in meters corresponding to a depth value of 1</returns>
+        /// <value>depth in meters corresponding to a depth value of 1</value>
         public float DepthScale
         {
             get
             {
                 object error;
-                return NativeMethods.rs2_get_depth_scale(m_instance, out error);
+                return NativeMethods.rs2_get_depth_scale(Handle, out error);
             }
         }
 
@@ -334,63 +352,23 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                if (NativeMethods.rs2_is_sensor_extendable_to(Handle, Extension.Roi, out error) == 0)
                 {
-                    return new AutoExposureROI { m_instance = m_instance };
+                    return new AutoExposureROI { m_instance = Handle };
                 }
                 return null;
             }
         }
         #endregion
 
+        /// <value>list of stream profiles that given subdevice can provide</value>
         public StreamProfileList StreamProfiles
         {
             get
             {
                 object error;
-                return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(m_instance, out error));
+                return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(Handle, out error));
             }
         }
-
-        private frame_callback m_callback;
-        private FrameQueue m_queue;
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                    m_callback = null;
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_sensor(m_instance);
-
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Sensor()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

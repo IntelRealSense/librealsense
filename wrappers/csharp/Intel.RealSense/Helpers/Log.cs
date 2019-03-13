@@ -14,5 +14,11 @@ namespace Intel.RealSense
             object err;
             NativeMethods.rs2_log_to_file(severity, filename, out err);
         }
+
+        public static void LogMessage(LogSeverity severity, string message)
+        {
+            object err;
+            NativeMethods.rs2_log(severity, message, out err);
+        }
     }
 }

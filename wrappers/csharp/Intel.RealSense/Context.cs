@@ -3,11 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Context : IDisposable
+    /// <summary>
+    /// default librealsense context class
+    /// </summary>
+    public class Context : Base.Object
     {
-        internal HandleRef m_instance;
-
-        public readonly int api_version;
+        public static readonly int api_version;
         public string Version
         {
             get
@@ -17,17 +18,23 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>
-        /// default librealsense context class
-        /// </summary>
-        public Context()
+        static Context()
         {
             object error;
             api_version = NativeMethods.rs2_get_api_version(out error);
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_context(api_version, out error));
+        }
 
+        public static IntPtr Create()
+        {
+            object error;
+            return NativeMethods.rs2_create_context(api_version, out error);
+        }
+
+        public Context() : base(Create(), NativeMethods.rs2_delete_context)
+        {
+            object error;
             onDevicesChangedCallback = new rs2_devices_changed_callback(onDevicesChanged);
-            NativeMethods.rs2_set_devices_changed_callback(m_instance.Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
+            NativeMethods.rs2_set_devices_changed_callback(Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
         }
 
         // Keeps the delegate alive, if we were to assign onDevicesChanged directly, there'll be 
@@ -35,6 +42,9 @@ namespace Intel.RealSense
         readonly rs2_devices_changed_callback onDevicesChangedCallback;
 
         public delegate void OnDevicesChangedDelegate(DeviceList removed, DeviceList added);
+        /// <summary>
+        /// these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
+        /// </summary>
         public event OnDevicesChangedDelegate OnDevicesChanged;
 
         private void onDevicesChanged(IntPtr removedList, IntPtr addedList, IntPtr userData)
@@ -49,14 +59,14 @@ namespace Intel.RealSense
         }
 
 
-        /// <summary>
-        /// create a static snapshot of all connected devices at the time of the call
-        /// </summary>
-        /// <returns></returns>
+        /// <summary>create a static snapshot of all connected devices at the time of the call</summary>
+        /// <param name="include_platform_camera">Controls what kind of devices will be returned</param>
+        /// <returns>the list of devices</returns>
+        /// <remarks>devices in the collection should be disposed</remarks>
         public DeviceList QueryDevices(bool include_platform_camera = false)
         {
             object error;
-            var ptr = NativeMethods.rs2_query_devices_ex(m_instance.Handle,
+            var ptr = NativeMethods.rs2_query_devices_ex(Handle,
                 include_platform_camera ? 0xff : 0xfe, out error);
             return new DeviceList(ptr);
         }
@@ -64,6 +74,7 @@ namespace Intel.RealSense
         /// <summary>
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
+        /// <value>the list of devices</value>
         public DeviceList Devices
         {
             get
@@ -72,47 +83,22 @@ namespace Intel.RealSense
             }
         }
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                    OnDevicesChanged = null;
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                if (m_instance.Handle != IntPtr.Zero)
-                {
-                    NativeMethods.rs2_delete_context(m_instance.Handle);
-                    m_instance = new HandleRef(this, IntPtr.Zero);
-                }
-
-                disposedValue = true;
-            }
+        /// <summary>Create a new device and add it to the context</summary>
+        /// <param name="file">The file from which the device should be created</param>
+        /// <returns>a device that plays data from the file</returns>
+        public PlaybackDevice AddDevice(string file) {
+            object error;
+            var ptr = NativeMethods.rs2_context_add_device(Handle, file, out error);
+            return Device.Create<PlaybackDevice>(ptr);
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Context()
+        /// <summary>Removes a playback device from the context, if exists</summary>
+        /// <param name="file">The file name that was used to add the device</param>
+        public void RemoveDevice(string file)
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
+            object error;
+            NativeMethods.rs2_context_remove_device(Handle, file, out error);
         }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 
 

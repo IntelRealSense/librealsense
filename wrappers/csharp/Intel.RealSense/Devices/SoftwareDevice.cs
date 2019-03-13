@@ -17,7 +17,7 @@ namespace Intel.RealSense
         internal IntPtr AddSoftwareSensor(string name)
         {
             object error;
-            return NativeMethods.rs2_software_device_add_sensor(m_instance, name, out error);
+            return NativeMethods.rs2_software_device_add_sensor(Handle, name, out error);
         }
 
         public SoftwareSensor AddSensor(string name)
@@ -28,7 +28,7 @@ namespace Intel.RealSense
         public void SetMatcher(Matchers matcher)
         {
             object error;
-            NativeMethods.rs2_software_device_create_matcher(m_instance, matcher, out error);
+            NativeMethods.rs2_software_device_create_matcher(Handle, matcher, out error);
         }
     }
 }

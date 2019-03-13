@@ -5,60 +5,67 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class Device : IDisposable
+    public class Device : Base.PooledObject
     {
-        public IntPtr m_instance;
-
-        internal Device(IntPtr dev)
+        internal override void Initialize()
         {
-            //if (dev == IntPtr.Zero)
-            //    throw new ArgumentNullException();
-            m_instance = dev;
+            Info = new CameraInfos(this);
+        }
+
+        internal Device(IntPtr ptr) : base(ptr, null)
+        {
+            this.Initialize();
+        }
+
+        internal static T Create<T>(IntPtr ptr) where T : Device
+        {
+            return Pool.Get<T>(ptr);
+        }
+
+        internal static T Create<T>(IntPtr ptr, Base.Deleter deleter) where T : Device
+        {
+            var dev = Pool.Get<T>(ptr);
+            dev.m_instance.Reset(ptr, deleter);
+            return dev;
         }
 
         public class CameraInfos
         {
-            readonly IntPtr m_device;
-            public CameraInfos(IntPtr device) { m_device = device; }
+            readonly Device m_device;
+            public CameraInfos(Device device) { m_device = device; }
 
             public string this[CameraInfo info]
             {
                 get
                 {
                     object err;
-                    if (NativeMethods.rs2_supports_device_info(m_device, info, out err) > 0)
-                        return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_device_info(m_device, info, out err));
+                    if (NativeMethods.rs2_supports_device_info(m_device.Handle, info, out err) > 0)
+                        return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_device_info(m_device.Handle, info, out err));
                     return null;
                 }
             }
         }
 
-        CameraInfos m_info;
-
-        public CameraInfos Info
-        {
-            get
-            {
-                if (m_info == null)
-                    m_info = new CameraInfos(m_instance);
-                return m_info;
-            }
-        }
+        /// <summary>
+        /// retrieve camera specific information, like versions of various internal components
+        /// </summary>
+        public CameraInfos Info { get; private set; }
 
         /// <summary>
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The list of sensors</returns>
         public SensorList QuerySensors()
         {
             object error;
-            var ptr = NativeMethods.rs2_query_sensors(m_instance, out error);
+            var ptr = NativeMethods.rs2_query_sensors(Handle, out error);
             return new SensorList(ptr);
         }
 
         /// <summary>
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
+        /// <value>The list of sensors</value>
         public SensorList Sensors
         {
             get
@@ -67,46 +74,30 @@ namespace Intel.RealSense
             }
         }
         
+        /// <summary>
+        /// Send hardware reset request to the device. The actual reset is asynchronous.
+        /// Note: Invalidates all handles to this device.
+        /// </summary>
         public void HardwareReset()
         {
                 object error;
-                NativeMethods.rs2_hardware_reset(m_instance, out error);
+                NativeMethods.rs2_hardware_reset(Handle, out error);
         }
 
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        #region Extension
 
-        protected virtual void Dispose(bool disposing)
+        /// <summary>Test if the given device can be extended to the requested extension.</summary>
+        /// <param name="extension">The extension to which the device should be tested if it is extendable</param>
+        /// <returns>Non-zero value iff the device can be extended to the given extension</returns>
+        public bool Is(Extension extension)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_device(m_instance);
-
-                disposedValue = true;
-            }
+            object error;
+            return NativeMethods.rs2_is_device_extendable_to(Handle, extension, out error) != 0;
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Device()
+        public T As<T>() where T : Device
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
+            return Device.Create<T>(Handle);
         }
         #endregion
     }

@@ -5,13 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace Intel.RealSense
 {
-    public class PipelineProfile : IDisposable
+    public class PipelineProfile : Base.Object
     {
-        HandleRef m_instance;
 
-        public PipelineProfile(IntPtr p)
+        public PipelineProfile(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_pipeline_profile)
         {
-            m_instance = new HandleRef(this, p);
         }
 
         public Device Device
@@ -19,8 +17,8 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_pipeline_profile_get_device(m_instance.Handle, out error);
-                return new Device(ptr);
+                var ptr = NativeMethods.rs2_pipeline_profile_get_device(Handle, out error);
+                return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 
@@ -29,7 +27,7 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_pipeline_profile_get_streams(m_instance.Handle, out error);
+                var ptr = NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error);
                 return new StreamProfileList(ptr);
             }
         }
@@ -47,7 +45,7 @@ namespace Intel.RealSense
                 int count = streams.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    var ptr = NativeMethods.rs2_get_stream_profile(streams.m_instance, i, out error);
+                    var ptr = NativeMethods.rs2_get_stream_profile(streams.Handle, i, out error);
                     var t = StreamProfile.Create<T>(ptr);
                     if (t.Stream == s && (index == -1 || t.Index == index))
                         return t;
@@ -55,49 +53,6 @@ namespace Intel.RealSense
                 }
                 return null;
             }
-        }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Release();
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~PipelineProfile()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        public void Release()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_delete_pipeline_profile(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
         }
     }
 }

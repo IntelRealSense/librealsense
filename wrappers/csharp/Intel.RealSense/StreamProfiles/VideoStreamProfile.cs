@@ -7,25 +7,23 @@ namespace Intel.RealSense
 {
     public class VideoStreamProfile : StreamProfile
     {
-        protected override void Initialize()
+        internal override void Initialize()
         {
             base.Initialize();
-            //Console.WriteLine($"{GetType()}.VideoStreamProfile::Initialize");
             object error;
-            NativeMethods.rs2_get_video_stream_resolution(m_instance.Handle, out width, out height, out error);
+            NativeMethods.rs2_get_video_stream_resolution(Handle, out width, out height, out error);
         }
 
-        public VideoStreamProfile(IntPtr ptr) : base(ptr)
+        internal VideoStreamProfile(IntPtr ptr) : base(ptr)
         {
-            object error;
-            NativeMethods.rs2_get_video_stream_resolution(ptr, out width, out height, out error);
+            this.Initialize();
         }
 
         public Intrinsics GetIntrinsics()
         {
             object error;
             Intrinsics intrinsics;
-            NativeMethods.rs2_get_video_stream_intrinsics(m_instance.Handle, out intrinsics, out error);
+            NativeMethods.rs2_get_video_stream_intrinsics(Handle, out intrinsics, out error);
             return intrinsics;
         }
 
