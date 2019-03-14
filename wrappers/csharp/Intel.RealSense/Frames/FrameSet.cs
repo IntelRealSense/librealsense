@@ -61,19 +61,8 @@ namespace Intel.RealSense
 
         public T FirstOrDefault<T>(Stream stream, Format format = Format.Any) where T : Frame
         {
-            //return FirstOrDefault(stream, format)?.As<T>();
             using (var f = FirstOrDefault(stream, format))
                 return f?.As<T>();
-
-            //var f = FirstOrDefault(stream, format);
-            //if (f == null)
-            //    return null;
-            //object error;
-            //NativeMethods.rs2_frame_add_ref(f.Handle, out error);
-            //var r = Create<T>(f.Handle);
-            //f.m_instance.SetHandleAsInvalid();
-            //Pool.Release(f);
-            //return r;
         }
 
         public Frame FirstOrDefault(Stream stream, Format format = Format.Any)
@@ -205,7 +194,7 @@ namespace Intel.RealSense
         }
 
         public static new FrameSet Create(IntPtr ptr) {
-            return Pool.Get<FrameSet>(ptr);
+            return ObjectPool.Get<FrameSet>(ptr);
         }
 
         protected override void Dispose(bool disposing)

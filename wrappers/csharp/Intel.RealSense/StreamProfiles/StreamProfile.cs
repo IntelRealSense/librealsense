@@ -63,7 +63,7 @@ namespace Intel.RealSense
 
         internal static T Create<T>(IntPtr ptr) where T : StreamProfile
         {
-            return Pool.Get<T>(ptr);
+            return ObjectPool.Get<T>(ptr);
         }
 
         internal static StreamProfile Create(IntPtr ptr)

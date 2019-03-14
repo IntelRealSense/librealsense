@@ -8,10 +8,9 @@ namespace Intel.RealSense
 {
     using PooledStack = System.Collections.Generic.Stack<Base.PooledObject>;
     using ObjectFactory = Func<IntPtr, object>;
-
-    public class ObjectPool
+    
+    public static class ObjectPool
     {
-
         public class TypeComparer : IEqualityComparer<Type>
         {
             public static readonly TypeComparer Default = new TypeComparer();
@@ -27,21 +26,22 @@ namespace Intel.RealSense
             }
         }
 
-        readonly Dictionary<Type, PooledStack> pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
-        readonly Dictionary<Type, ObjectFactory> factories = new Dictionary<Type, ObjectFactory>();
+        static readonly Dictionary<Type, PooledStack> pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
+        static Dictionary<Type, ObjectFactory> factories = new Dictionary<Type, ObjectFactory>(TypeComparer.Default);
 
-        PooledStack GetPool(Type t)
+        static PooledStack GetPool(Type t)
         {
             Stack<Base.PooledObject> s;
             if (pools.TryGetValue(t, out s))
                 return s;
-            return pools[t] = new PooledStack();
+            lock ((pools as ICollection).SyncRoot)
+            {
+                return pools[t] = new PooledStack();
+            }
         }
 
-        public object CreateInstance(Type t, IntPtr ptr)
+        public static object CreateInstance(Type t, IntPtr ptr)
         {
-            //Console.WriteLine($"{t.Name}({ptr})");
-
             Func<IntPtr, object> factory;
             if (factories.TryGetValue(t, out factory))
                 return factory(ptr);
@@ -49,23 +49,19 @@ namespace Intel.RealSense
             var ctorinfo = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
                     null, new Type[] { typeof(IntPtr) }, null);
             var args = new ParameterExpression[] { Expression.Parameter(typeof(IntPtr), "ptr") };
-            var f = factories[t] = Expression.Lambda<ObjectFactory>(Expression.New(ctorinfo, args), args).Compile();
-            return f(ptr);
+            var lambda = Expression.Lambda<ObjectFactory>(Expression.New(ctorinfo, args), args).Compile();
+            lock ((factories as ICollection).SyncRoot)
+            {
+                factories[t] = lambda;
+            }
+            return lambda(ptr);
         }
 
-        //private object CreateInstance(Type t, IntPtr ptr)
-        //{
-        //    return Activator.CreateInstance(t,
-        //        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
-        //        null,
-        //        new object[] { ptr },
-        //        null, null);
-        //}
-
-        object Get(Type t, IntPtr ptr)
+        static object Get(Type t, IntPtr ptr)
         {
+
             var stack = GetPool(t);
-            int count; 
+            int count;
             lock ((stack as ICollection).SyncRoot)
             {
                 count = stack.Count;
@@ -84,14 +80,14 @@ namespace Intel.RealSense
             return CreateInstance(t, ptr);
         }
 
-        public T Get<T>(IntPtr ptr) where T : Base.PooledObject
+        public static T Get<T>(IntPtr ptr) where T : Base.PooledObject
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             return Get(typeof(T), ptr) as T;
         }
 
-        public void Release<T>(T obj) where T : Base.PooledObject
+        public static void Release<T>(T obj) where T : Base.PooledObject
         {
             var stack = GetPool(obj.GetType());
             lock ((stack as ICollection).SyncRoot)
@@ -99,6 +95,6 @@ namespace Intel.RealSense
                 stack.Push(obj);
             }
         }
-        
+
     }
 }

@@ -19,7 +19,7 @@ namespace Intel.RealSense
 
         internal static T Create<T>(IntPtr ptr) where T : Sensor
         {
-            return Pool.Get<T>(ptr);
+            return ObjectPool.Get<T>(ptr);
         }
 
         internal Sensor(IntPtr sensor) : base(sensor, NativeMethods.rs2_delete_sensor)

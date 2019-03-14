@@ -24,14 +24,14 @@ namespace Intel.RealSense
 
         public static T Create<T>(IntPtr ptr) where T : Frame
         {
-            return Pool.Get<T>(ptr);
+            return ObjectPool.Get<T>(ptr);
         }
 
         public static T Create<T>(Frame other) where T : Frame
         {
             object error;
             NativeMethods.rs2_frame_add_ref(other.Handle, out error);
-            return Pool.Get<T>(other.Handle);
+            return ObjectPool.Get<T>(other.Handle);
         }
 
         /// <summary>Test if the given frame can be extended to the requested extension</summary>

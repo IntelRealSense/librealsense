@@ -84,7 +84,7 @@ namespace Intel.RealSense.Base
                 return m_instance.Handle;
             }
         }
-
+    
         protected Object(IntPtr ptr, Deleter deleter)
         {
             if (ptr == IntPtr.Zero)
@@ -108,8 +108,6 @@ namespace Intel.RealSense.Base
     /// </summary>
     public abstract class PooledObject : Object
     {
-        protected readonly static ObjectPool Pool = new ObjectPool();
-
         protected PooledObject(IntPtr ptr, Deleter deleter) : base(ptr, deleter)
         {
         }
@@ -118,8 +116,10 @@ namespace Intel.RealSense.Base
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-            Pool.Release(this);
+            if (m_instance.IsInvalid)
+                return;
+            base.Dispose(disposing);            
+            ObjectPool.Release(this);
         }
     }
 }

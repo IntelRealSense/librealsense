@@ -19,12 +19,12 @@ namespace Intel.RealSense
 
         internal static T Create<T>(IntPtr ptr) where T : Device
         {
-            return Pool.Get<T>(ptr);
+            return ObjectPool.Get<T>(ptr);
         }
 
         internal static T Create<T>(IntPtr ptr, Base.Deleter deleter) where T : Device
         {
-            var dev = Pool.Get<T>(ptr);
+            var dev = ObjectPool.Get<T>(ptr);
             dev.m_instance.Reset(ptr, deleter);
             return dev;
         }
