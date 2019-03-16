@@ -26,7 +26,5 @@ set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
 link_directories(${LIBUSB1_LIBRARY_DIRS})
 
 set(LIBUSB1_LIBRARIES usb)
-#set(LIBUSB_LOCAL_INCLUDE_PATH third-party/libusb)
-
 set(USE_EXTERNAL_USB ON)
-set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
+set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb)
