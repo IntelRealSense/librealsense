@@ -12,13 +12,23 @@
 
 namespace librealsense
 {
+	static color_map hue{ {
+		{ 255, 0, 0 },
+		{ 255, 255, 0 },
+		{ 0, 255, 0 },
+		{ 0, 255, 255 },
+		{ 0, 0, 255 },
+		{ 255, 0, 255 },
+		{ 255, 0, 0 },
+		} };
+
     static color_map jet{ {
         { 0, 0, 255 },
         { 0, 255, 255 },
         { 255, 255, 0 },
         { 255, 0, 0 },
         { 50, 0, 0 },
-        } };
+		} };
 
     static color_map classic{ {
         { 30, 77, 203 },
@@ -140,7 +150,7 @@ namespace librealsense
         _stream_filter.stream = RS2_STREAM_DEPTH;
         _stream_filter.format = RS2_FORMAT_Z16;
 
-        _maps = { &jet, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern };
+        _maps = { &jet, &hue, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern };
 
         auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters");
         register_option(RS2_OPTION_MIN_DISTANCE, min_opt);
@@ -149,15 +159,16 @@ namespace librealsense
         register_option(RS2_OPTION_MAX_DISTANCE, max_opt);
 
         auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
-        color_map->set_description(0.f, "Jet");
-        color_map->set_description(1.f, "Classic");
-        color_map->set_description(2.f, "White to Black");
-        color_map->set_description(3.f, "Black to White");
-        color_map->set_description(4.f, "Bio");
-        color_map->set_description(5.f, "Cold");
-        color_map->set_description(6.f, "Warm");
-        color_map->set_description(7.f, "Quantized");
-        color_map->set_description(8.f, "Pattern");
+		color_map->set_description(0.f, "Jet");
+		color_map->set_description(1.f, "Hue");
+		color_map->set_description(2.f, "Classic");
+        color_map->set_description(3.f, "White to Black");
+        color_map->set_description(4.f, "Black to White");
+        color_map->set_description(5.f, "Bio");
+        color_map->set_description(6.f, "Cold");
+        color_map->set_description(7.f, "Warm");
+        color_map->set_description(8.f, "Quantized");
+        color_map->set_description(9.f, "Pattern");
         register_option(RS2_OPTION_COLOR_SCHEME, color_map);
 
         auto preset_opt = std::make_shared<ptr_option<int>>(0, 3, 1, 0, &_preset, "Preset depth colorization");
