@@ -49,10 +49,8 @@ else() # Some other windows version
 endif()
 
 pybind11_add_module(pybackend2 SHARED ${RAW_RS_CPP} ${RAW_RS_HPP})
-if(USE_EXTERNAL_USB)
-    add_dependencies(pybackend2 libusb)
-endif()
-target_link_libraries(pybackend2 PRIVATE ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(pybackend2 ${external_libusb})
+target_link_libraries(pybackend2 PRIVATE usb ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})

@@ -20,11 +20,10 @@ ExternalProject_Add(
             -DANDROID_STL=${ANDROID_STL}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
     TEST_COMMAND ""
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
-set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
-link_directories(${LIBUSB1_LIBRARY_DIRS})
-
-set(LIBUSB1_LIBRARIES usb)
-set(USE_EXTERNAL_USB ON)
-set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb)
+add_library(usb INTERFACE)
+target_include_directories(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb)
+target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(USE_EXTERNAL_USB ON) # INTERFACE libraries can't have real deps, so targets that link with usb need to also depend on libusb

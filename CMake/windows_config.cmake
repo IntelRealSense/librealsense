@@ -37,11 +37,15 @@ macro(os_set_flags)
     if(BUILD_EASYLOGGINGPP)
         add_definitions(-DNOMINMAX)
     endif()
-
-    include(CMake/external_libusb.cmake)
 endmacro()
 
 macro(os_target_config)
+    include(CMake/external_libusb.cmake)
+    target_link_libraries(${LRS_TARGET} PRIVATE usb)
+    if(USE_EXTERNAL_USB)
+        add_dependencies(${LRS_TARGET} libusb)
+    endif()
+
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     if(FORCE_WINUSB_UVC)
