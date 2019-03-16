@@ -50,7 +50,7 @@ macro(global_set_flags)
 
     if(FORCE_LIBUVC)
         set(BACKEND RS2_USE_LIBUVC_BACKEND)
-        message( WARNING "Using libuvc!" )
+        message(STATUS "Using libuvc (by force)")
     endif()
 
     if (BUILD_WITH_CUDA)
