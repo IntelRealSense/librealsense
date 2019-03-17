@@ -11,6 +11,7 @@ The application should open a window split into 4 viewports: top (upper left vie
 In the 3D view, you should be able to interact with the camera using your mouse, for rotating, zooming and panning.
 
 ## Code Overview
+![expected output](https://raw.githubusercontent.com/wiki/dorodnic/librealsense/trajectory.gif)
 
 First, we include the Intel® RealSense™ Cross-Platform API.
 ```cpp
