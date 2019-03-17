@@ -6,12 +6,12 @@
 This sample demonstrates how to draw the trajectory of the device's movement based on pose data. 
 
 ## Expected Output
+![expected output](https://raw.githubusercontent.com/wiki/dorodnic/librealsense/trajectory.gif)
 
 The application should open a window split into 4 viewports: top (upper left viewport), front (lower left viewport), side (lower right viewport) and 3D (upper right viewport). In each viewport, a 3D model of the camera and the corresponding 2D trajectory are rendered.
 In the 3D view, you should be able to interact with the camera using your mouse, for rotating, zooming and panning.
 
 ## Code Overview
-![expected output](https://raw.githubusercontent.com/wiki/dorodnic/librealsense/trajectory.gif)
 
 First, we include the Intel® RealSense™ Cross-Platform API.
 ```cpp
