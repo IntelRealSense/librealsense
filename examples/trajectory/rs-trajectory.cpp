@@ -1,12 +1,5 @@
 #include <librealsense2/rs.hpp>
 #include "example.hpp"          // Include short list of convenience functions for rendering
-#include <thread>
-
-/*
-pointer to member
-transpose initially in constructor
-remove calculating of rotation (set pre-calculated in global)
-*/
 
 struct short3
 {
@@ -104,12 +97,12 @@ public:
         glLineWidth(0.5f);
     }
 
-    rs2_vector get_max_borders()
+    rs2_vector get_max_coord()
     {
         return max_coord;
     }
 
-    rs2_vector get_min_borders()
+    rs2_vector get_min_coord()
     {
         return min_coord;
     }
@@ -182,7 +175,7 @@ void render_scene(glfw_state app_state)
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, 4 / 3, 1, 40);
+    gluPerspective(60.0, 4 / 3, 0.5, 100);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
@@ -262,21 +255,21 @@ public:
         : width(width), height(height), aspect (height / width), t(tracker), renderer(r) {  } 
 
     // Setup viewport
-    void load_matrices(float x, float y, float app_width, float app_height)
+    void load_matrices(float2 pos, float app_width, float app_height)
     {
         width = app_width;
         height = app_height;
         aspect = height / width;
 
         // Set viewport to 1/4 of the app window and enable scissor test to avoid rendering outside the current viewport
-        glViewport(x, y, width / 2, height / 2);
+        glViewport(pos.x, pos.y, width / 2, height / 2);
         glEnable(GL_SCISSOR_TEST);
-        glScissor(x, y, width / 2, height / 2);
+        glScissor(pos.x, pos.y, width / 2, height / 2);
 
         // Setup orthogonal projection matrix
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glOrtho(-1.0, 1.0, -1.0 * aspect, 1.0 * aspect, -50.0, 50.0);
+        glOrtho(-1.0, 1.0, -1.0 * aspect, 1.0 * aspect, -100.0, 100.0);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -320,20 +313,20 @@ class view_2d : public view
 {
 public:
     view_2d(float width, float height, tracker& tracker, camera_renderer& renderer, rs2_vector lookat_eye, pos a, pos b, pos c)
-        : view(width, height, tracker, renderer), a(a), b(b), c(c), lookat_eye(lookat_eye)
+        : view(width, height, tracker, renderer), a(a), b(b), c(c), lookat_eye(lookat_eye), window_borders{ 1, aspect }
     {  }
 
     // Renders a viewport on 1/4 of the app window
-    void draw_view(float x, float y, float width, float height, float2 scale_pos, float r[16])
+    void draw_view(float2 pos, float width, float height, float2 scale_pos, float r[16])
     {
         // Calculate and print scale in meters
         float bar_width = display_scale(scale_factor, scale_pos.x, scale_pos.y);
 
-        min_borders = t.get_min_borders();
-        max_borders = t.get_max_borders();
+        rs2_vector min_coord = t.get_min_coord();
+        rs2_vector max_coord = t.get_max_coord();
 
         // Prepare viewport for rendering
-        load_matrices(x, y, width, height);
+        load_matrices(pos, width, height);
 
         glBegin(GL_LINES);
         // Draw scale bar
@@ -347,13 +340,13 @@ public:
         // Scale viewport according to current scale factor
         glScalef(scale_factor, scale_factor, scale_factor);
         // If trajectory reached one of the viewport's borders, zoom out and update scale factor
-        if (min_borders.*a < -scale_threshold_x || max_borders.*a > scale_threshold_x
-            || min_borders.*b < -scale_threshold_y || max_borders.*b > scale_threshold_y)
+        if (min_coord.*a < -window_borders.x || max_coord.*a > window_borders.x
+            || min_coord.*b < -window_borders.y || max_coord.*b > window_borders.y)
         {
             glScalef(0.5, 0.5, 0.5);
             scale_factor *= 0.5;
-            scale_threshold_x = scale_threshold_x * 2;
-            scale_threshold_y = scale_threshold_y * 2;
+            window_borders.x = window_borders.x * 2;
+            window_borders.y = window_borders.y * 2;
         }
         // Draw trajectory and camera
         draw_cam_trajectory(180, { 0, 1, 0 }, r);
@@ -361,10 +354,8 @@ public:
         clean_matrices();
     }
 private:
-    float scale_threshold_x = 1.0;
-    float scale_threshold_y = 1.0 * aspect;
+    float2 window_borders;
     float scale_factor = 1.0;
-    rs2_vector min_borders, max_borders;
     rs2_vector lookat_eye;
     pos a, b, c;
 };
@@ -376,10 +367,10 @@ public:
     view_3d(float width, float height, tracker& tracker, camera_renderer& renderer)
         : view(width, height, tracker, renderer) { }
 
-    void draw_view(float x, float y, float app_width, float app_height, glfw_state app_state, float r[16])
+    void draw_view(float2 pos, float app_width, float app_height, glfw_state app_state, float r[16])
     {
         // Prepare viewport for rendering
-        load_matrices(x, y, app_width, app_height);
+        load_matrices(pos, app_width, app_height);
         // Set the scene configuration and handle user's manipulations
         render_scene(app_state);
         // Draw trajectory and camera
@@ -406,6 +397,22 @@ public:
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Upper left window: top perspective (x and z axes)
+        top.draw_view({ 0, app_height / 2 }, app_width, app_height, float2{ float(0.457) * app_width, float(0.49) * app_height }, r);
+        // Lower left window: front perspective (x and y axes)
+        front.draw_view({ 0, 0 }, app_width, app_height, float2{ float(0.457) * app_width, float(0.99) * app_height }, r);
+        // Lower right window: side perspective (y and z axes)
+        side.draw_view({ app_width / 2, 0 }, app_width, app_height, float2{ float(0.957) * app_width, float(0.99) * app_height }, r);
+        // Upper right window: 3D view
+        three_dim.draw_view({ app_width / 2, app_height / 2 }, app_width, app_height, app_state, r);
+
+        // Draw viewport titles
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_text(0.005 * app_width, 0.02 * app_height, "TOP");
+        draw_text(0.005 * app_width, 0.52 * app_height, "FRONT");
+        draw_text(0.505 * app_width, 0.52 * app_height, "SIDE");
+        draw_text(0.505 * app_width, 0.02 * app_height, "3D");
+
         // Label axes
         glColor3f(1.0f, 0.0f, 0.0f);
         draw_text(0.494 * app_width, 0.261 * app_height, "x");
@@ -417,15 +424,6 @@ public:
         draw_text(0.245 * app_width, 0.995 * app_height, "y");
         draw_text(0.745 * app_width, 0.995 * app_height, "y");
 
-        // Upper left window: top perspective (x and z axes)
-        top.draw_view(0, app_height / 2, app_width, app_height, float2{ float(0.457) * app_width, float(0.49) * app_height }, r);
-        // Lower left window: front perspective (x and y axes)
-        front.draw_view(0, 0, app_width, app_height, float2{ float(0.457) * app_width, float(0.99) * app_height },  r);
-        // Lower right window: side perspective (y and z axes)
-        side.draw_view(app_width / 2, 0, app_width, app_height, float2{ float(0.957) * app_width, float(0.99) * app_height }, r);
-        // Upper right window: 3D view
-        three_dim.draw_view(app_width / 2, app_height / 2, app_width, app_height, app_state, r);
-       
         // Draw lines bounding each viewport
         draw_borders();
     }
@@ -445,6 +443,11 @@ int main(int argc, char * argv[]) try
     // Register callbacks to allow manipulation of the view state
     register_glfw_callbacks(app, app_state);
 
+    // Create objects for rendering the camera, the trajectory and the split screen
+    camera_renderer cam_renderer;
+    tracker tracker;
+    split_screen_renderer screen_renderer(app.width(), app.height(), tracker, cam_renderer);
+
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
@@ -454,11 +457,6 @@ int main(int argc, char * argv[]) try
 
     // Start pipeline with chosen configuration
     pipe.start(cfg);
-
-    // Create objects for rendering the camera, the trajectory and the split screen
-    camera_renderer cam_renderer;
-    tracker tracker;
-    split_screen_renderer screen_renderer(app.width(), app.height(), tracker, cam_renderer);
 
     // Main loop
     while (app)
