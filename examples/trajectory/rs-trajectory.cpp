@@ -1,5 +1,6 @@
 #include <librealsense2/rs.hpp>
 #include "example.hpp"          // Include short list of convenience functions for rendering
+#include <cstring>
 
 struct short3
 {
