@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Security;
 
 namespace Intel.RealSense.Base
@@ -57,69 +56,13 @@ namespace Intel.RealSense.Base
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         public void Dispose(bool disposing)
         {
             if (handle == IntPtr.Zero)
                 return;
             m_deleter?.Invoke(handle);
             handle = IntPtr.Zero;
-        }
-    }
-
-    /// <summary>
-    /// Base class for disposable objects with native resources
-    /// </summary>
-    public abstract class Object : IDisposable
-    {
-        //TODO: rename, kept for backwards compatiblity
-        internal readonly DeleterHandle m_instance;
-
-        public IntPtr Handle
-        {
-            get
-            {
-                if (m_instance.IsInvalid)
-                    throw new ObjectDisposedException(GetType().Name);
-                return m_instance.Handle;
-            }
-        }
-    
-        protected Object(IntPtr ptr, Deleter deleter)
-        {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-            m_instance = new DeleterHandle(ptr, deleter);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            m_instance.Dispose();
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-        }
-    }
-
-    /// <summary>
-    /// Base class for objects in an <cref see="ObjectPool">ObjectPool</cref>
-    /// </summary>
-    public abstract class PooledObject : Object
-    {
-        protected PooledObject(IntPtr ptr, Deleter deleter) : base(ptr, deleter)
-        {
-        }
-
-        internal abstract void Initialize();
-
-        protected override void Dispose(bool disposing)
-        {
-            if (m_instance.IsInvalid)
-                return;
-            base.Dispose(disposing);            
-            ObjectPool.Release(this);
         }
     }
 }
