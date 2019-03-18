@@ -21,6 +21,7 @@
 #include "context.h"
 
 #ifdef WITH_TRACKING
+#include "tm2/tm-context.h"
 #include "tm2/tm-info.h"
 #endif
 
@@ -559,6 +560,13 @@ namespace librealsense
         _playback_devices.erase(it);
         on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
+
+#if WITH_TRACKING
+    void context::unload_tracking_module()
+    {
+        _tm2_context.reset();
+    };
+#endif
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {

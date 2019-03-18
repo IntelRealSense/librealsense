@@ -17,7 +17,7 @@ namespace librealsense
         for (auto dev : devices)
         {
             auto data = dev->get_device_data();
-            for (auto uvc : data.uvc_devices)
+            for (const auto& uvc : data.uvc_devices)
             {
                 if (uvc.vid == vid || vid == 0)
                 {
@@ -25,6 +25,9 @@ namespace librealsense
                     break;
                 }
             }
+
+            if (data.tm2_devices.size() && (0== vid))
+                result.push_back(dev);
         }
         return result;
     }

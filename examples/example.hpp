@@ -16,9 +16,11 @@
 #include <cmath>
 #include <map>
 
-#define PI 3.14159265358979323846
-#define IMU_FRAME_WIDTH 1280
-#define IMU_FRAME_HEIGHT 720
+#ifndef PI
+const double PI = 3.14159265358979323846;
+#endif
+const size_t IMU_FRAME_WIDTH = 1280;
+const size_t IMU_FRAME_HEIGHT = 720;
 //////////////////////////////
 // Basic Data Types         //
 //////////////////////////////
@@ -101,83 +103,7 @@ void set_viewport(const rect& r)
     glOrtho(0, r.w, r.h, 0, -1, +1);
 }
 
-////////////////////////
-// Image display code //
-////////////////////////
-class texture
-{
-    GLuint gl_handle = 0;
-    rs2_stream stream = RS2_STREAM_ANY;
-
-public:
-    void render(const rs2::video_frame& frame, const rect& rect)
-    {
-        upload(frame);
-        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
-    }
-
-    void upload(const rs2::video_frame& frame)
-    {
-        if (!frame) return;
-
-        if (!gl_handle)
-            glGenTextures(1, &gl_handle);
-        GLenum err = glGetError();
-
-        auto format = frame.get_profile().format();
-        auto width = frame.get_width();
-        auto height = frame.get_height();
-        stream = frame.get_profile().stream_type();
-
-        glBindTexture(GL_TEXTURE_2D, gl_handle);
-
-        switch (format)
-        {
-        case RS2_FORMAT_RGB8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
-            break;
-        case RS2_FORMAT_RGBA8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.get_data());
-            break;
-        case RS2_FORMAT_Y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
-            break;
-        default:
-            throw std::runtime_error("The requested format is not supported by this demo!");
-        }
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    void show(const rect& r) const
-    {
-        if (!gl_handle)
-            return;
-
-        set_viewport(r);
-
-        glBindTexture(GL_TEXTURE_2D, gl_handle);
-        glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(0, 0);
-        glTexCoord2f(0, 1); glVertex2f(0, r.h);
-        glTexCoord2f(1, 1); glVertex2f(r.w, r.h);
-        glTexCoord2f(1, 0); glVertex2f(r.w, 0);
-        glEnd();
-        glDisable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        draw_text(int(0.05f * r.w), int(r.h - 0.05f*r.h), rs2_stream_to_string(stream));
-    }
-
-    GLuint get_gl_handle() { return gl_handle; }
-};
-
-class imu_drawer
+class imu_renderer
 {
 public:
     void render(const rs2::motion_frame& frame, const rect& r)
@@ -196,7 +122,7 @@ private:
             glGenTextures(1, &_gl_handle);
 
         set_viewport(r);
-        draw_text(int(0.05f * r.w), int(r.h - 0.1f*r.h), f.get_profile().stream_name().c_str());
+        draw_text(int(0.05f * r.w), int(0.05f * r.h), f.get_profile().stream_name().c_str());
 
         auto md = f.get_motion_data();
         auto x = md.x;
@@ -218,7 +144,7 @@ private:
         glRotatef(180, 0.0f, 0.0f, 1.0f);
         glRotatef(-90, 0.0f, 1.0f, 0.0f);
 
-        draw_axes();
+        draw_axes(1,2);
 
         draw_circle(1, 0, 0, 0, 1, 0);
         draw_circle(0, 1, 0, 0, 0, 1);
@@ -247,7 +173,7 @@ private:
         }
         else
         {
-            auto vectorWidth = 5.f;
+            auto vectorWidth = 3.f;
             glLineWidth(vectorWidth);
             glBegin(GL_LINES);
             glColor3f(1.0f, 1.0f, 1.0f);
@@ -397,6 +323,146 @@ private:
 
 };
 
+class pose_renderer
+{
+public:
+    void render(const rs2::pose_frame& frame, const rect& r)
+    {
+        draw_pose(frame, r.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
+
+    GLuint get_gl_handle() { return _gl_handle; }
+
+private:
+    mutable GLuint _gl_handle = 0;
+
+    // Provide textual representation only
+    void draw_pose(const rs2::pose_frame& f, const rect& r)
+    {
+        if (!_gl_handle)
+            glGenTextures(1, &_gl_handle);
+
+        set_viewport(r);
+        std::string caption(f.get_profile().stream_name());
+        if (f.get_profile().stream_index())
+            caption += std::to_string(f.get_profile().stream_index());
+        draw_text(int(0.05f * r.w), int(0.05f * r.h), caption.c_str());
+
+        auto pose = f.get_pose_data();
+        std::stringstream ss;
+        ss << "Pos (meter): \t\t" << std::fixed << std::setprecision(2) << pose.translation.x << ", " << pose.translation.y << ", " << pose.translation.z;
+        draw_text(int(0.05f * r.w), int(0.2f*r.h), ss.str().c_str());
+        ss.clear(); ss.str("");
+        ss << "Orient (quaternion): \t" << pose.rotation.x << ", " << pose.rotation.y << ", " << pose.rotation.z << ", " << pose.rotation.w;
+        draw_text(int(0.05f * r.w), int(0.3f*r.h), ss.str().c_str());
+        ss.clear(); ss.str("");
+        ss << "Lin Velocity (m/sec): \t" << pose.velocity.x << ", " << pose.velocity.y << ", " << pose.velocity.z;
+        draw_text(int(0.05f * r.w), int(0.4f*r.h), ss.str().c_str());
+        ss.clear(); ss.str("");
+        ss << "Ang. Velocity (rad/sec): \t" << pose.angular_velocity.x << ", " << pose.angular_velocity.y << ", " << pose.angular_velocity.z;
+        draw_text(int(0.05f * r.w), int(0.5f*r.h), ss.str().c_str());
+    }
+};
+
+////////////////////////
+// Image display code //
+////////////////////////
+class texture
+{
+    GLuint          _gl_handle = 0;
+    rs2_stream      _stream_type = RS2_STREAM_ANY;
+    int             _stream_index{};
+    imu_renderer    _imu_render;
+    pose_renderer   _pose_render;
+
+public:
+    template<class T>
+    typename std::enable_if<std::is_base_of<rs2::frame, T>::value, void>::type render(const T& frame, const rect& rect)
+    {
+        static_assert(false, "Rendering is currently supported for video, motion and pose frame types only");
+    }
+
+    template<>
+    void render<rs2::video_frame>(const rs2::video_frame& frame, const rect& rect)
+    {
+        upload(frame);
+        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
+    }
+
+    template<>
+    void render<rs2::motion_frame>(const rs2::motion_frame& frame, const rect& rect)
+    {
+        _imu_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
+
+    template<>
+    void render<rs2::pose_frame>(const rs2::pose_frame& frame, const rect& rect)
+    {
+        _pose_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
+
+    void upload(const rs2::video_frame& frame)
+    {
+        if (!frame) return;
+
+        if (!_gl_handle)
+            glGenTextures(1, &_gl_handle);
+        GLenum err = glGetError();
+
+        auto format = frame.get_profile().format();
+        auto width = frame.get_width();
+        auto height = frame.get_height();
+        _stream_type = frame.get_profile().stream_type();
+        _stream_index = frame.get_profile().stream_index();
+
+        glBindTexture(GL_TEXTURE_2D, _gl_handle);
+
+        switch (format)
+        {
+        case RS2_FORMAT_RGB8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+            break;
+        case RS2_FORMAT_RGBA8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.get_data());
+            break;
+        case RS2_FORMAT_Y8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
+            break;
+        default:
+            throw std::runtime_error("The requested format is not supported by this demo!");
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void show(const rect& r) const
+    {
+        if (!_gl_handle)
+            return;
+
+        set_viewport(r);
+
+        glBindTexture(GL_TEXTURE_2D, _gl_handle);
+        glEnable(GL_TEXTURE_2D);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0, 0);
+        glTexCoord2f(0, 1); glVertex2f(0, r.h);
+        glTexCoord2f(1, 1); glVertex2f(r.w, r.h);
+        glTexCoord2f(1, 0); glVertex2f(r.w, 0);
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        draw_text(int(0.05f * r.w), int(0.05f * r.h), rs2_stream_to_string(_stream_type));
+    }
+
+    GLuint get_gl_handle() { return _gl_handle; }
+};
+
 class window
 {
 public:
@@ -486,7 +552,7 @@ public:
         if (auto vf = frame.as<rs2::video_frame>())
             render_video_frame(vf, rect);
         if (auto mf = frame.as<rs2::motion_frame>())
-            render_motoin_frame(mf, rect);
+            render_motion_frame(mf, rect);
     }
 
     operator GLFWwindow*() { return win; }
@@ -494,7 +560,7 @@ public:
 private:
     GLFWwindow * win;
     std::map<int, texture> _textures;
-    std::map<int, imu_drawer> _imus;
+    std::map<int, imu_renderer> _imus;
     int _width, _height;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
@@ -503,7 +569,7 @@ private:
         t.render(f, r);
     }
 
-    void render_motoin_frame(const rs2::motion_frame& f, const rect& r)
+    void render_motion_frame(const rs2::motion_frame& f, const rect& r)
     {
         auto& i = _imus[f.get_profile().unique_id()];
         i.render(f, r);

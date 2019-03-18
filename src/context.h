@@ -7,9 +7,6 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
-#if WITH_TRACKING
-    #include "tm2/tm-context.h"
-#endif
 
 #include <vector>
 #include <media/playback/playback_device.h>
@@ -106,6 +103,9 @@ namespace librealsense
 
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
+    //FW Decl
+    class tm2_context;
+
     class context : public std::enable_shared_from_this<context>
     {
     public:
@@ -135,7 +135,7 @@ namespace librealsense
         void add_software_device(std::shared_ptr<device_info> software_device);
 
 #if WITH_TRACKING
-        void unload_tracking_module() {_tm2_context.reset();};
+        void unload_tracking_module();
 #endif
 
     private:
