@@ -444,6 +444,12 @@ namespace librealsense
         return callback_id;
     }
 
+    void context::unregister_internal_device_callback(uint64_t cb_id)
+    {
+        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        _devices_changed_callbacks.erase(cb_id);
+    }
+
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
         _device_watcher->stop();
@@ -453,12 +459,6 @@ namespace librealsense
         {
             on_device_changed(old, curr, _playback_devices, _playback_devices);
         });
-    }
-
-    void context::unregister_internal_device_callback(uint64_t cb_id)
-    {
-        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-        _devices_changed_callbacks.erase(cb_id);
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)

@@ -67,8 +67,6 @@ void TrackingManager::ReleaseInstance(TrackingManager*& manager)
 // -[interface]----------------------------------------------------------------
 Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mListener(nullptr), mContext(nullptr), mFwFileName(""), mLibUsbDeviceToTrackingDeviceMap(), mEvent(), mCompleteQMutex(), mCompleteQ(), mTrackingDeviceInfoMap()
 {
-    // Evgeni
-    //setHostLogControl({ LogVerbosityLevel::Warning, LogOutputMode::LogOutputModeScreen, true });
     setHostLogControl({ LogVerbosityLevel::None, LogOutputMode::LogOutputModeScreen, true });
 
     // start running context 
