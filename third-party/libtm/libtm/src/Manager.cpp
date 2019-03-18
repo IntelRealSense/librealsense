@@ -67,7 +67,7 @@ void TrackingManager::ReleaseInstance(TrackingManager*& manager)
 // -[interface]----------------------------------------------------------------
 Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mListener(nullptr), mContext(nullptr), mFwFileName(""), mLibUsbDeviceToTrackingDeviceMap(), mEvent(), mCompleteQMutex(), mCompleteQ(), mTrackingDeviceInfoMap()
 {
-    setHostLogControl({ LogVerbosityLevel::None, LogOutputMode::LogOutputModeScreen, true });
+    setHostLogControl({ LogVerbosityLevel::Error, LogOutputMode::LogOutputModeScreen, true });
 
     // start running context 
     mThread = std::thread([this] {

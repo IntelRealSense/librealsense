@@ -136,7 +136,7 @@ float get_depth_scale(rs2::device dev)
             return dpt.get_depth_scale();
         }
     }
-    throw std::runtime_error("Device does not have a depth sensor");
+    throw std::runtime_error("The demo requires a Depth sensor to run");
 }
 
 void render_slider(rect location, float& clipping_dist)

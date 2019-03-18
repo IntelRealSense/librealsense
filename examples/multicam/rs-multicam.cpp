@@ -44,7 +44,7 @@ class device_container
     class frames_container
     {
     public:
-        frames_container() : _raw(1){};
+        frames_container() : _raw(1){}
         rs2::frame_queue    _raw;
         rs2::frame          _processed;
     };
@@ -53,10 +53,8 @@ class device_container
     struct view_port
     {
     public:
-        view_port()
-        {
-        }
-        ~view_port() {};
+        view_port(){}
+        ~view_port(){}
         view_port(const view_port&) = delete;               // non construction-copyable
         view_port(view_port&& vp):                          // moveable
             colorize_frame(std::move(vp.colorize_frame)),
@@ -83,7 +81,6 @@ public:
             remove_devices(info);
             for (auto&& dev : info.get_new_devices())
             {
-                std::cout << "Adding new device !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << dev.get_info(RS2_CAMERA_INFO_NAME) << " , " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
                 enable_device(dev);
             }
         }
@@ -163,14 +160,11 @@ public:
 
         if (_devices.find(serial_number) != _devices.end())
         {
-            std::cout << __FUNCTION__ << " Device s.n " << serial_number << " is already registered, skipped" << std::endl;
             return; //already in
         }
-        std::cout << __FUNCTION__ << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      Enabling device " << dev.get_info(RS2_CAMERA_INFO_NAME) << " s.n: " << serial_number << std::endl;
         // Ignoring platform cameras (webcams, etc..)
         if (platform_camera_name == dev.get_info(RS2_CAMERA_INFO_NAME))
         {
-            std::cout << __FUNCTION__ << " !!!!!!!!!!!!!!!!!!!!!!!!!!        Platform camera found, return" << std::endl;
             return;
         }
         // Create a pipeline from the given device
@@ -182,31 +176,24 @@ public:
 
         rs2::pipeline_profile profile = p.start(c, [serial_number, this](const rs2::frame& frame)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
             // With callbacks, both the synchronized and unsynchronized frames would arrive in a single frameset
             if (auto fs = frame.as<rs2::frameset>())
             {
                 for (const rs2::frame& f : fs)
                 {
-                    //std::cout << "Enq: Frame type " << f.get_profile().stream_name() << " format: " << f.get_profile().format() << " stream id: " << f.get_profile().unique_id() << " fn: " << f.get_frame_number() << std::endl;
                     if (_devices.find(serial_number) != _devices.end())
                         _devices[serial_number].frames_per_stream[f.get_profile().unique_id()]._raw.enqueue(f);
                 }
             }
-            else
+            else // Single frames
             {
-                // Stream that bypass synchronization (such as IMU) will produce single frames
                 if (_devices.find(serial_number) != _devices.end())
                     _devices[serial_number].frames_per_stream[frame.get_profile().unique_id()]._raw.enqueue(frame);
-                /*std::cout << "Enq: Single  type " << frame.get_profile().stream_name() << " format: " << frame.get_profile().format()
-                    << " stream id: " << frame.get_profile().unique_id() << " fn: " << frame.get_frame_number() << std::endl;*/
             }
         });
 
         _devices[serial_number].pipe = p;
         _devices[serial_number].profile = profile;
-        // Hold it internally
-        std::cout << "!!!!!!!!!!!!!!  Starting with device " << profile.get_device().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << " streams: " << profile.get_streams().size() << std::endl;
     }
 
     void remove_devices(const rs2::event_information& info)
@@ -218,9 +205,7 @@ public:
         {
             if (info.was_removed(itr->second.profile.get_device()))
             {
-                std::cout << "Device erased !!!!!!!!!!!!!!!!! " << itr->first << std::endl;
                 itr = _devices.erase(itr);
-                std::cout << "Devices left = " << _devices.size() << std::endl;
             }
             else
             {
@@ -250,14 +235,12 @@ int main(int argc, char * argv[]) try
     // Enumerate all the connected devices
     for (auto&& dev : ctx.query_devices())
     {
-        std::cout << "Enabling device " << dev.get_info(RS2_CAMERA_INFO_NAME) << " , " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
         connected_devices.enable_device(dev);
     }
 
     // Register user callback for tracking device connect/disconnect events
     ctx.set_devices_changed_callback([&](rs2::event_information& info)
     {
-        std::cout << "set_devices_changed_callback fired !!!!!!!!!!!!!!! " << std::endl;
         connected_devices.add_dev_event(info);
     });
 

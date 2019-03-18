@@ -63,7 +63,6 @@ namespace librealsense
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - started);
-            //LOG_WARNING("_manager: " << _manager << " init state: " << (_manager ? _manager->isInitialized() : 0));
         }
         LOG_DEBUG("T265 query acomplished after " << std::dec << elapsed.count() << " ms]");
         return _devices;
@@ -78,13 +77,13 @@ namespace librealsense
             case TrackingManager::ATTACH:
             {
                 _devices.push_back(dev);
-                LOG_WARNING("TM2 Device Attached - " << dev);
+                LOG_INFO("TM2 Device Attached - " << dev);
                 added = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
                 break;
             }
             case TrackingManager::DETACH:
             {
-                LOG_WARNING("TM2 Device Detached");
+                LOG_INFO("TM2 Device Detached");
                 removed = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
                 auto itr = std::find_if(_devices.begin(), _devices.end(), [dev](TrackingDevice* d) { return dev == d; });
                 _devices.erase(itr);

@@ -156,10 +156,10 @@ void perc::UsbPlugListener::EnumerateDevices()
     // free the list
     libusb_free_device_list(list, 1);
 
-    switch (mInitialized)
+    switch (mInitialized.load())
     {
     case usb_setup_init:
-        mInitialized = usb_setup_progress;
+        mInitialized.store(usb_setup_progress);
         // Schedule 1000ms for loading if DFU device(s) were found, otherwise 500msec
         mUSBMinTimeout = mUSBSetupTimeout = systemTime() + (bootLoader_count ? 1000000000 : 500000000);
         mDevicesToProcess = bootLoader_count;
@@ -182,14 +182,14 @@ void perc::UsbPlugListener::EnumerateDevices()
 
         if (systemTime() >= mUSBSetupTimeout)
         {
-            mInitialized = usb_setup_timeout;
+            mInitialized.store(usb_setup_timeout);
             LOGE("EnumerateDevices: ,timeout occurred time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
         }
         else
         {
             if ((systemTime() >= mUSBMinTimeout) && (!mDevicesToProcess))
             {
-                mInitialized = usb_setup_success;
+                mInitialized.store(usb_setup_success);
                 LOGE("EnumerateDevices: ,usb_setup_success time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
             }
             // else wait for process co complete
@@ -199,6 +199,6 @@ void perc::UsbPlugListener::EnumerateDevices()
         break;
     }
 
-    if (mInitialized & (usb_setup_success | usb_setup_timeout))
+    if (mInitialized.load() & (usb_setup_success | usb_setup_timeout))
         mNextScanIntervalMs = ENUMERATE_TIMEOUT_NSEC;
 }

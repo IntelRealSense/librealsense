@@ -45,7 +45,7 @@ namespace perc
         static const char *usbSpeed(uint16_t bcdUSB);
 
         enum usb_setup_e { usb_setup_init = 1, usb_setup_progress = 1<<1, usb_setup_success = 1<<2, usb_setup_timeout= 1<<3};
-        bool isInitialized(void) const { return mInitialized & (usb_setup_success | usb_setup_timeout); }
+        bool isInitialized(void) const { return mInitialized.load() & (usb_setup_success | usb_setup_timeout); }
 
     private:
         void EnumerateDevices();
