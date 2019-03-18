@@ -367,38 +367,20 @@ private:
 ////////////////////////
 // Image display code //
 ////////////////////////
+/// \brief The texture class
 class texture
 {
-    GLuint          _gl_handle = 0;
-    rs2_stream      _stream_type = RS2_STREAM_ANY;
-    int             _stream_index{};
-    imu_renderer    _imu_render;
-    pose_renderer   _pose_render;
-
 public:
-    template<class T>
-    typename std::enable_if<std::is_base_of<rs2::frame, T>::value, void>::type render(const T& frame, const rect& rect)
-    {
-        static_assert(false, "Rendering is currently supported for video, motion and pose frame types only");
-    }
+    template<typename T>
+    struct identity { typedef T type; };
 
-    template<>
-    void render<rs2::video_frame>(const rs2::video_frame& frame, const rect& rect)
+    template<typename T>
+    typename std::enable_if<std::is_base_of<rs2::frame, T>::value, void>::type render(const T& frame, const rect& r)
     {
-        upload(frame);
-        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
-    }
-
-    template<>
-    void render<rs2::motion_frame>(const rs2::motion_frame& frame, const rect& rect)
-    {
-        _imu_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
-    }
-
-    template<>
-    void render<rs2::pose_frame>(const rs2::pose_frame& frame, const rect& rect)
-    {
-        _pose_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+        static_assert((std::is_same<T,rs2::video_frame>::value) ||
+                      (std::is_same<T,rs2::motion_frame>::value) ||
+                      (std::is_same<T,rs2::pose_frame>::value), "Rendering is currently supported for video, motion and pose non-aggregative frame types only");
+        render(frame, r, identity<T>());
     }
 
     void upload(const rs2::video_frame& frame)
@@ -461,6 +443,29 @@ public:
     }
 
     GLuint get_gl_handle() { return _gl_handle; }
+
+private:
+    void render(const rs2::video_frame& frame, const rect& rect, identity<rs2::video_frame>)
+    {
+        upload(frame);
+        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
+    }
+
+    void render(const rs2::motion_frame& frame, const rect& rect, identity<rs2::motion_frame>)
+    {
+        _imu_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
+
+    void render(const rs2::pose_frame& frame, const rect& rect, identity<rs2::pose_frame>)
+    {
+        _pose_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+    }
+
+    GLuint          _gl_handle = 0;
+    rs2_stream      _stream_type = RS2_STREAM_ANY;
+    int             _stream_index{};
+    imu_renderer    _imu_render;
+    pose_renderer   _pose_render;
 };
 
 class window
