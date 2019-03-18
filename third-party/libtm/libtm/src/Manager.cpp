@@ -67,6 +67,10 @@ void TrackingManager::ReleaseInstance(TrackingManager*& manager)
 // -[interface]----------------------------------------------------------------
 Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mListener(nullptr), mContext(nullptr), mFwFileName(""), mLibUsbDeviceToTrackingDeviceMap(), mEvent(), mCompleteQMutex(), mCompleteQ(), mTrackingDeviceInfoMap()
 {
+    // Evgeni
+    //setHostLogControl({ LogVerbosityLevel::Warning, LogOutputMode::LogOutputModeScreen, true });
+    setHostLogControl({ LogVerbosityLevel::None, LogOutputMode::LogOutputModeScreen, true });
+
     // start running context 
     mThread = std::thread([this] {
         mFsm.init(FSM(main), this, mDispatcher.get(), LOG_TAG);
@@ -77,15 +81,7 @@ Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mL
     {
         throw std::runtime_error("Failed to init manager");
     }
-
-
-    TrackingData::LogControl logControl(LogVerbosityLevel::None,
-        LogOutputMode::LogOutputModeBuffer,
-        true);
-
-    setHostLogControl(logControl);
 }
-
 
 Manager::~Manager()
 {
@@ -455,7 +451,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
     }
 
     /* USB Device Firmware Upgrade (DFU) */
-    if (mUsbPlugListener->identifyUDFDevice(&desc) == true)
+    if (mUsbPlugListener->identifyDFUDevice(&desc) == true)
     {
         libusb_ref_device(m.device);
 
@@ -547,7 +543,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_DETACH, msg)
         delete device;
         libusb_unref_device(m.device);
     }
-    else if (mUsbPlugListener->identifyUDFDevice(&desc) == true)
+    else if (mUsbPlugListener->identifyDFUDevice(&desc) == true)
     {
         libusb_unref_device(m.device);
     }

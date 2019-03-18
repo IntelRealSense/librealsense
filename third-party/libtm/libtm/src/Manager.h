@@ -44,6 +44,9 @@ namespace perc
         static std::mutex instanceExistMutex;
         static bool instanceExist;
 
+        // Await USB device discovery completion
+        bool isInitialized() const override { return mUsbPlugListener->isInitialized(); }
+
     protected:
         std::thread mThread;
         std::shared_ptr<Dispatcher> mDispatcher;
