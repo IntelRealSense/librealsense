@@ -297,21 +297,6 @@ namespace Intel.RealSense
             NativeMethods.rs2_start(Handle, cb2, IntPtr.Zero, out error);
         }
 
-        /// <summary>start streaming from specified configured sensor</summary>
-        /// <param name="cb">delegate to register as per-frame callback</param>
-        public void Start<T>(Action<T> cb) where T : Frame
-        {
-            object error;
-            frame_callback cb2 = (IntPtr f, IntPtr u) =>
-            {
-                using (var frame = Frame.Create<T>(f))
-                    cb(frame);
-            };
-            m_callback = cb2;
-            m_queue = null;
-            NativeMethods.rs2_start(Handle, cb2, IntPtr.Zero, out error);
-        }
-
         /// <summary>
         /// stops streaming from specified configured device
         /// </summary>

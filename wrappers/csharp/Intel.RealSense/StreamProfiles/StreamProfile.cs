@@ -55,10 +55,7 @@ namespace Intel.RealSense
 
         public T As<T>() where T : StreamProfile
         {
-            using (this)
-            {
-                return Create<T>(Handle);
-            }
+            return Create<T>(Handle);
         }
 
         internal static T Create<T>(IntPtr ptr) where T : StreamProfile
