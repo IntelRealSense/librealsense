@@ -161,7 +161,6 @@ namespace librealsense
         _hist_data = _histogram.data();
         _stream_filter.stream = RS2_STREAM_DEPTH;
         _stream_filter.format = RS2_FORMAT_Z16;
-//		_stream_filter.format = RS2_FORMAT_DISPARITY32;
 
         _maps = { &jet, &hue, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern };
 
@@ -325,7 +324,6 @@ namespace librealsense
 
         auto make_value_cropped_frame = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
         {
-            const auto max_depth = 0x10000;
             const auto w = depth.get_width(), h = depth.get_height();
             const auto depth_data = reinterpret_cast<const uint16_t*>(depth.get_data());
             auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
@@ -356,24 +354,63 @@ namespace librealsense
             }
         };
 
+		// for disparity colorization with equalization
 		auto make_disparity_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
 		{
 			const auto w = depth.get_width(), h = depth.get_height();
-			const auto depth_data = reinterpret_cast<const float*>(depth.get_data());
+			const auto disparity_data = reinterpret_cast<const float*>(depth.get_data());
 			auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
 
-			update_disparity_histogram(_hist_data, depth_data, w, h);
+			update_disparity_histogram(_hist_data, disparity_data, w, h);
 
 			auto cm = _maps[_map_index];
 			for (auto i = 0; i < w*h; ++i)
 			{
-				auto d = (int)depth_data[i];
+				auto d = (int)disparity_data[i];
 
 				if (d)
 				{
 					auto f = _hist_data[d] / (float)_hist_data[MAX_DEPTH - 1]; // 0-255 based on histogram location
 
 					auto c = cm->get(f);
+					rgb_data[i * 3 + 0] = (uint8_t)c.x;
+					rgb_data[i * 3 + 1] = (uint8_t)c.y;
+					rgb_data[i * 3 + 2] = (uint8_t)c.z;
+				}
+				else
+				{
+					rgb_data[i * 3 + 0] = 0;
+					rgb_data[i * 3 + 1] = 0;
+					rgb_data[i * 3 + 2] = 0;
+				}
+			}
+		};
+
+		// for disparity colorization with fixed range
+		auto make_disparity_value_cropped_frame = [this](const rs2::video_frame& depth, rs2::video_frame rgb)
+		{
+			const auto w = depth.get_width(), h = depth.get_height();
+			const auto disparity_data = reinterpret_cast<const float*>(depth.get_data());
+			auto rgb_data = reinterpret_cast<uint8_t*>(const_cast<void *>(rgb.get_data()));
+
+			auto fi = (frame_interface*)depth.get();
+			auto df = dynamic_cast<librealsense::depth_frame*>(fi);
+			auto depth_units = df->get_units();
+
+			// convert from depth min max to disparity min max
+			// note: max min value is inverted in disparity domain
+			auto _disparity_max = static_cast<float>((_d2d_convert_factor / _min) * depth_units + .5f);
+			auto _disparity_min = static_cast<float>((_d2d_convert_factor / _max) * depth_units + .5f);
+
+			for (auto i = 0; i < w*h; ++i)
+			{
+				auto d = disparity_data[i];
+
+				if (d)
+				{
+					// colorize with disparity
+					auto f = (d - _disparity_min) / (_disparity_max - _disparity_min);
+					auto c = _maps[_map_index]->get(f);
 					rgb_data[i * 3 + 0] = (uint8_t)c.x;
 					rgb_data[i * 3 + 1] = (uint8_t)c.y;
 					rgb_data[i * 3 + 2] = (uint8_t)c.z;
@@ -395,7 +432,10 @@ namespace librealsense
 
 		if (_source_stream_profile.format() == RS2_FORMAT_DISPARITY32)
 		{
-			make_disparity_equalized_histogram(f, ret);
+			if (_equalize)
+				make_disparity_equalized_histogram(f, ret);
+			else
+				make_disparity_value_cropped_frame(f, ret);
 		}
 		else
 		{ 
