@@ -364,6 +364,21 @@ private:
     }
 };
 
+class text_renderer
+{
+public:
+    // Provide textual representation only
+    void put_text(const std::string& msg, float norm_x_pos, float norm_y_pos, const rect& r)
+    {
+        if (!_gl_handle)
+            glGenTextures(1, &_gl_handle);
+
+        set_viewport(r);
+        draw_text(int(norm_x_pos * r.w), int(norm_y_pos * r.h), msg.c_str());
+    }
+private:
+    mutable GLuint _gl_handle = 0;
+};
 ////////////////////////
 // Image display code //
 ////////////////////////
@@ -371,17 +386,6 @@ private:
 class texture
 {
 public:
-    template<typename T>
-    struct identity { typedef T type; };
-
-    template<typename T>
-    typename std::enable_if<std::is_base_of<rs2::frame, T>::value, void>::type render(const T& frame, const rect& r)
-    {
-        static_assert((std::is_same<T,rs2::video_frame>::value) ||
-                      (std::is_same<T,rs2::motion_frame>::value) ||
-                      (std::is_same<T,rs2::pose_frame>::value), "Rendering is currently supported for video, motion and pose non-aggregative frame types only");
-        render(frame, r, identity<T>());
-    }
 
     void upload(const rs2::video_frame& frame)
     {
@@ -444,22 +448,26 @@ public:
 
     GLuint get_gl_handle() { return _gl_handle; }
 
+    void render(const rs2::frame& frame, const rect& rect)
+    {
+        if (auto vf = frame.as<rs2::video_frame>())
+        {
+            upload(vf);
+            show(rect.adjust_ratio({ (float)vf.get_width(), (float)vf.get_height() }));
+        }
+        else if (auto mf = frame.as<rs2::motion_frame>())
+        {
+            _imu_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+        }
+        else if (auto pf = frame.as<rs2::pose_frame>())
+        {
+            _pose_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
+        }
+        else
+            throw std::runtime_error("Rendering is currently supported for video, motion and pose frames only");
+    }
+
 private:
-    void render(const rs2::video_frame& frame, const rect& rect, identity<rs2::video_frame>)
-    {
-        upload(frame);
-        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
-    }
-
-    void render(const rs2::motion_frame& frame, const rect& rect, identity<rs2::motion_frame>)
-    {
-        _imu_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
-    }
-
-    void render(const rs2::pose_frame& frame, const rect& rect, identity<rs2::pose_frame>)
-    {
-        _pose_render.render(frame, rect.adjust_ratio({ IMU_FRAME_WIDTH, IMU_FRAME_HEIGHT }));
-    }
 
     GLuint          _gl_handle = 0;
     rs2_stream      _stream_type = RS2_STREAM_ANY;
@@ -514,6 +522,12 @@ public:
         });
     }
 
+    ~window()
+    {
+        glfwDestroyWindow(win);
+        glfwTerminate();
+    }
+
     float width() const { return float(_width); }
     float height() const { return float(_height); }
 
@@ -539,12 +553,6 @@ public:
         return res;
     }
 
-    ~window()
-    {
-        glfwDestroyWindow(win);
-        glfwTerminate();
-    }
-
     void show(rs2::frame frame)
     {
         show(frame, { 0, 0, (float)_width, (float)_height });
@@ -558,6 +566,33 @@ public:
             render_video_frame(vf, rect);
         if (auto mf = frame.as<rs2::motion_frame>())
             render_motion_frame(mf, rect);
+        if (auto pf = frame.as<rs2::pose_frame>())
+            render_pose_frame(pf, rect);
+    }
+
+    void show(const std::map<int, rs2::frame> frames)
+    {
+        // Render openGl mosaic of frames
+         if (frames.size())
+         {
+             int cols = int(std::ceil(std::sqrt(frames.size())));
+             int rows = int(std::ceil(frames.size() / static_cast<float>(cols)));
+
+             float view_width = float(_width / cols);
+             float view_height = float(_height / rows);
+             int stream_no =0;
+             for (auto& frame : frames)
+             {
+                 rect viewport_loc{ view_width * (stream_no % cols), view_height * (stream_no / cols), view_width, view_height };
+                 show(frame.second, viewport_loc);
+                 stream_no++;
+             }
+         }
+         else
+         {
+             _main_win.put_text("Connect one or more cameras to run", 
+                 0.45f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
+         }
     }
 
     operator GLFWwindow*() { return win; }
@@ -566,6 +601,8 @@ private:
     GLFWwindow * win;
     std::map<int, texture> _textures;
     std::map<int, imu_renderer> _imus;
+    std::map<int, pose_renderer> _poses;
+    text_renderer   _main_win;
     int _width, _height;
 
     void render_video_frame(const rs2::video_frame& f, const rect& r)
@@ -577,6 +614,12 @@ private:
     void render_motion_frame(const rs2::motion_frame& f, const rect& r)
     {
         auto& i = _imus[f.get_profile().unique_id()];
+        i.render(f, r);
+    }
+
+    void render_pose_frame(const rs2::pose_frame& f, const rect& r)
+    {
+        auto& i = _poses[f.get_profile().unique_id()];
         i.render(f, r);
     }
 

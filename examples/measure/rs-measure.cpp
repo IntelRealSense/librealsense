@@ -337,7 +337,7 @@ int main(int argc, char * argv[]) try
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             // First render the colorized depth image
-            depth_image.render(colorized_depth.as<rs2::video_frame>(), { 0, 0, app.width(), app.height() });
+            depth_image.render(colorized_depth, { 0, 0, app.width(), app.height() });
             // Next, set global alpha for the color image to 90%
             // (to make it slightly translucent)
             //glColor4f(1.f, 1.f, 1.f, 0.9f);

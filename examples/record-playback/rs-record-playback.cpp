@@ -194,7 +194,7 @@ int main(int argc, char * argv[]) try
         ImGui::Render();
 
         // Render depth frames from the default configuration, the recorder or the playback
-        depth_image.render(depth.as<rs2::video_frame>(), { app.width() * 0.25f, app.height() * 0.25f, app.width() * 0.5f, app.height() * 0.75f  });
+        depth_image.render(depth, { app.width() * 0.25f, app.height() * 0.25f, app.width() * 0.5f, app.height() * 0.75f  });
     }
     return EXIT_SUCCESS;
 }
