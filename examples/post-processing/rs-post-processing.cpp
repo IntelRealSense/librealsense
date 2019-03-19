@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) try
     filters.emplace_back("Spatial", spat_filter);
     filters.emplace_back("Temporal", temp_filter);
 
-    // Declaring two concurrent queues that will be used to push and pop frames from different threads
+    // Declaring two concurrent queues that will be used to enqueue and dequeue frames from different threads
     rs2::frame_queue original_data;
     rs2::frame_queue filtered_data;
 
