@@ -20,7 +20,7 @@ endif()
 
 set(DEPENDENCIES realsense2)
 
-if (BUILD_PYTHON_BINDINGS)
+if (BUILD_PYTHON_BINDINGS OR BUILD_PYTHON_DOCS)
   add_subdirectory(python)
 endif()
 

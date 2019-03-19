@@ -102,7 +102,11 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 PYBIND11_MODULE(NAME, m) {
-    m.doc() = "Library for accessing Intel RealSenseTM cameras";
+    m.doc() = R"pbdoc(
+        LibrealsenseTM Python Bindings
+        ==============================
+        Library for accessing Intel RealSenseTM cameras
+    )pbdoc";
 
     class BufData {
     public:
