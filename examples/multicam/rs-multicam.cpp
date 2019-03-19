@@ -226,7 +226,7 @@ int main(int argc, char * argv[]) try
     // Create a simple OpenGL window for rendering:
     window app(1280, 960, "CPP Multi-Camera Example");
 
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+    rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
 
     rs2::context ctx;    // Create librealsense context for managing devices
 

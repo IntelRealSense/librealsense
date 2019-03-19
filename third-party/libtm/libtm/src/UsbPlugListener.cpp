@@ -163,7 +163,8 @@ void perc::UsbPlugListener::EnumerateDevices()
         // Schedule 1000ms for loading if DFU device(s) were found, otherwise 500msec
         mUSBMinTimeout = mUSBSetupTimeout = systemTime() + (bootLoader_count ? 1000000000 : 500000000);
         mDevicesToProcess = bootLoader_count;
-        LOGE("usb_setup_init, %d dfu devices, %d TM2 devices, time=%lu , min timeout =%lu", bootLoader_count, TM_count, systemTime(), mUSBSetupTimeout);
+        LOGD("usb_setup_init, %d dfu devices, %d TM2 devices, time=%lu , min timeout =%lu",
+                bootLoader_count, TM_count, systemTime(), mUSBSetupTimeout);
         break;
     case usb_setup_progress:
         // New devices discovered during the setup phase will add 1 sec
@@ -171,26 +172,27 @@ void perc::UsbPlugListener::EnumerateDevices()
         {
             mUSBSetupTimeout = systemTime() + 1000000000;
             mDevicesToProcess += bootLoader_count;
-            LOGE("usb_setup_progress, %d new dfu devices, time=%lu, new timeout=%lu", bootLoader_count, systemTime(), mUSBSetupTimeout);
+            LOGD("usb_setup_progress, %d new dfu devices, time=%lu, new timeout=%lu",
+                bootLoader_count, systemTime(), mUSBSetupTimeout);
         }
 
         if (TM_count)
         {
-            LOGE("New TM2 discovered were  %d time=%lu, timeout=%lu", TM_count, systemTime(), mUSBSetupTimeout);
+            LOGE("New TM2 discovered %d time=%lu, timeout=%lu", TM_count, systemTime(), mUSBSetupTimeout);
         }
         mDevicesToProcess -= TM_count;
 
         if (systemTime() >= mUSBSetupTimeout)
         {
             mInitialized.store(usb_setup_timeout);
-            LOGE("EnumerateDevices: ,timeout occurred time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
+            LOGD("EnumerateDevices: ,timeout occurred time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
         }
         else
         {
             if ((systemTime() >= mUSBMinTimeout) && (!mDevicesToProcess))
             {
                 mInitialized.store(usb_setup_success);
-                LOGE("EnumerateDevices: ,usb_setup_success time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
+                LOGD("EnumerateDevices: ,usb_setup_success time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
             }
             // else wait for process co complete
         }

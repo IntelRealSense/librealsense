@@ -32,7 +32,7 @@ TrackingManager* TrackingManager::CreateInstance(Listener* lis, void* param)
     {
         if (Manager::instanceExist)
         {
-            LOGE("Manager instance already exist");
+            LOGW("Manager instance already exist");
             return nullptr;
         }
         Manager::instanceExist = true;
