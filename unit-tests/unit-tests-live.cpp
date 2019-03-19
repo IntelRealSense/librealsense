@@ -5745,7 +5745,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
             {
                 THEN("Load wheel odometry calibration")
                 {
-                    //Odometry API
                     std::ifstream calibrationFile("calibration_odometry.json");
                     if (calibrationFile)
                     {
@@ -5771,13 +5770,26 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                     CAPTURE(wo_snr);
                     REQUIRE(wo_snr);
 
-                    //Odometry send data API
                     bool b;
-                    for (int i = 0; i < 20; i++)
+                    float norm_max = 0;
+                    WARN("T2xx Collecting frames started - Keep device static");
+                    rs2::frameset frames;
+                    for (int i = 0; i < 100; i++)
                     {
-                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,2,3 }));
+                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
                         REQUIRE(b);
+
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                        auto f = frames.first_or_default(RS2_STREAM_POSE);
+                        auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
+                        float norm = sqrt(pose_data.translation.x*pose_data.translation.x + pose_data.translation.y*pose_data.translation.y
+                                          + pose_data.translation.z*pose_data.translation.z);
+                        if (norm > norm_max) norm_max = norm;
                     }
+                    Approx approx_norm(0);
+                    approx_norm.epsilon(0.005); // 0.5cm threshold
+                    REQUIRE_FALSE(norm_max == approx_norm);
                     REQUIRE_NOTHROW(pipe.stop());
                 }
             }
