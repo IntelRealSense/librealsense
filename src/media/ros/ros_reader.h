@@ -80,6 +80,7 @@ namespace librealsense
         void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
         bool is_depth_sensor(std::string sensor_name);
         bool is_color_sensor(std::string sensor_name);
+        bool is_motion_module_sensor(std::string sensor_name);
         bool is_ds5_PID(int pid);
         bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);

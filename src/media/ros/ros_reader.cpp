@@ -805,6 +805,13 @@ namespace librealsense
         return false;
     }
 
+    bool ros_reader::is_motion_module_sensor(std::string sensor_name)
+    {
+        if (sensor_name.compare("Motion Module") == 0)
+            return true;
+        return false;
+    }
+
     bool ros_reader::is_ds5_PID(int pid)
     {
         using namespace ds;
@@ -862,6 +869,10 @@ namespace librealsense
             else if (is_color_sensor(sensor_name))
             {
                 return std::make_shared<recommended_proccesing_blocks_snapshot>(get_color_recommended_proccesing_blocks());
+            }
+            else if (is_motion_module_sensor(sensor_name))
+            {
+                return std::make_shared<recommended_proccesing_blocks_snapshot>(processing_blocks{});
             }
             throw io_exception("Unrecognized sensor name" + sensor_name);
         }
