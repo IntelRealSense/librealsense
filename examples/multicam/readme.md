@@ -9,14 +9,14 @@ The multicam sample demonstrates the ability to use the SDK for streaming and re
 The application opens and renders a mosaic view of all automatically-selected streams provided by the connected devices. (The selection is device-tailored and takes into account USB-type constrains).
 Each tile displays an unique stream produced by a specific camera. The stream name appear at the top left.
 
-In the following example we used five Intel® RealSense™ devices to produce the mosaic: D435i, D415, SR300 and two T265 tracking cameras. Those were responsible to generate:
+In the following snapshot we use five Intel® RealSense™ devices to produce the mosaic: D435i, D415, SR300 and two T265 tracking cameras. Those are responsible to generate:
  - Three Depth streams (D435i, D415, SR300)
  - Three Color streams (D435i, D415, SR300)
  - Two Pose streams (T265x2)
  - Four Fisheye streams (T265x2)
  - Six IMU streams (D435i, T265x2)  
 
- Alltogether the mosaic consist of 18 simultaneous live feeds:
+ Alltogether the mosaic comprise of 18 simultaneous live feeds:
 
 <p align="center"><img src="https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/Multicam.gif" alt="screenshot gif"/></p>
 
@@ -47,7 +47,7 @@ window app(1280, 960, "CPP Multi-Camera Example");
 
 The `window` class resides in `example.hpp` and lets us easily open a new window and prepare textures for rendering.
 
-Next, we define the objects to be used in this demo.
+Next, we define the objects to be used in the example.
 
 ```cpp
 rs2::context ctx;    // Create librealsense context for managing devices
@@ -57,9 +57,9 @@ rs2::colorizer              colorizer;      // Utility class to convert depth da
 std::vector<rs2::pipeline>  pipelines;
 ```
 The `rs2::context` encapsulates all of the devices and sensors, and provides some additional functionalities. We employ the `rs2::colorizer ` to convert depth data to RGB format.  
-In this demo we use multiple `rs2::pipeline` objects, each controlling a lifetime of a single HW device.
+In the example we use multiple `rs2::pipeline` objects, each controlling a lifetime of a single HW device.
 
-The demo flow starts with listing and activating all the connected Intel® RealSense™ devices
+The example's flow starts with listing and activating all the connected Intel® RealSense™ devices:
 ```cpp
 // Start a streaming pipe per each connected device
 for (auto&& dev : ctx.query_devices())
@@ -87,10 +87,9 @@ Since we do not specify explicit stream requests, each device is configured inte
 After adding the device, we begin our main loop of the application:  
 ```cpp
 while (app)
-{...}
 ```
 
-Every demo cycle we traverse the configured devices and retrieve all the available frames:
+Every application cycle we traverse the registered devices and retrieve all the available frames:
 
 ```cpp
 // Collect the new frames from all the connected devices
@@ -112,13 +111,13 @@ To minimize UI impact we're using non-blocking frames polling method:
 ```cpp
     if (pipe.poll_for_frames(&fs))
 ```
-In order to simplify the presentation, we split those `rs2::frameset` containers into separate frames and store them with a standard C++ container for later use.   
+In order to simplify the presentation, we split those `rs2::frameset` containers into separate frames and store them with a standard C++ container for later use:  
 ```cpp
 for (rs2::frame& f : fs)
     new_frames.emplace_back(f);
 ```
 
-The Depth data is delivered as `uint16_t` type which cannot be rendered directly, therefore we use `rs2::colorizer` to convert the depth representation into human-readable RGB map
+The Depth data is delivered as `uint16_t` type which cannot be rendered directly, therefore we use `rs2::colorizer` to convert the depth representation into human-readable RGB map:
 ```cpp
 // Convert the newly-arrived frames to render-friendly format
 for (const auto& frame : new_frames)
