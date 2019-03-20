@@ -15,6 +15,7 @@ option(BUILD_UNIT_TESTS "Build realsense unit tests. Note that when enabled, add
 option(BUILD_EXAMPLES "Build realsense examples and tools." ON)
 option(ENFORCE_METADATA "Require WinSDK with Metadata support during compilation. Windows OS Only" OFF)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" OFF)
+option(BUILD_PYTHON_DOCS "Build Documentation for Python bindings" OFF)
 option(BUILD_CSHARP_BINDINGS "Build C# bindings" OFF)
 option(BUILD_MATLAB_BINDINGS "Build Matlab bindings" OFF)
 option(BUILD_UNITY_BINDINGS "Copy the unity project to the build folder with the required dependencies" OFF)

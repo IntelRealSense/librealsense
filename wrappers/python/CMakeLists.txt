@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsensePythonWrappers)
 
+if (NOT BUILD_PYTHON_BINDINGS)
+    message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
+endif()
+
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
@@ -76,3 +80,7 @@ install(TARGETS pybackend2
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+if (BUILD_PYTHON_DOCS)
+	add_subdirectory(docs)
+endif()
