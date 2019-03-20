@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         mConfig.enableStream(StreamType.DEPTH, 640, 480);
         mConfig.enableStream(StreamType.COLOR, 640, 480);
 
-        if(mRsContext.getDeviceCount() > 0) {
+        if(mRsContext.queryDevices().getDeviceCount() > 0) {
             showConnectLabel(false);
             start();
         }
