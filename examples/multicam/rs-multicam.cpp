@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) try
             rs2::frameset fs;
             if (pipe.poll_for_frames(&fs))
             {
-                for (rs2::frame& f : fs)
+                for (const rs2::frame& f : fs)
                     new_frames.emplace_back(f);
             }
         }
