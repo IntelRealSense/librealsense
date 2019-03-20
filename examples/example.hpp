@@ -110,10 +110,10 @@ class texture
     rs2_stream stream = RS2_STREAM_ANY;
 
 public:
-    void render(const rs2::video_frame& frame, const rect& rect)
+    void render(const rs2::video_frame& frame, const rect& rect, float alpha = 1.f)
     {
         upload(frame);
-        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }));
+        show(rect.adjust_ratio({ (float)frame.get_width(), (float)frame.get_height() }), alpha);
     }
 
     void upload(const rs2::video_frame& frame)
@@ -154,7 +154,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void show(const rect& r) const
+    void show(const rect& r, float alpha = 1.f) const
     {
         if (!gl_handle)
             return;
@@ -162,6 +162,7 @@ public:
         set_viewport(r);
 
         glBindTexture(GL_TEXTURE_2D, gl_handle);
+        glColor4f(1.0f, 1.0f, 1.0f, alpha);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex2f(0, 0);
