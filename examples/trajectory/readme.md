@@ -201,43 +201,43 @@ void draw_view(float2 pos, float width, float height, float2 scale_pos, float r[
 We set `min_coord` and `max_coord` which we'll use to check if zooming-out is needed. 
 `load_matrices` is called to prepare the viewport for rendering and the scale bar is rendered using `bar_width` we previously obtained.
 ```cpp
-    rs2_vector min_coord = t.get_min_coord();
-    rs2_vector max_coord = t.get_max_coord();
+rs2_vector min_coord = t.get_min_coord();
+rs2_vector max_coord = t.get_max_coord();
 
-    // Prepare viewport for rendering
-    load_matrices(pos, width, height);
-    glBegin(GL_LINES);
-    // Draw scale bar
-    glColor3f(1.0f, 1.0f, 1.0f); 
-    glVertex3f(0.8, -0.9 * aspect, 0); glVertex3f(0.8 + bar_width, -0.9 * aspect, 0);
-    glEnd();
+// Prepare viewport for rendering
+load_matrices(pos, width, height);
+glBegin(GL_LINES);
+// Draw scale bar
+glColor3f(1.0f, 1.0f, 1.0f); 
+glVertex3f(0.8, -0.9 * aspect, 0); glVertex3f(0.8 + bar_width, -0.9 * aspect, 0);
+glEnd();
 ```
 
 We define the perspective of the viewport using `gluLookAt` and scale according to the current `scale_factor`.
 ```cpp
-    // Set a 2D view using OpenGL's LookAt matrix
-    gluLookAt(lookat_eye.x, lookat_eye.y, lookat_eye.z, 0, 0, 0, 0, 1, 0);
-    // Draw axes (only two are visible)
-    draw_axes();
-    // Scale viewport according to current scale factor
-    glScalef(scale_factor, scale_factor, scale_factor);
+// Set a 2D view using OpenGL's LookAt matrix
+gluLookAt(lookat_eye.x, lookat_eye.y, lookat_eye.z, 0, 0, 0, 0, 1, 0);
+// Draw axes (only two are visible)
+draw_axes();
+// Scale viewport according to current scale factor
+glScalef(scale_factor, scale_factor, scale_factor);
 ```
 
 If the trajectory's new maximal or minimal coordinates are beyond the window borders, we zoom out by scaling the viewport, in order to keep the whole trajectory visible. `scale_factor` and `window_borders` are updated accordingly. Then, we render the camera and trajectory using `draw_cam_trajectory` with 180 degrees rotation in the y axis.
 ```cpp
-    // If trajectory reached one of the viewport's borders, zoom out and update scale factor
-    if (min_coord.*a < -window_borders.x || max_coord.*a > window_borders.x
-        || min_coord.*b < -window_borders.y || max_coord.*b > window_borders.y)
-    {
-        glScalef(0.5, 0.5, 0.5);
-        scale_factor *= 0.5;
-        window_borders.x = window_borders.x * 2;
-        window_borders.y = window_borders.y * 2;
-    }
-    // Draw trajectory and camera
-    draw_cam_trajectory(180, { 0, 1, 0 }, r);
-    // Return the default configuration of OpenGL's matrices
-    clean_matrices();
+// If trajectory reached one of the viewport's borders, zoom out and update scale factor
+if (min_coord.*a < -window_borders.x || max_coord.*a > window_borders.x
+    || min_coord.*b < -window_borders.y || max_coord.*b > window_borders.y)
+{
+    glScalef(0.5, 0.5, 0.5);
+    scale_factor *= 0.5;
+    window_borders.x = window_borders.x * 2;
+    window_borders.y = window_borders.y * 2;
+}
+// Draw trajectory and camera
+draw_cam_trajectory(180, { 0, 1, 0 }, r);
+// Return the default configuration of OpenGL's matrices
+clean_matrices();
 ```
 
 Similarly, class `view_3d` handles rendering of the 3D view. We use the function `render_scene` to handle manipulations by the user. `draw_cam_trajectory` is called with a parameter of 90 angles rotation in the x angle.
@@ -294,50 +294,48 @@ int main(int argc, char * argv[]) try
 
 Then, we initialize `rs2::pipeline`. We configure it with `RS2_STREAM_POSE` since we'll only use pose frames, and start the pipeline.
 ```cpp
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
-    // Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg;
-    // Add pose stream
-    cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
+// Declare RealSense pipeline, encapsulating the actual device and sensors
+rs2::pipeline pipe;
+// Create a configuration for configuring the pipeline with a non default profile
+rs2::config cfg;
+// Add pose stream
+cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
 
-    // Start pipeline with chosen configuration
-    pipe.start(cfg);
+// Start pipeline with chosen configuration
+pipe.start(cfg);
 ```
 
 In the main loop, we obtain the next pose frame and get it's `pose_data`.
 ```cpp
-    // Main loop
-    while (app)
-    {
-        // Wait for the next set of frames from the camera
-        auto frames = pipe.wait_for_frames();
-        // Get a frame from the pose stream
-        auto f = frames.first_or_default(RS2_STREAM_POSE);
-        // Cast the frame to pose_frame and get its data
-        auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
+while (app)
+{
+    // Wait for the next set of frames from the camera
+    auto frames = pipe.wait_for_frames();
+    // Get a frame from the pose stream
+    auto f = frames.first_or_default(RS2_STREAM_POSE);
+    // Cast the frame to pose_frame and get its data
+    auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
 ```
 
 Using the `pose_data`, we can calculate the transformation matrix. We use a one dimensional array of length 16 to store the matrix, for convenient work with OpenGL.
 ```cpp
-        float r[16];
-        // Calculate current transformation matrix
-        tracker.calc_transform(pose_data, r);
-        ```
+float r[16];
+// Calculate current transformation matrix
+tracker.calc_transform(pose_data, r);
+```
 
 The next point of the trajectory is obtained from the computed transformation matrix. Along with it's confidence level, we try adding the new point to the trajectory vector using `add_to_trajectory` function.
 ```cpp
-    // From the matrix we found, get the new location point
-    rs2_vector tr{ r[12], r[13], r[14] };
-    // Create a new point to be added to the trajectory
-    tracked_point p{ tr , pose_data.tracker_confidence };
-    // Register the new point
-    tracker.add_to_trajectory(p);
+// From the matrix we found, get the new location point
+rs2_vector tr{ r[12], r[13], r[14] };
+// Create a new point to be added to the trajectory
+tracked_point p{ tr , pose_data.tracker_confidence };
+// Register the new point
+tracker.add_to_trajectory(p);
 ```
 
 Finally, we draw the trajectory of the camera movement so far and render a 3D model of the camera according to it's current pose. The rendering is done from different perspectives in each of the viewports using `draw_windows` as described above.
 ```cpp
-    // Draw the trajectory from different perspectives
-    screen_renderer.draw_windows(app.width(), app.height(), app_state, r);
-}
+// Draw the trajectory from different perspectives
+screen_renderer.draw_windows(app.width(), app.height(), app_state, r);
 ```
