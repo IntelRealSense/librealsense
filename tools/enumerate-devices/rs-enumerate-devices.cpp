@@ -17,7 +17,7 @@ using namespace rs2;
 void print(const rs2_extrinsics& extrinsics)
 {
     stringstream ss;
-     ss << "Rotation Matrix:\n";
+    ss << "Rotation Matrix:\n";
 
     for (auto i = 0 ; i < 3 ; ++i)
     {
@@ -163,10 +163,12 @@ int main(int argc, char** argv) try
     SwitchArg show_options("o", "option", "Show all supported options per subdevice");
     SwitchArg show_modes("m", "modes", "Show all supported stream modes per subdevice");
     SwitchArg show_calibration_data("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
+    SwitchArg show_defaults("d", "defaults", "Show default streams configuration");
     cmd.add(compact_view_arg);
     cmd.add(show_options);
     cmd.add(show_modes);
     cmd.add(show_calibration_data);
+    cmd.add(show_defaults);
 
     cmd.parse(argc, argv);
 
@@ -206,12 +208,14 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
+    log_to_console(RS2_LOG_SEVERITY_FATAL);
+
     for (auto i = 0; i < device_count; ++i)
     {
         auto dev = devices[i];
 
         // Show which options are supported by this device
-        cout << " Device info: \n";
+        cout << "Device info: \n";
         for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j)
         {
             auto param = static_cast<rs2_camera_info>(j);
@@ -221,6 +225,32 @@ int main(int argc, char** argv) try
         }
 
         cout << endl;
+
+        if (show_defaults.getValue())
+        {
+            if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+            {
+                cout << "Default streams:" << endl;
+                config cfg;
+                cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                pipeline p;
+                auto profile = cfg.resolve(p);
+                for (auto&& sp : profile.get_streams())
+                {
+                    cout << "    " << sp.stream_name() << " as " << sp.format() << " at " << sp.fps() << " Hz";
+                    if (auto vp = sp.as<video_stream_profile>())
+                    {
+                        cout << "; Resolution: " << vp.width() << "x" << vp.height();
+                    }
+                    cout << endl;
+                }
+            }
+            else
+            {
+                cout << "Cannot list default streams since the device does not provide a serial number!" << endl;
+            }
+            cout << endl;
+        }
 
         if (show_options.getValue())
         {
