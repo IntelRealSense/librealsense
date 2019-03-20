@@ -1,15 +1,21 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// List of adjacent devices, sharing the same physical parent composite device
+    /// </summary>
     public class SensorList : Base.Object, IEnumerable<Sensor>
     {
-
-        internal SensorList(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_sensor_list)
+        internal SensorList(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_sensor_list)
         {
         }
 
@@ -30,6 +36,9 @@ namespace Intel.RealSense
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Gets the number of sensors in the list
+        /// </summary>
         public int Count
         {
             get
@@ -40,6 +49,11 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>
+        /// Creates sensor by index
+        /// </summary>
+        /// <param name="index">the zero based index of sensor to retrieve</param>
+        /// <returns>the requested sensor</returns>
         public Sensor this[int index]
         {
             get

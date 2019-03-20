@@ -1,16 +1,30 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
     public class DeviceList : Base.Object, IEnumerable<Device>
     {
-        public DeviceList(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_device_list)
+        internal static readonly Base.Deleter DeviceDeleter = NativeMethods.rs2_delete_device;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeviceList"/> class.
+        /// </summary>
+        /// <param name="ptr">Native <c>rs2_device_list*</c> pointer</param>
+        public DeviceList(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_device_list)
         {
         }
 
+        /// <summary>
+        /// Returns an iterable of devices in the list
+        /// </summary>
+        /// <returns>an iterable of devices in the list</returns>
         public IEnumerator<Device> GetEnumerator()
         {
             object error;
@@ -19,16 +33,17 @@ namespace Intel.RealSense
             for (int i = 0; i < deviceCount; i++)
             {
                 var ptr = NativeMethods.rs2_create_device(Handle, i, out error);
-                yield return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
+                yield return Device.Create<Device>(ptr, DeviceDeleter);
             }
         }
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
-        /// <summary>Determines number of devices in a list.</summary>
+        /// <summary>Gets the number of devices in a list.</summary>
         /// <value>Device count</value>
         public int Count
         {
@@ -49,7 +64,7 @@ namespace Intel.RealSense
             {
                 object error;
                 var ptr = NativeMethods.rs2_create_device(Handle, index, out error);
-                return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
+                return Device.Create<Device>(ptr, DeviceDeleter);
             }
         }
 

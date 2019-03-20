@@ -1,10 +1,23 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// The pipeline simplifies the user interaction with the device and computer vision processing modules.
+    /// </summary>
+    /// <remarks>
+    /// The class abstracts the camera configuration and streaming, and the vision modules triggering and threading.
+    /// It lets the application focus on the computer vision output of the modules, or the device output data.
+    /// The pipeline can manage computer vision modules, which are implemented as a processing blocks.
+    /// The pipeline is the consumer of the processing block interface, while the application consumes the
+    /// computer vision interface.
+    /// </remarks>
     public class Pipeline : Base.Object
     {
         private frame_callback m_callback;
@@ -15,11 +28,20 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_pipeline(ctx.Handle, out error);
         }
 
-        public Pipeline(Context ctx) : base(Create(ctx), NativeMethods.rs2_delete_pipeline)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Pipeline"/> class.
+        /// </summary>
+        /// <param name="ctx">context</param>
+        public Pipeline(Context ctx)
+            : base(Create(ctx), NativeMethods.rs2_delete_pipeline)
         {
         }
 
-        public Pipeline() : base(Create(new Context()), NativeMethods.rs2_delete_pipeline)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Pipeline"/> class.
+        /// </summary>
+        public Pipeline()
+            : base(Create(new Context()), NativeMethods.rs2_delete_pipeline)
         {
         }
 
@@ -36,6 +58,11 @@ namespace Intel.RealSense
             return prof;
         }
 
+        /// <summary>
+        /// Start the pipeline streaming according to the configuraion.
+        /// </summary>
+        /// <param name="cfg">A <see cref="Config"/> with requested filters on the pipeline configuration. By default no filters are applied.</param>
+        /// <returns>The actual pipeline device and streams profile, which was successfully configured to the streaming device.</returns>
         public PipelineProfile Start(Config cfg)
         {
             object error;
@@ -44,13 +71,27 @@ namespace Intel.RealSense
             return prof;
         }
 
+        /// <summary>
+        /// Start the pipeline streaming with its default configuration.
+        /// <para>
+        /// The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
+        /// When starting the pipeline with a callback both <see cref="WaitForFrames"/> or <see cref="PollForFrames"/> will throw exception.
+        /// </remarks>
+        /// <param name="cb">Delegate to register as per-frame callback</param>
+        /// <returns>The actual pipeline device and streams profile, which was successfully configured to the streaming device.</returns>
         public PipelineProfile Start(FrameCallback cb)
         {
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
                 using (var frame = Frame.Create(f))
+                {
                     cb(frame);
+                }
             };
             m_callback = cb2;
             var res = NativeMethods.rs2_pipeline_start_with_callback(Handle, cb2, IntPtr.Zero, out error);
@@ -64,7 +105,9 @@ namespace Intel.RealSense
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
                 using (var frame = Frame.Create(f))
+                {
                     cb(frame);
+                }
             };
             m_callback = cb2;
             var res = NativeMethods.rs2_pipeline_start_with_config_and_callback(Handle, cfg.Handle, cb2, IntPtr.Zero, out error);
@@ -72,6 +115,14 @@ namespace Intel.RealSense
             return prof;
         }
 
+        /// <summary>
+        /// Stop the pipeline streaming.
+        /// </summary>
+        /// <remarks>
+        /// The pipeline stops delivering samples to the attached computer vision modules and processing blocks, stops the device streaming
+        /// and releases the device resources used by the pipeline. It is the application's responsibility to release any frame reference it owns.
+        /// The method takes effect only after <see cref="Start"/> was called, otherwise an exception is raised.
+        /// </remarks>
         public void Stop()
         {
             object error;
@@ -103,11 +154,12 @@ namespace Intel.RealSense
                 result = FrameSet.Create(fs);
                 return true;
             }
+
             result = null;
             return false;
         }
 
-        /// <summary>Return the active device and streams profiles, used by the pipeline.</summary>
+        /// <summary>Gets the active device and streams profiles, used by the pipeline.</summary>
         /// <remarks>The method returns a valid result only when the pipeline is active</remarks>
         /// <value>The actual pipeline device and streams profile, which was successfully configured to the streaming device on start.</value>
         public PipelineProfile ActiveProfile

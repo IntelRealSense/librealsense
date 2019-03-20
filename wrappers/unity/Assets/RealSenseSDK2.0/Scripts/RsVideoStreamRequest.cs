@@ -37,14 +37,17 @@ public struct RsVideoStreamRequest : IEquatable<RsVideoStreamRequest>
 
     public static RsVideoStreamRequest FromProfile(StreamProfile p)
     {
-        return new RsVideoStreamRequest(
-            p.Stream,
-            p.Format,
-            p.Framerate,
-            p.Index,
-            p is VideoStreamProfile ? (p as VideoStreamProfile).Width : 0,
-            p is VideoStreamProfile ? (p as VideoStreamProfile).Height : 0
-        );
+        var isVideo = p.Is(Extension.VideoProfile);
+        using (p)
+        using (var v = p.As<VideoStreamProfile>())
+            return new RsVideoStreamRequest(
+                p.Stream,
+                p.Format,
+                p.Framerate,
+                p.Index,
+                isVideo ? v.Width : 0,
+                isVideo ? v.Height : 0
+            );
     }
 
     public override bool Equals(object other)

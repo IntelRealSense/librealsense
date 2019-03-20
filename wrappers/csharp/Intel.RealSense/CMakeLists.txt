@@ -8,8 +8,10 @@ add_library(${PROJECT_NAME}
     Context.cs
     NativeMethods.cs
     .nuget/Intel.RealSense.targets
-
+	GlobalSuppressions.cs
     Properties/AssemblyInfo.cs
+	packages.config
+	stylecop.json
 )
 
 include(Base/CMakeLists.txt)
@@ -70,6 +72,8 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE /define:${CMAKE_SYSTEM_NAME})
+
+set_source_files_properties(stylecop.json PROPERTIES VS_TOOL_OVERRIDE "AdditionalFiles")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets

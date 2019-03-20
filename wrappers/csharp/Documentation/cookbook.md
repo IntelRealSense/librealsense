@@ -28,9 +28,12 @@ Following samples are ports of the C++ [API-How-To](https://github.com/IntelReal
 * [Get Field of View](#get-field-of-view)
 * [Get Depth Units](#get-depth-units)
 * [Controlling the Laser](#controlling-the-laser)
+* [Casting](#casting)
 * [Unsafe Direct Access](#unsafe-direct-access)
 * [Generics support](#generics-support)
 * [LINQ Carefully](#linq-carefully)
+* [Recording](#recording)
+* [Playback](#playback)
 
 ### Get first RealSense device
 
@@ -192,6 +195,63 @@ if (depth_sensor.Options[Option.LaserPower].Supported)
 }
 ```
 
+### Casting
+
+```cs
+void Is<T>(T obj, Type type,
+        [System.Runtime.CompilerServices.CallerFilePath] string sourceFilePath = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int sourceLineNumber = 0)
+        where T : IDisposable
+{
+    using (obj)
+        Console.WriteLine($"{sourceFilePath}:{sourceLineNumber} {typeof(T) == type}");
+}
+
+using (var pipe = new Pipeline())
+using (var pp = pipe.Start())
+using (var fs = pipe.WaitForFrames())
+{
+    // Non generic methods return the base type, StreamProfile in this case
+    Is(pp.GetStream(Stream.Depth), typeof(VideoStreamProfile)); // False
+
+    // As<T> creates a new object, both need to be disposed
+    using (var p = pp.GetStream(Stream.Depth))
+        Is(p.As<VideoStreamProfile>(), typeof(VideoStreamProfile)); // True
+
+    // Cast<T> is just a shorthand for the above
+    Is(pp.GetStream(Stream.Depth).Cast<VideoStreamProfile>(), typeof(VideoStreamProfile)); // True
+
+    // Generic methods are preferable, in this case it creates the correct type upfront
+    Is(pp.GetStream<VideoStreamProfile>(Stream.Depth), typeof(VideoStreamProfile)); // True
+
+    // Again, non generic methods return the base type, Frame in this case
+    Is(fs.FirstOrDefault(Stream.Depth), typeof(VideoFrame)); // False
+
+    // Be sure to dispose of both the frame and the strongly-typed clone
+    using (var f = fs.FirstOrDefault(Stream.Depth))
+        Is(f.As<VideoFrame>(), typeof(VideoFrame)); // True
+
+    // Cast<T> is basically a shorthand for the above
+    Is(fs.FirstOrDefault(Stream.Depth).Cast<VideoFrame>(), typeof(VideoFrame)); // True
+
+    // FirstOrDefault<T> is same as above
+    Is(fs.FirstOrDefault<VideoFrame>(Stream.Depth), typeof(VideoFrame)); // True
+
+    // Non generic properties return the base type, StreamProfile in this case
+    Is(fs.Profile, typeof(VideoStreamProfile)); // False
+
+    // As<T> creates a new object, both need to be disposed
+    using(var p = fs.Profile)
+        Is(p.As<VideoStreamProfile>(), typeof(VideoStreamProfile)); // True
+
+    // Cast<T> is basically a shorthand for the above
+    Is(fs.Profile.Cast<VideoStreamProfile>(), typeof(VideoStreamProfile)); // True
+
+    // Generic methods are preferable, in this case it creates the correct type upfront
+    Is(fs.GetProfile<VideoStreamProfile>(), typeof(VideoStreamProfile)); // True
+}
+```
+
 ### Unsafe Direct Access
 
 ```cs
@@ -258,4 +318,109 @@ pipe.Start(frame =>
 });
 
 await Task.Delay(4000);
+```
+
+### Recording
+
+```cs
+// Extension method for a fluent API
+static Config RecordToFile(this Config cfg, string file) { cfg.EnableRecordToFile(file); return cfg; }
+
+int i;
+
+// Record to file using pipeline, the returned device is a recorder
+using (var pipe = new Pipeline())
+using (var cfg = new Config().RecordToFile($"ros{++i}.bag"))
+using (var pp = pipe.Start(cfg))
+using (var dev = pp.Device)
+using (var recorder = RecordDevice.FromDevice(dev))
+{
+    Task.Delay(1000).Wait();
+    Console.WriteLine(recorder.FileName);
+}
+
+class WaitAndDispose : IDisposable
+{
+    public WaitAndDispose(int millisecodsDelay, RecordDevice dev) => Task.Delay(millisecodsDelay)
+        .ContinueWith(_ => Console.WriteLine(dev.FileName))
+        .ContinueWith(_ => dev.Dispose())
+        .Wait();
+    public void Dispose() { }
+}
+
+// Record to files twice, from same device, manually creating recorders
+using (var pipe = new Pipeline())
+using (var pp = pipe.Start())
+using (var dev = pp.Device)
+using (new WaitAndDispose(1000, new RecordDevice(dev, $"ros{++i}.bag")))
+using (new WaitAndDispose(1000, new RecordDevice(dev, $"ros{++i}.bag")))
+{ }
+```
+
+### Playback
+
+```cs
+// Extension method for a fluent API
+static Config FromFile(this Config cfg, string file) { cfg.EnableDeviceFromFile(file, repeat: false); return cfg; }
+// Extension method to convert playback position (nanoseconds) to TimeSpan
+static TimeSpan ToTimeSpan(this ulong ns) => TimeSpan.FromMilliseconds(ns * 1e-6);
+
+// Playback from file using pipeline
+using (var pipe = new Pipeline())
+using (var cfg = new Config().FromFile(@"ros1.bag"))
+using (var pp = pipe.Start(cfg))
+using (var dev = pp.Device)
+using (var playback = PlaybackDevice.FromDevice(dev))
+{
+    Console.WriteLine(playback.FileName);
+    playback.Realtime = false;
+    var t = Task.Run(async () =>
+    {
+        var start = DateTime.Now;
+        void Print() => Console.WriteLine($"Real: {DateTime.Now - start} Status: {playback.Status,-7} Playback: {playback.Position.ToTimeSpan()}/{playback.Duration.ToTimeSpan()}");
+        while (playback.Status != PlaybackStatus.Stopped)
+        {
+            Print();
+            if (pipe.PollForFrames(out FrameSet frames))
+                using (frames)
+                {
+                    foreach (var f in frames)
+                        using (f)
+                        using (var p = f.Profile)
+                            Console.WriteLine($"    {p.Stream} {p.Format,4} #{f.Number} {f.TimestampDomain} {f.Timestamp:F2}");
+                }
+            await Task.Delay(50);
+        }
+        Print();
+    });
+    await Task.Delay(500);
+    playback.Pause();
+    await Task.Delay(2000);
+    playback.Resume();
+    await t;
+}
+
+// Manually creating a playback device, configure it's first sensor and stream
+using (var ctx = new Context())
+using (var playback = ctx.AddDevice(@"ros1.bag"))
+using (var sensor = playback.Sensors[0])
+{
+    Console.WriteLine(playback.FileName);
+    playback.Realtime = false;
+
+    var start = DateTime.Now;
+    void Print() => Console.WriteLine($"Real: {DateTime.Now - start} Status: {playback.Status,-7} Playback: {playback.Position.ToTimeSpan()}/{playback.Duration.ToTimeSpan()}");
+
+    sensor.Open(sensor.StreamProfiles.ToArray());
+    sensor.Start(f =>
+    {
+        Print();
+        using (var p = f.Profile)
+            Console.WriteLine($"    {p.Stream} {p.Format,4} #{f.Number} {f.TimestampDomain} {f.Timestamp:F2}");
+        Task.Delay(100).Wait();
+    });
+
+    SpinWait.SpinUntil(() => playback.Status == PlaybackStatus.Stopped);
+    Print();
+}
 ```

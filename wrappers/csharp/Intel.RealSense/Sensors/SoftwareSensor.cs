@@ -1,11 +1,15 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     public class SoftwareSensor : Sensor
     {
-        internal SoftwareSensor(IntPtr ptr) : base(ptr)
+        internal SoftwareSensor(IntPtr ptr)
+            : base(ptr)
         {
         }
 
@@ -15,17 +19,16 @@ namespace Intel.RealSense
             NativeMethods.rs2_software_sensor_on_video_frame(Handle, f, out error);
         }
 
-
         public void AddVideoFrame<T>(T[] pixels, int stride, int bpp, double timestamp, TimestampDomain domain, int frameNumber, VideoStreamProfile profile)
         {
-            //TODO: avoid copy by adding void* user_data to native methods, so we can pass GCHandle.ToIntPtr() and free in deleter
+            // TODO: avoid copy by adding void* user_data to native methods, so we can pass GCHandle.ToIntPtr() and free in deleter
             IntPtr hglobal = Marshal.AllocHGlobal(profile.Height * stride);
 
             var handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-            
+
             try
             {
-                NativeMethods.memcpy(hglobal, handle.AddrOfPinnedObject(), profile.Height * stride);
+                NativeMethods.Memcpy(hglobal, handle.AddrOfPinnedObject(), profile.Height * stride);
             }
             finally
             {

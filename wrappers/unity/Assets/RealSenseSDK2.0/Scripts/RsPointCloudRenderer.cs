@@ -136,7 +136,7 @@ public class RsPointCloudRenderer : MonoBehaviour
     }
 
 
-    protected void Update()
+    protected void LateUpdate()
     {
         if (q != null)
         {

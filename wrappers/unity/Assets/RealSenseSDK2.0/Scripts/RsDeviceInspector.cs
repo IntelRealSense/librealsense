@@ -22,12 +22,16 @@ public class RsDeviceInspector : MonoBehaviour
 
     private IEnumerator WaitForDevice()
     {
-        yield return new WaitUntil(() => (rsdevice = GetComponent<RsDevice>()) != null);
-        // rsdevice.OnStart += onStartStreaming;
-        rsdevice.OnStop += onStopStreaming;
+        while (true)
+        {
+            yield return new WaitUntil(() => (rsdevice = GetComponent<RsDevice>()) != null);
+            // rsdevice.OnStart += onStartStreaming;
+            rsdevice.OnStop += onStopStreaming;
 
-        if(rsdevice.Streaming)
+            yield return new WaitUntil(() => rsdevice.Streaming);
             onStartStreaming(rsdevice.ActiveProfile);
+            yield return new WaitWhile(() => rsdevice.Streaming);
+        }
     }
 
     private void onStopStreaming()

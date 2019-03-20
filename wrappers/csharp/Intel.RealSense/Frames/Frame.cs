@@ -1,9 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
     /// <summary>
     /// Base class for multiple frame extensions
     /// </summary>
@@ -13,21 +16,39 @@ namespace Intel.RealSense
         {
         }
 
-        internal Frame(IntPtr ptr) : base(ptr, NativeMethods.rs2_release_frame)
+        internal Frame(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_release_frame)
         {
         }
 
+        /// <summary>
+        /// Create a frame from a native pointer
+        /// </summary>
+        /// <param name="ptr">Native <c>rs2_frame*</c> pointer</param>
+        /// <returns>a new <see cref="Frame"/></returns>
         public static Frame Create(IntPtr ptr)
         {
             return Create<Frame>(ptr);
         }
 
-        public static T Create<T>(IntPtr ptr) where T : Frame
+        /// <summary>
+        /// Create a frame from a native pointer
+        /// </summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="ptr">Native <c>rs2_frame*</c> pointer</param>
+        /// <returns>a new <typeparamref name="T"/></returns>
+        public static T Create<T>(IntPtr ptr)
+            where T : Frame
         {
             return ObjectPool.Get<T>(ptr);
         }
 
-        public static T Create<T>(Frame other) where T : Frame
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="other"><see cref="Frame"/> to clone</param>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public static T Create<T>(Frame other)
+            where T : Frame
         {
             object error;
             NativeMethods.rs2_frame_add_ref(other.Handle, out error);
@@ -43,14 +64,31 @@ namespace Intel.RealSense
             return NativeMethods.rs2_is_frame_extendable_to(Handle, extension, out error) != 0;
         }
 
-        /// <summary>Cast current instance as the type of another class</summary>
-        /// <typeparam name="T">New frame subtype</typeparam>
-        /// <returns>class instance</returns>
-        public T As<T>() where T : Frame
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T As<T>()
+            where T : Frame
         {
             return Create<T>(this);
         }
 
+        /// <summary>Returns a strongly-typed clone, <c>this</c> is disposed</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T Cast<T>()
+            where T : Frame
+        {
+            using (this)
+            {
+                return Create<T>(this);
+            }
+        }
+
+        /// <summary>
+        /// Add a reference to this frame and return a clone, does not copy data
+        /// </summary>
+        /// <returns>A clone of this frame</returns>
         public Frame Clone()
         {
             object error;
@@ -59,14 +97,20 @@ namespace Intel.RealSense
         }
 
         /// <summary>communicate to the library you intend to keep the frame alive for a while
-        /// this will remove the frame from the regular count of the frame pool</summary>
-        /// <remarks>once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling</remarks>
-        public void Keep() {
+        /// <para>
+        /// this will remove the frame from the regular count of the frame pool
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling
+        /// </remarks>
+        public void Keep()
+        {
             NativeMethods.rs2_keep_frame(Handle);
         }
 
         /// <summary>
-        /// Test if frame is composite
+        /// Gets a value indicating whether frame is a composite frame
         /// <para>Shorthand for <c>Is(Extension.CompositeFrame)</c></para>
         /// </summary>
         /// <value>true if frame is a composite frame and false otherwise</value>
@@ -78,7 +122,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve data from frame handle</summary>
+        /// <summary>Gets a pointer to the frame data</summary>
         /// <value>pointer to the start of the frame data</value>
         public IntPtr Data
         {
@@ -89,16 +133,25 @@ namespace Intel.RealSense
             }
         }
 
-        public T GetProfile<T>() where T : StreamProfile
+        /// <summary>
+        /// Returns the stream profile that was used to start the stream of this frame
+        /// </summary>
+        /// <typeparam name="T">StreamProfile or subclass type</typeparam>
+        /// <returns>the stream profile that was used to start the stream of this frame</returns>
+        public T GetProfile<T>()
+            where T : StreamProfile
         {
             object error;
             var ptr = NativeMethods.rs2_get_frame_stream_profile(Handle, out error);
             return StreamProfile.Create<T>(ptr);
         }
 
+        /// <summary>
+        /// Gets the stream profile that was used to start the stream of this frame
+        /// </summary>
         public StreamProfile Profile => GetProfile<StreamProfile>();
 
-        /// <summary>retrieve frame number from frame handle</summary>
+        /// <summary>Gets the frame number of the frame</summary>
         /// <value>the frame nubmer of the frame</value>
         public ulong Number
         {
@@ -109,7 +162,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve timestamp from frame handle in milliseconds</summary>
+        /// <summary>Gets timestamp from frame handle in milliseconds</summary>
         /// <value>the timestamp of the frame in milliseconds</value>
         public double Timestamp
         {
@@ -120,7 +173,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain</summary>
+        /// <summary>Gets the timestamp domain from frame handle. timestamps can only be comparable if they are in common domain</summary>
         /// <remarks>
         /// (for example, depth timestamp might come from system time while color timestamp might come from the device)
         /// this method is used to check if two timestamp values are comparable (generated from the same clock)
@@ -137,7 +190,8 @@ namespace Intel.RealSense
 
         public long this[FrameMetadataValue frame_metadata]
         {
-            get {
+            get
+            {
                 return GetFrameMetadata(frame_metadata);
             }
         }

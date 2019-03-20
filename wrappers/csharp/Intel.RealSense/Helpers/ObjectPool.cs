@@ -1,17 +1,25 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection;
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq.Expressions;
+    using System.Reflection;
+    using ObjectFactory = System.Func<System.IntPtr, object>;
     using PooledStack = System.Collections.Generic.Stack<Base.PooledObject>;
-    using ObjectFactory = Func<IntPtr, object>;
-    
+
+    /// <summary>
+    /// Object pool to reuse objects, avoids allocation and GC pauses
+    /// </summary>
     public static class ObjectPool
     {
-        public class TypeComparer : IEqualityComparer<Type>
+        private static readonly Dictionary<Type, PooledStack> Pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
+        private static readonly Dictionary<Type, ObjectFactory> Factories = new Dictionary<Type, ObjectFactory>(TypeComparer.Default);
+
+        private class TypeComparer : IEqualityComparer<Type>
         {
             public static readonly TypeComparer Default = new TypeComparer();
 
@@ -26,46 +34,52 @@ namespace Intel.RealSense
             }
         }
 
-        static readonly Dictionary<Type, PooledStack> pools = new Dictionary<Type, PooledStack>(TypeComparer.Default);
-        static Dictionary<Type, ObjectFactory> factories = new Dictionary<Type, ObjectFactory>(TypeComparer.Default);
-
-        static PooledStack GetPool(Type t)
+        private static PooledStack GetPool(Type t)
         {
             Stack<Base.PooledObject> s;
-            if (pools.TryGetValue(t, out s))
-                return s;
-            lock ((pools as ICollection).SyncRoot)
+            if (Pools.TryGetValue(t, out s))
             {
-                return pools[t] = new PooledStack();
+                return s;
+            }
+
+            lock ((Pools as ICollection).SyncRoot)
+            {
+                return Pools[t] = new PooledStack();
             }
         }
 
-        public static object CreateInstance(Type t, IntPtr ptr)
+        private static object CreateInstance(Type t, IntPtr ptr)
         {
             Func<IntPtr, object> factory;
-            if (factories.TryGetValue(t, out factory))
+            if (Factories.TryGetValue(t, out factory))
+            {
                 return factory(ptr);
+            }
 
-            var ctorinfo = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
-                    null, new Type[] { typeof(IntPtr) }, null);
+            var ctorinfo = t.GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                    null,
+                    new Type[] { typeof(IntPtr) },
+                    null);
             var args = new ParameterExpression[] { Expression.Parameter(typeof(IntPtr), "ptr") };
             var lambda = Expression.Lambda<ObjectFactory>(Expression.New(ctorinfo, args), args).Compile();
-            lock ((factories as ICollection).SyncRoot)
+            lock ((Factories as ICollection).SyncRoot)
             {
-                factories[t] = lambda;
+                Factories[t] = lambda;
             }
+
             return lambda(ptr);
         }
 
-        static object Get(Type t, IntPtr ptr)
+        private static object Get(Type t, IntPtr ptr)
         {
-
             var stack = GetPool(t);
             int count;
             lock ((stack as ICollection).SyncRoot)
             {
                 count = stack.Count;
             }
+
             if (count > 0)
             {
                 Base.PooledObject obj;
@@ -73,21 +87,28 @@ namespace Intel.RealSense
                 {
                     obj = stack.Pop();
                 }
+
                 obj.m_instance.Reset(ptr);
                 obj.Initialize();
                 return obj;
             }
+
             return CreateInstance(t, ptr);
         }
 
-        public static T Get<T>(IntPtr ptr) where T : Base.PooledObject
+        public static T Get<T>(IntPtr ptr)
+            where T : Base.PooledObject
         {
             if (ptr == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(ptr));
+            }
+
             return Get(typeof(T), ptr) as T;
         }
 
-        public static void Release<T>(T obj) where T : Base.PooledObject
+        public static void Release<T>(T obj)
+            where T : Base.PooledObject
         {
             var stack = GetPool(obj.GetType());
             lock ((stack as ICollection).SyncRoot)
@@ -95,6 +116,5 @@ namespace Intel.RealSense
                 stack.Push(obj);
             }
         }
-
     }
 }

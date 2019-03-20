@@ -1,16 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using System.Text;
+
     public class MotionStreamProfile : StreamProfile
     {
-        //internal static readonly ProfilePool<MotionStreamProfile> Pool = new ProfilePool<MotionStreamProfile>(ptr => new MotionStreamProfile(ptr));
-
-        public MotionStreamProfile(IntPtr ptr) : base(ptr)
+        public MotionStreamProfile(IntPtr ptr)
+            : base(ptr)
         {
         }
 
@@ -18,13 +20,8 @@ namespace Intel.RealSense
         {
             object error;
             MotionDeviceIntrinsics intrinsics;
-            NativeMethods.rs2_get_motion_intrinsics(m_instance.Handle, out intrinsics, out error);
+            NativeMethods.rs2_get_motion_intrinsics(Handle, out intrinsics, out error);
             return intrinsics;
         }
-        //public override void Release()
-        //{
-        //    m_instance = new HandleRef(this, IntPtr.Zero);
-        //    ProfilePool<MotionStreamProfile>.Release(this);
-        //}
     }
 }

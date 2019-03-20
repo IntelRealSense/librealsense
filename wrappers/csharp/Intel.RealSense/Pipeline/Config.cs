@@ -1,10 +1,16 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
+    /// </summary>
     public class Config : Base.Object
     {
         internal static IntPtr Create()
@@ -13,7 +19,8 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_config(out error);
         }
 
-        public Config() : base(Create(), NativeMethods.rs2_delete_config)
+        public Config()
+            : base(Create(), NativeMethods.rs2_delete_config)
         {
         }
 
@@ -63,6 +70,12 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_config_enable_device_from_file(Handle, filename, out error);
+        }
+
+        public void EnableDeviceFromFile(string filename, bool repeat)
+        {
+            object error;
+            NativeMethods.rs2_config_enable_device_from_file_repeat_option(Handle, filename, repeat ? 1 : 0, out error);
         }
 
         public void EnableRecordToFile(string filename)

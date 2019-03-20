@@ -1,9 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    /// <summary>
+    /// Specifies advanced interfaces (capabilities) objects may implement
+    /// </summary>
     public enum Extension
     {
         Unknown = 0,

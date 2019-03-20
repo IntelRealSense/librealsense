@@ -1,17 +1,30 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// The pipeline profile includes a device and a selection of active streams, with specific profile.
+    /// <para>
+    /// The profile is a selection of the above under filters and conditions defined by the pipeline.
+    /// Streams may belong to more than one sensor of the device.
+    /// </para>
+    /// </summary>
     public class PipelineProfile : Base.Object
     {
-
-        public PipelineProfile(IntPtr ptr) : base(ptr, NativeMethods.rs2_delete_pipeline_profile)
+        public PipelineProfile(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_pipeline_profile)
         {
         }
 
+        /// <summary>
+        /// Gets the device used by the pipeline.
+        /// </summary>
         public Device Device
         {
             get
@@ -22,6 +35,9 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>
+        /// Gets the selected streams profiles, which are enabled in this profile.
+        /// </summary>
         public StreamProfileList Streams
         {
             get
@@ -37,7 +53,16 @@ namespace Intel.RealSense
             return GetStream<StreamProfile>(s, index);
         }
 
-        public T GetStream<T>(Stream s, int index = -1) where T : StreamProfile
+        /// <summary>
+        /// Return the selected stream profile, which are enabled in this profile.
+        /// </summary>
+        /// <typeparam name="T"><see cref="StreamProfile"/> type or subclass</typeparam>
+        /// <param name="s">Stream type of the desired profile</param>
+        /// <param name="index">Stream index of the desired profile. -1 for any matching.</param>
+        /// <returns>The first matching stream profile</returns>
+        /// <exception cref="ArgumentException">Thrown when the <see cref="PipelineProfile"/> does not contain the request stream</exception>
+        public T GetStream<T>(Stream s, int index = -1)
+            where T : StreamProfile
         {
             using (var streams = Streams)
             {
@@ -48,10 +73,14 @@ namespace Intel.RealSense
                     var ptr = NativeMethods.rs2_get_stream_profile(streams.Handle, i, out error);
                     var t = StreamProfile.Create<T>(ptr);
                     if (t.Stream == s && (index == -1 || t.Index == index))
+                    {
                         return t;
+                    }
+
                     t.Dispose();
                 }
-                return null;
+
+                throw new ArgumentException("Profile does not contain the requested stream", nameof(s));
             }
         }
     }

@@ -1,27 +1,28 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
     public class PointCloud : ProcessingBlock
     {
         private readonly IOption formatFilter;
         private readonly IOption indexFilter;
         private readonly IOption streamFilter;
 
-        static IntPtr Create()
+        private static IntPtr Create()
         {
             object error;
             return NativeMethods.rs2_create_pointcloud(out error);
         }
 
-        public PointCloud() : base(Create())
+        public PointCloud()
+            : base(Create())
         {
-            object error;
-            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
-
             streamFilter = Options[Option.StreamFilter];
             formatFilter = Options[Option.StreamFormatFilter];
             indexFilter = Options[Option.StreamIndexFilter];
@@ -35,11 +36,13 @@ namespace Intel.RealSense
 
         public void MapTexture(VideoFrame texture)
         {
-            using (var p = texture.Profile) {
+            using (var p = texture.Profile)
+            {
                 streamFilter.Value = (float)p.Stream;
                 formatFilter.Value = (float)p.Format;
                 indexFilter.Value = (float)p.Index;
             }
+
             using (var f = Process(texture))
             {
                 // Intentionally empty

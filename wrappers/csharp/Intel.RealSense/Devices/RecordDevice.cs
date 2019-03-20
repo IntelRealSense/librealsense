@@ -1,13 +1,17 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
     public class RecordDevice : Device
     {
-        internal RecordDevice(IntPtr ptr) : base(ptr)
+        internal RecordDevice(IntPtr ptr)
+            : base(ptr)
         {
         }
 
@@ -17,10 +21,22 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_record_device(dev.Handle, file, out error);
         }
 
-        public RecordDevice(Device dev, string file) : base(Create(dev, file))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RecordDevice"/> class.
+        /// </summary>
+        /// <param name="dev">The <see cref="Device"/> to record</param>
+        /// <param name="file">The desired path to which the recorder should save the data</param>
+        public RecordDevice(Device dev, string file)
+            : base(Create(dev, file), NativeMethods.rs2_delete_device)
         {
         }
 
+        /// <summary>
+        ///  Create a <see cref="RecordDevice"/> from existing <see cref="Device"/>
+        /// </summary>
+        /// <param name="dev">a device that supports <see cref="Extension.Record"/></param>
+        /// <returns>a new <see cref="RecordDevice"/></returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="dev"/> does not support <see cref="Extension.Record"/></exception>
         public static RecordDevice FromDevice(Device dev)
         {
             object error;
@@ -54,7 +70,7 @@ namespace Intel.RealSense
         /// <summary>
         /// Gets the name of the file to which the recorder is writing
         /// </summary>
-        public string Filename
+        public string FileName
         {
             get
             {

@@ -1,16 +1,26 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+
     public class AdvancedDevice : Device
     {
-        internal AdvancedDevice(IntPtr dev) : base(dev)
+        internal AdvancedDevice(IntPtr dev)
+            : base(dev)
         {
         }
 
+        /// <summary>
+        /// Create an <see cref="AdvancedDevice"/> from existing <see cref="Device"/>
+        /// </summary>
+        /// <param name="dev">a device that supports <see cref="Extension.AdvancedMode"/></param>
+        /// <returns>a new <see cref="AdvancedDevice"/></returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="dev"/> does not support <see cref="Extension.AdvancedMode"/></exception>
         public static AdvancedDevice FromDevice(Device dev)
         {
             object error;
@@ -23,11 +33,9 @@ namespace Intel.RealSense
         }
 
         /// <summary>
-        /// Enable/Disable Advanced-Mode
+        /// Gets or sets a value indicating whether Advanced-Mode is enabled
         /// </summary>
-        /// <value>
-        /// Check if Advanced-Mode is enabled
-        /// </value>
+        /// <value>true when Advanced-Mode is enabled</value>
         public bool AdvancedModeEnabled
         {
             get
@@ -37,12 +45,15 @@ namespace Intel.RealSense
                 {
                     object error;
                     NativeMethods.rs2_is_enabled(Handle, out enabled, out error);
-                } catch
+                }
+                catch
                 {
                     // above might throw, ignored for this getter
                 }
+
                 return enabled == 1;
             }
+
             set
             {
                 object error;
@@ -51,7 +62,7 @@ namespace Intel.RealSense
         }
 
         /// <summary>
-        /// Load JSON and apply advanced-mode controls
+        /// Gets or sets JSON and applies advanced-mode controls
         /// </summary>
         /// <value>Serialize JSON content</value>
         public string JsonConfiguration
@@ -66,6 +77,7 @@ namespace Intel.RealSense
                 NativeMethods.rs2_delete_raw_data(buffer);
                 return str;
             }
+
             set
             {
                 object error;

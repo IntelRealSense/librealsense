@@ -1,20 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Runtime.InteropServices;
+
     public class VideoFrame : Frame
     {
-        public VideoFrame(IntPtr ptr) : base(ptr)
+        public VideoFrame(IntPtr ptr)
+            : base(ptr)
         {
             object error;
             Debug.Assert(NativeMethods.rs2_is_frame_extendable_to(ptr, Extension.VideoFrame, out error) > 0);
         }
 
-
-        /// <summary>retrieve frame width in pixels</summary>
+        /// <summary>Gets the frame width in pixels</summary>
         /// <value>frame width in pixels</value>
         public int Width
         {
@@ -26,7 +29,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve frame height in pixels</summary>
+        /// <summary>Gets the frame height in pixels</summary>
         /// <value>frame height in pixels</value>
         public int Height
         {
@@ -38,7 +41,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width)</summary>
+        /// <summary>Gets the frame stride, meaning the actual line width in memory in bytes (not the logical image width)</summary>
         /// <value>stride in bytes</value>
         public int Stride
         {
@@ -50,7 +53,7 @@ namespace Intel.RealSense
             }
         }
 
-        /// <summary>retrieve bits per pixels in the frame image</summary>
+        /// <summary>Gets the bits per pixels in the frame image</summary>
         /// <remarks>
         /// (note that bits per pixel is not necessarily divided by 8, as in 12bpp)
         /// </remarks>
@@ -70,14 +73,18 @@ namespace Intel.RealSense
         /// </summary>
         /// <typeparam name="T">array element type</typeparam>
         /// <param name="array">array to copy to</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="array"/> is null</exception>
         public void CopyTo<T>(T[] array)
         {
             if (array == null)
+            {
                 throw new ArgumentNullException(nameof(array));
+            }
+
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
-                //System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
+                // System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
                 CopyTo(handle.AddrOfPinnedObject());
             }
             finally
@@ -90,26 +97,34 @@ namespace Intel.RealSense
         /// Copy frame data to pointer
         /// </summary>
         /// <param name="ptr">destination pointer</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="ptr"/> is null</exception>
         public void CopyTo(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(ptr));
-            NativeMethods.memcpy(ptr, Data, Stride * Height);
+            }
+
+            NativeMethods.Memcpy(ptr, Data, Stride * Height);
         }
 
         /// <summary>
         /// Copy data from managed array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="array"></param>
+        /// <typeparam name="T">array element type</typeparam>
+        /// <param name="array">array to copy from</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="array"/> is null</exception>
         public void CopyFrom<T>(T[] array)
         {
             if (array == null)
+            {
                 throw new ArgumentNullException(nameof(array));
+            }
+
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
-                //System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
+                // System.Diagnostics.Debug.Assert((array.Length * Marshal.SizeOf(typeof(T))) == (Stride * Height));
                 CopyFrom(handle.AddrOfPinnedObject());
             }
             finally
@@ -122,11 +137,15 @@ namespace Intel.RealSense
         /// Copy data from pointer
         /// </summary>
         /// <param name="ptr">source pointer</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="ptr"/> is null</exception>
         public void CopyFrom(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
+            {
                 throw new ArgumentNullException(nameof(ptr));
-            NativeMethods.memcpy(Data, ptr, Stride * Height);
+            }
+
+            NativeMethods.Memcpy(Data, ptr, Stride * Height);
         }
     }
 }

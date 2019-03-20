@@ -1,23 +1,25 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
     public class DisparityTransform : ProcessingBlock
     {
-        static IntPtr Create(bool transform_to_disparity)
+        private static IntPtr Create(bool transform_to_disparity)
         {
             object error;
             byte transform_direction = transform_to_disparity ? (byte)1 : (byte)0;
             return NativeMethods.rs2_create_disparity_transform_block(transform_direction, out error);
         }
 
-        public DisparityTransform(bool transform_to_disparity = true) : base(Create(transform_to_disparity))
+        public DisparityTransform(bool transform_to_disparity = true)
+            : base(Create(transform_to_disparity))
         {
-            object error;
-            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
         }
 
         [Obsolete("This method is obsolete. Use Process method instead")]

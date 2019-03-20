@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 using Intel.RealSense;
@@ -112,7 +109,7 @@ public class RsDevice : RsFrameProvider
         if (m_pipeline != null)
         {
             // if (Streaming)
-                // m_pipeline.Stop();
+            // m_pipeline.Stop();
             m_pipeline.Dispose();
             m_pipeline = null;
         }
@@ -155,8 +152,7 @@ public class RsDevice : RsFrameProvider
         while (!stopEvent.WaitOne(0))
         {
             using (var frames = m_pipeline.WaitForFrames())
-            using (var frame = frames.AsFrame())
-                RaiseSampleEvent(frame);
+                RaiseSampleEvent(frames);
         }
     }
 
@@ -172,10 +168,7 @@ public class RsDevice : RsFrameProvider
         if (m_pipeline.PollForFrames(out frames))
         {
             using (frames)
-            using (var frame = frames.AsFrame())
-            {
-                RaiseSampleEvent(frame);
-            }
+                RaiseSampleEvent(frames);
         }
     }
 

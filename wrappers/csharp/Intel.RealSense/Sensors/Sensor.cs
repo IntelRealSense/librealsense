@@ -1,11 +1,14 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
     public class Sensor : Base.PooledObject, IOptions
     {
         internal override void Initialize()
@@ -17,12 +20,14 @@ namespace Intel.RealSense
         private frame_callback m_callback;
         private FrameQueue m_queue;
 
-        internal static T Create<T>(IntPtr ptr) where T : Sensor
+        internal static T Create<T>(IntPtr ptr)
+            where T : Sensor
         {
             return ObjectPool.Get<T>(ptr);
         }
 
-        internal Sensor(IntPtr sensor) : base(sensor, NativeMethods.rs2_delete_sensor)
+        internal Sensor(IntPtr sensor)
+            : base(sensor, NativeMethods.rs2_delete_sensor)
         {
             Info = new CameraInfos(Handle);
             Options = new SensorOptions(Handle);
@@ -30,8 +35,12 @@ namespace Intel.RealSense
 
         public class CameraInfos
         {
-            readonly IntPtr m_sensor;
-            public CameraInfos(IntPtr sensor) { m_sensor = sensor; }
+            private readonly IntPtr m_sensor;
+
+            public CameraInfos(IntPtr sensor)
+            {
+                m_sensor = sensor;
+            }
 
             /// <summary>retrieve sensor specific information, like versions of various internal components</summary>
             /// <param name="info">camera info type to retrieve</param>
@@ -42,7 +51,10 @@ namespace Intel.RealSense
                 {
                     object err;
                     if (NativeMethods.rs2_supports_sensor_info(m_sensor, info, out err) > 0)
+                    {
                         return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_sensor_info(m_sensor, info, out err));
+                    }
+
                     return null;
                 }
             }
@@ -52,8 +64,8 @@ namespace Intel.RealSense
 
         internal class CameraOption : IOption
         {
-            readonly IntPtr m_sensor;
-            readonly Option option;
+            private readonly IntPtr m_sensor;
+            private readonly Option option;
 
             private readonly float min;
             private readonly float max;
@@ -73,8 +85,7 @@ namespace Intel.RealSense
                 }
             }
 
-
-            /// <summary>check if particular option is supported by a subdevice</summary>
+            /// <summary>Gets a value indicating whether a particular option is supported by a subdevice</summary>
             /// <value>true if option is supported</value>
             public bool Supported
             {
@@ -100,24 +111,24 @@ namespace Intel.RealSense
                 }
             }
 
-            /// <summary>get option description</summary>
+            /// <summary>Gets the option description</summary>
             /// <value>human-readable option description</value>
             public string Description
             {
                 get
                 {
-                    if(description == null)
+                    if (description == null)
                     {
                         object error;
                         var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
                         description = Marshal.PtrToStringAnsi(str);
                     }
+
                     return description;
                 }
             }
 
-
-            /// <summary>Read and write option value</summary>
+            /// <summary>Gets or sets option value</summary>
             /// <value>value of the option</value>
             public float Value
             {
@@ -126,6 +137,7 @@ namespace Intel.RealSense
                     object error;
                     return NativeMethods.rs2_get_option(m_sensor, option, out error);
                 }
+
                 set
                 {
                     object error;
@@ -133,7 +145,7 @@ namespace Intel.RealSense
                 }
             }
 
-            /// <summary>get option value description (in case specific option value hold special meaning)</summary>
+            /// <summary>Gets the option value description (in case specific option value hold special meaning)</summary>
             /// <value>human-readable description of a specific value of an option or null if no special meaning</value>
             public string ValueDescription
             {
@@ -185,7 +197,7 @@ namespace Intel.RealSense
                 }
             }
 
-            /// <summary>check if an option is read-only</summary>
+            /// <summary>Gets a value indicating whether an option is read-only</summary>
             /// <value>true if option is read-only</value>
             public bool ReadOnly
             {
@@ -196,14 +208,10 @@ namespace Intel.RealSense
                 }
             }
         }
-        
+
         public class SensorOptions : IOptionsContainer
         {
-            readonly IntPtr m_sensor;
-            internal SensorOptions(IntPtr sensor)
-            {
-                m_sensor = sensor;
-            }
+            private readonly IntPtr m_sensor;
 
             /// <summary>read option value from the sensor</summary>
             /// <param name="option">option id to be queried</param>
@@ -216,35 +224,54 @@ namespace Intel.RealSense
                 }
             }
 
+            /// <summary>
+            /// Get option value description (in case specific option value hold special meaning)
+            /// </summary>
+            /// <param name="option">option id to be checked</param>
+            /// <param name="value">value of the option</param>
+            /// <returns>human-readable description of a specific value of an option or null if no special meaning</returns>
             public string OptionValueDescription(Option option, float value)
             {
                 object error;
                 var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                if(desc != IntPtr.Zero)
+                if (desc != IntPtr.Zero)
                 {
                     return Marshal.PtrToStringAnsi(desc);
                 }
+
                 return null;
             }
 
-            static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
+            private static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
 
+            /// <summary>
+            /// Returns an enumerator that iterates over supported options
+            /// </summary>
+            /// <returns>an enumerator that iterates over supported options</returns>
             public IEnumerator<IOption> GetEnumerator()
             {
-
                 foreach (var v in OptionValues)
                 {
                     if (this[v].Supported)
+                    {
                         yield return this[v];
+                    }
                 }
             }
 
+            /// <inheritdoc/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
+
+            internal SensorOptions(IntPtr sensor)
+            {
+                m_sensor = sensor;
+            }
         }
 
+        /// <inheritdoc/>
         public IOptionsContainer Options { get; private set; }
 
         /// <summary>open subdevice for exclusive access, by committing to a configuration</summary>
@@ -253,7 +280,6 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_open(Handle, profile.Handle, out error);
-
         }
 
         /// <summary>open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles</summary>
@@ -266,7 +292,10 @@ namespace Intel.RealSense
             object error;
             IntPtr[] handles = new IntPtr[profiles.Length];
             for (int i = 0; i < profiles.Length; i++)
+            {
                 handles[i] = profiles[i].Handle;
+            }
+
             NativeMethods.rs2_open_multiple(Handle, handles, profiles.Length, out error);
         }
 
@@ -290,7 +319,9 @@ namespace Intel.RealSense
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
                 using (var frame = Frame.Create(f))
+                {
                     cb(frame);
+                }
             };
             m_callback = cb2;
             m_queue = null;
@@ -317,10 +348,8 @@ namespace Intel.RealSense
             NativeMethods.rs2_close(Handle, out error);
         }
 
-        #region Extensions
-
         /// <summary>
-        /// retrieve mapping between the units of the depth image and meters
+        /// Gets the mapping between the units of the depth image and meters
         /// </summary>
         /// <value>depth in meters corresponding to a depth value of 1</value>
         public float DepthScale
@@ -332,6 +361,9 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>
+        /// Gets the active region of interest to be used by auto-exposure algorithm
+        /// </summary>
         public AutoExposureROI AutoExposureSettings
         {
             get
@@ -341,11 +373,13 @@ namespace Intel.RealSense
                 {
                     return new AutoExposureROI { m_instance = Handle };
                 }
+
+                // TODO: consider making AutoExposureROI a struct and throwing instead
                 return null;
             }
         }
-        #endregion
 
+        /// <summary>Gets the list of supported stream profiles</summary>
         /// <value>list of stream profiles that given subdevice can provide</value>
         public StreamProfileList StreamProfiles
         {
