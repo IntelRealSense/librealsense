@@ -827,7 +827,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
             "odometry_config_buf"_a, "Load Wheel odometer settings from host to device.")
         .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
-            "wo_sensor_id"_a, "frame_num"_a, "angular_velocity"_a,
+            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a,
             "Send wheel odometry data for each individual sensor (wheel)")
         .def("__nonzero__", &rs2::wheel_odometer::operator bool);
 

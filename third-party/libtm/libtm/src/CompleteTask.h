@@ -320,7 +320,7 @@ namespace perc {
             interrupt_message_velocimeter_stream_metadata metaData = ((interrupt_message_velocimeter_stream*)imuHeader)->metadata;
             mFrame.sensorIndex = GET_SENSOR_INDEX(imuHeader->bSensorID);
             mFrame.frameId = imuHeader->dwFrameId;
-            mFrame.angularVelocity.set(metaData.flVx, metaData.flVy, metaData.flVz);
+            mFrame.translationalVelocity.set(metaData.flVx, metaData.flVy, metaData.flVz);
             mFrame.temperature = metaData.flTemperature;
             mFrame.timestamp = imuHeader->llNanoseconds;
             mFrame.arrivalTimeStamp = imuHeader->llArrivalNanoseconds;
