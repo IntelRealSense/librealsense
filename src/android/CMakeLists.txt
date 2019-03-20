@@ -31,6 +31,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.h"
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/context.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/device.c"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/device_list.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/pipeline.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/config.c"
         "${CMAKE_CURRENT_LIST_DIR}/jni/stream_profile.c"

@@ -2307,11 +2307,11 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, odometry_blob, blob_size)
 
 int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
-                            const rs2_vector angular_velocity, rs2_error** error) BEGIN_API_CALL
+                            const rs2_vector translational_velocity, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     auto wo_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::wheel_odometry_interface);
 
-    return wo_snr->send_wheel_odometry(wo_sensor_id, frame_num, { angular_velocity.x, angular_velocity.y, angular_velocity.z });
+    return wo_snr->send_wheel_odometry(wo_sensor_id, frame_num, { translational_velocity.x, translational_velocity.y, translational_velocity.z });
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, angular_velocity)
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)

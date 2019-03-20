@@ -95,21 +95,21 @@ namespace librealsense
             }
             if(_type == RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
             {
+                // Note: additional_data.system_time is the arrival time
+                // (backend_time is what we have traditionally called
+                // system_time)
                 if (auto* vf = dynamic_cast<const video_frame*>(&frm))
                 {
-                    const video_frame_metadata* md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(vf->additional_data.system_time);
                 }
                 
                 if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
                 {
-                    const motion_frame_metadata* md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(mf->additional_data.system_time);
                 }
                 if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
                 {
-                    const pose_frame_metadata* md = reinterpret_cast<const pose_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(pf->additional_data.system_time);
                 }
             }
             if (_type == RS2_FRAME_METADATA_TEMPERATURE)
@@ -377,6 +377,9 @@ namespace librealsense
             {
             case RS2_STREAM_FISHEYE:
             {
+                if(stream_index != 1 && stream_index != 2) {
+                    throw invalid_value_exception("Invalid stream index, must be 1 or 2");
+                }
                 stream_index -= 1; // for multiple streams, the index starts from 1
                 //TODO: check bound for _tm_supported_profiles.___[]
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
@@ -491,8 +494,8 @@ namespace librealsense
             f.frameLength = vframe->get_height()*vframe->get_stride()* (vframe->get_bpp() / 8);
             f.data = vframe->data.data();
             f.timestamp = to_nanos(vframe->additional_data.timestamp);
-            f.systemTimestamp = to_nanos(vframe->additional_data.system_time);
-            f.arrivalTimeStamp = time_of_arrival;
+            f.systemTimestamp = to_nanos(vframe->additional_data.backend_timestamp);
+            f.arrivalTimeStamp = to_nanos(vframe->additional_data.system_time);
             auto sts = _tm_dev->SendFrame(f);
             if (sts != Status::SUCCESS)
             {
@@ -511,8 +514,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -528,8 +531,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -681,11 +684,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         video_frame_metadata video_md = { 0 };
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
-        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp, 0 ,0, false);
+        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, arrival_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, system_ts_ms.count(), 0 ,0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -716,8 +721,8 @@ namespace librealsense
         {
             auto video = (video_frame*)(frame.frame);
             video->assign(tm_frame.profile.width, tm_frame.profile.height, tm_frame.profile.stride, bpp);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
             video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
@@ -766,10 +771,12 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_num++, arrival_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -795,8 +802,8 @@ namespace librealsense
         if (frame.frame)
         {
             auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
 
             auto info = reinterpret_cast<librealsense::pose_frame::pose_info*>(pose_frame->data.data());
@@ -903,11 +910,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         motion_frame_metadata motion_md = { 0 };
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_number, arrival_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -932,8 +941,8 @@ namespace librealsense
         if (frame.frame)
         {
             auto motion_frame = static_cast<librealsense::motion_frame*>(frame.frame);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
             auto data = reinterpret_cast<float*>(motion_frame->data.data());
             data[0] = imu_data[0];
@@ -1134,7 +1143,7 @@ namespace librealsense
         return (status == Status::SUCCESS);
     }
 
-    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity) const
+    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const
     {
         if (!_tm_dev)
             throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
@@ -1142,7 +1151,7 @@ namespace librealsense
         perc::TrackingData::VelocimeterFrame vel_fr;
         vel_fr.sensorIndex  = wo_sensor_id;
         vel_fr.frameId      = frame_num;
-        vel_fr.angularVelocity = { angular_velocity.x, angular_velocity.y, angular_velocity.z };
+        vel_fr.translationalVelocity = { translational_velocity.x, translational_velocity.y, translational_velocity.z };
 
         auto status = _tm_dev->SendFrame(vel_fr);
         if (status != Status::SUCCESS)
