@@ -377,6 +377,9 @@ namespace librealsense
             {
             case RS2_STREAM_FISHEYE:
             {
+                if(stream_index != 1 && stream_index != 2) {
+                    throw invalid_value_exception("Invalid stream index, must be 1 or 2");
+                }
                 stream_index -= 1; // for multiple streams, the index starts from 1
                 //TODO: check bound for _tm_supported_profiles.___[]
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
