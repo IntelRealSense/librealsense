@@ -86,7 +86,7 @@ namespace librealsense
         case perc::SIXDOF_INTERRUPT_RATE_FISHEYE:
             return 30;
         case perc::SIXDOF_INTERRUPT_RATE_IMU:
-            return 262; //TODO - going to change by TM2 to something else...
+            return 200; //TODO - going to change by TM2 to something else...
         default:
             throw invalid_value_exception("Invalid TM2 pose rate");
         }

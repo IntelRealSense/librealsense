@@ -44,7 +44,7 @@ int main(int argc, char * argv[]) try
     // Create a pipeline to easily configure and start the camera
     rs2::pipeline pipe;
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_DEPTH, 500, 500);
+    cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_COLOR);
     pipe.start(cfg);
 

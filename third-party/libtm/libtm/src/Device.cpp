@@ -2709,7 +2709,7 @@ namespace perc {
                 break;
             }
 
-            // Add some statistics calculations            
+            // Add some statistics calculations
             totalBytesReceived += actual;
             if (timeOfFirstByte == 0)
                 timeOfFirstByte = systemTime();
