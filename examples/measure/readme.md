@@ -2,9 +2,9 @@
 
 ## Overview
 
-This tutorial is designed to explain some of the more advanced SDK topics by writing a simple "Ruler" app. 
+This tutorial shows simple method for measuring real-world distances using depth data. 
 > **Note:** Measuring dimensions of real-world objects is one of the obvious applications of a depth camera. This sample is not indented to be a proper measurement tool, but rather to showcase critical concepts.
-> Both the algorithm and the performance of this app can be considerably improved
+> With better algorithms measurement results can be improved considerably.
 
 In this tutorial you will learn how to:
 
@@ -16,13 +16,9 @@ In this tutorial you will learn how to:
 
 
 ## Expected Output
-![expected output](https://raw.githubusercontent.com/wiki/IntelRealSense/librealsense/res/measure-expected.png)
+![expected output](https://raw.githubusercontent.com/wiki/dorodnic/librealsense/expected.png)
 
 This demo lets the user measure distance between two points in the physical world.
-We calculate two simple distance metrics:
-
-* **Euclidean Distance** - very fast to calculate, but cuts through air and solid objects
-* **Geodesic Distance** - distance along the surface, approximated by a shortest path on the depth lattice
 
 ## Code Overview 
 
@@ -33,6 +29,8 @@ We start this example by defining all the processing blocks we are going to use:
 ```cpp
 // Colorizer is used to visualize depth data
 rs2::colorizer color_map;
+// Use black to white color map
+color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
 // Decimation filter reduces the amount of data (while preserving best samples)
 rs2::decimation_filter dec;
 // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
@@ -72,19 +70,12 @@ auto profile = pipe.start(cfg);
 Our goal is to generate depth without any holes, since these are going to pose an immediate problem to our algorithm.
 The best way to reduce the number of missing pixels is by letting the hardware do it.
 The D400 cameras have a **High Density** preset we can take advantage of.
-Until the presets are finalized, the way to apply this preset is by name:
 ```cpp
 auto sensor = profile.get_device().first<rs2::depth_sensor>();
     
-// TODO: At the moment the SDK does not offer a closed enum for D400 visual presets
-// (because they keep changing)
-// As a work-around we try to find the High-Density preset by name
-// We do this to reduce the number of black pixels
-// The hardware can perform hole-filling much better and much more power efficient then our software
-auto range = sensor.get_option_range(RS2_OPTION_VISUAL_PRESET);
-for (auto i = range.min; i < range.max; i += range.step)
-	if (std::string(sensor.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i)) == "High Density")
-		sensor.set_option(RS2_OPTION_VISUAL_PRESET, i);
+// Set the device to High Accuracy preset
+auto sensor = profile.get_device().first<rs2::depth_sensor>();
+sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
 ```
 
 Given a frame-set, we are going to apply all the processing blocks in order. 
@@ -172,83 +163,25 @@ float dist_3d(const rs2_intrinsics& intr, const rs2::depth_frame& frame, pixel u
 
 ### Running Processing on a Background Thread
 
-Both the post-processing and the shortest-path calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for both the post-processing and the algorithm. 
-
-<p align="center"><img src="https://user-images.githubusercontent.com/6958867/34941961-8843ff5c-f9fe-11e7-9ff4-470620db1329.png" /></p>
+Post-processing calculations in this example can be relatively slow. To not block the main (UI) thread, we are going to have a dedicated thread for post-processing. 
 
 #### Video-Processing Thread
 
-This thread will consume full frame-sets from the camera, and will produce:
-
-* Frameset containing color and colorized depth frames (for rendering on the main thread)
-* Post-processed depth frame for the shortest-path calculation
-
-In order to create a new `frameset` we must wrap our code in a `processing_block` object:
-
-```cpp
-rs2::processing_block frame_processor(
-	[&](rs2::frameset data, // Input frameset (from the pipeline)
-		rs2::frame_source& source) // Frame pool that can allocate new frames
-{
-	...
-	
-	// Group the two frames together (to make sure they are rendered in sync)
-	rs2::frameset combined = source.allocate_composite_frame({ colorized, color });
-	// Send the composite frame for rendering
-	source.frame_ready(combined);
-});
-```
-This object will both invoke our lambda (in a safe way) and manage the frame-pool for the resulting framesets. 
-
-We can tie the output of a processing block directly into a `frame_queue`:
-```cpp
-// Indicate that we want the results of frame_processor 
-// to be pushed into postprocessed_frames queue
-frame_processor >> postprocessed_frames;
-```
-
-Next, the thread will poll for frames from `pipeline` and send them into our processing block:
+This thread will consume full frame-sets from the camera, and will produce frame-sets containing color and colorized depth frames (for rendering on the main thread):
 ```cpp
 while (alive)
 {
-	// Fetch frames from the pipeline and send them for processing
-	rs2::frameset fs;
-	if (pipe.poll_for_frames(&fs)) frame_processor.invoke(fs);
+    // Fetch frames from the pipeline and send them for processing
+    rs2::frameset fs;
+    if (pipe.poll_for_frames(&fs)) 
+    {
+        // Apply post processing
+        // ...
+        
+        // Send resulting frames for visualization in the main thread
+        postprocessed_frames.enqueue(data);
+    }
 }
-```
-
-In addition, the processing block will send individual post-processed depth frames to `pathfinding_queue` to be picked-up by the Shortest-Path thread.
-```cpp
-// Send the post-processed depth for path-finding
-pathfinding_queue.enqueue(depth);
-```
-
-#### Shortest-Path Thread
-
-This thread will consume depth frames from `pathfinding_queue` and will update a global `path` variable with the shortest path.
-We don't need to define a processing block since no new frames are being created. 
-
-```cpp
-// Shortest-path thread is receiving depth frame and
-// runs classic Dijkstra on it to find the shortest path (in 3D)
-// between the two points the user have chosen
-std::thread shortest_path_thread([&]() {
-	while (alive)
-	{
-		// Try to fetch frames from the pathfinding_queue
-		rs2::frame depth;
-		if (pathfinding_queue.poll_for_frame(&depth))
-		{
-			...
-			
-			{
-				// Write the shortest-path to the path variable
-				std::lock_guard<std::mutex> lock(path_mutex);
-				path = ...
-			}
-		}
-	}
-});
 ```
 
 #### Main Thread
@@ -280,20 +213,13 @@ while(app) // Application still alive?
 		// pixels out of FOV will appear transparent)
 		color_image.render(color, { 0, 0, app.width(), app.height() });
 
-		{
-			// Take the lock, to make sure the path is not modified
-			// while we are rendering it
-			std::lock_guard<std::mutex> lock(path_mutex);
+		// Render the simple pythagorean distance
+		render_simple_distance(depth, app_state, app, intrinsics);
 
-			// Render the shortest-path as calculated
-			render_shortest_path(depth, path, app, total_dist);
-			// Render the simple pythagorean distance
-			render_simple_distance(depth, app_state, app, intrinsics);
-
-			// Render the ruler
-			app_state.ruler_start.render(app);
-			app_state.ruler_end.render(app);
-		}
+		// Render the ruler
+		app_state.ruler_start.render(app);
+		app_state.ruler_end.render(app);
+			
 		glDisable(GL_BLEND);
 	}
 }
@@ -304,6 +230,4 @@ We use `glBlendFunc` to overlay aligned-color on top of depth using colors alpha
 
 This example demonstrates a short yet complex processing flow. Each thread has somewhat different rate and they all need to synchronize but not block one another. 
 This is achieved using thread-safe `frame_queue`s as synchronization primitives and `rs2::frame` reference counting for object lifetime management across threads.
-
- 
 

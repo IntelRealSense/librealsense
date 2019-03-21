@@ -422,7 +422,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void show(const rect& r) const
+    void show(const rect& r, float alpha = 1.f) const
     {
         if (!_gl_handle)
             return;
@@ -430,6 +430,7 @@ public:
         set_viewport(r);
 
         glBindTexture(GL_TEXTURE_2D, _gl_handle);
+        glColor4f(1.0f, 1.0f, 1.0f, alpha);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex2f(0, 0);
@@ -444,12 +445,12 @@ public:
 
     GLuint get_gl_handle() { return _gl_handle; }
 
-    void render(const rs2::frame& frame, const rect& rect)
+    void render(const rs2::frame& frame, const rect& rect, float alpha = 1.f)
     {
         if (auto vf = frame.as<rs2::video_frame>())
         {
             upload(vf);
-            show(rect.adjust_ratio({ (float)vf.get_width(), (float)vf.get_height() }));
+            show(rect.adjust_ratio({ (float)vf.get_width(), (float)vf.get_height() }), alpha);
         }
         else if (auto mf = frame.as<rs2::motion_frame>())
         {

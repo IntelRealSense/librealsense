@@ -162,6 +162,7 @@ namespace librealsense
 
     using on_frame = std::function<void(frame_interface*)>;
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
+    using unique_profiles = std::set<std::shared_ptr<stream_profile_interface>>;
     using processing_blocks = std::vector<std::shared_ptr<processing_block_interface>>;
 
 
