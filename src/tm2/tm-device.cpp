@@ -633,7 +633,7 @@ namespace librealsense
 
     rs2_motion_device_intrinsic tm2_sensor::get_motion_intrinsics(const motion_stream_profile_interface& profile) const
     {
-        rs2_motion_device_intrinsic result;
+        rs2_motion_device_intrinsic result{};
         TrackingData::MotionIntrinsics tm_intrinsics{};
         int stream_index = profile.get_stream_index();
         if (stream_index != 0) //firmware only accepts stream 0

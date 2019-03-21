@@ -501,7 +501,7 @@ void render_shortest_path(const rs2::depth_frame& depth,
         auto y = (float(pixel1.second) / depth.get_height()) * app.height();
         glVertex2f(x, y);
 
-        if (i == path.size() / 2) center = { x, y };
+        if (i == (path.size() / 2)) center = { int(x), int(y) };
     }
     glEnd();
 

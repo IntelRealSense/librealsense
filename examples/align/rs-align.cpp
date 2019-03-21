@@ -136,7 +136,7 @@ float get_depth_scale(rs2::device dev)
             return dpt.get_depth_scale();
         }
     }
-    throw std::runtime_error("Device does not have a depth sensor");
+    throw std::runtime_error("The demo requires a Depth sensor to run");
 }
 
 void render_slider(rect location, float& clipping_dist)
@@ -215,7 +215,7 @@ rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams)
     rs2_stream align_to = RS2_STREAM_ANY;
     bool depth_stream_found = false;
     bool color_stream_found = false;
-    for (rs2::stream_profile sp : streams)
+    for (const rs2::stream_profile& sp : streams)
     {
         rs2_stream profile_stream = sp.stream_type();
         if (profile_stream != RS2_STREAM_DEPTH)
