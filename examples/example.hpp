@@ -364,21 +364,17 @@ private:
     }
 };
 
-class text_renderer
+/// \brief Print flat 2D text over openGl window
+struct text_renderer
 {
-public:
     // Provide textual representation only
     void put_text(const std::string& msg, float norm_x_pos, float norm_y_pos, const rect& r)
     {
-        if (!_gl_handle)
-            glGenTextures(1, &_gl_handle);
-
         set_viewport(r);
         draw_text(int(norm_x_pos * r.w), int(norm_y_pos * r.h), msg.c_str());
     }
-private:
-    mutable GLuint _gl_handle = 0;
 };
+
 ////////////////////////
 // Image display code //
 ////////////////////////
@@ -468,7 +464,6 @@ public:
     }
 
 private:
-
     GLuint          _gl_handle = 0;
     rs2_stream      _stream_type = RS2_STREAM_ANY;
     int             _stream_index{};
@@ -590,8 +585,8 @@ public:
          }
          else
          {
-             _main_win.put_text("Connect one or more cameras to run", 
-                 0.45f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
+             _main_win.put_text("Connect one or more Intel RealSense devices and rerun the example",
+                 0.4f, 0.5f, { 0.f,0.f, float(_width) , float(_height) });
          }
     }
 

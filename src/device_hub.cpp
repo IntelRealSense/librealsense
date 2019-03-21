@@ -16,17 +16,20 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> result;
         for (auto dev : devices)
         {
+            bool filtered = false;
             auto data = dev->get_device_data();
             for (const auto& uvc : data.uvc_devices)
             {
                 if (uvc.vid == vid || vid == 0)
                 {
                     result.push_back(dev);
+                    filtered = true;
                     break;
                 }
             }
 
-            if (data.tm2_devices.size() && (0== vid))
+            // TODO: enable T265 filter by VID:PID via tm2_device_info
+            if ((!filtered) && data.tm2_devices.size())
                 result.push_back(dev);
         }
         return result;
