@@ -53,7 +53,7 @@ We include 2 more header files which will help us to render GUI controls in our 
 
 These headers are part of the [ImGui](https://github.com/ocornut/imgui) library which we use to render GUI elements.
 
-Next, we declare three functions to help the code look clearer:
+Next, we declare several functions to help the code look clearer:
 ```cpp
 void render_slider(rect location, float& clipping_dist);
 void remove_background(rs2::video_frame& color, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);

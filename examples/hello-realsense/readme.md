@@ -35,7 +35,7 @@ To get first frame from the depth data stream, you can use `get_depth_frame` hel
 // Try to get a frame of a depth image
 rs2::depth_frame depth = frames.get_depth_frame();
 ```
-Next we query the default depth frame dimentions (these may differ from sensor to sensor):
+Next we query the default depth frame dimensions (these may differ from sensor to sensor):
 ```cpp
 // Get the depth frame's dimensions
 float width = depth.get_width();

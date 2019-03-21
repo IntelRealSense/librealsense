@@ -132,7 +132,7 @@ void render_slider(rect location, float* alpha, direction* dir)
     ImGui::SetNextWindowPos({ location.x, location.y });
     ImGui::SetNextWindowSize({ location.w, location.h });
 
-    // Render transparancy slider:
+    // Render transparency slider:
     ImGui::Begin("slider", nullptr, flags);
     ImGui::PushItemWidth(-1);
     ImGui::SliderFloat("##Slider", alpha, 0.f, 1.f);

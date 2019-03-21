@@ -139,9 +139,13 @@ int main(int argc, char * argv[]) try
     cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_RGBA8, 15);
     auto profile = pipe.start(cfg);
 
-    // Set the device to High Accuracy preset
-    auto sensor = profile.get_device().first<rs2::depth_sensor>();
-    sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+    // Set the device to High Accuracy preset of the D400 stereoscopic cameras
+    // TODO: SR300 structured-light cameras and the L500 would require different handling
+    auto sensor = profile.get_device().first<rs2::depth_stereo_sensor>();
+    if (sensor)
+    {
+        sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+    }
 
     auto stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
 
