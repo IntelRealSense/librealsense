@@ -328,6 +328,7 @@ namespace librealsense
             CASE(INVERSE_BROWN_CONRADY)
             CASE(FTHETA)
             CASE(BROWN_CONRADY)
+            CASE(KANNALA_BRANDT4)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

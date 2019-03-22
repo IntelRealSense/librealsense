@@ -198,6 +198,10 @@ namespace librealsense
         std::vector<TrackingData::VideoProfile> video_profiles(_tm_supported_profiles.video, _tm_supported_profiles.video + VideoProfileMax);
         for (auto tm_profile : video_profiles)
         {
+            if (tm_profile.sensorIndex == VideoProfileMax)
+            {
+                continue;
+            }
             rs2_stream stream = RS2_STREAM_FISHEYE; //TM2_API provides only fisheye video streams
             platform::stream_profile p = { tm_profile.profile.width, tm_profile.profile.height, tm_profile.fps, static_cast<uint32_t>(tm_profile.profile.pixelFormat) };
             auto profile = std::make_shared<video_stream_profile>(p);
@@ -607,15 +611,14 @@ namespace librealsense
     rs2_intrinsics tm2_sensor::get_intrinsics(const stream_profile& profile) const
     {
         rs2_intrinsics result;
-        const TrackingData::CameraIntrinsics tm_intrinsics{};
+        TrackingData::CameraIntrinsics tm_intrinsics{};
         int stream_index = profile.index - 1;
-        //TODO - wait for TM2 intrinsics impl
-        //TODO - assuming IR only
-//             auto status = _tm_dev->GetCameraIntrinsics(tm_intrinsics, SET_SENSOR_ID(SensorType::Fisheye,stream_index));
-//             if (status != Status::SUCCESS)
-//             {
-//                 throw io_exception("Failed to read TM2 intrinsics");
-//             }
+
+        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
 
         result.width = tm_intrinsics.width;
         result.height = tm_intrinsics.height;

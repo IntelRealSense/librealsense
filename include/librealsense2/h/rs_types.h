@@ -48,6 +48,7 @@ typedef enum rs2_distortion
     RS2_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS2_DISTORTION_FTHETA                , /**< F-Theta fish-eye distortion model */
     RS2_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
+    RS2_DISTORTION_KANNALA_BRANDT4       , /**< Four parameter Kannala Brandt distortion model */
     RS2_DISTORTION_COUNT                   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_distortion;
 const char* rs2_distortion_to_string(rs2_distortion distortion);
