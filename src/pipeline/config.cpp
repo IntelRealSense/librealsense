@@ -222,7 +222,7 @@ namespace librealsense
                     if (!dev->supports_info(RS2_CAMERA_INFO_SERIAL_NUMBER))
                     {
                         throw std::runtime_error(to_string() << "Failed to resolve request. "
-                            "Conflict between enable_device_from_file(\"" << _device_request.filename
+                            "Conflic between enable_device_from_file(\"" << _device_request.filename
                             << "\") and enable_device(\"" << _device_request.serial << "\"), "
                             "File does not contain a device with such serial");
                     }
@@ -232,7 +232,7 @@ namespace librealsense
                         if (s != _device_request.serial)
                         {
                             throw std::runtime_error(to_string() << "Failed to resolve request. "
-                                "Conflict between enable_device_from_file(\"" << _device_request.filename
+                                "Conflic between enable_device_from_file(\"" << _device_request.filename
                                 << "\") and enable_device(\"" << _device_request.serial << "\"), "
                                 "File contains device with different serial number (" << s << "\")");
                         }
