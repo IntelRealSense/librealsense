@@ -509,9 +509,9 @@ namespace librealsense
                     std::wstring targetKey(reinterpret_cast<const wchar_t*>(driver_key.data()));
 
                     // recursively check all hubs, searching for composite device
-                    std::wstringstream buf;
                     for (int i = 0;; i++)
                     {
+                        std::wstringstream buf;
                         buf << "\\\\.\\HCD" << i;
                         std::wstring hcd = buf.str();
 

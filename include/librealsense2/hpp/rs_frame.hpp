@@ -817,7 +817,7 @@ namespace rs2
         * Retrieve back the pose data from T2xx position tracking sensor
         * \return rs2_pose - orientation and velocity data.
         */
-        rs2_pose get_pose_data()
+        rs2_pose get_pose_data() const
         {
             rs2_pose pose_data;
             rs2_error* e = nullptr;

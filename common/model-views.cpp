@@ -3182,7 +3182,7 @@ namespace rs2
                 data = "[";
                 std::string comma = "";
                 unsigned int i = 0;
-                while ((pose.floatData[i] != FLT_MAX) && (i<4))
+                while ((i<4) && (pose.floatData[i] != FLT_MAX))
                 {
 
                     data += to_string() << std::fixed << std::setprecision(pose.precision) << (pose.signedNumber ? std::showpos : std::noshowpos) << comma << pose.floatData[i];

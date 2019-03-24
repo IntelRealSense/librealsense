@@ -25,7 +25,6 @@ namespace perc
             virtual void onError(Status, TrackingDevice* device)= 0;
         };
 
-    public:
         // factory
         static TrackingManager* CreateInstance(Listener*, void* param = 0);
         // release existing manager and clean the pointer
@@ -46,5 +45,7 @@ namespace perc
         */
         virtual uint64_t version() = 0;
         virtual ~TrackingManager() {}
+
+        virtual bool isInitialized() const = 0;
     };
 } 
