@@ -38,7 +38,7 @@ classdef frameset < realsense.frame
             end
             infrared_frame = realsense.video_frame(ret);
         end
-        function frameset_size = size(this)
+        function frameset_size = frame_count(this)
             frameset_size = realsense.librealsense_mex('rs2::frameset', 'size', this.objectHandle);
         end
         % TODO: iterator protocol?
