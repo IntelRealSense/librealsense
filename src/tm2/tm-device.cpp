@@ -95,21 +95,21 @@ namespace librealsense
             }
             if(_type == RS2_FRAME_METADATA_TIME_OF_ARRIVAL)
             {
+                // Note: additional_data.system_time is the arrival time
+                // (backend_time is what we have traditionally called
+                // system_time)
                 if (auto* vf = dynamic_cast<const video_frame*>(&frm))
                 {
-                    const video_frame_metadata* md = reinterpret_cast<const video_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(vf->additional_data.system_time);
                 }
                 
                 if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
                 {
-                    const motion_frame_metadata* md = reinterpret_cast<const motion_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(mf->additional_data.system_time);
                 }
                 if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
                 {
-                    const pose_frame_metadata* md = reinterpret_cast<const pose_frame_metadata*>(frm.additional_data.metadata_blob.data());
-                    return (rs2_metadata_type)(md->arrival_ts);
+                    return (rs2_metadata_type)(pf->additional_data.system_time);
                 }
             }
             if (_type == RS2_FRAME_METADATA_TEMPERATURE)
@@ -149,7 +149,7 @@ namespace librealsense
     }
 
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-        : sensor_base("Tracking Module", owner), _tm_dev(dev), _dispatcher(10)
+        : sensor_base("Tracking Module", owner, this), _tm_dev(dev), _dispatcher(10)
     {
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
@@ -296,7 +296,7 @@ namespace librealsense
 
     void tm2_sensor::open(const stream_profiles& requests)
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (_is_streaming)
             throw wrong_api_call_sequence_exception("open(...) failed. TM2 device is streaming!");
         else if (_is_opened)
@@ -377,6 +377,9 @@ namespace librealsense
             {
             case RS2_STREAM_FISHEYE:
             {
+                if(stream_index != 1 && stream_index != 2) {
+                    throw invalid_value_exception("Invalid stream index, must be 1 or 2");
+                }
                 stream_index -= 1; // for multiple streams, the index starts from 1
                 //TODO: check bound for _tm_supported_profiles.___[]
                 auto tm_profile = _tm_supported_profiles.video[stream_index];
@@ -439,7 +442,7 @@ namespace librealsense
 
     void tm2_sensor::close()
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (_is_streaming)
             throw wrong_api_call_sequence_exception("close() failed. TM2 device is streaming!");
         else if (!_is_opened)
@@ -491,8 +494,8 @@ namespace librealsense
             f.frameLength = vframe->get_height()*vframe->get_stride()* (vframe->get_bpp() / 8);
             f.data = vframe->data.data();
             f.timestamp = to_nanos(vframe->additional_data.timestamp);
-            f.systemTimestamp = to_nanos(vframe->additional_data.system_time);
-            f.arrivalTimeStamp = time_of_arrival;
+            f.systemTimestamp = to_nanos(vframe->additional_data.backend_timestamp);
+            f.arrivalTimeStamp = to_nanos(vframe->additional_data.system_time);
             auto sts = _tm_dev->SendFrame(f);
             if (sts != Status::SUCCESS)
             {
@@ -511,8 +514,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -528,8 +531,8 @@ namespace librealsense
                 f.sensorIndex = stream_index;
                 f.temperature = get_md_or_default(RS2_FRAME_METADATA_TEMPERATURE);
                 f.timestamp = to_nanos(mframe->additional_data.timestamp);
-                f.systemTimestamp = to_nanos(mframe->additional_data.system_time);
-                f.arrivalTimeStamp = time_of_arrival;
+                f.systemTimestamp = to_nanos(mframe->additional_data.backend_timestamp);
+                f.arrivalTimeStamp = to_nanos(mframe->additional_data.system_time);
                 auto sts = _tm_dev->SendFrame(f);
                 if (sts != Status::SUCCESS)
                 {
@@ -552,7 +555,7 @@ namespace librealsense
     }
     void tm2_sensor::start(frame_callback_ptr callback)
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (_is_streaming)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. TM2 device is already streaming!");
         else if (!_is_opened)
@@ -584,7 +587,7 @@ namespace librealsense
 
     void tm2_sensor::stop()
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (!_is_streaming)
             throw wrong_api_call_sequence_exception("stop_streaming() failed. TM2 device is not streaming!");
         
@@ -631,8 +634,12 @@ namespace librealsense
     rs2_motion_device_intrinsic tm2_sensor::get_motion_intrinsics(const motion_stream_profile_interface& profile) const
     {
         rs2_motion_device_intrinsic result;
-        const TrackingData::MotionIntrinsics tm_intrinsics{};
-        int stream_index = profile.get_stream_index() - 1;
+        TrackingData::MotionIntrinsics tm_intrinsics{};
+        int stream_index = profile.get_stream_index();
+        if (stream_index != 0) //firmware only accepts stream 0
+        {
+            return result;
+        }
         SensorType type = SensorType::Max;
         switch (profile.get_stream_type())
         {
@@ -645,11 +652,11 @@ namespace librealsense
         default:
             throw invalid_value_exception("Invalid motion stream type");
         }
-        //auto status = _tm_dev->GetMotionModuleIntrinsics(tm_intrinsics, SET_SENSOR_ID(type, stream_index));
-        //             if (status != Status::SUCCESS)
-        //             {
-        //                 throw io_exception("Failed to read TM2 intrinsics");
-        //             }
+        auto status = _tm_dev->GetMotionModuleIntrinsics(SET_SENSOR_ID(type, stream_index), tm_intrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
         librealsense::copy_2darray(result.data, tm_intrinsics.data);
         librealsense::copy_array(result.noise_variances, tm_intrinsics.noiseVariances);
         librealsense::copy_array(result.bias_variances, tm_intrinsics.biasVariances);
@@ -677,11 +684,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         video_frame_metadata video_md = { 0 };
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
-        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, system_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, tm_frame.arrivalTimeStamp, 0 ,0, false);
+        frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, arrival_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, system_ts_ms.count(), 0 ,0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -712,8 +721,8 @@ namespace librealsense
         {
             auto video = (video_frame*)(frame.frame);
             video->assign(tm_frame.profile.width, tm_frame.profile.height, tm_frame.profile.stride, bpp);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
             video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
@@ -762,10 +771,12 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = tm_frame.arrivalTimeStamp;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_num++, system_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, tm_frame.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_num++, arrival_ts_ms.count(), sizeof(frame_md), (uint8_t*)&frame_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -791,8 +802,8 @@ namespace librealsense
         if (frame.frame)
         {
             auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
 
             auto info = reinterpret_cast<librealsense::pose_frame::pose_info*>(pose_frame->data.data());
@@ -816,19 +827,19 @@ namespace librealsense
     void tm2_sensor::onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame)
     {
         std::string msg = to_string() << "Controller discovered with MAC " << frame.macAddress;
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame)
     {
         std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " disconnected";
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerFrame(perc::TrackingData::ControllerFrame& frame)
     {
         std::string msg = to_string() << "Controller #" << (int)frame.sensorIndex << " button ["<< (int)frame.eventId << ", " << (int)frame.instanceId << "]";
-        raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+        raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
     }
 
     void tm2_sensor::onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame)
@@ -836,7 +847,7 @@ namespace librealsense
         std::string msg = to_string() << "Controller #" << (int)frame.controllerId << " connected";
         if (frame.status == perc::Status::SUCCESS)
         {
-            raise_controller_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
+            raise_hardware_event(msg, controller_event_serializer::serialized_data(frame), frame.timestamp);
         }
         else
         {
@@ -844,17 +855,47 @@ namespace librealsense
         }
     }
 
+    void tm2_sensor::onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame)
+    {
+        LOG_DEBUG("T2xx: Loc_data fragment " << frame.chunkIndex  \
+            << " size: " << std::dec << frame.length << " status : " << int(frame.status));
+
+        if (Status::SUCCESS == frame.status)
+        {
+            _async_op_res_buffer.reserve(_async_op_res_buffer.size() + frame.length);
+            auto start = (const char*)frame.buffer;
+            _async_op_res_buffer.insert(_async_op_res_buffer.end(), start, start + frame.length);
+        }
+        else
+            _async_op_status = _async_fail;
+
+        if (!frame.moreData)
+        {
+            if (_async_progress == _async_op_status)
+                _async_op_status = _async_success;
+            _async_op.notify_one();
+        }
+    }
+
+    void tm2_sensor::onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt)
+    {
+        std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << evt.sessionId <<  ", timestamp: " << double(evt.timestamp*0.000000001) << " sec";
+        // TODO: Modify the firmware to correctly raise notifications
+        // As a temporary work-around, block notifications at the software level
+        //raise_hardware_event(msg, {}, evt.timestamp);
+    }
+
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         if (_is_streaming || _is_opened)
-            throw wrong_api_call_sequence_exception("Cannot enter loopback mode while device is open or streaming");
+            throw wrong_api_call_sequence_exception("T2xx: Cannot enter loopback mode while device is open or streaming");
         _loopback = input;
     }
 
     void tm2_sensor::disable_loopback()
     {
-        std::lock_guard<std::mutex> lock(_configure_lock);
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         _loopback.reset();
     }
 
@@ -869,11 +910,13 @@ namespace librealsense
         duration<double, std::milli> ts_ms(ts_double_nanos);
         auto sys_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.systemTimestamp);
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
+        auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.arrivalTimeStamp);
+        duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
         motion_frame_metadata motion_md = { 0 };
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
-        frame_additional_data additional_data(ts_ms.count(), frame_number, system_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, tm_frame_ts.arrivalTimeStamp, 0, 0, false);
+        frame_additional_data additional_data(ts_ms.count(), frame_number, arrival_ts_ms.count(), sizeof(motion_md), (uint8_t*)&motion_md, system_ts_ms.count(), 0, 0, false);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -898,8 +941,8 @@ namespace librealsense
         if (frame.frame)
         {
             auto motion_frame = static_cast<librealsense::motion_frame*>(frame.frame);
-            frame->set_timestamp(ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK);
+            frame->set_timestamp(system_ts_ms.count());
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
             frame->set_stream(profile);
             auto data = reinterpret_cast<float*>(motion_frame->data.data());
             data[0] = imu_data[0];
@@ -914,7 +957,7 @@ namespace librealsense
         _source.invoke_callback(std::move(frame));
     }
     
-    void tm2_sensor::raise_controller_event(const std::string& msg, const std::string& json_data, double timestamp)
+    void tm2_sensor::raise_hardware_event(const std::string& msg, const std::string& json_data, double timestamp)
     {
         notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
         controller_event.serialized_data = json_data;
@@ -958,19 +1001,175 @@ namespace librealsense
             std::string msg = to_string() << "Disconnected from controller #" << id;
             perc::TrackingData::ControllerDisconnectedEventFrame f;
             f.controllerId = id;
-            raise_controller_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            raise_hardware_event(msg, controller_event_serializer::serialized_data(f), std::chrono::high_resolution_clock::now().time_since_epoch().count());
         }
+    }
+
+    std::string async_op_to_string(tm2_sensor::async_op_state val)
+    {
+        switch (val)
+        {
+            case tm2_sensor::_async_init:       return "Init";
+            case tm2_sensor::_async_progress:   return "In Progress";
+            case tm2_sensor::_async_success:    return "Success";
+            case tm2_sensor::_async_fail:       return "Fail";
+            default: return (to_string() << " Unsupported type: " << val);
+        }
+    }
+
+    tm2_sensor::async_op_state tm2_sensor::perform_async_transfer(std::function<perc::Status()> transfer_activator,
+        std::function<void()> on_success, const std::string& op_description) const
+    {
+        const uint32_t tm2_async_op_timeout_sec = 10;
+        async_op_state res = async_op_state::_async_fail;
+        auto ret = false;
+
+        std::unique_lock<std::mutex> lock(_tm_op_lock);
+        auto stat = transfer_activator();
+        if (Status::SUCCESS == stat)
+        {
+            _async_op_status = _async_progress;
+            LOG_INFO(op_description << " in progress");
+            ret = _async_op.wait_for(lock, std::chrono::seconds(tm2_async_op_timeout_sec), [&]() { return _async_op_status & (_async_success | _async_fail); });
+            if (!ret)
+                LOG_WARNING(op_description << " aborted on timeout");
+            else
+            {
+                // Perform user-defined action if operation ends successfully
+                if (_async_success == _async_op_status)
+                    on_success();
+
+                if (_async_fail == _async_op_status)
+                    LOG_ERROR(op_description << " aborted by device");
+            }
+            res = _async_op_status;
+            _async_op_status = _async_init;
+            lock.unlock();
+            LOG_DEBUG(op_description << " completed with " << async_op_to_string(res));
+        }
+        else
+            LOG_WARNING(op_description << " activation failed, status " << int(stat));
+
+        return (res);
+    }
+
+    bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        auto res = perform_async_transfer(
+            [&]() { _async_op_res_buffer.clear(); return _tm_dev->GetLocalizationData(const_cast<tm2_sensor*>(this)); },
+            [&](){ lmap_buf = this->_async_op_res_buffer; },
+            "Export localization map");
+
+        if (res != async_op_state::_async_success)
+        {
+            LOG_ERROR("Export localization map failed");
+        }
+        return (res == async_op_state::_async_success);
+    }
+
+    bool tm2_sensor::import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        auto res = perform_async_transfer(
+            [&]() { return _tm_dev->SetLocalizationData(const_cast<tm2_sensor*>(this), uint32_t(lmap_buf.size()), lmap_buf.data()); },
+            [&]() {}, "Import localization map");
+
+        if (res != async_op_state::_async_success)
+        {
+            LOG_ERROR("Import localization map failed");
+        }
+        return (res == async_op_state::_async_success);
+    }
+
+    bool tm2_sensor::set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        perc::TrackingData::RelativePose rp;
+        rp.translation  = { pos.x, pos.y, pos.z };
+        rp.rotation     = { orient_quat.x, orient_quat.y, orient_quat.z, orient_quat.w };
+
+        auto status = _tm_dev->SetStaticNode(guid.data(), rp);
+        if (status != Status::SUCCESS)
+        {
+            LOG_WARNING("Set static node failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
+    }
+
+    bool tm2_sensor::get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        perc::TrackingData::RelativePose rel_pose;
+        auto status = _tm_dev->GetStaticNode(guid.data(), rel_pose);
+        if (status == perc::Status::SUCCESS)
+        {
+            pos[0] = rel_pose.translation.x;
+            pos[1] = rel_pose.translation.y;
+            pos[2] = rel_pose.translation.z;
+            orient_quat[0] = rel_pose.rotation.i;
+            orient_quat[1] = rel_pose.rotation.j;
+            orient_quat[2] = rel_pose.rotation.k;
+            orient_quat[3] = rel_pose.rotation.r;
+        }
+        else
+        {
+            LOG_WARNING("Get static node failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
+    }
+
+
+    bool tm2_sensor::load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const
+    {
+        TrackingData::CalibrationData calibrationData;
+        calibrationData.length = uint32_t(odometry_config_buf.size());
+        calibrationData.buffer = (uint8_t*)odometry_config_buf.data();
+        calibrationData.type = CalibrationTypeAppend;
+
+        auto status = _tm_dev->SetCalibration(calibrationData);
+        if (status != Status::SUCCESS)
+        {
+            LOG_ERROR("T2xx Load Wheel odometry calibration failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
+    }
+
+    bool tm2_sensor::send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const
+    {
+        if (!_tm_dev)
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
+
+        perc::TrackingData::VelocimeterFrame vel_fr;
+        vel_fr.sensorIndex  = wo_sensor_id;
+        vel_fr.frameId      = frame_num;
+        vel_fr.translationalVelocity = { translational_velocity.x, translational_velocity.y, translational_velocity.z };
+
+        auto status = _tm_dev->SendFrame(vel_fr);
+        if (status != Status::SUCCESS)
+        {
+            LOG_WARNING("Send Wheel odometry failed, status =" << (uint32_t)status);
+        }
+        return (status == Status::SUCCESS);
     }
 
     TrackingData::Temperature tm2_sensor::get_temperature()
     {
         if (!_tm_dev)
-            throw wrong_api_call_sequence_exception("TM2 device is not available");
+            throw wrong_api_call_sequence_exception("T2xx tracking device is not available");
         TrackingData::Temperature temperature;
         auto status = _tm_dev->GetTemperature(temperature);
         if (status != Status::SUCCESS)
         {
-            throw io_exception("Failed to query TM2 temperature option");
+            throw io_exception("Failed to query T2xx tracking temperature option");
         }
         return temperature;
     }
@@ -994,8 +1193,8 @@ namespace librealsense
             throw io_exception("Failed to get device info");
         }
 
-        std::string vendorIdStr = to_string() << std::hex << info.usbDescriptor.idVendor;
-        std::string productIdStr = to_string() << std::hex << info.usbDescriptor.idProduct;
+        std::string vendorIdStr = hexify(info.usbDescriptor.idVendor);
+        std::string productIdStr = hexify(info.usbDescriptor.idProduct);
 
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << std::hex << (info.serialNumber >> 16));

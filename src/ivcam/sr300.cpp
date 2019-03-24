@@ -4,6 +4,11 @@
 #include "sr300.h"
 #include "metadata.h"
 #include "hw-monitor.h"
+#include "proc/decimation-filter.h"
+#include "proc/threshold.h" 
+#include "proc/spatial-filter.h"
+#include "proc/temporal-filter.h"
+#include "proc/hole-filling-filter.h"
 
 namespace librealsense
 {
@@ -202,7 +207,7 @@ namespace librealsense
         _camer_calib_params = [this]() { return get_calibration(); };
         enable_timestamp(true, true);
 
-        auto pid_hex_str = hexify(color.pid>>8) + hexify(static_cast<uint8_t>(color.pid));
+        auto pid_hex_str = hexify(color.pid);
 
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
@@ -324,5 +329,14 @@ namespace librealsense
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
 
+    }
+    processing_blocks sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks()
+    {
+        auto res = get_depth_recommended_proccesing_blocks();
+        res.push_back(std::make_shared<threshold>());
+        res.push_back(std::make_shared<spatial_filter>());
+        res.push_back(std::make_shared<temporal_filter>());
+        res.push_back(std::make_shared<hole_filling_filter>());
+        return res;
     }
 }

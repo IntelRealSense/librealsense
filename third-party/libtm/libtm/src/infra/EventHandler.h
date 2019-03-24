@@ -26,7 +26,8 @@ public:
 
     // replace <std::is_base_of> mechanism that generate compilation error
     // if derived class was not inherited from <Message> class
-    enum { IS_DERIVED_FROM_Message = true };
+    static inline void IS_DERIVED_FROM_Message_() {}
+#define IS_DERIVED_FROM_Message IS_DERIVED_FROM_Message_()
 };
 
 // ----------------------------------------------------------------------------

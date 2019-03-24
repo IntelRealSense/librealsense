@@ -5,7 +5,7 @@
 
 #include "backend.h"
 #include "types.h"
-
+#include "option.h"
 
 namespace librealsense
 {
@@ -26,7 +26,9 @@ namespace librealsense
             HWReset = 0x20,
             GVD = 0x10,
             GLD = 0x0f,
-            DPT_INTRINSICS_GET = 0x5A
+            DPT_INTRINSICS_GET = 0x5A,
+            MRD = 0x01,
+            TEMPERATURES_GET = 0x6A
         };
 
         enum gvd_fields
@@ -38,5 +40,24 @@ namespace librealsense
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
                                          const platform::uvc_device_info& info, platform::usb_device_info& result);
+
+
+        class l500_temperature_options : public readonly_option
+        {
+        public:
+            float query() const override;
+
+            option_range get_range() const override { return option_range{ 0, 100, 0, 0 }; };
+
+            bool is_enabled() const override { return true; }
+
+            const char* get_description() const override { return ""; }
+
+            explicit l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt);
+
+        private:
+            rs2_option _option;
+            hw_monitor* _hw_monitor;
+        };
     } // librealsense::ivcam2
 } // namespace librealsense

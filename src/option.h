@@ -287,26 +287,6 @@ namespace librealsense
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
-    inline std::string hexify(unsigned char n)
-    {
-        std::string res;
-
-        do
-        {
-            res += "0123456789ABCDEF"[n % 16];
-            n >>= 4;
-        } while (n);
-
-        reverse(res.begin(), res.end());
-
-        if (res.size() == 1)
-        {
-            res.insert(0, "0");
-        }
-
-        return res;
-    }
-
     template<class T, class R, class W, class U>
     class struct_field_option : public option
     {

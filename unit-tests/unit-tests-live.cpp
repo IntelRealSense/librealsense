@@ -8,6 +8,7 @@
 #include <cmath>
 #include "unit-tests-common.h"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/hpp/rs_frame.hpp>
 #include <iostream>
 #include <chrono>
@@ -126,6 +127,7 @@ struct profile
     int width;
     int height;
     int index;
+    int fps;
 
     bool operator==(const profile& other) const
     {
@@ -144,8 +146,15 @@ struct profile
     {
         return stream < other.stream;
     }
-
 };
+
+std::ostream& operator <<(std::ostream& stream, const profile& cap)
+{
+    stream << cap.stream << " " << cap.stream << " " << cap.format << " "
+    << cap.width << " " << cap.height << " " << cap.index << " " << cap.fps;
+    return stream;
+}
+
 struct device_profiles
 {
     std::vector<profile> streams;
@@ -157,13 +166,13 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
 {
     std::vector<profile> all_profiles =
     {
-        { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, width, height, 0 },
-        { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, width, height, 0 },
-        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 1 },
-        { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, width, height, 2 },
-        { RS2_STREAM_FISHEYE, RS2_FORMAT_RAW8, width, height, 0 },
-        //        {RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 0},
-        //        {RS2_STREAM_ACCEL, 0,  0, 0, RS2_FORMAT_MOTION_XYZ32F, 0}
+        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,           width, height,    0, fps},
+        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
+        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
+        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
+        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
     };
 
     std::vector<profile> profiles;
@@ -174,19 +183,36 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
     {
         if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
         {
-            auto  video = p.as<rs2::video_stream_profile>();
-            if (!video) return false;
-
-            if (p.fps() == fps &&
+            if (auto  video = p.as<rs2::video_stream_profile>())
+            {
+                if (p.fps() == profile.fps &&
                 p.stream_index() == profile.index &&
                 p.stream_type() == profile.stream &&
                 p.format() == profile.format &&
                 video.width() == profile.width &&
                 video.height() == profile.height)
-            {
-                modes.push_back(p);
-                return true;
+                {
+                    modes.push_back(p);
+                    return true;
+                }
             }
+            else
+            {
+                if (auto  motion = p.as<rs2::motion_stream_profile>())
+                {
+                    if (p.fps() == profile.fps &&
+                        p.stream_index() == profile.index &&
+                        p.stream_type() == profile.stream &&
+                        p.format() == profile.format)
+                        {
+                            modes.push_back(p);
+                            return true;
+                        }
+                }
+                else
+                    return false;
+            }
+
             return false;
         }) != all_modes.end())
         {
@@ -201,8 +227,8 @@ std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int w
 
 std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
 {
-    std::vector<profile > profiles;
-    std::vector<sensor > sensors;
+    std::vector<profile> profiles;
+    std::vector<sensor> sensors;
     auto sens = dev.query_sensors();
     for (auto s : sens)
     {
@@ -592,6 +618,60 @@ TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
     }
 }
 
+
+TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbacks]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        for (auto i = 0; i < 5; i++)
+        {
+            std::vector<rs2::device> list;
+            REQUIRE_NOTHROW(list = ctx.query_devices());
+            REQUIRE(list.size());
+
+            auto dev = list[0];
+            CAPTURE(dev.get_info(RS2_CAMERA_INFO_NAME));
+            disable_sensitive_options_for(dev);
+
+            std::mutex m;
+            int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+            std::map<std::string,size_t> frames_per_stream{};
+
+            auto profiles = configure_all_supported_streams(dev,640,480, fps);
+
+            for (auto s : profiles.first)
+            {
+                REQUIRE_NOTHROW(s.start([&m,&frames_per_stream](rs2::frame f)
+                {
+                    std::lock_guard<std::mutex> lock(m);
+                    ++frames_per_stream[f.get_profile().stream_name()];
+                }));
+            }
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Stop & flush all active sensors
+            for (auto s : profiles.first)
+            {
+                REQUIRE_NOTHROW(s.stop());
+                REQUIRE_NOTHROW(s.close());
+            }
+
+            // Verify frames arrived for all the profiles specified
+            std::stringstream active_profiles, streams_arrived;
+            active_profiles << "Profiles requested : " << profiles.second.size() << std::endl;
+            for (auto& pf : profiles.second)
+                active_profiles << pf << std::endl;
+            streams_arrived << "Streams recorded : " << frames_per_stream.size() << std::endl;
+            for (auto& frec : frames_per_stream)
+                streams_arrived << frec.first << ": frames = " << frec.second << std::endl;
+
+            CAPTURE(active_profiles.str().c_str());
+            CAPTURE(streams_arrived.str().c_str());
+            REQUIRE(profiles.second.size() == frames_per_stream.size());
+        }
+    }
+}
 
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
@@ -4064,7 +4144,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
 
                             if (auto f = fs.get_depth_frame())
                             {
-                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                if (((bool(f.get_frame_number()%2)) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
                                     even = !even;  // Alternating odd/even frame number is sufficient to avoid duplicates
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
@@ -4130,7 +4210,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
 
                             if (auto f = fs.get_depth_frame())
                             {
-                                if (((f.get_frame_number()%2) != even) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
+                                if (((bool(f.get_frame_number()%2) != even)) && f.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE))
                                 {
                                     even = !even;
                                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE));
@@ -5322,3 +5402,397 @@ TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
         pose_frame.timestamp == recorded_pose.get_timestamp()));
 }
 
+void compare(filter first, filter second)
+{
+    CAPTURE(first.get_info(RS2_CAMERA_INFO_NAME));
+    CAPTURE(second.get_info(RS2_CAMERA_INFO_NAME));
+    REQUIRE(strcmp(first.get_info(RS2_CAMERA_INFO_NAME), second.get_info(RS2_CAMERA_INFO_NAME)) == 0);
+
+    auto first_options = first.get_supported_options();
+    auto second_options = second.get_supported_options();
+
+    REQUIRE(first_options.size() == second_options.size());
+
+    REQUIRE(first_options == second_options);
+
+    for (auto i = 0;i < first_options.size();i++)
+    {
+        auto opt = static_cast<rs2_option>(first_options[i]);
+        CAPTURE(opt);
+        CAPTURE(first.get_option(opt));
+        CAPTURE(second.get_option(opt));
+        REQUIRE(first.get_option(opt) == second.get_option(opt));
+    }
+}
+
+void compare(std::vector<filter> first, std::vector<std::shared_ptr<filter>> second)
+{
+    REQUIRE(first.size() == second.size());
+
+    for (auto i = 0;i < first.size();i++)
+    {
+        compare(first[i], (*second[i]));
+    }
+}
+
+TEST_CASE("Sensor get recommended filters", "[live]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+
+    enum sensors
+    {
+        depth,
+        depth_stereo,
+        color
+    };
+
+    std::map<sensors, std::vector<std::shared_ptr<filter>>> sensors_to_filters;
+
+    auto dec_color = std::make_shared<decimation_filter>();
+    dec_color->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_COLOR);
+    dec_color->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_ANY);
+
+    sensors_to_filters[color] = {
+        dec_color
+    };
+
+    auto dec_depth = std::make_shared<decimation_filter>();
+    dec_depth->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_DEPTH);
+    dec_depth->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_Z16);
+
+    auto threshold = std::make_shared<threshold_filter>(0.1f, 4.f);
+    auto spatial = std::make_shared<spatial_filter>();
+    auto temporal = std::make_shared<temporal_filter>();
+    auto hole_filling = std::make_shared<hole_filling_filter>();
+
+    sensors_to_filters[depth] = {
+        dec_depth,
+        threshold,
+        spatial,
+        temporal,
+        hole_filling
+    };
+
+    auto depth2disparity = std::make_shared<disparity_transform>(true);
+    auto disparity2depth = std::make_shared<disparity_transform>(false);
+
+    sensors_to_filters[depth_stereo] = {
+        dec_depth,
+        threshold,
+        depth2disparity,
+        spatial,
+        temporal,
+        hole_filling,
+        disparity2depth
+    };
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> sensors;
+        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
+        REQUIRE(sensors.size() > 0);
+
+        for (auto sensor : sensors)
+        {
+            auto processing_blocks = sensor.get_recommended_filters();
+            auto stream_profiles = sensor.get_stream_profiles();
+            if (sensor.is<depth_stereo_sensor>())
+            {
+                compare(processing_blocks, sensors_to_filters[depth_stereo]);
+            }
+            else if (sensor.is<depth_sensor>())
+            {
+                compare(processing_blocks, sensors_to_filters[depth]);
+            }
+            else if (std::find_if(stream_profiles.begin(), stream_profiles.end(), [](stream_profile profile) { return profile.stream_type() == RS2_STREAM_COLOR;}) != stream_profiles.end())
+            {
+                compare(processing_blocks, sensors_to_filters[color]);
+            }
+        }
+    }
+}
+
+TEST_CASE("L500 zero order sanity", "[live]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+    const int RETRIES = 30;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> sensors;
+        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
+        REQUIRE(sensors.size() > 0);
+
+        for (auto sensor : sensors)
+        {
+            auto processing_blocks = sensor.get_recommended_filters();
+            auto zo = std::find_if(processing_blocks.begin(), processing_blocks.end(), [](filter f)
+            {
+                return f.is<zero_order_invalidation>();
+            });
+
+            if(zo != processing_blocks.end())
+            {
+                rs2::config c;
+                c.enable_stream(RS2_STREAM_DEPTH);
+                c.enable_stream(RS2_STREAM_INFRARED);
+                c.enable_stream(RS2_STREAM_CONFIDENCE);
+
+                rs2::pipeline p;
+                p.start(c);
+                rs2::frame frame;
+
+                std::map<rs2_stream, bool> stream_arrived;
+                stream_arrived[RS2_STREAM_DEPTH] = false;
+                stream_arrived[RS2_STREAM_INFRARED] = false;
+                stream_arrived[RS2_STREAM_CONFIDENCE] = false;
+
+                for (auto i = 0;i < RETRIES;i++)
+                {
+                    REQUIRE_NOTHROW(frame = p.wait_for_frames(15000));
+                    auto res = zo->process(frame);
+                    if (res.is<rs2::frameset>())
+                    {
+                        auto set = res.as<rs2::frameset>();
+                        REQUIRE(set.size() == stream_arrived.size());   // depth, ir, confidance
+                        for (auto&& f : set)
+                        {
+                            stream_arrived[f.get_profile().stream_type()] = true;
+                        }
+                        auto stream_missing = std::find_if(stream_arrived.begin(), stream_arrived.end(), [](std::pair< rs2_stream, bool> item)
+                        {
+                            return !item.second;
+                        });
+
+                        REQUIRE(stream_missing == stream_arrived.end());
+                    }
+                   
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Positional_Sensors_API", "[live]")
+{
+    rs2::context ctx;
+    auto dev_list = ctx.query_devices();
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+
+        // T265 Only
+        if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
+        {
+            WARN("Skipping test - Applicable for Positional Tracking sensors only. Current device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+        }
+        else
+        {
+            CAPTURE(dev);
+            REQUIRE(dev.is<rs2::tm2>());
+            REQUIRE_NOTHROW(auto tmp_pos = dev.first<rs2::pose_sensor>());
+            auto pose_snr = dev.first<rs2::pose_sensor>();
+            CAPTURE(pose_snr);
+            REQUIRE(pose_snr);
+
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Export/Import must Fail")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto pose_snr = d.first<rs2::pose_sensor>();
+                    CAPTURE(pose_snr);
+                    REQUIRE(pose_snr);
+
+                    WARN("T2xx Collecting frames started");
+                    rs2::frameset frames;
+                    // The frames are required to generate some initial localization map
+                    for (auto i = 0; i < 200; i++)
+                    {
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                    }
+
+                    std::vector<uint8_t> results{}, vnv{};
+                    WARN("T2xx export map");
+                    REQUIRE_THROWS(results = pose_snr.export_localization_map());
+                    CAPTURE(results.size());
+                    REQUIRE(0 == results.size());
+                    WARN("T2xx import map");
+                    REQUIRE_THROWS(pose_snr.import_localization_map({ 0, 1, 2, 3, 4 }));
+                    REQUIRE_NOTHROW(pipe.stop());
+                    WARN("T2xx import/export during streaming finished");
+                }
+            }
+
+            WHEN("Sequence - idle.")
+            {
+                THEN("Export/Import Success")
+                {
+                    std::vector<uint8_t> results, vnv;
+                    REQUIRE_NOTHROW(results = pose_snr.export_localization_map());
+                    CAPTURE(results.size());
+                    REQUIRE(results.size());
+
+                    bool ret = false;
+                    REQUIRE_NOTHROW(ret = pose_snr.import_localization_map(results));
+                    CAPTURE(ret);
+                    REQUIRE(ret);
+                    REQUIRE_NOTHROW(vnv = pose_snr.export_localization_map());
+                    CAPTURE(vnv.size());
+                    REQUIRE(vnv.size());
+                    REQUIRE(vnv == results);
+                }
+            }
+
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Set/Get Static node functionality")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto pose_snr = d.first<rs2::pose_sensor>();
+                    CAPTURE(pose_snr);
+                    REQUIRE(pose_snr);
+
+                    rs2::frameset frames;
+                    // The frames are required to get pose with sufficient confidence for static node marker
+                    for (auto i = 0; i < 100; i++)
+                    {
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                    }
+
+                    rs2_vector init_pose{}, test_pose{ 1,2,3 }, vnv_pose{};
+                    rs2_quaternion init_or{}, test_or{ 4,5,6,7 }, vnv_or{};
+                    auto res = 0;
+                    REQUIRE_NOTHROW(res = pose_snr.set_static_node("wp1", test_pose, test_or));
+                    CAPTURE(res);
+                    REQUIRE(res != 0);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    REQUIRE_NOTHROW(res = pose_snr.get_static_node("wp1", vnv_pose, vnv_or));
+                    CAPTURE(vnv_pose);
+                    CAPTURE(vnv_or);
+                    CAPTURE(res);
+                    REQUIRE(test_pose.x == Approx(vnv_pose.x));
+                    REQUIRE(test_pose.y == Approx(vnv_pose.y));
+                    REQUIRE(test_pose.z == Approx(vnv_pose.z));
+                    REQUIRE(test_or.x == Approx(vnv_or.x));
+                    REQUIRE(test_or.y == Approx(vnv_or.y));
+                    REQUIRE(test_or.z == Approx(vnv_or.z));
+                    REQUIRE(test_or.w == Approx(vnv_or.w));
+
+                    REQUIRE_NOTHROW(pipe.stop());
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Wheel_Odometry_API", "[live]")
+{
+    rs2::context ctx;
+    auto dev_list = ctx.query_devices();
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+
+        // T265 Only
+        if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
+        {
+            WARN("Skipping test - Applicable for Positional Tracking sensors only. Current device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+        }
+        else
+        {
+            CAPTURE(dev);
+            REQUIRE(dev.is<rs2::tm2>());
+            auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
+            CAPTURE(wheel_odom_snr);
+            REQUIRE(wheel_odom_snr);
+
+            WHEN("Sequence - idle.")
+            {
+                THEN("Load wheel odometry calibration")
+                {
+                    std::ifstream calibrationFile("calibration_odometry.json");
+                    if (calibrationFile)
+                    {
+                        const std::string json_str((std::istreambuf_iterator<char>(calibrationFile)),
+                            std::istreambuf_iterator<char>());
+                        const std::vector<uint8_t> wo_calib(json_str.begin(), json_str.end());
+                        bool b;
+                        REQUIRE_NOTHROW(b = wheel_odom_snr.load_wheel_odometery_config(wo_calib));
+                        REQUIRE(b);
+                    }
+                }
+            }
+
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Send wheel odometry data")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto wo_snr = d.first<rs2::wheel_odometer>();
+                    CAPTURE(wo_snr);
+                    REQUIRE(wo_snr);
+
+                    bool b;
+                    float norm_max = 0;
+                    WARN("T2xx Collecting frames started - Keep device static");
+                    rs2::frameset frames;
+                    for (int i = 0; i < 100; i++)
+                    {
+                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
+                        REQUIRE(b);
+
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                        auto f = frames.first_or_default(RS2_STREAM_POSE);
+                        auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
+                        float norm = sqrt(pose_data.translation.x*pose_data.translation.x + pose_data.translation.y*pose_data.translation.y
+                                          + pose_data.translation.z*pose_data.translation.z);
+                        if (norm > norm_max) norm_max = norm;
+                    }
+                    Approx approx_norm(0);
+                    approx_norm.epsilon(0.005); // 0.5cm threshold
+                    REQUIRE_FALSE(norm_max == approx_norm);
+                    REQUIRE_NOTHROW(pipe.stop());
+                }
+            }
+        }
+    }
+}

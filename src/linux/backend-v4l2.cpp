@@ -515,7 +515,7 @@ namespace librealsense
             DIR * dir = opendir("/sys/class/video4linux");
             if(!dir)
             {
-                LOG_ERROR("Cannot access /sys/class/video4linux");
+                LOG_INFO("Cannot access /sys/class/video4linux");
                 return;
             }
 

@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #define LOG_TAG "libtmutil"
 #include "Log.h"
 #include "TrackingManager.h"
@@ -194,9 +196,9 @@ enum ControllerBurnConfigure
 
 class ArgumentConfigurarion {
 public:
-    ArgumentConfigurarion() : inputFilename(""), controllerDataFilename(""), velocimeterFilename(""), nodeFilename(""), temperature{0}, maxLoop(MAX_START_STOP_LOOP_COUNT), startStreamTime(START_STREAM_TIME_SEC),
+    ArgumentConfigurarion() : inputFilename(""), controllerDataFilename(""), velocimeterFilename(""), nodeFilename(""), temperature{0}, maxLoop(MAX_START_STOP_LOOP_COUNT), startStreamTime(START_STREAM_TIME_SEC), stopStreamTime(STOP_STREAM_TIME_SEC),
         resetLoop(0), statistics(false), jtag(false), errorCheck(false), errorExit(false), videoFile(false), videoCount(0), gyroCount(0), velocimeterCount(0), accelerometerCount(0), sixdofCount(0),
-        controllersCount(0), setExposure(false), verifyConfiguration(true), geoLocationEnabled(false), gpioEnabled(0), gpioControlBitMask(0), mode("live"), stereoMode(false), tumFormat(0)
+        controllersCount(0), setExposure(false), verifyConfiguration(true), geoLocationEnabled(false), gpioEnabled(0), gpioControlBitMask(0), mode("live"), stereoMode(false), tumFormat(0), lowPowerEnabled(true)
     {
         for (uint8_t i = 0; i < LogSourceMax; i++)
         {
@@ -262,6 +264,7 @@ public:
     bool stereoMode;
     uint32_t maxLoop;
     uint32_t startStreamTime;
+    uint32_t stopStreamTime;
 
     class Localization {
     public:
@@ -279,6 +282,7 @@ public:
     };
 
     Calibration calibration;
+    bool lowPowerEnabled;
 
     TrackingData::GeoLocalization geoLocation;
     bool geoLocationEnabled;
@@ -506,7 +510,7 @@ public:
     void reset(void)
     {
         count = 0;
-	}
+    }
 
     uint32_t count; /* Number of led events */
 };
@@ -1575,7 +1579,7 @@ public:
         gStatistics.inc(message);
 
         LOGV("Got Velocimeter[%u] frame (%" PRId64 "): Timestamp %" PRId64 ", FrameID = %d, Temperature = %.0f, AngularVelocity[%f, %f, %f]", message.sensorIndex, gStatistics.velocimeter[message.sensorIndex].frames,
-            message.timestamp, message.frameId, message.temperature, message.angularVelocity.x, message.angularVelocity.y, message.angularVelocity.z);
+            message.timestamp, message.frameId, message.temperature, message.translationalVelocity.x, message.translationalVelocity.y, message.translationalVelocity.z);
 
         if (gConfiguration.statistics == true)
         {
@@ -1584,7 +1588,7 @@ public:
 
             velocimeterCSV << std::fixed << unsigned(message.sensorIndex) << "," << gStatistics.velocimeter[message.sensorIndex].frames << ","
                 << timeStamp.hostCurrentSystemTime << "," << message.systemTimestamp << "," << timeStamp.fwTimeStamp << "," << timeStamp.arrivalTimeStamp << "," << timeStamp.latency << ","
-                << message.frameId << "," << message.temperature << "," << message.angularVelocity.x << "," << message.angularVelocity.y << "," << message.angularVelocity.z << "\n";
+                << message.frameId << "," << message.temperature << "," << message.translationalVelocity.x << "," << message.translationalVelocity.y << "," << message.translationalVelocity.z << "\n";
         }
     };
 
@@ -2100,11 +2104,11 @@ void fwLogThreadFunction()
 void showArguments()
 {
     printf("libtm_util version %d.%d\n", LIBTM_UTIL_VERSION_MAJOR, LIBTM_UTIL_VERSION_MINOR);
-    printf("Usage: libtm_util [-h] [-y] [-reset <count> (optional)] [-time <time>] [-loop <count>] [-check <Exit on Error[0-1]>] [-video  <SensorIndex[0-3]> <Output [0-1]> <Width Height (Optional)>]\n");
+    printf("Usage: libtm_util [-h] [-y] [-reset <count> (optional)] [-time <time>] [-stop <time>] [-loop <count>] [-check <Exit on Error[0-1]>] [-video  <SensorIndex[0-3]> <Output [0-1]> <Width Height (Optional)>]\n");
     printf("       [-gyro <SensorIndex[0-2]> <Output [0-1]> <FPS (Optional)>] [-accl <SensorIndex[0-2]> <Output [0-1]> <FPS (Optional)>]\n");
     printf("       [-6dof <Source [0-2]> <Mode [0|1|2|4] (Optional)>] [-enable_all] [-controller <controller index [1-2]> <MacAddress [AABBCCDDEEFF]> <Calibrate [0-1]>]\n");
     printf("       [-rssi <controller [1-2]> <Time (Sec)>] [-exposure <SensorIndex[0-3]> <integration time (uSec)> <gain>] [-fw <filename>] [-statistics] [-image] [-tum <type [1-2]>]\n");
-    printf("       [-log <Source [fw/host]> <Verbosity [0-6]> <Mode [0-1]> <OutputMode [0-1]>] [-calibrate <Type [new/append]> <filename>] [-map <reset/set/get> <filename>] [-jtag]\n");
+    printf("       [-log <Source [fw/host]> <Verbosity [0-6]> <Mode [0-1]> <OutputMode [0-1]>] [-calibrate <Type [new/append]> <filename>] [-power <high/low>] [-map <reset/set/get> <filename>] [-jtag]\n");
     printf("       [-temperature <get/set> <sensor [VPU, IMU, BLE] (Optional)> <threshold (optional)>] [-geo <latitude> <longitude> <altitude>] [-gpio <controlBitMask>] [-velocimeter <filename>]\n");
     printf("       [-controller_data <filename>] [-node <filename>] [-burn <type [bl/app]> <filename> <force (optional)>] \n\n");
 
@@ -2113,6 +2117,7 @@ void showArguments()
     printf("    -y................Skip configuration verification\n");
     printf("    -reset............Reset device before start [-reset -h for more info]\n");
     printf("    -time ............Run Time Between Start to Stop stream (Default 10 sec) [-time -h for more info]\n");
+    printf("    -stop ............Stop Time Between Stop to Start stream (Default 2 sec) [-stop -h for more info]\n");
     printf("    -loop ............Start/Stop loop count [-loop -h for more info]\n");
     printf("    -check ...........Check for errors [-check -h for more info]\n");
     printf("    -video ...........Enable video capture and output to host [-video -h for more info]\n");
@@ -2129,6 +2134,7 @@ void showArguments()
     printf("    -image............Output video images to files [-image -h for more info]\n");
     printf("    -log .............Set FW/Host log verbosity, rollover mode and output mode [-log -h for more info]\n");
     printf("    -calibrate .......Calibrate device [-calibrate -h for more info]\n");
+    printf("    -power ...........Set High/Low power mode [-power -h for more info]\n");
     printf("    -map .............Set/Get Localization Map [-map -h for more info]\n");
     printf("    -jtag ............Load FW from JTAG [-jtag -h for more info]\n");
     printf("    -temperature .....Get/Set temperature sensors [-temperature -h for more info]\n");
@@ -2182,6 +2188,30 @@ int parseArguments(int argc, char *argv[])
                 printf("-time : Run Time Between START to STOP stream\n");
                 printf("        Parameters: <Time (Sec)> (Min = 2, Max = 86400, Default = 10)\n");
                 printf("        Example: \"libtm_util.exe -gyro 0 1 -time 60\" - Call START stream and wait for 60 seconds before calling STOP stream\n");
+                return -1;
+            }
+        }
+        else if ((arg == "-stop"))
+        {
+            bool parseError = true;
+
+            /* Make sure we aren't at the end of argv */
+            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+            {
+                uint32_t stopTime = atoi(argv[++i]);
+
+                if ((stopTime >= MIN_RUN_TIME_SEC) && (stopTime <= MAX_RUN_TIME_SEC))
+                {
+                    gConfiguration.stopStreamTime = stopTime;
+                    parseError = false;
+                }
+            }
+
+            if (parseError == true)
+            {
+                printf("-stop : Time Between STOP to next START stream\n");
+                printf("        Parameters: <Time (Sec)> (Min = 2, Max = 86400, Default = 10)\n");
+                printf("        Example: \"libtm_util.exe -gyro 0 1 -time 60 -stop 10 -loop 3\" - Call START stream, wait for 60 seconds before calling STOP stream, wait 10 seconds before calling START again\n");
                 return -1;
             }
         }
@@ -2752,6 +2782,35 @@ int parseArguments(int argc, char *argv[])
                 return -1;
             }
         }
+        else if ((arg == "-power"))
+        {
+            bool parseError = true;
+
+            /* Make sure we aren't at the end of argv */
+            if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+            {
+                if (strncmp("high", argv[++i], 4) == 0)
+                {
+                    gConfiguration.lowPowerEnabled = false;
+                    parseError = false;
+                }
+                else if (strncmp("low", argv[i], 3) == 0)
+                {
+                    gConfiguration.lowPowerEnabled = true;
+                    parseError = false;
+                }
+            }
+
+            if (parseError == true)
+            {
+                printf("-power : Set high/low power mode\n");
+                printf("         Default mode: Low power\n");
+                printf("         Parameters: <high/low>\n");
+                printf("         Example: \"libtm_util.exe -power high\" : Set high power mode - FW will never go to sleep\n");
+                printf("         Example: \"libtm_util.exe -power low\"  : Set low power mode - FW will go to sleep before start stream / after stop stream\n");
+                return -1;
+            }
+        }
         else if ((arg == "-map"))
         {
             bool parseError = true;
@@ -2939,7 +2998,7 @@ int parseArguments(int argc, char *argv[])
                 printf("               Parameters: <filename>\n");
                 printf("               Example: \"libtm_util.exe -velocimeter velocimeterfile.csv\" : Enable Velocimeter and sends all velocimeter frames input file to the FW\n");
                 printf("               Velocimeter file must include the following line(s) in the following pattern:\n");
-                printf("               FrameId,angularVelocity.X,angularVelocity.Y,angularVelocity.Z,timestamp,arrivaltimeStamp\n");
+                printf("               FrameId,translationalVelocity.X,translationalVelocity.Y,translationalVelocity.Z,timestamp,arrivaltimeStamp\n");
                 printf("               File example: 0,1.0,2.0,3.0,0,0 : Velocimeter frame ID 0 with velocity (1.0,2.0,3.0) and timestamp 0\n");
                 return -1;
             }
@@ -3036,6 +3095,7 @@ int parseArguments(int argc, char *argv[])
     printf("-------------------------------------------------------------------\n");
     printf("libtm_util Run Configuration:\n");
     printf(" - Run Time = %d (sec)\n", gConfiguration.startStreamTime);
+    printf(" - Stop Time = %d (sec)\n", gConfiguration.stopStreamTime);
 
     if (gConfiguration.videoCount + gConfiguration.gyroCount + gConfiguration.accelerometerCount + gConfiguration.sixdofCount + gConfiguration.controllersCount + gConfiguration.rssiCount == 0)
     {
@@ -3068,6 +3128,7 @@ int parseArguments(int argc, char *argv[])
         printf(" - Calibration = Type: %s, Input File: %s %s\n", (gConfiguration.calibration.type == CalibrationTypeNew)?"New":"Append", gConfiguration.calibration.filename.c_str(), (!std::ifstream(gConfiguration.calibration.filename.c_str())) ? "(Warning: file not found)" : "");
     }
 
+    printf(" - Low Power Mode = %s\n", (gConfiguration.lowPowerEnabled ? "Enabled" : "Disabled"));
     printf(" - JTAG = %s\n", (gConfiguration.jtag ? "True" : "False"));
     printf(" - Images output = %s\n", (gConfiguration.videoFile == true) ? "Enabled" : "Disabled");
 
@@ -3326,7 +3387,7 @@ void saveOutput()
             std::ostringstream csvHeader;
             csvHeader << "Velocimeter Index," << "Frame Number,"
                 << "Host Timestamp (NanoSec)," << "Host Correlated to FW Timestamp (NanoSec)," << "FW Timestamp (NanoSec)," << "Arrival Timestamp (NanoSec)," << "FW to Host Latency (NanoSec),"
-                << "Frame Id," << "Temperature (Celsius)," << "Angular Velocity X (Radians/Sec)," << "Angular Velocity Y (Radians/Sec)," << "Angular Velocity Z (Radians/Sec)," << "\n";
+                << "Frame Id," << "Temperature (Celsius)," << "Translational Velocity X (Meters/Sec)," << "Translational Velocity Y (Meters/Sec)," << "Translational Velocity Z (Meters/Sec)," << "\n";
 
             static int velocimeterCount = 0;
             std::string fileHeaderName(gFileHeaderName);
@@ -3474,7 +3535,7 @@ void printSupportedProfiles(TrackingData::Profile& profile)
 
     for (uint8_t i = 0; i < VelocimeterProfileMax; i++)
     {
-        LOGD("%02d | Velocimeter   | 0x%02X |  %01d  | %-6d | %-5d | %-6d | %-5d  |  %-5d | %-7d | %d", totalProfiles, SensorType::Velocimeter, profile.gyro[i].sensorIndex,
+        LOGD("%02d | Velocimeter   | 0x%02X |  %01d  | %-6d | %-5d | %-6d | %-5d  |  %-5d | %-7d | %d", totalProfiles, SensorType::Velocimeter, profile.velocimeter[i].sensorIndex,
             0, 0, 0, 0, 0, profile.velocimeter[i].enabled, profile.velocimeter[i].outputEnabled);
         totalProfiles++;
     }
@@ -3756,6 +3817,16 @@ int main(int argc, char *argv[])
         if (status != Status::SUCCESS)
         {
             LOGE("Failed setting calibration, status = %s (0x%X)", statusToString(status).c_str(), status);
+            goto cleanup;
+        }
+    }
+
+    if (gConfiguration.lowPowerEnabled == false)
+    {
+        status = gDevice->SetLowPowerMode(gConfiguration.lowPowerEnabled);
+        if (status != Status::SUCCESS)
+        {
+            LOGE("Failed to set power mode, status = %s (0x%X)", statusToString(status).c_str(), status);
             goto cleanup;
         }
     }
@@ -4063,8 +4134,8 @@ int main(int argc, char *argv[])
                     LOGD("Stop RSSI test on controller %d", i);
                     gDevice->ControllerRssiTestControl(i, false);
 
-                    LOGD("Sleeping (Stop RSSI) for %d seconds...", STOP_STREAM_TIME_SEC);
-                    std::this_thread::sleep_for(std::chrono::seconds(STOP_STREAM_TIME_SEC));
+                    LOGD("Sleeping (Stop RSSI) for %d seconds...", gConfiguration.stopStreamTime);
+                    std::this_thread::sleep_for(std::chrono::seconds(gConfiguration.stopStreamTime));
                 }
             }
         }
@@ -4143,7 +4214,7 @@ int main(int argc, char *argv[])
                 {
                     std::string cell;
                     uint32_t frameId = 0;
-                    float_t angularVelocity[3] = { 0 };
+                    float_t translationalVelocity[3] = { 0 };
                     int64_t timestamp[2] = { 0 };
 
                     uint32_t i = 0;
@@ -4155,7 +4226,7 @@ int main(int argc, char *argv[])
                         }
                         else if ((i == 1) || (i == 2) || (i == 3))
                         {
-                            angularVelocity[i - 1] = stof(cell.c_str());
+                            translationalVelocity[i - 1] = stof(cell.c_str());
                         }
                         else
                         {
@@ -4167,13 +4238,13 @@ int main(int argc, char *argv[])
 
                     TrackingData::VelocimeterFrame frame;
                     frame.frameId = frameId;
-                    frame.angularVelocity.x = angularVelocity[0];
-                    frame.angularVelocity.y = angularVelocity[1];
-                    frame.angularVelocity.z = angularVelocity[2];
+                    frame.translationalVelocity.x = translationalVelocity[0];
+                    frame.translationalVelocity.y = translationalVelocity[1];
+                    frame.translationalVelocity.z = translationalVelocity[2];
                     frame.timestamp = timestamp[0];
                     frame.arrivalTimeStamp = timestamp[1];
 
-                    LOGD("Sending velocimeter frame[%d]: AngularVelocity[%f, %f, %f], Timestamp %" PRId64 ", ArrivalTimestamp %" PRId64 "", frame.frameId, frame.angularVelocity.x, frame.angularVelocity.y, frame.angularVelocity.z, frame.timestamp, frame.arrivalTimeStamp);
+                    LOGD("Sending velocimeter frame[%d]: TranslationalVelocity[%f, %f, %f], Timestamp %" PRId64 ", ArrivalTimestamp %" PRId64 "", frame.frameId, frame.translationalVelocity.x, frame.translationalVelocity.y, frame.translationalVelocity.z, frame.timestamp, frame.arrivalTimeStamp);
 
                     status = gDevice->SendFrame(frame);
                     if (status != Status::SUCCESS)
@@ -4283,8 +4354,8 @@ int main(int argc, char *argv[])
             goto cleanup;
         }
 
-        LOGD("Sleeping (Stop) for %d seconds...", STOP_STREAM_TIME_SEC);
-        std::this_thread::sleep_for(std::chrono::seconds(STOP_STREAM_TIME_SEC));
+        LOGD("Sleeping (Stop) for %d seconds...", gConfiguration.stopStreamTime);
+        std::this_thread::sleep_for(std::chrono::seconds(gConfiguration.stopStreamTime));
 
         if (gConfiguration.temperature.check == true)
         {
@@ -4340,6 +4411,15 @@ int main(int argc, char *argv[])
                 }
                 resetCount++;
 
+                if (gConfiguration.lowPowerEnabled == false)
+                {
+                    status = gDevice->SetLowPowerMode(gConfiguration.lowPowerEnabled);
+                    if (status != Status::SUCCESS)
+                    {
+                        LOGE("Failed to set power mode, status = %s (0x%X)", statusToString(status).c_str(), status);
+                        goto cleanup;
+                    }
+                }
             }
         } while (((loop + 1) == gConfiguration.maxLoop) && (resetCount < gConfiguration.resetLoop)); /* Check if finished with START/STOP loop, and there are more reset loops to run */
 

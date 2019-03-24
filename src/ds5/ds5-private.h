@@ -19,6 +19,7 @@ namespace librealsense
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
         const uint16_t RS430_PID        = 0x0ad4; // AWG
+        const uint16_t RS430I_PID       = 0x0b4b; // D430i
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
         const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
         const uint16_t RS400_IMU_PID    = 0x0af2; // IMU
@@ -49,6 +50,7 @@ namespace librealsense
             ds::RS410_PID,
             ds::RS415_PID,
             ds::RS430_PID,
+            ds::RS430I_PID,
             ds::RS430_MM_PID,
             ds::RS_USB2_PID,
             ds::RS400_IMU_PID,
@@ -71,11 +73,12 @@ namespace librealsense
             ds::RS430_MM_PID,
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
-            ds::RS435I_PID
+            ds::RS435I_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
-            ds::RS435I_PID
+            ds::RS435I_PID,
+            ds::RS430I_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
@@ -95,6 +98,7 @@ namespace librealsense
             { RS420_PID,        "Intel RealSense D420"},
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
+            { RS430I_PID,       "Intel RealSense D430I"},
             { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module"},
             { RS430_MM_RGB_PID, "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS435_RGB_PID,    "Intel RealSense D435"},
@@ -594,8 +598,8 @@ namespace librealsense
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps);
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height, uint32_t fps);
+        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);

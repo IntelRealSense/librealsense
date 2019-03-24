@@ -149,7 +149,7 @@ namespace librealsense
         return get_intrinsic_by_resolution(
             *_owner->_color_calib_table_raw,
             ds::calibration_table_id::rgb_calibration_id,
-            profile.width, profile.height, profile.fps);
+            profile.width, profile.height);
     }
 
     stream_profiles ds5_color_sensor::init_stream_profiles()
@@ -181,5 +181,10 @@ namespace librealsense
         }
 
         return results;
+    }
+
+    processing_blocks ds5_color_sensor::get_recommended_processing_blocks() const
+    {
+        return get_color_recommended_proccesing_blocks();
     }
 }

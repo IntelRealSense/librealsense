@@ -11,11 +11,14 @@
 #include "device.h"
 #include "stream.h"
 #include "sensor.h"
+#include "proc/decimation-filter.h"
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, device* dev)
-        : _is_streaming(false),
+    sensor_base::sensor_base(std::string name, device* dev, 
+        recommended_proccesing_blocks_interface* owner)
+        : recommended_proccesing_blocks_base(owner),
+        _is_streaming(false),
           _is_opened(false),
           _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
           _on_before_frame_callback(nullptr),
@@ -272,6 +275,31 @@ namespace librealsense
         }
 
         return results;
+    }
+
+    processing_blocks get_color_recommended_proccesing_blocks()
+    {
+        processing_blocks res;
+        auto dec = std::make_shared<decimation_filter>();
+        if (!dec->supports_option(RS2_OPTION_STREAM_FILTER))
+            return res;
+        dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_COLOR);
+        dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_ANY);
+        res.push_back(dec);
+        return res;
+    }
+
+    processing_blocks get_depth_recommended_proccesing_blocks()
+    {
+        processing_blocks res;
+        auto dec = std::make_shared<decimation_filter>();
+        if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
+        {
+            dec->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
+            dec->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16);
+            res.push_back(dec);
+        }
+        return res;
     }
 
     stream_profiles uvc_sensor::init_stream_profiles()
@@ -740,7 +768,7 @@ namespace librealsense
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
         device* dev)
-    : sensor_base("Motion Module", dev), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
+    : sensor_base("Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
       _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
       _hid_device(hid_device),
       _is_configured_stream(RS2_STREAM_COUNT),
@@ -1048,7 +1076,7 @@ namespace librealsense
     }
 
     uvc_sensor::uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device, std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev)
-        : sensor_base(name, dev),
+       :   sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
           _device(move(uvc_device)),
           _user_count(0),
           _timestamp_reader(std::move(timestamp_reader))

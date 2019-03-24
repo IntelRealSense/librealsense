@@ -100,12 +100,6 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             {
                 error_message = "Invalid numeric input!";
             }
-            else if (new_value < min || new_value > max)
-            {
-                error_message = rs2::to_string() << new_value
-                    << " is out of bounds [" << min << ", "
-                    << max << "]";
-            }
             else
             {
                 val->*field = static_cast<S>(new_value);
@@ -161,12 +155,6 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             if (!string_to_int(buff, new_value))
             {
                 error_message = "Invalid numeric input!";
-            }
-            else if (new_value < min || new_value > max)
-            {
-                error_message = rs2::to_string() << new_value
-                    << " is out of bounds [" << min << ", "
-                    << max << "]";
             }
             else
             {
@@ -258,7 +246,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_depth_control(amc.depth_controls.vals[0]);
+            try
+            {
+                advanced.set_depth_control(amc.depth_controls.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -280,7 +276,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rsm(amc.rsm.vals[0]);
+            try
+            {
+                advanced.set_rsm(amc.rsm.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -307,7 +311,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rau_support_vector_control(amc.rsvc.vals[0]);
+            try
+            {
+                advanced.set_rau_support_vector_control(amc.rsvc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -330,7 +342,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_color_control(amc.color_control.vals[0]);
+            try
+            {
+                advanced.set_color_control(amc.color_control.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -351,7 +371,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_rau_thresholds_control(amc.rctc.vals[0]);
+            try
+            {
+                advanced.set_rau_thresholds_control(amc.rctc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -372,7 +400,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_slo_color_thresholds_control(amc.sctc.vals[0]);
+            try
+            {
+                advanced.set_slo_color_thresholds_control(amc.sctc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -396,7 +432,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_slo_penalty_control(amc.spc.vals[0]);
+            try
+            {
+                advanced.set_slo_penalty_control(amc.spc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -419,7 +463,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_hdad(amc.hdad.vals[0]);
+            try
+            {
+                advanced.set_hdad(amc.hdad.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -449,7 +501,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_color_correction(amc.cc.vals[0]);
+            try
+            {
+                advanced.set_color_correction(amc.cc.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -472,7 +532,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_depth_table(amc.depth_table.vals[0]);
+            try
+            {
+                advanced.set_depth_table(amc.depth_table.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -491,7 +559,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_ae_control(amc.ae.vals[0]);
+            try
+            {
+                advanced.set_ae_control(amc.ae.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 
@@ -511,7 +587,15 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         if (to_set)
         {
-            advanced.set_census(amc.census.vals[0]);
+            try
+            {
+                advanced.set_census(amc.census.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
             was_set = true;
         }
 

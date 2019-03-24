@@ -21,6 +21,10 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 9. [Software Device](./software-device) - Shows how to create a custom `rs2::device`.
 10. [Sensor Control](./sensor-control) -- A tutorial for using the `rs2::sensor` API
 11. [Measure](./measure) - Lets the user measure the dimentions of 3D objects in a stream.
+#### Tracking Examples:
+12. [Pose](./pose) - Demonstarates how to obtain data from pose frames.
+13. [Pose Prediction](./pose-predict) - Demonstarates how to use tracking camera asynchroniously to implement simple pose prediction.
+14. [Trajectory](./trajectory) - Demonstrates how to track and draw the trajectory of the camera from different perspectives.
 
 ### C Examples:
 1. [Depth](./C/depth) - Demonstrates how to stream depth data and prints a simple text-based representation of the depth image.
@@ -46,3 +50,4 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 6. [OpenCV threaded depth cleaner](https://github.com/juniorxsound/ThreadedDepthCleaner) - RealSense depth-map cleaning and inpainting using OpenCV
 7. [Sample of how to use the IMU of D435i as well as doing PCL rotations based on this](https://github.com/GruffyPuffy/imutest)
 8. [realsense-ir-to-vaapi-h264](https://github.com/bmegli/realsense-ir-to-vaapi-h264) - hardware encode infrared stream to H.264 with Intel VAAPI
+9. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore

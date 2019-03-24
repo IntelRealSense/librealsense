@@ -26,7 +26,6 @@ namespace librealsense
         register_stream_to_extrinsic_group(stream, groupd_index);
     }
 
-
     software_sensor& software_device::get_software_sensor(int index)
     {
         if (index >= _software_sensors.size())
@@ -35,6 +34,13 @@ namespace librealsense
         }
         return *_software_sensors[index];
     }
+    
+    std::shared_ptr<software_device_info> software_device::get_info() {
+        if (!_info)
+            _info = std::make_shared<software_device_info>(std::dynamic_pointer_cast< software_device>(shared_from_this()));
+        
+        return _info;
+    }
 
     void software_device::set_matcher_type(rs2_matchers matcher)
     {
@@ -42,7 +48,8 @@ namespace librealsense
     }
 
     software_sensor::software_sensor(std::string name, software_device* owner)
-        : sensor_base(name, owner)
+        : sensor_base(name, owner, &_pbs),
+          _stereo_extension([this]() { return stereo_extension(this); })
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
         _unique_id = unique_id::generate_id();
@@ -137,6 +144,28 @@ namespace librealsense
         return profile;
     }
 
+    bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
+    {
+        if (extension_type == RS2_EXTENSION_DEPTH_SENSOR)
+        {
+            if (supports_option(RS2_OPTION_DEPTH_UNITS))
+            {
+                *ptr = &(*_stereo_extension);
+                return true;
+            }
+        }
+        else if (extension_type == RS2_EXTENSION_DEPTH_STEREO_SENSOR)
+        {
+            if (supports_option(RS2_OPTION_DEPTH_UNITS) && 
+                supports_option(RS2_OPTION_STEREO_BASELINE))
+            {
+                *ptr = &(*_stereo_extension);
+                return true;
+            }
+        }
+        return false;
+    }
+
     stream_profiles software_sensor::init_stream_profiles()
     {
         return _profiles;
@@ -195,6 +224,8 @@ namespace librealsense
 
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
+        if (!_is_streaming) return;
+        
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
@@ -240,6 +271,8 @@ namespace librealsense
 
     void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
     {
+        if (!_is_streaming) return;
+
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
@@ -271,6 +304,8 @@ namespace librealsense
 
     void software_sensor::on_pose_frame(rs2_software_pose_frame software_frame)
     {
+        if (!_is_streaming) return;
+
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;

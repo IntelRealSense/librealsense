@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 2.8)
 cmake_policy(SET CMP0015 NEW)
 
@@ -39,16 +41,21 @@ set(SOURCE_FILES
     infra/Fence.h
     infra/EventHandler.h
     infra/Poller.h
-    infra/Poller_${OS}.cpp
+    
     infra/Dispatcher.h
     infra/Dispatcher.cpp
     infra/Fsm.h
     infra/Fsm.cpp
     infra/Utils.h
     infra/Utils.cpp
-    infra/Semaphore.h
-    infra/Semaphore_${OS}.cpp
-    infra/Event_${OS}.cpp
+    
+    infra/Event_lin.cpp
+    infra/Event_bsd.cpp
+    infra/Event_win.cpp
+
+    infra/Poller_lin.cpp
+    infra/Poller_win.cpp
+    infra/Poller_bsd.cpp
 )
 
 #Add versioning to DLL

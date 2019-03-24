@@ -30,9 +30,6 @@ namespace Intel.RealSense
         private Pipeline pipeline = new Pipeline();
         private Colorizer colorizer = new Colorizer();
         private Align align = new Align(Stream.Color);
-        private DecimationFilter decimate = new DecimationFilter();
-        private SpatialFilter spatial = new SpatialFilter();
-        private TemporalFilter temp = new TemporalFilter();
         private CustomProcessingBlock block;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
@@ -59,6 +56,18 @@ namespace Intel.RealSense
                 cfg.EnableStream(Stream.Depth, 640, 480);
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
                 var pp = pipeline.Start(cfg);
+                var s = pp.Device.Sensors;
+
+                var blocks = new List<ProcessingBlock>();
+
+                foreach (var sensor in pp.Device.Sensors)
+                {
+                    var list = sensor.ProcessingBlocks;
+                    foreach (var block in list)
+                    {
+                        blocks.Add(block);
+                    }
+                }
 
                 // Allocate bitmaps for rendring.
                 // Since the sample aligns the depth frames to the color frames, both of the images will have the color resolution
@@ -89,14 +98,14 @@ namespace Intel.RealSense
                     {
                         var frames = FrameSet.FromFrame(f).DisposeWith(releaser);
 
-                        var processedFrames = frames.ApplyFilter(decimate).DisposeWith(releaser)
-                                                .ApplyFilter(spatial).DisposeWith(releaser)
-                                                .ApplyFilter(temp).DisposeWith(releaser)
-                                                .ApplyFilter(align).DisposeWith(releaser)
-                                                .ApplyFilter(colorizer).DisposeWith(releaser);
+                        foreach (ProcessingBlock p in blocks)
+                            frames = p.Process(frames).DisposeWith(releaser);
 
-                        var colorFrame = processedFrames.ColorFrame.DisposeWith(releaser);
-                        var colorizedDepth = processedFrames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
+                        frames = frames.ApplyFilter(align).DisposeWith(releaser);
+                        frames = frames.ApplyFilter(colorizer).DisposeWith(releaser);
+
+                        var colorFrame = frames[Stream.Color, Format.Rgb8].DisposeWith(releaser);
+                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
 
                         // Combine the frames into a single result
                         var res = src.AllocateCompositeFrame(colorizedDepth, colorFrame).DisposeWith(releaser);

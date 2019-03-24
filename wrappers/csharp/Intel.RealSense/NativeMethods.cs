@@ -167,6 +167,9 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_threshold([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
 #endregion
 #region rs_option
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -339,7 +342,19 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_get_stream_profiles(IntPtr device, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_get_recommended_processing_blocks(IntPtr device, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_get_processing_block(IntPtr device, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_get_stream_profile(IntPtr list, int index, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_get_processing_block(IntPtr list, int index, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_stream_profile_data(IntPtr mode, out Stream stream, out Format format, out int index, out int unique_id, out int framerate, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
@@ -357,6 +372,10 @@ namespace Intel.RealSense
         internal static extern int rs2_stream_profile_is(IntPtr mode, Extension type, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_is_processing_block_extendable_to(IntPtr mode, Extension type, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_video_stream_resolution(IntPtr from, out int width, out int height, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -369,6 +388,12 @@ namespace Intel.RealSense
         internal static extern void rs2_delete_stream_profiles_list(IntPtr list);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_get_recommended_processing_blocks_count(IntPtr list, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void rs2_delete_recommended_processing_blocks(IntPtr list);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_extrinsics(IntPtr from, IntPtr to, out Extrinsics extrin, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -376,6 +401,27 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_video_stream_intrinsics(IntPtr from, out Intrinsics intrinsics, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_export_localization_map(IntPtr sensor, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_import_localization_map(IntPtr sensor, IntPtr raw_data_to_send, uint size_of_raw_data_to_send, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_set_static_node(IntPtr sensor, [MarshalAs(UnmanagedType.LPStr)] string guid, Math.Vector pos, Math.Quaternion orient,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_get_static_node(IntPtr sensor, [MarshalAs(UnmanagedType.LPStr)] string guid, out Math.Vector pos, out Math.Quaternion orient,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_load_wheel_odometry_config(IntPtr sensor, IntPtr wheel_odometry_cfg_buf, uint size_of_buf, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int rs2_send_wheel_odometry(IntPtr sensor, byte wo_sensor_id, uint frame_num, Math.Vector translational_velocity,
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_motion_intrinsics(IntPtr profile, out MotionDeviceIntrinsics intrinsics, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);

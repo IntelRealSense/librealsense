@@ -26,7 +26,7 @@ struct ppf_test_config
     int         holes_filling_mode = 0;
     int         downsample_scale = 1;
     float       depth_units = 0.001f;
-    float       stereo_baseline = 0.f;
+    float       stereo_baseline_mm = 0.f;
     float       focal_length = 0.f;
     uint32_t    input_res_x = 0;
     uint32_t    input_res_y = 0;
@@ -150,7 +150,7 @@ inline ppf_test_config attrib_from_csv(const std::string& str)
     // The user must assign the parameters appropriately
     cfg.input_res_x = dict.count(metadata_attributes.at(res_x)) ? std::stoi(dict.at(metadata_attributes.at(res_x))) : 0;
     cfg.input_res_y = dict.count(metadata_attributes.at(res_y)) ? std::stoi(dict.at(metadata_attributes.at(res_y))) : 0;
-    cfg.stereo_baseline = dict.count(metadata_attributes.at(stereo_baseline)) ? std::stof(dict.at(metadata_attributes.at(stereo_baseline))) : 0.f;
+    cfg.stereo_baseline_mm = dict.count(metadata_attributes.at(stereo_baseline)) ? std::stof(dict.at(metadata_attributes.at(stereo_baseline))) : 0.f;
     cfg.depth_units = dict.count(metadata_attributes.at(depth_units)) ? std::stof(dict.at(metadata_attributes.at(depth_units))) : 0.f;
     cfg.focal_length = dict.count(metadata_attributes.at(focal_length)) ? std::stof(dict.at(metadata_attributes.at(focal_length))) : 0.f;
 
@@ -231,7 +231,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     test_config.output_res_y = output_meta_params.input_res_y;
     test_config.depth_units = input_meta_params.depth_units;
     test_config.focal_length = input_meta_params.focal_length;
-    test_config.stereo_baseline = input_meta_params.stereo_baseline;
+    test_config.stereo_baseline_mm = input_meta_params.stereo_baseline_mm;
     test_config.downsample_scale = output_meta_params.downsample_scale;
     test_config.spatial_filter = output_meta_params.spatial_filter;
     test_config.spatial_alpha = output_meta_params.spatial_alpha;
@@ -284,7 +284,7 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
     REQUIRE(test_config.input_res_y > 0);
     REQUIRE(test_config.output_res_x > 0);
     REQUIRE(test_config.output_res_y > 0);
-    REQUIRE(std::fabs(test_config.stereo_baseline) > 0.f);
+    REQUIRE(std::fabs(test_config.stereo_baseline_mm) > 0.f);
     REQUIRE(test_config.depth_units > 0);
     REQUIRE(test_config.focal_length > 0);
     REQUIRE(test_config.frames_sequence_size > 0);
@@ -312,6 +312,8 @@ inline bool load_test_configuration(const std::string test_name, ppf_test_config
         REQUIRE(test_config.temporal_delta >= 1);
         REQUIRE(test_config.temporal_delta <= 100);
         REQUIRE(test_config.temporal_persistence >= 0);
+        // Reference code treats values [1-8] as valid persistence modes.
+        // Zero or val>8 mean no persistance
         REQUIRE(test_config.temporal_persistence <= 8);
     }
 

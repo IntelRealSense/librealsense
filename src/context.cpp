@@ -531,6 +531,21 @@ namespace librealsense
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
         return playback_dev;
     }
+    
+    void context::add_software_device(std::shared_ptr<device_info> dev)
+    {
+        auto file = dev->get_device_data().playback_devices.front().file_path;
+        
+        auto it = _playback_devices.find(file);
+        if (it != _playback_devices.end() && it->second.lock())
+        {
+            //Already exists
+            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+        }
+        auto prev_playback_devices = _playback_devices;
+        _playback_devices[file] = dev;
+        on_device_changed({}, {}, prev_playback_devices, _playback_devices);
+    }
 
     void context::remove_device(const std::string& file)
     {
@@ -617,3 +632,5 @@ namespace librealsense
         return results;
     }
 }
+
+using namespace librealsense;

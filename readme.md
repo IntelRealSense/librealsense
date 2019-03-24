@@ -2,14 +2,12 @@
 
 -----------------
 
-Linux/MacOS | Windows |
--------- | ------------ |
-[![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense) | [![Build status](https://ci.appveyor.com/api/projects/status/6u04bgmpwfejpgo8?svg=true)](https://ci.appveyor.com/project/dorodnic/librealsense-s4xnv) |
+**CI State**: [![Build Status](https://travis-ci.org/IntelRealSense/librealsense.svg?branch=development)](https://travis-ci.org/IntelRealSense/librealsense)
 
 -----------------
 
 ## Overview
-**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300).
+**Intel® RealSense™ SDK 2.0** is a cross-platform library for Intel® RealSense™ depth cameras (D400 series and the SR300) and the [T265 tracking camera](./doc/t265.md).
 
 > :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
@@ -24,7 +22,7 @@ Information about the Intel® RealSense™ technology at [realsense.intel.com](h
 ## Download and Install
 * **Download** - The latest releases including the Intel RealSense SDK, Viewer and Depth Quality tools are available at: [**latest releases**](https://github.com/IntelRealSense/librealsense/releases). Please check the [**release notes**](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for the supported platforms, new features and capabilities, known issues, how to upgrade the Firmware and more.
 
-* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md)), connect your D400 depth camera and you are ready to start writing your first application. (For Android limited support, please refer to [Android](./doc/android/Android.md))
+* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md)), connect your D400 depth camera and you are ready to start writing your first application.
 
 > **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.

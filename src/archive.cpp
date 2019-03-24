@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "metadata-parser.h"
 #include "archive.h"
 #include <fstream>
@@ -63,7 +65,7 @@ namespace librealsense
                 fabs(vertices[i].z) >= MIN_DISTANCE)
             {
                 index2reducedIndex[i] = new_vertices.size();
-                new_vertices.push_back(vertices[i]);
+                new_vertices.push_back({ vertices[i].x,  -1*vertices[i].y, -1*vertices[i].z });
                 if (texture)
                 {
                     auto color = get_texcolor(texture, texcoords[i].x, texcoords[i].y);
@@ -84,8 +86,9 @@ namespace librealsense
                     if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 ||
                         index2reducedIndex.count(d) == 0)
                         continue;
-                    faces.emplace_back(index2reducedIndex[a], index2reducedIndex[b], index2reducedIndex[d]);
-                    faces.emplace_back(index2reducedIndex[d], index2reducedIndex[c], index2reducedIndex[a]);
+
+                    faces.emplace_back(index2reducedIndex[a], index2reducedIndex[d], index2reducedIndex[b]);
+                    faces.emplace_back(index2reducedIndex[d], index2reducedIndex[a], index2reducedIndex[c]);
                 }
             }
         }
