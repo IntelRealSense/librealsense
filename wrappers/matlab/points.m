@@ -24,7 +24,7 @@ classdef points < realsense.frame
         function texture_coordinates = get_texture_coordinates(this)
             texture_coordinates = realsense.librealsense_mex('rs2::points', 'get_texture_coordinates', this.objectHandle);
         end
-        function s = size(this)
+        function s = point_count(this)
             realsense.librealsense_mex('rs2::points', 'size', this.objectHandle);
         end
     end

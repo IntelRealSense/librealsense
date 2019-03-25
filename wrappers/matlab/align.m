@@ -5,7 +5,7 @@ classdef align < realsense.filter
         function this = align(align_to)
             narginchk(1, 1);
             validateattributes(align_to, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)});
-            this.objectHandle = realsense.librealsense_mex('rs2::align', 'new', int64(align_to));
+            out = realsense.librealsense_mex('rs2::align', 'new', int64(align_to));
             this = this@realsense.filter(out);
         end
         

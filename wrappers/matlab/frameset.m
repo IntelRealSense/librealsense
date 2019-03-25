@@ -12,13 +12,13 @@ classdef frameset < realsense.frame
         function frame = first_or_default(this, s)
             narginchk(2, 2);
             validateattributes(s, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 's', 2);
-            ret = realsense.librealsense_mex('rs2::frameset', 'first_or_default', this.objectHandle, int64_t(s));
+            ret = realsense.librealsense_mex('rs2::frameset', 'first_or_default', this.objectHandle, int64(s));
             frame = realsense.frame(ret);
         end
         function frame = first(this, s)
             narginchk(2, 2);
             validateattributes(s, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 's', 2);
-            ret = realsense.librealsense_mex('rs2::frameset', 'first', this.objectHandle, int64_t(s));
+            ret = realsense.librealsense_mex('rs2::frameset', 'first', this.objectHandle, int64(s));
             frame = realsense.frame(ret);
         end
         function depth_frame = get_depth_frame(this)
@@ -34,11 +34,11 @@ classdef frameset < realsense.frame
                 ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle);
             else
                 validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 2);
-                ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle, int64_t(index));
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_infrared_frame', this.objectHandle, int64(index));
             end
             infrared_frame = realsense.video_frame(ret);
         end
-        function frameset_size = size(this)
+        function frameset_size = frame_count(this)
             frameset_size = realsense.librealsense_mex('rs2::frameset', 'size', this.objectHandle);
         end
         % TODO: iterator protocol?
