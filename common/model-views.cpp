@@ -914,7 +914,7 @@ namespace rs2
     subdevice_model::subdevice_model(
         device& dev,
         std::shared_ptr<sensor> s, std::string& error_message)
-        : s(s), dev(dev), ui(), last_valid_ui(),
+        : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
         yuy2rgb(std::make_shared<rs2::yuy_decoder>())
@@ -1444,13 +1444,12 @@ namespace rs2
     {
         viewer.not_model.add_log("Stopping streaming");
 
-        // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
-                viewer.tm2.reset_trajectory();
-                viewer.tm2.record_trajectory(false);
+                 this->tm2.reset_trajectory();
+                 this->tm2.record_trajectory(false);
             }
         });
 
@@ -1529,10 +1528,12 @@ namespace rs2
         viewer.not_model.add_log(ss.str());
 
         // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
-                viewer.tm2.record_trajectory(true);
+            {
+                this->tm2.record_trajectory(true);
+            }
         });
 
         s->open(profiles);
@@ -1908,7 +1909,7 @@ namespace rs2
         return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
-    void viewer_model::render_pose(rs2::rect stream_rect, uint32_t pose_stream_count, float buttons_heights, ImGuiWindowFlags flags)
+    void viewer_model::render_pose(tm2_model& tm2, rs2::rect stream_rect, uint32_t pose_stream_count, float buttons_heights, ImGuiWindowFlags flags)
     {
         int num_of_pose_buttons = 3; // trajectory, grid, info
 
@@ -2423,8 +2424,12 @@ namespace rs2
 
         if (pose_render)
         {
-            total_top_bar_height += top_bar_height; // add additional bar height for pose
-            render_pose(stream_rect, pose_stream_count, buttons_heights, flags);
+            for (auto&& s : streams)
+            {
+                total_top_bar_height += top_bar_height; // add additional bar height for pose
+               // for (auto dev : tm2)
+                render_pose(streams[s.second.profile.unique_id()].dev->tm2, stream_rect, pose_stream_count, buttons_heights, flags);
+            }
         }
 
         ImGui::PopStyleColor(6);
@@ -4158,7 +4163,13 @@ namespace rs2
                         }
 
                         if (frame.is<pose_frame>())  // Aggregate the trajectory in pause mode to make the path consistent
-                            tm2.update_model_trajectory(frame.as<pose_frame>(), !paused);
+                        {
+                            auto dev = streams[frame.get_profile().unique_id()].dev;
+                            if (dev)
+                            {
+                                dev->tm2.update_model_trajectory(frame.as<pose_frame>(), !paused);
+                            }
+                        }
 
                         auto texture = upload_frame(std::move(frame));
 
@@ -4768,7 +4779,7 @@ namespace rs2
 
                 glMultMatrixf((float*)_rx);
 
-                tm2.draw_trajectory();
+                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory();
 
                 // remove model matrix from the rest of the render
                 glPopMatrix();
@@ -8365,7 +8376,6 @@ namespace rs2
     // Aggregate the trajectory path
     void tm2_model::update_model_trajectory(const pose_frame& pose, bool track)
     {
-        // TODO refactor for multi-cam
         static bool prev_track = track;
         if (!_trajectory_tracking)
             return;
