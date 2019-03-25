@@ -29,7 +29,7 @@ add_subdirectory(third_party/pybind11)
 pybind11_add_module(pyrealsense2 SHARED python.cpp)
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
-        ${REALSENSE_VERSION_STRING} SOVERSION ${REALSENSE_VERSION_MAJOR})
+    ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
 install(TARGETS pyrealsense2 EXPORT realsense2Targets
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
