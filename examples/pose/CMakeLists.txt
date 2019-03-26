@@ -17,7 +17,7 @@ elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif()
 
-if(BUILD_GRAPHICAL_EXAMPLES)
+if(BUILD_EXAMPLES)
     add_executable(rs-pose rs-pose.cpp)
     target_link_libraries(rs-pose ${DEPENDENCIES})
     set_target_properties (rs-pose PROPERTIES FOLDER Examples)
