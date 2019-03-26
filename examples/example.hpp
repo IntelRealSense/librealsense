@@ -524,6 +524,11 @@ public:
         glfwTerminate();
     }
 
+    void close()
+    {
+        glfwSetWindowShouldClose(win, GLFW_TRUE);
+    }
+
     float width() const { return float(_width); }
     float height() const { return float(_height); }
 
