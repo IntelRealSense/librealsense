@@ -23,9 +23,7 @@ namespace Intel.RealSense
         public Context()
             : base(Create(), NativeMethods.rs2_delete_context)
         {
-            object error;
             onDevicesChangedCallback = new rs2_devices_changed_callback(OnDevicesChangedInternal);
-            NativeMethods.rs2_set_devices_changed_callback(Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
         }
 
         /// <summary>
@@ -66,10 +64,37 @@ namespace Intel.RealSense
         /// <param name="added">list of added devices</param>
         public delegate void OnDevicesChangedDelegate(DeviceList removed, DeviceList added);
 
+        private event OnDevicesChangedDelegate OnDevicesChangedEvent;
+
+        private readonly object deviceChangedEventLock = new object();
+
         /// <summary>
         /// these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected
         /// </summary>
-        public event OnDevicesChangedDelegate OnDevicesChanged;
+        public event OnDevicesChangedDelegate OnDevicesChanged
+        {
+            add
+            {
+                lock (deviceChangedEventLock)
+                {
+                    if (OnDevicesChangedEvent == null)
+                    {
+                        object error;
+                        NativeMethods.rs2_set_devices_changed_callback(Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
+                    }
+
+                    OnDevicesChangedEvent += value;
+                }
+            }
+
+            remove
+            {
+                lock (deviceChangedEventLock)
+                {
+                    OnDevicesChangedEvent -= value;
+                }
+            }
+        }
 
         /// <summary>
         /// Create a static snapshot of all connected devices at the time of the call
@@ -116,7 +141,7 @@ namespace Intel.RealSense
 
         private void OnDevicesChangedInternal(IntPtr removedList, IntPtr addedList, IntPtr userData)
         {
-            var e = OnDevicesChanged;
+            var e = OnDevicesChangedEvent;
             if (e != null)
             {
                 using (var removed = new DeviceList(removedList))
