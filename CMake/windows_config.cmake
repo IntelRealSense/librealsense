@@ -40,12 +40,6 @@ macro(os_set_flags)
 endmacro()
 
 macro(os_target_config)
-    include(CMake/external_libusb.cmake)
-    target_link_libraries(${LRS_TARGET} PRIVATE usb)
-    if(USE_EXTERNAL_USB)
-        add_dependencies(${LRS_TARGET} libusb)
-    endif()
-
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
     if(FORCE_WINUSB_UVC)

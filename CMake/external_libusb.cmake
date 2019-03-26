@@ -1,4 +1,3 @@
-message(STATUS "Use external libusb")
 include(ExternalProject)
 
 ExternalProject_Add(
@@ -27,3 +26,9 @@ add_library(usb INTERFACE)
 target_include_directories(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb)
 target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(USE_EXTERNAL_USB ON) # INTERFACE libraries can't have real deps, so targets that link with usb need to also depend on libusb
+
+if (APPLE)
+  find_library(corefoundation_lib CoreFoundation)
+  find_library(iokit_lib IOKit)
+  target_link_libraries(usb INTERFACE objc ${corefoundation_lib} ${iokit_lib})
+endif()

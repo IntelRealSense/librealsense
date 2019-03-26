@@ -6,6 +6,4 @@ macro(os_set_flags)
 endmacro()
 
 macro(os_target_config)
-    include(CMake/libusb_config.cmake)
-    target_link_libraries(${LRS_TARGET} PRIVATE usb)
 endmacro()
