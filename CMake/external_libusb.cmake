@@ -5,7 +5,7 @@ ExternalProject_Add(
     libusb
 
     GIT_REPOSITORY "https://github.com/libusb/libusb.git"
-    GIT_TAG "v1.0.22"
+    GIT_TAG "2a7372db54094a406a755f0b8548b614ba8c78ec" # "v1.0.22" + Mac get_device_list hang fix
 
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
