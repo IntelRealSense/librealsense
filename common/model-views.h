@@ -416,8 +416,10 @@ namespace rs2
     class press_button_model
     {
     public:
-        press_button_model(const char* icon_default, const char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed)
+        press_button_model(const char* icon_default, const char* icon_pressed, std::string tooltip_default, std::string tooltip_pressed,
+                           bool init_pressed)
         {
+            state_pressed = init_pressed;
             tooltip[unpressed] = tooltip_default;
             tooltip[pressed] = tooltip_pressed;
             icon[unpressed] = icon_default;
@@ -446,21 +448,13 @@ namespace rs2
     {
     public:
         tm2_model() : _trajectory_tracking(true)
-        {   // Render trajectory path by default
-            trajectory_button.toggle_button();
+        {   
         }
         void draw_controller_pose_object();
-        void draw_pose_object();
-        void draw_trajectory();
+        void draw_trajectory(bool is_trajectory_button_pressed);
         void update_model_trajectory(const pose_frame& pose, bool track);
         void record_trajectory(bool on) { _trajectory_tracking = on; };
         void reset_trajectory() { trajectory.clear(); };
-
-        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory" };
-        press_button_model camera_object_button{ u8"\uf047", u8"\uf083",  "Draw pose axis", "Draw camera pose" };
-        press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid" };
-        press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay" };
-
 
     private:
         void add_to_trajectory(tracked_point& p);
@@ -991,7 +985,7 @@ namespace rs2
 
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
-        void render_pose(tm2_model& tm2, rs2::rect stream_rect, uint32_t pose_stream_count, float buttons_heights, ImGuiWindowFlags flags);
+        void render_pose(rs2::rect stream_rect, float buttons_heights, ImGuiWindowFlags flags);
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
@@ -1041,6 +1035,13 @@ namespace rs2
         float dim_level = 1.f;
 
         bool continue_with_ui_not_aligned = false;
+
+        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
+        press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
+        press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
+
+        bool show_pose_info_3d = false;
+
     private:
         struct rgb {
             uint32_t r, g, b;
