@@ -80,6 +80,7 @@ endif()
 if(APPLE)
   find_library(corefoundation_lib CoreFoundation)
   find_library(iokit_lib IOKit)
+  target_include_directories(usb PRIVATE XCode)
   TARGET_LINK_LIBRARIES(usb objc ${corefoundation_lib} ${iokit_lib})
 endif()
 
