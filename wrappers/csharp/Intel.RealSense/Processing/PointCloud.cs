@@ -20,6 +20,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_pointcloud(out error);
         }
 
+        internal PointCloud(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public PointCloud()
             : base(Create())
         {

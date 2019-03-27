@@ -57,7 +57,7 @@ namespace Intel.RealSense
             }
 
             var ctorinfo = t.GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
                     null,
                     new Type[] { typeof(IntPtr) },
                     null);
@@ -96,6 +96,12 @@ namespace Intel.RealSense
             return CreateInstance(t, ptr);
         }
 
+        /// <summary>
+        /// Get an object from the pool, should be released back
+        /// </summary>
+        /// <typeparam name="T">type of object</typeparam>
+        /// <param name="ptr">native handle</param>
+        /// <returns>an object of type <typeparamref name="T"/></returns>
         public static T Get<T>(IntPtr ptr)
             where T : Base.PooledObject
         {
@@ -107,6 +113,11 @@ namespace Intel.RealSense
             return Get(typeof(T), ptr) as T;
         }
 
+        /// <summary>
+        /// Return an object to the pool
+        /// </summary>
+        /// <typeparam name="T">type of object</typeparam>
+        /// <param name="obj">object to return to pool</param>
         public static void Release<T>(T obj)
             where T : Base.PooledObject
         {

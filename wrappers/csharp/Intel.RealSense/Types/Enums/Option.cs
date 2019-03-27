@@ -152,19 +152,19 @@ namespace Intel.RealSense
         /// <summary>When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled</summary>
         EmitterOnOff = 46,
 
-        ///<summary>Zero order point x</summary>
-        zeroOrderPointX = 47,
+        /// <summary>Zero order point x</summary>
+        ZeroOrderPointX = 47,
 
-        ///<summary>Zero order point y</summary>
-        zeroOrderPointY = 48,
+        /// <summary>Zero order point y</summary>
+        ZeroOrderPointY = 48,
 
-        ///<summary>LLD temperature</summary>
+        /// <summary>LLD temperature</summary>
         LLDTemperature = 49,
 
-        ///<summary>MC temperature</summary>
+        /// <summary>MC temperature</summary>
         MCTemperature = 50,
 
-        ///<summary>MA temperature</summary>
+        /// <summary>MA temperature</summary>
         MATemperature = 51
     }
 }

@@ -8,25 +8,27 @@ namespace Intel.RealSense
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
 
-    public class StreamProfileList : Base.Object, IEnumerable<StreamProfile>
+    internal sealed class StreamProfileList : Base.Object, IEnumerable<StreamProfile>, ICollection
     {
         public StreamProfileList(IntPtr ptr)
             : base(ptr, NativeMethods.rs2_delete_stream_profiles_list)
         {
         }
 
+        /// <inheritdoc/>
         public IEnumerator<StreamProfile> GetEnumerator()
         {
             object error;
 
-            int deviceCount = NativeMethods.rs2_get_stream_profiles_count(Handle, out error);
-            for (int i = 0; i < deviceCount; i++)
+            int size = NativeMethods.rs2_get_stream_profiles_count(Handle, out error);
+            for (int i = 0; i < size; i++)
             {
                 var ptr = NativeMethods.rs2_get_stream_profile(Handle, i, out error);
                 yield return StreamProfile.Create(ptr);
             }
         }
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
@@ -39,10 +41,15 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                int deviceCount = NativeMethods.rs2_get_stream_profiles_count(Handle, out error);
-                return deviceCount;
+                return NativeMethods.rs2_get_stream_profiles_count(Handle, out error);
             }
         }
+
+        /// <inheritdoc/>
+        public object SyncRoot => this;
+
+        /// <inheritdoc/>
+        public bool IsSynchronized => false;
 
         /// <summary>
         /// Gets a specific stream profile
@@ -68,6 +75,20 @@ namespace Intel.RealSense
         {
             object error;
             return StreamProfile.Create<T>(NativeMethods.rs2_get_stream_profile(Handle, index, out error));
+        }
+
+        /// <inheritdoc/>
+        public void CopyTo(Array array, int index)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException("array");
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                array.SetValue(this[i], i + index);
+            }
         }
     }
 }

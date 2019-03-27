@@ -6,6 +6,7 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -26,10 +27,19 @@ namespace Intel.RealSense
             this.Initialize();
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private Stream stream;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private Format format;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private int framerate;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private int index;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private int uniqueId;
 
         /// <summary>

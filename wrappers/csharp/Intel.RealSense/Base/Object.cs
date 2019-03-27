@@ -4,6 +4,7 @@
 namespace Intel.RealSense.Base
 {
     using System;
+    using System.Diagnostics;
 
     /// <summary>
     /// Base class for disposable objects with native resources
@@ -11,6 +12,7 @@ namespace Intel.RealSense.Base
     public abstract class Object : IDisposable
     {
         // TODO: rename, kept for backwards compatiblity
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal readonly DeleterHandle m_instance;
 
         /// <summary>

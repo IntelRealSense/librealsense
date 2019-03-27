@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_temporal_filter_block(out error);
         }
 
+        internal TemporalFilter(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public TemporalFilter()
             : base(Create())
         {

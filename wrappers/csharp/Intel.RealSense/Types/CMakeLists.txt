@@ -8,9 +8,6 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/Extrinsics.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Intrinsics.cs"
         "${CMAKE_CURRENT_LIST_DIR}/MotionDeviceIntrinsics.cs"
-        "${CMAKE_CURRENT_LIST_DIR}/IOption.cs"
-        "${CMAKE_CURRENT_LIST_DIR}/IOptions.cs"
-        "${CMAKE_CURRENT_LIST_DIR}/IOptionsContainer.cs"
         "${CMAKE_CURRENT_LIST_DIR}/ROI.cs"
         "${CMAKE_CURRENT_LIST_DIR}/SoftwareVideoFrame.cs"
         "${CMAKE_CURRENT_LIST_DIR}/SoftwareVideoStream.cs"
@@ -19,4 +16,5 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/SoftwareMotionStream.cs"
         "${CMAKE_CURRENT_LIST_DIR}/SoftwareMotionFrame.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Pose.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/InfoCollection.cs"
 )

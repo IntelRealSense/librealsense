@@ -39,6 +39,10 @@ namespace Intel.RealSense
         SpatialFilter = 28,
         TemporalFilter = 29,
         HoleFillingFilter = 30,
-        ZeroOrderFilter = 31
+        ZeroOrderFilter = 31,
+        RecommendedFilters = 32,
+        Pose = 33,
+        PoseSensor = 34,
+        WheelOdometer = 35,
     }
 }

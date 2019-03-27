@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_spatial_filter_block(out error);
         }
 
+        internal SpatialFilter(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public SpatialFilter()
             : base(Create())
         {

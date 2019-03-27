@@ -5,6 +5,8 @@ namespace Intel.RealSense
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -12,12 +14,15 @@ namespace Intel.RealSense
     /// </summary>
     public class Frame : Base.PooledObject
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly Base.Deleter FrameReleaser = NativeMethods.rs2_release_frame;
+
         internal override void Initialize()
         {
         }
 
         internal Frame(IntPtr ptr)
-            : base(ptr, NativeMethods.rs2_release_frame)
+            : base(ptr, FrameReleaser)
         {
         }
 
@@ -57,7 +62,7 @@ namespace Intel.RealSense
 
         /// <summary>Test if the given frame can be extended to the requested extension</summary>
         /// <param name="extension">The extension to which the frame should be tested if it is extendable</param>
-        /// <returns>true iff the frame can be extended to the given extension</returns>
+        /// <returns><see langword="true"/> iff the frame can be extended to the given extension</returns>
         public bool Is(Extension extension)
         {
             object error;
@@ -73,7 +78,7 @@ namespace Intel.RealSense
             return Create<T>(this);
         }
 
-        /// <summary>Returns a strongly-typed clone, <c>this</c> is disposed</summary>
+        /// <summary>Returns a strongly-typed clone, <see langword="this"/> is disposed</summary>
         /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
         /// <returns>an instance of <typeparamref name="T"/></returns>
         public T Cast<T>()
@@ -111,9 +116,11 @@ namespace Intel.RealSense
 
         /// <summary>
         /// Gets a value indicating whether frame is a composite frame
-        /// <para>Shorthand for <c>Is(Extension.CompositeFrame)</c></para>
+        /// <para>Shorthand for <c>Is(<see cref="Extension.CompositeFrame"/>)</c></para>
         /// </summary>
-        /// <value>true if frame is a composite frame and false otherwise</value>
+        /// <seealso cref="Is(Extension)"/>
+        /// <value><see langword="true"/> if frame is a composite frame and false otherwise</value>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool IsComposite
         {
             get
@@ -149,6 +156,7 @@ namespace Intel.RealSense
         /// <summary>
         /// Gets the stream profile that was used to start the stream of this frame
         /// </summary>
+        /// <see cref="GetProfile{T}"/>
         public StreamProfile Profile => GetProfile<StreamProfile>();
 
         /// <summary>Gets the frame number of the frame</summary>
@@ -213,5 +221,19 @@ namespace Intel.RealSense
             object error;
             return NativeMethods.rs2_supports_frame_metadata(Handle, frame_metadata, out error) != 0;
         }
+
+#if DEBUGGER_METADATA
+        private static readonly FrameMetadataValue[] MetadataValues = Enum.GetValues(typeof(FrameMetadataValue)) as FrameMetadataValue[];
+        public ICollection<KeyValuePair<FrameMetadataValue, long>> MetaData
+        {
+            get
+            {
+                return MetadataValues
+                    .Where(m => SupportsFrameMetaData(m))
+                    .Select(m => new KeyValuePair<FrameMetadataValue, long>(m, GetFrameMetadata(m)))
+                    .ToArray();
+            }
+        }
+#endif
     }
 }

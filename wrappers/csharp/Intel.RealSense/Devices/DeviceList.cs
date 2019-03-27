@@ -6,11 +6,44 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
 
+    [DebuggerTypeProxy(typeof(DeviceListDebugView))]
+    [DebuggerDisplay("Count = {Count}")]
     public class DeviceList : Base.Object, IEnumerable<Device>
     {
         internal static readonly Base.Deleter DeviceDeleter = NativeMethods.rs2_delete_device;
+
+        internal sealed class DeviceListDebugView
+        {
+            private readonly DeviceList dl;
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public Device[] Items
+            {
+                get
+                {
+                    Device[] array = new Device[dl.Count];
+                    for (int i = 0; i < dl.Count; i++)
+                    {
+                        array.SetValue(dl[i], i);
+                    }
+
+                    return array;
+                }
+            }
+
+            public DeviceListDebugView(DeviceList optionList)
+            {
+                if (optionList == null)
+                {
+                    throw new ArgumentNullException(nameof(optionList));
+                }
+
+                dl = optionList;
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DeviceList"/> class.
@@ -33,7 +66,7 @@ namespace Intel.RealSense
             for (int i = 0; i < deviceCount; i++)
             {
                 var ptr = NativeMethods.rs2_create_device(Handle, i, out error);
-                yield return Device.Create<Device>(ptr, DeviceDeleter);
+                yield return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 
@@ -64,7 +97,7 @@ namespace Intel.RealSense
             {
                 object error;
                 var ptr = NativeMethods.rs2_create_device(Handle, index, out error);
-                return Device.Create<Device>(ptr, DeviceDeleter);
+                return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 

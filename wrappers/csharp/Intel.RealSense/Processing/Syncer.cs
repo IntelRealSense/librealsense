@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_sync_processing_block(out error);
         }
 
+        internal Syncer(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Syncer"/> class.
         /// <para>

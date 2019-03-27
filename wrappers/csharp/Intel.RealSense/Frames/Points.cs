@@ -112,5 +112,11 @@ namespace Intel.RealSense
                 handle.Free();
             }
         }
+
+        public void ExportToPLY(string fname, Frame texture)
+        {
+            object error;
+            NativeMethods.rs2_export_to_ply(Handle, fname, texture.Handle, out error);
+        }
     }
 }

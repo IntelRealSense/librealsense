@@ -10,6 +10,10 @@ namespace Intel.RealSense
     /// </summary>
     public interface ICompositeDisposable : IDisposable
     {
+        /// <summary>
+        /// Add an <see cref="IDisposable"/> object to to be disposed along with this instance
+        /// </summary>
+        /// <param name="disposable">an <see cref="IDisposable"/> to to be disposed along with this instance</param>
         void AddDisposable(IDisposable disposable);
     }
 

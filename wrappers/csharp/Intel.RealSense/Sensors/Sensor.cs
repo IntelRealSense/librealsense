@@ -6,18 +6,24 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
 
+    // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
     public class Sensor : Base.PooledObject, IOptions
     {
         internal override void Initialize()
         {
-            Info = new CameraInfos(Handle);
-            Options = new SensorOptions(Handle);
+            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
+            Options = new OptionsList(Handle);
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private frame_callback m_callback;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private FrameQueue m_queue;
 
         internal static T Create<T>(IntPtr ptr)
@@ -29,11 +35,18 @@ namespace Intel.RealSense
         internal Sensor(IntPtr sensor)
             : base(sensor, NativeMethods.rs2_delete_sensor)
         {
-            Info = new CameraInfos(Handle);
-            Options = new SensorOptions(Handle);
+            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
+            Options = new OptionsList(Handle);
         }
 
-        public class CameraInfos
+        protected override void Dispose(bool disposing)
+        {
+            //m_queue.Dispose();
+            (Options as OptionsList).Dispose();
+            base.Dispose(disposing);
+        }
+
+        public class CameraInfos : IEnumerable<KeyValuePair<CameraInfo, string>>
         {
             private readonly IntPtr m_sensor;
 
@@ -58,203 +71,19 @@ namespace Intel.RealSense
                     return null;
                 }
             }
-        }
 
-        public CameraInfos Info { get; private set; }
+            private static readonly CameraInfo[] CameraInfoValues = Enum.GetValues(typeof(CameraInfo)) as CameraInfo[];
 
-        internal class CameraOption : IOption
-        {
-            private readonly IntPtr m_sensor;
-            private readonly Option option;
-
-            private readonly float min;
-            private readonly float max;
-            private readonly float step;
-            private readonly float @default;
-            private string description;
-
-            public CameraOption(IntPtr sensor, Option option)
-            {
-                m_sensor = sensor;
-                this.option = option;
-
-                if (Supported)
-                {
-                    object error;
-                    NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
-                }
-            }
-
-            /// <summary>Gets a value indicating whether a particular option is supported by a subdevice</summary>
-            /// <value>true if option is supported</value>
-            public bool Supported
-            {
-                get
-                {
-                    try
-                    {
-                        object error;
-                        return NativeMethods.rs2_supports_option(m_sensor, option, out error) > 0;
-                    }
-                    catch (Exception)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            public Option Key
-            {
-                get
-                {
-                    return option;
-                }
-            }
-
-            /// <summary>Gets the option description</summary>
-            /// <value>human-readable option description</value>
-            public string Description
-            {
-                get
-                {
-                    if (description == null)
-                    {
-                        object error;
-                        var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
-                        description = Marshal.PtrToStringAnsi(str);
-                    }
-
-                    return description;
-                }
-            }
-
-            /// <summary>Gets or sets option value</summary>
-            /// <value>value of the option</value>
-            public float Value
-            {
-                get
-                {
-                    object error;
-                    return NativeMethods.rs2_get_option(m_sensor, option, out error);
-                }
-
-                set
-                {
-                    object error;
-                    NativeMethods.rs2_set_option(m_sensor, option, value, out error);
-                }
-            }
-
-            /// <summary>Gets the option value description (in case specific option value hold special meaning)</summary>
-            /// <value>human-readable description of a specific value of an option or null if no special meaning</value>
-            public string ValueDescription
-            {
-                get
-                {
-                    return GetValueDescription(Value);
-                }
-            }
-
-            /// <summary>get option value description (in case specific option value hold special meaning)</summary>
-            /// <param name="value">value of the option</param>
-            /// <returns>human-readable description of a specific value of an option or null if no special meaning</returns>
-            public string GetValueDescription(float value)
+            /// <inheritdoc/>
+            public IEnumerator<KeyValuePair<CameraInfo, string>> GetEnumerator()
             {
                 object error;
-                var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                return Marshal.PtrToStringAnsi(str);
-            }
-
-            public float Min
-            {
-                get
+                foreach (var key in CameraInfoValues)
                 {
-                    return min;
-                }
-            }
-
-            public float Max
-            {
-                get
-                {
-                    return max;
-                }
-            }
-
-            public float Step
-            {
-                get
-                {
-                    return step;
-                }
-            }
-
-            public float Default
-            {
-                get
-                {
-                    return @default;
-                }
-            }
-
-            /// <summary>Gets a value indicating whether an option is read-only</summary>
-            /// <value>true if option is read-only</value>
-            public bool ReadOnly
-            {
-                get
-                {
-                    object error;
-                    return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
-                }
-            }
-        }
-
-        public class SensorOptions : IOptionsContainer
-        {
-            private readonly IntPtr m_sensor;
-
-            /// <summary>read option value from the sensor</summary>
-            /// <param name="option">option id to be queried</param>
-            /// <value>value of the option</value>
-            public IOption this[Option option]
-            {
-                get
-                {
-                    return new CameraOption(m_sensor, option);
-                }
-            }
-
-            /// <summary>
-            /// Get option value description (in case specific option value hold special meaning)
-            /// </summary>
-            /// <param name="option">option id to be checked</param>
-            /// <param name="value">value of the option</param>
-            /// <returns>human-readable description of a specific value of an option or null if no special meaning</returns>
-            public string OptionValueDescription(Option option, float value)
-            {
-                object error;
-                var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                if (desc != IntPtr.Zero)
-                {
-                    return Marshal.PtrToStringAnsi(desc);
-                }
-
-                return null;
-            }
-
-            private static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
-
-            /// <summary>
-            /// Returns an enumerator that iterates over supported options
-            /// </summary>
-            /// <returns>an enumerator that iterates over supported options</returns>
-            public IEnumerator<IOption> GetEnumerator()
-            {
-                foreach (var v in OptionValues)
-                {
-                    if (this[v].Supported)
+                    if (NativeMethods.rs2_supports_sensor_info(m_sensor, key, out error) > 0)
                     {
-                        yield return this[v];
+                        var value = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_sensor_info(m_sensor, key, out error));
+                        yield return new KeyValuePair<CameraInfo, string>(key, value);
                     }
                 }
             }
@@ -264,12 +93,10 @@ namespace Intel.RealSense
             {
                 return GetEnumerator();
             }
-
-            internal SensorOptions(IntPtr sensor)
-            {
-                m_sensor = sensor;
-            }
         }
+
+        public InfoCollection Info { get; private set; }
+
 
         /// <inheritdoc/>
         public IOptionsContainer Options { get; private set; }
@@ -303,6 +130,7 @@ namespace Intel.RealSense
         /// start streaming from specified configured sensor of specific stream to frame queue
         /// </summary>
         /// <param name="queue">frame-queue to store new frames into</param>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public void Start(FrameQueue queue)
         {
             object error;
@@ -313,6 +141,7 @@ namespace Intel.RealSense
 
         /// <summary>start streaming from specified configured sensor</summary>
         /// <param name="cb">delegate to register as per-frame callback</param>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public void Start(FrameCallback cb)
         {
             object error;
@@ -348,6 +177,12 @@ namespace Intel.RealSense
             NativeMethods.rs2_close(Handle, out error);
         }
 
+        public bool Is(Extension ext)
+        {
+            object error;
+            return NativeMethods.rs2_is_sensor_extendable_to(Handle, ext, out error) != 0;
+        }
+
         /// <summary>
         /// Gets the mapping between the units of the depth image and meters
         /// </summary>
@@ -369,7 +204,7 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                if (NativeMethods.rs2_is_sensor_extendable_to(Handle, Extension.Roi, out error) == 0)
+                if (NativeMethods.rs2_is_sensor_extendable_to(Handle, Extension.Roi, out error) != 0)
                 {
                     return new AutoExposureROI { m_instance = Handle };
                 }
@@ -381,12 +216,36 @@ namespace Intel.RealSense
 
         /// <summary>Gets the list of supported stream profiles</summary>
         /// <value>list of stream profiles that given subdevice can provide</value>
-        public StreamProfileList StreamProfiles
+        public ReadOnlyCollection<StreamProfile> StreamProfiles
         {
             get
             {
                 object error;
-                return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(Handle, out error));
+                using (var pl = new StreamProfileList(NativeMethods.rs2_get_stream_profiles(Handle, out error)))
+                {
+                    var profiles = new StreamProfile[pl.Count];
+                    pl.CopyTo(profiles, 0);
+                    return Array.AsReadOnly(profiles);
+                }
+            }
+        }
+
+        /// <summary>Gets the list of recommended processing blocks for a specific sensor.</summary>
+        /// <remarks>
+        /// Order and configuration of the blocks are decided by the sensor
+        /// </remarks>
+        /// <value>list of supported sensor recommended processing blocks</value>
+        public ReadOnlyCollection<ProcessingBlock> ProcessingBlocks
+        {
+            get
+            {
+                object error;
+                using (var pl = new ProcessingBlockList(NativeMethods.rs2_get_recommended_processing_blocks(Handle, out error)))
+                {
+                    var blocks = new ProcessingBlock[pl.Count];
+                    pl.CopyTo(blocks, 0);
+                    return Array.AsReadOnly(blocks);
+                }
             }
         }
     }

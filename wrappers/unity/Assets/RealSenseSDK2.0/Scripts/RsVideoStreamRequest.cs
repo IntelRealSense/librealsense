@@ -39,7 +39,7 @@ public struct RsVideoStreamRequest : IEquatable<RsVideoStreamRequest>
     {
         var isVideo = p.Is(Extension.VideoProfile);
         using (p)
-        using (var v = p.As<VideoStreamProfile>())
+        using (var v = isVideo ? p.As<VideoStreamProfile>() : null)
             return new RsVideoStreamRequest(
                 p.Stream,
                 p.Format,

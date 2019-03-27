@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_decimation_filter_block(out error);
         }
 
+        internal DecimationFilter(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public DecimationFilter()
             : base(Create())
         {

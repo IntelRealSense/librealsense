@@ -126,7 +126,7 @@ public class RsStreamTextureRenderer : MonoBehaviour
         {
             if (frame.IsComposite)
             {
-                using (var fs = FrameSet.FromFrame(frame))
+                using (var fs = frame.As<FrameSet>())
                 using (var f = fs.FirstOrDefault(matcher))
                 {
                     if (f != null)

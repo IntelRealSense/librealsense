@@ -6,19 +6,21 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.InteropServices;
 
     /// <summary>
     /// List of adjacent devices, sharing the same physical parent composite device
     /// </summary>
-    public class SensorList : Base.Object, IEnumerable<Sensor>
+    internal sealed class SensorList : Base.Object, IEnumerable<Sensor>, ICollection
     {
         internal SensorList(IntPtr ptr)
             : base(ptr, NativeMethods.rs2_delete_sensor_list)
         {
         }
 
+        /// <inheritdoc/>
         public IEnumerator<Sensor> GetEnumerator()
         {
             object error;
@@ -31,9 +33,24 @@ namespace Intel.RealSense
             }
         }
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        /// <inheritdoc/>
+        public void CopyTo(Array array, int index)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException("array");
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                array.SetValue(this[i], i + index);
+            }
         }
 
         /// <summary>
@@ -44,10 +61,13 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                int deviceCount = NativeMethods.rs2_get_sensors_count(Handle, out error);
-                return deviceCount;
+                return NativeMethods.rs2_get_sensors_count(Handle, out error);
             }
         }
+
+        public object SyncRoot => this;
+
+        public bool IsSynchronized => false;
 
         /// <summary>
         /// Creates sensor by index

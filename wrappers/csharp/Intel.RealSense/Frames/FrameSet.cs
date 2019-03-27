@@ -6,12 +6,17 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
 
     public class FrameSet : Frame, ICompositeDisposable, IEnumerable<Frame>
     {
         private readonly List<IDisposable> disposables = new List<IDisposable>();
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly Enumerator enumerator;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private int count;
 
         /// <summary>
@@ -54,6 +59,9 @@ namespace Intel.RealSense
             enumerator = new Enumerator(this);
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public new bool IsComposite => true;
+
         /// <summary>
         /// Cast this to a <see cref="Frame"/>
         /// </summary>
@@ -83,7 +91,7 @@ namespace Intel.RealSense
         public T FirstOrDefault<T>(Stream stream, Format format = Format.Any)
             where T : Frame
         {
-            return FirstOrDefault(stream, format).Cast<T>();
+            return FirstOrDefault(stream, format)?.Cast<T>();
         }
 
         public Frame FirstOrDefault(Stream stream, Format format = Format.Any)
@@ -142,57 +150,39 @@ namespace Intel.RealSense
             return f;
         }
 
-        public Frame First(Stream stream, Format format = Format.Any)
-        {
-            return First<Frame>(stream, format);
-        }
+        /// <summary>
+        /// Retrieve back the first frame of specific stream type, if no frame found, error will be thrown
+        /// </summary>
+        /// <param name="stream">stream type of frame to be retrieved</param>
+        /// <param name="format">format type of frame to be retrieved, defaults to <see cref="Format.Any"/></param>
+        /// <returns>first found frame with <paramref name="stream"/> type and <paramref name="format"/> type</returns>
+        /// <exception cref="ArgumentException">Thrown when requested type not found</exception>
+        /// <seealso cref="First{T}(Stream, Format)"/>
+        public Frame First(Stream stream, Format format = Format.Any) => First<Frame>(stream, format);
 
-        public DepthFrame DepthFrame
-        {
-            get
-            {
-                return FirstOrDefault<DepthFrame>(Stream.Depth, Format.Z16);
-            }
-        }
+        /// <summary>Gets the first depth frame</summary>
+        public DepthFrame DepthFrame => FirstOrDefault<DepthFrame>(Stream.Depth, Format.Z16);
 
-        public VideoFrame ColorFrame
-        {
-            get
-            {
-                return FirstOrDefault<VideoFrame>(Stream.Color);
-            }
-        }
+        /// <summary>Gets the first color frame</summary>
+        public VideoFrame ColorFrame => FirstOrDefault<VideoFrame>(Stream.Color);
 
-        public VideoFrame InfraredFrame
-        {
-            get
-            {
-                return FirstOrDefault<VideoFrame>(Stream.Infrared);
-            }
-        }
+        /// <summary>Gets the first infrared frame</summary>
+        public VideoFrame InfraredFrame => FirstOrDefault<VideoFrame>(Stream.Infrared);
 
-        public VideoFrame FishEyeFrame
-        {
-            get
-            {
-                return FirstOrDefault(Stream.Fisheye)?.As<VideoFrame>();
-            }
-        }
+        /// <summary>Gets the first fisheye frame</summary>
+        public VideoFrame FishEyeFrame => FirstOrDefault<VideoFrame>(Stream.Fisheye);
 
-        public PoseFrame PoseFrame
-        {
-            get
-            {
-                return FirstOrDefault(Stream.Pose)?.As<PoseFrame>();
-            }
-        }
+        /// <summary>Gets the first pose frame</summary>
+        public PoseFrame PoseFrame => FirstOrDefault<PoseFrame>(Stream.Pose);
 
+        /// <inheritdoc/>
         public IEnumerator<Frame> GetEnumerator()
         {
             enumerator.Reset();
             return enumerator;
         }
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             enumerator.Reset();
@@ -201,13 +191,7 @@ namespace Intel.RealSense
 
         /// <summary>Gets the number of frames embedded within a composite frame</summary>
         /// <value>Number of embedded frames</value>
-        public int Count
-        {
-            get
-            {
-                return count;
-            }
-        }
+        public int Count => count;
 
         /// <summary>Extract frame from within a composite frame</summary>
         /// <param name="index">Index of the frame to extract within the composite frame</param>
@@ -268,6 +252,7 @@ namespace Intel.RealSense
             base.Dispose(disposing);
         }
 
+        /// <inheritdoc/>
         public void AddDisposable(IDisposable disposable)
         {
             if (disposable == this)

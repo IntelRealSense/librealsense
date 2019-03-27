@@ -70,8 +70,7 @@ public class RsDevice : RsFrameProvider
         using (var cfg = DeviceConfiguration.ToPipelineConfig())
             ActiveProfile = m_pipeline.Start(cfg);
 
-        using (var activeStreams = ActiveProfile.Streams)
-            DeviceConfiguration.Profiles = activeStreams.Select(RsVideoStreamRequest.FromProfile).ToArray();
+        DeviceConfiguration.Profiles = ActiveProfile.Streams.Select(RsVideoStreamRequest.FromProfile).ToArray();
 
         if (processMode == ProcessMode.Multithread)
         {
@@ -106,6 +105,12 @@ public class RsDevice : RsFrameProvider
         if (Streaming && OnStop != null)
             OnStop();
 
+        if (ActiveProfile != null)
+        {
+            ActiveProfile.Dispose();
+            ActiveProfile = null;
+        }
+
         if (m_pipeline != null)
         {
             // if (Streaming)
@@ -115,12 +120,6 @@ public class RsDevice : RsFrameProvider
         }
 
         Streaming = false;
-
-        if (ActiveProfile != null)
-        {
-            ActiveProfile.Dispose();
-            ActiveProfile = null;
-        }
     }
 
     void OnDestroy()
@@ -128,11 +127,17 @@ public class RsDevice : RsFrameProvider
         // OnStart = null;
         OnStop = null;
 
-        if (m_pipeline != null)
-            m_pipeline.Dispose();
-        m_pipeline = null;
+        if (ActiveProfile != null)
+        {
+            ActiveProfile.Dispose();
+            ActiveProfile = null;
+        }
 
-        // Instance = null;
+        if (m_pipeline != null)
+        {
+            m_pipeline.Dispose();
+            m_pipeline = null;
+        }
     }
 
     private void RaiseSampleEvent(Frame frame)

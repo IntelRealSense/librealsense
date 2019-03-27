@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_colorizer(out error);
         }
 
+        internal Colorizer(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public Colorizer()
             : base(Create())
         {

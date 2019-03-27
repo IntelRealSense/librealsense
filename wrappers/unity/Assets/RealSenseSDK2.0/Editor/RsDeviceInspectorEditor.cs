@@ -75,7 +75,7 @@ public class RsDeviceInspectorEditor : Editor
         DrawHorizontal("Device S/N", devSerial);
         EditorGUILayout.Space();
 
-        if (dev.Info[CameraInfo.AdvancedMode] != null)
+        if (dev.Info.Supports(CameraInfo.AdvancedMode))
         {
             var adv = dev.As<AdvancedDevice>();
             if (adv.AdvancedModeEnabled)

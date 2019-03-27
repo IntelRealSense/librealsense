@@ -16,6 +16,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_hole_filling_filter_block(out error);
         }
 
+        internal HoleFillingFilter(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public HoleFillingFilter()
             : base(Create())
         {

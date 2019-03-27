@@ -23,6 +23,7 @@ include(StreamProfiles/CMakeLists.txt)
 include(Sensors/CMakeLists.txt)
 include(Types/CMakeLists.txt)
 include(Helpers/CMakeLists.txt)
+include(Options/CMakeLists.txt)
 
 csharp_set_designer_cs_properties(
     .nuget/Intel.RealSense.targets

@@ -6,6 +6,7 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -15,7 +16,7 @@ namespace Intel.RealSense
     {
         internal override void Initialize()
         {
-            Info = new CameraInfos(this);
+            Info = new InfoCollection(NativeMethods.rs2_supports_device_info, NativeMethods.rs2_get_device_info, Handle);
         }
 
         internal Device(IntPtr ptr)
@@ -40,87 +41,36 @@ namespace Intel.RealSense
             where T : Device
         {
             var dev = ObjectPool.Get<T>(ptr);
-            dev.m_instance.Reset(ptr, deleter);
+            dev.Reset(ptr, deleter);
             return dev;
-        }
-
-        public class CameraInfos : IEnumerable<KeyValuePair<CameraInfo, string>>
-        {
-            private readonly Device device;
-
-            internal CameraInfos(Device device)
-            {
-                this.device = device;
-            }
-
-            /// <summary>
-            /// Retrieve camera specific information, like versions of various internal components.
-            /// </summary>
-            /// <param name="info">Camera info type to retrieve</param>
-            /// <returns>The requested camera info string, in a format specific to the device model</returns>
-            public string this[CameraInfo info]
-            {
-                get
-                {
-                    object err;
-                    if (NativeMethods.rs2_supports_device_info(device.Handle, info, out err) > 0)
-                    {
-                        return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_device_info(device.Handle, info, out err));
-                    }
-
-                    return null;
-                }
-            }
-
-            private static readonly CameraInfo[] CameraInfoValues = Enum.GetValues(typeof(CameraInfo)) as CameraInfo[];
-
-            /// <inheritdoc/>
-            public IEnumerator<KeyValuePair<CameraInfo, string>> GetEnumerator()
-            {
-                object error;
-                foreach (var key in CameraInfoValues) {
-                    if (NativeMethods.rs2_supports_device_info(device.Handle, key, out error) > 0)
-                    {
-                        var value = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_device_info(device.Handle, key, out error));
-                        yield return new KeyValuePair<CameraInfo, string>(key, value);
-                    }
-                }
-            }
-
-            /// <inheritdoc/>
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
         }
 
         /// <summary>
         /// Gets camera specific information, like versions of various internal components
         /// </summary>
-        public CameraInfos Info { get; private set; }
+        public InfoCollection Info { get; private set; }
 
         /// <summary>
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <returns>The list of sensors</returns>
-        public SensorList QuerySensors()
+        public ReadOnlyCollection<Sensor> QuerySensors()
         {
             object error;
             var ptr = NativeMethods.rs2_query_sensors(Handle, out error);
-            return new SensorList(ptr);
+            using (var sl = new SensorList(ptr))
+            {
+                var a = new Sensor[sl.Count];
+                sl.CopyTo(a, 0);
+                return Array.AsReadOnly(a);
+            }
         }
 
         /// <summary>
         /// Gets a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <value>The list of sensors</value>
-        public SensorList Sensors
-        {
-            get
-            {
-                return QuerySensors();
-            }
-        }
+        public ReadOnlyCollection<Sensor> Sensors => QuerySensors();
 
         /// <summary>
         /// Send hardware reset request to the device. The actual reset is asynchronous.

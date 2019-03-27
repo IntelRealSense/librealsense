@@ -35,7 +35,7 @@ namespace Intel.RealSense
         /// <summary>
         /// Gets or sets a value indicating whether Advanced-Mode is enabled
         /// </summary>
-        /// <value>true when Advanced-Mode is enabled</value>
+        /// <value><see langword="true"/> when Advanced-Mode is enabled</value>
         public bool AdvancedModeEnabled
         {
             get

@@ -182,12 +182,12 @@ PipelineProfile selection = pipe.Start();
 var selected_device = selection.Device;
 var depth_sensor = selected_device.Sensors[0];
 
-if (depth_sensor.Options[Option.EmitterEnabled].Supported)
+if (depth_sensor.Options.Supports(Option.EmitterEnabled))
 {
     depth_sensor.Options[Option.EmitterEnabled].Value = 1f; // Enable emitter
     depth_sensor.Options[Option.EmitterEnabled].Value = 0f; // Disable emitter
 }
-if (depth_sensor.Options[Option.LaserPower].Supported)
+if (depth_sensor.Options.Supports(Option.LaserPower))
 {
     var laserPower = depth_sensor.Options[Option.LaserPower];
     laserPower.Value = laserPower.Max; // Set max power

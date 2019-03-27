@@ -4,30 +4,27 @@
 namespace Intel.RealSense
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.InteropServices;
 
-    public class ThresholdFilter : ProcessingBlock
+    public class ZeroOrderInvalidationFilter : ProcessingBlock
     {
         private static IntPtr Create()
         {
             object error;
-            return NativeMethods.rs2_create_threshold(out error);
+            return NativeMethods.rs2_create_zero_order_invalidation_block(out error);
         }
 
-        internal ThresholdFilter(IntPtr ptr)
+        internal ZeroOrderInvalidationFilter(IntPtr ptr)
             : base(ptr)
         {
         }
 
-        public ThresholdFilter()
+        public ZeroOrderInvalidationFilter()
             : base(Create())
         {
         }
 
         [Obsolete("This method is obsolete. Use Process method instead")]
-        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
+        public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser)
         {
             return Process(original).DisposeWith(releaser) as VideoFrame;
         }

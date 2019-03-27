@@ -13,6 +13,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _processingBlocks:
   - {fileID: 114476060953143426}
+  - {fileID: 114613456056826128}
   - {fileID: 114544001719900210}
   - {fileID: 114401103692956310}
   - {fileID: 114093195037715096}
@@ -109,6 +110,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enabled: 1
   Mode: 1
+--- !u!114 &114613456056826128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dffddaeb99d79644b99b1d8d18bad86, type: 3}
+  m_Name: RsThresholdFilter
+  m_EditorClassIdentifier: 
+  enabled: 0
+  MinDistance: 0
+  MaxDistance: 4
 --- !u!114 &114894276943703578
 MonoBehaviour:
   m_ObjectHideFlags: 0

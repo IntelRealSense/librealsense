@@ -4,6 +4,7 @@
 namespace Intel.RealSense.Base
 {
     using System;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
     using System.Security;
 
@@ -15,6 +16,7 @@ namespace Intel.RealSense.Base
     /// Native handle with deleter delegate to release unmanaged resources
     /// </summary>
     // TODO: CriticalFinalizerObject & CER
+    //[DebuggerDisplay("{deleter?.Method.Name,nq}", Name = nameof(Deleter))]
     internal sealed class DeleterHandle : IDisposable
     {
         private IntPtr handle;
@@ -64,8 +66,9 @@ namespace Intel.RealSense.Base
 
         internal void Reset(IntPtr ptr, Deleter deleter)
         {
+            this.handle = ptr;
             this.deleter = deleter;
-            Reset(ptr);
+            //GC.ReRegisterForFinalize(this);
         }
 
         ~DeleterHandle()

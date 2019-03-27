@@ -4,13 +4,13 @@
 namespace Intel.RealSense
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
+    using Base;
 
-    public interface IOptionsContainer : IEnumerable<IOption>
+    public interface IOptions
     {
-        IOption this[Option option] { get; }
-
-        string OptionValueDescription(Option option, float value);
+        IOptionsContainer Options { get; }
     }
 }

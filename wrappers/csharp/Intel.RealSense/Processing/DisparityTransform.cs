@@ -17,6 +17,11 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_disparity_transform_block(transform_direction, out error);
         }
 
+        internal DisparityTransform(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
         public DisparityTransform(bool transform_to_disparity = true)
             : base(Create(transform_to_disparity))
         {

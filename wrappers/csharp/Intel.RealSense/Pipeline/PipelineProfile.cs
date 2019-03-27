@@ -6,6 +6,7 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -38,13 +39,17 @@ namespace Intel.RealSense
         /// <summary>
         /// Gets the selected streams profiles, which are enabled in this profile.
         /// </summary>
-        public StreamProfileList Streams
+        public ReadOnlyCollection<StreamProfile> Streams
         {
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error);
-                return new StreamProfileList(ptr);
+                using (var pl = new StreamProfileList(NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error)))
+                {
+                    var profiles = new StreamProfile[pl.Count];
+                    pl.CopyTo(profiles, 0);
+                    return Array.AsReadOnly(profiles);
+                }
             }
         }
 
@@ -64,9 +69,9 @@ namespace Intel.RealSense
         public T GetStream<T>(Stream s, int index = -1)
             where T : StreamProfile
         {
-            using (var streams = Streams)
+            object error;
+            using (var streams = new StreamProfileList(NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error)))
             {
-                object error;
                 int count = streams.Count;
                 for (int i = 0; i < count; i++)
                 {

@@ -6,6 +6,7 @@ namespace Intel.RealSense
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
 
     /// <summary>
@@ -20,12 +21,21 @@ namespace Intel.RealSense
     /// </remarks>
     public class Pipeline : Base.Object
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private frame_callback m_callback;
 
         internal static IntPtr Create(Context ctx)
         {
             object error;
             return NativeMethods.rs2_create_pipeline(ctx.Handle, out error);
+        }
+
+        internal static IntPtr Create()
+        {
+            using (var ctx = new Context())
+            {
+                return Create(ctx);
+            }
         }
 
         /// <summary>
@@ -41,7 +51,7 @@ namespace Intel.RealSense
         /// Initializes a new instance of the <see cref="Pipeline"/> class.
         /// </summary>
         public Pipeline()
-            : base(Create(new Context()), NativeMethods.rs2_delete_pipeline)
+            : base(Create(), NativeMethods.rs2_delete_pipeline)
         {
         }
 
@@ -83,6 +93,7 @@ namespace Intel.RealSense
         /// </remarks>
         /// <param name="cb">Delegate to register as per-frame callback</param>
         /// <returns>The actual pipeline device and streams profile, which was successfully configured to the streaming device.</returns>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public PipelineProfile Start(FrameCallback cb)
         {
             object error;
@@ -99,6 +110,7 @@ namespace Intel.RealSense
             return prof;
         }
 
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public PipelineProfile Start(Config cfg, FrameCallback cb)
         {
             object error;

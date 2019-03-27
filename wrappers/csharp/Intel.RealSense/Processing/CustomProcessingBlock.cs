@@ -16,10 +16,10 @@ namespace Intel.RealSense
     {
         internal Base.DeleterHandle m_instance;
 
+        private static readonly frame_processor_callback fpc = new frame_processor_callback(ProcessingBlockCallback);
+        private static readonly frame_callback frameCallback = new frame_callback(ProcessingBlockFrameCallback);
         private readonly FrameQueue queue = new FrameQueue(1);
         private readonly GCHandle frameProcessorCallbackHandle;
-        private readonly frame_processor_callback fpc = new frame_processor_callback(ProcessingBlockCallback);
-
         private GCHandle frameCallbackHandle;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Intel.RealSense
             object error;
             var pb = NativeMethods.rs2_create_processing_block_fptr(fpc, cbPtr, out error);
             m_instance = new Base.DeleterHandle(pb, NativeMethods.rs2_delete_processing_block);
-            Options = new Sensor.SensorOptions(m_instance.Handle);
+            Options = new OptionsList(m_instance.Handle);
         }
 
         ~CustomProcessingBlock()
@@ -105,6 +105,7 @@ namespace Intel.RealSense
         /// Start the processing block, delivering frames to a callback
         /// </summary>
         /// <param name="cb">callback to receive frames</param>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public void Start(FrameCallback cb)
         {
             frameCallbackHandle = GCHandle.Alloc(cb, GCHandleType.Normal);
@@ -128,8 +129,6 @@ namespace Intel.RealSense
             object error;
             return NativeMethods.rs2_processing_block_register_simple_option(m_instance.Handle, option_id, min, max, step, def, out error) > 0;
         }
-
-        private readonly frame_callback frameCallback = new frame_callback(ProcessingBlockFrameCallback);
 
         private static void ProcessingBlockFrameCallback(IntPtr f, IntPtr u)
         {
@@ -163,6 +162,7 @@ namespace Intel.RealSense
             m_instance.Dispose();
         }
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             Dispose(true);

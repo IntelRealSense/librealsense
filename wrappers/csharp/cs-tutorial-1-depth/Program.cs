@@ -36,9 +36,10 @@ namespace Intel.RealSense
                 char[] buffer = new char[(640 / 10 + 1) * (480 / 20)];
                 int[] coverage = new int[64];
 
-                depthSensor.Start<DepthFrame>(f =>
+                depthSensor.Start(f =>
                 {
-                    f.CopyTo(depth);
+                    using (var vf = f.As<VideoFrame>())
+                        vf.CopyTo(depth);
                     
                     int b = 0;
                     for (int y = 0; y < 480; ++y)
