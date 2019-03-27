@@ -83,11 +83,10 @@ namespace librealsense
         {
         case L500_PID:
             return std::make_shared<rs500_device>(ctx, group, register_device_notifications);
-
         case L515_PID:
             return std::make_shared<rs515_device>(ctx, group, register_device_notifications);
         default:
-            throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
+            throw std::runtime_error(to_string() << "Unsupported L500 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
         }
     }
