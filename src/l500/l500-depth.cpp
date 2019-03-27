@@ -78,7 +78,8 @@ namespace librealsense
     {
         _calib_table_raw = [this]() { return get_raw_calibration_table(); };
         
-        static const auto device_name = "Intel RealSense L500";
+        auto pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
 
         using namespace ivcam2;
 

@@ -7,9 +7,6 @@
 
 namespace librealsense
 {
-    const uint16_t L500_PID = 0x0b0d;
-    const uint16_t L515_PID = 0x0b3d;
-
     class l500_info : public device_info
     {
     public:

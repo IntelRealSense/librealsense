@@ -25,7 +25,7 @@ namespace librealsense
     private:
         friend class l500_color_sensor;
 
-        const uint8_t _color_device_idx = -1;
+        uint8_t _color_device_idx = -1;
 
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;

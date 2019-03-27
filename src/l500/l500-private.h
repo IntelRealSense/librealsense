@@ -9,6 +9,9 @@
 
 namespace librealsense
 {
+    const uint16_t L500_PID = 0x0b0d;
+    const uint16_t L515_PID = 0x0b3d;
+
     namespace ivcam2
     {
         // L500 depth XU identifiers
@@ -34,6 +37,11 @@ namespace librealsense
             fw_version_offset = 12,
             module_serial_offset = 56,
             module_serial_size = 8
+        };
+
+        static const std::map<std::uint16_t, std::string> rs500_sku_names = {
+            { L500_PID,        "Intel RealSense L500"},
+            { L515_PID,        "Intel RealSense L515"},
         };
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

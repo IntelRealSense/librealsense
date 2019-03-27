@@ -45,14 +45,14 @@ namespace librealsense
     }
 
     l500_color::l500_color(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
-        : _color_device_idx(add_sensor(create_color_device(ctx, group.uvc_devices))),
-          _color_stream(new stream(RS2_STREAM_COLOR))
+        :device(ctx, group),
+         _color_stream(new stream(RS2_STREAM_COLOR))
     {
         auto color_devs_info = filter_by_mi(group.uvc_devices, 4);
         if (color_devs_info.size() != 1)
             throw invalid_value_exception(to_string() << "L500 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
-        auto color_ep = create_color_device(ctx, color_devs_info);
+        _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
     }
 };

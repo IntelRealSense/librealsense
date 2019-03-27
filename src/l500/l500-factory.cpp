@@ -30,7 +30,8 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             l500_depth(ctx, group),
-            l500_color(ctx, group){}
+            l500_color(ctx, group)
+        {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

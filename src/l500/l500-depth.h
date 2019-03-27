@@ -154,6 +154,7 @@ namespace librealsense
             intrinsics.fy = std::fabs(intr[1]);
             intrinsics.ppx = std::fabs(intr[2]);
             intrinsics.ppy = std::fabs(intr[3]);
+            intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
 
