@@ -1,5 +1,6 @@
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_CXX_STANDARD 11)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
