@@ -4,7 +4,7 @@
 #include "ros_reader.h"
 #include "ds5/ds5-device.h"
 #include "ivcam/sr300.h"
-#include "l500/l500.h"
+#include "l500/l500-factory.h"
 #include "proc/disparity-transform.h"
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h" 
@@ -897,7 +897,7 @@ namespace librealsense
                 auto zo_point_x = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZERO_ORDER_POINT_X), [](option*) {});
                 auto zo_point_y = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZERO_ORDER_POINT_Y), [](option*) {});
 
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(l500_device::l500_depth_sensor::get_l500_recommended_proccesing_blocks(zo_point_x, zo_point_y));
+                return std::make_shared<recommended_proccesing_blocks_snapshot>(l500_depth_sensor::get_l500_recommended_proccesing_blocks(zo_point_x, zo_point_y));
             }
             throw io_exception("Unrecognized sensor name");
         }
