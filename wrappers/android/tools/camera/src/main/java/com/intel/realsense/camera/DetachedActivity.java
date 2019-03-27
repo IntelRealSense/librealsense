@@ -95,6 +95,8 @@ public class DetachedActivity extends AppCompatActivity {
         String[] sFw = fw.split("\\.");
         String[] sRecFw = recFw.split("\\.");
         for(int i = 0; i < sRecFw.length; i++){
+            if(Integer.parseInt(sFw[i]) > Integer.parseInt(sRecFw[i]))
+                break;
             if(Integer.parseInt(sFw[i]) < Integer.parseInt(sRecFw[i])){
                 runOnUiThread(new Runnable() {
                     @Override
