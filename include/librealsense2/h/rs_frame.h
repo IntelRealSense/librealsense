@@ -25,7 +25,7 @@ typedef enum rs2_timestamp_domain
 } rs2_timestamp_domain;
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
 
-/** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
+/** \brief Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame. */
 typedef enum rs2_frame_metadata_value
 {
     RS2_FRAME_METADATA_FRAME_COUNTER                        , /**< A sequential index managed per-stream. Integer value*/

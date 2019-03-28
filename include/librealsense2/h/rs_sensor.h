@@ -34,7 +34,7 @@ typedef enum rs2_camera_info {
 } rs2_camera_info;
 const char* rs2_camera_info_to_string(rs2_camera_info info);
 
-/** \brief Streams are different types of data provided by RealSense devices */
+/** \brief Streams are different types of data provided by RealSense devices. */
 typedef enum rs2_stream
 {
     RS2_STREAM_ANY,
@@ -51,7 +51,7 @@ typedef enum rs2_stream
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);
 
-/** \brief Format identifies how binary data is encoded within a frame */
+/** \brief A stream's format identifies how binary data is encoded within a frame. */
 typedef enum rs2_format
 {
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */

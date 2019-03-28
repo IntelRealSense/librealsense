@@ -38,10 +38,11 @@ std::string make_pythonic_str(std::string str)
     }
     return str;
 }
-#define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT)                                                                    \
+#define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT, docstring)                                                         \
     static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
     /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
     py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                               \
+    py_##rs2_enum_type.doc() = docstring;                                                                                   \
     /* std::cout << std::endl << "## " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                              \
     for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                              \
     {                                                                                                                       \
@@ -143,17 +144,17 @@ PYBIND11_MODULE(NAME, m) {
     /**
     Binding of rs2_ enums
     */
-    BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT)
-        BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
-        BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT)
-        BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT)
-        BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT)
-        BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT)
-        BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT)
-        BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT)
-        BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT)
-        BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT)
-        BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT)
+    BIND_ENUM(m, rs2_camera_info, RS2_CAMERA_INFO_COUNT, "This information is mainly available for camera debug and troubleshooting and should not be used in applications.")
+    BIND_ENUM(m, rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT, "Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame.")
+    BIND_ENUM(m, rs2_stream, RS2_STREAM_COUNT, "Streams are different types of data provided by RealSense devices.")
+    BIND_ENUM(m, rs2_extension, RS2_EXTENSION_COUNT, "Specifies advanced interfaces (capabilities) objects may implement.")
+    BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT, "A stream's format identifies how binary data is encoded within a frame.")
+    BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT, "Category of the librealsense notification.")
+    BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT, "Severity of the librealsense logger.")
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set / queried at any time.")
+    BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
+    BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT, "Distortion model: defines how pixel coordinates should be mapped to sensor coordinates.")
+    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "")
 
         py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
     extrinsics.def(py::init<>())

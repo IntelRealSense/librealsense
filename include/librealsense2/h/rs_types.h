@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-/** \brief Category of the librealsense notifications */
+/** \brief Category of the librealsense notification. */
 typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT,               /**< Frames didn't arrived within 5 seconds */
     RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED,              /**< Received partial/incomplete frame */
@@ -25,7 +25,7 @@ typedef enum rs2_notification_category{
 } rs2_notification_category;
 const char* rs2_notification_category_to_string(rs2_notification_category category);
 
-/** \brief Exception types are the different categories of errors that RealSense API might return */
+/** \brief Exception types are the different categories of errors that RealSense API might return. */
 typedef enum rs2_exception_type
 {
     RS2_EXCEPTION_TYPE_UNKNOWN,
@@ -53,7 +53,7 @@ typedef enum rs2_distortion
 } rs2_distortion;
 const char* rs2_distortion_to_string(rs2_distortion distortion);
 
-/** \brief Video stream intrinsics */
+/** \brief Video stream intrinsics. */
 typedef struct rs2_intrinsics
 {
     int           width;     /**< Width of the image in pixels */
@@ -116,7 +116,7 @@ typedef struct rs2_pose
     unsigned int    mapper_confidence;    /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
 } rs2_pose;
 
-/** \brief Severity of the librealsense logger */
+/** \brief Severity of the librealsense logger. */
 typedef enum rs2_log_severity {
     RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
     RS2_LOG_SEVERITY_INFO , /**< Terse information about ordinary operations */
@@ -128,7 +128,7 @@ typedef enum rs2_log_severity {
 } rs2_log_severity;
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
-/** \brief Specifies advanced interfaces (capabilities) objects may implement */
+/** \brief Specifies advanced interfaces (capabilities) objects may implement. */
 typedef enum rs2_extension
 {
     RS2_EXTENSION_UNKNOWN,
