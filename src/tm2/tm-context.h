@@ -29,13 +29,12 @@ namespace librealsense
         friend class connect_disconnect_listener;
         std::shared_ptr<perc::TrackingManager::Listener> _listener;
         std::shared_ptr<perc::TrackingManager> _manager;
-        std::mutex _manager_mutex;
+        mutable std::mutex _manager_mutex;
         std::vector<perc::TrackingDevice*> _devices;
         context* _ctx;
 
         //_is_disposed is used in _t, keep this order:
         std::atomic_bool _is_disposed;
         std::thread _t;
-        
     };
 }

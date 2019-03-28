@@ -7,9 +7,6 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
-#if WITH_TRACKING
-    #include "tm2/tm-context.h"
-#endif
 
 #include <vector>
 #include <media/playback/playback_device.h>
@@ -106,6 +103,9 @@ namespace librealsense
 
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
+    //FW Decl
+    class tm2_context;
+
     class context : public std::enable_shared_from_this<context>
     {
     public:
@@ -115,19 +115,17 @@ namespace librealsense
             rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
             std::string min_api_version = "0.0.0");
 
-        void stop(){_device_watcher->stop();}
+        void stop(){ if (!_devices_changed_callbacks.size()) _device_watcher->stop();}
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
 
         uint64_t register_internal_device_callback(devices_changed_callback_ptr callback);
-        void set_devices_changed_callback(devices_changed_callback_ptr callback);
         void unregister_internal_device_callback(uint64_t cb_id);
+        void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
             const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
-
-
 
         std::shared_ptr<device_interface> add_device(const std::string& file);
         void remove_device(const std::string& file);
@@ -135,7 +133,7 @@ namespace librealsense
         void add_software_device(std::shared_ptr<device_info> software_device);
 
 #if WITH_TRACKING
-        void unload_tracking_module() {_tm2_context.reset();};
+        void unload_tracking_module();
 #endif
 
     private:
@@ -154,7 +152,6 @@ namespace librealsense
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
-
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;

@@ -11,6 +11,9 @@
 
 using namespace std::chrono;
 
+const size_t ENUMERATE_TIMEOUT_NSEC         = 500000000; // 500 msec periodic query
+const size_t ENUMERATE_TIMEOUT_STARTUP_NSEC = 10000000;  // 10 msec at startup
+
 typedef enum {
     USB_1_0 = 0x0100, // USB 1.0 (Low Speed 1.5 Mbps)
     USB_1_1 = 0x0110, // USB 1.1 (Full Speed 12 Mbps)
@@ -20,18 +23,19 @@ typedef enum {
     USB_3_1 = 0x0310, // USB 3.1 (Super Speed + 10.0 Gbps)
 } USB_SPECIFICIATION_VERSION;
 
-perc::UsbPlugListener::UsbPlugListener(Owner& owner) : mOwner(owner), mMessage(0)
+perc::UsbPlugListener::UsbPlugListener(Owner& owner) : mOwner(owner), mMessage(0),
+    mInitialized(usb_setup_init), mNextScanIntervalMs(ENUMERATE_TIMEOUT_STARTUP_NSEC), mDevicesToProcess(0)
 {
-    // schedule the listener itself for every 100 milliseconds
-    mOwner.dispatcher().scheduleTimer(this, ENUMERATE_TIMEOUT_NSEC, mMessage);
+    // schedule the listener to query USB devices according to the initialization phase: 10 msec during boot, then 500 msec
+    mOwner.dispatcher().scheduleTimer(this, mNextScanIntervalMs, mMessage);
 }
 
 void perc::UsbPlugListener::onTimeout(uintptr_t timerId, const Message & msg)
 {
     EnumerateDevices();
 
-    /* Reschedule the listener itself for every 100 milliseconds */
-    mOwner.dispatcher().scheduleTimer(this, ENUMERATE_TIMEOUT_NSEC, mMessage);
+    /* Reschedule the listener itself */
+    mOwner.dispatcher().scheduleTimer(this, mNextScanIntervalMs, mMessage);
 }
 
 bool perc::UsbPlugListener::identifyDevice(libusb_device_descriptor* desc)
@@ -44,9 +48,9 @@ bool perc::UsbPlugListener::identifyDevice(libusb_device_descriptor* desc)
     return false;
 }
 
-bool perc::UsbPlugListener::identifyUDFDevice(libusb_device_descriptor* desc)
+bool perc::UsbPlugListener::identifyDFUDevice(libusb_device_descriptor* desc)
 {
-    if ((desc->idVendor == TM2_UDF_DEV_VID) && (desc->idProduct == TM2_UDF_DEV_PID) && (desc->bcdUSB >= USB_2_0))
+    if ((desc->idVendor == TM2_DFU_DEV_VID) && (desc->idProduct == TM2_DFU_DEV_PID) && (desc->bcdUSB >= USB_2_0))
     {
         return true;
     }
@@ -79,6 +83,8 @@ void perc::UsbPlugListener::EnumerateDevices()
     libusb_device **list = NULL;
     int rc = 0;
     ssize_t count = 0;
+    size_t bootLoader_count = 0;
+    size_t TM_count = 0;
 
     count = libusb_get_device_list(NULL, &list);
 
@@ -99,7 +105,9 @@ void perc::UsbPlugListener::EnumerateDevices()
 
         LOGV("%d: VID 0x%04X, PID 0x%04X, bcdUSB 0x%x, iSerialNumber %d", idx, desc.idVendor, desc.idProduct, desc.bcdUSB, desc.iSerialNumber);
 
-        if ((identifyDevice(&desc) == true) || (identifyUDFDevice(&desc) == true))
+        auto tm2_dev = identifyDevice(&desc);
+        auto dfu_dev = identifyDFUDevice(&desc);
+        if (tm2_dev || dfu_dev)
         {
             std::lock_guard<std::mutex> lk(mDeviceToPortMapLock);
             DeviceToPortMap devicePort(device);
@@ -107,7 +115,10 @@ void perc::UsbPlugListener::EnumerateDevices()
 
             if (mDeviceToPortMap.find(devicePort) == mDeviceToPortMap.end())
             {
-                LOGD("Found USB device %s on port %d: VID 0x%04X, PID 0x%04X, %s",(desc.idVendor == TM2_UDF_DEV_VID)?"Movidius":(desc.idProduct == TM2_T265_PID)?"T265":"T260", devicePort.portChain[0], desc.idVendor, desc.idProduct, usbSpeed(desc.bcdUSB));
+                LOGD("Found USB device %s on port %d: VID 0x%04X, PID 0x%04X, %s",(desc.idVendor == TM2_DFU_DEV_VID)?"Movidius":(desc.idProduct == TM2_T265_PID)?"T265":"T260", devicePort.portChain[0], desc.idVendor, desc.idProduct, usbSpeed(desc.bcdUSB));
+                if (dfu_dev) bootLoader_count++;
+                if (tm2_dev) TM_count++;
+
                 st = mOwner.onAttach(device);
             }
 
@@ -144,4 +155,50 @@ void perc::UsbPlugListener::EnumerateDevices()
 
     // free the list
     libusb_free_device_list(list, 1);
+
+    switch (mInitialized.load())
+    {
+    case usb_setup_init:
+        mInitialized.store(usb_setup_progress);
+        // One-time overhead: schedule 1 sec for loading if DFU device(s) were present, otherwise 300 msec. 
+        mUSBMinTimeout = mUSBSetupTimeout = systemTime() + (bootLoader_count ? 1000000000 : 300000000);
+        mDevicesToProcess = bootLoader_count;
+        LOGT("usb_setup_init, %d dfu devices, %d TM2 devices, time=%lu , min timeout =%lu", bootLoader_count, TM_count, systemTime(), mUSBSetupTimeout);
+        break;
+    case usb_setup_progress:
+        // Devices discovered during the setup phase will add 1 sec
+        if (bootLoader_count)
+        {
+            mUSBSetupTimeout = systemTime() + 1000000000;
+            mDevicesToProcess += bootLoader_count;
+            LOGT("usb_setup_progress, %d new dfu devices, time=%lu, new timeout=%lu", bootLoader_count, systemTime(), mUSBSetupTimeout);
+        }
+
+        if (TM_count)
+        {
+            LOGT("New TM2 discovered were  %d time=%lu, timeout=%lu", TM_count, systemTime(), mUSBSetupTimeout);
+        }
+        mDevicesToProcess -= TM_count;
+
+        if (systemTime() >= mUSBSetupTimeout)
+        {
+            mInitialized.store(usb_setup_timeout);
+            LOGT("EnumerateDevices: ,timeout occurred time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
+        }
+        else
+        {
+            if ((systemTime() >= mUSBMinTimeout) && (!mDevicesToProcess))
+            {
+                mInitialized.store(usb_setup_success);
+                LOGT("EnumerateDevices: ,usb_setup_success time=%lu, timeout=%lu", systemTime(), mUSBSetupTimeout);
+            }
+            // else wait for process co complete
+        }
+        break;
+    default: // Init completed
+        break;
+    }
+
+    if (mInitialized.load() & (usb_setup_success | usb_setup_timeout))
+        mNextScanIntervalMs = ENUMERATE_TIMEOUT_NSEC;
 }

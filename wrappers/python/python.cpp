@@ -102,7 +102,11 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 PYBIND11_MODULE(NAME, m) {
-    m.doc() = "Library for accessing Intel RealSenseTM cameras";
+    m.doc() = R"pbdoc(
+        LibrealsenseTM Python Bindings
+        ==============================
+        Library for accessing Intel RealSenseTM cameras
+    )pbdoc";
 
     class BufData {
     public:
@@ -615,7 +619,9 @@ PYBIND11_MODULE(NAME, m) {
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::threshold_filter, rs2::filter> threshold(m, "threshold_filter");
-    threshold.def(py::init<>());
+    threshold.def(py::init<>())
+		.def(py::init<float, float>(), "min_dist"_a, "max_dist"_a);
+
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
@@ -821,7 +827,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
             "odometry_config_buf"_a, "Load Wheel odometer settings from host to device.")
         .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
-            "wo_sensor_id"_a, "frame_num"_a, "angular_velocity"_a,
+            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a,
             "Send wheel odometry data for each individual sensor (wheel)")
         .def("__nonzero__", &rs2::wheel_odometer::operator bool);
 
@@ -868,8 +874,8 @@ PYBIND11_MODULE(NAME, m) {
     config.def(py::init<>())
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a = -1)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "stream_type"_a, "format"_a, "framerate"_a = 0)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
         .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
         .def("enable_all_streams", &rs2::config::enable_all_streams)
         .def("enable_device", &rs2::config::enable_device, "serial"_a)

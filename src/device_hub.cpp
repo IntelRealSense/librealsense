@@ -16,15 +16,21 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> result;
         for (auto dev : devices)
         {
+            bool filtered = false;
             auto data = dev->get_device_data();
-            for (auto uvc : data.uvc_devices)
+            for (const auto& uvc : data.uvc_devices)
             {
                 if (uvc.vid == vid || vid == 0)
                 {
                     result.push_back(dev);
+                    filtered = true;
                     break;
                 }
             }
+
+            // TODO: enable T265 filter by VID:PID via tm2_device_info
+            if ((!filtered) && data.tm2_devices.size())
+                result.push_back(dev);
         }
         return result;
     }
@@ -32,7 +38,8 @@ namespace librealsense
     device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid,
                            bool register_device_notifications)
         : _ctx(ctx), _vid(vid),
-          _register_device_notifications(register_device_notifications)
+          _register_device_notifications(register_device_notifications),
+         _device_changes_callback_id(0)
     {
         _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
 
@@ -50,7 +57,15 @@ namespace librealsense
                         }
                     });
 
-        _ctx->set_devices_changed_callback({cb,  [](rs2_devices_changed_callback* p) { p->release(); }});
+        _device_changes_callback_id = _ctx->register_internal_device_callback({ cb, [](rs2_devices_changed_callback* p) { p->release(); } });
+    }
+
+    device_hub::~device_hub()
+    {
+        if (_device_changes_callback_id)
+            _ctx->unregister_internal_device_callback(_device_changes_callback_id);
+
+        _ctx->stop();
     }
 
     std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)

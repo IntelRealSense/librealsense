@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         mPipeline = new Pipeline();
 
 
-        if(mRsContext.getDeviceCount() > 0) {
+        if(mRsContext.queryDevices().getDeviceCount() > 0) {
             showConnectLabel(false);
             start(false);
         }

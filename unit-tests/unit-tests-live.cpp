@@ -5607,9 +5607,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
             auto pose_snr = dev.first<rs2::pose_sensor>();
             CAPTURE(pose_snr);
             REQUIRE(pose_snr);
-            auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
-            CAPTURE(wheel_odom_snr);
-            REQUIRE(wheel_odom_snr);
 
             WHEN("Sequence - Streaming.")
             {
@@ -5661,18 +5658,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     CAPTURE(vnv.size());
                     REQUIRE(vnv.size());
                     REQUIRE(vnv == results);
-
-                    //Odometry API
-                    std::ifstream calibrationFile("calibration_odometry.json");
-                    if (calibrationFile)
-                    {
-                        const std::string json_str((std::istreambuf_iterator<char>(calibrationFile)),
-                            std::istreambuf_iterator<char>());
-                        const std::vector<uint8_t> wo_calib(json_str.begin(), json_str.end());
-                        bool b;
-                        REQUIRE_NOTHROW(b = wheel_odom_snr.load_wheel_odometery_config(wo_calib));
-                        REQUIRE(b);
-                    }
                 }
             }
 
@@ -5687,9 +5672,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     auto pose_snr = d.first<rs2::pose_sensor>();
                     CAPTURE(pose_snr);
                     REQUIRE(pose_snr);
-                    auto wo_snr = d.first<rs2::wheel_odometer>();
-                    CAPTURE(wo_snr);
-                    REQUIRE(wo_snr);
 
                     rs2::frameset frames;
                     // The frames are required to get pose with sufficient confidence for static node marker
@@ -5718,13 +5700,96 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE(test_or.z == Approx(vnv_or.z));
                     REQUIRE(test_or.w == Approx(vnv_or.w));
 
-                    //Odometry send data API
-                    bool b;
-                    for (int i = 0; i < 20; i++)
+                    REQUIRE_NOTHROW(pipe.stop());
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Wheel_Odometry_API", "[live]")
+{
+    rs2::context ctx;
+    auto dev_list = ctx.query_devices();
+    log_to_console(RS2_LOG_SEVERITY_WARN);
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+
+        // T265 Only
+        if (!librealsense::val_in_range(PID.first, { std::string("0B37")}))
+        {
+            WARN("Skipping test - Applicable for Positional Tracking sensors only. Current device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+        }
+        else
+        {
+            CAPTURE(dev);
+            REQUIRE(dev.is<rs2::tm2>());
+            auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
+            CAPTURE(wheel_odom_snr);
+            REQUIRE(wheel_odom_snr);
+
+            WHEN("Sequence - idle.")
+            {
+                THEN("Load wheel odometry calibration")
+                {
+                    std::ifstream calibrationFile("calibration_odometry.json");
+                    if (calibrationFile)
                     {
-                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,2,3 }));
+                        const std::string json_str((std::istreambuf_iterator<char>(calibrationFile)),
+                            std::istreambuf_iterator<char>());
+                        const std::vector<uint8_t> wo_calib(json_str.begin(), json_str.end());
+                        bool b;
+                        REQUIRE_NOTHROW(b = wheel_odom_snr.load_wheel_odometery_config(wo_calib));
                         REQUIRE(b);
                     }
+                }
+            }
+
+            WHEN("Sequence - Streaming.")
+            {
+                THEN("Send wheel odometry data")
+                {
+                    rs2::pipeline_profile pf;
+                    REQUIRE_NOTHROW(pf = pipe.start(cfg));
+                    rs2::device d = pf.get_device();
+                    REQUIRE(d);
+                    auto wo_snr = d.first<rs2::wheel_odometer>();
+                    CAPTURE(wo_snr);
+                    REQUIRE(wo_snr);
+
+                    bool b;
+                    float norm_max = 0;
+                    WARN("T2xx Collecting frames started - Keep device static");
+                    rs2::frameset frames;
+                    for (int i = 0; i < 100; i++)
+                    {
+                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
+                        REQUIRE(b);
+
+                        REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
+                        REQUIRE(frames.size() > 0);
+                        auto f = frames.first_or_default(RS2_STREAM_POSE);
+                        auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
+                        float norm = sqrt(pose_data.translation.x*pose_data.translation.x + pose_data.translation.y*pose_data.translation.y
+                                          + pose_data.translation.z*pose_data.translation.z);
+                        if (norm > norm_max) norm_max = norm;
+                    }
+                    Approx approx_norm(0);
+                    approx_norm.epsilon(0.005); // 0.5cm threshold
+                    REQUIRE_FALSE(norm_max == approx_norm);
                     REQUIRE_NOTHROW(pipe.stop());
                 }
             }

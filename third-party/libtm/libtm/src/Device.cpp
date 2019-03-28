@@ -2213,9 +2213,9 @@ namespace perc {
         req->metadata.dwMetadataLength = offsetof(bulk_message_velocimeter_stream_metadata, dwFrameLength) - sizeof(req->metadata.dwMetadataLength);
         req->metadata.flTemperature = frame.temperature;
         req->metadata.dwFrameLength = sizeof(bulk_message_velocimeter_stream_metadata) - offsetof(bulk_message_velocimeter_stream_metadata, dwFrameLength) - sizeof(req->metadata.dwFrameLength);
-        req->metadata.flVx = frame.angularVelocity.x;
-        req->metadata.flVy = frame.angularVelocity.y;
-        req->metadata.flVz = frame.angularVelocity.z;
+        req->metadata.flVx = frame.translationalVelocity.x;
+        req->metadata.flVy = frame.translationalVelocity.y;
+        req->metadata.flVz = frame.translationalVelocity.z;
 
         int actual;
         auto rc = libusb_bulk_transfer(mDevice, mStreamEndpoint | TO_DEVICE, (unsigned char*)req, (int)buf.size(), &actual, 100);
@@ -2709,7 +2709,7 @@ namespace perc {
                 break;
             }
 
-            // Add some statistics calculations            
+            // Add some statistics calculations
             totalBytesReceived += actual;
             if (timeOfFirstByte == 0)
                 timeOfFirstByte = systemTime();

@@ -38,7 +38,7 @@ namespace librealsense
     {
     public:
         virtual bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const = 0;
-        virtual bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& angular_velocity) const = 0;
+        virtual bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const = 0;
         virtual ~wheel_odometry_interface() = default;
     };
     MAP_EXTENSION(RS2_EXTENSION_WHEEL_ODOMETER, librealsense::wheel_odometry_interface);

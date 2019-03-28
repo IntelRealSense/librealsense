@@ -17,10 +17,8 @@
 #define TM2_DEV_VID 0x8087
 #define TM2_T265_PID 0x0B37
 #define TM2_T260_PID 0x0AF3
-#define TM2_UDF_DEV_VID 0x03E7
-#define TM2_UDF_DEV_PID 0x2150
-#define ENUMERATE_TIMEOUT_NSEC 500000000
-
+#define TM2_DFU_DEV_VID 0x03E7
+#define TM2_DFU_DEV_PID 0x2150
 
 namespace perc
 {
@@ -36,16 +34,18 @@ namespace perc
             virtual Dispatcher& dispatcher() = 0;
         };
 
-    public:
         UsbPlugListener(Owner& owner);
         ~UsbPlugListener();
         
         bool identifyDevice(libusb_device_descriptor* desc);
-        bool identifyUDFDevice(libusb_device_descriptor* desc);
+        bool identifyDFUDevice(libusb_device_descriptor* desc);
 
         // [interface] EventHandler
         virtual void onTimeout(uintptr_t timerId, const Message &msg);
         static const char *usbSpeed(uint16_t bcdUSB);
+
+        enum usb_setup_e { usb_setup_init = 1, usb_setup_progress = 1<<1, usb_setup_success = 1<<2, usb_setup_timeout= 1<<3};
+        bool isInitialized(void) const { return mInitialized.load() & (usb_setup_success | usb_setup_timeout); }
 
     private:
         void EnumerateDevices();
@@ -106,5 +106,11 @@ namespace perc
         };
         std::map<DeviceToPortMap, bool> mDeviceToPortMap;
         std::mutex mDeviceToPortMapLock;
+
+        size_t                  mNextScanIntervalMs;             // Calculate the next time USB devices scan will be scheduled
+        std::atomic<usb_setup_e> mInitialized;
+        nsecs_t                 mUSBSetupTimeout;
+        nsecs_t                 mUSBMinTimeout;
+        size_t                  mDevicesToProcess;
     };
 }

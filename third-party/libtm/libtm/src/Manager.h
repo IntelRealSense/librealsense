@@ -44,6 +44,8 @@ namespace perc
         static std::mutex instanceExistMutex;
         static bool instanceExist;
 
+        bool isInitialized() const override { return mUsbPlugListener->isInitialized(); }
+
     protected:
         std::thread mThread;
         std::shared_ptr<Dispatcher> mDispatcher;

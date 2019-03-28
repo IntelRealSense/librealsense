@@ -10,7 +10,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
+import com.intel.realsense.librealsense.CameraInfo;
+import com.intel.realsense.librealsense.Device;
+import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.RsContext;
 
@@ -72,16 +76,48 @@ public class DetachedActivity extends AppCompatActivity {
         RsContext.init(getApplicationContext());
         mRsContext.setDevicesChangedCallback(mListener);
 
-        if(mRsContext.getDeviceCount() > 0){
+        if(mRsContext.queryDevices().getDeviceCount() > 0){
+            if(!validated_device())
+                return;
             Intent intent = new Intent(mAppContext, PreviewActivity.class);
             startActivity(intent);
             finish();
         }
     }
 
+    private boolean validated_device(){
+         DeviceList devices = mRsContext.queryDevices();
+        if(devices.getDeviceCount() == 0)
+            return false;
+        Device device = devices.createDevice(0);
+        final String recFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
+        final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
+        String[] sFw = fw.split("\\.");
+        String[] sRecFw = recFw.split("\\.");
+        for(int i = 0; i < sRecFw.length; i++){
+            if(Integer.parseInt(sFw[i]) > Integer.parseInt(sRecFw[i]))
+                break;
+            if(Integer.parseInt(sFw[i]) < Integer.parseInt(sRecFw[i])){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView textView = findViewById(R.id.connectCameraText);
+                        textView.setText("The FW of the connected device is:\n " + fw +
+                                "\n\nThe recommended FW for this device is:\n " + recFw +
+                                "\n\nPlease update your device to the recommended FW or higher");
+                    }
+                });
+                return false;
+            }
+        }
+        return true;
+    }
+
     private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
+            if(!validated_device())
+                return;
             Intent intent = new Intent(mAppContext, PreviewActivity.class);
             startActivity(intent);
             finish();

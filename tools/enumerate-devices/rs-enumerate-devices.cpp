@@ -14,21 +14,39 @@ using namespace std;
 using namespace TCLAP;
 using namespace rs2;
 
+std::vector<std::string> tokenize_floats(string input, char separator){
+    std::vector<std::string> tokens;
+    stringstream ss(input);
+    string token;
+
+    while (std::getline(ss, token, separator)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
 void print(const rs2_extrinsics& extrinsics)
 {
     stringstream ss;
-     ss << "Rotation Matrix:\n";
+     ss << " Rotation Matrix:\n";
 
+    // Align displayed data along decimal point
     for (auto i = 0 ; i < 3 ; ++i)
     {
         for (auto j = 0 ; j < 3 ; ++j)
         {
-            ss << left << setw(15) << setprecision(5) << extrinsics.rotation[j*3 +i];
+            std::ostringstream oss;
+            oss << extrinsics.rotation[j*3 +i];
+            auto tokens = tokenize_floats(oss.str().c_str(),'.');
+            ss << right << setw(4) << tokens[0];
+            if (tokens.size()>1)
+                ss << "." << left <<setw(12) << tokens[1];
         }
         ss << endl;
     }
 
-    ss << "\nTranslation Vector: ";
+    ss << "\n Translation Vector: ";
     for (auto i = 0 ; i < sizeof(extrinsics.translation)/sizeof(extrinsics.translation[0]) ; ++i)
         ss << setprecision(15) << extrinsics.translation[i] << "  ";
 
@@ -61,14 +79,14 @@ void print(const rs2_motion_device_intrinsic& intrinsics)
 void print(const rs2_intrinsics& intrinsics)
 {
     stringstream ss;
-     ss << left << setw(14) << "Width: "      << "\t" << intrinsics.width  << endl <<
-           left << setw(14) << "Height: "     << "\t" << intrinsics.height << endl <<
-           left << setw(14) << "PPX: "        << "\t" << setprecision(15)  << intrinsics.ppx << endl <<
-           left << setw(14) << "PPY: "        << "\t" << setprecision(15)  << intrinsics.ppy << endl <<
-           left << setw(14) << "Fx: "         << "\t" << setprecision(15)  << intrinsics.fx  << endl <<
-           left << setw(14) << "Fy: "         << "\t" << setprecision(15)  << intrinsics.fy  << endl <<
-           left << setw(14) << "Distortion: " << "\t" << rs2_distortion_to_string(intrinsics.model) << endl <<
-           left << setw(14) << "Coeffs: ";
+     ss << left << setw(14) << "  Width: "      << "\t" << intrinsics.width  << endl <<
+           left << setw(14) << "  Height: "     << "\t" << intrinsics.height << endl <<
+           left << setw(14) << "  PPX: "        << "\t" << setprecision(15)  << intrinsics.ppx << endl <<
+           left << setw(14) << "  PPY: "        << "\t" << setprecision(15)  << intrinsics.ppy << endl <<
+           left << setw(14) << "  Fx: "         << "\t" << setprecision(15)  << intrinsics.fx  << endl <<
+           left << setw(14) << "  Fy: "         << "\t" << setprecision(15)  << intrinsics.fy  << endl <<
+           left << setw(14) << "  Distortion: " << "\t" << rs2_distortion_to_string(intrinsics.model) << endl <<
+           left << setw(14) << "  Coeffs: ";
 
     for (auto i = 0 ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
         ss << "\t" << setprecision(15) << intrinsics.coeffs[i] << "  ";
@@ -157,16 +175,16 @@ string get_str_formats(const set<rs2_format>& formats)
 
 int main(int argc, char** argv) try
 {
-    CmdLine cmd("librealsense rs-enumerate-devices example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_VERSION_STR);
 
     SwitchArg compact_view_arg("s", "short", "Provide short summary of the devices");
-    SwitchArg show_options("o", "option", "Show all supported options per subdevice");
-    SwitchArg show_modes("m", "modes", "Show all supported stream modes per subdevice");
-    SwitchArg show_calibration_data("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
+    SwitchArg show_options_arg("o", "option", "Show all supported options per subdevice");
+    SwitchArg show_calibration_data_arg("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
+    SwitchArg show_defaults("d", "defaults", "Show default streams configuration");
     cmd.add(compact_view_arg);
-    cmd.add(show_options);
-    cmd.add(show_modes);
-    cmd.add(show_calibration_data);
+    cmd.add(show_options_arg);
+    cmd.add(show_calibration_data_arg);
+    cmd.add(show_defaults);
 
     cmd.parse(argc, argv);
 
@@ -182,7 +200,12 @@ int main(int argc, char** argv) try
         return EXIT_SUCCESS;
     }
 
-    if (compact_view_arg.getValue())
+    bool compact_view           = compact_view_arg.getValue();
+    bool show_options           = show_options_arg.getValue();
+    bool show_calibration_data  = show_calibration_data_arg.getValue();
+    bool show_modes             = !compact_view;
+
+    if (compact_view)
     {
         cout << left << setw(30) << "Device Name"
             << setw(20) << "Serial Number"
@@ -199,19 +222,21 @@ int main(int argc, char** argv) try
                 << endl;
         }
 
-        if (show_options.getValue() || show_modes.getValue())
+        if (show_options || show_calibration_data)
             cout << "\n\nNote:  \"-s\" option is not compatible with the other flags specified,"
                  << " all the additional options are skipped" << endl;
 
-        return EXIT_SUCCESS;
+        show_options = show_calibration_data = false;
     }
+
+    log_to_console(RS2_LOG_SEVERITY_FATAL);
 
     for (auto i = 0; i < device_count; ++i)
     {
         auto dev = devices[i];
 
         // Show which options are supported by this device
-        cout << " Device info: \n";
+        cout << "Device info: \n";
         for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j)
         {
             auto param = static_cast<rs2_camera_info>(j);
@@ -222,13 +247,39 @@ int main(int argc, char** argv) try
 
         cout << endl;
 
-        if (show_options.getValue())
+        if (show_defaults.getValue())
+        {
+            if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+            {
+                cout << "Default streams:" << endl;
+                config cfg;
+                cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+                pipeline p;
+                auto profile = cfg.resolve(p);
+                for (auto&& sp : profile.get_streams())
+                {
+                    cout << "    " << sp.stream_name() << " as " << sp.format() << " at " << sp.fps() << " Hz";
+                    if (auto vp = sp.as<video_stream_profile>())
+                    {
+                        cout << "; Resolution: " << vp.width() << "x" << vp.height();
+                    }
+                    cout << endl;
+                }
+            }
+            else
+            {
+                cout << "Cannot list default streams since the device does not provide a serial number!" << endl;
+            }
+            cout << endl;
+        }
+
+        if (show_options)
         {
             for (auto&& sensor : dev.query_sensors())
             {
                 cout << "Options for " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
 
-                cout << setw(55) << " Supported options:" << setw(10) << "min" << setw(10)
+                cout << setw(35) << " Supported options:" << setw(10) << "min" << setw(10)
                      << " max" << setw(6) << " step" << setw(10) << " default" << endl;
                 for (auto j = 0; j < RS2_OPTION_COUNT; ++j)
                 {
@@ -236,7 +287,7 @@ int main(int argc, char** argv) try
                     if (sensor.supports(opt))
                     {
                         auto range = sensor.get_option_range(opt);
-                        cout << "    " << left << setw(50) << opt << " : "
+                        cout << "    " << left << setw(30) << opt << " : "
                              << setw(5) << range.min << "... " << setw(12) << range.max
                              << setw(6) << range.step << setw(10) << range.def << "\n";
                     }
@@ -246,25 +297,26 @@ int main(int argc, char** argv) try
             }
         }
 
-        if (show_modes.getValue())
+        if (show_modes)
         {
             for (auto&& sensor : dev.query_sensors())
             {
                 cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
 
-                cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
-                     << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
+                cout << " Supported modes:\n" << setw(16) << "    stream" << setw(16)
+                     << " resolution" << setw(10) << " fps" << setw(10) << " format" << endl;
                 // Show which streams are supported by this device
                 for (auto&& profile : sensor.get_stream_profiles())
                 {
                     if (auto video = profile.as<video_stream_profile>())
                     {
                         cout << "    " << profile.stream_name() << "\t  " << video.width() << "x"
-                            << video.height() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
+                            << video.height() << "\t@ " << profile.fps() << setw(6) << "Hz\t" << profile.format() << endl;
                     }
                     else
                     {
-                        cout << "    " << profile.stream_name() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
+                        cout << "    " << profile.stream_name() << "\t N/A\t\t@ " << profile.fps()
+                            << setw(6) << "Hz\t" << profile.format() << endl;
                     }
                 }
 
@@ -272,31 +324,8 @@ int main(int argc, char** argv) try
             }
         }
 
-        for (auto&& sensor : dev.query_sensors())
-        {
-            cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
-
-            cout << setw(55) << " Supported modes:" << setw(10) << "stream" << setw(10)
-                 << " resolution" << setw(6) << " fps" << setw(10) << " format" << endl;
-            // Show which streams are supported by this device
-            for (auto&& profile : sensor.get_stream_profiles())
-            {
-                if (auto video = profile.as<video_stream_profile>())
-                {
-                    cout << "    " << profile.stream_name() << "\t  " << video.width() << "x"
-                        << video.height() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
-                }
-                else
-                {
-                    cout << "    " << profile.stream_name() << "\t@ " << profile.fps() << "Hz\t" << profile.format() << endl;
-                }
-            }
-
-            cout << endl;
-        }
-
         // Print Intrinsics
-        if (show_calibration_data.getValue())
+        if (show_calibration_data)
         {
             std::map<stream_and_index, stream_profile> streams;
             std::map<stream_and_resolution, std::vector<std::pair<std::set<rs2_format>, rs2_intrinsics>>> intrinsics_map;
@@ -368,9 +397,9 @@ int main(int argc, char** argv) try
                 auto stream_res = kvp.first;
                 for (auto& intrinsics : kvp.second)
                 {
-                    auto formats = get_str_formats(intrinsics.first);
-                    cout << "Intrinsic of \"" << stream_res.stream_name << "\"\t  " << stream_res.width << "x"
-                        << stream_res.height << "\t  " << formats << endl;
+                    auto formats = "{" + get_str_formats(intrinsics.first) + "}";
+                    cout << " Intrinsic of \"" << stream_res.stream_name << "\" / " << stream_res.width << "x"
+                        << stream_res.height << " / " << formats << endl;
                     if (intrinsics.second == rs2_intrinsics{})
                     {
                         cout << "Intrinsic NOT available!\n\n";
@@ -423,8 +452,6 @@ int main(int argc, char** argv) try
             }
         }
     }
-
-    cout << endl;
 
     return EXIT_SUCCESS;
 }

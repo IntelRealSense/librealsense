@@ -114,16 +114,16 @@ namespace librealsense
 #define CASE(X) STRCASE(STREAM, X)
         switch (value)
         {
-            STRCASE(STREAM, ANY)
-            STRCASE(STREAM, DEPTH)
-            STRCASE(STREAM, COLOR)
-            STRCASE(STREAM, INFRARED)
-            STRCASE(STREAM, FISHEYE)
-            STRCASE(STREAM, GYRO)
-            STRCASE(STREAM, ACCEL)
-            STRCASE(STREAM, GPIO)
-            STRCASE(STREAM, POSE)
-            STRCASE(STREAM, CONFIDENCE)
+            CASE(ANY)
+            CASE(DEPTH)
+            CASE(COLOR)
+            CASE(INFRARED)
+            CASE(FISHEYE)
+            CASE(GYRO)
+            CASE(ACCEL)
+            CASE(GPIO)
+            CASE(POSE)
+            CASE(CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -75,7 +75,7 @@ $ source ~/.zshrc
 
 ```
 
-### install `protobu`
+### install `protobuf`
 ```
 $ cd ~
 $ git clone --depth=1 -b v3.5.1 https://github.com/google/protobuf.git
