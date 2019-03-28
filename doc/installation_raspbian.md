@@ -36,7 +36,7 @@ $ sudo apt-get install -y libdrm-amdgpu1 libdrm-amdgpu1-dbg libdrm-dev libdrm-ex
 
 $ sudo apt-get install -y libglu1-mesa libglu1-mesa-dev glusterfs-common libglu1-mesa libglu1-mesa-dev libglui-dev libglui2c2
 
-$ sudo apt-get install libglu1-mesa libglu1-mesa-dev mesa-utils mesa-utils-extra
+$ sudo apt-get install -y libglu1-mesa libglu1-mesa-dev mesa-utils mesa-utils-extra xorg-dev libgtk-3-dev libusb-1.0-0-dev
 ```
 
 ### update udev rule
