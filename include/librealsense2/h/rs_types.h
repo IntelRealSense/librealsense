@@ -178,14 +178,20 @@ typedef enum rs2_matchers
 
    RS2_MATCHER_DI_C,    //compare depth and ir based on frame number,
                         //compare the pair of corresponding depth and ir with color based on closest timestamp,
-                        //commonlly used by SR300
+                        //commonly used by SR300
 
    RS2_MATCHER_DLR_C,   //compare depth, left and right ir based on frame number,
                         //compare the set of corresponding depth, left and right with color based on closest timestamp,
-                        //commonlly used by RS415, RS435
+                        //commonly used by RS415, RS435
 
    RS2_MATCHER_DLR,     //compare depth, left and right ir based on frame number,
-                        //commonlly used by RS400, RS405, RS410, RS420, RS430
+                        //commonly used by RS400, RS405, RS410, RS420, RS430
+
+   RS2_MATCHER_DIC,     //compare depth, ir and confidence based on frame number used by RS500
+
+   RS2_MATCHER_DIC_C,    //compare depth, ir and confidence based on frame number,
+                         //compare the set of corresponding depth, ir and confidence with color based on closest timestamp,
+                         //commonly used by RS515
 
    RS2_MATCHER_DEFAULT, //the default matcher compare all the streams based on closest timestamp
 
