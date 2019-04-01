@@ -52,9 +52,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      **Note** on graphic sub-system utilization:<br />
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
 
-  3. Install Intel Realsense permission scripts located in librealsense source directory:<br />
-    `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`  <br />
-    `sudo udevadm control --reload-rules && udevadm trigger`
+  3. Run Intel Realsense permissions script located from librealsense root directory:<br />
+    `./scripts/setup_udev_rules.sh`
     <br />
 
   4. Build and apply patched kernel modules for: <br />
