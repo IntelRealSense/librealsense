@@ -16,11 +16,11 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
+        const uint8_t L500_DEPTH_LASER_POWER = 2;
+        const uint8_t L500_ERROR_REPORTING = 3;
 
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
-
-        const uint8_t IVCAM2_DEPTH_LASER_POWER = 2;
 
         enum fw_cmd : uint8_t
         {
@@ -42,6 +42,34 @@ namespace librealsense
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
             { L500_PID,        "Intel RealSense L500"},
             { L515_PID,        "Intel RealSense L515"},
+        };
+
+        enum l500_notifications_types
+        {
+            success = 0,
+            depth_not_available,
+            overflow_infrared,
+            overflow_depth,
+            overflow_confidence,
+            depth_stream_hard_error,
+            depth_stream_soft_error,
+            temp_warning,
+            temp_critical,
+            DFU_error
+        };
+
+        // Elaborate FW XU report.
+        const std::map< uint8_t, std::string> l500_fw_error_report = {
+            { success,                      "Success" },
+            { depth_not_available,          "Fatal error occur and device is unable \nto run depth stream" },
+            { overflow_infrared,            "Overflow occur on infrared stream" },
+            { overflow_depth,               "Overflow occur on depth stream" },
+            { overflow_confidence,          "Overflow occur on confidence stream" },
+            { depth_stream_hard_error,      "Stream stoped. \nNon recoverable. power reset may help" },
+            { depth_stream_soft_error,      "Error that may be overcome in few sec. \nStream stoped. May be recoverable" },
+            { temp_warning,                 "Warning, temperature close to critical" },
+            { temp_critical,                "Critical temperature reached" },
+            { DFU_error,                    "DFU error" },
         };
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,

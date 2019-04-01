@@ -42,7 +42,7 @@ namespace librealsense
             std::make_shared<uvc_xu_option<int>>(
                 *depth_ep,
                 ivcam2::depth_xu,
-                ivcam2::IVCAM2_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
+                ivcam2::L500_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
 
         return depth_ep;
     }
@@ -122,6 +122,16 @@ namespace librealsense
 
         register_stream_to_extrinsic_group(*_depth_stream, 0);
         register_stream_to_extrinsic_group(*_ir_stream, 0);
+
+        auto error_control = std::unique_ptr<uvc_xu_option<int>>(new uvc_xu_option<int>(get_depth_sensor(), ivcam2::depth_xu, L500_ERROR_REPORTING, "Error reporting"));
+
+        _polling_error_handler = std::unique_ptr<polling_error_handler>(
+            new polling_error_handler(1000,
+                std::move(error_control),
+                get_depth_sensor().get_notifications_processor(),
+                std::unique_ptr<notification_decoder>(new l500_notification_decoder())));
+
+        get_depth_sensor().register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler.get()));
     }
 
     void l500_depth::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
@@ -150,6 +160,29 @@ namespace librealsense
         command cmd(ivcam2::fw_cmd::HWReset);
         cmd.require_response = false;
         _hw_monitor->send(cmd);
+    }
+
+    std::shared_ptr<matcher> l500_depth::create_matcher(const frame_holder& frame) const
+    {
+        std::vector<std::shared_ptr<matcher>> depth_matchers;
+
+        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get() };
+
+        for (auto& s : streams)
+        {
+            depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
+        }
+        std::vector<std::shared_ptr<matcher>> matchers;
+        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
+        }
+        else
+        {
+            matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
+        }
+
+        return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
     std::pair<int, int> l500_depth_sensor::read_zo_point()
@@ -279,5 +312,13 @@ namespace librealsense
         res.push_back(std::make_shared<temporal_filter>());
         res.push_back(std::make_shared<hole_filling_filter>());
         return res;
+    }
+
+    notification l500_notification_decoder::decode(int value)
+    {
+        if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, l500_fw_error_report.at(static_cast<uint8_t>(value)) };
+
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "L500 HW report - unresolved type " << value) };
     }
 }
