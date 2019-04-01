@@ -194,7 +194,7 @@ if(CENTRAL_APP_VERSION)
         #         uint8 data[];
 
         # Read 1 byte of file_format_version and abort if not supported
-        readBinHeaderField(${LIBTM_RESOURCES_DIR}/central_app.bin 8 1 central_app_format_ver)
+        readBinHeaderField(${LIBTM_RESOURCES_DIR}/central_app.bin 8 4 central_app_format_ver)
         if (NOT ${central_app_format_ver} EQUAL 1)
             message(FATAL_ERROR "  Central FW File format (${central_app_format_ver}) is not supported" )
         endif()
