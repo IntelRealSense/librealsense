@@ -4,7 +4,7 @@
 #ifdef RS2_USE_ANDROID_BACKEND
 
 #include "android_uvc.h"
-#include "device_watcher.h"
+#include "../device_watcher.h"
 #include "libuvc/utlist.h"
 
 #include "concurrency.h"
@@ -21,8 +21,6 @@ struct frame;
 // We keep no more then 2 frames in between frontend and backend
 typedef librealsense::small_heap<frame, 2> frames_archive;
 
-using namespace librealsense::usb_host;
-
 struct frame {
     frame() {}
 
@@ -38,7 +36,15 @@ struct frame {
     librealsense::platform::frame_object fo;
     frames_archive *owner; // Keep pointer to owner for light-deleter
 };
-
+// convert to standard fourcc codes
+const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
+        { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
+        { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
+        { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
+        { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 ' */
+        { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
+        { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
+};
 
 void cleanup_frame(frame *ptr) {
     if (ptr) ptr->owner->deallocate(ptr);
@@ -632,14 +638,13 @@ uvc_error_t update_stream_if_handle(usbhost_uvc_device *devh, int interface_idx)
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
         if (stream_if->bInterfaceNumber == interface_idx)
-            if (!stream_if->interfaceHandle.device && interface_idx < MAX_USB_INTERFACES) {
+            if (!stream_if->interface && interface_idx < MAX_USB_INTERFACES) {
                 // usbhost_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
                 // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
                 // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
                 // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
                 // For this reason, when calling to usbhost_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-                stream_if->interfaceHandle.device = devh->device;
-                stream_if->interfaceHandle.interface_index = interface_idx;
+                stream_if->interface = devh->device->get_interface(interface_idx);
             }
     }
     return UVC_SUCCESS;
@@ -733,8 +738,8 @@ uvc_error_t usbhost_get_available_formats_all(usbhost_uvc_device *devh, uvc_form
                     cur_format->height = frame_desc->wHeight;
                     cur_format->width = frame_desc->wWidth;
                     cur_format->fourcc = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
-                    if(1496850464 == cur_format->fourcc)
-                        cur_format->fourcc = 1196574041; //TODO
+                    if(fourcc_map.count(cur_format->fourcc))
+                        cur_format->fourcc = fourcc_map.at(cur_format->fourcc);
                     cur_format->interfaceNumber = stream_if->bInterfaceNumber;
 
                     cur_format->fps = 10000000 / *interval_ptr;
@@ -897,16 +902,17 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
         }
         else
         {
-            LOG_WARNING("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
+            LOG_WARNING("usbhost backend is dropping a frame because librealsense wasn't fast enough");
         }
     }
 }
 
 void stream_thread(usbhost_uvc_stream_context *strctx) {
-    auto dev = strctx->stream->stream_if->interfaceHandle.device;
+    auto inf = strctx->stream->stream_if->interface;
+    auto dev = strctx->stream->devh->device;
+    auto messenger = dev->claim_interface(inf);;
 
-    auto pipe = dev->get_pipe(strctx->endpoint);
-    pipe->reset();
+    messenger->reset_endpoint(messenger->get_read_endpoint());
 
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks(true);
@@ -935,20 +941,19 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     });
     LOG_DEBUG("Transfer thread started for endpoint address: " << strctx->endpoint);
     do {
-        int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
+        int res = messenger->bulk_transfer(messenger->get_read_endpoint()->get_address(), strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
         {
-            LOG_ERROR("Read pipe returned error and was clear halted ERROR:" << strerror(errno));
-            if(pipe->reset())
-                continue;
-            break;
+            std::string err = strerror(errno);
+            LOG_WARNING("bulk_transfer on read endpoint returned error, ERROR: " << err);
+            continue;
         }
         strctx->stream->got_bytes = res;
         usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
     } while (strctx->stream->running);
 
     int ep = strctx->endpoint;
-    pipe->reset();
+    messenger->reset_endpoint(messenger->get_read_endpoint());
     free(strctx);
 
     queue.clear();
@@ -1367,8 +1372,8 @@ uvc_error_t usbhost_get_stream_ctrl_format_size(
         uvc_frame_desc_t *frame;
         //TODO
         auto val = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
-        if(1496850464 == val)
-            val = 1196574041;
+        if(fourcc_map.count(val))
+            val = fourcc_map.at(val);
 
         if (fourcc != val)
             continue;

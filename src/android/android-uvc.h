@@ -70,6 +70,7 @@ namespace librealsense
         private:
             friend class source_reader_callback;
 
+            std::shared_ptr<usbhost_uvc_device> open_uvc_device(uint16_t mi);
             int32_t rs2_value_translate(uvc_req_code action, rs2_option option, int32_t value) const;
             void play_profile(stream_profile profile, frame_callback callback);
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
@@ -87,8 +88,7 @@ namespace librealsense
             std::vector<profile_and_callback>       _streams;
             std::mutex                              _streams_mutex;
 
-            std::shared_ptr<const android_backend>      _backend;
-
+            std::shared_ptr<const android_backend>  _backend;
             std::string                             _location;
             std::vector<stream_profile>             _profiles;
             std::vector<frame_callback>             _frame_callbacks;
@@ -96,6 +96,7 @@ namespace librealsense
             std::atomic<bool>                       _is_started = {false};
 
             std::shared_ptr<usbhost_uvc_device>     _device = nullptr;
+            std::shared_ptr<usb_messenger>          _messenger = nullptr;
 
             int _input_terminal = 0;
             int _processing_unit = 0;

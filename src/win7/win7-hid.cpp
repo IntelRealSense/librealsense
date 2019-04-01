@@ -11,9 +11,9 @@
 #define NOMINMAX
 #endif
 
+#include "win/win-helpers.h"
 #include "../types.h"
 #include "win7-hid.h"
-#include "win7-helpers.h"
 
 #include <PortableDeviceTypes.h>
 //#include <PortableDeviceClassExtension.h>
@@ -300,7 +300,7 @@ namespace librealsense
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, device_guid;
-                                                if (parse_usb_path(vid, pid, mi, uid, device_guid, info.device_path))
+                                                if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path, device_guid))
                                                 {
                                                     info.unique_id = "*";
                                                     info.pid = to_string() << std::hex << pid;

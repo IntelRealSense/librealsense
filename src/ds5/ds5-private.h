@@ -110,6 +110,10 @@ namespace librealsense
 
         };
 
+        static const std::set<std::uint16_t> rs400_sku_recovery_pid = {
+            0x0adb, 0x0ab3, 0x0adc
+        };
+
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
@@ -125,6 +129,7 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
             SET_ADV         = 0x2B,     // set advanced mode control

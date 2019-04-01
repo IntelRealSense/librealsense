@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../backend.h"
-#include "win-helpers.h"
+#include "win/win-helpers.h"
 
 #include <mfidl.h>
 #include <mfreadwrite.h>

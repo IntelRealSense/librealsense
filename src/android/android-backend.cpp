@@ -7,7 +7,8 @@
 #include "android-uvc.h"
 #include "android-hid.h"
 #include "../types.h"
-#include "usb_host/device_watcher.h"
+#include "device_watcher.h"
+#include "../usb/usb-enumerator.h"
 #include <chrono>
 #include <cctype> // std::tolower
 
@@ -38,17 +39,27 @@ namespace librealsense {
         }
 
         std::vector<uvc_device_info> android_backend::query_uvc_devices() const {
-            return usb_host::device_watcher::query_uvc_devices();
+            return device_watcher_usbhost::instance()->query_uvc_devices();
         }
 
         std::shared_ptr<usb_device> android_backend::create_usb_device(usb_device_info info) const {
-            throw std::runtime_error("create_usb_device Not supported");
+            auto devices = usb_enumerator::query_devices();
+            for(auto&& dev : devices){
+                auto curr = dev->get_info();
+                if(info.id == curr.id)
+                    return dev;
+            }
+            return nullptr;
         }
 
         std::vector<usb_device_info> android_backend::query_usb_devices() const {
-
             std::vector<usb_device_info> result;
-            // Not supported
+            auto devices = usb_enumerator::query_devices();
+
+            for(auto&& dev : devices){
+                auto info = dev->get_info();
+                result.push_back(info);
+            }
             return result;
         }
 
@@ -68,7 +79,7 @@ namespace librealsense {
 
 
         std::shared_ptr<device_watcher> android_backend::create_device_watcher() const {
-            return std::make_shared<usb_host::device_watcher>();
+            return device_watcher_usbhost::instance();
         }
     }
 }

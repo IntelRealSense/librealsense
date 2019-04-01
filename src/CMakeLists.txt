@@ -11,8 +11,11 @@ include(${_rel_path}/mock/CMakeLists.txt)
 include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
+include(${_rel_path}/usb/CMakeLists.txt)
+#include(${_rel_path}/fw-update/CMakeLists.txt)
 
 if(FORCE_LIBUVC)
+    include(${_rel_path}/libusb/CMakeLists.txt)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
 
@@ -25,15 +28,24 @@ if(BUILD_WITH_CUDA)
 endif()
 
 if(ANDROID_USB_HOST_UVC)
+    include(${_rel_path}/usbhost/CMakeLists.txt)
     include(${_rel_path}/android/CMakeLists.txt)
 endif()
 
+if(UNIX)
+    include(${_rel_path}/libusb/CMakeLists.txt)
+endif()
+    
 if(BUILD_FOR_WIN7)
+    include(${_rel_path}/win/CMakeLists.txt)
+    include(${_rel_path}/winusb/CMakeLists.txt)
     include(${_rel_path}/win7/CMakeLists.txt)
 endif()
 
 if(BUILD_FOR_OTHER_WIN)
     include(${_rel_path}/win/CMakeLists.txt)
+    include(${_rel_path}/winusb/CMakeLists.txt)
+    include(${_rel_path}/mf/CMakeLists.txt)
 endif()
 
 if(LRS_TRY_USE_AVX)

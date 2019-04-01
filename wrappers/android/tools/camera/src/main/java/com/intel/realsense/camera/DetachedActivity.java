@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -77,7 +78,7 @@ public class DetachedActivity extends AppCompatActivity {
         mRsContext.setDevicesChangedCallback(mListener);
 
         if(mRsContext.queryDevices().getDeviceCount() > 0){
-            if(!validated_device())
+            if(!validateDevice())
                 return;
             Intent intent = new Intent(mAppContext, PreviewActivity.class);
             startActivity(intent);
@@ -85,11 +86,15 @@ public class DetachedActivity extends AppCompatActivity {
         }
     }
 
-    private boolean validated_device(){
-         DeviceList devices = mRsContext.queryDevices();
+    private boolean validateDevice(){
+        DeviceList devices = mRsContext.queryDevices();
         if(devices.getDeviceCount() == 0)
             return false;
         Device device = devices.createDevice(0);
+        if(!device.supportsInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION)) {
+            Log.w(TAG, "unable to check fw version");
+            return true;
+        }
         final String recFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
         final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
         String[] sFw = fw.split("\\.");
@@ -103,7 +108,7 @@ public class DetachedActivity extends AppCompatActivity {
                     public void run() {
                         TextView textView = findViewById(R.id.connectCameraText);
                         textView.setText("The FW of the connected device is:\n " + fw +
-                                "\n\nThe recommended FW for this device is:\n " + recFw +
+                                "\n\nThe minimal recommended FW for this device is:\n " + recFw +
                                 "\n\nPlease update your device to the recommended FW or higher");
                     }
                 });
@@ -116,7 +121,7 @@ public class DetachedActivity extends AppCompatActivity {
     private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
-            if(!validated_device())
+            if(!validateDevice())
                 return;
             Intent intent = new Intent(mAppContext, PreviewActivity.class);
             startActivity(intent);

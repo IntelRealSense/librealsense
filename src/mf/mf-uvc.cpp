@@ -26,7 +26,7 @@ The library will be compiled without the metadata support!\n")
 
 #define DEVICE_ID_MAX_SIZE 256
 
-#include "win-uvc.h"
+#include "mf-uvc.h"
 #include "../types.h"
 
 #include "Shlwapi.h"
@@ -734,8 +734,8 @@ namespace librealsense
                     auto name = win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
-                    uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, name)) continue;
+                    uint16_t vid, pid, mi; std::string unique_id, guid;
+                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, name, guid)) continue;
 
                     uvc_device_info info;
                     info.vid = vid;

@@ -37,7 +37,7 @@ install(TARGETS pyrealsense2 EXPORT realsense2Targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-set(RAW_RS_CPP ../../src/backend.cpp pybackend_extras.cpp pybackend.cpp
+set(RAW_RS_CPP ../../src/backend.cpp pybackend_extras.cpp pybackend.cpp ../../src/win/win-helpers.cpp
            ../../src/linux/backend-v4l2.cpp ../../src/linux/backend-hid.cpp ../../src/types.cpp
            ../../src/log.cpp ../../src/types.cpp ../../third-party/easyloggingpp/src/easylogging++.cc)
 set(RAW_RS_HPP ../../src/backend.h ../../src/linux/backend-v4l2.h ../../src/linux/backend-hid.h
@@ -46,7 +46,6 @@ set(RAW_RS_HPP ../../src/backend.h ../../src/linux/backend-v4l2.h ../../src/linu
 
 if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
     list(APPEND RAW_RS_CPP
-        ../../src/win7/win7-helpers.cpp
         ../../src/win7/win7-uvc.cpp
         ../../src/win7/win7-usb.cpp
         ../../src/win7/win7-hid.cpp
@@ -54,12 +53,10 @@ if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
         ../../src/win7/winusb_uvc/winusb_uvc.cpp
         )
 else() # Some other windows version
-    list(APPEND RAW_RS_CPP
-        ../../src/win/win-helpers.cpp
-        ../../src/win/win-uvc.cpp
-        ../../src/win/win-usb.cpp
-        ../../src/win/win-hid.cpp
-        ../../src/win/win-backend.cpp
+    list(APPEND RAW_RS_CPP        
+        ../../src/mf/mf-uvc.cpp
+        ../../src/mf/mf-hid.cpp
+        ../../src/mf/mf-backend.cpp
         )
 endif()
 

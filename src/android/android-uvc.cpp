@@ -7,7 +7,7 @@
 #include "android-uvc.h"
 #include "../types.h"
 #include "libuvc/utlist.h"
-#include "usb_host/device_watcher.h"
+#include "../usb/usb-enumerator.h"
 #include "../libuvc/utlist.h"
 
 
@@ -19,16 +19,6 @@
 
 namespace librealsense {
     namespace platform {
-        // we are using standard fourcc codes to represent formats, while MF is using GUIDs
-        // occasionally there is a mismatch between the code and the guid data
-        const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
-                {0x59382020, 0x47524559},    /* 'GREY' from 'Y8  ' */
-                {0x52573130, 0x70524141},    /* 'pRAA' from 'RW10'.*/
-                {0x32000000, 0x47524559},    /* 'GREY' from 'L8  ' */
-                {0x50000000, 0x5a313620},    /* 'Z16'  from 'D16 ' */
-                {0x52415738, 0x47524559},    /* 'GREY' from 'RAW8' */
-                {0x52573136, 0x42595232}     /* 'RW16' from 'BYR2' */
-        };
 
         bool android_uvc_device::is_connected(const uvc_device_info &info) {
             auto result = true;
@@ -319,56 +309,64 @@ namespace librealsense {
             return result;
         }
 
+        std::shared_ptr<usbhost_uvc_device> android_uvc_device::open_uvc_device(uint16_t mi)
+        {
+            for(auto&& dev : usb_enumerator::query_devices())
+            {
+                for(auto&& in : dev->get_control_interfaces_numbers())
+                {
+                    if(in != mi)
+                        continue;
+                    std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
+                                                            [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
+                    uvc->device = std::static_pointer_cast<usb_device_usbhost>(dev);
+                    uvc->vid = dev->get_info().vid;
+                    uvc->pid = dev->get_info().pid;
+                    usbhost_open(uvc.get(), mi);
+                    return uvc;
+                }
+            }
+            return nullptr;
+        }
+
         void android_uvc_device::set_power_state(power_state state) {
             std::lock_guard<std::mutex> lock(_power_mutex);
 
             if (state == D0 && _power_state == D3) {
                 uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
 
-                std::vector<std::shared_ptr<usbhost_uvc_device>> uvc_devices;
-                for(auto&& dev : usb_host::device_watcher::get_device_list())
-                {
-                    std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
-                                                            [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
-                    uvc->device = dev;
-                    uvc->vid = dev->get_vid();
-                    uvc->pid = dev->get_pid();
-                    uvc_devices.push_back(uvc);
+                _device = open_uvc_device(mi);
+
+                if(!_device)
+                    throw std::runtime_error("Device not found!");
+
+                for (auto ct = _device->deviceData.ctrl_if.input_term_descs;
+                     ct; ct = ct->next) {
+                    _input_terminal = ct->bTerminalID;
                 }
 
-                for (auto device : uvc_devices) {
-
-                    usbhost_open(device.get(), mi);
-
-                    if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {
-                        _device = device;
-
-                        for (auto ct = _device->deviceData.ctrl_if.input_term_descs;
-                             ct; ct = ct->next) {
-                            _input_terminal = ct->bTerminalID;
-                        }
-
-                        for (auto pu = _device->deviceData.ctrl_if.processing_unit_descs;
-                             pu; pu = pu->next) {
-                            _processing_unit = pu->bUnitID;
-                        }
-
-                        for (auto eu = _device->deviceData.ctrl_if.extension_unit_descs;
-                             eu; eu = eu->next) {
-                            _extension_unit = eu->bUnitID;
-                        }
-
-                        _device->device->claim_interface(mi);
-
-                        _power_state = D0;
-                        return;
-                    }
+                for (auto pu = _device->deviceData.ctrl_if.processing_unit_descs;
+                     pu; pu = pu->next) {
+                    _processing_unit = pu->bUnitID;
                 }
 
-                throw std::runtime_error("Device not found!");
+                for (auto eu = _device->deviceData.ctrl_if.extension_unit_descs;
+                     eu; eu = eu->next) {
+                    _extension_unit = eu->bUnitID;
+                }
+
+                auto udev = _device->device;
+                auto intf = udev->get_interface(mi);
+                if(!intf)
+                    throw std::runtime_error("USB interface not found!");
+                _messenger = udev->claim_interface(intf);
+
+                _power_state = D0;
+
             }
             if (state == D3 && _power_state == D0) {
                 _device.reset();
+                _messenger.reset();
                 _power_state = D3;
             }
         }

@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_WMF_BACKEND
+#ifdef WIN32
 
 #if (_MSC_FULL_VER < 180031101)
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -12,8 +12,8 @@
 #endif
 
 #include "../types.h"
-#include "win-hid.h"
-#include "win-helpers.h"
+#include "mf-hid.h"
+#include "win/win-helpers.h"
 
 #include <PortableDeviceTypes.h>
 //#include <PortableDeviceClassExtension.h>
@@ -415,8 +415,8 @@ namespace librealsense
                                                 info.id = std::string(fName, fName + wcslen(fName));
 
                                                 uint16_t vid, pid, mi;
-                                                std::string uid;
-                                                if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path))
+                                                std::string uid, guid;
+                                                if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path, guid))
                                                 {
                                                     info.unique_id = "*";
                                                     info.pid = to_string() << std::hex << pid;

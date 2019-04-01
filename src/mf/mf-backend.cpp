@@ -6,10 +6,11 @@
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
-#include "win-backend.h"
-#include "win-uvc.h"
-#include "win-usb.h"
-#include "win-hid.h"
+#include "mf-backend.h"
+#include "mf-uvc.h"
+#include "mf-hid.h"
+#include "usb/usb-device.h"
+#include "usb/usb-enumerator.h"
 #include "../types.h"
 #include <mfapi.h>
 #include <chrono>
@@ -68,33 +69,24 @@ namespace librealsense
 
         std::shared_ptr<usb_device> wmf_backend::create_usb_device(usb_device_info info) const
         {
-            return std::make_shared<winusb_bulk_transfer>(info);
+            for (auto&& usb : usb_enumerator::query_devices())
+            {
+                if (info.unique_id == usb->get_info().unique_id)
+                    return usb;
+            }
+            return nullptr;
         }
 
         std::vector<usb_device_info> wmf_backend::query_usb_devices() const
         {
-            const std::vector<std::string> usb_interfaces = {
-                "{175695CD-30D9-4F87-8BE3-5A8270F49A31}",
-                "{08090549-CE78-41DC-A0FB-1BD66694BB0C}"
-            };
+            std::vector<usb_device_info> results;
 
-            std::vector<usb_device_info> result;
-            for (auto&& interface_id : usb_interfaces)
+            for (auto&& usb : usb_enumerator::query_devices())
             {
-                for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
-                {
-                    std::string path(id.begin(), id.end());
-                    uint16_t vid, pid, mi; std::string unique_id;
-                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, path)) continue;
-
-                    auto device_serial = get_device_serial(vid, pid, unique_id);
-                    usb_device_info info{ path, vid, pid, mi, unique_id, device_serial, usb_undefined };
-
-                    result.push_back(info);
-                }
+                results.push_back(usb->get_info());
             }
 
-            return result;
+            return results;
         }
 
         wmf_hid_device::wmf_hid_device(const hid_device_info& info)

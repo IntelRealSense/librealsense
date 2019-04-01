@@ -6,6 +6,7 @@
 #include "../../include/librealsense2/h/rs_internal.h"
 #include "backend.h"
 #include "context.h"
+#include "../usb/usb-device.h"
 #include <vector>
 #include <mutex>
 #include <chrono>
@@ -381,7 +382,7 @@ namespace librealsense
             const record_backend* _owner;
         };
 
-        class record_usb_device : public usb_device
+        class record_usb_device : public usb_device_mock
         {
         public:
             std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response) override;
@@ -543,7 +544,7 @@ namespace librealsense
         };
 
 
-        class playback_usb_device : public usb_device
+        class playback_usb_device : public usb_device_mock
         {
         public:
             std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int timeout_ms, bool require_response) override;
