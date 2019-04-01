@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "Version.h"
 #include "Utils.h"
-#include "fw.h"
+#include "fw_target.h"
 
 #define LIBTM_UTIL_VERSION_MAJOR 1
 #define LIBTM_UTIL_VERSION_MINOR 0

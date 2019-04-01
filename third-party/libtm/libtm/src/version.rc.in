@@ -1,9 +1,9 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "windows.h"
-#include "fw.h"
-#include "CentralAppFw.h"
-#include "CentralBlFw.h"
+#include "fw_target.h"
+#include "fw_central_app.h"
+#include "fw_central_bl.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Hebrew (Israel) resources
@@ -41,7 +41,7 @@ END
 // Version
 //
 #define FILE_VERSION "@LIBTM_VERSION_MAJOR@.@LIBTM_VERSION_MINOR@.@LIBTM_VERSION_PATCH@.@LIBTM_VERSION_BUILD@"
-#define PRODUCT_VERSION FILE_VERSION ", FW " FW_VERSION ", Central APP " CENTRAL_APP_VERSION ", Central BL " CENTRAL_BL_VERSION " "
+#define PRODUCT_VERSION FILE_VERSION ", FW " FW_TARGET_VERSION ", Central APP " FW_CENTRAL_APP_VERSION ", Central BL " FW_CENTRAL_BL_VERSION " "
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION @LIBTM_VERSION_MAJOR@,@LIBTM_VERSION_MINOR@,@LIBTM_VERSION_PATCH@,0

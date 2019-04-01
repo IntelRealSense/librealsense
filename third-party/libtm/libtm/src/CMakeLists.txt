@@ -60,6 +60,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
     ${OS_SPECIFIC_LIBS}
     usb
+    fw
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION "${LIBVERSION}" SOVERSION "${LIBTM_VERSION_MAJOR}")

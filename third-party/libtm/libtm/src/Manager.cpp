@@ -9,7 +9,7 @@
 #include <chrono>
 #include "Version.h"
 #include <vector>
-#include "fw.h"
+#include "fw_target.h"
 #include "Common.h"
 
 using namespace std::chrono;
@@ -461,9 +461,10 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
         }
         else
         {
-            LOGD("USB Device FW Load start - loading internal FW image \"%s\"", FW_VERSION);
-            auto size = sizeof(target_hex);
-            status = loadBufferToDevice(m.device, (unsigned char*)target_hex, size);
+            LOGD("USB Device FW Load start - loading internal FW image \"%s\"", FW_TARGET_VERSION);
+            int size;
+            auto target_hex = fw_get_target(size);
+            status = loadBufferToDevice(m.device, const_cast<unsigned char*>(target_hex), size);
         }
     }
 

@@ -18,8 +18,8 @@
 #include "Utils.h"
 #include "UsbPlugListener.h"
 #include "TrackingData.h"
-#include "CentralAppFw.h"
-#include "CentralBlFw.h"
+#include "fw_central_app.h"
+#include "fw_central_bl.h"
 
 #define CHUNK_SIZE 512
 #define BUFFER_SIZE 1024
@@ -2567,7 +2567,7 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
-    Status Device::CentralLoadFW(uint8_t* buffer)
+    Status Device::CentralLoadFW(const uint8_t* buffer, int size)
     {
         if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH)
         {
@@ -2575,8 +2575,8 @@ namespace perc {
             return Status::FEATURE_UNSUPPORTED;
         }
         uint32_t addressSize = offsetof(message_fw_update_request, bNumFiles);
-        std::vector<uint8_t> msgArr(addressSize + CENTRAL_APP_SIZE, 0);
-        perc::copy(msgArr.data() + addressSize, buffer, CENTRAL_APP_SIZE);
+        std::vector<uint8_t> msgArr(addressSize + size, 0);
+        perc::copy(msgArr.data() + addressSize, buffer, size);
         message_fw_update_request* msg = (message_fw_update_request*)(msgArr.data());
         MessageON_ASYNC_START setMsg(&mCentralListener, DEV_FIRMWARE_UPDATE, (uint32_t)msgArr.size(), (uint8_t*)msg);
         mFsm.fireEvent(setMsg);
@@ -2611,14 +2611,16 @@ namespace perc {
 
         bool updateApp = false;
 
-        if (CentralBlFw::Version[0] != mDeviceInfo.bCentralBootloaderVersionMajor ||
-            CentralBlFw::Version[1] != mDeviceInfo.bCentralBootloaderVersionMinor ||
-            CentralBlFw::Version[2] != mDeviceInfo.bCentralBootloaderVersionPatch)
+        if (fw_central_bl_version[0] != mDeviceInfo.bCentralBootloaderVersionMajor ||
+            fw_central_bl_version[1] != mDeviceInfo.bCentralBootloaderVersionMinor ||
+            fw_central_bl_version[2] != mDeviceInfo.bCentralBootloaderVersionPatch)
         {
             DEVICELOGD("Updating Central Boot Loader FW [%u.%u.%u] --> [%u.%u.%u]", 
                 mDeviceInfo.bCentralBootloaderVersionMajor, mDeviceInfo.bCentralBootloaderVersionMinor, mDeviceInfo.bCentralBootloaderVersionPatch, 
-                CentralBlFw::Version[0], CentralBlFw::Version[1], CentralBlFw::Version[2]);
-            auto status = CentralLoadFW((uint8_t*)CentralBlFw::Buffer);
+                fw_central_bl_version[0], fw_central_bl_version[1], fw_central_bl_version[2]);
+            int size;
+            auto buffer = fw_get_central_bl(size);
+            auto status = CentralLoadFW(buffer, size);
             if (status != Status::SUCCESS)
             {
                 return status;
@@ -2627,15 +2629,17 @@ namespace perc {
         }
 
         if (updateApp == true ||
-            CentralAppFw::Version[0] != mDeviceInfo.bCentralAppVersionMajor ||
-            CentralAppFw::Version[1] != mDeviceInfo.bCentralAppVersionMinor ||
-            CentralAppFw::Version[2] != mDeviceInfo.bCentralAppVersionPatch ||
-            CentralAppFw::Version[3] != mDeviceInfo.dwCentralAppVersionBuild)
+            fw_central_app_version[0] != mDeviceInfo.bCentralAppVersionMajor ||
+            fw_central_app_version[1] != mDeviceInfo.bCentralAppVersionMinor ||
+            fw_central_app_version[2] != mDeviceInfo.bCentralAppVersionPatch ||
+            fw_central_app_version[3] != mDeviceInfo.dwCentralAppVersionBuild)
         {
             DEVICELOGD("Updating Central Application FW [%u.%u.%u.%u] --> [%u.%u.%u.%u]", 
                 mDeviceInfo.bCentralAppVersionMajor, mDeviceInfo.bCentralAppVersionMinor, mDeviceInfo.bCentralAppVersionPatch, mDeviceInfo.dwCentralAppVersionBuild,
-                CentralAppFw::Version[0], CentralAppFw::Version[1], CentralAppFw::Version[2], CentralAppFw::Version[3]);
-            auto status = CentralLoadFW((uint8_t*)CentralAppFw::Buffer);
+                fw_central_app_version[0], fw_central_app_version[1], fw_central_app_version[2], fw_central_app_version[3]);
+            int size;
+            auto buffer = fw_get_central_app(size);
+            auto status = CentralLoadFW(buffer, size);
             if (status != Status::SUCCESS)
             {
                 return status;

@@ -14,11 +14,3 @@ output_build
 /captures
 .externalNativeBuild
 /.vs
-/versions.log
-/resources/target.mvcmd
-/resources/central_bl.bin
-/resources/central_app.bin
-/resources/remote_versions.log
-/libtm/src/fw.h
-/libtm/src/CentralBlFw.h
-/libtm/src/CentralAppFw.h
