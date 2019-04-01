@@ -5774,9 +5774,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                     rs2::frameset frames;
                     for (int i = 0; i < 100; i++)
                     {
-                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
-                        REQUIRE(b);
-
                         REQUIRE_NOTHROW(frames = pipe.wait_for_frames());
                         REQUIRE(frames.size() > 0);
                         auto f = frames.first_or_default(RS2_STREAM_POSE);
@@ -5784,6 +5781,9 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                         float norm = sqrt(pose_data.translation.x*pose_data.translation.x + pose_data.translation.y*pose_data.translation.y
                                           + pose_data.translation.z*pose_data.translation.z);
                         if (norm > norm_max) norm_max = norm;
+
+                        REQUIRE_NOTHROW(b = wo_snr.send_wheel_odometry(0, 0, { 1,0,0 }));
+                        REQUIRE(b);
                     }
                     Approx approx_norm(0);
                     approx_norm.epsilon(0.005); // 0.5cm threshold
