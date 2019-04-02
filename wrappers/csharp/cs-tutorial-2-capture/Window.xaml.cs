@@ -31,11 +31,8 @@ namespace Intel.RealSense
             var wbmp = img.Source as WriteableBitmap;
             return new Action<VideoFrame>(frame =>
             {
-                using (frame)
-                {
-                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
-                }
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
             });
         }
 
@@ -74,8 +71,8 @@ namespace Intel.RealSense
                             var colorFrame = frames.ColorFrame.DisposeWith(frames);
                             var depthFrame = frames.DepthFrame.DisposeWith(frames);
 
-                            // We colorize the depth frame for visualization purposes, .
-                            var colorizedDepth = colorizer.Process(depthFrame).As<VideoFrame>().DisposeWith(frames);
+                            // We colorize the depth frame for visualization purposes
+                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
 
                             // Render the frames.
                             Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);

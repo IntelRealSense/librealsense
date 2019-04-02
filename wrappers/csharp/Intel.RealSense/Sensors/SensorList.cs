@@ -1,94 +1,87 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class SensorList : IDisposable, IEnumerable<Sensor>
-    {
-        IntPtr m_instance;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
+    using System.Runtime.InteropServices;
 
-        public SensorList(IntPtr ptr)
+    /// <summary>
+    /// List of adjacent devices, sharing the same physical parent composite device
+    /// </summary>
+    internal sealed class SensorList : Base.Object, IEnumerable<Sensor>, ICollection
+    {
+        internal SensorList(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_sensor_list)
         {
-            m_instance = ptr;
         }
 
-
+        /// <inheritdoc/>
         public IEnumerator<Sensor> GetEnumerator()
         {
             object error;
 
-            int sensorCount = NativeMethods.rs2_get_sensors_count(m_instance, out error);
+            int sensorCount = NativeMethods.rs2_get_sensors_count(Handle, out error);
             for (int i = 0; i < sensorCount; i++)
             {
-                var ptr = NativeMethods.rs2_create_sensor(m_instance, i, out error);
-                yield return new Sensor(ptr);
+                var ptr = NativeMethods.rs2_create_sensor(Handle, i, out error);
+                yield return Sensor.Create<Sensor>(ptr);
             }
         }
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
+        /// <inheritdoc/>
+        public void CopyTo(Array array, int index)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException("array");
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                array.SetValue(this[i], i + index);
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of sensors in the list
+        /// </summary>
         public int Count
         {
             get
             {
                 object error;
-                int deviceCount = NativeMethods.rs2_get_sensors_count(m_instance, out error);
-                return deviceCount;
+                return NativeMethods.rs2_get_sensors_count(Handle, out error);
             }
         }
 
+        public object SyncRoot => this;
+
+        public bool IsSynchronized => false;
+
+        /// <summary>
+        /// Creates sensor by index
+        /// </summary>
+        /// <param name="index">the zero based index of sensor to retrieve</param>
+        /// <returns>the requested sensor</returns>
         public Sensor this[int index]
         {
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_create_sensor(m_instance, index, out error);
-                return new Sensor(ptr);
+                var ptr = NativeMethods.rs2_create_sensor(Handle, index, out error);
+                return Sensor.Create<Sensor>(ptr);
             }
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_sensor_list(m_instance);
-                m_instance = IntPtr.Zero;
-
-                disposedValue = true;
-            }
-        }
-
-        //TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~SensorList()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

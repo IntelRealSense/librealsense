@@ -1,9 +1,12 @@
-﻿using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Diagnostics;
+    using System.Runtime.InteropServices;
+
     /// <summary>
     /// Custom marshaler for throwing exceptions on errors codes.
     /// </summary>
@@ -17,6 +20,7 @@ namespace Intel.RealSense
             {
                 Instance = new ErrorMarshaler();
             }
+
             return Instance;
         }
 
@@ -26,7 +30,7 @@ namespace Intel.RealSense
 
         public void CleanUpNativeData(IntPtr pNativeData)
         {
-            //!TODO: maybe rs_free_error here?
+            // !TODO: maybe rs_free_error here?
             NativeMethods.rs2_free_error(pNativeData);
         }
 
@@ -43,7 +47,9 @@ namespace Intel.RealSense
         public object MarshalNativeToManaged(IntPtr pNativeData)
         {
             if (pNativeData == IntPtr.Zero)
+            {
                 return null;
+            }
 
             string function = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_failed_function(pNativeData));
             string args = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_failed_args(pNativeData));
@@ -66,6 +72,7 @@ namespace Intel.RealSense
                 throw new System.IO.IOException(message, inner);
 
             default:
+                // TODO: custom exception type
                 throw new Exception(message, inner);
             }
         }

@@ -246,7 +246,7 @@ MonoBehaviour:
       Width: 0
       Height: 0
     RequestedSerialNumber: 
-    PlaybackFile: d:/odo1.bag
+    PlaybackFile: 
     RecordPath: 
 --- !u!1 &341674281
 GameObject:

@@ -1,107 +1,125 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class FrameQueue : IDisposable
-    {
-        internal HandleRef m_instance;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using System.Text;
 
+    public class FrameQueue : Base.Object
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FrameQueue"/> class.
+        /// <para>
+        /// Frame queues are the simplest x-platform synchronization primitive provided by librealsense
+        /// to help developers who are not using async APIs
+        /// </para>
+        /// </summary>
+        /// <param name="capacity">max number of frames to allow to be stored in the queue before older frames will start to get dropped</param>
         public FrameQueue(int capacity = 1)
+            : base(Create(capacity), NativeMethods.rs2_delete_frame_queue)
         {
-            object error;
             Capacity = capacity;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_frame_queue(capacity, out error));
         }
 
-        public readonly int Capacity;
-         
-        public bool PollForFrame<T>(out T frame) where T : Frame
+        /// <summary>
+        /// Gets the max number of frames to allow to be stored in the queue before older frames will start to get dropped
+        /// </summary>
+        public int Capacity { get; private set; }
+
+        /// <summary>
+        /// Poll if a new frame is available and dequeue if it is
+        /// </summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="frame">dequeued frame</param>
+        /// <returns>true if new frame was stored to <paramref name="frame"/></returns>
+        public bool PollForFrame<T>(out T frame)
+            where T : Frame
         {
             object error;
             IntPtr ptr;
-            if (NativeMethods.rs2_poll_for_frame(m_instance.Handle, out ptr, out error) > 0)
+            if (NativeMethods.rs2_poll_for_frame(Handle, out ptr, out error) > 0)
             {
                 frame = Frame.Create<T>(ptr);
                 return true;
             }
+
             frame = null;
             return false;
         }
 
-        public Frame WaitForFrame(uint timeout_ms = 5000)
+        /// <summary>
+        /// Wait until new frame becomes available in the queue and dequeue it
+        /// </summary>
+        /// <param name="timeout_ms">max time in milliseconds to wait until an exception will be thrown</param>
+        /// <returns>dequeued frame</returns>
+        public Frame WaitForFrame(uint timeout_ms = 5000u)
         {
             return WaitForFrame<Frame>(timeout_ms);
         }
 
-        public T WaitForFrame<T>(uint timeout_ms = 5000) where T : Frame
+        /// <summary>
+        /// Wait until new frame becomes available in the queue and dequeue it
+        /// </summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="timeout_ms">max time in milliseconds to wait until an exception will be thrown</param>
+        /// <returns>dequeued frame</returns>
+        public T WaitForFrame<T>(uint timeout_ms = 5000u)
+            where T : Frame
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(Handle, timeout_ms, out error);
             return Frame.Create<T>(ptr);
         }
 
-        public bool TryWaitForFrame<T>(out T frame, uint timeout_ms = 5000) where T : Frame
+        /// <summary>
+        /// Wait until new frame becomes available in the queue and dequeue it
+        /// </summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="frame">dequeued frame</param>
+        /// <param name="timeout_ms">max time in milliseconds to wait until a frame becomes available</param>
+        /// <returns>true if new frame was stored to <paramref name="frame"/></returns>
+        public bool TryWaitForFrame<T>(out T frame, uint timeout_ms = 5000u)
+            where T : Frame
         {
             object error;
             IntPtr ptr;
-            bool res = NativeMethods.rs2_try_wait_for_frame(m_instance.Handle, timeout_ms, out ptr, out error) > 0;
+            bool res = NativeMethods.rs2_try_wait_for_frame(Handle, timeout_ms, out ptr, out error) > 0;
             frame = res ? Frame.Create<T>(ptr) : null;
             return res;
         }
 
-        public FrameSet WaitForFrames(uint timeout_ms = 5000)
+        /// <summary>
+        /// Wait until new frame becomes available in the queue and dequeue it
+        /// </summary>
+        /// <param name="timeout_ms">max time in milliseconds to wait until a frame becomes available</param>
+        /// <returns>dequeued frame</returns>
+        public FrameSet WaitForFrames(uint timeout_ms = 5000u)
         {
             object error;
-            var ptr = NativeMethods.rs2_wait_for_frame(m_instance.Handle, timeout_ms, out error);
+            var ptr = NativeMethods.rs2_wait_for_frame(Handle, timeout_ms, out error);
             return FrameSet.Create(ptr);
         }
 
+        /// <summary>
+        /// Enqueue new frame into a queue
+        /// </summary>
+        /// <param name="f">frame to enqueue</param>
         public void Enqueue(Frame f)
         {
             object error;
-            NativeMethods.rs2_frame_add_ref(f.m_instance.Handle, out error);
-            NativeMethods.rs2_enqueue_frame(f.m_instance.Handle, m_instance.Handle);
+            NativeMethods.rs2_frame_add_ref(f.Handle, out error);
+            NativeMethods.rs2_enqueue_frame(f.Handle, Handle);
         }
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
+        internal static IntPtr Create(int capacity = 1)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_frame_queue(m_instance.Handle);
-
-                disposedValue = true;
-            }
+            object error;
+            return NativeMethods.rs2_create_frame_queue(capacity, out error);
         }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~FrameQueue()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }
