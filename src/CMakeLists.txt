@@ -79,6 +79,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/stream.h"
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
+        "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/option.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-parser.h"
