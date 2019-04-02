@@ -5578,7 +5578,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
     log_to_console(RS2_LOG_SEVERITY_WARN);
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
     {
@@ -5712,7 +5711,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
     log_to_console(RS2_LOG_SEVERITY_WARN);
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // T265 invocation workaround
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.18.1"))
     {
