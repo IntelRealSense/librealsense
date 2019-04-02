@@ -57,32 +57,6 @@ ImVec4 operator+(const ImVec4& c, float v)
 
 namespace rs2
 {
-    namespace models
-    {
-        struct short3
-        {
-            uint16_t x, y, z;
-        };
-
-        #include <res/d435.h>
-        #include <res/d415.h>
-        #include <res/sr300.h>
-        #include <res/t265.h>
-    }
-
-    typedef void(*load_function)(std::vector<rs2::float3>&,
-        std::vector<rs2::float3>&, std::vector<models::short3>&);
-
-    obj_mesh load_model(load_function f)
-    {
-        obj_mesh res;
-        std::vector<models::short3> idx;
-        f(res.positions, res.normals, idx);
-        for (auto i : idx)
-            res.indexes.push_back({ i.x, i.y, i.z });
-        return res;
-    }
-
     template <typename T>
     std::string safe_call(T t)
     {
@@ -916,8 +890,8 @@ namespace rs2
         std::shared_ptr<sensor> s, std::string& error_message)
         : s(s), dev(dev), ui(), last_valid_ui(),
         streaming(false), _pause(false),
-        depth_colorizer(std::make_shared<rs2::colorizer>()),
-        yuy2rgb(std::make_shared<rs2::yuy_decoder>())
+        depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
+        yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>())
     {
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
@@ -2507,19 +2481,6 @@ namespace rs2
         not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
     
         update_configuration();
-
-        camera_mesh.push_back(load_model(models::uncompress_d415_obj));
-        camera_mesh.push_back(load_model(models::uncompress_d435_obj));
-        camera_mesh.push_back(load_model(models::uncompress_sr300_obj));
-        camera_mesh.push_back(load_model(models::uncompress_t265_obj));
-
-        for (auto&& mesh : camera_mesh)
-            for (auto& xyz : mesh.positions)
-            {
-                xyz = xyz / 1000.f;
-                xyz.x *= -1;
-                xyz.y *= -1;
-            }
     }
 
     void viewer_model::gc_streams()
@@ -3893,6 +3854,8 @@ namespace rs2
     {
         std::vector<rs2::frame> res;
 
+        if (uploader) f = uploader->process(f);
+
         auto filtered = apply_filters(f, source);
 
         map_id(filtered, f);
@@ -4623,30 +4586,7 @@ namespace rs2
         glPopAttrib(); // line width
     }
 
-     void viewer_model::render_camera_mesh(int id)
-    {
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-
-        glBegin(GL_TRIANGLES);
-        auto& mesh = camera_mesh[id];
-        for (auto& i : mesh.indexes)
-        {
-            auto v0 = mesh.positions[i.x];
-            auto v1 = mesh.positions[i.y];
-            auto v2 = mesh.positions[i.z];
-            glVertex3fv(&v0.x);
-            glVertex3fv(&v1.x);
-            glVertex3fv(&v2.x);
-            glColor4f(0.036f, 0.044f, 0.051f, 0.3f);
-        }
-        glEnd();
-
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
-    }
- void viewer_model::render_3d_view(const rect& viewer_rect,
+    void viewer_model::render_3d_view(const rect& viewer_rect,
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1)
     {
         auto top_bar_height = 32.f;
@@ -4847,98 +4787,61 @@ namespace rs2
             glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
+            glBindTexture(GL_TEXTURE_2D, tex);
             glEnable(GL_TEXTURE_2D);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture_border_mode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture_border_mode);
 
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(r2 * view_mat);
+            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_FILLED, render_quads ? 1.f : 0.f);
 
-            auto vertices = last_points.get_vertices();
-            auto tex_coords = last_points.get_texture_coordinates();
+            _pc_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
+            _pc_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
 
-            glBindTexture(GL_TEXTURE_2D, tex);
-
-            if (render_quads)
-            {
-                glBegin(GL_QUADS);
-
-                const auto threshold = 0.05f;
-                auto width = vf_profile.width();
-                auto height = vf_profile.height();
-                for (int x = 0; x < width - 1; ++x) {
-                    for (int y = 0; y < height - 1; ++y) {
-                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
-                        if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
-                            && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
-                            && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold) {
-                            glVertex3fv(vertices[a]); glTexCoord2fv(tex_coords[a]);
-                            glVertex3fv(vertices[b]); glTexCoord2fv(tex_coords[b]);
-                            glVertex3fv(vertices[d]); glTexCoord2fv(tex_coords[d]);
-                            glVertex3fv(vertices[c]); glTexCoord2fv(tex_coords[c]);
-                        }
-                    }
-                }
-                glEnd();
-            }
-            else
-            {
-                glBegin(GL_POINTS);
-                for (int i = 0; i < last_points.size(); i++)
-                {
-                    if (vertices[i].z)
-                    {
-                        glVertex3fv(vertices[i]);
-                        glTexCoord2fv(tex_coords[i + 1]);
-                    }
-                }
-                glEnd();
-            }
-
-            glPopMatrix();
+            // Render Point-Cloud
+            last_points.apply_filter(_pc_renderer);
 
             glDisable(GL_TEXTURE_2D);
+
+            _cam_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
+            _cam_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
 
             if (streams.find(selected_depth_source_uid) != streams.end())
             {
                 auto source_frame = streams[selected_depth_source_uid].texture->get_last_frame();
-
-                int index = -1;
-
-                auto dev = streams[selected_depth_source_uid].dev->dev;
-                if (dev.supports(RS2_CAMERA_INFO_NAME))
+                if (source_frame)
                 {
-                    auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-                    if (starts_with(dev_name, "Intel RealSense D415"))  index = 0;
-                    if (starts_with(dev_name, "Intel RealSense D435") ||
-                        starts_with(dev_name, "Intel RealSense USB2"))  index = 1;
-                    if (starts_with(dev_name, "Intel RealSense SR300")) index = 2;
-                    if (starts_with(dev_name, "Intel RealSense T26"))   index = 3;
-                };
+                    glDisable(GL_DEPTH_TEST);
+                    glEnable(GL_BLEND);
 
-                if (source_frame && index >= 0)
-                {
-                    glMatrixMode(GL_MODELVIEW);
-                    glPushMatrix();
-                    glLoadMatrixf(r2 * view_mat);
-                    render_camera_mesh(index);
-                    glPopMatrix();
+                    glBlendFunc(GL_ONE, GL_ONE);
+
+                    // Render camera model (based on source_frame camera type)
+                    source_frame.apply_filter(_cam_renderer);
+
+                    glDisable(GL_BLEND);
+                    glEnable(GL_DEPTH_TEST);
                 }
             }
         }
 
+        glPopMatrix();
+
         if (pose)
         {
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(r1 * view_mat);
-            render_camera_mesh(t265_mesh_id);
-            glPopMatrix();
-        }
+            _cam_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
+            _cam_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r1 * view_mat);
 
-        glPopMatrix();
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+
+            glBlendFunc(GL_ONE, GL_ONE);
+            // Render T265 model (camera model of the pose frame)
+            pose.apply_filter(_cam_renderer);
+
+            glDisable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);
+        }
 
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
@@ -5227,6 +5130,32 @@ namespace rs2
                     }
                     ImGui::PopItemWidth();
 
+#ifndef __APPLE__ // Not available at the moment on Mac
+                    bool gpu_rendering = temp_cfg.get(configurations::performance::glsl_for_rendering);
+                    if (ImGui::Checkbox("Use GLSL for Rendering", &gpu_rendering))
+                    {
+                        refresh_required = true;
+                        temp_cfg.set(configurations::performance::glsl_for_rendering, gpu_rendering);
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Using OpenGL 3 shaders is a widely supported way to boost rendering speeds on modern GPUs.");
+
+                    bool gpu_processing = temp_cfg.get(configurations::performance::glsl_for_processing);
+                    if (ImGui::Checkbox("Use GLSL for Processing", &gpu_processing))
+                    {
+                        refresh_required = true;
+                        temp_cfg.set(configurations::performance::glsl_for_processing, gpu_processing);
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Using OpenGL 3 shaders for depth data processing can reduce CPU utilisation.");
+
+                    if (gpu_processing && !gpu_rendering)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                        ImGui::Text(u8"\uf071 Using GLSL for processing but not for rendering can reduce CPU utilisation, but is likely to hurt overall performance!");
+                        ImGui::PopStyleColor();
+                    }
+#endif
                     bool msaa = temp_cfg.get(configurations::performance::enable_msaa);
                     if (ImGui::Checkbox("Enable Multisample Anti-Aliasing (MSAA)", &msaa))
                     {

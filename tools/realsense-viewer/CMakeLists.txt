@@ -45,8 +45,6 @@ endif()
             ../../third-party/imgui/imgui_impl_glfw.cpp
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp
-            ${LZ4_DIR}/lz4.h
-            ${LZ4_DIR}/lz4.c
             ../../common/rendering.h
             ../../common/model-views.h
             ../../common/model-views.cpp
@@ -62,8 +60,6 @@ endif()
             ../../common/os.h
             ../../common/os.cpp
         )
-
-    include_directories(${LZ4_DIR})
 
     # config-ui
     if(WIN32)
@@ -96,6 +92,7 @@ endif()
     target_link_libraries(realsense-viewer ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
+                                           realsense2-gl
                                            )
 
     set_target_properties (realsense-viewer PROPERTIES

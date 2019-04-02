@@ -120,13 +120,13 @@ namespace rs2
         }
         namespace performance
         {
-            static const char* glsl_for_rendering  { "performance.glsl_for_rendering" };
-            static const char* glsl_for_processing { "performance.glsl_for_processing" };
+            static const char* glsl_for_rendering  { "performance.glsl_for_rendering.v2" };
+            static const char* glsl_for_processing { "performance.glsl_for_processing.v2" };
             static const char* enable_msaa         { "performance.msaa" };
             static const char* msaa_samples        { "performance.msaa_samples" };
             static const char* show_fps            { "performance.show_fps" };
             static const char* vsync               { "performance.vsync" };
-            static const char* font_oversample     { "performance.font_oversample" };
+            static const char* font_oversample     { "performance.font_oversample.v2" };
         }
     }
 
@@ -751,7 +751,7 @@ namespace rs2
         post_processing_filters(viewer_model& viewer)
             : processing_block([&](rs2::frame f, const rs2::frame_source& source)
             {
-                process(std::move(f),source);
+                process(std::move(f), source);
             }),
             viewer(viewer),
             depth_stream_active(false),
@@ -759,7 +759,8 @@ namespace rs2
             resulting_queue(static_cast<unsigned int>(resulting_queue_max_size)),
             render_thread(),
             render_thread_active(false),
-            pc(new pointcloud())
+            pc(new gl::pointcloud()),
+            uploader(new gl::uploader())
         {
             std::string s;
             pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointcloud Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
@@ -836,6 +837,8 @@ namespace rs2
         int last_frame_number = 0;
         double last_timestamp = 0;
         int last_stream_id = 0;
+
+        std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };
 
     class press_button_model
@@ -1085,10 +1088,8 @@ namespace rs2
         bool manipulating = false;
         float2 overflow = { 0.f, 0.f };
 
-        // Camera models
-        std::vector<obj_mesh> camera_mesh;
-        const int t265_mesh_id = 3;
-        void render_camera_mesh(int id);
+        rs2::gl::camera_renderer _cam_renderer;
+        rs2::gl::pointcloud_renderer _pc_renderer;
     };
 
     void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool notify = true);
