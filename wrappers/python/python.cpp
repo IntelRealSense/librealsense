@@ -838,7 +838,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config")
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start)
         .def("stop", &rs2::pipeline::stop)
-        .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000)
+        .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("poll_for_frames", [](const rs2::pipeline &self)
         {
             rs2::frameset frames;
