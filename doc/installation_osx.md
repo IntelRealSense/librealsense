@@ -18,7 +18,7 @@
 4. Generate XCode project:
   * `mkdir build && cd build`
   * `sudo xcode-select --reset`
-  * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -G Xcode`
+  * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false`
 5. Build the Project
   * `make -j`
 
