@@ -81,10 +81,14 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Library)
 
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/../cmake/realsense2")
 
+configure_file("${PROJECT_SOURCE_DIR}/Version.h.in"  "${CMAKE_CURRENT_BINARY_DIR}/Version.h")
+configure_file("${PROJECT_SOURCE_DIR}/version.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
+
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-

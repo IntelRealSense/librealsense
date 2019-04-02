@@ -13,7 +13,6 @@ output_build
 *-build/
 /captures
 .externalNativeBuild
-Version.h
 /.vs
 /versions.log
 /resources/target.mvcmd
@@ -23,4 +22,3 @@ Version.h
 /libtm/src/fw.h
 /libtm/src/CentralBlFw.h
 /libtm/src/CentralAppFw.h
-/libtm/src/version.rc
