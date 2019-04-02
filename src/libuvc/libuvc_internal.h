@@ -17,7 +17,8 @@
 #include <signal.h>
 #include "utlist.h"
 
-#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic push ignored "-Wpedantic"
 #include <libusb.h>
 #pragma GCC diagnostic pop
 
