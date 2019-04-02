@@ -13,6 +13,7 @@
 #include "image.h"
 #include "stream.h"
 #include "l500-private.h"
+#include "error-handling.h"
 
 namespace librealsense
 {
@@ -44,6 +45,8 @@ namespace librealsense
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         std::vector<tagged_profile> get_profiles_tags() const override;
 
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
     protected:
         friend class l500_depth_sensor;
 
@@ -52,6 +55,8 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+
+        std::unique_ptr<polling_error_handler> _polling_error_handler;
 
         lazy<std::vector<uint8_t>> _calib_table_raw;
         void force_hardware_reset() const;
@@ -238,5 +243,11 @@ namespace librealsense
         std::shared_ptr<option> _zo_point_x_option;
         std::shared_ptr<option> _zo_point_y_option;
         lazy<std::pair<int, int>> _zo_point;
+    };
+
+    class l500_notification_decoder : public notification_decoder
+    {
+    public:
+        notification decode(int value) override;
     };
 }

@@ -137,33 +137,15 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs500_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<std::shared_ptr<matcher>> matchers;
-
-        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get()};
-
-        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
-        }
-        else
-        {
-            return matcher_factory::create(RS2_MATCHER_DIC, streams);
-        }
+        return l500_depth::create_matcher(frame);
     }
 
     std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
     {
-        std::vector<std::shared_ptr<matcher>> matchers;
+        std::vector<std::shared_ptr<matcher>> matchers = { l500_depth::create_matcher(frame),
+            std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type()) };
 
-        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get(), _color_stream.get() };
+        return std::make_shared<timestamp_composite_matcher>(matchers);
 
-        if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
-        {
-            return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
-        }
-        else
-        {
-            return matcher_factory::create(RS2_MATCHER_DIC_C, streams);
-        }
     }
 }
