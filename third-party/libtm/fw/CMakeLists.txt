@@ -13,7 +13,15 @@ set( FW_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/target"
 set(APP_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/app")
 set( BL_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/bl")
 
-add_library(fw STATIC "fw.rc") # lib.exe can't handle multiple .res files, so include them in one
+add_library(fw STATIC empty.c)
+
+if (MSVC)
+  # lib.exe can't handle multiple .res files, so include them in one.
+  # even then, the linker won't grab a .res out of a .lib object, so it needs to be explicitly listed
+  # and to find the name of the .res file (across cmake generators) we need to create our own rule. :(
+  add_custom_command(TARGET fw BYPRODUCTS fw.res COMMAND ${CMAKE_RC_COMPILER} ${CMAKE_RC_FLAGS} /I . /fo "fw.res" "${CMAKE_CURRENT_SOURCE_DIR}/fw.rc")
+  target_link_libraries(fw PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/fw.res")
+endif()
 
 target_include_directories(fw PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
