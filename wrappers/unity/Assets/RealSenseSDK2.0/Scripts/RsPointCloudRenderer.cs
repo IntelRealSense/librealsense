@@ -113,7 +113,7 @@ public class RsPointCloudRenderer : MonoBehaviour
         {
             if (frame.IsComposite)
             {
-                using (var fs = FrameSet.FromFrame(frame))
+                using (var fs = frame.As<FrameSet>())
                 using (var points = fs.FirstOrDefault<Points>(Stream.Depth, Format.Xyz32f))
                 {
                     if (points != null)
@@ -136,7 +136,7 @@ public class RsPointCloudRenderer : MonoBehaviour
     }
 
 
-    protected void Update()
+    protected void LateUpdate()
     {
         if (q != null)
         {

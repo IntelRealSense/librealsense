@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
@@ -13,6 +15,12 @@ namespace Intel.RealSense
         {
             object err;
             NativeMethods.rs2_log_to_file(severity, filename, out err);
+        }
+
+        public static void LogMessage(LogSeverity severity, string message)
+        {
+            object err;
+            NativeMethods.rs2_log(severity, message, out err);
         }
     }
 }

@@ -29,7 +29,7 @@ index fd387bf..3219519 100644
  
  /*
   * The Logitech cameras listed below have their interface class set to
-@@ -2819,6 +2821,168 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2819,6 +2821,176 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= (kernel_ulong_t)&uvc_quirk_force_y8 },
@@ -191,6 +191,14 @@ index fd387bf..3219519 100644
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
 +	  .idVendor			= 0x8086,
 +	  .idProduct		= 0x0b4b,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_META(V4L2_META_FMT_D4XX) },
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b3d,
 +	  .bInterfaceClass	= USB_CLASS_VIDEO,
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,

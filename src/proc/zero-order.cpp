@@ -3,7 +3,7 @@
 
 #include "zero-order.h"
 #include <iomanip>
-#include "l500/l500.h"
+#include "l500/l500-depth.h"
 
 const double METER_TO_MM = 1000;
 
@@ -329,9 +329,7 @@ namespace librealsense
     {
         if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
         {
-            auto dev = const_cast<device_interface*>(&(sensor->get_device()));
-
-            if (auto l5 = dynamic_cast<l500_device*>(dev))
+            if(auto l5 = dynamic_cast<l500_depth_sensor*>(sensor.get()))
             {
                 _options.baseline = l5->read_baseline();
                 return true;
@@ -432,7 +430,7 @@ namespace librealsense
     {
         if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
         {
-            if (auto l500 = As<l500_device::l500_depth_sensor>(sensor))
+            if (auto l500 = As<l500_depth_sensor>(sensor))
             {
                 _zo_point_x = l500->get_zo_point_x();
                 _zo_point_y = l500->get_zo_point_y();

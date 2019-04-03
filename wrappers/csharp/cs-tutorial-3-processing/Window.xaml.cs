@@ -38,11 +38,8 @@ namespace Intel.RealSense
             var wbmp = img.Source as WriteableBitmap;
             return new Action<VideoFrame>(frame =>
             {
-                using (frame)
-                {
-                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
-                }
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
             });
         }
 
@@ -56,18 +53,10 @@ namespace Intel.RealSense
                 cfg.EnableStream(Stream.Depth, 640, 480);
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
                 var pp = pipeline.Start(cfg);
-                var s = pp.Device.Sensors;
 
-                var blocks = new List<ProcessingBlock>();
-
-                foreach (var sensor in pp.Device.Sensors)
-                {
-                    var list = sensor.ProcessingBlocks;
-                    foreach (var block in list)
-                    {
-                        blocks.Add(block);
-                    }
-                }
+                // Get the recommended processing blocks for the depth sensor
+                var sensor = pp.Device.Sensors.First(s => s.Is(Extension.DepthSensor));
+                var blocks = sensor.ProcessingBlocks.ToList();
 
                 // Allocate bitmaps for rendring.
                 // Since the sample aligns the depth frames to the color frames, both of the images will have the color resolution
@@ -87,7 +76,7 @@ namespace Intel.RealSense
                 // Processing blocks are inherently thread-safe and play well with
                 // other API primitives such as frame-queues, 
                 // and can be used to encapsulate advanced operations.
-                // All invokations are, however, synchronious so the high-level threading model
+                // All invocations are, however, synchronious so the high-level threading model
                 // is up to the developer
                 block = new CustomProcessingBlock((f, src) =>
                 {
@@ -96,31 +85,31 @@ namespace Intel.RealSense
                     // at the end of scope. 
                     using (var releaser = new FramesReleaser())
                     {
-                        var frames = FrameSet.FromFrame(f).DisposeWith(releaser);
-
                         foreach (ProcessingBlock p in blocks)
-                            frames = p.Process(frames).DisposeWith(releaser);
+                            f = p.Process(f).DisposeWith(releaser);
 
-                        frames = frames.ApplyFilter(align).DisposeWith(releaser);
-                        frames = frames.ApplyFilter(colorizer).DisposeWith(releaser);
+                        f = f.ApplyFilter(align).DisposeWith(releaser);
+                        f = f.ApplyFilter(colorizer).DisposeWith(releaser);
 
+                        var frames = f.As<FrameSet>().DisposeWith(releaser);
+                        
                         var colorFrame = frames[Stream.Color, Format.Rgb8].DisposeWith(releaser);
                         var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
 
                         // Combine the frames into a single result
                         var res = src.AllocateCompositeFrame(colorizedDepth, colorFrame).DisposeWith(releaser);
                         // Send it to the next processing stage
-                        src.FramesReady(res);
+                        src.FrameReady(res);
                     }
                 });
 
                 // Register to results of processing via a callback:
                 block.Start(f =>
                 {
-                    using (var frames = FrameSet.FromFrame(f))
+                    using (var frames = f.As<FrameSet>())
                     {
                         var colorFrame = frames.ColorFrame.DisposeWith(frames);
-                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].As<VideoFrame>().DisposeWith(frames);
+                        var colorizedDepth = frames.First<VideoFrame>(Stream.Depth, Format.Rgb8).DisposeWith(frames);
 
                         Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                         Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
@@ -136,7 +125,7 @@ namespace Intel.RealSense
                         using (var frames = pipeline.WaitForFrames())
                         {
                             // Invoke custom processing block
-                            block.ProcessFrames(frames);
+                            block.Process(frames);
                         }
                     }
                 }, token);

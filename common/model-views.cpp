@@ -914,7 +914,7 @@ namespace rs2
     subdevice_model::subdevice_model(
         device& dev,
         std::shared_ptr<sensor> s, std::string& error_message)
-        : s(s), dev(dev), ui(), last_valid_ui(),
+        : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::colorizer>()),
         yuy2rgb(std::make_shared<rs2::yuy_decoder>())
@@ -1444,13 +1444,12 @@ namespace rs2
     {
         viewer.not_model.add_log("Stopping streaming");
 
-        // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
             {
-                viewer.tm2.reset_trajectory();
-                viewer.tm2.record_trajectory(false);
+                 this->tm2.reset_trajectory();
+                 this->tm2.record_trajectory(false);
             }
         });
 
@@ -1529,10 +1528,12 @@ namespace rs2
         viewer.not_model.add_log(ss.str());
 
         // TODO  - refactor tm2 from viewer to subdevice
-        for_each(stream_display_names.begin(), stream_display_names.end(), [&viewer](std::pair<int, std::string> kvp)
+        for_each(stream_display_names.begin(), stream_display_names.end(), [this, &viewer](std::pair<int, std::string> kvp)
         {
             if ("Pose" == kvp.second)
-                viewer.tm2.record_trajectory(true);
+            {
+                this->tm2.record_trajectory(true);
+            }
         });
 
         s->open(profiles);
@@ -1908,184 +1909,171 @@ namespace rs2
         return ImGui::Combo(id.c_str(), &new_index, device_names_chars.data(), static_cast<int>(device_names.size()));
     }
 
-    void viewer_model::render_pose(rs2::rect stream_rect, uint32_t pose_stream_count, float buttons_heights, ImGuiWindowFlags flags)
+    void viewer_model::render_pose(rs2::rect stream_rect, float buttons_heights, ImGuiWindowFlags flags)
     {
         int num_of_pose_buttons = 3; // trajectory, grid, info
-
-        if (pose_stream_count > 1)
-        {
-            num_of_pose_buttons = 1; // |Currently supports only single pose view
-        }
 
         ImGui::SetNextWindowPos({ stream_rect.x, stream_rect.y + buttons_heights });
         ImGui::SetNextWindowSize({ stream_rect.w, buttons_heights });
         std::string pose_label = to_string() << "header of 3dviewer - pose";
         ImGui::Begin(pose_label.c_str(), nullptr, flags);
 
-        // Draw selection buttons on the pose header
+        // Draw selection buttons on the pose header, the buttons are global to all the streaming devices
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, 0 });
 
-        /* not supporting multiple stream at the moment */
-        if (pose_stream_count == 1)
-        {
-            bool color_icon = tm2.pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
-            if (color_icon)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-            }
-
-            // Draw info object button
-            if (ImGui::Button(tm2.pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
-            {
-                for (auto&& s : streams)
-                {
-                    if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    {
-                        s.second.show_stream_details = !s.second.show_stream_details;
-                        tm2.pose_info_object_button.toggle_button();
-                    }
-                }
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", tm2.pose_info_object_button.get_tooltip().c_str());
-            }
-            if (color_icon)
-            {
-                ImGui::PopStyleColor(2);
-            }
-
-
-            // Draw grid object button
-            ImGui::SameLine();
-
-            if (ImGui::Button(tm2.grid_object_button.get_icon().c_str(), { 24, buttons_heights }))
-            {
-                ImGui::OpenPopup("Grid Configuration");
-            }
-
-            if (ImGui::BeginPopupModal("Grid Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysUseWindowPadding))
-            {
-                for (auto&& s : streams)
-                {
-                    if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    {
-                        ImGui::Text(" Unit Scale:");
-                        ImGui::Text("     1 unit =");
-                        ImGui::SameLine();
-
-                        ImGui::PushItemWidth(100);
-                        float currentStep = s.second.texture->currentGrid.step;
-                        if (ImGui::InputFloat("##grid_step", &currentStep, 0.1f, 1.0f, 2))
-                        {
-                            if (currentStep >= 0.01)
-                            {
-                                s.second.texture->currentGrid.set(currentStep);
-                            }
-                        }
-                        ImGui::PopItemWidth();
-
-                        ImGui::SameLine();
-
-                        ImGui::PushItemWidth(80);
-                        int currentGridUnit = s.second.texture->currentGrid.unit;
-                        if (ImGui::Combo("##grid_scale_combo", &currentGridUnit, "Meter\0Feet\0\0"))
-                        {
-                            s.second.texture->currentGrid.set((grid_step_unit)currentGridUnit);
-                        }
-                        ImGui::PopItemWidth();
-
-
-                        ImGui::Separator();
-
-                        int boxHorizontalLength = s.second.texture->currentGrid.boxHorizontalLength;
-                        int boxVerticalLength = s.second.texture->currentGrid.boxVerticalLength;
-                        int boxVerticaAlignment = s.second.texture->currentGrid.boxVerticalAlignment;
-
-                        ImGui::Text(" Display");
-
-                        ImGui::Columns(2, 0, false);
-                        ImGui::SetColumnOffset(1, 100);
-
-                        ImGui::Text("     Horizontal:");
-                        ImGui::NextColumn();
-                        ImGui::PushItemWidth(148);
-                        if (ImGui::SliderIntWithSteps("##boxHorizontalLength", &boxHorizontalLength, 0, 100, 2))
-                        {
-                            s.second.texture->currentGrid.boxHorizontalLength = boxHorizontalLength;
-                        }
-                        ImGui::PopItemWidth();
-                        ImGui::NextColumn();
-
-                        ImGui::Text("     Vertical:  ");
-                        ImGui::NextColumn();
-                        ImGui::PushItemWidth(148);
-                        if (ImGui::SliderIntWithSteps("##boxVerticalLength", &boxVerticalLength, 1, 99, 2))
-                        {
-                            s.second.texture->currentGrid.boxVerticalLength = boxVerticalLength;
-                        }
-                        ImGui::PopItemWidth();
-                        ImGui::NextColumn();
-
-                        ImGui::Text("     Vertical Alignment:  ");
-                        ImGui::NextColumn();
-                        ImGui::PushItemWidth(148);
-                        if (ImGui::SliderIntWithSteps("##boxVerticalAlignment", &boxVerticaAlignment, -100, 100, 1))
-                        {
-                            s.second.texture->currentGrid.boxVerticalAlignment = boxVerticaAlignment;
-                        }
-                        ImGui::PopItemWidth();
-
-                        ImGui::Columns();
-
-                        if (ImGui::Button("OK", ImVec2(80, 0)))
-                        {
-                            s.second.texture->previousGrid = s.second.texture->currentGrid;
-                            ImGui::CloseCurrentPopup();
-                        }
-
-                        ImGui::SameLine();
-                        if (ImGui::Button("Cancel", ImVec2(80, 0)))
-                        {
-                            s.second.texture->currentGrid.set(s.second.texture->previousGrid);
-                            ImGui::CloseCurrentPopup();
-                        }
-
-                        ImGui::SameLine();
-                        if (ImGui::Button("Reset", ImVec2(80, 0)))
-                        {
-                            pose_grid resetGrid;
-                            s.second.texture->currentGrid.set(resetGrid);
-                            s.second.texture->previousGrid = s.second.texture->currentGrid;
-                            ImGui::CloseCurrentPopup();
-                        }
-                        break;
-                    }
-                }
-
-                ImGui::EndPopup();
-            }
-
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", tm2.grid_object_button.get_tooltip().c_str());
-            }
-
-            ImGui::SameLine();
-        }
-        // Draw trajectory button
-
-        bool color_icon = tm2.trajectory_button.is_pressed(); //draw trajectory is on - color the icon
+        bool color_icon = pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
         if (color_icon)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
         }
-        if (ImGui::Button(tm2.trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
+
+        // Draw info object button (is not synchronized with the info buttons in the 2D view)
+        if (ImGui::Button(pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
         {
-            tm2.trajectory_button.toggle_button();
-            tm2.record_trajectory(tm2.trajectory_button.is_pressed());
+            show_pose_info_3d = !show_pose_info_3d;
+            pose_info_object_button.toggle_button();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", pose_info_object_button.get_tooltip().c_str());
+        }
+        if (color_icon)
+        {
+            ImGui::PopStyleColor(2);
+        }
+
+        // Draw grid object button
+        ImGui::SameLine();
+
+        if (ImGui::Button(grid_object_button.get_icon().c_str(), { 24, buttons_heights }))
+        {
+            ImGui::OpenPopup("Grid Configuration");
+        }
+
+        if (ImGui::BeginPopupModal("Grid Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_AlwaysUseWindowPadding))
+        {
+            for (auto&& s : streams)
+            {
+                if (s.second.is_stream_visible() && s.second.profile.stream_type() == RS2_STREAM_POSE)
+                {
+                    ImGui::Text(" Unit Scale:");
+                    ImGui::Text("     1 unit =");
+                    ImGui::SameLine();
+
+                    ImGui::PushItemWidth(100);
+                    float currentStep = s.second.texture->currentGrid.step;
+                    if (ImGui::InputFloat("##grid_step", &currentStep, 0.1f, 1.0f, 2))
+                    {
+                        if (currentStep >= 0.01)
+                        {
+                            s.second.texture->currentGrid.set(currentStep);
+                        }
+                    }
+                    ImGui::PopItemWidth();
+
+                    ImGui::SameLine();
+
+                    ImGui::PushItemWidth(80);
+                    int currentGridUnit = s.second.texture->currentGrid.unit;
+                    if (ImGui::Combo("##grid_scale_combo", &currentGridUnit, "Meter\0Feet\0\0"))
+                    {
+                        s.second.texture->currentGrid.set((grid_step_unit)currentGridUnit);
+                    }
+                    ImGui::PopItemWidth();
+
+
+                    ImGui::Separator();
+
+                    int boxHorizontalLength = s.second.texture->currentGrid.boxHorizontalLength;
+                    int boxVerticalLength = s.second.texture->currentGrid.boxVerticalLength;
+                    int boxVerticaAlignment = s.second.texture->currentGrid.boxVerticalAlignment;
+
+                    ImGui::Text(" Display");
+
+                    ImGui::Columns(2, 0, false);
+                    ImGui::SetColumnOffset(1, 100);
+
+                    ImGui::Text("     Horizontal:");
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(148);
+                    if (ImGui::SliderIntWithSteps("##boxHorizontalLength", &boxHorizontalLength, 0, 100, 2))
+                    {
+                        s.second.texture->currentGrid.boxHorizontalLength = boxHorizontalLength;
+                    }
+                    ImGui::PopItemWidth();
+                    ImGui::NextColumn();
+
+                    ImGui::Text("     Vertical:  ");
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(148);
+                    if (ImGui::SliderIntWithSteps("##boxVerticalLength", &boxVerticalLength, 1, 99, 2))
+                    {
+                        s.second.texture->currentGrid.boxVerticalLength = boxVerticalLength;
+                    }
+                    ImGui::PopItemWidth();
+                    ImGui::NextColumn();
+
+                    ImGui::Text("     Vertical Alignment:  ");
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(148);
+                    if (ImGui::SliderIntWithSteps("##boxVerticalAlignment", &boxVerticaAlignment, -100, 100, 1))
+                    {
+                        s.second.texture->currentGrid.boxVerticalAlignment = boxVerticaAlignment;
+                    }
+                    ImGui::PopItemWidth();
+
+                    ImGui::Columns();
+
+                    if (ImGui::Button("OK", ImVec2(80, 0)))
+                    {
+                        s.second.texture->previousGrid = s.second.texture->currentGrid;
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("Cancel", ImVec2(80, 0)))
+                    {
+                        s.second.texture->currentGrid.set(s.second.texture->previousGrid);
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("Reset", ImVec2(80, 0)))
+                    {
+                        pose_grid resetGrid;
+                        s.second.texture->currentGrid.set(resetGrid);
+                        s.second.texture->previousGrid = s.second.texture->currentGrid;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    break;
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", grid_object_button.get_tooltip().c_str());
+        }
+
+        ImGui::SameLine();
+
+        color_icon = trajectory_button.is_pressed(); //draw trajectory is on - color the icon
+        if (color_icon)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+        }
+        if (ImGui::Button(trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
+        {
+            trajectory_button.toggle_button();
+            for (auto&& s : streams)
+            {
+                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
+                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
+            }
         }
         if (color_icon)
         {
@@ -2093,7 +2081,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", tm2.trajectory_button.get_tooltip().c_str());
+            ImGui::SetTooltip("%s", trajectory_button.get_tooltip().c_str());
         }
 
         ImGui::End();
@@ -2407,7 +2395,6 @@ namespace rs2
 
         // Draw pose header if pose stream exists
         bool pose_render = false;
-        uint32_t pose_stream_count = 0;
 
         for (auto&& s : streams)
         {
@@ -2415,17 +2402,16 @@ namespace rs2
                 s.second.profile.stream_type() == RS2_STREAM_POSE)
             {
                 pose_render = true;
-                pose_stream_count++;
+                break;
             }
         }
 
-        auto total_top_bar_height = top_bar_height; // may include single bar or additional bar for pose
-
         if (pose_render)
         {
-            total_top_bar_height += top_bar_height; // add additional bar height for pose
-            render_pose(stream_rect, pose_stream_count, buttons_heights, flags);
+            render_pose(stream_rect, buttons_heights, flags);
         }
+
+        auto total_top_bar_height = top_bar_height * (1 + pose_render); // may include single bar or additional bar for pose
 
         ImGui::PopStyleColor(6);
         ImGui::PopStyleVar();
@@ -4158,7 +4144,13 @@ namespace rs2
                         }
 
                         if (frame.is<pose_frame>())  // Aggregate the trajectory in pause mode to make the path consistent
-                            tm2.update_model_trajectory(frame.as<pose_frame>(), !paused);
+                        {
+                            auto dev = streams[frame.get_profile().unique_id()].dev;
+                            if (dev)
+                            {
+                                dev->tm2.update_model_trajectory(frame.as<pose_frame>(), !paused);
+                            }
+                        }
 
                         auto texture = upload_frame(std::move(frame));
 
@@ -4729,6 +4721,7 @@ namespace rs2
         rs2::matrix4 rx(_rx);
         rs2::matrix4 rz(_rz);
 
+        int stream_num = 0; // counter to locate the pose info window correctly (currently works for up to 3 streaming devices)
         pose_frame pose = frame{};
         for (auto&& stream : streams)
         {
@@ -4744,10 +4737,11 @@ namespace rs2
 
                 pose = f;
                 rs2_pose pose_data = pose.get_pose_data();
-                if (stream.second.show_stream_details)
+                if (show_pose_info_3d)
                 {
                     auto stream_type = stream.second.profile.stream_type();
                     auto stream_rect = viewer_rect;
+                    stream_rect.x += 460 * stream_num;
                     stream_rect.y += 2 * top_bar_height + 5;
                     stream.second.show_stream_pose(font1, stream_rect, pose_data, stream_type, true, 0);
                 }
@@ -4756,7 +4750,6 @@ namespace rs2
                 float model[4][4];
                 t.to_column_major((float*)model);
                 auto m = model;
-
 
                 r1 = m * rx;
                 r2 = rz * m * rx;
@@ -4768,10 +4761,18 @@ namespace rs2
 
                 glMultMatrixf((float*)_rx);
 
-                tm2.draw_trajectory();
+                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory(trajectory_button.is_pressed());
 
                 // remove model matrix from the rest of the render
                 glPopMatrix();
+
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glLoadMatrixf(r2 * view_mat);
+                render_camera_mesh(t265_mesh_id);
+                glPopMatrix();
+
+                stream_num++;
             }
         }
 
@@ -4927,15 +4928,6 @@ namespace rs2
                     glPopMatrix();
                 }
             }
-        }
-
-        if (pose)
-        {
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(r1 * view_mat);
-            render_camera_mesh(t265_mesh_id);
-            glPopMatrix();
         }
 
         glPopMatrix();
@@ -8337,35 +8329,9 @@ namespace rs2
         texture_buffer::draw_circle(1, 0, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
     }
 
-    void tm2_model::draw_pose_object()
-    {
-        if (!camera_object_button.is_pressed()) // draw camera box
-        {
-            glBegin(GL_QUADS);
-            for (auto&& colored_face : camera_box)
-            {
-                auto& c = colored_face.second;
-                glColor3f(c[0], c[1], c[2]);
-                for (auto&& v : colored_face.first)
-                {
-                    glVertex3f(v.x, v.y, v.z);
-                }
-            }
-            glEnd();
-
-            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_left, 1.0f);
-            texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, lens_radius, center_right, 1.0f);
-        }
-        else //draw axis
-        {
-            texture_buffer::draw_axes(0.1f, 1.f);
-        }
-    }
-
     // Aggregate the trajectory path
     void tm2_model::update_model_trajectory(const pose_frame& pose, bool track)
     {
-        // TODO refactor for multi-cam
         static bool prev_track = track;
         if (!_trajectory_tracking)
             return;
@@ -8390,9 +8356,9 @@ namespace rs2
         prev_track = track;
     }
 
-    void tm2_model::draw_trajectory()
+    void tm2_model::draw_trajectory(bool is_trajectory_button_pressed)
     {
-        if (!trajectory_button.is_pressed())
+        if (!is_trajectory_button_pressed)
         {
             record_trajectory(false);
             reset_trajectory();

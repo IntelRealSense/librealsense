@@ -48,6 +48,7 @@ typedef enum rs2_distortion
     RS2_DISTORTION_INVERSE_BROWN_CONRADY , /**< Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */
     RS2_DISTORTION_FTHETA                , /**< F-Theta fish-eye distortion model */
     RS2_DISTORTION_BROWN_CONRADY         , /**< Unmodified Brown-Conrady distortion model */
+    RS2_DISTORTION_KANNALA_BRANDT4       , /**< Four parameter Kannala Brandt distortion model */
     RS2_DISTORTION_COUNT                   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_distortion;
 const char* rs2_distortion_to_string(rs2_distortion distortion);
@@ -178,14 +179,20 @@ typedef enum rs2_matchers
 
    RS2_MATCHER_DI_C,    //compare depth and ir based on frame number,
                         //compare the pair of corresponding depth and ir with color based on closest timestamp,
-                        //commonlly used by SR300
+                        //commonly used by SR300
 
    RS2_MATCHER_DLR_C,   //compare depth, left and right ir based on frame number,
                         //compare the set of corresponding depth, left and right with color based on closest timestamp,
-                        //commonlly used by RS415, RS435
+                        //commonly used by RS415, RS435
 
    RS2_MATCHER_DLR,     //compare depth, left and right ir based on frame number,
-                        //commonlly used by RS400, RS405, RS410, RS420, RS430
+                        //commonly used by RS400, RS405, RS410, RS420, RS430
+
+   RS2_MATCHER_DIC,     //compare depth, ir and confidence based on frame number used by RS500
+
+   RS2_MATCHER_DIC_C,    //compare depth, ir and confidence based on frame number,
+                         //compare the set of corresponding depth, ir and confidence with color based on closest timestamp,
+                         //commonly used by RS515
 
    RS2_MATCHER_DEFAULT, //the default matcher compare all the streams based on closest timestamp
 

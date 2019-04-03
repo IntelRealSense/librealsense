@@ -1,36 +1,55 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class PipelineProfile : IDisposable
-    {
-        HandleRef m_instance;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Runtime.InteropServices;
 
-        public PipelineProfile(IntPtr p)
+    /// <summary>
+    /// The pipeline profile includes a device and a selection of active streams, with specific profile.
+    /// <para>
+    /// The profile is a selection of the above under filters and conditions defined by the pipeline.
+    /// Streams may belong to more than one sensor of the device.
+    /// </para>
+    /// </summary>
+    public class PipelineProfile : Base.Object
+    {
+        public PipelineProfile(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_pipeline_profile)
         {
-            m_instance = new HandleRef(this, p);
         }
 
+        /// <summary>
+        /// Gets the device used by the pipeline.
+        /// </summary>
         public Device Device
         {
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_pipeline_profile_get_device(m_instance.Handle, out error);
-                return new Device(ptr);
+                var ptr = NativeMethods.rs2_pipeline_profile_get_device(Handle, out error);
+                return Device.Create<Device>(ptr, NativeMethods.rs2_delete_device);
             }
         }
 
-        public StreamProfileList Streams
+        /// <summary>
+        /// Gets the selected streams profiles, which are enabled in this profile.
+        /// </summary>
+        public ReadOnlyCollection<StreamProfile> Streams
         {
             get
             {
                 object error;
-                var ptr = NativeMethods.rs2_pipeline_profile_get_streams(m_instance.Handle, out error);
-                return new StreamProfileList(ptr);
+                using (var pl = new StreamProfileList(NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error)))
+                {
+                    var profiles = new StreamProfile[pl.Count];
+                    pl.CopyTo(profiles, 0);
+                    return Array.AsReadOnly(profiles);
+                }
             }
         }
 
@@ -39,65 +58,35 @@ namespace Intel.RealSense
             return GetStream<StreamProfile>(s, index);
         }
 
-        public T GetStream<T>(Stream s, int index = -1) where T : StreamProfile
+        /// <summary>
+        /// Return the selected stream profile, which are enabled in this profile.
+        /// </summary>
+        /// <typeparam name="T"><see cref="StreamProfile"/> type or subclass</typeparam>
+        /// <param name="s">Stream type of the desired profile</param>
+        /// <param name="index">Stream index of the desired profile. -1 for any matching.</param>
+        /// <returns>The first matching stream profile</returns>
+        /// <exception cref="ArgumentException">Thrown when the <see cref="PipelineProfile"/> does not contain the request stream</exception>
+        public T GetStream<T>(Stream s, int index = -1)
+            where T : StreamProfile
         {
-            using (var streams = Streams)
+            object error;
+            using (var streams = new StreamProfileList(NativeMethods.rs2_pipeline_profile_get_streams(Handle, out error)))
             {
-                object error;
                 int count = streams.Count;
                 for (int i = 0; i < count; i++)
                 {
-                    var ptr = NativeMethods.rs2_get_stream_profile(streams.m_instance, i, out error);
+                    var ptr = NativeMethods.rs2_get_stream_profile(streams.Handle, i, out error);
                     var t = StreamProfile.Create<T>(ptr);
                     if (t.Stream == s && (index == -1 || t.Index == index))
+                    {
                         return t;
+                    }
+
                     t.Dispose();
                 }
-                return null;
+
+                throw new ArgumentException("Profile does not contain the requested stream", nameof(s));
             }
-        }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Release();
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~PipelineProfile()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        public void Release()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_delete_pipeline_profile(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
         }
     }
 }

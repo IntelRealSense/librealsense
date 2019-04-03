@@ -677,7 +677,7 @@ namespace perc
             float_t ppy;              /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge                                           */
             float_t fx;               /**< Focal length of the image plane, as a multiple of pixel width                                                                          */
             float_t fy;               /**< Focal length of the image plane, as a multiple of pixel Height                                                                         */
-            uint32_t distortionModel; /**< Distortion model of the image: NONE = 0, MODIFIED_BROWN_CONRADY = 1, INVERSE_BROWN_CONRADY = 2, FTHETA = 3, KANNALA_BRANDT4 = 4        */
+            uint32_t distortionModel; /**< Distortion model of the image: F-THETA = 1, NONE (UNDISTORTED) = 3, KANNALA_BRANDT4 = 4                                                */
             float_t coeffs[5];        /**< Distortion coefficients                                                                                                                */
         };
 
