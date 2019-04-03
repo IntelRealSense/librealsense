@@ -53,6 +53,10 @@ if(NOT OPENGL_FOUND)
     message(FATAL_ERROR "\n\n OpenGL package is missing!\n\n")
 endif()
 
+if(BUILD_SHARED_LIBS)
+    add_definitions(-DSHARED_LIBS)
+endif()
+
 set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES} glfw)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
