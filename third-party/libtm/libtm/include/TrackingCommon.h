@@ -55,11 +55,14 @@ namespace perc {
         Depth = 1,
         IR = 2,
         Fisheye = 3,
-        Gyro = 4, 
+        Gyro = 4,
         Accelerometer = 5,
         Controller = 6,
         Rssi = 7,
         Velocimeter = 8,
+        Stereo = 9,
+        Pose = 10,
+        ControllerProperty = 11,
         Max
     };
 
