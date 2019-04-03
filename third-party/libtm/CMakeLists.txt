@@ -19,7 +19,3 @@ add_definitions(-DBUILD_STATIC)
 add_subdirectory(resources)
 add_subdirectory(libtm)
 add_subdirectory(tools)
-
-message(STATUS "----------------------------------------------------------------------------")
-message(STATUS "CMake Done")
-message(STATUS "----------------------------------------------------------------------------")

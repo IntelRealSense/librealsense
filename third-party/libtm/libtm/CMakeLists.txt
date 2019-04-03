@@ -24,8 +24,4 @@ if(GIT_BRANCH STREQUAL "")
     set (GIT_BRANCH "Branch_Unknown")
 endif()
 
-message(STATUS "--------------------------------------------------------------------------------------------------------------------------------------------------------------")
-message(STATUS "Building ${PROJECT_NAME} project on ${OS}, LIBTM version [${LIBTM_VERSION_MAJOR}.${LIBTM_VERSION_MINOR}.${LIBTM_VERSION_PATCH}.${LIBTM_VERSION_BUILD}], API version [${LIBTM_API_VERSION_MAJOR}.${LIBTM_API_VERSION_MINOR}], branch [${GIT_BRANCH}], FW [${FW_VERSION}], Central APP [${CENTRAL_APP_VERSION}], Central BL [${CENTRAL_BL_VERSION}]")
-
 add_subdirectory(src)
-
