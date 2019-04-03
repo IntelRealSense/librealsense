@@ -269,7 +269,7 @@ int main(int argc, char** argv) try
                 }
         }
 
-	cout << endl;
+        cout << endl;
         cout << "|Filter Name |Step |Median(m)   |Mean(m)  |STD(m)  |Max(m)  | Max FPS |" << endl;
         cout << "|------------|-----|------------|---------|--------|--------|---------|" << endl;
 
@@ -347,7 +347,7 @@ int main(int argc, char** argv) try
                 }
             }
         }
-	cout << endl;
+        cout << endl;
     }
 
     return EXIT_SUCCESS;
