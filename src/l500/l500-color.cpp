@@ -58,4 +58,4 @@ namespace librealsense
 
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
     }
-};
+}
