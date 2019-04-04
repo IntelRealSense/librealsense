@@ -1,23 +1,35 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
     public class TemporalFilter : ProcessingBlock
     {
-        public TemporalFilter()
+        private static IntPtr Create()
         {
             object error;
-            m_instance = new HandleRef(this, NativeMethods.rs2_create_temporal_filter_block(out error));
-            NativeMethods.rs2_start_processing_queue(m_instance.Handle, queue.m_instance.Handle, out error);
+            return NativeMethods.rs2_create_temporal_filter_block(out error);
+        }
+
+        internal TemporalFilter(IntPtr ptr)
+            : base(ptr)
+        {
+        }
+
+        public TemporalFilter()
+            : base(Create())
+        {
         }
 
         [Obsolete("This method is obsolete. Use Process method instead")]
         public VideoFrame ApplyFilter(Frame original, FramesReleaser releaser = null)
         {
-            return Process(original).DisposeWith(releaser) as VideoFrame;
+            return Process(original).As<VideoFrame>().DisposeWith(releaser);
         }
     }
 }

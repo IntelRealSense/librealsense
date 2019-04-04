@@ -22,21 +22,14 @@ public class RsDeviceListener : MonoBehaviour
         Instance = this;
     }
 
-    // void Start()
     IEnumerator Start()
     {
         ctx = new Context();
-        // pipeline = new Pipeline(ctx);
-        pipeline = new Pipeline();
+        pipeline = new Pipeline(ctx);
+
         ctx.OnDevicesChanged += OnDevicesChanged;
 
         yield return null;
-
-        e.Set();
-
-        ctx.QueryDevices();
-        yield return new WaitForSeconds(1f);
-        ctx.QueryDevices();
 
         e.Set();
     }
@@ -106,6 +99,11 @@ public class RsDeviceListener : MonoBehaviour
 
     void OnDestroy()
     {
+        foreach (var d in m_added)
+            d.Dispose();
+        m_added.Clear();
+        m_removed.Clear();
+
         if (pipeline != null)
         {
             pipeline.Dispose();
@@ -114,6 +112,7 @@ public class RsDeviceListener : MonoBehaviour
 
         if (ctx != null)
         {
+            ctx.OnDevicesChanged -= OnDevicesChanged;
             ctx.Dispose();
             ctx = null;
         }

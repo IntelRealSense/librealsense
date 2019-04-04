@@ -8,9 +8,10 @@
 
 #include <array>
 #include <chrono>
-#include "l500/l500.h"
+#include "l500/l500-depth.h"
 #include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
+#include "l500/l500-factory.h"
 #include "ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"

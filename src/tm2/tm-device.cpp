@@ -194,10 +194,16 @@ namespace librealsense
         {
             throw io_exception("Failed to get supported raw streams");
         }
+
+        std::map<SensorId, std::shared_ptr<stream_profile_interface> > profile_map;
         //extract video profiles
         std::vector<TrackingData::VideoProfile> video_profiles(_tm_supported_profiles.video, _tm_supported_profiles.video + VideoProfileMax);
         for (auto tm_profile : video_profiles)
         {
+            if (tm_profile.sensorIndex == VideoProfileMax)
+            {
+                continue;
+            }
             rs2_stream stream = RS2_STREAM_FISHEYE; //TM2_API provides only fisheye video streams
             platform::stream_profile p = { tm_profile.profile.width, tm_profile.profile.height, tm_profile.fps, static_cast<uint32_t>(tm_profile.profile.pixelFormat) };
             auto profile = std::make_shared<video_stream_profile>(p);
@@ -215,6 +221,7 @@ namespace librealsense
             stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
             auto intrinsics = get_intrinsics(sp);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
+            profile_map[SET_SENSOR_ID(SensorType::Fisheye, profile->get_stream_index() - 1)] = profile;
             if (tm_profile.sensorIndex <= 1) results.push_back(profile);
 
             //TODO - need to register to have resolve_requests work
@@ -242,6 +249,7 @@ namespace librealsense
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
                 results.push_back(profile);
+                profile_map[SET_SENSOR_ID(SensorType::Gyro, profile->get_stream_index())] = profile;
             }
         }
 
@@ -262,6 +270,7 @@ namespace librealsense
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
                 results.push_back(profile);
+                profile_map[SET_SENSOR_ID(SensorType::Accelerometer, profile->get_stream_index())] = profile;
             }
         }
 
@@ -287,8 +296,17 @@ namespace librealsense
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
                 results.push_back(profile);
+                profile_map[SET_SENSOR_ID(SensorType::Pose, profile->get_stream_index())] = profile;
             }
             //TODO - do I need to define native_pixel_format for RS2_STREAM_POSE? and how to draw it?
+        }
+
+        //add extrinic parameters
+        for (auto profile : results)
+        {
+            SensorId current_reference;
+            auto current_extrinsics = get_extrinsics(*profile, current_reference);
+            environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
         }
 
         return results;
@@ -610,15 +628,14 @@ namespace librealsense
     rs2_intrinsics tm2_sensor::get_intrinsics(const stream_profile& profile) const
     {
         rs2_intrinsics result;
-        const TrackingData::CameraIntrinsics tm_intrinsics{};
+        TrackingData::CameraIntrinsics tm_intrinsics{};
         int stream_index = profile.index - 1;
-        //TODO - wait for TM2 intrinsics impl
-        //TODO - assuming IR only
-//             auto status = _tm_dev->GetCameraIntrinsics(tm_intrinsics, SET_SENSOR_ID(SensorType::Fisheye,stream_index));
-//             if (status != Status::SUCCESS)
-//             {
-//                 throw io_exception("Failed to read TM2 intrinsics");
-//             }
+
+        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
 
         result.width = tm_intrinsics.width;
         result.height = tm_intrinsics.height;
@@ -663,6 +680,50 @@ namespace librealsense
 
         return result;
     }
+
+    rs2_extrinsics tm2_sensor::get_extrinsics(const stream_profile_interface & profile, perc::SensorId & reference_sensor_id) const
+    {
+
+        rs2_extrinsics result{0};
+        TrackingData::SensorExtrinsics tm_extrinsics{};
+        int stream_index = profile.get_stream_index();
+        SensorType type = SensorType::Max;
+        switch (profile.get_stream_type())
+        {
+        case RS2_STREAM_FISHEYE:
+            type = SensorType::Fisheye;
+            break;
+        case RS2_STREAM_ACCEL:
+            type = SensorType::Accelerometer;
+            break;
+        case RS2_STREAM_GYRO:
+            type = SensorType::Gyro;
+            break;
+        case RS2_STREAM_POSE:
+            type = SensorType::Pose;
+            break;
+        default:
+            throw invalid_value_exception("Invalid stream type");
+        }
+
+        if (type == SensorType::Fisheye)
+        {
+            stream_index--;
+        }
+
+        auto status = _tm_dev->GetExtrinsics(SET_SENSOR_ID(type, stream_index), tm_extrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
+
+        librealsense::copy_array(result.rotation, tm_extrinsics.rotation);
+        librealsense::copy_array(result.translation, tm_extrinsics.translation);
+        reference_sensor_id = tm_extrinsics.referenceSensorId;
+
+        return result;
+    }
+
 
     // Tracking listener
     ////////////////////
@@ -729,7 +790,7 @@ namespace librealsense
         }
         else
         {
-            LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
+            LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
         _source.invoke_callback(std::move(frame));
@@ -951,12 +1012,12 @@ namespace librealsense
         }
         else
         {
-            LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
+            LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
         _source.invoke_callback(std::move(frame));
     }
-    
+
     void tm2_sensor::raise_hardware_event(const std::string& msg, const std::string& json_data, double timestamp)
     {
         notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
@@ -964,7 +1025,7 @@ namespace librealsense
         controller_event.timestamp = timestamp;
         get_notifications_processor()->raise_notification(controller_event);
     }
-    
+
     void tm2_sensor::raise_error_notification(const std::string& msg)
     {
         notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
@@ -988,7 +1049,7 @@ namespace librealsense
             }
         });
     }
-    
+
     void tm2_sensor::detach_controller(int id)
     {
         perc::Status status = _tm_dev->ControllerDisconnect(id);

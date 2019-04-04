@@ -62,6 +62,7 @@ namespace librealsense
         void stop() override;
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         rs2_motion_device_intrinsic get_motion_intrinsics(const motion_stream_profile_interface& profile) const;
+        rs2_extrinsics get_extrinsics(const stream_profile_interface & profile, perc::SensorId & reference_sensor_id) const;
 
         // Tracking listener
         ////////////////////

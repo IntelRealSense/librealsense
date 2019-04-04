@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <cmath>
 #include <map>
+#include <functional>
 
 #ifndef PI
 const double PI = 3.14159265358979323846;
@@ -524,6 +525,11 @@ public:
         glfwTerminate();
     }
 
+    void close()
+    {
+        glfwSetWindowShouldClose(win, 1);
+    }
+
     float width() const { return float(_width); }
     float height() const { return float(_height); }
 
@@ -706,6 +712,25 @@ private:
         }
 
         return rv;
+    }
+};
+
+// Struct to get keys pressed on window
+struct window_key_listener {
+    int last_key = GLFW_KEY_UNKNOWN;
+
+    window_key_listener(window& win) {
+        win.on_key_release = std::bind(&window_key_listener::on_key_release, this, std::placeholders::_1);
+    }
+
+    void on_key_release(int key) {
+        last_key = key;
+    }
+
+    int get_key() {
+        int key = last_key;
+        last_key = GLFW_KEY_UNKNOWN;
+        return key;
     }
 };
 

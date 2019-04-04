@@ -105,18 +105,17 @@ int main(int argc, char** argv) try
     auto frameNumber = 0ULL;
     
     rs2::frameset frameset;
+    uint64_t posLast = playback.get_position();
     while (pipe->try_wait_for_frames(&frameset, 1000)) 
     {
-        int posP = static_cast<int>(playback.get_position() * 100. / duration.count());
+        int posP = static_cast<int>(posLast * 100. / duration.count());
 
         if (posP > progress) {
             progress = posP;
             cout << posP << "%" << "\r" << flush;
         }
 
-        if (frameset[0].get_frame_number() < frameNumber) {
-            break;
-        }
+
 
         frameNumber = frameset[0].get_frame_number();
 
@@ -129,6 +128,11 @@ int main(int argc, char** argv) try
             [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
                 converter->wait();
             });
+        const uint64_t posCurr = playback.get_position();
+        if(static_cast<int64_t>(posCurr - posLast) < 0){
+            break;
+        }
+        posLast = posCurr;
     }
 
     cout << endl;

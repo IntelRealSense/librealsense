@@ -1,8 +1,11 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     public class SoftwareDevice : Device
     {
         private static IntPtr CreateSoftwareDevice()
@@ -11,13 +14,9 @@ namespace Intel.RealSense
             return NativeMethods.rs2_create_software_device(out error);
         }
 
-        public SoftwareDevice() : base(CreateSoftwareDevice()) { }
-
-
-        internal IntPtr AddSoftwareSensor(string name)
+        public SoftwareDevice()
+            : base(CreateSoftwareDevice())
         {
-            object error;
-            return NativeMethods.rs2_software_device_add_sensor(m_instance, name, out error);
         }
 
         public SoftwareSensor AddSensor(string name)
@@ -28,7 +27,13 @@ namespace Intel.RealSense
         public void SetMatcher(Matchers matcher)
         {
             object error;
-            NativeMethods.rs2_software_device_create_matcher(m_instance, matcher, out error);
+            NativeMethods.rs2_software_device_create_matcher(Handle, matcher, out error);
+        }
+
+        internal IntPtr AddSoftwareSensor(string name)
+        {
+            object error;
+            return NativeMethods.rs2_software_device_add_sensor(Handle, name, out error);
         }
     }
 }
