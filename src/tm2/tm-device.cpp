@@ -790,7 +790,7 @@ namespace librealsense
         }
         else
         {
-            LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
+            LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
         _source.invoke_callback(std::move(frame));
@@ -1012,12 +1012,12 @@ namespace librealsense
         }
         else
         {
-            LOG_WARNING("Dropped frame. alloc_frame(...) returned nullptr");
+            LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
         _source.invoke_callback(std::move(frame));
     }
-    
+
     void tm2_sensor::raise_hardware_event(const std::string& msg, const std::string& json_data, double timestamp)
     {
         notification controller_event{ RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT, 0, RS2_LOG_SEVERITY_INFO, msg };
@@ -1025,7 +1025,7 @@ namespace librealsense
         controller_event.timestamp = timestamp;
         get_notifications_processor()->raise_notification(controller_event);
     }
-    
+
     void tm2_sensor::raise_error_notification(const std::string& msg)
     {
         notification error{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg };
@@ -1049,7 +1049,7 @@ namespace librealsense
             }
         });
     }
-    
+
     void tm2_sensor::detach_controller(int id)
     {
         perc::Status status = _tm_dev->ControllerDisconnect(id);
