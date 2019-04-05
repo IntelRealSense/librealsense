@@ -180,7 +180,8 @@ public class RsStreamTextureRenderer : MonoBehaviour
             }
 
             using (var p = frame.Profile) {
-                texture = new Texture2D(frame.Width, frame.Height, Convert(p.Format), false, true)
+                bool isGammaColorSpace = QualitySettings.activeColorSpace == ColorSpace.Gamma;
+                texture = new Texture2D(frame.Width, frame.Height, Convert(p.Format), false, isGammaColorSpace)
                 {
                     wrapMode = TextureWrapMode.Clamp,
                     filterMode = filterMode
