@@ -62,7 +62,7 @@ macro(global_set_flags)
 endmacro()
 
 macro(global_target_config)
-    target_link_libraries(${LRS_TARGET} PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+    target_link_libraries(${LRS_TARGET} PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT})
 
     include_directories(${LRS_TARGET} src)
 
@@ -88,6 +88,5 @@ macro(add_tm2)
         add_dependencies(tm libusb)
     endif()
     target_compile_definitions(${LRS_TARGET} PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
-    target_link_libraries(${LRS_TARGET} PRIVATE tm ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
-    target_include_directories(${LRS_TARGET} PRIVATE third-party/libtm/libtm/include)
+    target_link_libraries(${LRS_TARGET} PRIVATE tm ${CMAKE_THREAD_LIBS_INIT})
 endmacro()

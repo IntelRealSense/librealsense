@@ -1,27 +1,15 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
 cmake_policy(SET CMP0015 NEW)
 
 project(tm)
 
-include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}
-    ${LIBTM_INCLUDE_DIR}
-    ${INFRA_INCLUDE_DIR}
-)
-
-IF(WIN32)
-    set(OS "win")
-ELSE()
-    set(OS "lin")
-ENDIF(WIN32)
-
-#Source Files
 set(SOURCE_FILES
-    ${LIBTM_INCLUDE_DIR}/TrackingManager.h
-    ${LIBTM_INCLUDE_DIR}/TrackingDevice.h
-    ${LIBTM_INCLUDE_DIR}/TrackingCommon.h
-    ${LIBTM_INCLUDE_DIR}/TrackingData.h
+    ../include/TrackingManager.h
+    ../include/TrackingDevice.h
+    ../include/TrackingCommon.h
+    ../include/TrackingData.h
 
     Manager.h
     Manager.cpp
@@ -67,8 +55,7 @@ set(SDK_LIB_TYPE "STATIC")
 add_definitions(-DBUILD_STATIC)
 
 add_library(${PROJECT_NAME} ${SDK_LIB_TYPE} ${SOURCE_FILES})
-
-#LINK_LIBRARIES
+target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/../include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include> PRIVATE infra)
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
     ${OS_SPECIFIC_LIBS}
