@@ -1769,34 +1769,6 @@ namespace perc {
         return setMsg.Result == 0 ? Status::SUCCESS : Status::COMMON_ERROR;
     }
 
-    Status Device::ResetLocalizationData(uint8_t flag)
-    {
-        bulk_message_request_reset_localization_data request = {0};
-        bulk_message_response_reset_localization_data response = {0};
-
-        if (flag > 1)
-        {
-            DEVICELOGE("Error: Flag (%d) is unknown", flag);
-            return Status::ERROR_PARAMETER_INVALID;
-        }
-
-        request.header.wMessageID = SLAM_RESET_LOCALIZATION_DATA;
-        request.header.dwLength = sizeof(request);
-        request.bFlag = flag;
-
-        DEVICELOGD("Set Reset Localization Data - Flag 0x%X", flag);
-        Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
-
-        mDispatcher->sendMessage(&mFsm, msg);
-        if (msg.Result != toUnderlying(Status::SUCCESS))
-        {
-            DEVICELOGE("USB Error (0x%X)", msg.Result);
-            return Status::ERROR_USB_TRANSFER;
-        }
-
-        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
-    }
-
     Status Device::SetStaticNode(const char* guid, const TrackingData::RelativePose& relativePose)
     {
         bulk_message_request_set_static_node request = { 0 };
