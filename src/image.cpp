@@ -344,6 +344,7 @@ namespace librealsense
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
 #ifdef RS2_USE_CUDA
         rscuda::unpack_yuy2_cuda<FORMAT>(d, s, n);
+        return;
 #endif
 #if defined __SSSE3__ && ! defined ANDROID
         static bool do_avx = has_avx();
