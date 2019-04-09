@@ -55,7 +55,7 @@ namespace librealsense
             std::shared_ptr<profile> resolve(std::shared_ptr<device_interface> dev);
 
             device_request _device_request;
-            std::map<std::pair<rs2_stream, int>, util::config::request_type> _stream_requests;
+            std::map<std::pair<rs2_stream, int>, stream_profile> _stream_requests;
             std::mutex _mtx;
             bool _enable_all_streams = false;
             std::shared_ptr<profile> _resolved_profile;

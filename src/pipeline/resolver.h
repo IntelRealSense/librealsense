@@ -27,15 +27,6 @@ namespace librealsense
         class config
         {
         public:
-            struct request_type
-            {
-                rs2_stream stream;
-                int stream_index;
-                uint32_t width, height;
-                rs2_format format;
-                uint32_t fps;
-            };
-
             struct index_type
             {
                 rs2_stream stream;
@@ -84,11 +75,11 @@ namespace librealsense
                 return true;
             }
 
-            static bool match(stream_profile_interface* a, const request_type& b)
+            static bool match(stream_profile_interface* a, const stream_profile& b)
             {
                 if (a->get_stream_type() != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a->get_stream_type() != b.stream))
                     return false;
-                if (a->get_stream_index() != -1 && b.stream_index != -1 && (a->get_stream_index() != b.stream_index))
+                if (a->get_stream_index() != -1 && b.index != -1 && (a->get_stream_index() != b.index))
                     return false;
                 if (a->get_format() != RS2_FORMAT_ANY && b.format != RS2_FORMAT_ANY && (a->get_format() != b.format))
                     return false;
@@ -106,55 +97,6 @@ namespace librealsense
                 return true;
             }
 
-            static bool contradicts(stream_profile_interface* a, stream_profiles others)
-            {
-                for (auto request : others)
-                {
-                    if (a->get_framerate()!= 0 && request->get_framerate() != 0 && (a->get_framerate() != request->get_framerate()))
-                        return true;
-                }
-
-                if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
-                {
-                    for (auto request : others)
-                    {
-                        if (auto vid_b = dynamic_cast<video_stream_profile_interface*>(request.get()))
-                        {
-                            if (vid_a->get_width() != 0 && vid_b->get_width() != 0 && (vid_a->get_width() != vid_b->get_width()))
-                                return true;
-                            if (vid_a->get_framerate() != 0 && vid_b->get_framerate() != 0 && (vid_a->get_framerate() != vid_b->get_framerate()))
-                                return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            static bool contradicts(stream_profile_interface* a, const std::vector<request_type>& others)
-            {
-                if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
-                {
-                    for (auto request : others)
-                    {
-                        if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
-                            return true;
-                    }
-
-                    for (auto request : others)
-                    {
-                        // Patch for DS5U_S that allows different resolutions on multi-pin device
-                        if ((vid_a->get_height() == vid_a->get_width()) && (request.height == request.width))
-                            return false;
-                        if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
-                            return true;
-                        if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
-                            return true;
-                    }
-                }
-                return false;
-            }
-
-
             static bool has_wildcards(stream_profile_interface* a)
             {
                 if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_stream_index() == -1 || a->get_format() == RS2_FORMAT_ANY) return true;
@@ -165,15 +107,15 @@ namespace librealsense
                 return false;
             }
 
-            static bool has_wildcards(const request_type& a)
+            static bool has_wildcards(const stream_profile& a)
             {
                 if (a.fps == 0 || a.stream == RS2_STREAM_ANY || a.format == RS2_FORMAT_ANY) return true;
                 if (a.width == 0 || a.height == 0) return true;
-                if (a.stream_index == -1) return true;
+                if (a.index == -1) return true;
                 return false;
             }
 
-            std::map<index_type, request_type> get_requests()
+            std::map<index_type, stream_profile> get_requests()
             {
                 return _requests;
             }
@@ -262,7 +204,7 @@ namespace librealsense
 
             void enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t fps)
             {
-                _requests[{stream, index}] = request_type{ stream, index, width, height, format, fps };
+                _requests[{stream, index}] = stream_profile{ stream, index, width, height, fps, format };
                 require_all = true;
             }
 
@@ -404,14 +346,14 @@ namespace librealsense
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static void auto_complete(std::vector<request_type> &requests, stream_profiles candidates)
+            static void auto_complete(std::vector<stream_profile> &requests, stream_profiles candidates, device_interface* dev)
             {
                 for (auto & request : requests)
                 {
                     if (!has_wildcards(request)) continue;
                     for (auto candidate : candidates)
                     {
-                        if (match(candidate.get(), request) && !contradicts(candidate.get(), requests))
+                        if (match(candidate.get(), request) && !dev->contradicts(candidate.get(), requests))
                         {
                             request = to_request(candidate.get());
                             break;
@@ -422,13 +364,13 @@ namespace librealsense
                 }
             }
 
-            static request_type to_request(stream_profile_interface* profile)
+            static stream_profile to_request(stream_profile_interface* profile)
             {
-                request_type r;
+                stream_profile r;
                 r.fps = profile->get_framerate();
                 r.stream = profile->get_stream_type();
                 r.format = profile->get_format();
-                r.stream_index = profile->get_stream_index();
+                r.index = profile->get_stream_index();
                 if (auto vid = dynamic_cast<video_stream_profile_interface*>(profile))
                 {
                     r.width = vid->get_width();
@@ -442,12 +384,12 @@ namespace librealsense
                 return r;
             }
 
-            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams) const
+            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams, device_interface* dev) const
             {
                 stream_profiles rv;
                 try
                 {
-                    std::vector<request_type> targets;
+                    std::vector<stream_profile> targets;
 
                     // deal with explicit requests
                     for (auto && kvp : _requests)
@@ -468,7 +410,7 @@ namespace librealsense
 
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
-                        auto_complete(targets, profiles);
+                        auto_complete(targets, profiles, dev);
 
                         for (auto && t : targets)
                         {
@@ -501,8 +443,8 @@ namespace librealsense
                 {
                     auto&& sub = dev->get_sensor(i);
 
-                    auto default_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), satisfied_streams);
-                    auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams);
+                    auto default_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_SUPERSET), satisfied_streams, dev);
+                    auto any_profiles = map_sub_device(sub.get_stream_profiles(profile_tag::PROFILE_TAG_ANY), satisfied_streams, dev);
 
                     //use any streams if default streams wasn't satisfy
                     auto profiles = default_profiles.size() == any_profiles.size() ? default_profiles : any_profiles;
@@ -517,7 +459,7 @@ namespace librealsense
                 return out;
             }
 
-            std::map<index_type, request_type> _requests;
+            std::map<index_type, stream_profile> _requests;
             bool require_all;
         };
     }

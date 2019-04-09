@@ -293,3 +293,24 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
         }
     }
 }
+
+bool librealsense::device::contradicts(stream_profile_interface* a, const std::vector<stream_profile>& others)
+{
+    if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
+    {
+        for (auto request : others)
+        {
+            if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                return true;
+        }
+
+        for (auto request : others)
+        {
+            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                return true;
+            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                return true;
+        }
+    }
+    return false;
+}
