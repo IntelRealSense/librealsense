@@ -307,7 +307,6 @@ namespace librealsense
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
         std::set<uint32_t> unregistered_formats;
         std::set<uint32_t> supported_formats;
-        std::set<uint32_t> registered_formats;
 
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
         if (_uvc_profiles.empty()){}
@@ -354,7 +353,7 @@ namespace librealsense
             }
 
             ss << "]; Supported: [ ";
-            for (auto& elem : registered_formats)
+            for (auto& elem : supported_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
