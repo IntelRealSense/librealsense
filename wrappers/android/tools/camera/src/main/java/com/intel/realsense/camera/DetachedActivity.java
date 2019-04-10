@@ -90,6 +90,8 @@ public class DetachedActivity extends AppCompatActivity {
         if(devices.getDeviceCount() == 0)
             return false;
         Device device = devices.createDevice(0);
+        if(!device.supportsInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION))
+            return true;
         final String recFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
         final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
         String[] sFw = fw.split("\\.");
