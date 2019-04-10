@@ -73,15 +73,19 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       Based on the custom kernel provided by Canonical Ltd.  
 
       `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
-    * **Arch-based distributions**
-      * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
-      * You also need to install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
-        * Navigate to the scripts folder  `cd ./scripts/`<br />
-        * Then run the following script to patch the uvc module: `./patch-arch.sh`<br /><br />
-    * **Odroid XU4 with Ubuntu 16.04 4.14 image**
-      Based on the custom kernel provided by Hardkernel
 
+  * **Arch-based distributions**
+    * Install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
+    * Install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
+    * Navigate to the scripts folder  <br />
+      `cd ./scripts/`<br />
+    * Then run the following script to patch the uvc module:  <br />
+      `./patch-arch.sh`<br /><br />
+
+  * **Odroid XU4 with Ubuntu 16.04 4.14 image**
+      Based on the custom kernel provided by Hardkernel  <br />
       `./scripts/patch-realsense-ubuntu-odroid.sh`<br />
+      
       Some additional details on the Odroid installation can also be found in [installation_odroid.md](installation_odroid.md)
 
 > Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
