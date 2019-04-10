@@ -24,10 +24,14 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
 
   **Download/Clone librealsense github repository:**  
-    1. Navigate to *librealsense* root directory to run the following scripts.<br />
+    1. Get *librealsense* sources in one of the following ways:<br />
+      - Clone source tree from Github.com using *git* command:<br />
+        `git clone https://github.com/IntelRealSense/librealsense.git`<br />
+      - Download and unzip latest stable version from `master` branch:
+          https://github.com/IntelRealSense/librealsense/archive/master.zip  
+
+    2. Navigate to *librealsense* root directory to run the following scripts.<br />
        Unplug any connected Intel RealSense camera.<br />  
-
-
 
 **Prepare Linux Backend and the Dev. Environment:**  
   1. Navigate to *librealsense* root directory to run the following scripts.<br />
@@ -53,12 +57,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
 
   3. Run Intel Realsense permissions script located from librealsense root directory:<br />
-    `./scripts/setup_udev_rules.sh`
-    ` cd ~ `  <br />
-    `git clone https://github.com/IntelRealSense/librealsense.git`  <br />
-    `cd librealsense`  <br />
-    `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`  <br />
-    `sudo udevadm control --reload-rules && udevadm trigger`
+    `./scripts/setup_udev_rules.sh`  
     <br />
 
   4. Build and apply patched kernel modules for: <br />
