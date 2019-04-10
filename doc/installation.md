@@ -23,15 +23,14 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`  
 
 
-  **Download/Clone librealsense github repository:**  
-    1. Get *librealsense* sources in one of the following ways:<br />
-      - Clone source tree from Github.com using *git* command:<br />
-        `git clone https://github.com/IntelRealSense/librealsense.git`<br />
-      - Download and unzip latest stable version from `master` branch:
-          https://github.com/IntelRealSense/librealsense/archive/master.zip  
+**Download/Clone librealsense github repository:**  
+  * Get *librealsense* sources in one of the following ways:<br />
 
-    2. Navigate to *librealsense* root directory to run the following scripts.<br />
-       Unplug any connected Intel RealSense camera.<br />  
+    - Download the complete source tree with *git*<br />
+      `git clone https://github.com/IntelRealSense/librealsense.git`<br />
+
+    - Download and unzip the latest stable version from `master` branch:
+        https://github.com/IntelRealSense/librealsense/archive/master.zip  
 
 **Prepare Linux Backend and the Dev. Environment:**  
   1. Navigate to *librealsense* root directory to run the following scripts.<br />
