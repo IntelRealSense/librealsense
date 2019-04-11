@@ -85,18 +85,30 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
 
+        if (group.usb_devices.size() > 0)
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
+                    get_depth_sensor()));
+        }
+        else
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
+                    get_depth_sensor(), depth_xu, L500_HWMONITOR),
+                    get_depth_sensor()));
+        }
+
 #ifdef HWM_OVER_XU
-        _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                                                      get_depth_sensor(), depth_xu, L500_HWMONITOR),
-                                                      get_depth_sensor()));
-#else
-        if(group.usb_devices.size() == 0)
-            throw std::runtime_error("HWM_OVER_XU is disabled and no USB devices found");
-        _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
-                                                                                get_depth_sensor()));
+        if (group.usb_devices.size() > 0)
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
+                    get_depth_sensor(), depth_xu, L500_HWMONITOR),
+                    get_depth_sensor()));
+        }
 #endif
+
         *_calib_table_raw;  //work around to bug on fw
         auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset, module_serial_size);
