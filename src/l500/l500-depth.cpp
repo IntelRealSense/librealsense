@@ -91,6 +91,8 @@ namespace librealsense
                                                       get_depth_sensor(), depth_xu, L500_HWMONITOR),
                                                       get_depth_sensor()));
 #else
+        if(group.usb_devices.size() == 0)
+            throw std::runtime_error("HWM_OVER_XU is disabled and no USB devices found");
         _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
                                                                                 get_depth_sensor()));
