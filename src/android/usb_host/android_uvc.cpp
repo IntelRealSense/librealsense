@@ -5,11 +5,11 @@
 
 #include "android_uvc.h"
 #include "device_watcher.h"
-#include "libuvc/utlist.h"
 
-#include "concurrency.h"
+#include "../../concurrency.h"
 #include "../../types.h"
 #include "../../libuvc/utlist.h"
+#include "../../libuvc/uvc_types.h"
 
 #include <vector>
 #include <thread>
@@ -37,25 +37,6 @@ struct frame {
     std::vector<uint8_t> pixels;
     librealsense::platform::frame_object fo;
     frames_archive *owner; // Keep pointer to owner for light-deleter
-};
-
-std::string fourcc(uint32_t val)
-{
-    char rv[4] = { (char)((val & 0xff000000) >> 24),
-                     (char)((val & 0x00ff0000) >> 16),
-                     (char)((val & 0x0000ff00) >> 8),
-                     (char)(val & 0x000000ff) };
-    return rv;
-}
-
-// convert to standard fourcc codes
-const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
-        { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
-        { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
-        { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
-        { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 ' */
-        { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
-        { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
 };
 
 void cleanup_frame(frame *ptr) {
@@ -752,8 +733,6 @@ uvc_error_t usbhost_get_available_formats_all(usbhost_uvc_device *devh, uvc_form
                     cur_format->width = frame_desc->wWidth;
                     auto temp = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
                     cur_format->fourcc = fourcc_map.count(temp) ? fourcc_map.at(temp) : temp;
-                    //auto ts = fourcc(temp);
-                    //auto cs = fourcc(cur_format->fourcc);
                     cur_format->interfaceNumber = stream_if->bInterfaceNumber;
 
                     cur_format->fps = 10000000 / *interval_ptr;
@@ -957,8 +936,11 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
         {
-            std::string err = strerror(errno);
-            LOG_WARNING("bulk_transfer on read endpoint returned error, ERROR: " << err);
+            auto err = errno;
+            std::string strerr = strerror(errno);
+            LOG_WARNING("bulk_transfer on read endpoint returned error, ERROR: " << strerr);
+            if(EBADF == err || ENODEV == err)// bad file descriptor || No such device
+                break;
             continue;
         }
         strctx->stream->got_bytes = res;

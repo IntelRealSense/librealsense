@@ -39,7 +39,7 @@ public class Streamer {
         @Override
         public void run() {
             try {
-                try(FrameSet frames = mPipeline.waitForFrames()) {
+                try(FrameSet frames = mPipeline.waitForFrames(1000)) {
                     try (FrameSet processed = frames.applyFilter(mColorizer)) {
                         mGLSurfaceView.upload(processed);
                     }
