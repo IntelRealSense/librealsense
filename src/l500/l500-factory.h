@@ -28,7 +28,10 @@ namespace librealsense
 
         platform::backend_device_group get_device_data() const override
         {
-            return platform::backend_device_group({ _depth }, { _hwm });
+            std::vector<platform::usb_device_info> usb_devices;
+            if (_hwm.id != "")
+                usb_devices = { _hwm };
+            return platform::backend_device_group({ _depth }, usb_devices);
         }
 
     private:
