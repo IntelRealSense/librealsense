@@ -107,17 +107,12 @@ namespace librealsense
             {
                 auto depth = get_mi(group, 0);
                 platform::usb_device_info hwm;
-
-                if (ivcam2::try_fetch_usb_device(usb, depth, hwm))
-                {
-                    auto info = std::make_shared<l500_info>(ctx, group, hwm);
-                    chosen.push_back(depth);
-                    results.push_back(info);
-                }
-                else
-                {
+                if (!ivcam2::try_fetch_usb_device(usb, depth, hwm))
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
-                }
+
+                auto info = std::make_shared<l500_info>(ctx, group, hwm);
+                chosen.push_back(depth);
+                results.push_back(info);
             }
             else
             {

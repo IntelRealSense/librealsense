@@ -20,6 +20,8 @@ Java_com_intel_realsense_librealsense_Device_nGetInfo(JNIEnv *env, jclass type, 
     rs2_error *e = NULL;
     const char* rv = rs2_get_device_info(handle, info, &e);
     handle_error(env, e);
+    if(NULL == rv)
+        rv = "";
     return (*env)->NewStringUTF(env, rv);
 }
 
