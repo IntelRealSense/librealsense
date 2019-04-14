@@ -2911,6 +2911,10 @@ namespace rs2
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
                 }
+				else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_SYSTEM_TIME)
+				{
+					ImGui::SetTooltip("Timestamp: SystemTime(Hardware clock)");
+				}
                 else
                 {
                     ImGui::SetTooltip("Timestamp: Hardware clock");
