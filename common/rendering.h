@@ -1189,16 +1189,16 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-			switch (format)
-			{
-			case RS2_FORMAT_ANY:
-				throw std::runtime_error("not a valid format");
-			case RS2_FORMAT_Z16:
-			case RS2_FORMAT_DISPARITY16:
-				if (frame.is<depth_frame>())
-				{
-					if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
-					{
+            switch (format)
+            {
+            case RS2_FORMAT_ANY:
+                throw std::runtime_error("not a valid format");
+            case RS2_FORMAT_Z16:
+            case RS2_FORMAT_DISPARITY16:
+                if (frame.is<depth_frame>())
+                {
+                    if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
+                    {
                         data = colorized_frame.get_data();
                         // Override the first pixel in the colorized image for occlusion invalidation.
                         memset((void*)data,0, colorized_frame.get_bytes_per_pixel());
@@ -1207,19 +1207,19 @@ namespace rs2
                             colorized_frame.get_height(),
                             0, GL_RGB, GL_UNSIGNED_BYTE,
                             colorized_frame.get_data());
-						rendered_frame = colorized_frame;
-					}
-				}
-				else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                        rendered_frame = colorized_frame;
+                    }
+                }
+                else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
 
-				break;
-			case RS2_FORMAT_DISPARITY32:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
-				break;
-			case RS2_FORMAT_XYZ32F:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
-				break;
-			case RS2_FORMAT_YUYV:
+                break;
+            case RS2_FORMAT_DISPARITY32:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
+                break;
+            case RS2_FORMAT_XYZ32F:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
+                break;
+            case RS2_FORMAT_YUYV:
                 if (yuy2rgb)
                 {
                     if (auto colorized_frame = yuy2rgb->process(frame).as<video_frame>())
@@ -1233,79 +1233,79 @@ namespace rs2
                 {
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
                 }
-				break;
-			case RS2_FORMAT_UYVY: // Use luminance component only to avoid costly UVUY->RGB conversion
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-				break;
-			case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-				break;
-			case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-				break;
-			case RS2_FORMAT_Y8:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-				break;
-			case RS2_FORMAT_MOTION_XYZ32F:
-			{
-				if (auto motion = frame.as<motion_frame>())
-				{
-					auto axes = motion.get_motion_data();
-					draw_motion_data(axes.x, axes.y, axes.z);
-				}
-				else
-				{
-					throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
-				}
-				break;
-			}
-			case RS2_FORMAT_Y16:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-				break;
-			case RS2_FORMAT_RAW8:
-			case RS2_FORMAT_MOTION_RAW:
-			case RS2_FORMAT_GPIO_RAW:
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-				break;
-			case RS2_FORMAT_6DOF:
-			{
-				if (auto pose = frame.as<pose_frame>())
-				{
-					rs2_pose pose_data = pose.get_pose_data();
-					draw_pose_data(pose_data, frame.get_profile().unique_id());
-				}
-				else
-				{
-					throw std::runtime_error("Not expecting a frame with 6DOF format that is not a pose_frame");
-				}
-				break;
-			}
+                break;
+            case RS2_FORMAT_UYVY: // Use luminance component only to avoid costly UVUY->RGB conversion
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                break;
+            case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_Y8:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_MOTION_XYZ32F:
+            {
+                if (auto motion = frame.as<motion_frame>())
+                {
+                    auto axes = motion.get_motion_data();
+                    draw_motion_data(axes.x, axes.y, axes.z);
+                }
+                else
+                {
+                    throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
+                }
+                break;
+            }
+            case RS2_FORMAT_Y16:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                break;
+            case RS2_FORMAT_RAW8:
+            case RS2_FORMAT_MOTION_RAW:
+            case RS2_FORMAT_GPIO_RAW:
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                break;
+            case RS2_FORMAT_6DOF:
+            {
+                if (auto pose = frame.as<pose_frame>())
+                {
+                    rs2_pose pose_data = pose.get_pose_data();
+                    draw_pose_data(pose_data, frame.get_profile().unique_id());
+                }
+                else
+                {
+                    throw std::runtime_error("Not expecting a frame with 6DOF format that is not a pose_frame");
+                }
+                break;
+            }
             case RS2_FORMAT_Y10BPACK:
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
                 break;
-			//case RS2_FORMAT_RAW10:
-			//{
-			//    // Visualize Raw10 by performing a naive down sample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
-			//    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
-			//    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
-			//    for (auto y = 0; y<height; y += 2)
-			//    {
-			//        for (auto x = 0; x<width; x += 4)
-			//        {
-			//            *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
-			//            *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
-			//            in0 += 5; in1 += 5;
-			//        }
-			//        in0 = in1; in1 += width * 5 / 4;
-			//    }
-			//    glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
-			//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-			//}
-			//break;
-			default:
-				throw std::runtime_error("The requested format is not supported for rendering");
-			}
-			
+            //case RS2_FORMAT_RAW10:
+            //{
+            //    // Visualize Raw10 by performing a naive down sample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
+            //    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
+            //    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
+            //    for (auto y = 0; y<height; y += 2)
+            //    {
+            //        for (auto x = 0; x<width; x += 4)
+            //        {
+            //            *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
+            //            *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
+            //            in0 += 5; in1 += 5;
+            //        }
+            //        in0 = in1; in1 += width * 5 / 4;
+            //    }
+            //    glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
+            //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+            //}
+            //break;
+            default:
+                throw std::runtime_error("The requested format is not supported for rendering");
+            }
+            
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

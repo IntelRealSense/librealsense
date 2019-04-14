@@ -75,7 +75,7 @@ namespace librealsense
                 return true;
             }
 
-            static bool match(stream_profile_interface* a, const stream_profile& b)
+            static bool match(const stream_profile_interface* a, const stream_profile& b)
             {
                 if (a->get_stream_type() != RS2_STREAM_ANY && b.stream != RS2_STREAM_ANY && (a->get_stream_type() != b.stream))
                     return false;
@@ -86,7 +86,7 @@ namespace librealsense
                 if (a->get_framerate() != 0 && b.fps != 0 && (a->get_framerate() != b.fps))
                     return false;
 
-                if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
+                if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
                 {
                     if (vid_a->get_width() != 0 && b.width != 0 && (vid_a->get_width() != b.width))
                         return false;
@@ -97,10 +97,10 @@ namespace librealsense
                 return true;
             }
 
-            static bool has_wildcards(stream_profile_interface* a)
+            static bool has_wildcards(const stream_profile_interface* a)
             {
                 if (a->get_framerate() == 0 || a->get_stream_type() == RS2_STREAM_ANY || a->get_stream_index() == -1 || a->get_format() == RS2_FORMAT_ANY) return true;
-                if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
+                if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
                 {
                     if (vid_a->get_width() == 0 || vid_a->get_height() == 0) return true;
                 }
@@ -250,7 +250,7 @@ namespace librealsense
                 return false;
             }*/
 
-           bool can_enable_stream(device_interface* dev, rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
+           bool can_enable_stream(const device_interface* dev, rs2_stream stream, int index, int width, int height, rs2_format format, int fps)
            {
                config c(*this);
                c.enable_stream(stream, index, width, height, format, fps);
@@ -346,7 +346,7 @@ namespace librealsense
                 return sort_highest_framerate(lhs, rhs);
             }
 
-            static void auto_complete(std::vector<stream_profile> &requests, stream_profiles candidates, device_interface* dev)
+            static void auto_complete(std::vector<stream_profile> &requests, stream_profiles candidates, const device_interface* dev)
             {
                 for (auto & request : requests)
                 {
@@ -384,7 +384,7 @@ namespace librealsense
                 return r;
             }
 
-            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams, device_interface* dev) const
+            stream_profiles map_sub_device(stream_profiles profiles, std::set<index_type> satisfied_streams, const device_interface* dev) const
             {
                 stream_profiles rv;
                 try
@@ -432,7 +432,7 @@ namespace librealsense
                 return rv;
             }
 
-            std::multimap<int, std::shared_ptr<stream_profile_interface>> map_streams(device_interface* dev) const
+            std::multimap<int, std::shared_ptr<stream_profile_interface>> map_streams(const device_interface* dev) const
             {
                 std::multimap<int, std::shared_ptr<stream_profile_interface>> out;
                 std::set<index_type> satisfied_streams;

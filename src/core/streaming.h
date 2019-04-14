@@ -264,7 +264,7 @@ namespace librealsense
 
         virtual bool compress_while_record() const = 0;
 
-        virtual bool contradicts(stream_profile_interface* a, const std::vector<stream_profile>& others) = 0;
+        virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const = 0;
     };
 
     class depth_stereo_sensor;

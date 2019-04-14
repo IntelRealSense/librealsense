@@ -91,21 +91,14 @@ namespace librealsense
             return tags;
         };
 
-        bool contradicts(stream_profile_interface* a, const std::vector<stream_profile>& others) override
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override
         {
-            if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
+            if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
             {
                 for (auto request : others)
                 {
                     if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
                         return true;
-                }
-
-                for (auto request : others)
-                {
-                    // Patch for DS5U_S that allows different resolutions on multi-pin device
-                    if ((vid_a->get_height() == vid_a->get_width()) && (request.height == request.width))
-                        return false;
                 }
             }
             return false;
@@ -209,32 +202,26 @@ namespace librealsense
             if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 720, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 1024, 1024, RS2_FORMAT_RAW10, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 1024, 1024, RS2_FORMAT_RAW10, 30, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 2, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET });
             }
             else
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 576, 576, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 576, 576, RS2_FORMAT_RAW10, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 576, 576, RS2_FORMAT_RAW10, 15, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 2, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET });
             }
             return tags;
         };
 
-        bool contradicts(stream_profile_interface* a, const std::vector<stream_profile>& others) override
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override
         {
-            if (auto vid_a = dynamic_cast<video_stream_profile_interface*>(a))
+            if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
             {
                 for (auto request : others)
                 {
                     if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
                         return true;
-                }
-
-                for (auto request : others)
-                {
-                    if ((vid_a->get_height() == vid_a->get_width()) && (request.height == request.width))
-                        return false;
                 }
             }
             return false;
