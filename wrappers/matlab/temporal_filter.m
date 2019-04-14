@@ -5,7 +5,7 @@ classdef temporal_filter < realsense.filter
         function this = temporal_filter(smooth_alpha, smooth_delta, persistence_control)
             if (nargin == 0)
                 out = realsense.librealsense_mex('rs2::temporal_filter', 'new');
-            else if (nargin == 3)
+            elseif (nargin == 3)
                 validateattributes(smooth_alpha, {'numeric'}, {'scalar', 'real'});
                 validateattributes(smooth_delta, {'numeric'}, {'scalar', 'real'});
                 validateattributes(persistence_control, {'numeric'}, {'scalar', 'real', 'integer'});
