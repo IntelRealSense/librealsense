@@ -5,9 +5,11 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-depth.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-private.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-color.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-motion.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-depth.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-color.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.h"
 )

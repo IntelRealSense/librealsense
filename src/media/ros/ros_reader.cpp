@@ -4,7 +4,7 @@
 #include "ros_reader.h"
 #include "ds5/ds5-device.h"
 #include "ivcam/sr300.h"
-#include "l500/l500-factory.h"
+#include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h" 
