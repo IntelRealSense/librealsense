@@ -581,8 +581,6 @@ namespace librealsense
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS415_PID:
             return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
-        case RS416_PID:
-            return std::make_shared<rs416_device>(ctx, group, register_device_notifications);
         case RS420_PID:
             return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
         case RS420_MM_PID:
