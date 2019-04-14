@@ -58,21 +58,21 @@ namespace rsimpl
         }
 
         // Depth and IR modes on subdevice 1
-        info.stream_subdevices[RS_STREAM_DEPTH] = 1;
-        info.stream_subdevices[RS_STREAM_INFRARED] = 1;
+        info.stream_subdevices[RS_STREAM_DEPTH] = 3;
+        info.stream_subdevices[RS_STREAM_INFRARED] = 3;
         for(auto & m : f200_ir_only_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_f200_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
+                info.subdevice_modes.push_back({3, m.dims, pf_f200_invi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
         for(auto & m : f200_depth_modes)
         {
             for(auto fps : m.fps)
             {
-                info.subdevice_modes.push_back({1, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
-                info.subdevice_modes.push_back({1, m.dims, pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
+                info.subdevice_modes.push_back({3, m.dims, pf_invz, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
+                info.subdevice_modes.push_back({3, m.dims, pf_f200_inzi, fps, MakeDepthIntrinsics(c, m.dims), {}, {0}});
             }
         }
 
