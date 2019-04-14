@@ -5,7 +5,7 @@ classdef spatial_filter < realsense.filter
         function this = spatial_filter(smooth_alpha, smooth_delta, magnitude, hole_fill)
             if (nargin == 0)
                 out = realsense.librealsense_mex('rs2::spatial_filter', 'new');
-            else if (nargin == 4)
+            elseif (nargin == 4)
                 validateattributes(smooth_alpha, {'numeric'}, {'scalar', 'real'});
                 validateattributes(smooth_delta, {'numeric'}, {'scalar', 'real'});
                 validateattributes(magnitude, {'numeric'}, {'scalar', 'real'});
