@@ -5,11 +5,11 @@
 
 #include "android_uvc.h"
 #include "device_watcher.h"
-#include "libuvc/utlist.h"
 
-#include "concurrency.h"
+#include "../../concurrency.h"
 #include "../../types.h"
 #include "../../libuvc/utlist.h"
+#include "../../libuvc/uvc_types.h"
 
 #include <vector>
 #include <thread>
@@ -38,7 +38,6 @@ struct frame {
     librealsense::platform::frame_object fo;
     frames_archive *owner; // Keep pointer to owner for light-deleter
 };
-
 
 void cleanup_frame(frame *ptr) {
     if (ptr) ptr->owner->deallocate(ptr);
@@ -732,9 +731,8 @@ uvc_error_t usbhost_get_available_formats_all(usbhost_uvc_device *devh, uvc_form
                     uvc_format_t *cur_format = (uvc_format_t *) malloc(sizeof(uvc_format_t));
                     cur_format->height = frame_desc->wHeight;
                     cur_format->width = frame_desc->wWidth;
-                    cur_format->fourcc = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
-                    if(1496850464 == cur_format->fourcc)
-                        cur_format->fourcc = 1196574041; //TODO
+                    auto temp = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
+                    cur_format->fourcc = fourcc_map.count(temp) ? fourcc_map.at(temp) : temp;
                     cur_format->interfaceNumber = stream_if->bInterfaceNumber;
 
                     cur_format->fps = 10000000 / *interval_ptr;
@@ -938,10 +936,12 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
         {
-            LOG_ERROR("Read pipe returned error and was clear halted ERROR:" << strerror(errno));
-            if(pipe->reset())
-                continue;
-            break;
+            auto err = errno;
+            std::string strerr = strerror(errno);
+            LOG_WARNING("bulk_transfer on read endpoint returned error, ERROR: " << strerr);
+            if(EBADF == err || ENODEV == err)// bad file descriptor || No such device
+                break;
+            continue;
         }
         strctx->stream->got_bytes = res;
         usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
@@ -1367,8 +1367,8 @@ uvc_error_t usbhost_get_stream_ctrl_format_size(
         uvc_frame_desc_t *frame;
         //TODO
         auto val = SWAP_UINT32(*(const uint32_t *) format->guidFormat);
-        if(1496850464 == val)
-            val = 1196574041;
+        if(fourcc_map.count(val))
+            val = fourcc_map.at(val);
 
         if (fourcc != val)
             continue;

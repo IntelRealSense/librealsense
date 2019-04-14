@@ -66,6 +66,7 @@ public class Streamer {
             if(mListener != null)
                 mListener.config(config);
             mPipeline.start(config);
+            try(FrameSet frames = mPipeline.waitForFrames(15000)){} // w/a for l500
         }
     }
 

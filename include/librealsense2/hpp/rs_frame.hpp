@@ -887,7 +887,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first depth framee, if no frame found, return the default one(frame instance)
+        * Retrieve back the first depth frame, if no frame found, return the default one(frame instance)
         * \return depth_frame - first found depth frame.
         */
         depth_frame get_depth_frame() const
