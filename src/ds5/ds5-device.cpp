@@ -344,9 +344,9 @@ namespace librealsense
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _tf_keeper(new time_diff_keeper(this)),
-          _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
+          _tf_keeper(new time_diff_keeper(this))
     {
+        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
     }
 

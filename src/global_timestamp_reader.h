@@ -3,15 +3,31 @@
 #include "sensor.h"
 #include "device.h"
 #include "error-handling.h"
+#include <deque>
 
 namespace librealsense
 {
+    class stdev
+    {
+    public:
+        stdev(unsigned int buffer_size, double default_std);
+        void add_value(double val);
+        double get_std();
+
+    private:
+        unsigned int _buffer_size;
+        std::deque<double> _last_values;
+        double  _sum;
+        double _sumsq;
+        double _default_std;
+    };
+
     class time_diff_keeper
     {
     public:
         explicit time_diff_keeper(device* dev);
         ~time_diff_keeper();
-        double get_system_hw_time_diff();
+        double get_system_hw_time_diff(double crnt_hw_time);
 
     private:
         bool update_diff_time();
@@ -20,10 +36,12 @@ namespace librealsense
     private:
         device* _device;
         double _system_hw_time_diff;
+        double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
         active_object<> _active_object;
         mutable std::recursive_mutex _mtx;
         bool   _skipTimestampCorrection;
+        stdev _stdev;
     };
 
     class global_timestamp_reader : public frame_timestamp_reader
