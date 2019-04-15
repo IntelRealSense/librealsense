@@ -115,9 +115,13 @@ namespace librealsense
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
 
 
-#if defined( RS2_USE_WMF_BACKEND) || defined(RS2_USE_V4L2_BACKEND)
+#if defined( RS2_USE_WMF_BACKEND) || defined(RS2_USE_V4L2_BACKEND)  //currently hid backend implemented only for windows and linux.
                 if (g.second.size() < 2)
+                {
+                    LOG_WARNING("Skipping L500. " << g.second.size() << " HID devices were recognized, at least 2 required");
                     continue;
+                }
+                    
 #endif
                 auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
                 chosen.push_back(depth);

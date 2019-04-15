@@ -15,8 +15,6 @@
 
 namespace librealsense
 {
-    static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
-
     ds5_timestamp_reader_from_metadata::ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
         :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins), one_time_note(false)
     {
@@ -144,7 +142,6 @@ namespace librealsense
         return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
 
-        if (mode.pf->fourcc == 'GYRO')
     ds5_custom_hid_timestamp_reader::ds5_custom_hid_timestamp_reader()
     {
         counter.resize(sensors);
