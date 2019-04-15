@@ -44,7 +44,7 @@ namespace librealsense
             })
         {
             _active_object.start();
-        };
+        }
 
     time_diff_keeper::~time_diff_keeper()
     {
