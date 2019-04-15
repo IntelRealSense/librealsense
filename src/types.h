@@ -69,6 +69,8 @@ namespace librealsense
 {
     #define UNKNOWN_VALUE "UNKNOWN"
 
+    static const float TIMESTAMP_USEC_TO_MSEC = 0.001;
+
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////

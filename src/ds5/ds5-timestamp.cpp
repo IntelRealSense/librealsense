@@ -144,78 +144,7 @@ namespace librealsense
         return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
 
-    ds5_iio_hid_timestamp_reader::ds5_iio_hid_timestamp_reader()
-    {
-        counter.resize(sensors);
-        reset();
-    }
-
-    void ds5_iio_hid_timestamp_reader::reset()
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-        started = false;
-        for (auto i = 0; i < sensors; ++i)
-        {
-            counter[i] = 0;
-        }
-    }
-
-    rs2_time_t ds5_iio_hid_timestamp_reader::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        if(has_metadata(mode, fo.metadata, fo.metadata_size))
-        {
-            //  The timestamps conversions path is as follows :
-            //          FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit
-            // This flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends.
-            // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
-            // To revert to the extended 64 bit TS uncomment the next line instead
-            //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
-
-            // The FW timestamps for HID are converted to Nanosec in Linux kernel. This may produce conflicts with MS API.
-            return static_cast<rs2_time_t>(timestamp * HID_TIMESTAMP_MULTIPLIER);
-        }
-
-        if (!started)
-        {
-            LOG_WARNING("HID timestamp not found! please apply HID patch.");
-            started = true;
-        }
-
-        return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-    }
-
-    bool ds5_iio_hid_timestamp_reader::has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const
-    {
-        if(metadata != nullptr && metadata_size > 0)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    unsigned long long ds5_iio_hid_timestamp_reader::get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-        if (nullptr == mode.pf) return 0;                   // Windows support is limited
-        int index = 0;
-        if (mode.pf->fourcc == rs_fourcc('G','Y','R','O'))
-            index = 1;
-
-        return ++counter[index];
-    }
-
-    rs2_timestamp_domain ds5_iio_hid_timestamp_reader::get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const
-    {
-        if(has_metadata(mode ,fo.metadata, fo.metadata_size))
-        {
-            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-        }
-        return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-    }
-
+        if (mode.pf->fourcc == 'GYRO')
     ds5_custom_hid_timestamp_reader::ds5_custom_hid_timestamp_reader()
     {
         counter.resize(sensors);
