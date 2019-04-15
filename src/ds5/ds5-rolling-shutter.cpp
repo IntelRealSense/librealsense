@@ -37,6 +37,7 @@ namespace librealsense
             // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
             get_depth_sensor().register_pixel_format(pf_uyvyl);
             get_depth_sensor().register_pixel_format(pf_rgb888);
+            get_depth_sensor().register_pixel_format(pf_w10);
         }
 
         get_depth_sensor().unregister_option(RS2_OPTION_EMITTER_ON_OFF);

@@ -18,6 +18,7 @@ namespace librealsense
         const uint16_t RS400_PID        = 0x0ad1; // PSR
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
+        const uint16_t RS416_PID        = 0x0b49;
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430I_PID       = 0x0b4b; // D430i
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
@@ -38,6 +39,7 @@ namespace librealsense
         const uint8_t DS5_DEPTH_EMITTER_ENABLED           = 2;
         const uint8_t DS5_EXPOSURE                        = 3;
         const uint8_t DS5_LASER_POWER                     = 4;
+        const uint8_t DS5_HARDWARE_PRESET                 = 6;
         const uint8_t DS5_ERROR_REPORTING                 = 7;
         const uint8_t DS5_EXT_TRIGGER                     = 8;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
@@ -49,6 +51,7 @@ namespace librealsense
             ds::RS400_PID,
             ds::RS410_PID,
             ds::RS415_PID,
+            ds::RS416_PID,
             ds::RS430_PID,
             ds::RS430I_PID,
             ds::RS430_MM_PID,
@@ -95,6 +98,7 @@ namespace librealsense
             { RS410_PID,        "Intel RealSense D410"},
             { RS410_MM_PID,     "Intel RealSense D410 with Tracking Module"},
             { RS415_PID,        "Intel RealSense D415"},
+            { RS416_PID,        "Intel RealSense D416"},
             { RS420_PID,        "Intel RealSense D420"},
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
