@@ -113,13 +113,15 @@ namespace librealsense
 
                 if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
-                
-                if (g.second.size() >= 2)
-                {
-                    auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
-                    chosen.push_back(depth);
-                    results.push_back(info);
-                }
+
+
+#if defined( RS2_USE_WMF_BACKEND) || defined(RS2_USE_V4L2_BACKEND)
+                if (g.second.size() < 2)
+                    continue;
+#endif
+                auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
+                chosen.push_back(depth);
+                results.push_back(info);
             }
             else
             {
