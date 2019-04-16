@@ -4,6 +4,7 @@
 *.iml
 *.user
 
+!*.json
 !gradle-wrapper.jar
 
 .externalNativ
