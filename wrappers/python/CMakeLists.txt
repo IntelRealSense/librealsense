@@ -49,6 +49,7 @@ else() # Some other windows version
 endif()
 
 pybind11_add_module(pybackend2 SHARED ${RAW_RS_CPP} ${RAW_RS_HPP})
+include(libusb_config)
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()

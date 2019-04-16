@@ -36,8 +36,6 @@ if(BUILD_WITH_TM2)
     include(CMake/tm2_connectivity_check.cmake)
 endif()
 
-include(CMake/libusb_config.cmake)
-
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
