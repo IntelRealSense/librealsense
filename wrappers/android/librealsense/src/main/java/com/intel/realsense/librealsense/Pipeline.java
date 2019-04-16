@@ -13,7 +13,8 @@ public class Pipeline extends LrsClass{
     }
 
     public void start(Config config) throws Exception {
-        PipelineProfile rv = new PipelineProfile(nStartWithConfig(mHandle, config.getHandle()));
+        long h = nStartWithConfig(mHandle, config.getHandle());
+        PipelineProfile rv = new PipelineProfile(h);
         rv.close();//TODO: enable when PipelineProfile is implemented
     }
     public void stop() {

@@ -32,8 +32,8 @@ bool usb_pipe::reset()
 {
     bool rv = usb_device_control_transfer(_device,
                                           0x02, //UVC_FEATURE,
-                                           0x01, //CLEAR_FEATURE
-                                           0, _endpoint.get_endpoint_address(), NULL, 0, 10) == UVC_SUCCESS;
+                                          0x01, //CLEAR_FEATURE
+                                          0, _endpoint.get_endpoint_address(), NULL, 0, 10) == UVC_SUCCESS;
     if(rv)
         LOG_DEBUG("USB pipe " << (int)_endpoint.get_endpoint_address() << " reset successfully");
     else
@@ -42,24 +42,7 @@ bool usb_pipe::reset()
 }
 
 size_t usb_pipe::read_pipe(uint8_t *buffer, size_t buffer_len, unsigned int timeout_ms) {
-    using namespace std::chrono;
-    int bytes_copied = -1;
-    // Wait until pipe gets data
-    std::unique_lock<std::mutex> lk(_mutex);
-    submit_request(buffer, buffer_len);
-
-    auto res = _cv.wait_for(lk, std::chrono::milliseconds(timeout_ms), [&] { return _received; });
-    _received = false;
-    if (res == true) {
-        bytes_copied = _request->actual_length;
-    }
-    else {
-        LOG_WARNING("Timeout reached waiting for response!");
-        usb_request_cancel(_request.get());
-    }
-    lk.unlock();
-
-    return bytes_copied;
+    return usb_device_bulk_transfer(_device, _endpoint.get_endpoint_address(), buffer, buffer_len, timeout_ms);
 }
 
 void usb_pipe::queue_finished_request(usb_request* response) {
@@ -69,8 +52,20 @@ void usb_pipe::queue_finished_request(usb_request* response) {
     _received = true;
     lk.unlock();
     _cv.notify_all();
-    if(_interrupt_buffer.size() > 0)
+    if(_interrupt_buffer.size() > 0) {
+        if(response->actual_length > 0){
+            std::string buff = "";
+            for(int i = 0; i < response->actual_length; i++)
+                buff += ", " + std::to_string(((uint8_t*)response->buffer)[i]);
+            LOG_DEBUG("interrupt_request: " << buff.c_str());
+            if(response->actual_length == 6){
+                auto sts = ((uint8_t*)response->buffer)[5];
+                if(sts == 11 || sts == 13)
+                    LOG_ERROR("overflow status sent from the device");
+            }
+        }
         queue_interrupt_request();
+    }
 }
             
 void usb_pipe::submit_request(uint8_t *buffer, size_t buffer_len) {

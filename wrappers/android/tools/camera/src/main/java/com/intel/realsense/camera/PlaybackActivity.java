@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.WindowManager;
 
+import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 
 public class PlaybackActivity extends AppCompatActivity {
@@ -16,12 +18,16 @@ public class PlaybackActivity extends AppCompatActivity {
 
     private String mFilePath;
     private Streamer mStreamer;
+    private GLRsSurfaceView mGLSurfaceView;
+    private Colorizer mColorizer = new Colorizer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playback);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        mGLSurfaceView = findViewById(R.id.playbackGlSurfaceView);
     }
 
     @Override
@@ -33,14 +39,26 @@ public class PlaybackActivity extends AppCompatActivity {
             startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
         }
         else{
-            mStreamer = new Streamer(this, (GLRsSurfaceView) findViewById(R.id.playbackGlSurfaceView), new Streamer.Listener() {
+            mStreamer = new Streamer(this,false, new Streamer.Listener() {
                 @Override
                 public void config(Config config) {
                     config.enableAllStreams();
                     config.enableDeviceFromFile(mFilePath);
                 }
+
+                @Override
+                public void onFrameset(FrameSet frameSet) {
+                    try (FrameSet processed = frameSet.applyFilter(mColorizer)) {
+                        mGLSurfaceView.upload(processed);
+                    }
+                }
             });
-            mStreamer.start();
+            try {
+                mGLSurfaceView.clear();
+                mStreamer.start();
+            } catch (Exception e) {
+                finish();
+            }
         }
     }
 

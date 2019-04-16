@@ -1,3 +1,6 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+
 #include "error.h"
 
 void handle_error(JNIEnv *env, rs2_error* error){
@@ -14,6 +17,6 @@ void handle_error(JNIEnv *env, rs2_error* error){
             case RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE: message = "RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE"; break;
             default: message = "UNKNOWN_ERROR"; break;
         }
-        (*env)->ThrowNew(env, (*env)->FindClass(env, "java/lang/RuntimeException"), message);
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), message);
     }
 }
