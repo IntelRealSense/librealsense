@@ -5,11 +5,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Device;
@@ -52,6 +54,10 @@ public class SettingsActivity extends AppCompatActivity {
             loadSettingsList(device);
             StreamProfileSelector[] profilesList = createSettingList(device);
             loadStreamList(device, profilesList);
+        } catch(Exception e){
+            Log.e(TAG, "failed to load settings, error: " + e.getMessage());
+            Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
+            finish();
         }
     }
 
@@ -62,7 +68,7 @@ public class SettingsActivity extends AppCompatActivity {
         settingsMap.put(INDEX_DEVICE_INFO,"Device info");
         settingsMap.put(INDEX_ADVANCE_MODE,"Enable advanced mode");
 
-        if(device.isInAdvancedMode()){
+        if(device.supportsInfo(CameraInfo.ADVANCED_MODE) && device.isInAdvancedMode()){
             settingsMap.put(INDEX_ADVANCE_MODE,"Disable advanced mode");
             settingsMap.put(INDEX_PRESETS,"Presets");
         }

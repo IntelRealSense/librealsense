@@ -17,13 +17,18 @@ public class StreamProfileSelector implements Comparable<StreamProfileSelector> 
     private int mIndex;
     private List<VideoStreamProfile> mProfiles;
 
-
     public StreamProfileSelector(boolean enable, int index, List<VideoStreamProfile> profiles)
     {
         mIndex = index < profiles.size() ? index : 0;
         mEnabled = enable;
         mProfiles = profiles;
     }
+
+    public boolean isEnabled() { return mEnabled; }
+
+    public List<VideoStreamProfile> getProfiles() { return mProfiles; }
+
+    public int getIndex() { return mIndex; }
 
     public String getName(){
         VideoStreamProfile p = getProfile();
@@ -78,13 +83,5 @@ public class StreamProfileSelector implements Comparable<StreamProfileSelector> 
     @Override
     public int compareTo(@NonNull StreamProfileSelector streamProfileSelector) {
         return getName().compareTo(streamProfileSelector.getName());
-    }
-
-    public boolean isEnabled() { return mEnabled; }
-
-    public List<VideoStreamProfile> getProfiles() { return mProfiles; }
-
-    public int getIndex() {
-        return mIndex;
     }
 }
