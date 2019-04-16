@@ -7,21 +7,6 @@ if (NOT BUILD_PYTHON_BINDINGS)
     message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
 endif()
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 set(DEPENDENCIES realsense2)
 
 add_subdirectory(third_party/pybind11)
@@ -64,10 +49,11 @@ else() # Some other windows version
 endif()
 
 pybind11_add_module(pybackend2 SHARED ${RAW_RS_CPP} ${RAW_RS_HPP})
+include(libusb_config)
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()
-target_link_libraries(pybackend2 PRIVATE ${LIBUSB1_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(pybackend2 PRIVATE usb ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})

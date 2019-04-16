@@ -5,19 +5,6 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(RealsenseToolsRosbagInspector)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     if(APPLE)
@@ -55,6 +42,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
         include_directories(rs-rosbag-inspector ../../third-party/imgui ../../common ../../third-party)
     endif()
+    set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
 
     target_include_directories(rs-rosbag-inspector PRIVATE
         ${ROSBAG_HEADER_DIRS}

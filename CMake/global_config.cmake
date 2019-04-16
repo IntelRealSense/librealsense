@@ -1,5 +1,6 @@
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_CXX_STANDARD 11)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
@@ -50,7 +51,7 @@ macro(global_set_flags)
 
     if(FORCE_LIBUVC)
         set(BACKEND RS2_USE_LIBUVC_BACKEND)
-        message( WARNING "Using libuvc!" )
+        message(STATUS "Using libuvc (by force)")
     endif()
 
     if (BUILD_WITH_CUDA)
@@ -61,7 +62,7 @@ macro(global_set_flags)
 endmacro()
 
 macro(global_target_config)
-    target_link_libraries(${LRS_TARGET} PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
+    target_link_libraries(${LRS_TARGET} PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT})
 
     include_directories(${LRS_TARGET} src)
 
@@ -83,10 +84,10 @@ endmacro()
 macro(add_tm2)
     message(STATUS "Building with TM2")
     add_subdirectory(third-party/libtm)
+    include(libusb_config)
     if(USE_EXTERNAL_USB)
         add_dependencies(tm libusb)
     endif()
     target_compile_definitions(${LRS_TARGET} PRIVATE WITH_TRACKING=1 BUILD_STATIC=1)
-    target_link_libraries(${LRS_TARGET} PRIVATE tm ${CMAKE_THREAD_LIBS_INIT} ${TRACKING_DEVICE_LIBS})
-    target_include_directories(${LRS_TARGET} PRIVATE third-party/libtm/libtm/include)
+    target_link_libraries(${LRS_TARGET} PRIVATE tm ${CMAKE_THREAD_LIBS_INIT})
 endmacro()

@@ -1,13 +1,12 @@
-message(STATUS "Use external libusb")
 include(ExternalProject)
 
 ExternalProject_Add(
     libusb
 
     GIT_REPOSITORY "https://github.com/libusb/libusb.git"
-    GIT_TAG "v1.0.22"
+    GIT_TAG "2a7372db54094a406a755f0b8548b614ba8c78ec" # "v1.0.22" + Mac get_device_list hang fix
 
-    UPDATE_COMMAND ${CMAKE_COMMAND} -E copy
+    UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
             ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
     PATCH_COMMAND ""
@@ -20,13 +19,16 @@ ExternalProject_Add(
             -DANDROID_STL=${ANDROID_STL}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/libusb_install
     TEST_COMMAND ""
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
-set(LIBUSB1_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib)
-link_directories(${LIBUSB1_LIBRARY_DIRS})
+add_library(usb INTERFACE)
+target_include_directories(usb INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/libusb>)
+target_link_libraries(usb INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libusb_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}usb${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(USE_EXTERNAL_USB ON) # INTERFACE libraries can't have real deps, so targets that link with usb need to also depend on libusb
 
-set(LIBUSB1_LIBRARIES usb)
-#set(LIBUSB_LOCAL_INCLUDE_PATH third-party/libusb)
-
-set(USE_EXTERNAL_USB ON)
-set(LIBUSB_LOCAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb)
+if (APPLE)
+  find_library(corefoundation_lib CoreFoundation)
+  find_library(iokit_lib IOKit)
+  target_link_libraries(usb INTERFACE objc ${corefoundation_lib} ${iokit_lib})
+endif()

@@ -79,7 +79,7 @@ namespace librealsense
                 return results;
             }
 
-            processing_blocks get_recommended_processing_blocks() const
+            processing_blocks get_recommended_processing_blocks() const override
             {
                 return get_color_recommended_proccesing_blocks();
             }

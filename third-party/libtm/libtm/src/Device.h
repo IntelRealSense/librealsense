@@ -371,7 +371,7 @@ namespace perc
         void onControlMessage(const Message& msg);
         void SendLargeMessage(const Message& msg);
         Status CentralFWUpdate();
-        Status CentralLoadFW(uint8_t* buffer);
+        Status CentralLoadFW(const uint8_t* buffer, int size);
         std::mutex mDeletionMutex;
         bool mCleared;
         unsigned int mFrameTempBufferSize;

@@ -12,7 +12,7 @@ namespace perc
     #define SENSOR_TYPE_MASK (0x001F << SENSOR_TYPE_POS) /**< Bits 0-4 */
     #define SENSOR_INDEX_POS (5)
     #define SENSOR_INDEX_MASK (0x0007 << SENSOR_INDEX_POS) /**< Bits 5-7 */
-    #define SET_SENSOR_ID(_type, _index) (((_type << SENSOR_TYPE_POS) & SENSOR_TYPE_MASK) | ((_index << SENSOR_INDEX_POS) & SENSOR_INDEX_MASK))
+    #define SET_SENSOR_ID(_type, _index) ((((_type) << SENSOR_TYPE_POS) & SENSOR_TYPE_MASK) | (((_index) << SENSOR_INDEX_POS) & SENSOR_INDEX_MASK))
     #define GET_SENSOR_INDEX(_sensorID) ((_sensorID & SENSOR_INDEX_MASK) >> SENSOR_INDEX_POS)
     #define GET_SENSOR_TYPE(_sensorID) ((_sensorID & SENSOR_TYPE_MASK) >> SENSOR_TYPE_POS)
     #define MAX_VIDEO_STREAMS 8

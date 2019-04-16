@@ -2276,7 +2276,7 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
     float3 t_pos{};
     float4 t_or {};
     int ret = 0;
-    if (ret = pose_snr->get_static_node(s_guid, t_pos, t_or))
+    if ((ret = pose_snr->get_static_node(s_guid, t_pos, t_or)))
     {
         pos->x = t_pos.x;
         pos->y = t_pos.y;

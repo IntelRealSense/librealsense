@@ -143,8 +143,8 @@ namespace librealsense
         void set_ae_control(const STAEControl& val) override;
         void set_census_radius(const STCensusRadius& val) override;
 
-        std::vector<uint8_t> serialize_json() const;
-        void load_json(const std::string& json_content);
+        std::vector<uint8_t> serialize_json() const override;
+        void load_json(const std::string& json_content) override;
 
     private:
         void set_exposure(uvc_sensor& sensor, const exposure_control& val);

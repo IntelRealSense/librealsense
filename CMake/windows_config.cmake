@@ -37,8 +37,6 @@ macro(os_set_flags)
     if(BUILD_EASYLOGGINGPP)
         add_definitions(-DNOMINMAX)
     endif()
-
-    include(CMake/external_libusb.cmake)
 endmacro()
 
 macro(os_target_config)

@@ -791,7 +791,7 @@ namespace rs2
     {
         try
         {
-            if (supported = endpoint->supports(opt))
+            if ((supported = endpoint->supports(opt)))
             {
                 value = endpoint->get_option(opt);
                 range = endpoint->get_option_range(opt);
@@ -4133,7 +4133,7 @@ namespace rs2
             {
                 auto f = frame.second;
                 frameset frames;
-                if (frames = f.as<frameset>())
+                if ((frames = f.as<frameset>()))
                 {
                     for (auto&& frame : frames)
                     {
