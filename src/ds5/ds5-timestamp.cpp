@@ -199,7 +199,7 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         if (nullptr == mode.pf) return 0;                   // Windows support is limited
         int index = 0;
-        if (mode.pf->fourcc == 'GYRO')
+        if (mode.pf->fourcc == rs_fourcc('G','Y','R','O'))
             index = 1;
 
         return ++counter[index];
