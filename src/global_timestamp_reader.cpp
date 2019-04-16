@@ -81,7 +81,7 @@ namespace librealsense
                 if (diff > _system_hw_time_diff) 
                 {
                     iirWeight *= 0.1;
-                    std::cout << "get_std() = " << std::fixed << _stdev.get_std() << std::endl;
+                    //std::cout << "get_std() = " << std::fixed << _stdev.get_std() << std::endl;
                     if (diff - _system_hw_time_diff > _stdev.get_std())
                         iirWeight = 0;
                 }
@@ -124,8 +124,8 @@ namespace librealsense
         static const double possible_loop_time(3000);
         while ((_last_sample_hw_time - crnt_hw_time) > possible_loop_time)
         {
-            std::cout << "***** NOT initialized **** " << std::endl;
-            std::cout << _last_sample_hw_time << " > " << crnt_hw_time << std::endl;
+            //std::cout << "***** NOT initialized **** " << std::endl;
+            //std::cout << _last_sample_hw_time << " > " << crnt_hw_time << std::endl;
             update_diff_time();
         }
         return _system_hw_time_diff;
