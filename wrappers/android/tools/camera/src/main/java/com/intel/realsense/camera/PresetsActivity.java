@@ -33,7 +33,7 @@ public class PresetsActivity extends AppCompatActivity {
 
         TextView message = findViewById(R.id.list_view_title);
         final Resources resources = getResources();
-        String[] presets = null;
+        String[] presets;
         try {
             presets = resources.getAssets().list("presets");
         } catch (IOException e) {
@@ -58,7 +58,6 @@ public class PresetsActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
-//                device.toggleAdvancedMode(true);
                 RsContext ctx = new RsContext();
                 DeviceList devices = ctx.queryDevices();
                 if(devices.getDeviceCount() == 0){

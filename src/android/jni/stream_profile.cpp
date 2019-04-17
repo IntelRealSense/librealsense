@@ -58,3 +58,15 @@ Java_com_intel_realsense_librealsense_StreamProfile_nDelete(JNIEnv *env, jclass 
                                                             jlong handle) {
     rs2_delete_stream_profile((rs2_stream_profile *) handle);
 }
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_StreamProfile_nIsProfileExtendableTo(JNIEnv *env, jclass type,
+                                                                           jlong handle,
+                                                                           jint extension) {
+    rs2_error *e = NULL;
+    int rv = rs2_stream_profile_is(reinterpret_cast<const rs2_stream_profile *>(handle),
+                                   static_cast<rs2_extension>(extension), &e);
+    handle_error(env, e);
+    return rv;
+}

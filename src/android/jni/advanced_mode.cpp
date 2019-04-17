@@ -40,12 +40,12 @@ extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_intel_realsense_librealsense_Device_nSerializePresetToJson(JNIEnv *env, jclass type,
                                                                     jlong handle) {
     rs2_error* e = NULL;
-    rs2_raw_data_buffer* raw_data_buffer = rs2_serialize_json(
-            reinterpret_cast<rs2_device *>(handle), &e);
+    std::shared_ptr<rs2_raw_data_buffer> raw_data_buffer(
+            rs2_serialize_json(reinterpret_cast<rs2_device *>(handle), &e),
+            [](rs2_raw_data_buffer* buff){ if(buff) delete buff;});
     handle_error(env, e);
     jbyteArray rv = env->NewByteArray(raw_data_buffer->buffer.size());
     env->SetByteArrayRegion(rv, 0, raw_data_buffer->buffer.size(),
                             reinterpret_cast<const jbyte *>(raw_data_buffer->buffer.data()));
-    delete raw_data_buffer;
-    return rv;//delete raw_data_buffer?
+    return rv;
 }

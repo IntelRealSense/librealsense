@@ -13,6 +13,12 @@
 #include "../../types.h"
 
 #define INTERRUPT_BUFFER_SIZE 1024
+#define CLEAR_FEATURE 0x01
+#define UVC_FEATURE 0x02
+#define INTERRUPT_PACKET_SIZE 5
+#define INTERRUPT_NOTIFICATION_INDEX 5
+#define DEPTH_SENSOR_OVERFLOW_NOTIFICATION 11
+#define COLOR_SENSOR_OVERFLOW_NOTIFICATION 13
 
 using namespace librealsense::usb_host;
 
@@ -30,10 +36,15 @@ usb_pipe::~usb_pipe()
 
 bool usb_pipe::reset()
 {
-    bool rv = usb_device_control_transfer(_device,
-                                          0x02, //UVC_FEATURE,
-                                          0x01, //CLEAR_FEATURE
-                                          0, _endpoint.get_endpoint_address(), NULL, 0, 10) == UVC_SUCCESS;
+    int requestType = UVC_FEATURE;
+    int request = CLEAR_FEATURE;
+    int value = 0;
+    int index = _endpoint.get_endpoint_address();
+    void* buffer = NULL;
+    int length = 0;
+    unsigned int timeout = 10;
+    bool rv = usb_device_control_transfer(_device, requestType, request, value,
+            index, buffer, length, timeout) == UVC_SUCCESS;
     if(rv)
         LOG_DEBUG("USB pipe " << (int)_endpoint.get_endpoint_address() << " reset successfully");
     else
@@ -53,14 +64,16 @@ void usb_pipe::queue_finished_request(usb_request* response) {
     lk.unlock();
     _cv.notify_all();
     if(_interrupt_buffer.size() > 0) {
+        //Log fatal notifications, this is currently handles only D4xx devices.
+        //TODO push HW notifications to librealsense
         if(response->actual_length > 0){
             std::string buff = "";
             for(int i = 0; i < response->actual_length; i++)
-                buff += ", " + std::to_string(((uint8_t*)response->buffer)[i]);
+                buff += std::to_string(((uint8_t*)response->buffer)[i]) + ", ";
             LOG_DEBUG("interrupt_request: " << buff.c_str());
-            if(response->actual_length == 6){
-                auto sts = ((uint8_t*)response->buffer)[5];
-                if(sts == 11 || sts == 13)
+            if(response->actual_length == INTERRUPT_PACKET_SIZE){
+                auto sts = ((uint8_t*)response->buffer)[INTERRUPT_NOTIFICATION_INDEX];
+                if(sts == DEPTH_SENSOR_OVERFLOW_NOTIFICATION || sts == COLOR_SENSOR_OVERFLOW_NOTIFICATION)
                     LOG_ERROR("overflow status sent from the device");
             }
         }
