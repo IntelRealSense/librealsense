@@ -341,7 +341,7 @@ inline bool profile_diffs(const std::string& plot_name, std::vector<T>& distance
         distances.end(), 0.0f) / distances.size();
 
     auto pixels = distances.size();
-    auto first_non_identical_index = -1;
+    long long first_non_identical_index = -1;
     auto first_difference = 0.f;
     auto non_identical_count = distances.size() - std::count(distances.begin(), distances.end(), static_cast<T>(0));
     auto first_non_identical_iter = std::find_if(distances.begin(), distances.end(), [](const float& val) { return val != 0; });

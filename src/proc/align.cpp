@@ -155,6 +155,7 @@ namespace librealsense
                     aligned_intrinsics.width = to_video_profile->get_width();
                     aligned_intrinsics.height = to_video_profile->get_height();
                     aligned_video_profile->set_intrinsics([aligned_intrinsics]() { return aligned_intrinsics; });
+                    aligned_profile->register_extrinsics_to(to_profile, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
                 }
             }
         }
@@ -244,7 +245,7 @@ namespace librealsense
         _depth_scale = ((librealsense::depth_frame*)depth.get())->get_units();
 
         if (_to_stream_type == RS2_STREAM_DEPTH)
-            frames.foreach([&other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() != RS2_STREAM_DEPTH) other_frames.push_back(f); });
+            frames.foreach([&other_frames](const rs2::frame& f) {if ((f.get_profile().stream_type() != RS2_STREAM_DEPTH) && f.is<rs2::video_frame>()) other_frames.push_back(f); });
         else
             frames.foreach([this, &other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() == _to_stream_type) other_frames.push_back(f); });
 
