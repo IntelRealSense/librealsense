@@ -122,11 +122,11 @@ namespace perc {
             mDeviceStatus = Status::INIT_FAILED;
         }
 
-        /* Enable low power mode */
-        status = SetLowPowerModeInternal(true);
+        /* Disable low power mode */
+        status = SetLowPowerModeInternal(false);
         if (status != Status::SUCCESS)
         {
-            DEVICELOGE("Error: Failed to enable low power mode (0x%X)", status);
+            DEVICELOGE("Error: Failed to disable low power mode (0x%X)", status);
         }
 
         status = GetDeviceInfoInternal();
