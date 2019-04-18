@@ -65,9 +65,11 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 #include "../common/android_helpers.h"
 #endif
 
+#define UNKNOWN_VALUE "UNKNOWN"
+
 namespace librealsense
 {
-    #define UNKNOWN_VALUE "UNKNOWN"
+    static const double TIMESTAMP_USEC_TO_MSEC = 0.001f;
 
     ///////////////////////////////////
     // Utility types for general use //

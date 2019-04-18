@@ -18,7 +18,7 @@ namespace librealsense
                 {
 
                     result = *it;
-                    if (result.mi == 4 || result.mi == 6)
+                    if (result.mi == 4 || result.mi == 6 || result.mi == 7)
                     {
                         devices.erase(it);
                         return true;
