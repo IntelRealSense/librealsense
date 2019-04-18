@@ -117,28 +117,22 @@ namespace librealsense
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
             using namespace ivcam2;
+            auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
 
-            auto res = *_owner->_calib_table_raw;
-
-            if (res.size() < sizeof(intrinsic_depth))
-                throw invalid_value_exception("size of calibration invalid");
-
-            auto intrinsic = (intrinsic_depth*)(res.data());
-
-            auto num_of_res = intrinsic->resolution.numOfResolutions;
+            auto num_of_res = intrinsic->resolution.num_of_resolutions;
 
             for (auto i = 0; i < num_of_res; i++)
             {
-                auto model = intrinsic->resolution.intrinsicResolution[i].world.pinhole_cam_model;
+                auto model = intrinsic->resolution.intrinsic_resolution[i].world.pinhole_cam_model;
                 if (model.height == profile.height && model.width == profile.width)
                 {
                     rs2_intrinsics intrinsics;
                     intrinsics.width = model.width;
                     intrinsics.height = model.height;
-                    intrinsics.fx = model.ipm.focalLength.x;
-                    intrinsics.fy = model.ipm.focalLength.y;
-                    intrinsics.ppx = model.ipm.principalPoint.x;
-                    intrinsics.ppy = model.ipm.principalPoint.y;
+                    intrinsics.fx = model.ipm.focal_length.x;
+                    intrinsics.fy = model.ipm.focal_length.y;
+                    intrinsics.ppx = model.ipm.principal_point.x;
+                    intrinsics.ppy = model.ipm.principal_point.y;
                     return intrinsics;
                 }
             }

@@ -62,7 +62,7 @@ namespace librealsense
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset, module_serial_size);
 
         _fw_version = firmware_version(fw_version);
-        *_calib_table_raw;  //work around to bug on fw
+
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
@@ -101,7 +101,7 @@ namespace librealsense
 
     void l500_device::force_hardware_reset() const
     {
-        command cmd(ivcam2::fw_cmd::HWReset);
+        command cmd(ivcam2::fw_cmd::HW_RESET);
         cmd.require_response = false;
         _hw_monitor->send(cmd);
     }

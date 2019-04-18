@@ -14,9 +14,9 @@ namespace librealsense
             if (raw_data.size() < sizeof(pose))
                 throw invalid_value_exception("size of extrinsic invalid");
             auto res = *((pose*)raw_data.data());
-            float trans_scale = 0.001f;
+            float trans_scale = 0.001f; // Convert units from mm to meter
 
-            if (res.position.x > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
+            if (res.position.y > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
                 trans_scale *= -1;
 
             res.position.x *= trans_scale;

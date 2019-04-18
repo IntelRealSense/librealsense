@@ -7,6 +7,9 @@
 #include "types.h"
 #include "option.h"
 
+static const int NUM_OF_RGB_RESOLUTIONS = 5;
+static const int NUM_OF_DEPTH_RESOLUTIONS = 1;
+
 namespace librealsense
 {
     const uint16_t L500_PID = 0x0b0d;
@@ -24,13 +27,13 @@ namespace librealsense
 
         enum fw_cmd : uint8_t
         {
-            HWReset = 0x20,
-            GVD = 0x10,
-            GLD = 0x0f,
+            MRD     = 0x01,
+            GLD     = 0x0f,
+            GVD     = 0x10,
+            HW_RESET = 0x20,
             DPT_INTRINSICS_GET = 0x5A,
-            DPT_INTRINSICS_FULL_GET = 0x7F,
-            MRD = 0x01,
             TEMPERATURES_GET = 0x6A,
+            DPT_INTRINSICS_FULL_GET = 0x7F,
             RGB_INTRINSIC_GET = 0x81,
             RGB_EXTRINSIC_GET = 0x82
         };
@@ -75,19 +78,35 @@ namespace librealsense
             { DFU_error,                    "DFU error" },
         };
 
+        template<class T>
+        const T* check_calib(const std::vector<uint8_t>& raw_data)
+        {
+            using namespace std;
+
+            auto table = reinterpret_cast<const T*>(raw_data.data());
+
+            if (raw_data.size() < sizeof(T))
+            {
+                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(T) << " , actual: " << raw_data.size());
+            }
+
+            return table;
+        }
+
+#pragma pack(push, 1)
         struct pinhole_model
         {
-            float2 focalLength;
-            float2 principalPoint;
+            float2 focal_length;
+            float2 principal_point;
         };
 
         struct distortion
         {
-            float radialK1;
-            float radialK2;
-            float tangentialP1;
-            float radialK3;
-            float tangentialP2;
+            float radial_k1;
+            float radial_k2;
+            float tangential_p1;
+            float radial_k3;
+            float tangential_p2;
         };
 
         struct pinhole_camera_model
@@ -102,7 +121,7 @@ namespace librealsense
         {
             pinhole_camera_model pinhole_cam_model; //(Same as standard intrinsic)
             float2 zo;
-            float zNorm;
+            float znorm;
         };
 
         struct intrinsic_per_resolution
@@ -115,17 +134,17 @@ namespace librealsense
         {
             uint16_t reserved16;
             uint8_t reserved8;
-            uint8_t numOfResolutions;
-            intrinsic_per_resolution intrinsicResolution[1]; //Dynamic number of entries according to numOfResolutions
+            uint8_t num_of_resolutions;
+            intrinsic_per_resolution intrinsic_resolution[NUM_OF_DEPTH_RESOLUTIONS]; //Dynamic number of entries according to numOfResolutions
         };
 
         struct orientation
         {
-            uint8_t hScanDirection;
-            uint8_t vScanDirection;
+            uint8_t hscan_direction;
+            uint8_t vscan_direction;
             uint16_t reserved16;
             uint32_t reserved32;
-            float depthOffset;
+            float depth_offset;
         };
 
         struct intrinsic_depth
@@ -138,8 +157,8 @@ namespace librealsense
         {
             uint16_t reserved16;
             uint8_t reserved8;
-            uint8_t numOfResolutions;
-            pinhole_camera_model intrinsicResolution[1]; //Dynamic number of entries according to numOfResolutions
+            uint8_t num_of_resolutions;
+            pinhole_camera_model intrinsic_resolution[NUM_OF_RGB_RESOLUTIONS]; //Dynamic number of entries according to numOfResolutions
         };
 
         struct rgb_common
@@ -153,6 +172,7 @@ namespace librealsense
             rgb_common common;
             resolutions_rgb resolution;
         };
+#pragma pack(pop)
 
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
