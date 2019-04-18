@@ -407,7 +407,7 @@ namespace rs2
         void keep() { rs2_keep_frame(frame_ref); }
 
         /**
-        * Parenthesis operator check internal frame handle is valid.
+        * Parenthesis operator check if internal frame handle is valid.
         * \return bool - true or false.
         */
         operator bool() const { return frame_ref != nullptr; }
@@ -570,7 +570,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional video related attributs/functions
+        * Extend frame class with additional video related attributes and functions
         * \param[in] frame - existing frame instance
         */
         video_frame(const frame& f)
@@ -653,12 +653,12 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional point cloud related attributs/functions
+        * Extend frame class with additional point cloud related attributes and functions
         */
         points() : frame(), _size(0) {}
 
         /**
-        * Inherit frame class with additional point cloud related attributs/functions
+        * Extend frame class with additional point cloud related attributes and functions
         * \param[in] frame - existing frame instance
         */
         points(const frame& f)
@@ -678,7 +678,7 @@ namespace rs2
             }
         }
         /**
-        * Retrieve back the vertices
+        * Retrieve the vertices
         * \param[in] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
@@ -727,7 +727,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit video_frame class with additional depth related attributs/functions
+        * Extend video_frame class with additional depth related attributes and functions
         * \param[in] frame - existing frame instance
         */
         depth_frame(const frame& f)
@@ -742,10 +742,10 @@ namespace rs2
         }
 
         /**
-        * Return the distance between two depth pixels
-        * \param[in] int x - first pixel position.
-        * \param[in] int y - second pixel position.
-        * \return float - distance between to points.
+        * Provide the depth in metric units at the given pixel
+        * \param[in] int x - pixel's x coordinate.
+        * \param[in] int y - pixel's y coordinate.
+        * \return float - depth in metric units at given pixel
         */
         float get_distance(int x, int y) const
         {
@@ -790,7 +790,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional motion related attributs/functions
+        * Extends frame class with additional motion related attributes and functions
         * \param[in] frame - existing frame instance
         */
         motion_frame(const frame& f)
@@ -804,7 +804,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the motion data from IMU sensor
+        * Retrieve the motion data from IMU sensor
         * \return rs2_vector - 3D vector in Euclidean coordinate space.
         */
         rs2_vector get_motion_data() const
@@ -818,7 +818,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional pose related attributs/functions
+        * Extends frame class with additional pose related attributes and functions
         * \param[in] frame - existing frame instance
         */
         pose_frame(const frame& f)
@@ -832,7 +832,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the pose data from T2xx position tracking sensor
+        * Retrieve the pose data from T2xx position tracking sensor
         * \return rs2_pose - orientation and velocity data.
         */
         rs2_pose get_pose_data() const
@@ -849,11 +849,11 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional frameset related attributs/functions
+        * Extend frame class with additional frameset related attributes and functions
         */
         frameset() :_size(0) {};
         /**
-        * Inherit frame class with additional frameset related attributs/functions
+        * Extend frame class with additional frameset related attributes and functions
         * \param[in] frame - existing frame instance
         */
         frameset(const frame& f)
@@ -875,7 +875,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first frame of specific stream and format types, if no frame found, return the default one(frame instance)
+        * Retrieve the first frame of specific stream and format types, if no frame found, return the default one (frame instance)
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -892,7 +892,7 @@ namespace rs2
             return result;
         }
         /**
-        * Retrieve back the first frame of specific stream type, if no frame found, error will be thrown
+        * Retrieve the first frame of specific stream type, if no frame found, an error will be thrown
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -905,7 +905,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first depth frame, if no frame found, return the default one(frame instance)
+        * Retrieve the first depth frame, if no frame found, return the default one (frame instance)
         * \return depth_frame - first found depth frame.
         */
         depth_frame get_depth_frame() const
@@ -914,7 +914,7 @@ namespace rs2
             return f.as<depth_frame>();
         }
         /**
-        * Retrieve back the first color frame, if no frame found, search the color frame from IR stream. If still can't find, return the default one(frame instance)
+        * Retrieve the first color frame, if no frame found, search the color frame from IR stream. If one still can't be found, return the default one (frame instance)
         * \return video_frame - first found color frame.
         */
         video_frame get_color_frame() const
@@ -930,7 +930,7 @@ namespace rs2
             return f;
         }
         /**
-        * Retrieve back the first infrared frame, return the default one(frame instance)
+        * Retrieve the first infrared frame, if no frame found, return the default one (frame instance)
         * \param[in] size_t index
         * \return video_frame - first found infrared frame.
         */
@@ -1005,7 +1005,7 @@ namespace rs2
         }
 
         /**
-        * Template function, extract internal frame handle from the frameset and invoke the action function
+        * Template function, extract internal frame handles from the frameset and invoke the action function
         * \param[in] action - instance with () operator implemented will be invoke after frame extraction.
         */
         template<class T>

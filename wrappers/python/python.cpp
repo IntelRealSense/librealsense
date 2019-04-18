@@ -41,8 +41,7 @@ std::string make_pythonic_str(std::string str)
 #define BIND_ENUM(module, rs2_enum_type, RS2_ENUM_COUNT, docstring)                                                         \
     static std::string rs2_enum_type##pyclass_name = std::string(#rs2_enum_type).substr(rs2_prefix.length());               \
     /* Above 'static' is required in order to keep the string alive since py::class_ does not copy it */                    \
-    py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str());                               \
-    py_##rs2_enum_type.doc() = docstring;                                                                                   \
+    py::enum_<rs2_enum_type> py_##rs2_enum_type(module, rs2_enum_type##pyclass_name.c_str(), docstring);                    \
     /* std::cout << std::endl << "## " << rs2_enum_type##pyclass_name  << ":" << std::endl; */                              \
     for (int i = 0; i < static_cast<int>(RS2_ENUM_COUNT); i++)                                                              \
     {                                                                                                                       \
@@ -154,102 +153,100 @@ PYBIND11_MODULE(NAME, m) {
     BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set / queried at any time.")
     BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
     BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT, "Distortion model: defines how pixel coordinates should be mapped to sensor coordinates.")
-    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "")
+    BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
 
-        py::class_<rs2_extrinsics> extrinsics(m, "extrinsics");
+    py::class_<rs2_extrinsics> extrinsics(m, "extrinsics", "Cross-stream extrinsics: encodes the topology describing how the different devices are oriented.");
     extrinsics.def(py::init<>())
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, rotation, float, 9))
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, translation, float, 3))
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, rotation, float, 9), "Column - major 3x3 rotation matrix")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_extrinsics, translation, float, 3), "Three-element translation vector, in meters")
         .def("__repr__", [](const rs2_extrinsics &e) {
-        std::stringstream ss;
-        ss << "rotation: " << array_to_string(e.rotation);
-        ss << "\ntranslation: " << array_to_string(e.translation);
-        return ss.str();
-    });
+            std::stringstream ss;
+            ss << "rotation: " << array_to_string(e.rotation);
+            ss << "\ntranslation: " << array_to_string(e.translation);
+            return ss.str();
+        });
 
-    py::class_<rs2_intrinsics> intrinsics(m, "intrinsics");
+    py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
     intrinsics.def(py::init<>())
-        .def_readwrite("width", &rs2_intrinsics::width)
-        .def_readwrite("height", &rs2_intrinsics::height)
-        .def_readwrite("ppx", &rs2_intrinsics::ppx)
-        .def_readwrite("ppy", &rs2_intrinsics::ppy)
-        .def_readwrite("fx", &rs2_intrinsics::fx)
-        .def_readwrite("fy", &rs2_intrinsics::fy)
-        .def_readwrite("model", &rs2_intrinsics::model)
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5))
-        .def("__repr__", [](const rs2_intrinsics& self)
-    {
-        std::stringstream ss;
-        ss << "width: " << self.width << ", ";
-        ss << "height: " << self.height << ", ";
-        ss << "ppx: " << self.ppx << ", ";
-        ss << "ppy: " << self.ppy << ", ";
-        ss << "fx: " << self.fx << ", ";
-        ss << "fy: " << self.fy << ", ";
-        ss << "model: " << self.model << ", ";
-        ss << "coeffs: " << array_to_string(self.coeffs);
-        return ss.str();
-    });
+        .def_readwrite("width", &rs2_intrinsics::width, "Width of the image in pixels")
+        .def_readwrite("height", &rs2_intrinsics::height, "Height of the image in pixels")
+        .def_readwrite("ppx", &rs2_intrinsics::ppx, "Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge")
+        .def_readwrite("ppy", &rs2_intrinsics::ppy, "Vertical coordinate of the principal point of the image, as a pixel offset from the top edge")
+        .def_readwrite("fx", &rs2_intrinsics::fx, "Focal length of the image plane, as a multiple of pixel width")
+        .def_readwrite("fy", &rs2_intrinsics::fy, "Focal length of the image plane, as a multiple of pixel height")
+        .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients, order: k1, k2, p1, p2, k3")
+        .def("__repr__", [](const rs2_intrinsics& self) {
+            std::stringstream ss;
+            ss << "width: " << self.width << ", ";
+            ss << "height: " << self.height << ", ";
+            ss << "ppx: " << self.ppx << ", ";
+            ss << "ppy: " << self.ppy << ", ";
+            ss << "fx: " << self.fx << ", ";
+            ss << "fy: " << self.fy << ", ";
+            ss << "model: " << self.model << ", ";
+            ss << "coeffs: " << array_to_string(self.coeffs);
+            return ss.str();
+        });
 
-    py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic");
+    py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
     motion_device_inrinsic.def(py::init<>())
-        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4))
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, noise_variances, float, 3))
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3));
+        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4), "Interpret data array values")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, noise_variances, float, 3), "Variance of noise for X, Y, and Z axis")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3), "Variance of bias for X, Y, and Z axis");
 
     /* rs2_types.hpp */
-    py::class_<rs2::option_range> option_range(m, "option_range");
+    py::class_<rs2::option_range> option_range(m, "option_range"); // No docstring in C++
     option_range.def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
         .def_readwrite("default", &rs2::option_range::def)
         .def_readwrite("step", &rs2::option_range::step)
         .def("__repr__", [](const rs2::option_range &self) {
-        std::stringstream ss;
-        ss << "<" SNAME ".option_range: " << self.min << "-" << self.max
-            << "/" << self.step << " [" << self.def << "]>";
-        return ss.str();
-    });
+            std::stringstream ss;
+            ss << "<" SNAME ".option_range: " << self.min << "-" << self.max
+                << "/" << self.step << " [" << self.def << "]>";
+            return ss.str();
+        });
 
-    py::class_<rs2::region_of_interest> region_of_interest(m, "region_of_interest");
+    py::class_<rs2::region_of_interest> region_of_interest(m, "region_of_interest"); // No docstring in C++
     region_of_interest.def_readwrite("min_x", &rs2::region_of_interest::min_x)
         .def_readwrite("min_y", &rs2::region_of_interest::min_y)
         .def_readwrite("max_x", &rs2::region_of_interest::max_x)
         .def_readwrite("max_y", &rs2::region_of_interest::max_y);
 
     /* rs2_context.hpp */
-    py::class_<rs2::context> context(m, "context");
+    py::class_<rs2::context> context(m, "context", "Librealsense context class. Includes realsense API version.");
     context.def(py::init<>())
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
-            " snapshot of all connected devices a the time of the call.")
+             " snapshot of all connected devices a the time of the call.")
         .def_property_readonly("devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices,
-            "Create a static snapshot of all connected devices a the time of the call.")
+                               "A static snapshot of all connected devices at time of access. Identical to calling query_devices.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
-            "all available sensors from all RealSense devices.")
-        .def_property_readonly("sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
-            "all available sensors from all RealSense devices.")
-        .def("get_sensor_parent", &rs2::context::get_sensor_parent, "s"_a)
-        .def("set_devices_changed_callback", [](rs2::context& self, std::function<void(rs2::event_information)> &callback)
-    {
-        self.set_devices_changed_callback(callback);
-    }, "Register devices changed callback.", "callback"_a)
+             "all available sensors from all RealSense devices.")
+        .def_property_readonly("sensors", &rs2::context::query_all_sensors, "A flat list of "
+                               "all available sensors from all RealSense devices. Identical to calling query_all_sensors.")
+        .def("get_sensor_parent", &rs2::context::get_sensor_parent, "s"_a) // no docstring in C++
+        .def("set_devices_changed_callback", [](rs2::context& self, std::function<void(rs2::event_information)> &callback) {
+            self.set_devices_changed_callback(callback);
+        }, "Register devices changed callback.", "callback"_a)
         // not binding create_processing_block, not inpr Python API.
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
-            "On successful load, the device will be appended to the context and a devices_changed event triggered."
-            "filename"_a)
-        .def("unload_device", &rs2::context::unload_device, "filename"_a);
+             "On successful load, the device will be appended to the context and a devices_changed event triggered."
+             "filename"_a)
+        .def("unload_device", &rs2::context::unload_device, "filename"_a);  // No docstring in C++
 
     /* rs2_device.hpp */
-    py::class_<rs2::device> device(m, "device");
+    py::class_<rs2::device> device(m, "device"); // No docstring in C++
     device.def("query_sensors", &rs2::device::query_sensors, "Returns the list of adjacent devices, "
-        "sharing the same physical parent composite device.")
-        .def_property_readonly("sensors", &rs2::device::query_sensors, "Returns the list of adjacent devices, "
-            "sharing the same physical parent composite device.")
-        .def("first_depth_sensor", [](rs2::device& self) { return self.first<rs2::depth_sensor>(); })
-        .def("first_roi_sensor", [](rs2::device& self) { return self.first<rs2::roi_sensor>(); })
-        .def("first_pose_sensor", [](rs2::device& self) { return self.first<rs2::pose_sensor>(); })
+               "sharing the same physical parent composite device.")
+        .def_property_readonly("sensors", &rs2::device::query_sensors, "List of adjacent devices, "
+                               "sharing the same physical parent composite device. Identical to calling query_sensors.")
+        .def("first_depth_sensor", [](rs2::device& self) { return self.first<rs2::depth_sensor>(); }) // No docstring in C++
+        .def("first_roi_sensor", [](rs2::device& self) { return self.first<rs2::roi_sensor>(); }) // No docstring in C++
+        .def("first_pose_sensor", [](rs2::device& self) { return self.first<rs2::pose_sensor>(); }) // No docstring in C++
         .def("supports", &rs2::device::supports, "Check if specific camera info is supported.", "info"_a)
         .def("get_info", &rs2::device::get_info, "Retrieve camera specific information, "
-            "like versions of various internal components", "info"_a)
+             "like versions of various internal components", "info"_a)
         .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
         .def(py::init<>())
         .def("__nonzero__", &rs2::device::operator bool)
@@ -257,64 +254,64 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))
         .def(BIND_DOWNCAST(device, tm2))
-        .def("__repr__", [](const rs2::device &self)
-    {
-        std::stringstream ss;
-        ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
-            << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
-            << ")>";
-        return ss.str();
-    });
+        .def("__repr__", [](const rs2::device &self) {
+            std::stringstream ss;
+            ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
+                << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << ")>";
+            return ss.str();
+        });
 
-    py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol");
+    py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())
         .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
-            "input"_a);
+             "input"_a);  // No docstring in C++
 
-    py::class_<rs2::device_list> device_list(m, "device_list");
+    py::class_<rs2::device_list> device_list(m, "device_list"); // No docstring in C++
     device_list.def(py::init<>())
-        .def("contains", &rs2::device_list::contains)
+        .def("contains", &rs2::device_list::contains) // No docstring in C++
         .def("__getitem__", [](const rs2::device_list& self, size_t i) {
-        if (i >= self.size())
-            throw py::index_error();
-        return self[uint32_t(i)];
-    })
+            if (i >= self.size())
+                throw py::index_error();
+            return self[uint32_t(i)];
+        })
         .def("__len__", &rs2::device_list::size)
-        .def("size", &rs2::device_list::size)
+        .def("size", &rs2::device_list::size) // No docstring in C++
         .def("__iter__", [](const rs2::device_list& self) {
-        return py::make_iterator(self.begin(), self.end());
-    }, py::keep_alive<0, 1>())
+            return py::make_iterator(self.begin(), self.end());
+        }, py::keep_alive<0, 1>())
         .def("__getitem__", [](const rs2::device_list& self, py::slice slice) {
-        size_t start, stop, step, slicelength;
-        if (!slice.compute(self.size(), &start, &stop, &step, &slicelength))
-            throw py::error_already_set();
-        auto *dlist = new std::vector<rs2::device>(slicelength);
-        for (size_t i = 0; i < slicelength; ++i) {
-            (*dlist)[i] = self[uint32_t(start)];
-            start += step;
-        }
-        return dlist;
-    })
-        .def("front", &rs2::device_list::front)
-        .def("back", &rs2::device_list::back);
+            size_t start, stop, step, slicelength;
+            if (!slice.compute(self.size(), &start, &stop, &step, &slicelength))
+                throw py::error_already_set();
+            auto *dlist = new std::vector<rs2::device>(slicelength);
+            for (size_t i = 0; i < slicelength; ++i) {
+                (*dlist)[i] = self[uint32_t(start)];
+                start += step;
+            }
+            return dlist;
+        })
+        .def("front", &rs2::device_list::front) // No docstring in C++
+        .def("back", &rs2::device_list::back); // No docstring in C++
 
     // Not binding status_changed_callback, templated
 
-    py::class_<rs2::event_information> event_information(m, "event_information");
+    py::class_<rs2::event_information> event_information(m, "event_information"); // No docstring in C++
     event_information.def("was_removed", &rs2::event_information::was_removed, "Check if "
-        "specific device was disconnected.", "dev"_a)
+                          "a specific device was disconnected.", "dev"_a)
         .def("was_added", &rs2::event_information::was_added, "Check if "
-            "specific device was added.", "dev"_a)
+             "a specific device was added.", "dev"_a)
         .def("get_new_devices", &rs2::event_information::get_new_devices, "Returns a "
-            "list of all newly connected devices");
+             "list of all newly connected devices");
 
-    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2");
+    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2"); // No docstring in C++
     tm2.def(py::init<rs2::device>(), "device"_a)
-        .def("enable_loopback", &rs2::tm2::enable_loopback, "filename"_a)
-        .def("disable_loopback", &rs2::tm2::disable_loopback)
-        .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled)
-        .def("connect_controller", &rs2::tm2::connect_controller, "mac_address"_a)
-        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "id"_a);
+        .def("enable_loopback", &rs2::tm2::enable_loopback, "Enter the given device into "
+             "loopback operation mode that uses the given file as input for raw data", "filename"_a)
+        .def("disable_loopback", &rs2::tm2::disable_loopback, "Restores the given device into normal operation mode")
+        .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled, "Checks if the device is in loopback mode or not")
+        .def("connect_controller", &rs2::tm2::connect_controller, "Connects to a given tm2 controller", "mac_address"_a)
+        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a);
 
 
     /* rs2_frame.hpp */
@@ -342,25 +339,25 @@ PYBIND11_MODULE(NAME, m) {
         else
             return BufData(const_cast<void*>(self.get_data()), 1, std::string("@B"), 0); };
 
-    py::class_<rs2::frame> frame(m, "frame");
+    py::class_<rs2::frame> frame(m, "frame", "Base class for multiple frame extensions");
     frame.def(py::init<>())
-        //         .def(py::self = py::self) // can't overload assignment in python
+        // .def(py::self = py::self) // can't overload assignment in python
         .def(py::init<rs2::frame>())
-        .def("swap", &rs2::frame::swap, "other"_a)
-        .def("__nonzero__", &rs2::frame::operator bool)
+        .def("swap", &rs2::frame::swap, "Swap the internal frame handle with the one in parameter", "other"_a)
+        .def("__nonzero__", &rs2::frame::operator bool, "check if internal frame handle is valid")
         .def("get_timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
-        .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Retrieve the time at which the frame was captured")
+        .def_property_readonly("timestamp", &rs2::frame::get_timestamp, "Time at which the frame was captured. Identical to calling get_timestamp.")
         .def("get_frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
-        .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "Retrieve the timestamp domain.")
+        .def_property_readonly("frame_timestamp_domain", &rs2::frame::get_frame_timestamp_domain, "The timestamp domain. Identical to calling get_frame_timestamp_domain.")
         .def("get_frame_metadata", &rs2::frame::get_frame_metadata, "Retrieve the current value of a single frame_metadata.", "frame_metadata"_a)
         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
         .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-        .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
-        .def("get_data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-        .def_property_readonly("data", get_frame_data, "retrieve data from the frame handle.", py::keep_alive<0, 1>())
-        .def("get_profile", &rs2::frame::get_profile)
-        .def("keep", &rs2::frame::keep)
-        .def_property_readonly("profile", &rs2::frame::get_profile)
+        .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "The frame number. Identical to calling get_frame_number.")
+        .def("get_data", get_frame_data, "Retrieve data from the frame handle.", py::keep_alive<0, 1>())
+        .def_property_readonly("data", get_frame_data, "Data from the frame handle. Identical to calling get_data.", py::keep_alive<0, 1>())
+        .def("get_profile", &rs2::frame::get_profile, "Retrieve stream profile from frame handle.")
+        .def_property_readonly("profile", &rs2::frame::get_profile, "Stream profile from frame handle. Identical to calling get_profile.")
+        .def("keep", &rs2::frame::keep, "Keep the frame, otherwise if no refernce to the frame, the frame will be released.")
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
@@ -368,99 +365,99 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, depth_frame))
         .def(BIND_DOWNCAST(frame, motion_frame))
         .def(BIND_DOWNCAST(frame, pose_frame));
+        // No apply_filter?
 
-    py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame");
+    py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame", "Extend frame class with additional video related attributes and functions.");
     video_frame.def(py::init<rs2::frame>())
         .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
-        .def_property_readonly("width", &rs2::video_frame::get_width, "Returns image width in pixels.")
+        .def_property_readonly("width", &rs2::video_frame::get_width, "Image width in pixels. Identical to calling get_width.")
         .def("get_height", &rs2::video_frame::get_height, "Returns image height in pixels.")
-        .def_property_readonly("height", &rs2::video_frame::get_height, "Returns image height in pixels.")
+        .def_property_readonly("height", &rs2::video_frame::get_height, "Image height in pixels. Identical to calling get_height.")
         .def("get_stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width).")
-        .def_property_readonly("stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Retrieve frame stride, meaning the actual line width in memory in bytes (not the logical image width).")
+        .def_property_readonly("stride_in_bytes", &rs2::video_frame::get_stride_in_bytes, "Frame stride, meaning the actual line width in memory in bytes (not the logical image width). Identical to calling get_stride_in_bytes.")
         .def("get_bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
-        .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Retrieve bits per pixel.")
+        .def_property_readonly("bits_per_pixel", &rs2::video_frame::get_bits_per_pixel, "Bits per pixel. Identical to calling get_bits_per_pixel.")
         .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.")
-        .def("get_bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Retrieve bytes per pixel.");
+        .def_property_readonly("bytes_per_pixel", &rs2::video_frame::get_bytes_per_pixel, "Bytes per pixel. Identical to calling get_bytes_per_pixel.");
 
 
-    py::class_<rs2_vector> vector(m, "vector");
+    py::class_<rs2_vector> vector(m, "vector", "3D vector in Euclidean coordinate space.");
     vector.def(py::init<>())
         .def_readwrite("x", &rs2_vector::x)
         .def_readwrite("y", &rs2_vector::y)
         .def_readwrite("z", &rs2_vector::z)
-        .def("__repr__", [](const rs2_vector& self)
-    {
-        std::stringstream ss;
-        ss << "x: " << self.x << ", ";
-        ss << "y: " << self.y << ", ";
-        ss << "z: " << self.z;
-        return ss.str();
-    });
+        .def("__repr__", [](const rs2_vector& self) {
+            std::stringstream ss;
+            ss << "x: " << self.x << ", ";
+            ss << "y: " << self.y << ", ";
+            ss << "z: " << self.z;
+            return ss.str();
+        });
 
-    py::class_<rs2_quaternion> quaternion(m, "quaternion");
+    py::class_<rs2_quaternion> quaternion(m, "quaternion", "Quaternion used to represent rotation.");
     quaternion.def(py::init<>())
         .def_readwrite("x", &rs2_quaternion::x)
         .def_readwrite("y", &rs2_quaternion::y)
         .def_readwrite("z", &rs2_quaternion::z)
         .def_readwrite("w", &rs2_quaternion::w)
-        .def("__repr__", [](const rs2_quaternion& self)
-    {
-        std::stringstream ss;
-        ss << "x: " << self.x << ", ";
-        ss << "y: " << self.y << ", ";
-        ss << "z: " << self.z << ", ";
-        ss << "w: " << self.w;
-        return ss.str();
-    });
+        .def("__repr__", [](const rs2_quaternion& self) {
+            std::stringstream ss;
+            ss << "x: " << self.x << ", ";
+            ss << "y: " << self.y << ", ";
+            ss << "z: " << self.z << ", ";
+            ss << "w: " << self.w;
+            return ss.str();
+        });
 
 
-    py::class_<rs2_pose> pose(m, "pose");
+    py::class_<rs2_pose> pose(m, "pose"); // No docstring in C++
     pose.def(py::init<>())
-        .def_readwrite("translation",           &rs2_pose::translation)
-        .def_readwrite("velocity",              &rs2_pose::velocity)
-        .def_readwrite("acceleration",          &rs2_pose::acceleration)
-        .def_readwrite("rotation",              &rs2_pose::rotation)
-        .def_readwrite("angular_velocity",      &rs2_pose::angular_velocity)
-        .def_readwrite("angular_acceleration",  &rs2_pose::angular_acceleration)
-        .def_readwrite("tracker_confidence",    &rs2_pose::tracker_confidence)
-        .def_readwrite("mapper_confidence",     &rs2_pose::mapper_confidence);
+        .def_readwrite("translation",           &rs2_pose::translation, "X, Y, Z values of translation, in meters (relative to initial position)")
+        .def_readwrite("velocity",              &rs2_pose::velocity, "X, Y, Z values of velocity, in meter/sec")
+        .def_readwrite("acceleration",          &rs2_pose::acceleration, "X, Y, Z values of acceleration, in meter/sec^2")
+        .def_readwrite("rotation",              &rs2_pose::rotation, "Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)")
+        .def_readwrite("angular_velocity",      &rs2_pose::angular_velocity, "X, Y, Z values of angular velocity, in radians/sec")
+        .def_readwrite("angular_acceleration",  &rs2_pose::angular_acceleration, "X, Y, Z values of angular acceleration, in radians/sec^2")
+        .def_readwrite("tracker_confidence",    &rs2_pose::tracker_confidence, "Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High")
+        .def_readwrite("mapper_confidence",     &rs2_pose::mapper_confidence, "Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High");
 
-    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame");
+    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame", "Extends frame class with additional motion related attributes and functions");
     motion_frame.def(py::init<rs2::frame>())
-        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Returns motion info of frame.");
+        .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Retrieve the motion data from IMU sensor.")
+        .def_property_readonly("motion_data", &rs2::motion_frame::get_motion_data, "Motion data from IMU sensor. Identical to calling get_motion_data.");
 
-    py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame");
+    py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame", "Extends frame class with additional pose related attributes and functions.");
     pose_frame.def(py::init<rs2::frame>())
-        .def("get_pose_data", &rs2::pose_frame::get_pose_data);
+        .def("get_pose_data", &rs2::pose_frame::get_pose_data, "Retrieve the pose data from T2xx position tracking sensor.")
+        .def_property_readonly("pose_data", &rs2::pose_frame::get_pose_data, "Pose data from T2xx position tracking sensor. Identical to calling get_pose_data.");
 
-    py::class_<rs2::vertex> vertex(m, "vertex");
+    py::class_<rs2::vertex> vertex(m, "vertex"); // No docstring in C++
     vertex.def_readwrite("x", &rs2::vertex::x)
         .def_readwrite("y", &rs2::vertex::y)
         .def_readwrite("z", &rs2::vertex::z)
         .def(py::init([]() { return rs2::vertex{}; }))
         .def(py::init([](float x, float y, float z) { return rs2::vertex{ x,y,z }; }))
         .def("__repr__", [](const rs2::vertex& v) {
-        std::ostringstream oss;
-        oss << v.x << ", " << v.y << ", " << v.z;
-        return oss.str();
-    });
+            std::ostringstream oss;
+            oss << v.x << ", " << v.y << ", " << v.z;
+            return oss.str();
+        });
 
-    py::class_<rs2::texture_coordinate> texture_coordinate(m, "texture_coordinate");
+    py::class_<rs2::texture_coordinate> texture_coordinate(m, "texture_coordinate"); // No docstring in C++
     texture_coordinate.def_readwrite("u", &rs2::texture_coordinate::u)
         .def_readwrite("v", &rs2::texture_coordinate::v)
         .def(py::init([]() { return rs2::texture_coordinate{}; }))
         .def(py::init([](float u, float v) { return rs2::texture_coordinate{ u, v }; }))
         .def("__repr__", [](const rs2::texture_coordinate& t) {
-        std::ostringstream oss;
-        oss << t.u << ", " << t.v;
-        return oss.str();
-    });
+            std::ostringstream oss;
+            oss << t.u << ", " << t.v;
+            return oss.str();
+        });
 
-    py::class_<rs2::points, rs2::frame> points(m, "points");
+    py::class_<rs2::points, rs2::frame> points(m, "points", "Extend frame class with additional point cloud related attributes and functions.");
     points.def(py::init<>())
         .def(py::init<rs2::frame>())
-        .def("get_vertices", [](rs2::points& self, int dims) -> BufData
-        {
+        .def("get_vertices", [](rs2::points& self, int dims) {
             auto verts = const_cast<rs2::vertex*>(self.get_vertices());
             auto profile = self.get_profile().as<rs2::video_stream_profile>();
             size_t h = profile.height(), w = profile.width();
@@ -474,9 +471,8 @@ PYBIND11_MODULE(NAME, m) {
             default:
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
-        }, py::keep_alive<0, 1>(), "dims"_a=1)
-        .def("get_texture_coordinates", [](rs2::points& self, int dims) -> BufData
-        {
+        }, "Retrieve the vertices", py::keep_alive<0, 1>(), "dims"_a=1)
+        .def("get_texture_coordinates", [](rs2::points& self, int dims) {
             auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
             auto profile = self.get_profile().as<rs2::video_stream_profile>();
             size_t h = profile.height(), w = profile.width();
@@ -490,39 +486,51 @@ PYBIND11_MODULE(NAME, m) {
             default:
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
-        }, py::keep_alive<0, 1>(), "dims"_a=1)
-        .def("export_to_ply", &rs2::points::export_to_ply)
-        .def("size", &rs2::points::size);
+        }, "Return the texture coordinate(uv map) for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
+        .def("export_to_ply", &rs2::points::export_to_ply, "Export current point cloud to PLY file")
+        .def("size", &rs2::points::size); // No docstring in C++
 
-    py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame");
+    py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extend frame class with additional frameset related attributes and functions");
     frameset.def(py::init<rs2::frame>())
-        .def("first_or_default", &rs2::frameset::first_or_default, "s"_a, "f"_a = RS2_FORMAT_ANY)
-        .def("first", &rs2::frameset::first, "s"_a, "f"_a = RS2_FORMAT_ANY)
-        .def("size", &rs2::frameset::size)
-        .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable)
-    {
-        self.foreach(callable);
-    })
+        .def("first_or_default", &rs2::frameset::first_or_default, "Retrieve the first frame of specific stream and "
+             "format types, if no frame found, return the default one. (frame instance)", "s"_a, "f"_a = RS2_FORMAT_ANY)
+        .def("first", &rs2::frameset::first, "Retrieve the first frame of specific stream type, "
+             "if no frame found, an error will be thrown.", "s"_a, "f"_a = RS2_FORMAT_ANY)
+        .def("size", &rs2::frameset::size, "Return the size of the frameset")
+        .def("__len__", &rs2::frameset::size, "Return the size of the frameset")
+        .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable) {
+            self.foreach(callable);
+        }, "Extract internal frame handles from the frameset and invoke the action function", "callable"_a)
         .def("__getitem__", &rs2::frameset::operator[])
-        .def("get_depth_frame", &rs2::frameset::get_depth_frame)
-        .def("get_color_frame", &rs2::frameset::get_color_frame)
-        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "index"_a = 0)
-        .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame)
-        //.def("get_pose_frame", &rs2::frameset::get_pose_frame)
+        .def("get_depth_frame", &rs2::frameset::get_depth_frame, "Retrieve the first depth frame, if no frame found, return the default one. (frame instance)")
+        .def("get_color_frame", &rs2::frameset::get_color_frame, "Retrieve the first color frame, if no frame found, search the "
+             "color frame from IR stream. If one still can't be found, return the default one. (frame instance)")
+        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "Retrieve the first infrared frame, if no frame "
+             "found, return the default one (frame instance)", "index"_a = 0)
+        .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame, "Retrieve the fisheye monochrome video frame", "index"_a=0)
+        .def("get_pose_frame", &rs2::frameset::get_pose_frame, "Retrieve the pose frame", "index"_a = 0)
         .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
-        .def("__iter__", [](rs2::frameset& self)
-    {
-        return py::make_iterator(self.begin(), self.end());
-    }, py::keep_alive<0, 1>())
-        .def("size", &rs2::frameset::size)
-        .def("__getitem__", &rs2::frameset::operator[]);
+        .def("__iter__", [](rs2::frameset& self) {
+            return py::make_iterator(self.begin(), self.end());
+        }, py::keep_alive<0, 1>())
+        .def("__getitem__", [](const rs2::frameset& self, py::slice slice) {
+            size_t start, stop, step, slicelength;
+            if (!slice.compute(self.size(), &start, &stop, &step, &slicelength))
+                throw py::error_already_set();
+            auto *flist = new std::vector<rs2::frame>(slicelength);
+            for (size_t i = 0; i < slicelength; ++i) {
+                (*flist)[i] = self[start];
+                start += step;
+            }
+            return flist;
+        });
 
-    py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame");
+    py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame", "Extend video_frame class with additional depth related attributes and functions.");
     depth_frame.def(py::init<rs2::frame>())
-        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a);
+        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in metric units at the given pixel");
 
     /* rs2_processing.hpp */
-    py::class_<rs2::filter_interface> filter_interface(m, "filter_interface");
+    py::class_<rs2::filter_interface> filter_interface(m, "filter_interface", "Interface for frame filtering functionality");
     filter_interface.def("process", &rs2::filter_interface::process, "frame"_a);
 
     // Base class for options interface. Should be used via sensor

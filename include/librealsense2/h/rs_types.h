@@ -66,7 +66,7 @@ typedef struct rs2_intrinsics
     float         coeffs[5]; /**< Distortion coefficients, order: k1, k2, p1, p2, k3 */
 } rs2_intrinsics;
 
-/** \brief Motion device intrinsics: scale, bias, and variances */
+/** \brief Motion device intrinsics: scale, bias, and variances. */
 typedef struct rs2_motion_device_intrinsic
 {
     /* \internal
@@ -112,8 +112,8 @@ typedef struct rs2_pose
     rs2_quaternion  rotation;             /**< Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */
     rs2_vector      angular_velocity;     /**< X, Y, Z values of angular velocity, in radians/sec                                                         */
     rs2_vector      angular_acceleration; /**< X, Y, Z values of angular acceleration, in radians/sec^2                                                   */
-    unsigned int    tracker_confidence;   /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
-    unsigned int    mapper_confidence;    /**< pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+    unsigned int    tracker_confidence;   /**< Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
+    unsigned int    mapper_confidence;    /**< Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                     */
 } rs2_pose;
 
 /** \brief Severity of the librealsense logger. */

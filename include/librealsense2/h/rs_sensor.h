@@ -79,7 +79,7 @@ typedef enum rs2_format
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
 
-/** \brief Cross-stream extrinsics: encode the topology describing how the different devices are connected. */
+/** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
 typedef struct rs2_extrinsics
 {
     float rotation[9];    /**< Column-major 3x3 rotation matrix */

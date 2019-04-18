@@ -17,7 +17,7 @@ namespace rs2
             :_removed(removed), _added(added) {}
 
         /**
-        * check if specific device was disconnected
+        * check if a specific device was disconnected
         * \return            true if device disconnected, false if device connected
         */
         bool was_removed(const rs2::device& dev) const
@@ -34,7 +34,7 @@ namespace rs2
         }
 
         /**
-        * check if specific device was added
+        * check if a specific device was added
         * \return            true if device added, false otherwise
         */
         bool was_added(const rs2::device& dev) const
