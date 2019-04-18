@@ -1,8 +1,11 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+
 #include <jni.h>
 #include "error.h"
 #include "../../../include/librealsense2/rs.h"
 
-JNIEXPORT jlong JNICALL
+extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_RsContext_nCreate(JNIEnv *env, jclass type) {
     rs2_error* e = NULL;
     rs2_context* handle = rs2_create_context(RS2_API_VERSION, &e);
@@ -10,12 +13,12 @@ Java_com_intel_realsense_librealsense_RsContext_nCreate(JNIEnv *env, jclass type
     return (jlong) handle;
 }
 
-JNIEXPORT void JNICALL
+extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_RsContext_nDelete(JNIEnv *env, jclass type, jlong handle) {
     rs2_delete_context((rs2_context *) handle);
 }
 
-JNIEXPORT jlong JNICALL
+extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_RsContext_nQueryDevices(JNIEnv *env, jclass type,
                                                               jlong handle) {
     rs2_error* e = NULL;

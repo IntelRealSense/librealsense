@@ -5,7 +5,12 @@ public enum StreamType {
     DEPTH(1),
     COLOR(2),
     INFRARED(3),
-    FISHEYE(4);
+    FISHEYE(4),
+    GYRO(5),
+    ACCEL(6),
+    GPIO(7),
+    POSE(8),
+    CONFIDENCE(9);
 
     private final int mValue;
 

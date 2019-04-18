@@ -64,6 +64,8 @@ public class FileBrowserActivity extends AppCompatActivity {
             return;
         }
 
+        message.setText("Select a file to play from:");
+
         String[] filesNames = new String[files.length];
         final ListView listview = findViewById(R.id.list_view);
 

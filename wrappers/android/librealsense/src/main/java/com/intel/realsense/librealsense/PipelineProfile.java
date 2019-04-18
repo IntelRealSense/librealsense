@@ -7,7 +7,7 @@ class PipelineProfile extends LrsClass {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         nDelete(mHandle);
     }
 

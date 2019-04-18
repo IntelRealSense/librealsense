@@ -25,10 +25,11 @@
         android:visibility="gone"/>
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="100dp">
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="20dp"
+        android:orientation="vertical">
 
         <Space
             android:layout_width="0dp"
@@ -80,16 +81,21 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/start_record_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:clickable="true"
+            android:backgroundTint="#ffffff"
+            app:srcCompat="@android:drawable/ic_notification_overlay" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/start_record_fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="20dp"
-        android:clickable="true"
-        android:backgroundTint="#ffffff"
-        app:srcCompat="@android:drawable/ic_notification_overlay" />
+
 </RelativeLayout>
