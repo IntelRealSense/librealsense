@@ -75,13 +75,13 @@ namespace librealsense
             { DFU_error,                    "DFU error" },
         };
 
-        typedef struct pinhole_model
+        struct pinhole_model
         {
             float2 focalLength;
             float2 principalPoint;
         };
 
-        typedef struct distortion
+        struct distortion
         {
             float radialK1;
             float radialK2;
@@ -90,28 +90,28 @@ namespace librealsense
             float tangentialP2;
         };
 
-        typedef struct pinhole_camera_model
+        struct pinhole_camera_model
         {
             uint32_t width;
             uint32_t height;
             pinhole_model ipm;
-            distortion distortion;
+            distortion distort;
         };
 
-        typedef struct intrinsic_params
+        struct intrinsic_params
         {
             pinhole_camera_model pinhole_cam_model; //(Same as standard intrinsic)
             float2 zo;
             float zNorm;
         };
 
-        typedef struct intrinsic_per_resolution
+        struct intrinsic_per_resolution
         {
             intrinsic_params raw;
             intrinsic_params world;
         };
 
-        typedef struct resolutions_depth
+        struct resolutions_depth
         {
             uint16_t reserved16;
             uint8_t reserved8;
@@ -119,7 +119,7 @@ namespace librealsense
             intrinsic_per_resolution intrinsicResolution[1]; //Dynamic number of entries according to numOfResolutions
         };
 
-        typedef struct orientation
+        struct orientation
         {
             uint8_t hScanDirection;
             uint8_t vScanDirection;
@@ -128,13 +128,13 @@ namespace librealsense
             float depthOffset;
         };
 
-        typedef struct intrinsic_depth
+        struct intrinsic_depth
         {
-            orientation orientation;
+            orientation orient;
             resolutions_depth resolution;
         };
 
-        typedef struct resolutions_rgb
+        struct resolutions_rgb
         {
             uint16_t reserved16;
             uint8_t reserved8;
@@ -142,13 +142,13 @@ namespace librealsense
             pinhole_camera_model intrinsicResolution[1]; //Dynamic number of entries according to numOfResolutions
         };
 
-        typedef struct rgb_common
+        struct rgb_common
         {
             float sheer;
             uint32_t reserved32;
         };
 
-        typedef struct intrinsic_rgb
+        struct intrinsic_rgb
         {
             rgb_common common;
             resolutions_rgb resolution;

@@ -125,15 +125,24 @@ namespace librealsense
 
             auto intrinsic = (intrinsic_depth*)(res.data());
 
-            auto model = intrinsic->resolution.intrinsicResolution[0].world.pinhole_cam_model;
-            rs2_intrinsics intrinsics;
-            intrinsics.width = model.width;
-            intrinsics.height = model.height;
-            intrinsics.fx = model.ipm.focalLength.x;
-            intrinsics.fy = model.ipm.focalLength.y;
-            intrinsics.ppx = model.ipm.principalPoint.x;
-            intrinsics.ppy = model.ipm.principalPoint.y;
-            return intrinsics;
+            auto num_of_res = intrinsic->resolution.numOfResolutions;
+
+            for (auto i = 0; i < num_of_res; i++)
+            {
+                auto model = intrinsic->resolution.intrinsicResolution[i].world.pinhole_cam_model;
+                if (model.height == profile.height && model.width == profile.width)
+                {
+                    rs2_intrinsics intrinsics;
+                    intrinsics.width = model.width;
+                    intrinsics.height = model.height;
+                    intrinsics.fx = model.ipm.focalLength.x;
+                    intrinsics.fy = model.ipm.focalLength.y;
+                    intrinsics.ppx = model.ipm.principalPoint.x;
+                    intrinsics.ppy = model.ipm.principalPoint.y;
+                    return intrinsics;
+                }
+            }
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
         }
 
         stream_profiles init_stream_profiles() override
