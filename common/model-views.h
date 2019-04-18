@@ -665,7 +665,7 @@ namespace rs2
         bool                metadata_displayed  = false;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
-        float _frame_timeout = 5000.0f;
+        float _frame_timeout = RS_DEFAULT_TIMEOUT;
         float _min_timeout = 167.0f;
 
         bool _mid_click = false;

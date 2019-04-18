@@ -65,7 +65,7 @@ int main(int argc, char * argv[]) try
     rs2::pipeline pipe;
     rs2::config cfg;
     // Use a configuration object to request only depth from the pipeline
-    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 0, RS2_FORMAT_Z16, 30);
     // Start streaming with the above configuration
     pipe.start(cfg);
 
