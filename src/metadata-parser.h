@@ -144,7 +144,7 @@ namespace librealsense
                 // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
                 md_type expected_type = md_type_trait<S>::type;
 
-                if ((s->header.md_type_id != expected_type) || (s->header.md_size !=sizeof(*s)))
+                if ((s->header.md_type_id != expected_type) || (s->header.md_size < sizeof(*s)))
                 {
                     std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
                                 md_type_desc.at(s->header.md_type_id) : (to_string()
