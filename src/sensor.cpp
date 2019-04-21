@@ -15,7 +15,7 @@
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, device* dev, 
+    sensor_base::sensor_base(std::string name, device* dev,
         recommended_proccesing_blocks_interface* owner)
         : recommended_proccesing_blocks_base(owner),
         _is_streaming(false),
@@ -1105,15 +1105,15 @@ namespace librealsense
 
         if (has_metadata(mode, fo.metadata, fo.metadata_size))
         {
-            //  The timestamps conversions path comprise of: 
-            // FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit 
-            // The flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends. 
+            //  The timestamps conversions path comprise of:
+            // FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit
+            // The flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends.
             // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
             // To revert to the extended 64 bit TS uncomment the next line instead
             //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
             auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
 
-            // HID timestamps are aligned to FW Default - usec units 
+            // HID timestamps are aligned to FW Default - usec units
             return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);
         }
 
