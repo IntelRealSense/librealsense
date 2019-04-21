@@ -633,7 +633,7 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::threshold_filter, rs2::filter> threshold(m, "threshold_filter", "Depth thresholding filter. By controlling min and "
                                                              "max options on the block, one could filter out depth values that are either too large "
                                                              "or too small, as a software post-processing step");
-		.def(py::init<float, float>(), "min_dist"_a=0.15f, "max_dist"_a=4.f);
+    threshold.def(py::init<float, float>(), "min_dist"_a=0.15f, "max_dist"_a=4.f);
 
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer", "Colorizer filter generates color images based on input depth frame");
@@ -704,7 +704,7 @@ PYBIND11_MODULE(NAME, m) {
     /* rs_export.hpp */
     // py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply"); // No docstring in C++
     // save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
-    //            .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
+    //     .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR);
 
     py::class_<rs2::save_single_frameset, rs2::filter> save_single_frameset(m, "save_single_frameset"); // No docstring in C++
     save_single_frameset.def(py::init<std::string>(), "filename"_a = "RealSense Frameset ");
@@ -739,55 +739,57 @@ PYBIND11_MODULE(NAME, m) {
         // filename?
 
     /* rs2_sensor.hpp */
-    py::class_<rs2::stream_profile> stream_profile(m, "stream_profile");
+    py::class_<rs2::stream_profile> stream_profile(m, "stream_profile", "Stores details about the profile of a stream.");
     stream_profile.def(py::init<>())
-        .def("stream_index", &rs2::stream_profile::stream_index)
-        .def("stream_type", &rs2::stream_profile::stream_type)
-        .def("format", &rs2::stream_profile::format)
-        .def("fps", &rs2::stream_profile::fps)
-        .def("unique_id", &rs2::stream_profile::unique_id)
-        .def("clone", &rs2::stream_profile::clone, "type"_a, "index"_a, "format"_a)
+        .def("stream_index", &rs2::stream_profile::stream_index, "The stream's index")
+        .def("stream_type", &rs2::stream_profile::stream_type, "The stream's type")
+        .def("format", &rs2::stream_profile::format, "The stream's format")
+        .def("fps", &rs2::stream_profile::fps, "The streams framerate")
+        .def("unique_id", &rs2::stream_profile::unique_id, "Unique index assigned whent the stream was created")
+        .def("clone", &rs2::stream_profile::clone, "Clone the current profile and change the type, index and format to input parameters", "type"_a, "index"_a, "format"_a)
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
         .def(BIND_DOWNCAST(stream_profile, motion_stream_profile))
-        .def("stream_name", &rs2::stream_profile::stream_name)
-        .def("is_default", &rs2::stream_profile::is_default)
-        .def("__nonzero__", &rs2::stream_profile::operator bool)
-        .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "to"_a)
-        .def("register_extrinsics_to", &rs2::stream_profile::register_extrinsics_to, "to"_a, "extrinsics"_a)
-        .def("__repr__", [](const rs2::stream_profile& self)
-    {
-        std::stringstream ss;
-        if (auto vf = self.as<rs2::video_stream_profile>())
-        {
-            ss << "<" SNAME ".video_stream_profile: "
-                << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
-                << "x" << vf.height() << " @ " << vf.fps() << "fps "
-                << vf.format() << ">";
-        }
-        else
-        {
-            ss << "<" SNAME ".stream_profile: " << self.stream_type() << "(" << self.stream_index()
-                << ") @ " << self.fps() << "fps " << self.format() << ">";
-        }
-        return ss.str();
-    });
+        .def("stream_name", &rs2::stream_profile::stream_name, "The stream's human-readable name.")
+        .def("is_default", &rs2::stream_profile::is_default, "Checks if the stream profile is marked/assigned as default, "
+             "meaning that the profile will be selected when the user requests stream configuration using wildcards.")
+        .def("__nonzero__", &rs2::stream_profile::operator bool, "check that the profile is valid")
+        .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "Get the extrinsic transformation between two profiles (representing physical sensors)", "to"_a)
+        .def("register_extrinsics_to", &rs2::stream_profile::register_extrinsics_to, "Assign extrinsic transformation parameters "
+             "to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, "
+             "and librealsense is responsible for retrieving and assigning these parameters where appropriate. This specific function "
+             "is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.", "to"_a, "extrinsics"_a)
+        .def("__repr__", [](const rs2::stream_profile& self) {
+            std::stringstream ss;
+            if (auto vf = self.as<rs2::video_stream_profile>())
+            {
+                ss << "<" SNAME ".video_stream_profile: "
+                    << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
+                    << "x" << vf.height() << " @ " << vf.fps() << "fps "
+                    << vf.format() << ">";
+            }
+            else
+            {
+                ss << "<" SNAME ".stream_profile: " << self.stream_type() << "(" << self.stream_index()
+                    << ") @ " << self.fps() << "fps " << self.format() << ">";
+            }
+            return ss.str();
+        });
 
-    py::class_<rs2::video_stream_profile, rs2::stream_profile> video_stream_profile(m, "video_stream_profile");
+    py::class_<rs2::video_stream_profile, rs2::stream_profile> video_stream_profile(m, "video_stream_profile", "Video stream profile instance which contains additional video attributes.");
     video_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
-        .def("width", &rs2::video_stream_profile::width)
-        .def("height", &rs2::video_stream_profile::height)
-        .def("get_intrinsics", &rs2::video_stream_profile::get_intrinsics)
-        .def_property_readonly("intrinsics", &rs2::video_stream_profile::get_intrinsics)
-        .def("__repr__", [](const rs2::video_stream_profile& self)
-    {
-        std::stringstream ss;
-        ss << "<" SNAME ".video_stream_profile: "
-            << self.stream_type() << "(" << self.stream_index() << ") " << self.width()
-            << "x" << self.height() << " @ " << self.fps() << "fps "
-            << self.format() << ">";
-        return ss.str();
-    });
+        .def("width", &rs2::video_stream_profile::width) // No docstring in C++
+        .def("height", &rs2::video_stream_profile::height) // No docstring in C++
+        .def("get_intrinsics", &rs2::video_stream_profile::get_intrinsics, "Get stream profile instrinsics attributes.")
+        .def_property_readonly("intrinsics", &rs2::video_stream_profile::get_intrinsics, "Stream profile instrinsics attributes. Identical to calling get_intrinsics.")
+        .def("__repr__", [](const rs2::video_stream_profile& self) {
+            std::stringstream ss;
+            ss << "<" SNAME ".video_stream_profile: "
+                << self.stream_type() << "(" << self.stream_index() << ") " << self.width()
+                << "x" << self.height() << " @ " << self.fps() << "fps "
+                << self.format() << ">";
+            return ss.str();
+        });
 
     py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile");
     motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)

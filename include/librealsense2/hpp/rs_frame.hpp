@@ -32,7 +32,7 @@ namespace rs2
         */
         int stream_index() const { return _index; }
         /**
-        * Return the stream format
+        * Return the stream type
         * \return rs2_stream - stream type
         */
         rs2_stream stream_type() const { return _type; }
@@ -53,7 +53,7 @@ namespace rs2
         int unique_id() const { return _uid; }
 
         /**
-        * Clone current profile and change the type, index and format to input parameters
+        * Clone the current profile and change the type, index and format to input parameters
         * \param[in] type - will change the stream type from the cloned profile.
         * \param[in] index - will change the stream index from the cloned profile.
         * \param[in] format - will change the stream format from the cloned profile.
@@ -118,7 +118,7 @@ namespace rs2
         }
 
         /**
-        * Checking if stream profile is marked/assigned as default, the meaning is that the profile will be selected when the user will request stream configuration using wildcards (RS2_DEPTH, -1,-1,...
+        * Checking if stream profile is marked/assigned as default, meaning that the profile will be selected when the user requests stream configuration using wildcards (RS2_DEPTH, -1,-1,...
         * \return bool - true or false.
         */
         bool is_default() const { return _default; }
@@ -153,8 +153,8 @@ namespace rs2
             return res;
         }
         /**
-        * Assign extrinsic transformation parameters to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, and librealsense is responsible to retrieve and assign these parameters where appropriate.
-        * The specific function is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.
+        * Assign extrinsic transformation parameters to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, and librealsense is responsible for retrieving and assigning these parameters where appropriate.
+        * This specific function is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.
         * \param[in] stream_profile to - which stream profile to be registered with the extrinsic.
         * \param[in] rs2_extrinsics extrinsics - the extrinsics to be registered.
         */
@@ -201,7 +201,7 @@ namespace rs2
     {
     public:
         /**
-        * Video stream profile instance which contans additional video attributes
+        * Video stream profile instance which contains additional video attributes
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit video_stream_profile(const stream_profile& sp)
@@ -231,7 +231,7 @@ namespace rs2
             return _height;
         }
         /**
-        * Get stream profile instrinsics attribute
+        * Get stream profile instrinsics attributes
         * \return rs2_intrinsics - stream intrinsics.
         */
         rs2_intrinsics get_intrinsics() const
