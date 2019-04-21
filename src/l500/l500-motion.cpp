@@ -102,7 +102,7 @@ namespace librealsense
     {
         if (all_hid_infos.empty())
         {
-            LOG_WARNING("HID device is missing!");
+            LOG_WARNING("No HID info provided, IMU is disabled");
             return nullptr;
         }
 
