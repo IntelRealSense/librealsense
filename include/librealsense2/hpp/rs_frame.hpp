@@ -678,7 +678,7 @@ namespace rs2
             }
         }
         /**
-        * Retrieve the vertices
+        * Retrieve the vertices for the point cloud
         * \param[in] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
@@ -690,7 +690,7 @@ namespace rs2
         }
 
         /**
-        * Export current point cloud to PLY file
+        * Export the point cloud to PLY file
         * \param[in] string fname - file name of the PLY to be saved
         * \param[in] video_frame texture - the texture for the PLY.
         */
@@ -703,7 +703,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * return the texture coordinate(uv map) for the point cloud
+        * Retrieve the texture coordinates (uv map) for the point cloud
         * \return texture_coordinate* - pointer of texture coordinates.
         */
         const texture_coordinate* get_texture_coordinates() const

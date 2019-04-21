@@ -471,7 +471,7 @@ PYBIND11_MODULE(NAME, m) {
             default:
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
-        }, "Retrieve the vertices", py::keep_alive<0, 1>(), "dims"_a=1)
+        }, "Retrieve the vertices for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
         .def("get_texture_coordinates", [](rs2::points& self, int dims) {
             auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
             auto profile = self.get_profile().as<rs2::video_stream_profile>();
@@ -486,10 +486,11 @@ PYBIND11_MODULE(NAME, m) {
             default:
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
-        }, "Return the texture coordinate(uv map) for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
-        .def("export_to_ply", &rs2::points::export_to_ply, "Export current point cloud to PLY file")
+        }, "Retrieve the texture coordinates (uv map) for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
+        .def("export_to_ply", &rs2::points::export_to_ply, "Export the point cloud to PLY file")
         .def("size", &rs2::points::size); // No docstring in C++
 
+    // TODO: Deprecate composite_frame, replace with frameset
     py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extend frame class with additional frameset related attributes and functions");
     frameset.def(py::init<rs2::frame>())
         .def("first_or_default", &rs2::frameset::first_or_default, "Retrieve the first frame of specific stream and "
@@ -531,10 +532,10 @@ PYBIND11_MODULE(NAME, m) {
 
     /* rs2_processing.hpp */
     py::class_<rs2::filter_interface> filter_interface(m, "filter_interface", "Interface for frame filtering functionality");
-    filter_interface.def("process", &rs2::filter_interface::process, "frame"_a);
+    filter_interface.def("process", &rs2::filter_interface::process, "frame"_a); // No docstring in C++
 
-    // Base class for options interface. Should be used via sensor
-    py::class_<rs2::options> options(m, "options");
+
+    py::class_<rs2::options> options(m, "options", "Base class for options interface. Should be used via sensor.");
     options.def("is_option_read_only", &rs2::options::is_option_read_only, "Check if particular option "
         "is read only.", "option"_a)
         .def("get_option", &rs2::options::get_option, "Read option value from the device.", "option"_a)
@@ -550,22 +551,26 @@ PYBIND11_MODULE(NAME, m) {
             "of a supported option");
 
     /* rs2_processing.hpp */
-    py::class_<rs2::frame_source> frame_source(m, "frame_source");
-    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame,
+    py::class_<rs2::frame_source> frame_source(m, "frame_source", "The source used to generate frames, which is usually done by the low level driver for each sensor. "
+                                               "frame_source is one of the parameters of processing_block's callback function, which can be used to re-generate the "
+                                               "frame and via frame_ready invoke another callback function to notify application frame is ready. Please refer to "
+                                               "\"video_processing_thread\" code snippet in rs-measure.cpp for a detailed usage example.");
+    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, "Allocate a new video frame with given params"
                      "profile"_a, "original"_a, "new_bpp"_a = 0, "new_width"_a = 0,
                      "new_height"_a = 0, "new_stride"_a = 0, "frame_type"_a = RS2_EXTENSION_VIDEO_FRAME)
                 .def("allocate_points", &rs2::frame_source::allocate_points, "profile"_a,
-                     "original"_a)
+                     "original"_a) // No docstring in C++
                 .def("allocate_composite_frame", &rs2::frame_source::allocate_composite_frame,
-                     "frames"_a) // does anything special need to be done for the vector argument?
-                .def("frame_ready", &rs2::frame_source::frame_ready, "result"_a);
+                     "Allocate composite frame with given params", "frames"_a) // does anything special need to be done for the vector argument?
+                .def("frame_ready", &rs2::frame_source::frame_ready, "Invoke the "
+                     "callback funtion informing the frame is ready.", "result"_a);
 
-    py::class_<rs2::frame_queue> frame_queue(m, "frame_queue");
-    frame_queue.def(py::init<unsigned int>(), "Create a frame queue. Frame queues are the simplest "
-                    "cross-platform synchronization primitive provided by librealsense to help "
-                    "developers who are not using async APIs.")
+    py::class_<rs2::frame_queue> frame_queue(m, "frame_queue", "Frame queues are the simplest cross-platform "
+                                             "synchronization primitive provided by librealsense to help "
+                                             "developers who are not using async APIs.");
+    frame_queue.def(py::init<unsigned int>())
                .def(py::init<>())
-               .def("enqueue", &rs2::frame_queue::enqueue, "Enqueue a new frame into a queue.", "f"_a)
+               .def("enqueue", &rs2::frame_queue::enqueue, "Enqueue a new frame into the queue.", "f"_a)
                .def("wait_for_frame", &rs2::frame_queue::wait_for_frame, "Wait until a new frame "
                     "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
                .def("poll_for_frame", [](const rs2::frame_queue &self)
@@ -579,12 +584,14 @@ PYBIND11_MODULE(NAME, m) {
                         rs2::frame frame;
                         auto success = self.try_wait_for_frame(&frame, timeout_ms);
                         return std::make_tuple(success, frame);
-                    }, "timeout_ms"_a=5000, py::call_guard<py::gil_scoped_release>())
-               .def("__call__", &rs2::frame_queue::operator())
-               .def("capacity", &rs2::frame_queue::capacity);
+                    }, "timeout_ms"_a=5000, py::call_guard<py::gil_scoped_release>()) // No docstring in C++
+               .def("__call__", &rs2::frame_queue::operator(), "Identical to calling enqueue", "f"_a)
+               .def("capacity", &rs2::frame_queue::capacity, "Return the capacity of the queue");
 
     // Not binding frame_processor_callback, templated
-    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block");
+
+    py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block flow, inherit this class to generate your own "
+                                                                     "processing_block. Please refer to the viewer class in examples.hpp for a detailed usage example.");
     processing_block.def("__init__", [](rs2::processing_block &self, std::function<void(rs2::frame, rs2::frame_source&)> processing_function) {
         new (&self) rs2::processing_block(processing_function);
     }, "processing_function"_a);
