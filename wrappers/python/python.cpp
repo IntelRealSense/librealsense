@@ -557,8 +557,8 @@ PYBIND11_MODULE(NAME, m) {
                     "developers who are not using async APIs.")
                .def(py::init<>())
                .def("enqueue", &rs2::frame_queue::enqueue, "Enqueue a new frame into a queue.", "f"_a)
-               .def("wait_for_frame", [](const rs2::frame_queue& self, unsigned int timeout_ms) { py::gil_scoped_release(); self.wait_for_frame(timeout_ms); }, "Wait until a new frame "
-                    "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000)
+               .def("wait_for_frame", &rs2::frame_queue::wait_for_frame, "Wait until a new frame "
+                    "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
                .def("poll_for_frame", [](const rs2::frame_queue &self)
                     {
                         rs2::frame frame;
@@ -570,7 +570,7 @@ PYBIND11_MODULE(NAME, m) {
                         rs2::frame frame;
                         auto success = self.try_wait_for_frame(&frame, timeout_ms);
                         return std::make_tuple(success, frame);
-                    }, "timeout_ms"_a=5000)
+                    }, "timeout_ms"_a=5000, py::call_guard<py::gil_scoped_release>())
                .def("__call__", &rs2::frame_queue::operator())
                .def("capacity", &rs2::frame_queue::capacity);
 
@@ -603,7 +603,7 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::syncer> syncer(m, "syncer");
     syncer.def(py::init<int>(), "queue_size"_a = 1)
         .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
-            "of frames becomes available", "timeout_ms"_a = 5000)
+            "of frames becomes available", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("poll_for_frames", [](const rs2::syncer &self)
         {
             rs2::frameset frames;
@@ -615,7 +615,7 @@ PYBIND11_MODULE(NAME, m) {
             rs2::frameset fs;
             auto success = self.try_wait_for_frames(&fs, timeout_ms);
             return std::make_tuple(success, fs);
-        }, "timeout_ms"_a = 5000);
+        }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>());
         /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::threshold_filter, rs2::filter> threshold(m, "threshold_filter");
@@ -782,11 +782,11 @@ PYBIND11_MODULE(NAME, m) {
         .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
             "Open sensor for exclusive access, by committing to a composite configuration, specifying one or "
             "more stream profiles.", "profiles"_a)
-        .def("close", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.close(); }, "Close sensor for exclusive access.")
+        .def("close", &rs2::sensor::close, "Close sensor for exclusive access.", py::call_guard<py::gil_scoped_release>())
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback)
     { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
-        .def("stop", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.stop(); }, "Stop streaming.")
+        .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
 
@@ -837,7 +837,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config"_a)
         .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start)
         .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { self.start(f); }, "callback"_a)
-        .def("stop", &rs2::pipeline::stop)
+        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { self.start(config, f); }, "config"_a, "callback"_a)
+        .def("stop", &rs2::pipeline::stop, py::call_guard<py::gil_scoped_release>())
         .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("poll_for_frames", [](const rs2::pipeline &self)
         {
@@ -850,7 +851,7 @@ PYBIND11_MODULE(NAME, m) {
             rs2::frameset fs;
             auto success = self.try_wait_for_frames(&fs, timeout_ms);
             return std::make_tuple(success, fs);
-        }, "timeout_ms"_a = 5000)
+        }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("get_active_profile", &rs2::pipeline::get_active_profile);
 
     struct pipeline_wrapper //Workaround to allow python implicit conversion of pipeline to std::shared_ptr<rs2_pipeline>
