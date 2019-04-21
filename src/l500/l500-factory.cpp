@@ -114,15 +114,11 @@ namespace librealsense
                 if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
 
-
-#if defined( RS2_USE_WMF_BACKEND) || defined(RS2_USE_V4L2_BACKEND)  //currently hid backend implemented only for windows and linux.
                 if (g.second.size() < 2)
                 {
-                    LOG_WARNING("Skipping L500. " << g.second.size() << " HID devices were recognized, at least 2 required");
-                    continue;
+                    LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
                 }
-                    
-#endif
+
                 auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
                 chosen.push_back(depth);
                 results.push_back(info);
