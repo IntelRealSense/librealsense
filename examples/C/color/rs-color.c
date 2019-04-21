@@ -78,8 +78,8 @@ int main()
     {
         // This call waits until a new composite_frame is available
         // composite_frame holds a set of frames. It is used to prevent frame drops
-        // The retunred object should be released with rs2_release_frame(...)
-        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, 5000, &e);
+        // The returned object should be released with rs2_release_frame(...)
+        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, RS2_DEFAULT_TIMEOUT, &e);
         check_error(e);
 
         // Returns the number of frames embedded within the composite frame

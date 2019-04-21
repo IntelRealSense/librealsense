@@ -18,8 +18,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define STREAM          RS2_STREAM_DEPTH  // rs2_stream is a types of data provided by RealSense device           //
 #define FORMAT          RS2_FORMAT_Z16    // rs2_format is identifies how binary data is encoded within a frame   //
-#define WIDTH           640               // Defines the number of columns for each frame                         //
-#define HEIGHT          480               // Defines the number of lines for each frame                           //
+#define WIDTH           640               // Defines the number of columns for each frame or zero for auto resolve//
+#define HEIGHT          0                 // Defines the number of lines for each frame or zero for auto resolve  //
 #define FPS             30                // Defines the rate of frames per second                                //
 #define STREAM_INDEX    0                 // Defines the stream index, used for multiple streams of the same type //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,8 +79,8 @@ int main()
     {
         // This call waits until a new composite_frame is available
         // composite_frame holds a set of frames. It is used to prevent frame drops
-        // The retunred object should be released with rs2_release_frame(...)
-        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, 5000, &e);
+        // The returned object should be released with rs2_release_frame(...)
+        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, RS2_DEFAULT_TIMEOUT, &e);
         check_error(e);
 
         // Returns the number of frames embedded within the composite frame
