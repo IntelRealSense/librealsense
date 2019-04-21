@@ -993,7 +993,7 @@ namespace librealsense
                                 _readsample_result = S_OK;
                                 CHECK_HR(_reader->ReadSample(mfp.index, 0, nullptr, nullptr, nullptr, nullptr));
 
-                                const auto timeout_ms = RS_DEFAULT_TIMEOUT;
+                                const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
                                 if (_has_started.wait(timeout_ms))
                                 {
                                     check("_reader->ReadSample(...)", _readsample_result);

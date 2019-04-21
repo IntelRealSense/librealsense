@@ -125,14 +125,14 @@ int main()
     rs2_stream_profile_list* stream_profile_list = rs2_pipeline_profile_get_streams(pipeline_profile, &e);
     if (e)
     {
-        printf("Failed to create stream list profile list!\n");
+        printf("Failed to create stream profile list!\n");
         exit(EXIT_FAILURE);
     }
 
     const rs2_stream_profile* stream_profile = rs2_get_stream_profile(stream_profile_list, 0, &e);
     if (e)
     {
-        printf("Failed to create stream profile list!\n");
+        printf("Failed to create stream profile!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -163,8 +163,8 @@ int main()
     {
         // This call waits until a new composite_frame is available
         // composite_frame holds a set of frames. It is used to prevent frame drops
-        // The retunred object should be released with rs2_release_frame(...)
-        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, RS_DEFAULT_TIMEOUT, &e);
+        // The returned object should be released with rs2_release_frame(...)
+        rs2_frame* frames = rs2_pipeline_wait_for_frames(pipeline, RS2_DEFAULT_TIMEOUT, &e);
         check_error(e);
 
         // Returns the number of frames embedded within the composite frame
