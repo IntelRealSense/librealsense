@@ -14,8 +14,8 @@
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
 The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./src/media/readme.md) of streaming sessions.
 
-Developer kits containing the necessary hardware to use this library are available for purchase at [realsense.intel.com/buy](https://realsense.intel.com/buy).
-Information about the Intel® RealSense™ technology at [realsense.intel.com](https://realsense.intel.com)
+Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.intelrealsense.com/products.html).
+Information about the Intel® RealSense™ technology at [www.intelrealsense.com](https://www.intelrealsense.com/)
 
 > :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
