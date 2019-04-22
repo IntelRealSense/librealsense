@@ -79,7 +79,7 @@ $ source ~/.zshrc
 ```
 $ cd ~
 $ git clone --depth=1 -b v3.5.1 https://github.com/google/protobuf.git
-$ cd protbuf
+$ cd protobuf
 $ ./autogen.sh
 $ ./configure
 $ make -j1
