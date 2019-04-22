@@ -844,7 +844,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
             self.start(queue);
         }, "start passing frames into specified frame_queue", "queue"_a)
-        .def("stop", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.stop(); }, "Stop streaming.")
+        .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
 
