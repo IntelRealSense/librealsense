@@ -201,7 +201,7 @@ namespace rs2
     {
     public:
         /**
-        * Video stream profile instance which contains additional video attributes
+        * Stream profile instance which contains additional video attributes
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit video_stream_profile(const stream_profile& sp)
@@ -253,7 +253,7 @@ namespace rs2
     {
     public:
         /**
-        * Motion stream profile instance which contans IMU-specific intrinsic
+        * Stream profile instance which contains IMU-specific intrinsics.
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit motion_stream_profile(const stream_profile& sp)

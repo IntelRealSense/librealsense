@@ -776,7 +776,7 @@ PYBIND11_MODULE(NAME, m) {
             return ss.str();
         });
 
-    py::class_<rs2::video_stream_profile, rs2::stream_profile> video_stream_profile(m, "video_stream_profile", "Video stream profile instance which contains additional video attributes.");
+    py::class_<rs2::video_stream_profile, rs2::stream_profile> video_stream_profile(m, "video_stream_profile", "Stream profile instance which contains additional video attributes.");
     video_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
         .def("width", &rs2::video_stream_profile::width) // No docstring in C++
         .def("height", &rs2::video_stream_profile::height) // No docstring in C++
@@ -791,56 +791,60 @@ PYBIND11_MODULE(NAME, m) {
             return ss.str();
         });
 
-    py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile");
+    py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile", "Stream profile instance which contans additional motion attributes");
     motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
         .def("get_motion_intrinsics", &rs2::motion_stream_profile::get_motion_intrinsics, "Returns scale and bias of a motion stream.");
 
-    py::class_<rs2::notification> notification(m, "notification");
+    py::class_<rs2::notification> notification(m, "notification"); // No docstring in C++
     notification.def(py::init<>())
         .def("get_category", &rs2::notification::get_category,
-            "Retrieve the notification's category.")
-        .def("get_description", &rs2::notification::get_description,
-            "Retrieve the notification's description.")
-        .def("get_timestamp", &rs2::notification::get_timestamp,
-            "Retrieve the notification's arrival timestamp.")
-        .def("get_severity", &rs2::notification::get_severity,
-            "Retrieve the notification's severity.")
-        .def("get_serialized_data", &rs2::notification::get_severity,
-            "Retrieve the notification's serialized data.")
+             "Retrieve the notification's category.")
         .def_property_readonly("category", &rs2::notification::get_category,
-            "Retrieve the notification's category.")
+                               "The notification's category. Identical to calling get_category.")
+        .def("get_description", &rs2::notification::get_description,
+             "Retrieve the notification's description.")
         .def_property_readonly("description", &rs2::notification::get_description,
-            "Retrieve the notification's description.")
+                               "The notification's description. Identical to calling get_description.")
+        .def("get_timestamp", &rs2::notification::get_timestamp,
+             "Retrieve the notification's arrival timestamp.")
         .def_property_readonly("timestamp", &rs2::notification::get_timestamp,
-            "Retrieve the notification's arrival timestamp.")
+                               "The notification's arrival timestamp. Identical to calling get_timestamp.")
+        .def("get_severity", &rs2::notification::get_severity,
+             "Retrieve the notification's severity.")
         .def_property_readonly("severity", &rs2::notification::get_severity,
-            "Retrieve the notification's severity.")
+                               "The notification's severity. Identical to calling get_severity.")
+        .def("get_serialized_data", &rs2::notification::get_severity,
+             "Retrieve the notification's serialized data.")
         .def_property_readonly("serialized_data", &rs2::notification::get_serialized_data,
-            "Retrieve the notification's serialized data.")
+                               "The notification's serialized data. Identical to calling get_serialized_data.")
         .def("__repr__", [](const rs2::notification &n) {
-        return n.get_description();
-    });
+            return n.get_description();
+        });
 
     // not binding notifications_callback, templated
-    py::class_<rs2::sensor, rs2::options> sensor(m, "sensor");
+    py::class_<rs2::sensor, rs2::options> sensor(m, "sensor"); // No docstring in C++
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
-        "Open sensor for exclusive access, by commiting to a configuration", "profile"_a)
+               "Open sensor for exclusive access, by commiting to a configuration", "profile"_a)
         .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::sensor::supports,
-            "Check if specific camera info is supported.", "info")
+             "Check if specific camera info is supported.", "info")
         .def("supports", (bool (rs2::sensor::*)(rs2_option) const) &rs2::options::supports,
-            "Check if specific camera info is supported.", "info")
+             "Check if specific camera info is supported.", "info")
         .def("get_info", &rs2::sensor::get_info, "Retrieve camera specific information, "
-            "like versions of various internal components.", "info"_a)
-        .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback)
-    { self.set_notifications_callback(callback); }, "Register Notifications callback", "callback"_a)
+             "like versions of various internal components.", "info"_a)
+        .def("set_notifications_callback", [](const rs2::sensor& self, std::function<void(rs2::notification)> callback) {
+            self.set_notifications_callback(callback);
+        }, "Register Notifications callback", "callback"_a)
         .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
-            "Open sensor for exclusive access, by committing to a composite configuration, specifying one or "
-            "more stream profiles.", "profiles"_a)
+             "Open sensor for exclusive access, by committing to a composite configuration, specifying one or "
+             "more stream profiles.", "profiles"_a)
         .def("close", &rs2::sensor::close, "Close sensor for exclusive access.", py::call_guard<py::gil_scoped_release>())
-        .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback)
-    { self.start(callback); }, "Start passing frames into user provided callback.", "callback"_a)
-        .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) { self.start(queue); })
-        .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
+        .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback) {
+            self.start(callback);
+        }, "Start passing frames into user provided callback.", "callback"_a)
+        .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
+            self.start(queue);
+        }, "start passing frames into specified frame_queue", "queue"_a)
+        .def("stop", [](const rs2::sensor& self) { py::gil_scoped_release lock; self.stop(); }, "Stop streaming.")
         .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
 
