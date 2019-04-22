@@ -102,7 +102,7 @@ namespace librealsense
     {
         if (all_hid_infos.empty())
         {
-            LOG_WARNING("HID device is missing!");
+            LOG_WARNING("No HID info provided, IMU is disabled");
             return nullptr;
         }
 
@@ -128,6 +128,15 @@ namespace librealsense
         {
             _motion_module_device_idx = add_sensor(hid_ep);
         }
+    }
+
+    std::vector<tagged_profile> l500_motion::get_profiles_tags() const
+    {
+        std::vector<tagged_profile> tags;
+
+        tags.push_back({ RS2_STREAM_GYRO, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        tags.push_back({ RS2_STREAM_ACCEL, -1, 0, 0, RS2_FORMAT_MOTION_XYZ32F, 200, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        return tags;
     }
 
     rs2_motion_device_intrinsic l500_motion::get_motion_intrinsics(rs2_stream) const

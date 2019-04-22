@@ -7,6 +7,8 @@
 
 namespace librealsense
 {
+    using namespace ivcam2;
+
     std::shared_ptr<uvc_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)
     {
         auto&& backend = ctx->get_backend();
@@ -87,6 +89,7 @@ namespace librealsense
 
     l500_color::l500_color(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
         :device(ctx, group),
+        l500_device(ctx, group),
          _color_stream(new stream(RS2_STREAM_COLOR))
     {
         auto color_devs_info = filter_by_mi(group.uvc_devices, 4);
@@ -94,6 +97,31 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "L500 with RGB models are expected to include a single color device! - "
                 << color_devs_info.size() << " found");
 
+        _color_intrinsics_table_raw = [this]() { return get_raw_intrinsics_table(); };
+        _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
+
+        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw)); });
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        register_stream_to_extrinsic_group(*_color_stream, 0);
+
+
         _color_device_idx = add_sensor(create_color_device(ctx, color_devs_info));
+    }
+
+    std::vector<tagged_profile> l500_color::get_profiles_tags() const
+    {
+        std::vector<tagged_profile> tags;
+
+        tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        return tags;
+    }
+
+    std::vector<uint8_t> l500_color::get_raw_intrinsics_table() const
+    {
+        return _hw_monitor->send(command{ RGB_INTRINSIC_GET });
+    }
+    std::vector<uint8_t> l500_color::get_raw_extrinsics_table() const
+    {
+        return _hw_monitor->send(command{ RGB_EXTRINSIC_GET });
     }
 }
