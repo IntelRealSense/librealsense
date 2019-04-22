@@ -845,57 +845,87 @@ PYBIND11_MODULE(NAME, m) {
             self.start(queue);
         }, "start passing frames into specified frame_queue", "queue"_a)
         .def("stop", &rs2::sensor::stop, "Stop streaming.", py::call_guard<py::gil_scoped_release>())
-        .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
+        .def("get_stream_profiles", &rs2::sensor::get_stream_profiles, "Retrieves the list of stream profiles supported by the sensor.")
+        .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "The list of stream profiles supported by the sensor. Identical to calling get_stream_profiles")
         .def("get_recommended_filters", &rs2::sensor::get_recommended_filters, "Return the recommended list of filters by the sensor.")
-
-        .def_property_readonly("profiles", &rs2::sensor::get_stream_profiles, "Check if physical sensor is supported.")
         .def(py::init<>())
-        .def("__nonzero__", &rs2::sensor::operator bool)
+        .def("__nonzero__", &rs2::sensor::operator bool) // No docstring in C++
         .def(BIND_DOWNCAST(sensor, roi_sensor))
         .def(BIND_DOWNCAST(sensor, depth_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
-    py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor");
+    py::class_<rs2::roi_sensor, rs2::sensor> roi_sensor(m, "roi_sensor"); // No docstring in C++
     roi_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("set_region_of_interest", &rs2::roi_sensor::set_region_of_interest, "roi"_a)
-        .def("get_region_of_interest", &rs2::roi_sensor::get_region_of_interest)
-        .def("__nonzero__", &rs2::roi_sensor::operator bool);
+        .def("set_region_of_interest", &rs2::roi_sensor::set_region_of_interest, "roi"_a) // No docstring in C++
+        .def("get_region_of_interest", &rs2::roi_sensor::get_region_of_interest) // No docstring in C++
+        .def("__nonzero__", &rs2::roi_sensor::operator bool); // No docstring in C++
 
-    py::class_<rs2::depth_sensor, rs2::sensor> depth_sensor(m, "depth_sensor");
+    py::class_<rs2::depth_sensor, rs2::sensor> depth_sensor(m, "depth_sensor"); // No docstring in C++
     depth_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("get_depth_scale", &rs2::depth_sensor::get_depth_scale,
-            "Retrieves mapping between the units of the depth image and meters.")
-        .def("__nonzero__", &rs2::depth_sensor::operator bool);
+             "Retrieves mapping between the units of the depth image and meters.")
+        .def("__nonzero__", &rs2::depth_sensor::operator bool); // No docstring in C++
 
-    py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor");
+    py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor"); // No docstring in C++
     pose_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("import_localization_map", &rs2::pose_sensor::import_localization_map,
-            "Load SLAM localization map from host to device.", "lmap_buf"_a)
+             "Load SLAM localization map from host to device.", "lmap_buf"_a)
         .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
-            "Extract SLAM localization map from device and store on host.")
+             "Extract SLAM localization map from device and store on host.")
         .def("set_static_node", &rs2::pose_sensor::set_static_node,
-            "Create a named reference frame anchored to a specific 3D pose.")
+             "Create a named reference frame anchored to a specific 3D pose.")
         .def("get_static_node", &rs2::pose_sensor::get_static_node,
-            "Retrieve a named reference frame anchored to a specific 3D pose.")
-        .def("__nonzero__", &rs2::pose_sensor::operator bool);
+             "Retrieve a named reference frame anchored to a specific 3D pose.")
+        .def("__nonzero__", &rs2::pose_sensor::operator bool); // No docstring in C++
 
-    py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer");
+    py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer"); // No docstring in C++
     wheel_odometer.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("load_wheel_odometery_config", &rs2::wheel_odometer::load_wheel_odometery_config,
-            "odometry_config_buf"_a, "Load Wheel odometer settings from host to device.")
+             "Load Wheel odometer settings from host to device.", "odometry_config_buf"_a)
         .def("send_wheel_odometry", &rs2::wheel_odometer::send_wheel_odometry,
-            "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a,
-            "Send wheel odometry data for each individual sensor (wheel)")
+             "Send wheel odometry data for each individual sensor (wheel)",
+             "wo_sensor_id"_a, "frame_num"_a, "translational_velocity"_a)
         .def("__nonzero__", &rs2::wheel_odometer::operator bool);
 
     /* rs2_pipeline.hpp */
-    py::class_<rs2::pipeline> pipeline(m, "pipeline");
-    pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context())
-        .def("start", (rs2::pipeline_profile(rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "config"_a)
-        .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start)
-        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { self.start(f); }, "callback"_a)
-        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { self.start(config, f); }, "config"_a, "callback"_a)
+    py::class_<rs2::pipeline> pipeline(m, "pipeline", "The pipeline simplifies the user interaction with the device and computer vision processing modules.\n"
+                                       "The class abstracts the camera configuration and streaming, and the vision modules triggering and threading.\n"
+                                       "It lets the application focus on the computer vision output of the modules, or the device output data.\n"
+                                       "The pipeline can manage computer vision modules, which are implemented as a processing blocks.\n"
+                                       "The pipeline is the consumer of the processing block interface, while the application consumes the computer vision interface.");
+    pipeline.def(py::init<rs2::context>(), "ctx"_a = rs2::context(), "The caller can provide a context created by the application, usually for playback or testing purposes.")
+        // TODO: Streamline this wall of text
+        .def("start", (rs2::pipeline_profile(rs2::pipeline::*)(const rs2::config&)) &rs2::pipeline::start, "Start the pipeline streaming according to the configuraion.\n"
+             "The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules and processing blocks, according to "
+             "each module requirements and threading model.\n"
+             "During the loop execution, the application can access the camera streams by calling wait_for_frames() or poll_for_frames().\n"
+             "The streaming loop runs until the pipeline is stopped.\n"
+             "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
+             "The pipeline selects and activates the device upon start, according to configuration or a default configuration.\n"
+             "When the rs2::config is provided to the method, the pipeline tries to activate the config resolve() result.\n"
+             "If the application requests are conflicting with pipeline computer vision modules or no matching device is available on the platform, the method fails.\n"
+             "Available configurations and devices may change between config resolve() call and pipeline start, in case devices are connected or disconnected, or another "
+             "application acquires ownership of a device.", "config"_a)
+        .def("start", (rs2::pipeline_profile(rs2::pipeline::*)()) &rs2::pipeline::start, "Start the pipeline streaming with its default configuration.\n"
+             "The pipeline streaming loop captures samples from the device, and delivers them to the attached computer vision modules and processing "
+             "blocks, according to each module requirements and threading model.\n"
+             "During the loop execution, the application can access the camera streams by calling wait_for_frames() or poll_for_frames().\n"
+             "The streaming loop runs until the pipeline is stopped.\n"
+             "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n")
+        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { self.start(f); }, "Start the pipeline streaming with its default configuration.\n"
+             "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
+             "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
+             "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.", "callback"_a)
+        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { self.start(config, f); }, "Start the pipeline streaming according to the configuraion.\n"
+             "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
+             "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
+             "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.\n"
+             "The pipeline selects and activates the device upon start, according to configuration or a default configuration.\n"
+             "When the rs2::config is provided to the method, the pipeline tries to activate the config resolve() result.\n"
+             "If the application requests are conflicting with pipeline computer vision modules or no matching device is available on the platform, the method fails.\n"
+             "Available configurations and devices may change between config resolve() call and pipeline start, in case devices are connected or disconnected, "
+             "or another application acquires ownership of a device.", "config"_a, "callback"_a)
         .def("stop", &rs2::pipeline::stop, py::call_guard<py::gil_scoped_release>())
         .def("wait_for_frames", &rs2::pipeline::wait_for_frames, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
         .def("poll_for_frames", [](const rs2::pipeline &self)

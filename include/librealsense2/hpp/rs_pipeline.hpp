@@ -407,7 +407,7 @@ namespace rs2
         * Start the pipeline streaming with its default configuration.
         * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
         * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-        * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
+        * When starting the pipeline with a callback both \c wait_for_frames() and \c poll_for_frames() will throw exception.
         *
         * \param[in] callback   Stream callback, can be any callable object accepting rs2::frame
         * \return               The actual pipeline device and streams profile, which was successfully configured to the streaming device.
@@ -428,7 +428,7 @@ namespace rs2
         * Start the pipeline streaming according to the configuraion.
         * The pipeline captures samples from the device, and delivers them to the through the provided frame callback.
         * Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.
-        * When starting the pipeline with a callback both \c wait_for_frames() or \c poll_for_frames() will throw exception.
+        * When starting the pipeline with a callback both \c wait_for_frames() and \c poll_for_frames() will throw exception.
         * The pipeline selects and activates the device upon start, according to configuration or a default configuration.
         * When the rs2::config is provided to the method, the pipeline tries to activate the config \c resolve() result.
         * If the application requests are conflicting with pipeline computer vision modules or no matching device is available on
