@@ -49,3 +49,4 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 8. [realsense-ir-to-vaapi-h264](https://github.com/bmegli/realsense-ir-to-vaapi-h264) - hardware encode infrared stream to H.264 with Intel VAAPI
 9. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore
 10. [Unofficial OpenVino example + D400](https://github.com/gbr1/ros_openvino) - example of using OpenVino with RealSense and ROS for object detection
+11. [Vimeo Depth Viewer](https://github.com/vimeo/vimeo-depth-viewer) - A RealSense depth viewer using [nanogui](https://github.com/wjakob/nanogui)
