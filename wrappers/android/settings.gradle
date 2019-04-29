@@ -15,3 +15,6 @@ project(':playback').projectDir = new File('examples/playback')
 
 include ':recording'
 project(':recording').projectDir = new File('examples/recording')
+
+include ':processing'
+project(':processing').projectDir = new File('examples/processing')
