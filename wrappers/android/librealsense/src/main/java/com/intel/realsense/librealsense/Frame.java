@@ -47,6 +47,12 @@ public class Frame extends LrsClass implements Cloneable{
         return filter.process(this);
     }
 
+    public Frame applyFilter(FilterInterface filter, FrameReleaser frameReleaser) {
+        Frame rv = filter.process(this);
+        frameReleaser.addFrame(rv);
+        return rv;
+    }
+
     @Override
     public void close() {
         nRelease(mHandle);
