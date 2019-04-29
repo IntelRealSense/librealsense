@@ -370,7 +370,7 @@ namespace librealsense
             }
             else
             {
-                rs2_frame_metadata_value type;
+                rs2_frame_metadata_value type{};
                 if (!safe_convert(key_val_msg->key, type))
                 {
                     remaining[key_val_msg->key] = key_val_msg->value;
@@ -534,6 +534,14 @@ namespace librealsense
 
         pose_frame::pose_info pose{};
         std::chrono::duration<double, std::milli> timestamp_ms;
+        size_t frame_size = sizeof(pose);
+        rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
+        frame_additional_data additional_data{};
+
+        additional_data.fisheye_ae_mode = false;
+
+        stream_identifier stream_id;
+
         if (m_version == legacy_file_format::file_version())
         {
             auto pose_msg = instantiate_msg<realsense_legacy_msgs::pose>(msg);
@@ -569,15 +577,9 @@ namespace librealsense
             pose.acceleration = to_float3(accel_msg->linear);
             pose.angular_velocity = to_float3(twist_msg->angular);
             pose.velocity = to_float3(twist_msg->linear);
+
         }
-        size_t frame_size = sizeof(pose);
-        rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
-        frame_additional_data additional_data{};
 
-        additional_data.frame_number = 0; //No support for frame numbers
-        additional_data.fisheye_ae_mode = false;
-
-        stream_identifier stream_id;
         if (m_version == legacy_file_format::file_version())
         {
             //Version 1 legacy
@@ -605,6 +607,10 @@ namespace librealsense
                 else if (kvp.first == TRACKER_CONFIDENCE_MD_STR)
                 {
                     pose.tracker_confidence = std::stoul(kvp.second);
+                }
+                else if (kvp.first == FRAME_NUMBER_MD_STR)
+                {
+                    additional_data.frame_number = std::stoul(kvp.second);
                 }
             }
         }

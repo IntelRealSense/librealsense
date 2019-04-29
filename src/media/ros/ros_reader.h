@@ -51,16 +51,16 @@ namespace librealsense
         template <typename T>
         static bool safe_convert(const std::string& key, T& val)
         {
+            bool ret{ false };
             try
             {
-                convert(key, val);
+                bool ret = convert(key, val);
             }
             catch (const std::exception& e)
             {
                 LOG_ERROR(e.what());
-                return false;
             }
-            return true;
+            return ret;
         }
 
         static std::map<std::string, std::string> get_frame_metadata(const rosbag::Bag& bag,
