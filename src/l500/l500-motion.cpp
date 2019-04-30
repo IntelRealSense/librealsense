@@ -121,7 +121,7 @@ namespace librealsense
     }
 
     l500_motion::l500_motion(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
-        :l500_device(ctx, group), 
+        :device(ctx, group), l500_device(ctx, group), 
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
