@@ -25,7 +25,8 @@ namespace librealsense
     class time_diff_keeper
     {
     public:
-        explicit time_diff_keeper(device* dev);
+        explicit time_diff_keeper(device* dev, const std::string& name);
+        void start();   // must be called AFTER ALL initializations of _hw_monitor.
         ~time_diff_keeper();
         double get_system_hw_time_diff(double crnt_hw_time);
 
@@ -35,6 +36,7 @@ namespace librealsense
 
     private:
         device* _device;
+        std::string _name;
         double _system_hw_time_diff;
         double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
@@ -56,7 +58,7 @@ namespace librealsense
 
     private:
         std::unique_ptr<frame_timestamp_reader> _device_timestamp_reader;
-        std::shared_ptr<time_diff_keeper> _time_diff_keeper;
+        std::weak_ptr<time_diff_keeper> _time_diff_keeper;
         mutable std::recursive_mutex _mtx;
     };
 }

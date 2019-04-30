@@ -323,10 +323,12 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+        LOG_DEBUG("Create ds5_depth_sensor");
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper)));
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper)));
+        LOG_DEBUG("Create ds5_depth_sensor - Done");
 
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
@@ -344,9 +346,10 @@ namespace librealsense
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _tf_keeper(new time_diff_keeper(this))
+          _tf_keeper(std::make_shared<time_diff_keeper>(this, "ds5_device"))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
+        LOG_DEBUG("Created depth device");
         init(ctx, group);
     }
 
@@ -355,25 +358,31 @@ namespace librealsense
     {
         using namespace ds;
 
+        LOG_DEBUG("ds5_device init");
         auto&& backend = ctx->get_backend();
 
         if (group.usb_devices.size() > 0)
         {
+            LOG_DEBUG("get_backend>0");
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     backend.create_usb_device(group.usb_devices.front()), get_depth_sensor()));
+            LOG_DEBUG("get_backend>0 done");
         }
         else
         {
+            LOG_DEBUG("get_backend=0");
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         get_depth_sensor(), depth_xu, DS5_HWMONITOR),
                     get_depth_sensor()));
+            LOG_DEBUG("get_backend=0 - done");
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
+        LOG_DEBUG("rs2_extrinsics");
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
             rs2_extrinsics ext = identity_matrix();
@@ -397,6 +406,7 @@ namespace librealsense
         _recommended_fw_version = firmware_version("5.10.3.0");
         if (_fw_version >= firmware_version("5.10.4.0"))
             _device_capabilities = parse_device_capabilities();
+        LOG_DEBUG("_hw_monitor");
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
 
         auto& depth_ep = get_depth_sensor();
@@ -415,6 +425,7 @@ namespace librealsense
                 usb_modality = false;
         }
 
+        LOG_DEBUG("11");
         if (advanced_mode && (_usb_mode >= usb3_type))
         {
             depth_ep.register_pixel_format(pf_y8i); // L+R
@@ -430,6 +441,7 @@ namespace librealsense
                     "Hardware pipe configuration"));
         }
 
+        //LOG_DEBUG("22");
         std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
@@ -441,14 +453,17 @@ namespace librealsense
             // D400_IMU will remain using USB interface due to HW limitations
             if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
             {
+                LOG_DEBUG("21");
                 _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(
                         std::make_shared<command_transfer_over_xu>(
                             get_depth_sensor(), depth_xu, DS5_HWMONITOR),
                         get_depth_sensor()));
+                LOG_DEBUG("212");
             }
 #endif
 
+            LOG_DEBUG("33");
             depth_ep.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(depth_ep,
                 depth_xu,
@@ -532,6 +547,7 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([]() { return 0.001f; })));
         // Metadata registration
+        LOG_DEBUG("44");
         depth_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
         // attributes of md_capture_timing
@@ -591,6 +607,7 @@ namespace librealsense
 
         std::string curr_version= _fw_version;
         std::string minimal_version = _recommended_fw_version;
+        LOG_DEBUG("55");
 
         if (_fw_version < _recommended_fw_version)
         {
@@ -616,6 +633,9 @@ namespace librealsense
             });
             notification_thread.detach();
         }
+        LOG_DEBUG("_tf_keeper->start()");
+        _tf_keeper->start();
+        LOG_DEBUG("Init - Done");
     }
 
     notification ds5_notification_decoder::decode(int value)
@@ -676,8 +696,10 @@ namespace librealsense
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        LOG_DEBUG("Create ds5u_depth_sensor");
         auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                 std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper)));
+        LOG_DEBUG("Create ds5u_depth_sensor - Done");
 
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 

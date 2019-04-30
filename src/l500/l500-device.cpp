@@ -21,11 +21,12 @@ namespace librealsense
     l500_device::l500_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         :device(ctx, group),
-        _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices))),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
+        _tf_keeper(std::make_shared<time_diff_keeper>(this, "l500_device"))
     {
+        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
 
@@ -71,6 +72,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        _tf_keeper->start();
     }
 
     std::shared_ptr<uvc_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
@@ -82,8 +84,9 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new l500_timestamp_reader_from_metadata(backend.create_time_service()));
         auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-            std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader_from_metadata(backend.create_time_service())));
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper)));
 
         depth_ep->register_xu(depth_xu);
         depth_ep->register_pixel_format(pf_z16_l500);
@@ -114,6 +117,23 @@ namespace librealsense
     void l500_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         throw not_implemented_exception("enable_recording(...) not implemented!");
+    }
+
+    double l500_device::get_device_time()
+    {
+
+        if (!_hw_monitor)
+            throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
+
+        uint8_t data[]{
+            0x14, 00, 0xab, 0xcd, 01, 00, 00, 00, 0x1c, 0x02, 0x03, 0x90, 0x20, 0x02, 0x03, 0x90, 00, 00, 00, 00, 00, 00, 00, 00
+        };
+        std::vector<uint8_t> command(data, data + sizeof(data));
+        auto res = send_receive_raw_data(command);
+        auto ptr = reinterpret_cast<uint32_t*>(res.data());
+        LOG_INFO("ptr : " << ptr[0] << ", " << ptr[1]);
+        auto ts = ptr[1] * TIMESTAMP_USEC_TO_MSEC;
+        return ts;
     }
 
     notification l500_notification_decoder::decode(int value)

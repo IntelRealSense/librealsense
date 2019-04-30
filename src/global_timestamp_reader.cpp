@@ -30,8 +30,9 @@ namespace librealsense
     }
 
 
-    time_diff_keeper::time_diff_keeper(device* dev) :
+    time_diff_keeper::time_diff_keeper(device* dev, const std::string& name) :
         _device(dev),
+        _name(name),
         _poll_intervals_ms(100),
         _system_hw_time_diff(-1e+200),
         _last_sample_hw_time(1e+200),
@@ -39,16 +40,22 @@ namespace librealsense
         _stdev(15, 5.8),
         _active_object([this](dispatcher::cancellable_timer cancellable_timer)
             {
-                LOG_INFO("start new time_diff_keeper");
                 polling(cancellable_timer);
             })
-        {
-            _active_object.start();
-        }
+    {
+        LOG_INFO("start new time_diff_keeper " << _name);
+    }
+
+    void time_diff_keeper::start()
+    {
+        _active_object.start();
+    }
 
     time_diff_keeper::~time_diff_keeper()
     {
+        LOG_INFO("killed time_diff_keeper " << _name);
         _active_object.stop();
+        LOG_INFO("killed time_diff_keeper - stopped " << _name);
     }
 
     bool time_diff_keeper::update_diff_time()
@@ -57,19 +64,22 @@ namespace librealsense
         static std::ofstream fout("times.txt");
         try
         {
+            LOG_INFO("_device->get_device_time()");
             _last_sample_hw_time = _device->get_device_time();
+            LOG_INFO("_device->get_device_time()");
             double system_time = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
             double diff = system_time - _last_sample_hw_time;
+            LOG_INFO("diff : " << std::fixed << diff << " " << _name);
             if (fabs(diff - _system_hw_time_diff) > diffThresh)
             {
                 //Giant time leap: It happens on initialize 
-                LOG_INFO("Timestamp offset : " << diff);
+                LOG_INFO("Timestamp offset : " << diff << " " << _name);
                 _system_hw_time_diff = diff;
 
                 //In case of using system time. Time correction is useless.
                 if (fabs(diff)<500) {
-                    LOG_INFO("Timecorrection is not needed use raw timestamp");
+                    LOG_INFO("Timecorrection is not needed use raw timestamp" << " " << _name);
                     _skipTimestampCorrection = true;
                 }
             }
@@ -92,21 +102,22 @@ namespace librealsense
         }
         catch (const wrong_api_call_sequence_exception& ex)
         {
-            LOG_DEBUG("Error during time_diff_keeper polling: " << ex.what());
+            LOG_DEBUG("Error during time_diff_keeper polling: " << ex.what() << " " << _name);
         }
         catch (const std::exception& ex)
         {
-            LOG_ERROR("Error during time_diff_keeper polling: " << ex.what());
+            LOG_ERROR("Error during time_diff_keeper polling: " << ex.what() << " " << _name);
         }
         catch (...)
         {
-            LOG_ERROR("Unknown error during time_diff_keeper polling!");
+            LOG_ERROR("Unknown error during time_diff_keeper polling!" << " " << _name);
         }
         return false;
     }
 
     void time_diff_keeper::polling(dispatcher::cancellable_timer cancellable_timer)
     {
+        LOG_DEBUG("time_diff_keeper: going to sleep" << " " << _name);
         if (cancellable_timer.try_sleep(_poll_intervals_ms))
         {
             if (_skipTimestampCorrection)
@@ -115,19 +126,21 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down");
+            LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down" << " " << _name);
         }
+        LOG_DEBUG("time_diff_keeper: Done polling" << " " << _name);
     }
 
     double time_diff_keeper::get_system_hw_time_diff(double crnt_hw_time)
     {
         static const double possible_loop_time(3000);
-        while ((_last_sample_hw_time - crnt_hw_time) > possible_loop_time)
+        if ((_last_sample_hw_time - crnt_hw_time) > possible_loop_time)
         {
             //std::cout << "***** NOT initialized **** " << std::endl;
             //std::cout << _last_sample_hw_time << " > " << crnt_hw_time << std::endl;
             update_diff_time();
         }
+        LOG_DEBUG("time_diff_keeper: get_system_hw_time_diff: " << std::fixed << _system_hw_time_diff << " " << _name);
         return _system_hw_time_diff;
     }
 
@@ -135,17 +148,29 @@ namespace librealsense
         _device_timestamp_reader(std::move(device_timestamp_reader)),
         _time_diff_keeper(timediff)
     {
+        LOG_DEBUG("global_timestamp_reader created");
     }
 
     double global_timestamp_reader::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
     {
-
+        LOG_INFO("get_frame_ts:" << mode.profile.fps);
         double frame_time = _device_timestamp_reader->get_frame_timestamp(mode, fo);
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
+        LOG_INFO("frame_time0 : " << std::fixed << frame_time);
+        double system_hw_time_diff(0);
+        {
+            auto sp = _time_diff_keeper.lock();
+            if (sp)
+                system_hw_time_diff = sp->get_system_hw_time_diff(frame_time);
+            else
+                LOG_DEBUG("Notification: global_timestamp_reader - time_diff_keeper is being shut-down");
+        }
+        LOG_INFO("get_system_hw_time_diff : " << std::fixed << system_hw_time_diff);
         if (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
         {
-            frame_time += _time_diff_keeper->get_system_hw_time_diff(frame_time);
+            frame_time += system_hw_time_diff;
         }
+        LOG_INFO("frame_time1 : " << std::fixed << frame_time);
         return frame_time;
     }
 

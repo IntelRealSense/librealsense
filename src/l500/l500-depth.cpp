@@ -196,7 +196,7 @@ namespace librealsense
         if (has_metadata_ts(fo))
         {
             auto md = (librealsense::metadata_raw*)(fo.metadata);
-            return (double)(ts_wrap.calc(md->header.timestamp))*0.0001;
+            return (double)(ts_wrap.calc(md->header.timestamp))*TIMESTAMP_USEC_TO_MSEC;
         }
         else
         {
