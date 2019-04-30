@@ -309,6 +309,13 @@ namespace librealsense
             environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
         }
 
+        auto accel_it = std::find_if(results.begin(), results.end(),
+            [](std::shared_ptr<stream_profile_interface> spi) { return RS2_STREAM_ACCEL == spi->get_stream_type(); });
+        auto gyro_it = std::find_if(results.begin(), results.end(),
+            [](std::shared_ptr<stream_profile_interface> spi) { return RS2_STREAM_GYRO == spi->get_stream_type(); });
+        if ((accel_it != results.end()) && (gyro_it != results.end()))
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*(accel_it->get()), *(gyro_it->get()));
+
         return results;
     }
 
@@ -1268,6 +1275,11 @@ namespace librealsense
 
         _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
         _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+
+        // Assing the extrinsic nodes to the default group
+        auto tm2_profiles = _sensor->get_stream_profiles();
+        for (auto && pf : tm2_profiles)
+            register_stream_to_extrinsic_group(*pf, 0);
 
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
