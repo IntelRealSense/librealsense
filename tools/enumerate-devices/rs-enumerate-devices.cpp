@@ -56,14 +56,14 @@ void print(const rs2_extrinsics& extrinsics)
 void print(const rs2_motion_device_intrinsic& intrinsics)
 {
     stringstream ss;
-     ss << "Bias Variances: ";
+     ss << "Bias Variances: \t";
 
     for (auto i = 0 ; i < sizeof(intrinsics.bias_variances)/sizeof(intrinsics.bias_variances[0]) ; ++i)
-        ss << setprecision(15) << intrinsics.bias_variances[i] << "  ";
+        ss << setprecision(15) << std::fixed << intrinsics.bias_variances[i] << "  ";
 
-    ss << "\nNoise Variances: ";
+    ss << "\nNoise Variances: \t";
     for (auto i = 0 ; i < sizeof(intrinsics.noise_variances)/sizeof(intrinsics.noise_variances[0]) ; ++i)
-        ss << setprecision(15) << intrinsics.noise_variances[i] << "  ";
+        ss << setprecision(15) << std::fixed << intrinsics.noise_variances[i] << "  ";
 
     ss << "\nSensitivity : " << std::endl;
     for (auto i = 0 ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
@@ -363,13 +363,13 @@ int main(int argc, char** argv) try
                     {
                         if (motion_stream_profile motion = profile.as<motion_stream_profile>())
                         {
-                            if (streams.find(stream_and_index{profile.stream_type(), profile.stream_index()}) == streams.end())
+                            if (streams.find(stream_and_index{ profile.stream_type(), profile.stream_index() }) == streams.end())
                             {
-                                streams[stream_and_index{profile.stream_type(), profile.stream_index()}] = profile;
+                                streams[stream_and_index{ profile.stream_type(), profile.stream_index() }] = profile;
                             }
 
                             rs2_motion_device_intrinsic motion_intrinsics{};
-                            stream_and_resolution stream_res{profile.stream_type(), profile.stream_index(), motion.stream_type(), motion.stream_index(), profile.stream_name()};
+                            stream_and_resolution stream_res{ profile.stream_type(), profile.stream_index(), motion.stream_type(), motion.stream_index(), profile.stream_name() };
                             if (safe_get_motion_intrinsics(motion, motion_intrinsics))
                             {
                                 auto it = std::find_if((motion_intrinsics_map[stream_res]).begin(), (motion_intrinsics_map[stream_res]).end(),
@@ -387,11 +387,20 @@ int main(int argc, char** argv) try
                                 }
                             }
                         }
+                        else if (pose_stream_profile pose = profile.as<pose_stream_profile>())
+                        {
+                            if (streams.find(stream_and_index{ profile.stream_type(), profile.stream_index() }) == streams.end())
+                            {
+                                streams[stream_and_index{ profile.stream_type(), profile.stream_index() }] = profile;
+                            }
+                        }
+                        else
+                            cout << " Unhandled profile encountered: " << profile.stream_name() << "/" << profile.format() << std::endl;
                     }
                 }
             }
 
-            cout << "Provided Intrinsic:" << endl;
+            cout << "Provided Intrinsic:\n" << endl;
             for (auto& kvp : intrinsics_map)
             {
                 auto stream_res = kvp.first;
@@ -411,7 +420,7 @@ int main(int argc, char** argv) try
                 }
             }
 
-            cout << "Provided Motion Intrinsic:" << endl;
+            cout << "Provided Motion Intrinsic:\n" << endl;
             for (auto& kvp : motion_intrinsics_map)
             {
                 auto stream_res = kvp.first;
