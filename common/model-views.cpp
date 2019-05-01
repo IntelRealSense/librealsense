@@ -6517,7 +6517,7 @@ namespace rs2
 
                         if (ImGui::Selectable("Import Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                         {
-                            if (auto source_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
+                            if (auto source_path = file_dialog_open(open_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
                             {
                                 error_message = safe_call([&]()
                                 {
