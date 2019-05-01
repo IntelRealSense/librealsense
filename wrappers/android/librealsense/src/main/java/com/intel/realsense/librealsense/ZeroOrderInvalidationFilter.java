@@ -1,8 +1,8 @@
 package com.intel.realsense.librealsense;
 
-public class Decimation extends Filter {
+public class ZeroOrderInvalidationFilter extends Filter {
 
-    public Decimation(){
+    public ZeroOrderInvalidationFilter(){
         mHandle = nCreate(mQueue.getHandle());
     }
 

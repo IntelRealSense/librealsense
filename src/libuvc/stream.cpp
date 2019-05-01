@@ -1152,7 +1152,7 @@ uvc_error_t uvc_stream_start(
    * with the contents of each frame.
    */
   if (cb) {
-      strmh->cb_thread = std::thread([&]() {_uvc_user_caller((void*)strmh); });
+      strmh->cb_thread = std::thread([strmh]() {_uvc_user_caller((void*)strmh); });
   }
 
   for (transfer_id = 0; transfer_id < LIBUVC_NUM_TRANSFER_BUFS;
