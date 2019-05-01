@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cmath>
 #include <limits>
+#include <thread>
 
 #include "tclap/CmdLine.h"
 
@@ -183,17 +184,29 @@ int main(int argc, char** argv) try
     SwitchArg show_options_arg("o", "option", "Show all supported options per subdevice");
     SwitchArg show_calibration_data_arg("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
     SwitchArg show_defaults("d", "defaults", "Show default streams configuration");
+    ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
+                                              false, "", "Playback device - ROSBag record full path");
     cmd.add(compact_view_arg);
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
     cmd.add(show_defaults);
+    cmd.add(show_playback_device_arg);
 
     cmd.parse(argc, argv);
 
     log_to_console(RS2_LOG_SEVERITY_ERROR);
 
+    bool compact_view           = compact_view_arg.getValue();
+    bool show_options           = show_options_arg.getValue();
+    bool show_calibration_data  = show_calibration_data_arg.getValue();
+    bool show_modes             = !compact_view;
+    auto playback_dev_file = show_playback_device_arg.getValue();
+
     // Obtain a list of devices currently present on the system
     context ctx;
+    if (!playback_dev_file.empty())
+        ctx.load_device(playback_dev_file.data());
+
     auto devices = ctx.query_devices();
     size_t device_count = devices.size();
     if (!device_count)
@@ -201,11 +214,6 @@ int main(int argc, char** argv) try
         cout <<"No device detected. Is it plugged in?\n";
         return EXIT_SUCCESS;
     }
-
-    bool compact_view           = compact_view_arg.getValue();
-    bool show_options           = show_options_arg.getValue();
-    bool show_calibration_data  = show_calibration_data_arg.getValue();
-    bool show_modes             = !compact_view;
 
     if (compact_view)
     {
@@ -239,6 +247,9 @@ int main(int argc, char** argv) try
 
         // Show which options are supported by this device
         cout << "Device info: \n";
+        if (auto pb_dev = dev.as<playback>())
+            cout << "Playback Device (" << pb_dev.file_name() <<  ")" << std::endl;
+
         for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j)
         {
             auto param = static_cast<rs2_camera_info>(j);
@@ -389,75 +400,89 @@ int main(int argc, char** argv) try
                                 }
                             }
                         }
-                        else if (pose_stream_profile pose = profile.as<pose_stream_profile>())
+                        else
                         {
-                            if (streams.find(stream_and_index{ profile.stream_type(), profile.stream_index() }) == streams.end())
+                            if (pose_stream_profile pose = profile.as<pose_stream_profile>())
                             {
-                                streams[stream_and_index{ profile.stream_type(), profile.stream_index() }] = profile;
+                                if (streams.find(stream_and_index{ profile.stream_type(), profile.stream_index() }) == streams.end())
+                                {
+                                    streams[stream_and_index{ profile.stream_type(), profile.stream_index() }] = profile;
+                                }
+                            }
+                            else
+                            {
+                                cout << " Unhandled profile encountered: " << profile.stream_name() << "/" << profile.format() << std::endl;
                             }
                         }
+                    }
+                }
+            }
+
+            if (intrinsics_map.size())
+            {
+                cout << "Intrinsic Parameters:\n" << endl;
+                for (auto& kvp : intrinsics_map)
+                {
+                    auto stream_res = kvp.first;
+                    for (auto& intrinsics : kvp.second)
+                    {
+                        auto formats = "{" + get_str_formats(intrinsics.first) + "}";
+                        cout << " Intrinsic of \"" << stream_res.stream_name << "\" / " << stream_res.width << "x"
+                            << stream_res.height << " / " << formats << endl;
+                        if (intrinsics.second == rs2_intrinsics{})
+                        {
+                            cout << "Intrinsic NOT available!\n\n";
+                        }
                         else
-                            cout << " Unhandled profile encountered: " << profile.stream_name() << "/" << profile.format() << std::endl;
+                        {
+                            print(intrinsics.second);
+                        }
                     }
                 }
             }
 
-            cout << "Provided Intrinsic:\n" << endl;
-            for (auto& kvp : intrinsics_map)
+            if (motion_intrinsics_map.size())
             {
-                auto stream_res = kvp.first;
-                for (auto& intrinsics : kvp.second)
+                cout << "Motion Intrinsic Parameters:\n" << endl;
+                for (auto& kvp : motion_intrinsics_map)
                 {
-                    auto formats = "{" + get_str_formats(intrinsics.first) + "}";
-                    cout << " Intrinsic of \"" << stream_res.stream_name << "\" / " << stream_res.width << "x"
-                        << stream_res.height << " / " << formats << endl;
-                    if (intrinsics.second == rs2_intrinsics{})
+                    auto stream_res = kvp.first;
+                    for (auto& intrinsics : kvp.second)
                     {
-                        cout << "Intrinsic NOT available!\n\n";
-                    }
-                    else
-                    {
-                        print(intrinsics.second);
+                        auto formats = get_str_formats(intrinsics.first);
+                        cout << "Motion Intrinsic of \"" << stream_res.stream_name << "\"\t  " << formats << endl;
+                        if (intrinsics.second == rs2_motion_device_intrinsic{})
+                        {
+                            cout << "Intrinsic NOT available!\n\n";
+                        }
+                        else
+                        {
+                            print(intrinsics.second);
+                        }
                     }
                 }
             }
 
-            cout << "Provided Motion Intrinsic:\n" << endl;
-            for (auto& kvp : motion_intrinsics_map)
+            if (streams.size())
             {
-                auto stream_res = kvp.first;
-                for (auto& intrinsics : kvp.second)
+                // Print Extrinsics
+                cout << "\nExtrinsic Parameters:" << endl;
+                rs2_extrinsics extrinsics{};
+                for (auto kvp1 = streams.begin(); kvp1 != streams.end(); ++kvp1)
                 {
-                    auto formats = get_str_formats(intrinsics.first);
-                    cout << "Motion Intrinsic of \"" << stream_res.stream_name << "\"\t  " << formats << endl;
-                    if (intrinsics.second == rs2_motion_device_intrinsic{})
+                    for (auto kvp2 = streams.begin(); kvp2 != streams.end(); ++kvp2)
                     {
-                        cout << "Intrinsic NOT available!\n\n";
-                    }
-                    else
-                    {
-                        print(intrinsics.second);
-                    }
-                }
-            }
-
-            // Print Extrinsics
-            cout << "\nProvided Extrinsic:" << endl;
-            rs2_extrinsics extrinsics{};
-            for (auto kvp1 = streams.begin(); kvp1 != streams.end(); ++kvp1)
-            {
-                for (auto kvp2 = streams.begin(); kvp2 != streams.end(); ++kvp2)
-                {
-                    cout << "Extrinsic from \"" << kvp1->second.stream_name() << "\"\t  " <<
-                            "To" << "\t  \"" << kvp2->second.stream_name() << "\" :\n";
-                    try
-                    {
-                        extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
-                        print(extrinsics);
-                    }
-                    catch (...)
-                    {
-                        cout << "N/A\n";
+                        cout << "Extrinsic from \"" << kvp1->second.stream_name() << "\"\t  " <<
+                                "To" << "\t  \"" << kvp2->second.stream_name() << "\" :\n";
+                        try
+                        {
+                            extrinsics = kvp1->second.get_extrinsics_to(kvp2->second);
+                            print(extrinsics);
+                        }
+                        catch (...)
+                        {
+                            cout << "N/A\n";
+                        }
                     }
                 }
             }

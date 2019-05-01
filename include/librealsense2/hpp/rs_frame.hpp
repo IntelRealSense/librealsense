@@ -285,7 +285,7 @@ namespace rs2
     {
     public:
         /**
-        * Video stream profile instance which contans additional motion attributes
+        * Pose stream profile instance with a designated extension type
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit pose_stream_profile(const stream_profile& sp)

@@ -504,8 +504,6 @@ namespace librealsense
             LOG_ERROR("Failed to convert lrs stream " << lrs_stream << " to tm stream");
             return;
         }
-        //auto time_of_arrival = get_md_or_default(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
-
 
         //Pass frames to firmware
         if (auto vframe = As<video_frame>(fref.frame))
