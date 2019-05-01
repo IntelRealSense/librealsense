@@ -328,7 +328,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("unlock", &platform::retry_controls_work_around::unlock)
         .def("get_device_location", &platform::retry_controls_work_around::get_device_location);
 
-    py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
+    //py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
 
     py::class_<platform::backend, std::shared_ptr<platform::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &platform::backend::create_uvc_device, "info"_a)

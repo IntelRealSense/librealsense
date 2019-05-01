@@ -4,12 +4,13 @@
 #ifdef RS2_USE_ANDROID_BACKEND
 
 #include "android_uvc.h"
-#include "device_watcher.h"
+#include "../device_watcher.h"
 
 #include "../../concurrency.h"
 #include "../../types.h"
-#include "../../libuvc/utlist.h"
 #include "../../libuvc/uvc_types.h"
+#include "../../libuvc/utlist.h"
+#include "../../usb/usb-types.h"
 
 #include <vector>
 #include <thread>
@@ -20,8 +21,6 @@
 struct frame;
 // We keep no more then 2 frames in between frontend and backend
 typedef librealsense::small_heap<frame, 2> frames_archive;
-
-using namespace librealsense::usb_host;
 
 struct frame {
     frame() {}
@@ -631,14 +630,13 @@ uvc_error_t update_stream_if_handle(usbhost_uvc_device *devh, int interface_idx)
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
         if (stream_if->bInterfaceNumber == interface_idx)
-            if (!stream_if->interfaceHandle.device && interface_idx < MAX_USB_INTERFACES) {
+            if (!stream_if->interface && interface_idx < MAX_USB_INTERFACES) {
                 // usbhost_GetAssociatedInterface returns the associated interface (Video stream interface which is associated to Video control interface)
                 // A value of 0 indicates the first associated interface (Video Stream 1), a value of 1 indicates the second associated interface (video stream 2)
                 // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
                 // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
                 // For this reason, when calling to usbhost_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-                stream_if->interfaceHandle.device = devh->device;
-                stream_if->interfaceHandle.interface_index = interface_idx;
+                stream_if->interface = devh->device->get_interface(interface_idx);
             }
     }
     return UVC_SUCCESS;
@@ -895,16 +893,18 @@ void usbhost_uvc_process_payload(usbhost_uvc_stream_handle_t *strmh,
         }
         else
         {
-            LOG_WARNING("WinUSB backend is dropping a frame because librealsense wasn't fast enough");
+            LOG_WARNING("usbhost backend is dropping a frame because librealsense wasn't fast enough");
         }
     }
 }
 
 void stream_thread(usbhost_uvc_stream_context *strctx) {
-    auto dev = strctx->stream->stream_if->interfaceHandle.device;
+    auto inf = strctx->stream->stream_if->interface;
+    auto dev = strctx->stream->devh->device;
+    auto messenger = dev->open();
 
-    auto pipe = dev->get_pipe(strctx->endpoint);
-    pipe->reset();
+    auto read_ep = inf->first_endpoint(librealsense::platform::USB_ENDPOINT_DIRECTION_READ);
+    messenger->reset_endpoint(read_ep);
 
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks(true);
@@ -933,7 +933,8 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     });
     LOG_DEBUG("Transfer thread started for endpoint address: " << strctx->endpoint);
     do {
-        int res = pipe->read_pipe(strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
+        auto i = strctx->stream->stream_if->interface;
+        int res = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
         if(res < 0)
         {
             auto err = errno;
@@ -948,7 +949,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     } while (strctx->stream->running);
 
     int ep = strctx->endpoint;
-    pipe->reset();
+    messenger->reset_endpoint(read_ep);
     free(strctx);
 
     queue.clear();
