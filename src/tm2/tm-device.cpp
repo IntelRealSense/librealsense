@@ -53,9 +53,9 @@ namespace librealsense
             _range(option_range{ 0, ep.get_temperature().sensor[type].threshold, 0, 0 }) { }
 
     private:
-        tm2_sensor & _ep;
-        option_range _range;
-        temperature_type _type;
+        tm2_sensor&         _ep;
+        temperature_type    _type;
+        option_range        _range;
     };
 
     class asic_temperature_option : public temperature_option
@@ -149,7 +149,7 @@ namespace librealsense
     }
 
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-        : sensor_base("Tracking Module", owner, this), _tm_dev(dev), _dispatcher(10)
+        : sensor_base("Tracking Module", owner, this), _dispatcher(10), _tm_dev(dev)
     {
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
@@ -186,7 +186,6 @@ namespace librealsense
     stream_profiles tm2_sensor::init_stream_profiles()
     {
         stream_profiles results;
-        int uid = 0;
 
         //get TM2 profiles
         Status status = _tm_dev->GetSupportedProfile(_tm_supported_profiles);
@@ -288,7 +287,7 @@ namespace librealsense
             auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
             profile->set_stream_type(RS2_STREAM_POSE);
             // TM2_API - 6dof profile type enum behaves the same as stream index
-            profile->set_stream_index(static_cast<uint32_t>(tm_profile.profileType));
+            profile->set_stream_index(static_cast<int32_t>(tm_profile.profileType));
             profile->set_format(format);
             profile->set_framerate(fps);
             profile->set_unique_id(environment::get_instance().generate_stream_id());
@@ -505,14 +504,15 @@ namespace librealsense
             LOG_ERROR("Failed to convert lrs stream " << lrs_stream << " to tm stream");
             return;
         }
-        auto time_of_arrival = get_md_or_default(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+        //auto time_of_arrival = get_md_or_default(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
 
 
-        //Pass frames to firmeware
+        //Pass frames to firmware
         if (auto vframe = As<video_frame>(fref.frame))
         {
             TrackingData::VideoFrame f = {};
             f.sensorIndex = stream_index;
+            //TODO: Librealsense frame numbers are 64 bit. This is a potentional interface gap
             f.frameId = vframe->additional_data.frame_number;
             f.profile.set(vframe->get_width(), vframe->get_height(), vframe->get_stride(), convertToTm2PixelFormat(vframe->get_stream()->get_format()));
             f.exposuretime = get_md_or_default(RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
@@ -691,7 +691,7 @@ namespace librealsense
     rs2_extrinsics tm2_sensor::get_extrinsics(const stream_profile_interface & profile, perc::SensorId & reference_sensor_id) const
     {
 
-        rs2_extrinsics result{0};
+        rs2_extrinsics result{};
         TrackingData::SensorExtrinsics tm_extrinsics{};
         int stream_index = profile.get_stream_index();
         SensorType type = SensorType::Max;
@@ -754,7 +754,7 @@ namespace librealsense
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
         auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame.arrivalTimeStamp);
         duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
-        video_frame_metadata video_md = { 0 };
+        video_frame_metadata video_md{};
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
 
@@ -978,7 +978,7 @@ namespace librealsense
         duration<double, std::milli> system_ts_ms(sys_ts_double_nanos);
         auto arr_ts_double_nanos = duration<double, std::nano>(tm_frame_ts.arrivalTimeStamp);
         duration<double, std::milli> arrival_ts_ms(arr_ts_double_nanos);
-        motion_frame_metadata motion_md = { 0 };
+        motion_frame_metadata motion_md{};
         motion_md.arrival_ts = tm_frame_ts.arrivalTimeStamp;
         motion_md.temperature = temperature;
 
@@ -1249,8 +1249,8 @@ namespace librealsense
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group) :
         device(ctx, group),
-        _dev(dev),
-        _manager(manager)
+        _manager(manager),
+        _dev(dev)
     {
         TrackingData::DeviceInfo info;
         auto status = dev->GetDeviceInfo(info);

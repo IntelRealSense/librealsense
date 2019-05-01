@@ -68,8 +68,9 @@ public:
     }
 
 private:
-    rs2_stream _align_from;
     rs2::align _align;
+    rs2_stream _align_from;
+
 };
 
 class pointcloud_record_block : public processing_recordable_block
