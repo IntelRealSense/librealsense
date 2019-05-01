@@ -7,6 +7,8 @@
 #include <map>
 #include <set>
 #include <cstring>
+#include <cmath>
+#include <limits>
 
 #include "tclap/CmdLine.h"
 
@@ -47,7 +49,7 @@ void print(const rs2_extrinsics& extrinsics)
     }
 
     ss << "\n Translation Vector: ";
-    for (auto i = 0 ; i < sizeof(extrinsics.translation)/sizeof(extrinsics.translation[0]) ; ++i)
+    for (auto i = 0u ; i < sizeof(extrinsics.translation)/sizeof(extrinsics.translation[0]) ; ++i)
         ss << setprecision(15) << extrinsics.translation[i] << "  ";
 
     cout << ss.str() << endl << endl;
@@ -58,17 +60,17 @@ void print(const rs2_motion_device_intrinsic& intrinsics)
     stringstream ss;
      ss << "Bias Variances: \t";
 
-    for (auto i = 0 ; i < sizeof(intrinsics.bias_variances)/sizeof(intrinsics.bias_variances[0]) ; ++i)
+    for (auto i = 0u ; i < sizeof(intrinsics.bias_variances)/sizeof(intrinsics.bias_variances[0]) ; ++i)
         ss << setprecision(15) << std::fixed << intrinsics.bias_variances[i] << "  ";
 
     ss << "\nNoise Variances: \t";
-    for (auto i = 0 ; i < sizeof(intrinsics.noise_variances)/sizeof(intrinsics.noise_variances[0]) ; ++i)
+    for (auto i = 0u ; i < sizeof(intrinsics.noise_variances)/sizeof(intrinsics.noise_variances[0]) ; ++i)
         ss << setprecision(15) << std::fixed << intrinsics.noise_variances[i] << "  ";
 
     ss << "\nSensitivity : " << std::endl;
-    for (auto i = 0 ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
+    for (auto i = 0u ; i < sizeof(intrinsics.data)/sizeof(intrinsics.data[0]) ; ++i)
     {
-        for (auto j = 0 ; j < sizeof(intrinsics.data[0])/sizeof(intrinsics.data[0][0]) ; ++j)
+        for (auto j = 0u ; j < sizeof(intrinsics.data[0])/sizeof(intrinsics.data[0][0]) ; ++j)
             ss << std::right << std::setw(13) << setprecision(6) << intrinsics.data[i][j] << "  ";
         ss << "\n";
     }
@@ -88,7 +90,7 @@ void print(const rs2_intrinsics& intrinsics)
            left << setw(14) << "  Distortion: " << "\t" << rs2_distortion_to_string(intrinsics.model) << endl <<
            left << setw(14) << "  Coeffs: ";
 
-    for (auto i = 0 ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
+    for (auto i = 0u ; i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]) ; ++i)
         ss << "\t" << setprecision(15) << intrinsics.coeffs[i] << "  ";
 
     cout << ss.str() << endl << endl;
@@ -147,14 +149,14 @@ struct stream_and_index{
 bool operator ==(const rs2_intrinsics& lhs,
                  const rs2_intrinsics& rhs)
 {
-    return lhs.width == rhs.width &&
-           lhs.height == rhs.height &&
-           lhs.ppx == rhs.ppx &&
-           lhs.ppy == rhs.ppy &&
-           lhs.fx == rhs.fx &&
-           lhs.fy == rhs.fy &&
-           lhs.model == rhs.model &&
-           !std::memcmp(lhs.coeffs, rhs.coeffs, sizeof(rhs.coeffs));
+    return  lhs.width == rhs.width &&
+            lhs.height == rhs.height &&
+            (fabs(lhs.ppx - rhs.ppx) < std::numeric_limits<float>::min()) &&
+            (fabs(lhs.ppy - rhs.ppy) < std::numeric_limits<float>::min()) &&
+            (fabs(lhs.fx - rhs.fx) < std::numeric_limits<float>::min()) &&
+            (fabs(lhs.fy - rhs.fy) < std::numeric_limits<float>::min()) &&
+            lhs.model == rhs.model &&
+            !std::memcmp(lhs.coeffs, rhs.coeffs, sizeof(rhs.coeffs));
 }
 
 bool operator ==(const rs2_motion_device_intrinsic& lhs,
@@ -212,7 +214,7 @@ int main(int argc, char** argv) try
             << setw(20) << "Firmware Version"
             << endl;
 
-        for (auto i = 0; i < device_count; ++i)
+        for (auto i = 0u; i < device_count; ++i)
         {
             auto dev = devices[i];
 
@@ -231,7 +233,7 @@ int main(int argc, char** argv) try
 
     log_to_console(RS2_LOG_SEVERITY_FATAL);
 
-    for (auto i = 0; i < device_count; ++i)
+    for (auto i = 0u; i < device_count; ++i)
     {
         auto dev = devices[i];
 
