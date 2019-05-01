@@ -131,7 +131,6 @@ namespace librealsense
         std::vector<uint8_t> command(data, data + sizeof(data));
         auto res = send_receive_raw_data(command);
         auto ptr = reinterpret_cast<uint32_t*>(res.data());
-        LOG_INFO("ptr : " << ptr[0] << ", " << ptr[1]);
         auto ts = ptr[1] * TIMESTAMP_USEC_TO_MSEC;
         return ts;
     }
