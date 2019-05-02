@@ -109,6 +109,7 @@ namespace librealsense
                 if (g.second.size() < 2)
                 {
                     LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+                    continue;
                 }
 
                 auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
