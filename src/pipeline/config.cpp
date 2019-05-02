@@ -199,7 +199,7 @@ namespace librealsense
                 }
             }
 
-            return ctx->add_device(file);
+            return ctx->add_device(file)->create_device(false);
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)

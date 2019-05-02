@@ -516,7 +516,7 @@ namespace librealsense
         return results;
     }
 
-    std::shared_ptr<device_interface> context::add_device(const std::string& file)
+    std::shared_ptr<playback_device_info> context::add_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
         if (it != _playback_devices.end() && it->second.lock())
@@ -529,7 +529,7 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
-        return std::move(playback_dev);
+        return std::move(dinfo);
     }
 
     void context::add_software_device(std::shared_ptr<device_info> dev)

@@ -200,12 +200,13 @@ int main(int argc, char** argv) try
     bool show_options           = show_options_arg.getValue();
     bool show_calibration_data  = show_calibration_data_arg.getValue();
     bool show_modes             = !compact_view;
-    auto playback_dev_file = show_playback_device_arg.getValue();
+    auto playback_dev_file      = show_playback_device_arg.getValue();
 
     // Obtain a list of devices currently present on the system
     context ctx;
+    rs2::device d;
     if (!playback_dev_file.empty())
-        ctx.load_device(playback_dev_file.data());
+        d = ctx.load_device(playback_dev_file.data());
 
     auto devices = ctx.query_devices();
     size_t device_count = devices.size();
