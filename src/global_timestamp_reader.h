@@ -7,28 +7,46 @@
 
 namespace librealsense
 {
-    class stdev
+    class CSample
     {
     public:
-        stdev(unsigned int buffer_size, double default_std);
-        void add_value(double val);
-        double get_std();
+        CSample(double x, double y) :
+            _x(x), _y(y) {};
+        CSample& operator-=(const CSample& other);
+        CSample& operator+=(const CSample& other);
+
+    public:
+        double _x;
+        double _y;
+    };
+
+    class CLinearCoefficients
+    {
+    public:
+        CLinearCoefficients(unsigned int buffer_size);
+        void reset();
+        void add_value(CSample val);
+        double calc_value(double x) const;
+
+    private:
+        void calc_linear_coefs();
 
     private:
         unsigned int _buffer_size;
-        std::deque<double> _last_values;
-        double  _sum;
-        double _sumsq;
-        double _default_std;
+        std::deque<CSample> _last_values;
+        double _b, _a;    //Linear regression coeffitions.
+        CSample _base_sample;
+        mutable std::recursive_mutex _add_mtx;
+        mutable std::recursive_mutex _stat_mtx;
     };
 
     class time_diff_keeper
     {
     public:
-        explicit time_diff_keeper(device* dev, const std::string& name);
+        explicit time_diff_keeper(device* dev, const unsigned int sampling_interval_ms);
         void start();   // must be called AFTER ALL initializations of _hw_monitor.
         ~time_diff_keeper();
-        double get_system_hw_time_diff(double crnt_hw_time);
+        double get_system_hw_time(double crnt_hw_time);
 
     private:
         bool update_diff_time();
@@ -36,14 +54,12 @@ namespace librealsense
 
     private:
         device* _device;
-        std::string _name;
-        double _system_hw_time_diff;
         double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
         active_object<> _active_object;
         mutable std::recursive_mutex _mtx;
-        bool   _skipTimestampCorrection;
-        stdev _stdev;
+        mutable std::recursive_mutex _read_mtx;
+        CLinearCoefficients _coefs;
     };
 
     class global_timestamp_reader : public frame_timestamp_reader

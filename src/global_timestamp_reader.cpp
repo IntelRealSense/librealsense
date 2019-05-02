@@ -3,47 +3,107 @@
 
 namespace librealsense
 {
-    stdev::stdev(unsigned int buffer_size, double default_std):
-        _buffer_size(buffer_size),
-        _default_std(default_std)
-    {}
-
-    void stdev::add_value(double val)
+    CLinearCoefficients::CLinearCoefficients(unsigned int buffer_size) :
+        _base_sample(0, 0),
+        _buffer_size(buffer_size)
     {
+        LOG_DEBUG("CLinearCoefficients started");
+    }
+
+    void CLinearCoefficients::reset()
+    {
+        _last_values.clear();
+        LOG_DEBUG("CLinearCoefficients::reset");
+    }
+
+    CSample& CSample::operator-=(const CSample& other)
+    {
+        _x -= other._x;
+        _y -= other._y;
+        return *this;
+    }
+
+    CSample& CSample::operator+=(const CSample& other)
+    {
+        _x += other._x;
+        _y += other._y;
+        return *this;
+    }
+
+    void CLinearCoefficients::add_value(CSample val)
+    {
+        LOG_DEBUG("CLinearCoefficients::add_value - in");
+        std::lock_guard<std::recursive_mutex> lock(_add_mtx);   // Redandent as only being read from update_diff_time() and there is a lock there.
+        LOG_DEBUG("CLinearCoefficients::add_value - lock");
         while (_last_values.size() > _buffer_size)
         {
-            double old_val = _last_values.back();
-            _sum -= old_val;
-            _sumsq -= (old_val * old_val);
             _last_values.pop_back();
         }
-        _sum += val;
-        _sumsq += (val * val);
         _last_values.push_front(val);
+        calc_linear_coefs();
+        LOG_DEBUG("CLinearCoefficients::add_value - unlock");
     }
 
-    double stdev::get_std()
+    void CLinearCoefficients::calc_linear_coefs()
     {
-        size_t n(_last_values.size());
-        if (n < _buffer_size) return _default_std;
-        return  (_sumsq - (_sum * _sum) / n) / (n - 1);
+        // Calculate linear coefficients, based on calculus described in: https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/regression-analysis/find-a-linear-regression-equation/
+        // Calculate Std 
+        LOG_DEBUG("CLinearCoefficients::calc_linear_coefs - in");
+        double sum_x(0);
+        double sum_y(0);
+        double sum_xy(0);
+        double sum_x2(0);
+        double n(static_cast<double>(_last_values.size()));
+        CSample base_sample = _last_values.back();
+        double b(1);
+        double a(0);
+        if (n > 1)
+        {
+            for (auto sample = _last_values.begin(); sample != _last_values.end(); sample++)
+            {
+                CSample crnt_sample(*sample);
+                crnt_sample -= base_sample;
+                LOG_DEBUG("crnt_sample: " << std::fixed << crnt_sample._x << ", " << crnt_sample._y);
+                sum_x += crnt_sample._x;
+                sum_y += crnt_sample._y;
+                sum_xy += (crnt_sample._x * crnt_sample._y);
+                sum_x2 += (crnt_sample._x * crnt_sample._x);
+            }
+            b = (sum_y*sum_x2 - sum_x * sum_xy) / (n*sum_x2 - sum_x * sum_x);
+            a = (n*sum_xy - sum_x * sum_y) / (n*sum_x2 - sum_x * sum_x);
+        }
+        std::lock_guard<std::recursive_mutex> lock(_stat_mtx);
+        LOG_DEBUG("CLinearCoefficients::calc_linear_coefs - lock");
+        _base_sample = base_sample;
+        _a = a;
+        _b = b;
+        LOG_DEBUG("_base_sample:" << std::fixed << _base_sample._x << ", " << _base_sample._y);
+        LOG_DEBUG("_a, _b:" << std::fixed << _a << ", " << _b);
+        LOG_DEBUG("CLinearCoefficients::calc_linear_coefs - unlock");
     }
 
+    double CLinearCoefficients::calc_value(double x) const
+    {
+        LOG_DEBUG("CLinearCoefficients::calc_value - in");
+        std::lock_guard<std::recursive_mutex> lock(_stat_mtx);
+        LOG_DEBUG("CLinearCoefficients::calc_value - lock");
+        double y(_a * (x - _base_sample._x) + _b + _base_sample._y);
+        LOG_DEBUG("x -> y :" << std::fixed << x << ", " << y);
+        LOG_DEBUG("CLinearCoefficients::calc_value - unlock");
+        return y;
+    }
 
-    time_diff_keeper::time_diff_keeper(device* dev, const std::string& name) :
+    time_diff_keeper::time_diff_keeper(device* dev, const unsigned int sampling_interval_ms) :
         _device(dev),
-        _name(name),
-        _poll_intervals_ms(100),
-        _system_hw_time_diff(-1e+200),
+        _poll_intervals_ms(sampling_interval_ms),
         _last_sample_hw_time(1e+200),
-        _skipTimestampCorrection(false),
-        _stdev(15, 5.8),
+        _coefs(15),
         _active_object([this](dispatcher::cancellable_timer cancellable_timer)
             {
                 polling(cancellable_timer);
             })
     {
-        LOG_DEBUG("start new time_diff_keeper " << _name);
+        LOG_DEBUG("start new time_diff_keeper ");
     }
 
     void time_diff_keeper::start()
@@ -58,51 +118,37 @@ namespace librealsense
 
     bool time_diff_keeper::update_diff_time()
     {
+        using namespace std::chrono;
         const static double diffThresh = 500;
         try
         {
-            _last_sample_hw_time = _device->get_device_time();
-            double system_time = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-
-            double diff = system_time - _last_sample_hw_time;
-            if (fabs(diff - _system_hw_time_diff) > diffThresh)
+            LOG_DEBUG("time_diff_keeper::update_diff_time - in");
+            std::lock_guard<std::recursive_mutex> lock(_mtx);
+            LOG_DEBUG("time_diff_keeper::update_diff_time - lock");
+            double system_time = static_cast<double>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
+            double sample_hw_time = _device->get_device_time();
+            if (sample_hw_time < _last_sample_hw_time)
             {
-                //Giant time leap: It happens on initialize 
-                _system_hw_time_diff = diff;
-
-                //In case of using system time. Time correction is useless.
-                if (fabs(diff)<500) {
-                    LOG_DEBUG("Timecorrection is not needed use raw timestamp" << " " << _name);
-                    _skipTimestampCorrection = true;
-                }
+                // A time loop happend:
+                _coefs.reset();
             }
-            else
-            {
-                _stdev.add_value(diff - _system_hw_time_diff);
-                double iirWeight = 0.05;
-                // Transfer lag distribution is asynmmetry. Sometimes big latancy are happens. To reduce the affect. 
-                if (diff > _system_hw_time_diff) 
-                {
-                    iirWeight *= 0.1;
-                    //std::cout << "get_std() = " << std::fixed << _stdev.get_std() << std::endl;
-                    if (diff - _system_hw_time_diff > _stdev.get_std())
-                        iirWeight = 0;
-                }
-                _system_hw_time_diff = (1.0 - iirWeight) * _system_hw_time_diff + iirWeight * diff;
-            }
+            _last_sample_hw_time = sample_hw_time;
+            CSample crnt_sample(_last_sample_hw_time, system_time);
+            _coefs.add_value(crnt_sample);
+            LOG_DEBUG("time_diff_keeper::update_diff_time - unlock");
             return true;
         }
         catch (const wrong_api_call_sequence_exception& ex)
         {
-            LOG_DEBUG("Error during time_diff_keeper polling: " << ex.what() << " " << _name);
+            LOG_DEBUG("Temporary skip during time_diff_keeper polling: " << ex.what());
         }
         catch (const std::exception& ex)
         {
-            LOG_ERROR("Error during time_diff_keeper polling: " << ex.what() << " " << _name);
+            LOG_ERROR("Error during time_diff_keeper polling: " << ex.what());
         }
         catch (...)
         {
-            LOG_ERROR("Unknown error during time_diff_keeper polling!" << " " << _name);
+            LOG_ERROR("Unknown error during time_diff_keeper polling!");
         }
         return false;
     }
@@ -111,24 +157,28 @@ namespace librealsense
     {
         if (cancellable_timer.try_sleep(_poll_intervals_ms))
         {
-            if (_skipTimestampCorrection)
-                return;
             update_diff_time();
         }
         else
         {
-            LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down" << " " << _name);
+            LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down");
         }
     }
 
-    double time_diff_keeper::get_system_hw_time_diff(double crnt_hw_time)
+    double time_diff_keeper::get_system_hw_time(double crnt_hw_time)
     {
         static const double possible_loop_time(3000);
-        if ((_last_sample_hw_time - crnt_hw_time) > possible_loop_time)
         {
-            update_diff_time();
+            LOG_DEBUG("time_diff_keeper::get_system_hw_time - in");
+            std::lock_guard<std::recursive_mutex> lock(_read_mtx);
+            LOG_DEBUG("time_diff_keeper::get_system_hw_time - lock");
+            if ((_last_sample_hw_time - crnt_hw_time) > possible_loop_time)
+            {
+                update_diff_time();
+            }
+            LOG_DEBUG("time_diff_keeper::get_system_hw_time - unlock");
         }
-        return _system_hw_time_diff;
+        return _coefs.calc_value(crnt_hw_time);
     }
 
     global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, std::shared_ptr<time_diff_keeper> timediff) :
@@ -142,17 +192,13 @@ namespace librealsense
     {
         double frame_time = _device_timestamp_reader->get_frame_timestamp(mode, fo);
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
-        double system_hw_time_diff(0);
+        if (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
         {
             auto sp = _time_diff_keeper.lock();
             if (sp)
-                system_hw_time_diff = sp->get_system_hw_time_diff(frame_time);
+                frame_time = sp->get_system_hw_time(frame_time);
             else
                 LOG_DEBUG("Notification: global_timestamp_reader - time_diff_keeper is being shut-down");
-        }
-        if (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
-        {
-            frame_time += system_hw_time_diff;
         }
         return frame_time;
     }
@@ -166,7 +212,7 @@ namespace librealsense
     rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const request_mapping& mode, const platform::frame_object& fo) const
     {
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
-        return (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_HARDWARE_SYSTEM_TIME : ts_domain;
+        return (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;
     }
 
     void global_timestamp_reader::reset()
