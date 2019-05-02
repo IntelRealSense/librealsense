@@ -941,9 +941,7 @@ namespace librealsense
     void tm2_sensor::onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt)
     {
         std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << evt.sessionId <<  ", timestamp: " << double(evt.timestamp*0.000000001) << " sec";
-        // TODO: Modify the firmware to correctly raise notifications
-        // As a temporary work-around, block notifications at the software level
-        //raise_hardware_event(msg, {}, evt.timestamp);
+        raise_hardware_event(msg, {}, evt.timestamp);
     }
 
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
