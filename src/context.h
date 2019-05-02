@@ -125,7 +125,7 @@ namespace librealsense
         void set_devices_changed_callback(devices_changed_callback_ptr callback);
 
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
-            const std::map<std::string, std::shared_ptr<device_info>>& playback_devices, int mask) const;
+            const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
 
         std::shared_ptr<device_interface> add_device(const std::string& file);
         void remove_device(const std::string& file);
@@ -139,8 +139,8 @@ namespace librealsense
     private:
         void on_device_changed(platform::backend_device_group old,
                                platform::backend_device_group curr,
-                               const std::map<std::string, std::shared_ptr<device_info>>& old_playback_devices,
-                               const std::map<std::string, std::shared_ptr<device_info>>& new_playback_devices);
+                               const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
+                               const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         int find_stream_profile(const stream_interface& p);
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
@@ -150,7 +150,7 @@ namespace librealsense
         std::shared_ptr<tm2_context> _tm2_context;
 #endif
         std::shared_ptr<platform::device_watcher> _device_watcher;
-        std::map<std::string, std::shared_ptr<device_info>> _playback_devices;
+        std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 
         devices_changed_callback_ptr _devices_changed_callback;
