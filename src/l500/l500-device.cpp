@@ -24,7 +24,7 @@ namespace librealsense
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
         _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
-        _tf_keeper(std::make_shared<time_diff_keeper>(this, "l500_device"))
+        _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -121,17 +121,19 @@ namespace librealsense
 
     double l500_device::get_device_time()
     {
-
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
-        uint8_t data[]{
-            0x14, 00, 0xab, 0xcd, 01, 00, 00, 00, 0x1c, 0x02, 0x03, 0x90, 0x20, 0x02, 0x03, 0x90, 00, 00, 00, 00, 00, 00, 00, 00
-        };
-        std::vector<uint8_t> command(data, data + sizeof(data));
-        auto res = send_receive_raw_data(command);
-        auto ptr = reinterpret_cast<uint32_t*>(res.data());
-        auto ts = ptr[1] * TIMESTAMP_USEC_TO_MSEC;
+        command cmd(ivcam2::fw_cmd::MRD, ivcam2::REGISTER_CLOCK_0, ivcam2::REGISTER_CLOCK_0 + 4);
+        auto res = _hw_monitor->send(cmd);
+
+        if (res.size() < sizeof(uint32_t))
+        {
+            LOG_DEBUG("size(res):" << res.size());
+            throw std::runtime_error("Not enough bytes returned from the firmware!");
+        }
+        uint32_t dt = *(uint32_t*)res.data();
+        double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
     }
 

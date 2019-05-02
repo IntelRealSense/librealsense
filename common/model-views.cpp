@@ -2911,9 +2911,9 @@ namespace rs2
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
                 }
-				else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_SYSTEM_TIME)
+				else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
 				{
-					ImGui::SetTooltip("Timestamp: SystemTime(Hardware clock)");
+					ImGui::SetTooltip("Timestamp: Global Time");
 				}
                 else
                 {

@@ -403,7 +403,7 @@ namespace librealsense
         {
             CASE(HARDWARE_CLOCK)
             CASE(SYSTEM_TIME)
-            CASE(HARDWARE_SYSTEM_TIME)
+            CASE(GLOBAL_TIME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

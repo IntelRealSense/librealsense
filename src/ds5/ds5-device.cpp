@@ -344,7 +344,7 @@ namespace librealsense
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _tf_keeper(std::make_shared<time_diff_keeper>(this, "ds5_device"))
+          _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -649,18 +649,22 @@ namespace librealsense
         return platform::usb_undefined;
     }
 
+
     double ds5_device::get_device_time()
     {
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
-        uint8_t data[]{
-            0x14, 00, 0xab, 0xcd, 01, 00, 00, 00, 0x3c, 0x61, 01, 00, 0x40, 0x61, 01, 00, 00, 00, 00, 00, 00, 00, 00, 00
-        };
-        std::vector<uint8_t> command(data, data + sizeof(data));
-        auto res = send_receive_raw_data(command);
-        auto ptr = reinterpret_cast<uint32_t*>(res.data());
-        auto ts = ptr[1] * 0.001;
+        command cmd(ds::MRD, ds::REGISTER_CLOCK_0, ds::REGISTER_CLOCK_0 + 4);
+        auto res = _hw_monitor->send(cmd);
+
+        if (res.size() < sizeof(uint32_t))
+        {
+            LOG_DEBUG("size(res):" << res.size());
+            throw std::runtime_error("Not enough bytes returned from the firmware!");
+        }
+        uint32_t dt = *(uint32_t*)res.data();
+        double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
     }
 

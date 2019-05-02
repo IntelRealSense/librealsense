@@ -242,13 +242,14 @@ namespace librealsense
 
     float zo_point_option_x::query() const
     {
-        return _zo_point->first;
+        return static_cast<float>(_zo_point->first);
     }
 
     float zo_point_option_y::query() const
     {
-        return _zo_point->second;
+        return static_cast<float>(_zo_point->second);
     }
+
     processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
     {
         processing_blocks res;
