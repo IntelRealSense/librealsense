@@ -258,41 +258,11 @@ namespace librealsense
         // D435i to use predefined values extrinsics
         _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
-            try
-            {
-                pose ex{};
-                auto extr = _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
-                ex = { { extr.rotation[0], extr.rotation[1], extr.rotation[2],
-                         extr.rotation[3], extr.rotation[4], extr.rotation[5],
-                         extr.rotation[6], extr.rotation[7], extr.rotation[8]},
-                       { extr.translation[0], extr.translation[1], extr.translation[2]} };
-                return from_pose(ex);
-            }
-            catch (const std::exception &exc)
-            {
-                LOG_INFO("IMU EEPROM extrinsic is not available" << exc.what());
-                throw;
-            }
-        });
-
-        _depth_to_imu_aligned = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            try
-            {
-                rs2_extrinsics extr = **_depth_to_imu;
-                float rot[9] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
-                librealsense::copy(&extr.rotation, &rot, arr_size_bytes(rot));
-                return extr;
-            }
-            catch (const std::exception &exc)
-            {
-                LOG_INFO("IMU EEPROM Aligned extrinsic is not available" << exc.what());
-                throw;
-            }
+            return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
         });
 
         // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu_aligned);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
@@ -306,11 +276,9 @@ namespace librealsense
             std::function<void(rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)> align_imu_axes  = nullptr;
 
             // Perform basic IMU transformation to align orientation with Depth sensor CS.
-            float3x3 rotation{ {1,0,0}, {0,1,0}, {0,0,1} };
             try
             {
-                librealsense::copy(&rotation, &(*_depth_to_imu)->rotation, sizeof(float3x3));
-                align_imu_axes = [rotation](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
+                align_imu_axes = [](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
                 {
                     if (fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
                     {
@@ -318,7 +286,8 @@ namespace librealsense
 
                         // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
                         //Reference spec : Bosch BMI055
-                        *xyz = rotation * (*xyz);
+                        float3x3 rotation_depth_from_imu { {-1,0,0}, {0,1,0}, {0,0,-1} };
+                        *xyz = rotation_depth_from_imu * (*xyz);
                     }
                 };
             }

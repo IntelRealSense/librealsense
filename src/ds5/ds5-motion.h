@@ -95,17 +95,9 @@ namespace librealsense
             }
             else
             {
-                LOG_INFO("IMU Extrinsic table error, switch to default calibration");
+                LOG_INFO("IMU extrinsic table not found; using CAD values");
                 // D435i specific - BMI055 assembly transformation based on mechanical drawing (mm)
-                //    ([[ -1.  ,   0.  ,   0.  ,   5.52],
-                //      [  0.  ,   1.  ,   0.  ,   5.1 ],
-                //      [  0.  ,   0.  ,  -1.  , -11.74],
-                //      [  0.  ,   0.  ,   0.  ,   1.  ]])
-                // The orientation matrix will be integrated into the IMU stream data
-                extr = { {-1.f,     0.f,    0.f,
-                           0.f,     1.f,    0.f,
-                           0.f,     0.f,   -1.f},
-                    { 0.00552f, -0.0051f, -0.01174f} };
+                extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
             }
             return extr;
         };
@@ -185,7 +177,6 @@ namespace librealsense
         lazy<ds::imu_intrinsic>                 _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
-        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu_aligned;          // Translation component
 
 #ifdef _WIN32
         // Bandwidth parameters from BOSCH BMI 055 spec'
