@@ -55,15 +55,14 @@ namespace librealsense
         double sum_x2(0);
         double n(static_cast<double>(_last_values.size()));
         CSample base_sample = _last_values.back();
-        double b(1);
-        double a(0);
+        double a(1);
+        double b(0);
         if (n > 1)
         {
             for (auto sample = _last_values.begin(); sample != _last_values.end(); sample++)
             {
                 CSample crnt_sample(*sample);
                 crnt_sample -= base_sample;
-                LOG_DEBUG("crnt_sample: " << std::fixed << crnt_sample._x << ", " << crnt_sample._y);
                 sum_x += crnt_sample._x;
                 sum_y += crnt_sample._y;
                 sum_xy += (crnt_sample._x * crnt_sample._y);
@@ -77,8 +76,6 @@ namespace librealsense
         _base_sample = base_sample;
         _a = a;
         _b = b;
-        LOG_DEBUG("_base_sample:" << std::fixed << _base_sample._x << ", " << _base_sample._y);
-        LOG_DEBUG("_a, _b:" << std::fixed << _a << ", " << _b);
         LOG_DEBUG("CLinearCoefficients::calc_linear_coefs - unlock");
     }
 
@@ -88,7 +85,6 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_stat_mtx);
         LOG_DEBUG("CLinearCoefficients::calc_value - lock");
         double y(_a * (x - _base_sample._x) + _b + _base_sample._y);
-        LOG_DEBUG("x -> y :" << std::fixed << x << ", " << y);
         LOG_DEBUG("CLinearCoefficients::calc_value - unlock");
         return y;
     }
@@ -125,11 +121,12 @@ namespace librealsense
             LOG_DEBUG("time_diff_keeper::update_diff_time - in");
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             LOG_DEBUG("time_diff_keeper::update_diff_time - lock");
-            double system_time = static_cast<double>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
+            double system_time = static_cast<double>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count()) * TIMESTAMP_USEC_TO_MSEC * TIMESTAMP_USEC_TO_MSEC;
             double sample_hw_time = _device->get_device_time();
             if (sample_hw_time < _last_sample_hw_time)
             {
                 // A time loop happend:
+                LOG_DEBUG("time_diff_keeper::call reset()");
                 _coefs.reset();
             }
             _last_sample_hw_time = sample_hw_time;
