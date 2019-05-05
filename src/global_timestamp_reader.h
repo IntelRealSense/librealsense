@@ -27,6 +27,7 @@ namespace librealsense
         void reset();
         void add_value(CSample val);
         double calc_value(double x) const;
+        bool is_full() const;
 
     private:
         void calc_linear_coefs();

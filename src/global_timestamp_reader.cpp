@@ -30,6 +30,11 @@ namespace librealsense
         return *this;
     }
 
+    bool CLinearCoefficients::is_full() const 
+    {
+        return _last_values.size() >= _buffer_size;
+    };
+
     void CLinearCoefficients::add_value(CSample val)
     {
         LOG_DEBUG("CLinearCoefficients::add_value - in");
@@ -152,7 +157,8 @@ namespace librealsense
 
     void time_diff_keeper::polling(dispatcher::cancellable_timer cancellable_timer)
     {
-        if (cancellable_timer.try_sleep(_poll_intervals_ms))
+        unsigned int time_to_sleep = _poll_intervals_ms + _coefs.is_full() * (9 * _poll_intervals_ms);
+        if (cancellable_timer.try_sleep(time_to_sleep))
         {
             update_diff_time();
         }
