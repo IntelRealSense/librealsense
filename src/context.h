@@ -127,7 +127,7 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> create_devices(platform::backend_device_group devices,
             const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, int mask) const;
 
-        std::shared_ptr<device_interface> add_device(const std::string& file);
+        std::shared_ptr<playback_device_info> add_device(const std::string& file);
         void remove_device(const std::string& file);
 
         void add_software_device(std::shared_ptr<device_info> software_device);

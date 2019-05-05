@@ -5,6 +5,11 @@ project(RealsenseMatlabWrappers)
 
 find_package(Matlab COMPONENTS MX_LIBRARY MAT_LIBRARY REQUIRED)
 set(DEPENDENCIES realsense2 ${Matlab_MAT_LIBRARY})
+# Workaround for https://github.com/IntelRealSense/librealsense/pull/3611/files CMAKE_DEBUG_SUFFIX
+# With MSVC2017 the realsense2 dependency without the suffix is still added to the debug build
+# via the /DEFAULTLIB:realsense2.lib entry
+# A similar report exist dated in 2011 https://cmake.org/pipermail/cmake/2011-April/043808.html
+SET( CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} " /NODEFAULTLIB:realsense2" )
 
 set(MATLAB_CPP librealsense_mex.cpp Factory.cpp)
 set(MATLAB_H Factory.h MatlabParamParser.h rs2_type_traits.h types.h)

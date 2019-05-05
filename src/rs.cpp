@@ -1182,7 +1182,8 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(file);
 
-    return new rs2_device{ ctx->ctx, nullptr, ctx->ctx->add_device(file) };
+    auto dev_info = ctx->ctx->add_device(file);
+    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device(false) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 

@@ -116,7 +116,7 @@ namespace librealsense
         profile->set_intrinsics([=]() {return motion_stream.intrinsics; });
         _profiles.push_back(profile);
 
-        return profile;
+        return std::move(profile);
     }
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
@@ -141,7 +141,7 @@ namespace librealsense
         profile->set_unique_id(pose_stream.uid);
         _profiles.push_back(profile);
 
-        return profile;
+        return std::move(profile);
     }
 
     bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
