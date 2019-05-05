@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 #include "global_timestamp_reader.h"
 #include <chrono>
 
@@ -33,7 +35,7 @@ namespace librealsense
     bool CLinearCoefficients::is_full() const 
     {
         return _last_values.size() >= _buffer_size;
-    };
+    }
 
     void CLinearCoefficients::add_value(CSample val)
     {
