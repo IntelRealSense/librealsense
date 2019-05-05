@@ -29,7 +29,7 @@ namespace rs2
         * \param[in] option     option id to be checked
         * \return human-readable option description
         */
-        virtual const char* get_option_description(rs2_option option) const
+        const char* get_option_description(rs2_option option) const
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_option_description(_options, option, &e);
@@ -42,7 +42,7 @@ namespace rs2
         * \param[in] option     option id to be checked
         * \return human-readable option name
         */
-        virtual const char* get_option_name(rs2_option option) const
+        const char* get_option_name(rs2_option option) const
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_option_name(_options, option, &e);
@@ -56,7 +56,7 @@ namespace rs2
         * \param[in] val      value of the option
         * \return human-readable description of a specific value of an option or null if no special meaning
         */
-        virtual const char* get_option_value_description(rs2_option option, float val) const
+        const char* get_option_value_description(rs2_option option, float val) const
         {
             rs2_error* e = nullptr;
             auto res = rs2_get_option_value_description(_options, option, val, &e);
@@ -116,7 +116,7 @@ namespace rs2
             return res > 0;
         }
 
-        virtual std::vector<rs2_option> get_supported_options()
+        std::vector<rs2_option> get_supported_options()
         {
             std::vector<rs2_option> res;
             rs2_error* e = nullptr;
@@ -152,7 +152,6 @@ namespace rs2
             _options = (rs2_options*)(dev.get());
             return *this;
         }
-
 
     private:
         rs2_options* _options;

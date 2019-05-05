@@ -131,7 +131,11 @@ namespace librealsense
     }
 
     colorizer::colorizer()
-        : stream_filter_processing_block("Depth Visualization"),
+        : colorizer("Depth Visualization")
+    {}
+
+    colorizer::colorizer(const char* name)
+        : stream_filter_processing_block(name),
          _min(0.f), _max(6.f), _equalize(true), 
          _target_stream_profile(), _histogram()
     {

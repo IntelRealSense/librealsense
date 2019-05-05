@@ -78,6 +78,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
+        "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-archive.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"
