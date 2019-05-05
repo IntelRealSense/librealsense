@@ -41,17 +41,6 @@ namespace librealsense
         return res;
     }
 
-
-    std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
-    }
-
     recoverable_exception::recoverable_exception(const std::string& msg,
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)

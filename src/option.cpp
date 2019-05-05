@@ -191,3 +191,12 @@ const char * librealsense::polling_errors_disable::get_value_description(float v
         return "Enable error polling";
     }
 }
+
+std::vector<rs2_option> librealsense::options_container::get_supported_options() const
+{
+    std::vector<rs2_option> options;
+    for (auto option : _options)
+        options.push_back(option.first);
+
+    return options;
+}

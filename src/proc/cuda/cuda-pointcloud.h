@@ -13,9 +13,8 @@ namespace librealsense
     private:
         const float3 * depth_to_points(
             rs2::points output,
-            uint8_t* image, 
-            const rs2_intrinsics &depth_intrinsics, 
-            const uint16_t * depth_image, 
+            const rs2_intrinsics &depth_intrinsics,
+            const rs2::depth_frame& depth_frame,
             float depth_scale) override;
     };
 }

@@ -46,7 +46,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_OPTIONS, librealsense::options_interface);
 
-    class options_container : public virtual options_interface, public extension_snapshot
+    class LRS_EXTENSION_API options_container : public virtual options_interface, public extension_snapshot
     {
     public:
         bool supports_option(rs2_option id) const override
@@ -103,14 +103,8 @@ namespace librealsense
                 _options[opt.first] = opt.second;
             }
         }
-        std::vector<rs2_option> get_supported_options() const override
-        {
-            std::vector<rs2_option> options;
-            for (auto option : _options)
-                options.push_back(option.first);
 
-            return options;
-        }
+        std::vector<rs2_option> get_supported_options() const override;
 
         virtual const char* get_option_name(rs2_option option) const override
         {

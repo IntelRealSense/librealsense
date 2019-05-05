@@ -30,8 +30,6 @@ endif()
             ./depth-quality-model.h
             ./depth-quality-model.cpp
             ./depth-metrics.h
-            ${LZ4_DIR}/lz4.h
-            ${LZ4_DIR}/lz4.c
             ../../common/rendering.h
             ../../common/ux-window.h
             ../../common/ux-window.cpp
@@ -52,8 +50,6 @@ endif()
             ../../common/os.h
             ../../common/os.cpp
         )
-
-     include_directories(${LZ4_DIR})
 
     if(WIN32)
         add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
@@ -101,7 +97,8 @@ endif()
 
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
-                                           Threads::Threads)
+                                           Threads::Threads
+                                           realsense2-gl)
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )
