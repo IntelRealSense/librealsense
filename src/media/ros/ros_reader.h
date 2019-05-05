@@ -54,7 +54,7 @@ namespace librealsense
             bool ret{ false };
             try
             {
-                bool ret = convert(key, val);
+                ret = convert(key, val);
             }
             catch (const std::exception& e)
             {
