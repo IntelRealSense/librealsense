@@ -120,23 +120,30 @@ namespace librealsense
             auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
 
             auto num_of_res = intrinsic->resolution.num_of_resolutions;
+            pinhole_camera_model cam_model;
 
             for (auto i = 0; i < num_of_res; i++)
             {
-                auto model = intrinsic->resolution.intrinsic_resolution[i].world.pinhole_cam_model;
-                if (model.height == profile.height && model.width == profile.width)
-                {
-                    rs2_intrinsics intrinsics;
-                    intrinsics.width = model.width;
-                    intrinsics.height = model.height;
-                    intrinsics.fx = model.ipm.focal_length.x;
-                    intrinsics.fy = model.ipm.focal_length.y;
-                    intrinsics.ppx = model.ipm.principal_point.x;
-                    intrinsics.ppy = model.ipm.principal_point.y;
-                    return intrinsics;
-                }
+                auto model_world = intrinsic->resolution.intrinsic_resolution[i].world.pinhole_cam_model;
+                auto model_raw = intrinsic->resolution.intrinsic_resolution[i].raw.pinhole_cam_model;
+
+                if (model_world.height == profile.height && model_world.width == profile.width)
+                    cam_model = model_world;
+                else if (model_raw.height == profile.height && model_raw.width == profile.width)
+                    cam_model = model_raw;
+                else
+                    throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
+
+                rs2_intrinsics intrinsics;
+                intrinsics.width = cam_model.width;
+                intrinsics.height = cam_model.height;
+                intrinsics.fx = cam_model.ipm.focal_length.x;
+                intrinsics.fy = cam_model.ipm.focal_length.y;
+                intrinsics.ppx = cam_model.ipm.principal_point.x;
+                intrinsics.ppy = cam_model.ipm.principal_point.y;
+                return intrinsics;
             }
-            throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
+
         }
 
         stream_profiles init_stream_profiles() override

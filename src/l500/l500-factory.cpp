@@ -109,6 +109,9 @@ namespace librealsense
                 if (g.second.size() < 2)
                 {
                     LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+#if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
+                    continue;
+#endif // Not supported by android & macos
                 }
 
                 auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
