@@ -105,7 +105,7 @@ namespace librealsense
                 for (uint32_t i = 0; i < RS2_LOG_SEVERITY_COUNT; i++)
                 {
                     auto current = (rs2_log_severity)i;
-                    std::string name = rs2_log_severity_to_string(current);
+                    std::string name = librealsense::get_string(current);
                     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
                     if (content_str == name)
                     {
