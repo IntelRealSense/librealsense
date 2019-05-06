@@ -15,6 +15,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <pybind11/functional.h>
 
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
+#include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
@@ -421,3 +422,11 @@ PYBIND11_MODULE(NAME, m) {
 
 // Workaroud for failure to export template <typename T> class recordable
 void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
+void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
+void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
+void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}
+void librealsense::info_container::enable_recording(std::function<void(const info_interface&)> record_action){}
+void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
+bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
+const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
+std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }
