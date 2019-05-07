@@ -101,12 +101,12 @@ namespace librealsense {
         colorizer();
 
         static void update_histogram(int* hist, const uint16_t* depth_data, int w, int h);
-		static void update_disparity_histogram(int* hist, const float* depth_data, int w, int h);
+        static void update_disparity_histogram(int* hist, const float* depth_data, int w, int h);
         static const int MAX_DEPTH = 0x10000;
-		static const int MAX_DISPARITY = 14000; // need to be checked actual setting
+        static const int MAX_DISPARITY = 14000; // need to be checked actual setting
 
     protected:
-		bool should_process(const rs2::frame& frame) override;
+        bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         float _min, _max;
@@ -122,12 +122,12 @@ namespace librealsense {
         rs2::stream_profile _target_stream_profile;
         rs2::stream_profile _source_stream_profile;
 
-	// for handling disparity values
-	private:
-		bool                    _stereoscopic_depth;
-		float                   _focal_lenght_mm;
-		float                   _stereo_baseline_meter; // in meters
-		float                   _depth_units;
-		float                   _d2d_convert_factor;
+    // for handling disparity values
+    private:
+        bool                    _stereoscopic_depth;
+        float                   _focal_lenght_mm;
+        float                   _stereo_baseline_meter; // in meters
+        float                   _depth_units;
+        float                   _d2d_convert_factor;
     };
 }
