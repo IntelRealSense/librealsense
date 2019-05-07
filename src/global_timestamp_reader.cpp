@@ -122,7 +122,6 @@ namespace librealsense
     bool time_diff_keeper::update_diff_time()
     {
         using namespace std::chrono;
-        const static double diffThresh = 500;
         try
         {
             LOG_DEBUG("time_diff_keeper::update_diff_time - in");
