@@ -4154,8 +4154,8 @@ namespace rs2
 
                         auto texture = upload_frame(std::move(frame));
 
-                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) || 
-                            frame.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(frame))
+                        if ((selected_tex_source_uid == -1 && frame.get_profile().format() == RS2_FORMAT_Z16) ||
+                            (frame.get_profile().format() != RS2_FORMAT_ANY && is_3d_texture_source(frame)))
                         {
                             texture_frame = texture;
                         }
