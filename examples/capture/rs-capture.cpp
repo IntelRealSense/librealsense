@@ -14,13 +14,6 @@ int main(int argc, char * argv[]) try
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
-	color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
-	color_map.set_option(RS2_OPTION_MAX_DISTANCE, 2.0f);
-	color_map.set_option(RS2_OPTION_MIN_DISTANCE, 0.3f);
-	color_map.set_option(RS2_OPTION_COLOR_SCHEME, 1.0f);
-
-	rs2::disparity_transform depth_to_disparity(true);
-	
     // Declare rates printer for showing streaming rates of the enabled streams.
     rs2::rates_printer printer;
 
@@ -36,8 +29,7 @@ int main(int argc, char * argv[]) try
     {
         rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames from the camera
                              apply_filter(printer).     // Print each enabled stream frame rate
-							 apply_filter(depth_to_disparity).
-							apply_filter(color_map);   // Find and colorize the depth data
+                             apply_filter(color_map);   // Find and colorize the depth data
 
         // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
         // Each texture is displayed on different viewport according to it's stream unique id
