@@ -35,6 +35,7 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
+#include <iostream>
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
 #pragma GCC diagnostic pop
@@ -95,8 +96,9 @@ namespace rsimpl
             video_channel_callback callback = nullptr;
             data_channel_callback  channel_data_callback = nullptr;    // handle non-uvc data produced by device
             bool is_capturing;
+            bool is_metastream;
 
-            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing()
+            subdevice(const std::string & name) : dev_name("/dev/" + name), vid(), pid(), fd(), width(), height(), format(), callback(nullptr), channel_data_callback(nullptr), is_capturing(), is_metastream()
             {
                 struct stat st;
                 if(stat(dev_name.c_str(), &st) < 0)
@@ -154,6 +156,10 @@ namespace rsimpl
                 }
                 if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(dev_name + " is no video capture device");
                 if(!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(dev_name + " does not support streaming I/O");
+                if((cap.device_caps & V4L2_CAP_META_CAPTURE)){
+                    std::cout << dev_name << " is a metadata stream" << std::endl;
+                    is_metastream=true;
+                }
 
                 // Select video input, video standard and tune here.
                 v4l2_cropcap cropcap = {};
@@ -779,6 +785,8 @@ namespace rsimpl
                 if(is_new_device)
                 {
                     if (sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID)  // avoid inserting fisheye camera as a device
+                        continue;
+                    if (sub->is_metastream)  // avoid inserting metadata streamer
                         continue;
                     devices.push_back(std::make_shared<device>(context));
                     devices.back()->subdevices.push_back(move(sub));
