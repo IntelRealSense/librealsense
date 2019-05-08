@@ -127,8 +127,10 @@ namespace librealsense
             LOG_DEBUG("time_diff_keeper::update_diff_time - in");
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             LOG_DEBUG("time_diff_keeper::update_diff_time - lock");
-            double system_time = static_cast<double>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count()) * TIMESTAMP_USEC_TO_MSEC * TIMESTAMP_USEC_TO_MSEC;
+            double system_time_start = static_cast<double>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count()) * TIMESTAMP_USEC_TO_MSEC * TIMESTAMP_USEC_TO_MSEC;
             double sample_hw_time = _device->get_device_time();
+            double system_time_finish = static_cast<double>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count()) * TIMESTAMP_USEC_TO_MSEC * TIMESTAMP_USEC_TO_MSEC;
+            double system_time((system_time_finish + system_time_start) / 2);
             if (sample_hw_time < _last_sample_hw_time)
             {
                 // A time loop happend:
