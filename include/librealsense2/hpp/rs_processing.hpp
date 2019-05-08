@@ -669,7 +669,7 @@ namespace rs2
         *                           6 - Warm
         *                           7 - Quantized
         *                           8 - Pattern
-        *							9 - Hue
+        *                           9 - Hue
         */
         colorizer(float color_scheme) : filter(init(), 1)
         {
