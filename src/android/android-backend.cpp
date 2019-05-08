@@ -43,25 +43,14 @@ namespace librealsense {
         }
 
         std::shared_ptr<command_transfer> android_backend::create_usb_device(usb_device_info info) const {
-            auto devices = usb_enumerator::query_devices();
-            for(auto&& dev : devices){
-                auto curr = dev->get_info();
-                if(info.id == curr.id)
-                    return std::make_shared<platform::command_transfer_usb>(dev);
-            }
+            auto dev = usb_enumerator::create_usb_device(info);
+            if(dev != nullptr)
+                return std::make_shared<platform::command_transfer_usb>(dev);
             return nullptr;
         }
 
         std::vector<usb_device_info> android_backend::query_usb_devices() const {
-            std::vector<usb_device_info> results;
-            auto devices = usb_enumerator::query_devices();
-
-            for(auto&& dev : devices)
-            {
-                auto infos = dev->get_subdevices_infos();
-                results.insert(results.end(), infos.begin(), infos.end());
-            }
-            return results;
+            return usb_enumerator::query_devices_info();
         }
 
         std::shared_ptr<hid_device> android_backend::create_hid_device(hid_device_info info) const {

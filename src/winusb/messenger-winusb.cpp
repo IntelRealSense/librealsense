@@ -37,10 +37,20 @@ namespace librealsense
 
         }
 
-        int usb_messenger_winusb::control_transfer(int request_type, int request, int value, int index, uint8_t* buffer, uint32_t length, uint32_t timeout_ms)
+        std::shared_ptr<usb_interface_winusb> usb_messenger_winusb::get_interface(int number)
+        {
+            auto intfs = _device->get_interfaces();
+            auto it = std::find_if(intfs.begin(), intfs.end(),
+                [&](const rs_usb_interface& i) { return i->get_number() == number; });
+            if (it == intfs.end())
+                return nullptr;
+            return std::static_pointer_cast<usb_interface_winusb>(*it);
+        }
+
+        usb_status usb_messenger_winusb::control_transfer(int request_type, int request, int value, int index, uint8_t* buffer, uint32_t length, uint32_t& transferred, uint32_t timeout_ms)
         {
             WINUSB_SETUP_PACKET setupPacket;
-            ULONG lengthOutput;
+            ULONG length_transferred;
 
             setupPacket.RequestType = request_type;
             setupPacket.Request = request;
@@ -48,62 +58,95 @@ namespace librealsense
             setupPacket.Index = index;
             setupPacket.Length = length;
 
-            auto intf = std::static_pointer_cast<usb_interface_winusb>(_device->get_interface(index));//TODO_MK index?
+            auto intf = get_interface(0xFF & index);
+            if (!intf)
+                return RS2_USB_STATUS_INVALID_PARAM;
             auto path = intf->get_device_path();
-            handle_winusb dh(path);
+
+            handle_winusb dh;
+            auto sts = dh.open(path);
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return sts;
             auto h = dh.get_first_interface();
-            if (!WinUsb_ControlTransfer(h, setupPacket, buffer, length, &lengthOutput, NULL))
+
+            sts = set_timeout_policy(h, 0, timeout_ms);
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return sts;
+
+            if (!WinUsb_ControlTransfer(h, setupPacket, buffer, length, &length_transferred, NULL))
             {
                 auto lastResult = GetLastError();
                 LOG_ERROR("control_transfer failed, error: " << lastResult);
-                return -1;
+                return winusb_status_to_rs(lastResult);
             }
-            return lengthOutput;
+            transferred = length_transferred;
+            return RS2_USB_STATUS_SUCCESS;
         }
 
-        bool usb_messenger_winusb::reset_endpoint(std::shared_ptr<usb_endpoint> endpoint)
+        usb_status usb_messenger_winusb::reset_endpoint(const rs_usb_endpoint& endpoint, uint32_t timeout_ms)
         {
-            auto path = get_interface_by_endpoint(endpoint)->get_device_path();
-            handle_winusb dh(path);
+            auto intf = get_interface(endpoint->get_interface_number());
+            if (!intf)
+                return RS2_USB_STATUS_INVALID_PARAM;
+            handle_winusb dh;
+            auto sts = dh.open(intf->get_device_path());
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return sts;
             auto h = dh.get_first_interface();
-            return WinUsb_ResetPipe(h, endpoint->get_address());
+
+            if (!WinUsb_ResetPipe(h, endpoint->get_address()))
+            {
+                auto lastResult = GetLastError();
+                LOG_ERROR("control_transfer failed, error: " << lastResult);
+                return winusb_status_to_rs(lastResult);
+            }
+            return RS2_USB_STATUS_SUCCESS;
         }
 
-        std::shared_ptr<usb_interface_winusb> usb_messenger_winusb::get_interface_by_endpoint(const std::shared_ptr<usb_endpoint>& endpoint)
+        usb_status usb_messenger_winusb::bulk_transfer(const rs_usb_endpoint& endpoint, uint8_t* buffer, uint32_t length, uint32_t& transferred, uint32_t timeout_ms)
         {
-            auto i = _device->get_interface(endpoint->get_interface_number());
-            return std::static_pointer_cast<usb_interface_winusb>(i);
-        }
+            ULONG length_transferred;
 
-        int usb_messenger_winusb::bulk_transfer(const std::shared_ptr<usb_endpoint>& endpoint, uint8_t* buffer, uint32_t length, uint32_t timeout_ms)
-        {
-            ULONG length_transfered;
-            int sts;
+            auto intf = get_interface(endpoint->get_interface_number());
+            if (!intf)
+                return RS2_USB_STATUS_INVALID_PARAM; 
+            handle_winusb dh;
+            auto sts = dh.open(intf->get_device_path());
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return sts;
+            auto h = dh.get_first_interface();
 
-            auto start = std::chrono::system_clock::now();
-            auto path = get_interface_by_endpoint(endpoint)->get_device_path();
-            handle_winusb dh(path, timeout_ms);//this call may wait for other user to finish
-            auto h = dh.get_interface_handle(get_interface_by_endpoint(endpoint)->get_number());
-            auto now = std::chrono::system_clock::now();
-            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-            set_timeout_policy(h, endpoint->get_address(), timeout_ms - diff);
+            sts = set_timeout_policy(h, endpoint->get_address(), timeout_ms);
+            if (sts != RS2_USB_STATUS_SUCCESS)
+                return sts;
 
+            bool res;
             if (USB_ENDPOINT_DIRECTION_IN(endpoint->get_address()))
-                sts = WinUsb_ReadPipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transfered, NULL);
+                res = WinUsb_ReadPipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL);
             else
-                sts = WinUsb_WritePipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transfered, NULL);
-            return length_transfered;
+                res = WinUsb_WritePipe(h, endpoint->get_address(), const_cast<unsigned char*>(buffer), length, &length_transferred, NULL);
+            if(!res)
+            {
+                auto lastResult = GetLastError();
+                LOG_ERROR("bulk_transfer failed, error: " << lastResult);
+                return winusb_status_to_rs(lastResult);
+            }
+            transferred = length_transferred;
+            return RS2_USB_STATUS_SUCCESS;
         }
 
-        void usb_messenger_winusb::set_timeout_policy(WINUSB_INTERFACE_HANDLE handle, uint8_t endpoint, uint32_t timeout_ms)
+        usb_status usb_messenger_winusb::set_timeout_policy(WINUSB_INTERFACE_HANDLE handle, uint8_t endpoint, uint32_t timeout_ms)
         {
             // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
             // PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
-            auto bRetVal = WinUsb_SetPipePolicy(handle, endpoint, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_ms), &timeout_ms);
-            if (!bRetVal)
+            auto sts = WinUsb_SetPipePolicy(handle, endpoint, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_ms), &timeout_ms);
+            if (!sts)
             {
-                throw winapi_error("SetPipeTimeOutPolicy failed.");
+                auto lastResult = GetLastError();
+                LOG_ERROR("failed to set timeout policy, error: " << lastResult);
+                return winusb_status_to_rs(lastResult);
             }
+            return RS2_USB_STATUS_SUCCESS;
         }
     }
 }

@@ -1059,7 +1059,7 @@ namespace librealsense
             return try_record([&](recording* rec, lookup_key k)
             {
                 auto dev = _source->create_usb_device(info);
-                
+
                 auto id = _entity_count.fetch_add(1);
                 auto&& c = rec->add_call(k);
                 c.param1 = id;

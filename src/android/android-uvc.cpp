@@ -309,22 +309,20 @@ namespace librealsense {
             return result;
         }
 
-        std::shared_ptr<usbhost_uvc_device> android_uvc_device::open_uvc_device(uint16_t mi)
+        std::shared_ptr<usbhost_uvc_device> android_uvc_device::open_uvc_device()
         {
-            for(auto&& dev : usb_enumerator::query_devices())
+            for(auto&& info : usb_enumerator::query_devices_info())
             {
-                for(auto&& in : dev->get_interfaces(USB_SUBCLASS_CONTROL))
-                {
-                    if(in->get_number() != mi)
-                        continue;
-                    std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
-                                                            [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
-                    uvc->device = std::static_pointer_cast<usb_device_usbhost>(dev);
-                    uvc->vid = dev->get_info().vid;
-                    uvc->pid = dev->get_info().pid;
-                    usbhost_open(uvc.get(), mi);
-                    return uvc;
-                }
+                if(info.unique_id != _info.unique_id || info.mi != _info.mi)
+                    continue;
+                auto dev = usb_enumerator::create_usb_device(info);
+                std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
+                                                        [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
+                uvc->device = std::static_pointer_cast<usb_device_usbhost>(dev);
+                uvc->vid = info.vid;
+                uvc->pid = info.pid;
+                usbhost_open(uvc.get(), info.mi);
+                return uvc;
             }
             return nullptr;
         }
@@ -333,9 +331,7 @@ namespace librealsense {
             std::lock_guard<std::mutex> lock(_power_mutex);
 
             if (state == D0 && _power_state == D3) {
-                uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
-
-                _device = open_uvc_device(mi);
+                _device = open_uvc_device();
 
                 if(!_device)
                     throw std::runtime_error("Device not found!");

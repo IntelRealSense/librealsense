@@ -28,13 +28,25 @@ namespace librealsense
 {
     namespace platform
     {
+        usb_status usbhost_status_to_rs(int sts)
+        {
+            switch (sts)
+            {
+                case EBADF:
+                case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
+                //TODO:MK
+                default: return RS2_USB_STATUS_OTHER;
+            }
+        }
+
         usb_messenger_usbhost::usb_messenger_usbhost(const std::shared_ptr<usb_device_usbhost>& device)
             : _device(device)
         {
-            for(auto&& i : _device->get_interfaces(USB_SUBCLASS_ANY))
+            auto interfaces = _device->get_interfaces();
+            for(auto&& i : interfaces)
             {
                 claim_interface(i->get_number());
-                auto iep = i->first_endpoint(USB_ENDPOINT_DIRECTION_READ, USB_ENDPOINT_INTERRUPT);
+                auto iep = i->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ, RS2_USB_ENDPOINT_INTERRUPT);
                 if(iep)
                     _interrupt_endpoint = std::dynamic_pointer_cast<usb_endpoint_usbhost>(iep);
             }
@@ -93,29 +105,48 @@ namespace librealsense
             usb_device_claim_interface(_device->get_handle(), interface);
         }
 
-        bool usb_messenger_usbhost::reset_endpoint(std::shared_ptr<usb_endpoint> endpoint)
+        usb_status usb_messenger_usbhost::reset_endpoint(const rs_usb_endpoint& endpoint, uint32_t timeout_ms)
         {
+            uint32_t transferred = 0;
+            int requestType = UVC_FEATURE;
+            int request = CLEAR_FEATURE;
+            int value = 0;
             int ep = endpoint->get_address();
-            bool rv = control_transfer(0x02, //UVC_FEATURE,
-                                       0x01, //CLEAR_FEATURE
-                                       0, ep, NULL, 0, 10) == UVC_SUCCESS;
-            if(rv)
+            uint8_t* buffer = NULL;
+            int length = 0;
+            usb_status rv = control_transfer(requestType, request, value, ep, buffer, length, transferred, timeout_ms);
+            if(rv == RS2_USB_STATUS_SUCCESS)
                 LOG_DEBUG("USB pipe " << ep << " reset successfully");
             else
-                LOG_DEBUG("Failed to reset the USB pipe " << ep);
+                LOG_DEBUG("Failed to reset the USB pipe " << ep << ", error: " << usb_status_to_string.at(rv).c_str());
             return rv;
         }
 
-        int usb_messenger_usbhost::control_transfer(int request_type, int request, int value, int index, uint8_t* buffer, uint32_t length, uint32_t timeout_ms)
+        usb_status usb_messenger_usbhost::control_transfer(int request_type, int request, int value, int index, uint8_t* buffer, uint32_t length, uint32_t& transferred, uint32_t timeout_ms)
         {
-            return usb_device_control_transfer(_device->get_handle(), request_type, request, value, index, buffer, length, timeout_ms);
+            auto sts = usb_device_control_transfer(_device->get_handle(), request_type, request, value, index, buffer, length, timeout_ms);
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
+                return usbhost_status_to_rs(sts);
+            }
+            transferred = sts;
+            return RS2_USB_STATUS_SUCCESS;
         }
 
-        int usb_messenger_usbhost::bulk_transfer(const std::shared_ptr<usb_endpoint>& endpoint, uint8_t* buffer, uint32_t length, uint32_t timeout_ms)
+        usb_status usb_messenger_usbhost::bulk_transfer(const std::shared_ptr<usb_endpoint>&  endpoint, uint8_t* buffer, uint32_t length, uint32_t& transferred, uint32_t timeout_ms)
         {
-            return usb_device_bulk_transfer(_device->get_handle(), endpoint->get_address(), buffer,length, timeout_ms);
+            auto sts = usb_device_bulk_transfer(_device->get_handle(), endpoint->get_address(), buffer, length, timeout_ms);
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("bulk_transfer returned error, endpoint: " << endpoint->get_address() << ", error: " << strerr);
+                return usbhost_status_to_rs(sts);
+            }
+            transferred = sts;
+            return RS2_USB_STATUS_SUCCESS;
         }
     }
 }
-
 #endif

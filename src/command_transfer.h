@@ -6,6 +6,7 @@
 #include "usb/usb-device.h"
 
 #include <vector>
+#include <algorithm>
 #include <stdint.h>
 
 namespace librealsense
@@ -26,31 +27,33 @@ namespace librealsense
         class command_transfer_usb : public command_transfer
         {
         public:
-            command_transfer_usb(rs_usb_device device) : _device(device) {}
+            command_transfer_usb(const rs_usb_device& device) : _device(device) {}
             ~command_transfer_usb() {};
 
             std::vector<uint8_t> send_receive(
                 const std::vector<uint8_t>& data,
-                int timeout_ms = 5000,
+                int timeout_ms,
                 bool require_response = true) override
             { 
                 const auto& m = _device->open();
-                auto intfs = _device->get_interfaces(USB_SUBCLASS_HWM);
-                if (intfs.size() == 0)
-                    throw std::runtime_error("can't find HWM interface");
+                auto intfs = _device->get_interfaces();
+                auto it = std::find_if(intfs.begin(), intfs.end(),
+                    [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_VENDOR_SPECIFIC; });
+                if (it == intfs.end())
+                    throw std::runtime_error("can't find VENDOR_SPECIFIC interface of device: " + _device->get_info().id);
 
-                auto hwm = intfs[0];
+                auto hwm = *it;
+                uint32_t transfered_count = 0;
+                auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), data.size(), transfered_count, timeout_ms);
 
-                int transfered_count = m->bulk_transfer(hwm->first_endpoint(USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), data.size(), timeout_ms);
+                if (sts != RS2_USB_STATUS_SUCCESS)
+                    throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
 
-                if (transfered_count < 0)
-                    throw std::runtime_error("USB command timed-out!");
+                std::vector<uint8_t> output(DEFAULT_BUFFER_SIZE);
+                sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ), output.data(), output.size(), transfered_count, timeout_ms);
 
-                std::vector<uint8_t> output(1024);
-                transfered_count = m->bulk_transfer(hwm->first_endpoint(USB_ENDPOINT_DIRECTION_READ), output.data(), output.size(), timeout_ms);
-
-                if (transfered_count < 0)
-                    throw std::runtime_error("USB command timed-out!");
+                if (sts != RS2_USB_STATUS_SUCCESS)
+                    throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
 
                 output.resize(transfered_count);
                 return output;
@@ -58,6 +61,7 @@ namespace librealsense
 
         private:
             rs_usb_device _device;
+            static const uint32_t DEFAULT_BUFFER_SIZE = 1024;
         };
     }
 }

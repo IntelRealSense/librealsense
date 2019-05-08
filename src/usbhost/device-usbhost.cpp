@@ -18,6 +18,18 @@ namespace librealsense
 {
     namespace platform
     {
+        usb_device_info generate_info(::usb_device *handle, int mi, usb_spec conn_spec, usb_class cls)
+        {
+            usb_device_info rv{};
+            rv.vid = usb_device_get_vendor_id(handle);
+            rv.pid = usb_device_get_product_id(handle);
+            rv.unique_id = std::string(usb_device_get_name(handle));
+            rv.mi = mi;
+            rv.cls = cls;
+            rv.conn_spec = conn_spec;
+            return rv;
+        }
+
         usb_device_usbhost::usb_device_usbhost(::usb_device* handle) :
             _handle(handle)
         {
@@ -36,21 +48,20 @@ namespace librealsense
                     break;
                 if (h->bDescriptorType == USB_DT_INTERFACE_ASSOCIATION) {
                     auto iad = *(usb_interface_assoc_descriptor *) h;
+                    auto info = generate_info(_handle, iad.bFirstInterface, conn_spec,
+                                              static_cast<usb_class>(iad.bFunctionClass));
+                    _infos.push_back(info);
                 }
                 if (h->bDescriptorType == USB_DT_INTERFACE) {
                     auto id = *(usb_interface_descriptor *) h;
-                    auto in = id.bInterfaceNumber;
-                    _interfaces[in] = std::make_shared<usb_interface_usbhost>(id, it);
-                    if(id.bInterfaceSubClass != USB_SUBCLASS_CONTROL && id.bInterfaceSubClass != USB_SUBCLASS_HWM)
-                        continue;
-                    usb_device_info info{};
-                    info.vid = usb_device_get_vendor_id(_handle);
-                    info.pid = usb_device_get_product_id(_handle);
-                    info.id = std::string(usb_device_get_name(_handle));
-                    info.unique_id = std::string(usb_device_get_name(_handle));
-                    info.mi = in;
-                    info.conn_spec = conn_spec;
-                    _infos.push_back(info);
+                    _interfaces.push_back(std::make_shared<usb_interface_usbhost>(id, it));
+                    if(id.bInterfaceClass == RS2_USB_CLASS_VENDOR_SPECIFIC)
+                    {
+                        auto info = generate_info(_handle, id.bInterfaceNumber, conn_spec,
+                                                  static_cast<usb_class>(id.bInterfaceClass));
+                        _infos.push_back(info);
+                    }
+
                 }
             } while (h != nullptr);
 
@@ -61,25 +72,6 @@ namespace librealsense
         {
             _messenger.reset();
             LOG_DEBUG("usb device: " << get_info().unique_id << ", released");
-        }
-
-        const std::shared_ptr<usb_interface> usb_device_usbhost::get_interface(uint8_t interface_number) const
-        {
-            return _interfaces.at(interface_number);
-        }
-
-        const std::vector<std::shared_ptr<usb_interface>> usb_device_usbhost::get_interfaces(usb_subclass filter) const
-        {
-            std::vector<std::shared_ptr<usb_interface>> rv;
-            for (auto&& entry : _interfaces)
-            {
-                auto i = entry.second;
-                if(filter == USB_SUBCLASS_ANY ||
-                   i->get_subclass() & filter ||
-                   (filter == 0 && i->get_subclass() == 0))
-                    rv.push_back(i);
-            }
-            return rv;
         }
 
         const std::shared_ptr<usb_messenger> usb_device_usbhost::open()

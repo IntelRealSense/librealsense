@@ -9,19 +9,9 @@ namespace librealsense
 {
     namespace platform {
         pipe::pipe(::usb_device* handle) :
-                _handle(handle),
-                _pull_thread(nullptr),
-                _pull_requests(true)
-        {
-            start();
-        }
-
-        pipe::~pipe()
-        {
-            stop();
-        }
-
-        void pipe::start()
+            _handle(handle),
+            _pull_thread(nullptr),
+            _pull_requests(true)
         {
             _pull_requests = true;
             if (_pull_thread == nullptr)
@@ -38,7 +28,7 @@ namespace librealsense
             }
         }
 
-        void pipe::stop()
+        pipe::~pipe()
         {
             _pull_requests = false;
             if(_pull_thread != nullptr && _pull_thread->joinable())
@@ -55,7 +45,13 @@ namespace librealsense
         void pipe::cancel_request(std::shared_ptr<usb_request> request)
         {
             if(request)
-                usb_request_cancel(request.get());
+            {
+                int res = usb_request_cancel(request.get());
+                if(res < 0)
+                    LOG_ERROR("Cancel request failed: " << strerror(errno));
+            }
+            else
+                LOG_ERROR("Invalid cancel request ignored");
         }
     }
 }

@@ -4,6 +4,8 @@
 #pragma once
 
 #include "win/win-helpers.h"
+#include "types.h"
+
 #include <winusb.h>
 #include <chrono>
 
@@ -11,37 +13,54 @@ namespace librealsense
 {
     namespace platform
     {
+        static usb_status winusb_status_to_rs(DWORD sts)
+        {
+            switch (sts)
+            {
+            //TODO:MK
+            case ERROR_INVALID_CATEGORY: return RS2_USB_STATUS_IO;
+            case ERROR_BROKEN_PIPE: return RS2_USB_STATUS_PIPE;
+            case ERROR_ACCESS_DENIED: return RS2_USB_STATUS_ACCESS;
+            case ERROR_DRIVE_LOCKED: return RS2_USB_STATUS_BUSY;
+            case ERROR_SEM_TIMEOUT: return RS2_USB_STATUS_TIMEOUT;
+            default: return RS2_USB_STATUS_OTHER;
+            }
+        }
+
         class handle_winusb
         {
         public:
-            handle_winusb(const std::wstring& path, int timeout_ms = 100)
+            usb_status open(const std::wstring& path)
             {
-                _device_handle = INVALID_HANDLE_VALUE;
-                auto start = std::chrono::system_clock::now();
-                do
+                _device_handle = CreateFile(path.c_str(),
+                    GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    NULL,
+                    OPEN_EXISTING,
+                    FILE_FLAG_OVERLAPPED,
+                    NULL);
+                if (_device_handle == INVALID_HANDLE_VALUE)
                 {
-                    _device_handle = CreateFile(path.c_str(),
-                        GENERIC_READ | GENERIC_WRITE,
-                        FILE_SHARE_READ | FILE_SHARE_WRITE,
-                        NULL,
-                        OPEN_EXISTING,
-                        FILE_FLAG_OVERLAPPED,
-                        NULL);
-                    auto now = std::chrono::system_clock::now();
-                    if(timeout_ms < std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count())
-                        throw std::runtime_error("CreateFile timeout");
-                }while (_device_handle == INVALID_HANDLE_VALUE);
+                    auto lastResult = GetLastError();
+                    LOG_ERROR("CreateFile failed, error: " << lastResult);
+                    return winusb_status_to_rs(lastResult);
+                }
 
                 if (WinUsb_Initialize(_device_handle, &_winusb_handle) == FALSE)
-                    throw std::runtime_error("WinUsb_Initialize failed");
+                {
+                    auto lastResult = GetLastError();
+                    LOG_ERROR("WinUsb_Initialize failed, error: " << lastResult);
+                    return winusb_status_to_rs(lastResult);
+                }
+                return RS2_USB_STATUS_SUCCESS;
             }
 
             ~handle_winusb()
             {
-                if (!WinUsb_Free(_winusb_handle))
-                    throw winapi_error("WinUsb_Free failed.");
-                if (!CloseHandle(_device_handle))
-                    throw winapi_error("CloseHandle failed.");
+                if (_winusb_handle)
+                    WinUsb_Free(_winusb_handle);
+                if (_device_handle != INVALID_HANDLE_VALUE)
+                    CloseHandle(_device_handle);
             }
 
             const HANDLE get_device_handle() { return _device_handle; }
@@ -62,8 +81,8 @@ namespace librealsense
                 return h;
             }
         private:
-            HANDLE _device_handle;
-            WINUSB_INTERFACE_HANDLE _winusb_handle;
+            HANDLE _device_handle = INVALID_HANDLE_VALUE;
+            WINUSB_INTERFACE_HANDLE _winusb_handle = NULL;
         };
     }
 }

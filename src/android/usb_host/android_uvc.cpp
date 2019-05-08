@@ -11,6 +11,7 @@
 #include "../../libuvc/uvc_types.h"
 #include "../../libuvc/utlist.h"
 #include "../../usb/usb-types.h"
+#include "../../usb/usb-device.h"
 
 #include <vector>
 #include <thread>
@@ -636,7 +637,11 @@ uvc_error_t update_stream_if_handle(usbhost_uvc_device *devh, int interface_idx)
                 // WinUsbInterfaceNumber is the actual interface number taken from the USB config descriptor
                 // A value of 0 indicates the first interface (Video Control Interface), A value of 1 indicates the first associated interface (Video Stream 1)
                 // For this reason, when calling to usbhost_GetAssociatedInterface, we must decrease 1 to receive the associated interface
-                stream_if->interface = devh->device->get_interface(interface_idx);
+                auto intfs = devh->device->get_interfaces();
+                auto it = std::find_if(intfs.begin(), intfs.end(),
+                                       [&](const librealsense::platform::rs_usb_interface& i) { return i->get_number() == interface_idx; });
+                if (it != intfs.end())
+                    stream_if->interface = *it;
             }
     }
     return UVC_SUCCESS;
@@ -903,8 +908,9 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     auto dev = strctx->stream->devh->device;
     auto messenger = dev->open();
 
-    auto read_ep = inf->first_endpoint(librealsense::platform::USB_ENDPOINT_DIRECTION_READ);
-    messenger->reset_endpoint(read_ep);
+    auto read_ep = inf->first_endpoint(librealsense::platform::RS2_USB_ENDPOINT_DIRECTION_READ);
+    uint32_t reset_ep_timeout = 100;
+    messenger->reset_endpoint(read_ep, reset_ep_timeout);
 
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks(true);
@@ -934,22 +940,20 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     LOG_DEBUG("Transfer thread started for endpoint address: " << strctx->endpoint);
     do {
         auto i = strctx->stream->stream_if->interface;
-        int res = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, 1000);
-        if(res < 0)
+        uint32_t transferred = 0;
+        auto sts = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, transferred, 1000);
+        if(sts != librealsense::platform::RS2_USB_STATUS_SUCCESS)
         {
-            auto err = errno;
-            std::string strerr = strerror(errno);
-            LOG_WARNING("bulk_transfer on read endpoint returned error, ERROR: " << strerr);
-            if(EBADF == err || ENODEV == err)// bad file descriptor || No such device
+            if(sts == librealsense::platform::RS2_USB_STATUS_NO_DEVICE)
                 break;
             continue;
         }
-        strctx->stream->got_bytes = res;
+        strctx->stream->got_bytes = transferred;
         usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
     } while (strctx->stream->running);
 
     int ep = strctx->endpoint;
-    messenger->reset_endpoint(read_ep);
+    messenger->reset_endpoint(read_ep, reset_ep_timeout);
     free(strctx);
 
     queue.clear();

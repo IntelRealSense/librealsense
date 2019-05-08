@@ -15,8 +15,8 @@ namespace librealsense
         class usb_enumerator
         {
         public:
-            static std::vector<rs_usb_device> query_devices();
-            static bool is_device_connected(const rs_usb_device& device);
+            static rs_usb_device create_usb_device(const usb_device_info& info);
+            static std::vector<usb_device_info> query_devices_info();
         };
     }
 }

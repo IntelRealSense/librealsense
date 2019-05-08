@@ -23,8 +23,8 @@ namespace librealsense
             virtual endpoint_type get_type() const override { return _type; }
             virtual endpoint_direction get_direction() const override
             { 
-                return _address >= USB_ENDPOINT_DIRECTION_READ ?
-                    USB_ENDPOINT_DIRECTION_READ : USB_ENDPOINT_DIRECTION_WRITE;
+                return _address >= RS2_USB_ENDPOINT_DIRECTION_READ ?
+                    RS2_USB_ENDPOINT_DIRECTION_READ : RS2_USB_ENDPOINT_DIRECTION_WRITE;
             }
 
             virtual uint8_t get_interface_number() const override { return _interface_number; }

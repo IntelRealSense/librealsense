@@ -23,22 +23,26 @@ namespace librealsense
 {
     namespace platform
     {
-
-        bool usb_enumerator::is_device_connected(const std::shared_ptr<usb_device>& device)
+        std::vector<usb_device_info> usb_enumerator::query_devices_info()
         {
-            if (device == nullptr)
-                return false;
+            std::vector<usb_device_info> rv;
             for(auto&& dev : _devices)
             {
-                if(dev->get_info().unique_id == device->get_info().unique_id)
-                    return true;
+                auto d = std::static_pointer_cast<usb_device_usbhost>(dev);
+                auto sdi = d->get_subdevices_info();
+                rv.insert(rv.end(), sdi.begin(), sdi.end());
             }
-            return false;
+            return rv;
         }
 
-        std::vector<std::shared_ptr<usb_device>> usb_enumerator::query_devices()
+        rs_usb_device usb_enumerator::create_usb_device(const usb_device_info &info)
         {
-            return _devices;
+            for(auto&& dev : _devices)
+            {
+                if(info.unique_id == dev->get_info().unique_id)
+                    return dev;
+            }
+            return nullptr;
         }
     }
 }

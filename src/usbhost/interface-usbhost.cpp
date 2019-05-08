@@ -20,6 +20,8 @@ namespace librealsense
         {
             for (int e = 0; e < desc.bNumEndpoints;) {
                 usb_descriptor_header *h = usb_descriptor_iter_next(&it);
+                if(h == NULL)
+                    break;
                 if (h->bDescriptorType == (USB_DT_ENDPOINT & ~USB_TYPE_MASK)) {
                     e++;
                     auto epd = *((usb_endpoint_descriptor *) h);

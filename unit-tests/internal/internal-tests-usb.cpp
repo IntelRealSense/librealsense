@@ -8,8 +8,9 @@
 #include "librealsense2/h/rs_option.h"
 #include <map>
 
-using namespace librealsense;
 using namespace librealsense::platform;
+
+#define USB_SUBCLASS_CONTROL 1
 
 static std::map< std::string, int> uvc_req_code = {
     {"UVC_RC_UNDEFINED", 0x00},
@@ -60,97 +61,68 @@ static std::map< std::string, int> pu_controls = {
 
 };
 
+std::vector<usb_device_info> get_devices_info()
+{
+    std::vector<usb_device_info> rv;
+    auto  devices_info = usb_enumerator::query_devices_info();
+    for (auto&& info : devices_info)
+    {
+        if (std::find_if(rv.begin(), rv.end(), [&](const usb_device_info& i) { return i.id == info.id; }) == rv.end())
+            rv.push_back(info);
+    }
+    return rv;
+}
+
 TEST_CASE("query_devices", "[live][usb]") 
 {
-    auto  devices = usb_enumerator::query_devices();
+    auto  devices_info = usb_enumerator::query_devices_info();
 
-    REQUIRE(devices.size());
+    REQUIRE(devices_info.size());
 
-    switch (devices.size())
-    {
-        case 0: printf("\nno USB device found\n\n"); break;
-        case 1: printf("\n1 USB device found:\n\n"); break;
-        default:
-            printf("\n%d USB devices found:\n\n", devices.size()); break;
-    }
+    if (devices_info.size() == 1)
+        printf("\n1 USB device found:\n\n");
+    else
+        ("\n%d USB devices found:\n\n", devices_info.size());
 
     int device_counter = 0;
-    for (auto&& dev : devices)
+    for (auto&& device_info : devices_info)
     {
-        auto device_info = dev->get_info();
-        printf("%d)\tid: %s\n", ++device_counter, device_info.id.c_str());
-
-        auto subdevices = dev->get_subdevices_infos();
-        for (auto&& subdevice_info : subdevices)
-        {            
-            printf("\tmi: %d\n", subdevice_info.mi);
-        }
+        printf("%d)uid: %s\tmi: %d\tpath: %s\n", ++device_counter, device_info.unique_id.c_str(), device_info.mi, device_info.id.c_str());
     }
     printf("===============================================================================\n");
 }
 
-TEST_CASE("is_device_connected", "[live][usb]")
-{
-    auto  devices = usb_enumerator::query_devices();
-    int device_counter = 0;
-    for (auto&& dev : devices)
-    {
-        auto sts = usb_enumerator::is_device_connected(dev);
-        REQUIRE(sts);
-    }
-}
-
-TEST_CASE("filter_subdevices", "[live][usb]")
-{
-    auto  devices = usb_enumerator::query_devices();
-    int device_counter = 0;
-    std::map<usb_subclass, std::vector<rs_usb_interface>> interfaces;
-    for (auto&& dev : devices)
-    {
-        interfaces[USB_SUBCLASS_CONTROL] = dev->get_interfaces(USB_SUBCLASS_CONTROL);
-        interfaces[USB_SUBCLASS_STREAMING] = dev->get_interfaces(USB_SUBCLASS_STREAMING);
-        interfaces[USB_SUBCLASS_HWM] = dev->get_interfaces(USB_SUBCLASS_HWM);
-        auto any = dev->get_interfaces(USB_SUBCLASS_ANY);
-
-        auto count = interfaces.at(USB_SUBCLASS_CONTROL).size() +
-            interfaces.at(USB_SUBCLASS_STREAMING).size() +
-            interfaces.at(USB_SUBCLASS_HWM).size();
-        REQUIRE(any.size() == count);
-
-        for (auto&& intfs : interfaces)
-        {
-            for (auto&& intf : intfs.second)
-            {
-                REQUIRE(intf->get_subclass() == intfs.first);
-            }
-        }
-    }
-}
-
 TEST_CASE("first_endpoints_direction", "[live][usb]")
 {
-    auto  devices = usb_enumerator::query_devices();
+    auto devices_info = get_devices_info();
     int device_counter = 0;
-    for (auto&& dev : devices)
+    for (auto&& info : devices_info)
     {
-        auto interfaces = dev->get_interfaces(USB_SUBCLASS_HWM);
+        if(info.vid != 0x8086)
+            continue;
+        auto dev = usb_enumerator::create_usb_device(info);
+        if (!dev)
+            continue;
+        auto interfaces = dev->get_interfaces();
+        auto it = std::find_if(interfaces.begin(), interfaces.end(),
+            [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_VENDOR_SPECIFIC; });
 
-        for (auto&& i : interfaces)
-        {
-            auto w = i->first_endpoint(USB_ENDPOINT_DIRECTION_WRITE);
-            if(w)
-                REQUIRE(USB_ENDPOINT_DIRECTION_WRITE == w->get_direction());
-            auto r = i->first_endpoint(USB_ENDPOINT_DIRECTION_READ);
-            if(r)
-                REQUIRE(USB_ENDPOINT_DIRECTION_READ == r->get_direction());
-        }
+        REQUIRE(it != interfaces.end());
+
+        auto hwm = *it;
+        auto w = hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE);
+        if (w)
+            REQUIRE(RS2_USB_ENDPOINT_DIRECTION_WRITE == w->get_direction());
+        auto r = hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ);
+        if (r)
+            REQUIRE(RS2_USB_ENDPOINT_DIRECTION_READ == r->get_direction());
     }
 }
 
 //control transfer test
 TEST_CASE("query_controls", "[live][usb]")
 {
-    auto  devices = usb_enumerator::query_devices();
+    auto devices_info = get_devices_info();
 
     const int REQ_TYPE_GET = 0xa1;
 
@@ -164,24 +136,36 @@ TEST_CASE("query_controls", "[live][usb]")
 
     bool controls_found = false;
 
-    for (auto&& dev : devices)
+    for (auto&& info : devices_info)
     {
+        if(info.vid != 0x8086)
+            continue;
+        auto dev = usb_enumerator::create_usb_device(info);
+        if (!dev)
+            continue;
         auto m = dev->open();
 
-        std::vector<rs_usb_interface> ctrl_interfaces = dev->get_interfaces(USB_SUBCLASS_CONTROL);
+        std::vector<rs_usb_interface> interfaces = dev->get_interfaces();
 
         //uvc units, rs uvc api is not implemented yet so we use hard coded mapping for reading the PUs
         std::map<int,int> processing_units =
         {
           {0,2},
+          {2,2},
           {3,7}
         };
 
         int timeout = 1000;
 
-        for (auto&& intf : ctrl_interfaces)
+        for (auto&& intf : interfaces)
         {
+            if (intf->get_class() != RS2_USB_CLASS_VIDEO || intf->get_subclass() != USB_SUBCLASS_CONTROL)
+                continue;
+
             controls_found = true;
+            if (processing_units.find(intf->get_number()) == processing_units.end())
+                continue;
+
             auto unit = processing_units.at(intf->get_number());
 
             printf("interface: %d, processing unit: %d\n", intf->get_number(), unit);
@@ -195,9 +179,11 @@ TEST_CASE("query_controls", "[live][usb]")
                 for(auto&& req : requests)
                 {
                     int val = 0;
-                    auto sts = m->control_transfer(REQ_TYPE_GET, req, value, index, reinterpret_cast<uint8_t*>(&val), sizeof(val), timeout);
-                    if(sts <= 0)
-                        break;
+                    uint32_t transferred = 0;
+                    auto sts = m->control_transfer(REQ_TYPE_GET, req, value, index, reinterpret_cast<uint8_t*>(&val), sizeof(val), transferred, timeout);
+                    if (sts != RS2_USB_STATUS_SUCCESS)
+                        continue;
+                    REQUIRE(transferred == sizeof(val));
                     values[req] = val;
                 }
 
@@ -215,7 +201,7 @@ TEST_CASE("query_controls", "[live][usb]")
         }
     }
     if (!controls_found)
-        printf("There are no control interfaces available, force winusb/libuvc to probe controls\n");
+        printf("There are no control interfaces available, force winusb to probe controls\n");
     printf("===============================================================================\n");
 }
 
@@ -236,35 +222,76 @@ std::vector<uint8_t> create_gvd_request_buffer(bool is_sr300)
     return rv;
 }
 
+void read_gvd(const rs_usb_device& dev)
+{
+    command_transfer_usb ctu(dev);
+
+    bool is_sr300 = ((dev->get_info().pid == 0x0AA5) || (dev->get_info().pid == 0x0B48)) ? true : false;
+
+    int timeout = 100;
+    bool require_response = true;
+    auto data = create_gvd_request_buffer(is_sr300);
+
+    auto res = ctu.send_receive(data, timeout, require_response);
+    REQUIRE(res.size());
+
+    uint8_t fws[8];
+    uint16_t header_size = 4;
+    int fw_version_offset = is_sr300 ? 0 : 12;
+
+    librealsense::copy(fws, res.data() + header_size + fw_version_offset, 8);
+    std::string fw = librealsense::to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
+        << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
+
+    printf("device: %s, fw: %s\n", dev->get_info().unique_id.c_str(), fw.c_str());
+}
+
 //bulk transfer test
 TEST_CASE("read_gvd", "[live][usb]")
 {
-    auto  devices = usb_enumerator::query_devices();
+    auto devices_info = get_devices_info();
     int device_counter = 0;
 
     printf("Devices FW version:\n");
-    for (auto&& dev : devices)
+    for (auto&& info : devices_info)
     {
-        command_transfer_usb ctu(dev);
 
-        bool is_sr300 = dev->get_info().pid == 0x0AA5 ? true : false;
+        if(info.vid != 0x8086)
+            continue;
+        auto dev = usb_enumerator::create_usb_device(info);
+        if (!dev)
+            continue;
+        for(int i = 0; i < 3; i++)
+            read_gvd(dev);
+    }
+    printf("===============================================================================\n");
+}
 
-        int timeout = 1000;
-        bool require_response = true;
-        auto data = create_gvd_request_buffer(is_sr300);
+TEST_CASE("query_devices_info_duration", "[live][usb]")
+{
+    auto begin = std::chrono::system_clock::now();
+    auto devices_info = usb_enumerator::query_devices_info();
+    auto end = std::chrono::system_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    REQUIRE(diff < 500);
+    printf("===============================================================================\n");
+}
 
-        auto res = ctu.send_receive(data, timeout, require_response);
-        REQUIRE(res.size());
-
-        uint8_t fws[8];
-        uint16_t header_size = 4;
-        int fw_version_offset = is_sr300 ? 0 : 12;
-
-        librealsense::copy(fws, res.data() + header_size + fw_version_offset, 8);
-        std::string fw = to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
-            << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
-
-        printf("device: %s, fw: %s\n", dev->get_info().id.c_str(), fw.c_str());
+TEST_CASE("create_device_duration", "[live][usb]")
+{
+    auto devices_info = get_devices_info();
+    int device_counter = 0;
+    for (auto&& info : devices_info)
+    {
+        if (info.vid != 0x8086)
+            continue;
+        auto begin = std::chrono::system_clock::now();
+        auto dev = usb_enumerator::create_usb_device(info);
+        auto end = std::chrono::system_clock::now();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        REQUIRE(diff < 500);
+        if (!dev)
+            continue;
     }
     printf("===============================================================================\n");
 }

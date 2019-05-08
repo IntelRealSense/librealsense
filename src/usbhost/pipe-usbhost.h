@@ -51,11 +51,7 @@ namespace librealsense
             void release();
 
         private:
-            std::mutex _mutex;
             ::usb_device* _handle;
-
-            void start();
-            void stop();
         };
     }
 }

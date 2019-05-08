@@ -24,17 +24,20 @@
 
 #pragma comment(lib, "winusb.lib")
 
-const std::vector<std::string> guids = {
-    "{175695CD-30D9-4F87-8BE3-5A8270F49A31}", //Ivcam
-    "{08090549-CE78-41DC-A0FB-1BD66694BB0C}", //D4xx
-    "{a5dcbf10-6530-11d2-901f-00c04fb951ed}"  //DFU
-};
-
 namespace librealsense
 {
     namespace platform
     {
-        std::vector<std::wstring> query_by_interface(GUID guid, std::wstring vid)
+        //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
+        const std::map<std::string, usb_class> guids = {
+            {"{175695CD-30D9-4F87-8BE3-5A8270F49A31}", RS2_USB_CLASS_VENDOR_SPECIFIC}, //Ivcam
+            {"{08090549-CE78-41DC-A0FB-1BD66694BB0C}", RS2_USB_CLASS_VENDOR_SPECIFIC},  //D4xx
+            {"{a5dcbf10-6530-11d2-901f-00c04fb951ed}", RS2_USB_CLASS_UNSPECIFIED},  // for DFU
+            {"{ca3e7ab9-b4c3-4ae6-8251-579ef933890f}", RS2_USB_CLASS_VIDEO}, // win 10
+            {"{50537bc3-2919-452d-88a9-b13bbf7d2459}", RS2_USB_CLASS_VIDEO}, // win 7
+        };
+
+        std::vector<std::wstring> query_by_interface(GUID guid)
         {
             std::vector<std::wstring> rv;
 
@@ -56,8 +59,7 @@ namespace librealsense
                 while (offset < length)
                 {
                     auto str = std::wstring((device_list.data() + offset));
-                    std::transform(vid.begin(), vid.end(), vid.begin(), std::toupper);
-                    if (str.find(vid) != std::string::npos)
+                    if(!str.empty())
                         rv.push_back(str);
                     offset += str.size() + 1;
                 }
@@ -66,79 +68,91 @@ namespace librealsense
             return rv;
         }
 
-        std::vector<std::wstring> query_by_interface(const std::string& guidStr, std::wstring vid)
+        std::vector<std::wstring> query_by_interface(const std::string& guidStr)
         {
             GUID guid;
             std::wstring guidWStr(guidStr.begin(), guidStr.end());
             CHECK_HR(CLSIDFromString(guidWStr.c_str(), static_cast<LPCLSID>(&guid)));
-            return query_by_interface(guid, vid);
+            return query_by_interface(guid);
         }
 
-        std::string get_camera_id(const wchar_t* deviceID)
+        usb_device_info get_info(const std::wstring device_wstr)
         {
-            std::wsmatch matches;
-            std::wstring deviceIDstr(deviceID);
+            usb_device_info rv{};
+            std::smatch matches;
+            std::string device_str(device_wstr.begin(), device_wstr.end());
 
-            std::wregex recoveryReg(L"#111111111111#", std::regex_constants::icase);
-            if (std::regex_search(deviceIDstr, matches, recoveryReg))
-                return "recovery";
+            std::regex regex_camera_interface("\\b(.*VID_)(.*)(&PID_)(.*)(&MI_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);
+            std::regex regex_usb_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);
 
-            std::wregex camIdReg(L"\\b(mi_)(.*#\\w&)(.*)(&.*&)", std::regex_constants::icase);
-            if (!std::regex_search(deviceIDstr, matches, camIdReg) || matches.size() < 5)
-                throw std::runtime_error("regex_search failed!");
-
-            std::wstring wdevID = matches[3];
-            return std::string(wdevID.begin(), wdevID.end());
-        }
-
-        bool usb_enumerator::is_device_connected(const std::shared_ptr<usb_device>& device)
-        {
-            if (device == nullptr)
-                return false;
-            for (auto&& guid : guids)
+            if (std::regex_search(device_str, matches, regex_camera_interface) && matches.size() == 11)
             {
-                for (auto&& id : query_by_interface(guid, L"8086"))
-                {
-                    auto expected_id = get_camera_id(id.c_str());
-                    auto curr_id = device->get_info().id;
-                    if (curr_id == expected_id)
-                        return true;
-                }
+                rv.id = matches[0];
+                std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
+                std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
+                std::stringstream mi; mi << std::hex << matches[6]; mi >> rv.mi;
+                std::stringstream uid; uid << std::hex << matches[8]; uid >> rv.unique_id;
+                return rv;
             }
-            return false;
+            if (std::regex_search(device_str, matches, regex_usb_interface) && matches.size() == 9)
+            {
+                rv.id = matches[0];
+                std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
+                std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
+                std::stringstream uid; uid << std::hex << matches[6]; uid >> rv.unique_id;
+                return rv;
+            }
+
+            return rv;
         }
 
-        std::vector<std::shared_ptr<usb_device>> usb_enumerator::query_devices()
+        std::vector<usb_device_info> usb_enumerator::query_devices_info()
         {
-            std::map<std::string, std::vector<std::wstring>> devices_path;
+            std::vector<usb_device_info> rv;
 
             for (auto&& guid : guids)
             {
-                for (auto&& id : query_by_interface(guid, L"8086"))
+                for (auto&& id : query_by_interface(guid.first))
                 {
-                    try {
-                        auto s = get_camera_id(id.c_str());
-                        devices_path[s].push_back(id);
-                    }
-                    catch (std::exception e) {
-                        std::string path(id.begin(), id.end());
-                        LOG_WARNING("failed to create USB device, device: " << path.c_str() << ", error: " << e.what());
-                    }
-                }
-            }
-
-            std::vector<std::shared_ptr<usb_device>> rv;
-            for (auto&& id : devices_path)
-            {
-                try {
-                    rv.push_back(std::make_shared<usb_device_winusb>(id.second, id.first == "recovery"));
-                }
-                catch (...)
-                {
-                    LOG_WARNING("failed to create usb device: %s" << id.first.c_str());
+                    auto info = get_info(id.c_str());
+                    if (info.vid == 0) //unsupported device
+                        continue;
+                    info.cls = guid.second;
+                    rv.push_back(info);
                 }
             }
             return rv;
+        }
+
+        rs_usb_device usb_enumerator::create_usb_device(const usb_device_info& info)
+        {
+            std::vector<std::wstring> devices_path;
+
+            for (auto&& guid : guids)
+            {
+                for (auto&& id : query_by_interface(guid.first))
+                {
+                    auto i = get_info(id.c_str());
+                    if (i.unique_id == info.unique_id)
+                        devices_path.push_back(id);
+                }
+            }
+
+            if (devices_path.size() == 0)
+            {
+                LOG_WARNING("failed to locate usb interfaces for device: " << info.id);
+                return nullptr;
+            }
+
+            try 
+            {
+                return std::make_shared<usb_device_winusb>(info, devices_path);
+            }
+            catch (std::exception e)
+            {
+                LOG_WARNING("failed to create usb device: " << info.id << ", error: " << e.what());
+            }
+            return nullptr;
         }
     }
 }

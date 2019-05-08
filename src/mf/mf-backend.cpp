@@ -67,26 +67,15 @@ namespace librealsense
 
         std::shared_ptr<command_transfer> wmf_backend::create_usb_device(usb_device_info info) const
         {
-            for (auto&& usb : usb_enumerator::query_devices())
-            {
-                if (info.id == usb->get_info().id) {
-                    return std::make_shared<platform::command_transfer_usb>(usb);
-                }
-            }
+            auto dev = usb_enumerator::create_usb_device(info);
+            if(dev)
+                return std::make_shared<platform::command_transfer_usb>(dev);
             return nullptr;
         }
 
         std::vector<usb_device_info> wmf_backend::query_usb_devices() const
         {
-            std::vector<usb_device_info> results;
-
-            for (auto&& usb : usb_enumerator::query_devices())
-            {
-                auto infos = usb->get_subdevices_infos();
-                results.insert(results.end(), infos.begin(), infos.end());
-            }
-
-            return results;
+            return usb_enumerator::query_devices_info();
         }
 
         wmf_hid_device::wmf_hid_device(const hid_device_info& info)

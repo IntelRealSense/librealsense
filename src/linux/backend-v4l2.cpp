@@ -1581,26 +1581,15 @@ namespace librealsense
 
         std::shared_ptr<command_transfer> v4l_backend::create_usb_device(usb_device_info info) const
         {
-            auto devices =  usb_enumerator::query_devices();
-            for(auto&& dev : devices)
-            {
-                auto i = dev->get_info();
-                if(i.id == info.id)
-                    return std::make_shared<platform::command_transfer_usb>(dev);
-            }
-            return nullptr;
+            auto dev = usb_enumerator::create_usb_device(info);
+             if(dev)
+                 return std::make_shared<platform::command_transfer_usb>(dev);
+             return nullptr;
         }
 
         std::vector<usb_device_info> v4l_backend::query_usb_devices() const
         {
-            std::vector<usb_device_info> results;
-            auto devices =  usb_enumerator::query_devices();
-            for(auto&& dev : devices)
-            {
-                auto infos = dev->get_subdevices_infos();
-                results.insert(results.end(), infos.begin(), infos.end());
-            }
-            return results;
+            return usb_enumerator::query_devices_info();
         }
 
         std::shared_ptr<hid_device> v4l_backend::create_hid_device(hid_device_info info) const

@@ -23,8 +23,8 @@ namespace librealsense
 
             virtual endpoint_direction get_direction() const override
             {
-                return _desc.bEndpointAddress >= USB_ENDPOINT_DIRECTION_READ ?
-                       USB_ENDPOINT_DIRECTION_READ : USB_ENDPOINT_DIRECTION_WRITE;
+                return _desc.bEndpointAddress >= RS2_USB_ENDPOINT_DIRECTION_READ ?
+                       RS2_USB_ENDPOINT_DIRECTION_READ : RS2_USB_ENDPOINT_DIRECTION_WRITE;
             }
 
             usb_endpoint_descriptor get_descriptor(){ return _desc; }

@@ -12,37 +12,53 @@ namespace librealsense
 {
     namespace platform
     {
+        static usb_status libusb_status_to_rs(int sts)
+        {
+            switch (sts)
+            {
+                case LIBUSB_SUCCESS: return RS2_USB_STATUS_SUCCESS;
+                case LIBUSB_ERROR_IO: return RS2_USB_STATUS_IO;
+                case LIBUSB_ERROR_INVALID_PARAM: return RS2_USB_STATUS_INVALID_PARAM;
+                case LIBUSB_ERROR_ACCESS: return RS2_USB_STATUS_ACCESS;
+                case LIBUSB_ERROR_NO_DEVICE: return RS2_USB_STATUS_NO_DEVICE;
+                case LIBUSB_ERROR_NOT_FOUND: return RS2_USB_STATUS_NOT_FOUND;
+                case LIBUSB_ERROR_BUSY: return RS2_USB_STATUS_BUSY;
+                case LIBUSB_ERROR_TIMEOUT: return RS2_USB_STATUS_TIMEOUT;
+                case LIBUSB_ERROR_OVERFLOW: return RS2_USB_STATUS_OVERFLOW;
+                case LIBUSB_ERROR_PIPE: return RS2_USB_STATUS_PIPE;
+                case LIBUSB_ERROR_INTERRUPTED: return RS2_USB_STATUS_INTERRUPTED;
+                case LIBUSB_ERROR_NO_MEM: return RS2_USB_STATUS_NO_MEM;
+                case LIBUSB_ERROR_NOT_SUPPORTED: return RS2_USB_STATUS_NOT_SUPPORTED;
+                case LIBUSB_ERROR_OTHER: return RS2_USB_STATUS_OTHER;
+                default: return RS2_USB_STATUS_OTHER;
+            }
+        }
+        
         class handle_libusb
         {
-        public:
-            handle_libusb(libusb_device* device, uint8_t interface, int timeout_ms = 100) :
-                _handle(NULL), _interface(interface)
+        public:          
+            usb_status open(libusb_device* device, uint8_t interface)
             {
-                auto start = std::chrono::system_clock::now();
-                do
-                {
-                    auto now = std::chrono::system_clock::now();
-                    if(timeout_ms < std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count())
-                        break;
+                _interface = interface;
 
-                    if(0 != libusb_open(device, &_handle))
-                        continue;
+                auto sts = libusb_open(device, &_handle);
+                if(sts != LIBUSB_SUCCESS)
+                    return libusb_status_to_rs(sts);
 
-                    auto sts = libusb_detach_kernel_driver(_handle, _interface);
-                    if (sts != UVC_SUCCESS && sts != LIBUSB_ERROR_NOT_FOUND && sts != LIBUSB_ERROR_NOT_SUPPORTED)
-                        break;
+                libusb_set_auto_detach_kernel_driver(_handle, true);
 
-                    if(0 != libusb_claim_interface(_handle, _interface))
-                        continue;
-                    return;
-
-                }while (true);
-
-                throw std::runtime_error("libusb_open timeout");
+                sts = libusb_claim_interface(_handle, _interface);
+                if(sts != LIBUSB_SUCCESS)
+                    return libusb_status_to_rs(sts);
+                
+                return RS2_USB_STATUS_SUCCESS;
             }
+
 
             ~handle_libusb()
             {
+                if(_handle == NULL)
+                    return;
                 libusb_release_interface(_handle, _interface);
                 libusb_close(_handle);
             }

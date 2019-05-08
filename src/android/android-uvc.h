@@ -70,7 +70,7 @@ namespace librealsense
         private:
             friend class source_reader_callback;
 
-            std::shared_ptr<usbhost_uvc_device> open_uvc_device(uint16_t mi);
+            std::shared_ptr<usbhost_uvc_device> open_uvc_device();
             int32_t rs2_value_translate(uvc_req_code action, rs2_option option, int32_t value) const;
             void play_profile(stream_profile profile, frame_callback callback);
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);

@@ -768,26 +768,15 @@ namespace librealsense
 
             std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const
             {
-                auto devices =  usb_enumerator::query_devices();
-                for(auto&& dev : devices)
-                {
-                    auto i = dev->get_info();
-                    if(i.unique_id == info.unique_id)
-                        return std::make_shared<platform::command_transfer_usb>(dev);
-                }
+                auto dev = usb_enumerator::create_usb_device(info);
+                if(dev != nullptr)
+                    return std::make_shared<platform::command_transfer_usb>(dev);
                 return nullptr;
             }
 
             std::vector<usb_device_info> query_usb_devices() const
             {
-                std::vector<usb_device_info> results;
-                auto devices =  usb_enumerator::query_devices();
-                for(auto&& dev : devices)
-                {
-                    auto infos = dev->get_subdevices_infos();
-                    results.insert(results.end(), infos.begin(), infos.end());
-                }
-                return results;
+                return usb_enumerator::query_devices_info();
             }
 
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override
@@ -800,6 +789,7 @@ namespace librealsense
                 std::vector<hid_device_info> devices;
                 return devices;
             }
+
             std::shared_ptr<time_service> create_time_service() const override
             {
                 return std::make_shared<os_time_service>();

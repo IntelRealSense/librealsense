@@ -27,20 +27,19 @@ namespace librealsense
             virtual ~usb_device_usbhost() {}
 
             virtual const usb_device_info get_info() const override { return _infos[0]; }
-            virtual const std::vector<usb_device_info> get_subdevices_infos() const override { return _infos; }
-            virtual const rs_usb_interface get_interface(uint8_t interface_number) const override;
-            virtual const std::vector<std::shared_ptr<usb_interface>> get_interfaces(usb_subclass filter) const override;
+            virtual const std::vector<rs_usb_interface> get_interfaces() const override { return _interfaces; }
             virtual const rs_usb_messenger open() override;
 
             ::usb_device* get_handle() { return _handle; }
             int get_file_descriptor() { return usb_device_get_fd(_handle); }
             void release();
+            const std::vector<usb_device_info> get_subdevices_info() const { return _infos; }
 
         private:
             ::usb_device *_handle;
             const usb_device_descriptor *_usb_device_descriptor;
             std::vector<usb_device_info> _infos;
-            std::map<uint8_t,std::shared_ptr<usb_interface>> _interfaces;
+            std::vector<rs_usb_interface> _interfaces;
             std::shared_ptr<usb_messenger> _messenger;
         };
     }
