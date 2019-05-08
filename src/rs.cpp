@@ -59,12 +59,11 @@ struct rs2_sensor : public rs2_options
         librealsense::sensor_interface* sensor,
         size_t index)
         : rs2_options((librealsense::options_interface*)sensor),
-        parent(parent), sensor(sensor), index(index)
+        parent(parent), sensor(sensor)
     {}
 
     rs2_device parent;
     librealsense::sensor_interface* sensor;
-    size_t index;
 
     rs2_sensor& operator=(const rs2_sensor&) = delete;
     rs2_sensor(const rs2_sensor&) = delete;
@@ -763,6 +762,20 @@ rs2_timestamp_domain rs2_get_frame_timestamp_domain(const rs2_frame* frame_ref, 
     return ((frame_interface*)frame_ref)->get_frame_timestamp_domain();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_TIMESTAMP_DOMAIN_COUNT, frame_ref)
+
+rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    std::shared_ptr<librealsense::sensor_interface> sensor( ((frame_interface*)frame)->get_sensor() );
+    device_interface& dev = sensor->get_device();
+    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev.shared_from_this());
+    rs2_device dev2{ dev.get_context(), dev_info, dev.shared_from_this() };
+    return new rs2_sensor(
+        dev2,
+        (((frame_interface*)frame)->get_sensor()).get(),
+        (size_t)0);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {

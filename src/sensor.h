@@ -70,7 +70,7 @@ namespace librealsense
             _on_before_frame_callback = callback;
         }
 
-        const device_interface& get_device() override;
+        device_interface& get_device() override;
 
         void register_pixel_format(native_pixel_format pf);
         void remove_pixel_format(native_pixel_format pf);

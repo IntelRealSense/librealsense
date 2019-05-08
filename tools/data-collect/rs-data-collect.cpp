@@ -124,7 +124,7 @@ void data_collector::save_data_to_file(const string& out_filename)
 
     for (const auto& elem : data_collection)
     {
-        csv << "\n\nStream Type,Index,F#,HW Timestamp (ms),Host Timestamp(ms)"
+        csv << "\n\nStream Type,Index,F#,HW Timestamp (ms),Host Timestamp(ms), SerialNumber"
             << (val_in_range(elem.first.first, { RS2_STREAM_GYRO,RS2_STREAM_ACCEL }) ? ",3DOF_x,3DOF_y,3DOF_z" : "")
             << (val_in_range(elem.first.first, { RS2_STREAM_POSE }) ? ",t_x,t_y,t_z,r_x,r_y,r_z,r_w" : "")
             << std::endl;
@@ -161,6 +161,7 @@ void data_collector::collect_frame_attributes(rs2::frame f, std::chrono::time_po
             rec._params = { pose.translation.x, pose.translation.y, pose.translation.z,
                     pose.rotation.x,pose.rotation.y,pose.rotation.z,pose.rotation.w };
         }
+        rec._dev_serial_no = sensor_from_frame(f)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
         data_collection[stream_uid].emplace_back(rec);
     }

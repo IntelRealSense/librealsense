@@ -329,6 +329,12 @@ namespace rs2
 
     };
 
+    inline std::shared_ptr<sensor> sensor_from_frame(frame f)
+    {
+        std::shared_ptr<rs2_sensor> psens(f.get_sensor(), rs2_delete_sensor);
+        return std::make_shared<sensor>(psens);
+    }
+
     inline bool operator==(const sensor& lhs, const sensor& rhs)
     {
         if (!(lhs.supports(RS2_CAMERA_INFO_NAME) && lhs.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)
