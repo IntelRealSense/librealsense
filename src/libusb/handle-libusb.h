@@ -33,41 +33,53 @@ namespace librealsense
                 default: return RS2_USB_STATUS_OTHER;
             }
         }
-        
+
         class handle_libusb
         {
-        public:          
+        public:
+            handle_libusb() : _interface(-1), _handle(NULL) {}
             usb_status open(libusb_device* device, uint8_t interface)
             {
-                _interface = interface;
-
+                std::lock_guard<std::mutex> lock(_mutex);
+                release();
                 auto sts = libusb_open(device, &_handle);
                 if(sts != LIBUSB_SUCCESS)
                     return libusb_status_to_rs(sts);
 
                 libusb_set_auto_detach_kernel_driver(_handle, true);
 
-                sts = libusb_claim_interface(_handle, _interface);
+                sts = libusb_claim_interface(_handle, interface);
                 if(sts != LIBUSB_SUCCESS)
                     return libusb_status_to_rs(sts);
-                
+
+                _interface = interface;
                 return RS2_USB_STATUS_SUCCESS;
             }
 
-
             ~handle_libusb()
             {
-                if(_handle == NULL)
-                    return;
-                libusb_release_interface(_handle, _interface);
-                libusb_close(_handle);
+                std::lock_guard<std::mutex> lock(_mutex);
+                release();
             }
 
             libusb_device_handle* get_handle() { return _handle; }
 
         private:
-            uint8_t _interface;
+            void release()
+            {
+                if(_handle != NULL)
+                {
+                    if(_interface != -1)
+                        libusb_release_interface(_handle, _interface);
+                    libusb_close(_handle);
+                }
+                _interface = -1;
+                _handle = NULL;
+            }
+
+            int _interface;
             libusb_device_handle* _handle;
+            std::mutex _mutex;
         };
     }
 }
