@@ -120,10 +120,11 @@ struct rs2_error
     rs2_exception_type exception_type;
 };
 
-rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type)
+rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
     return new rs2_error{ what, name, args, type };
 }
+NOEXCEPT_RETURN(nullptr, what, name, args, type)
 
 void notifications_processor::raise_notification(const notification n)
 {
