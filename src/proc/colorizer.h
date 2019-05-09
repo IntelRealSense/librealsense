@@ -106,6 +106,8 @@ namespace librealsense {
         static const int MAX_DISPARITY = 14000; // need to be checked actual setting
 
     protected:
+		colorizer(const char* name);
+
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
