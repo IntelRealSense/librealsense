@@ -1,22 +1,28 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// Motion device intrinsics: scale, bias, and variances
+    /// </summary>
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct MotionDeviceIntrinsics
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3*4)]
-        ///<summary> Interpret data array values </summary>                        
+        /// <summary> Interpret data array values </summary>
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3 * 4)]
         public float[] data;
 
+        /// <summary> Variance of noise for X, Y, and Z axis </summary>
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
-        ///<summary> Variance of noise for X, Y, and Z axis </summary>             
         public float[] noise_variances;
 
+        /// <summary> Variance of bias for X, Y, and Z axis </summary>
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
-        ///<summary> Variance of bias for X, Y, and Z axis </summary>              
         public float[] bias_variances;
     }
 }

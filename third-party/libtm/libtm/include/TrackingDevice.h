@@ -410,14 +410,6 @@ namespace perc
         virtual Status SetLocalizationData(IN Listener* listener, IN uint32_t length, IN const uint8_t* buffer) = 0;
 
         /**
-        * @brief ResetLocalizationData
-        *        Resets the localization data
-        * @param flag - 0 - Reset all localization data tables, 1 - reset only the map by its mapIndex
-        * @return Status
-        */
-        virtual Status ResetLocalizationData(IN uint8_t flag) = 0;
-
-        /**
         * @brief SetStaticNode
         *        Set a relative position of a static node
         * @param guid - Unique name (Null-terminated C-string) for the static node, max length is 127 bytes plus one byte for the terminating null character

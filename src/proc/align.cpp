@@ -61,8 +61,16 @@ namespace librealsense
         }
     }
 
-    void align::align_z_to_other(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale)
+    align::align(rs2_stream to_stream) : align(to_stream, "Align")
+    {}
+
+    void align::align_z_to_other(rs2::video_frame& aligned, 
+        const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale)
     {
+        byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+        auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
+        memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
+
         auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
 
         auto z_intrin = depth_profile.get_intrinsics();
@@ -116,8 +124,12 @@ namespace librealsense
         }
     }
 
-    void align::align_other_to_z(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale)
+    void align::align_other_to_z(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale)
     {
+        byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+        auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
+        memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
+
         auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
         auto other_profile = other.get_profile().as<rs2::video_stream_profile>();
 
@@ -155,6 +167,7 @@ namespace librealsense
                     aligned_intrinsics.width = to_video_profile->get_width();
                     aligned_intrinsics.height = to_video_profile->get_height();
                     aligned_video_profile->set_intrinsics([aligned_intrinsics]() { return aligned_intrinsics; });
+                    aligned_profile->register_extrinsics_to(to_profile, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
                 }
             }
         }
@@ -188,7 +201,13 @@ namespace librealsense
         return true;
     }
 
-    rs2::frame align::allocate_aligned_frame(const rs2::frame_source& source, const rs2::video_frame& from, const rs2::video_frame& to)
+    rs2_extension align::select_extension(const rs2::frame& input)
+    {
+        auto ext = input.is<rs2::depth_frame>() ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
+        return ext;
+    }
+
+    rs2::video_frame align::allocate_aligned_frame(const rs2::frame_source& source, const rs2::video_frame& from, const rs2::video_frame& to)
     {
         rs2::frame rv;
         auto from_bytes_per_pixel = from.get_bytes_per_pixel();
@@ -198,7 +217,7 @@ namespace librealsense
 
         auto aligned_profile = create_aligned_profile(from_profile, to_profile);
 
-        auto ext = from.is<rs2::depth_frame>() ? RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
+        auto ext = select_extension(from);
 
         rv = source.allocate_video_frame(
             *aligned_profile,
@@ -211,24 +230,20 @@ namespace librealsense
         return rv;
     }
 
-    void align::align_frames(const rs2::video_frame& aligned, const rs2::video_frame& from, const rs2::video_frame& to)
+    void align::align_frames(rs2::video_frame& aligned, const rs2::video_frame& from, const rs2::video_frame& to)
     {
         auto from_profile = from.get_profile().as<rs2::video_stream_profile>();
         auto to_profile = to.get_profile().as<rs2::video_stream_profile>();
 
         auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
 
-        byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
-        memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
-
-
         if (to_profile.stream_type() == RS2_STREAM_DEPTH)
         {
-            align_other_to_z(aligned_data, to, from, _depth_scale);
+            align_other_to_z(aligned, to, from, _depth_scale);
         }
         else
         {
-            align_z_to_other(aligned_data, from, to_profile, _depth_scale);
+            align_z_to_other(aligned, from, to_profile, _depth_scale);
         }
     }
 
@@ -244,7 +259,7 @@ namespace librealsense
         _depth_scale = ((librealsense::depth_frame*)depth.get())->get_units();
 
         if (_to_stream_type == RS2_STREAM_DEPTH)
-            frames.foreach([&other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() != RS2_STREAM_DEPTH) other_frames.push_back(f); });
+            frames.foreach([&other_frames](const rs2::frame& f) {if ((f.get_profile().stream_type() != RS2_STREAM_DEPTH) && f.is<rs2::video_frame>()) other_frames.push_back(f); });
         else
             frames.foreach([this, &other_frames](const rs2::frame& f) {if (f.get_profile().stream_type() == _to_stream_type) other_frames.push_back(f); });
 

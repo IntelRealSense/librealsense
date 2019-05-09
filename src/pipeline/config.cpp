@@ -16,7 +16,7 @@ namespace librealsense
         {
             std::lock_guard<std::mutex> lock(_mtx);
             _resolved_profile.reset();
-            _stream_requests[{stream, index}] = { stream, index, width, height, format, fps };
+            _stream_requests[{stream, index}] = { stream, index, width, height, fps, format };
         }
 
         void config::enable_all_stream()
@@ -118,7 +118,7 @@ namespace librealsense
             for (auto&& req : _stream_requests)
             {
                 auto r = req.second;
-                config.enable_stream(r.stream, r.stream_index, r.width, r.height, r.format, r.fps);
+                config.enable_stream(r.stream, r.index, r.width, r.height, r.format, r.fps);
             }
             return std::make_shared<profile>(dev, config, _device_request.record_output);
         }
@@ -199,7 +199,7 @@ namespace librealsense
                 }
             }
 
-            return ctx->add_device(file);
+            return ctx->add_device(file)->create_device(false);
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)

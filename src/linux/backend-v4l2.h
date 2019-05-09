@@ -41,11 +41,7 @@
 #include <list>
 
 #pragma GCC diagnostic ignored "-Wpedantic"
-#ifdef USE_SYSTEM_LIBUSB
-    #include <libusb.h>
-#else
-    #include "libusb/libusb.h"
-#endif
+#include <libusb.h>
 #pragma GCC diagnostic pop
 
 // Metadata streaming nodes are available with kernels 4.16+

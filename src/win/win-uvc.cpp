@@ -28,6 +28,7 @@ The library will be compiled without the metadata support!\n")
 
 #include "win-uvc.h"
 #include "../types.h"
+#include "libuvc/uvc_types.h"
 
 #include "Shlwapi.h"
 #include <Windows.h>
@@ -54,16 +55,6 @@ namespace librealsense
 {
     namespace platform
     {
-        // we are using standard fourcc codes to represent formats, while MF is using GUIDs
-        // occasionally there is a mismatch between the code and the guid data
-        const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
-            { 0x59382020, 0x47524559 },    /* 'GREY' from 'Y8  ' */
-            { 0x52573130, 0x70524141 },    /* 'pRAA' from 'RW10'.*/
-            { 0x32000000, 0x47524559 },    /* 'GREY' from 'L8  ' */
-            { 0x50000000, 0x5a313620 },    /* 'Z16'  from 'D16 ' */
-            { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
-            { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
-        };
 
 #ifdef METADATA_SUPPORT
 
@@ -1002,7 +993,7 @@ namespace librealsense
                                 _readsample_result = S_OK;
                                 CHECK_HR(_reader->ReadSample(mfp.index, 0, nullptr, nullptr, nullptr, nullptr));
 
-                                const auto timeout_ms = 5000;
+                                const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
                                 if (_has_started.wait(timeout_ms))
                                 {
                                     check("_reader->ReadSample(...)", _readsample_result);

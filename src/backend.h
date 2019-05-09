@@ -335,7 +335,7 @@ namespace librealsense
         {
             void* device_ptr;
 
-            operator std::string()
+            operator std::string() const
             {
                 std::ostringstream oss;
                 oss << device_ptr;

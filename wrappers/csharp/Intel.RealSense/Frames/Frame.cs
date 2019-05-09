@@ -1,106 +1,126 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class Frame : IDisposable
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
+    /// <summary>
+    /// Base class for multiple frame extensions
+    /// </summary>
+    public class Frame : Base.PooledObject
     {
-        internal HandleRef m_instance;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static readonly Base.Deleter FrameReleaser = NativeMethods.rs2_release_frame;
 
-        readonly static ObjectPool Pool = new ObjectPool((obj, ptr) =>
+        internal override void Initialize()
         {
-            var f = obj as Frame;
-            f.m_instance = new HandleRef(f, ptr);
-            f.disposedValue = false;
-            GC.ReRegisterForFinalize(f);
-        });
-
-        public IntPtr NativePtr { get { return m_instance.Handle; } }
-
-        internal Frame(IntPtr ptr)
-        {
-            m_instance = new HandleRef(this, ptr);
         }
 
+        internal Frame(IntPtr ptr)
+            : base(ptr, FrameReleaser)
+        {
+        }
+
+        /// <summary>
+        /// Create a frame from a native pointer
+        /// </summary>
+        /// <param name="ptr">Native <c>rs2_frame*</c> pointer</param>
+        /// <returns>a new <see cref="Frame"/></returns>
         public static Frame Create(IntPtr ptr)
         {
             return Create<Frame>(ptr);
         }
 
-        public static T Create<T>(IntPtr ptr) where T : Frame
+        /// <summary>
+        /// Create a frame from a native pointer
+        /// </summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="ptr">Native <c>rs2_frame*</c> pointer</param>
+        /// <returns>a new <typeparamref name="T"/></returns>
+        public static T Create<T>(IntPtr ptr)
+            where T : Frame
         {
-            return Pool.Get<T>(ptr);
+            return ObjectPool.Get<T>(ptr);
         }
 
-        public bool Is(Extension e)
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <param name="other"><see cref="Frame"/> to clone</param>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public static T Create<T>(Frame other)
+            where T : Frame
         {
             object error;
-            return NativeMethods.rs2_is_frame_extendable_to(m_instance.Handle, e, out error) > 0;
+            NativeMethods.rs2_frame_add_ref(other.Handle, out error);
+            return ObjectPool.Get<T>(other.Handle);
         }
 
-        public T As<T>() where T : Frame
+        /// <summary>Test if the given frame can be extended to the requested extension</summary>
+        /// <param name="extension">The extension to which the frame should be tested if it is extendable</param>
+        /// <returns><see langword="true"/> iff the frame can be extended to the given extension</returns>
+        public bool Is(Extension extension)
+        {
+            object error;
+            return NativeMethods.rs2_is_frame_extendable_to(Handle, extension, out error) != 0;
+        }
+
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T As<T>()
+            where T : Frame
+        {
+            return Create<T>(this);
+        }
+
+        /// <summary>Returns a strongly-typed clone, <see langword="this"/> is disposed</summary>
+        /// <typeparam name="T"><see cref="Frame"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T Cast<T>()
+            where T : Frame
         {
             using (this)
             {
-                object error;
-                NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-                return Create<T>(m_instance.Handle);
+                return Create<T>(this);
             }
         }
 
-        #region IDisposable Support
-        internal bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Reset();
-                Pool.Release(this);
-
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Frame()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        internal void Reset()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_release_frame(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
-        }
-
+        /// <summary>
+        /// Add a reference to this frame and return a clone, does not copy data
+        /// </summary>
+        /// <returns>A clone of this frame</returns>
         public Frame Clone()
         {
             object error;
-            NativeMethods.rs2_frame_add_ref(m_instance.Handle, out error);
-            return Create(m_instance.Handle);
+            NativeMethods.rs2_frame_add_ref(Handle, out error);
+            return Create(Handle);
         }
 
+        /// <summary>communicate to the library you intend to keep the frame alive for a while
+        /// <para>
+        /// this will remove the frame from the regular count of the frame pool
+        /// </para>
+        /// </summary>
+        /// <remarks>
+        /// once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling
+        /// </remarks>
+        public void Keep()
+        {
+            NativeMethods.rs2_keep_frame(Handle);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether frame is a composite frame
+        /// <para>Shorthand for <c>Is(<see cref="Extension.CompositeFrame"/>)</c></para>
+        /// </summary>
+        /// <seealso cref="Is(Extension)"/>
+        /// <value><see langword="true"/> if frame is a composite frame and false otherwise</value>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool IsComposite
         {
             get
@@ -109,71 +129,111 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>Gets a pointer to the frame data</summary>
+        /// <value>pointer to the start of the frame data</value>
         public IntPtr Data
         {
             get
             {
                 object error;
-                return NativeMethods.rs2_get_frame_data(m_instance.Handle, out error);
+                return NativeMethods.rs2_get_frame_data(Handle, out error);
             }
         }
 
-        public T GetProfile<T>() where T : StreamProfile
+        /// <summary>
+        /// Returns the stream profile that was used to start the stream of this frame
+        /// </summary>
+        /// <typeparam name="T">StreamProfile or subclass type</typeparam>
+        /// <returns>the stream profile that was used to start the stream of this frame</returns>
+        public T GetProfile<T>()
+            where T : StreamProfile
         {
             object error;
-            var ptr = NativeMethods.rs2_get_frame_stream_profile(m_instance.Handle, out error);
+            var ptr = NativeMethods.rs2_get_frame_stream_profile(Handle, out error);
             return StreamProfile.Create<T>(ptr);
         }
 
+        /// <summary>
+        /// Gets the stream profile that was used to start the stream of this frame
+        /// </summary>
+        /// <see cref="GetProfile{T}"/>
         public StreamProfile Profile => GetProfile<StreamProfile>();
-  
+
+        /// <summary>Gets the frame number of the frame</summary>
+        /// <value>the frame nubmer of the frame</value>
         public ulong Number
         {
             get
             {
                 object error;
-                var frameNumber = NativeMethods.rs2_get_frame_number(m_instance.Handle, out error);
-                return frameNumber;
+                return NativeMethods.rs2_get_frame_number(Handle, out error);
             }
         }
 
+        /// <summary>Gets timestamp from frame handle in milliseconds</summary>
+        /// <value>the timestamp of the frame in milliseconds</value>
         public double Timestamp
         {
             get
             {
                 object error;
-                var timestamp = NativeMethods.rs2_get_frame_timestamp(m_instance.Handle, out error);
-                return timestamp;
+                return NativeMethods.rs2_get_frame_timestamp(Handle, out error);
             }
         }
 
+        /// <summary>Gets the timestamp domain from frame handle. timestamps can only be comparable if they are in common domain</summary>
+        /// <remarks>
+        /// (for example, depth timestamp might come from system time while color timestamp might come from the device)
+        /// this method is used to check if two timestamp values are comparable (generated from the same clock)
+        /// </remarks>
+        /// <value>the timestamp domain of the frame (camera / microcontroller / system time)</value>
         public TimestampDomain TimestampDomain
         {
             get
             {
                 object error;
-                var timestampDomain = NativeMethods.rs2_get_frame_timestamp_domain(m_instance.Handle, out error);
-                return timestampDomain;
+                return NativeMethods.rs2_get_frame_timestamp_domain(Handle, out error);
             }
         }
 
         public long this[FrameMetadataValue frame_metadata]
         {
-            get {
+            get
+            {
                 return GetFrameMetadata(frame_metadata);
             }
         }
 
+        /// <summary>retrieve metadata from frame handle</summary>
+        /// <param name="frame_metadata">the <see cref="FrameMetadataValue">FrameMetadataValue</see> whose latest frame we are interested in</param>
+        /// <returns>the metadata value</returns>
         public long GetFrameMetadata(FrameMetadataValue frame_metadata)
         {
             object error;
-            return NativeMethods.rs2_get_frame_metadata(m_instance.Handle, frame_metadata, out error);
+            return NativeMethods.rs2_get_frame_metadata(Handle, frame_metadata, out error);
         }
 
+        /// <summary>determine device metadata</summary>
+        /// <param name="frame_metadata">the metadata to check for support</param>
+        /// <returns>true if device has this metadata</returns>
         public bool SupportsFrameMetaData(FrameMetadataValue frame_metadata)
         {
             object error;
-            return NativeMethods.rs2_supports_frame_metadata(m_instance.Handle, frame_metadata, out error) != 0;
+            return NativeMethods.rs2_supports_frame_metadata(Handle, frame_metadata, out error) != 0;
         }
+
+#if DEBUGGER_METADATA
+        private static readonly FrameMetadataValue[] MetadataValues = Enum.GetValues(typeof(FrameMetadataValue)) as FrameMetadataValue[];
+        public ICollection<KeyValuePair<FrameMetadataValue, long>> MetaData
+        {
+            get
+            {
+                return MetadataValues
+                    .Where(m => SupportsFrameMetaData(m))
+                    .Select(m => new KeyValuePair<FrameMetadataValue, long>(m, GetFrameMetadata(m)))
+                    .ToArray();
+            }
+        }
+#endif
     }
 }

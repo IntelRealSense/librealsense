@@ -634,6 +634,9 @@ namespace rs2
             return filter::process(frames);
         }
 
+    protected:
+        align(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+
     private:
         friend class context;
         std::shared_ptr<rs2_processing_block> init(rs2_stream align_to)

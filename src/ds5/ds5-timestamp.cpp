@@ -142,71 +142,6 @@ namespace librealsense
         return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
 
-    ds5_iio_hid_timestamp_reader::ds5_iio_hid_timestamp_reader()
-    {
-        counter.resize(sensors);
-        reset();
-    }
-
-    void ds5_iio_hid_timestamp_reader::reset()
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-        started = false;
-        for (auto i = 0; i < sensors; ++i)
-        {
-            counter[i] = 0;
-        }
-    }
-
-    rs2_time_t ds5_iio_hid_timestamp_reader::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-
-        if(has_metadata(mode, fo.metadata, fo.metadata_size))
-        {
-            auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            // The FW timestamps for HID are converted to Nanosec in Linux kernel. This may produce conflicts with MS API.
-            return static_cast<rs2_time_t>(timestamp) * HID_TIMESTAMP_MULTIPLIER;
-        }
-
-        if (!started)
-        {
-            LOG_WARNING("HID timestamp not found! please apply HID patch.");
-            started = true;
-        }
-
-        return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-    }
-
-    bool ds5_iio_hid_timestamp_reader::has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const
-    {
-        if(metadata != nullptr && metadata_size > 0)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    unsigned long long ds5_iio_hid_timestamp_reader::get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const
-    {
-        std::lock_guard<std::recursive_mutex> lock(_mtx);
-        if (nullptr == mode.pf) return 0;                   // Windows support is limited
-        int index = 0;
-        if (mode.pf->fourcc == 'GYRO')
-            index = 1;
-
-        return ++counter[index];
-    }
-
-    rs2_timestamp_domain ds5_iio_hid_timestamp_reader::get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const
-    {
-        if(has_metadata(mode ,fo.metadata, fo.metadata_size))
-        {
-            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-        }
-        return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-    }
-
     ds5_custom_hid_timestamp_reader::ds5_custom_hid_timestamp_reader()
     {
         counter.resize(sensors);
@@ -227,7 +162,9 @@ namespace librealsense
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         static const uint8_t timestamp_offset = 17;
 
-        auto timestamp = *((uint64_t*)((const uint8_t*)fo.pixels + timestamp_offset));
+        // The timewstamp shall be trimmed back to 32 bit to allow HID/UVC intra-stream sync
+        // See ds5_iio_hid_timestamp_reader description
+        auto timestamp = *((uint32_t*)((const uint8_t*)fo.pixels + timestamp_offset));
         // TODO - verify units with custom report
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }

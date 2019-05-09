@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics * intrin, const float point[3])
@@ -36,7 +37,25 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
     if (intrin->model == RS2_DISTORTION_FTHETA)
     {
         float r = sqrtf(x*x + y*y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
         float rd = (float)(1.0f / intrin->coeffs[0] * atan(2 * r* tan(intrin->coeffs[0] / 2.0f)));
+        x *= rd / r;
+        y *= rd / r;
+    }
+    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
+    {
+        float r = sqrtf(x*x + y*y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
+        float theta = atan(r);
+        float theta2 = theta*theta;
+        float series = 1 + theta2*(intrin->coeffs[0] + theta2*(intrin->coeffs[1] + theta2*(intrin->coeffs[2] + theta2*intrin->coeffs[3])));
+        float rd = theta*series;
         x *= rd / r;
         y *= rd / r;
     }
@@ -49,7 +68,6 @@ static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsi
 static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics * intrin, const float pixel[2], float depth)
 {
     assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
-    assert(intrin->model != RS2_DISTORTION_FTHETA); // Cannot deproject to an ftheta image
     //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
 
     float x = (pixel[0] - intrin->ppx) / intrin->fx;
@@ -63,6 +81,43 @@ static void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrin
         x = ux;
         y = uy;
     }
+    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
+    {
+        float rd = sqrtf(x*x + y*y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+
+        float theta = rd;
+        float theta2 = rd*rd;
+        for (int i = 0; i < 4; i++)
+        {
+            float f = theta*(1 + theta2*(intrin->coeffs[0] + theta2*(intrin->coeffs[1] + theta2*(intrin->coeffs[2] + theta2*intrin->coeffs[3])))) - rd;
+            if (abs(f) < FLT_EPSILON)
+            {
+                break;
+            }
+            float df = 1 + theta2*(3 * intrin->coeffs[0] + theta2*(5 * intrin->coeffs[1] + theta2*(7 * intrin->coeffs[2] + 9 * theta2*intrin->coeffs[3])));
+            theta -= f / df;
+            theta2 = theta*theta;
+        }
+        float r = tan(theta);
+        x *= r / rd;
+        y *= r / rd;
+    }
+    if (intrin->model == RS2_DISTORTION_FTHETA)
+    {
+        float rd = sqrtf(x*x + y*y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+        float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
+        x *= r / rd;
+        y *= r / rd;
+    }
+
     point[0] = depth * x;
     point[1] = depth * y;
     point[2] = depth;

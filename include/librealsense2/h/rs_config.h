@@ -10,6 +10,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #ifndef LIBREALSENSE_RS2_CONFIG_H
 #define LIBREALSENSE_RS2_CONFIG_H
 
+#define RS2_DEFAULT_TIMEOUT 15000
+
 #ifdef __cplusplus
 extern "C" {
 #endif

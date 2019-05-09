@@ -253,7 +253,7 @@ namespace rs2
     {
     public:
         /**
-        * Video stream profile instance which contans additional motion attributes
+        * Motion stream profile instance which contans IMU-specific intrinsic
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit motion_stream_profile(const stream_profile& sp)
@@ -268,7 +268,7 @@ namespace rs2
         }
 
         /**
-        * Returns scale and bias of a the motion stream profile
+        * Returns scale/bias/covariances of a the motion sensors
         * \return rs2_motion_device_intrtinsic - stream motion intrinsics
         */
         rs2_motion_device_intrinsic get_motion_intrinsics() const
@@ -281,6 +281,24 @@ namespace rs2
         }
     };
 
+    class pose_stream_profile : public stream_profile
+    {
+    public:
+        /**
+        * Pose stream profile instance with a designated extension type
+        * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
+        */
+        explicit pose_stream_profile(const stream_profile& sp)
+            : stream_profile(sp)
+        {
+            rs2_error* e = nullptr;
+            if ((rs2_stream_profile_is(sp.get(), RS2_EXTENSION_POSE_PROFILE, &e) == 0 && !e))
+            {
+                _profile = nullptr;
+            }
+            error::handle(e);
+        }
+    };
 
     /**
     Interface for frame filtering functionality
@@ -817,7 +835,7 @@ namespace rs2
         * Retrieve back the pose data from T2xx position tracking sensor
         * \return rs2_pose - orientation and velocity data.
         */
-        rs2_pose get_pose_data()
+        rs2_pose get_pose_data() const
         {
             rs2_pose pose_data;
             rs2_error* e = nullptr;
@@ -887,7 +905,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first depth framee, if no frame found, return the default one(frame instance)
+        * Retrieve back the first depth frame, if no frame found, return the default one(frame instance)
         * \return depth_frame - first found depth frame.
         */
         depth_frame get_depth_frame() const

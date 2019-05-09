@@ -51,16 +51,16 @@ namespace librealsense
         template <typename T>
         static bool safe_convert(const std::string& key, T& val)
         {
+            bool ret{ false };
             try
             {
-                convert(key, val);
+                ret = convert(key, val);
             }
             catch (const std::exception& e)
             {
                 LOG_ERROR(e.what());
-                return false;
             }
-            return true;
+            return ret;
         }
 
         static std::map<std::string, std::string> get_frame_metadata(const rosbag::Bag& bag,
@@ -80,6 +80,7 @@ namespace librealsense
         void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
         bool is_depth_sensor(std::string sensor_name);
         bool is_color_sensor(std::string sensor_name);
+        bool is_motion_module_sensor(std::string sensor_name);
         bool is_ds5_PID(int pid);
         bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);
@@ -90,7 +91,7 @@ namespace librealsense
         std::shared_ptr<info_container> read_legacy_info_snapshot(uint32_t sensor_index) const;
         std::shared_ptr<info_container> read_info_snapshot(const std::string& topic) const;
         std::set<uint32_t> read_sensor_indices(uint32_t device_index) const;
-        static std::shared_ptr<stream_profile_base> create_pose_profile(uint32_t stream_index, uint32_t fps);
+        static std::shared_ptr<pose_stream_profile> create_pose_profile(uint32_t stream_index, uint32_t fps);
         static std::shared_ptr<motion_stream_profile> create_motion_stream(rs2_stream stream_type, uint32_t stream_index, uint32_t fps, rs2_format format, rs2_motion_device_intrinsic intrinsics);
         static std::shared_ptr<video_stream_profile> create_video_stream_profile(const platform::stream_profile& sp,
             const sensor_msgs::CameraInfo& ci,
@@ -108,6 +109,7 @@ namespace librealsense
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version);
         static std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view);
 
+        std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
         device_snapshot                         m_initial_device_description;
         nanoseconds                             m_total_duration;
         std::string                             m_file_path;
@@ -116,7 +118,6 @@ namespace librealsense
         std::unique_ptr<rosbag::View>           m_samples_view;
         rosbag::View::iterator                  m_samples_itrator;
         std::vector<std::string>                m_enabled_streams_topics;
-        std::shared_ptr<metadata_parser_map>    m_metadata_parser_map;
         std::shared_ptr<context>                m_context;
         uint32_t                                m_version;
     };

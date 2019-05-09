@@ -65,19 +65,11 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 #include "../common/android_helpers.h"
 #endif
 
+#define UNKNOWN_VALUE "UNKNOWN"
+
 namespace librealsense
 {
-    #define UNKNOWN_VALUE "UNKNOWN"
-    const double TIMESTAMP_USEC_TO_MSEC = 0.001;
-    const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
-
-#ifdef _WIN32
-/* The FW timestamps for HID are converted to Usec in Windows kernel */
-#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_USEC_TO_MSEC
-#else
-/* The FW timestamps for HID are converted to Nanosec in Linux kernel */
-#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_NSEC_TO_MSEC
-#endif // define HID_TIMESTAMP_MULTIPLIER
+    static const double TIMESTAMP_USEC_TO_MSEC = 0.001f;
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -458,7 +450,7 @@ namespace librealsense
     /////////////////////////////
 
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char* get_string(TYPE value); \
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) LRS_EXTENSION_API const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; } \
         inline bool try_parse(const std::string& str, TYPE& res)       \
@@ -1394,7 +1386,15 @@ namespace librealsense
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
 
-    std::string datetime_string();
+    inline std::string datetime_string()
+    {
+        auto t = time(nullptr);
+        char buffer[20] = {};
+        const tm* time = localtime(&t);
+        if (nullptr != time)
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
+        return to_string() << buffer;
+    }
 
     bool file_exists(const char* filename);
 

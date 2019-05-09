@@ -41,16 +41,22 @@ Verify that the kernel is updated :
 `modinfo uvcvideo | grep "version:"` should include `realsense` string
 
 ## Upgrading the Packages:
-When upgrading, be sure to:  
-- Remove the old records and update your source list:  
-  `sudo rm -f /etc/apt/sources.list.d/realsense-public.list`  
-  `sudo apt-get update`
+Refresh the local packages cache by invoking:  
+  `sudo apt-get update`  
+
+Upgrade all the installed packages, including `librealsense` with:  
+  `sudo apt-get upgrade`
+
+To upgrade selected packages only a more granular approach can be applied:  
+  `sudo apt-get --only-upgrade install <package1 package2 ...>`  
+  E.g:   
+  `sudo apt-get --only-upgrade install  librealsense2-utils librealsense2-dkms`  
 
 ## Uninstalling the Packages:
 **Important** Removing Debian package is allowed only when no other installed packages directly refer to it. For example removing `librealsense2-udev-rules` requires `librealsense2` to be removed first.
 
 Remove a single package with:   
-  `sudo apt-get --purge <package-name>`  
+  `sudo apt-get purge <package-name>`  
 
 Remove all RealSense™ SDK-related packages with:   
   `dpkg -l | grep "realsense" | cut -d " " -f 3 | xargs sudo dpkg --purge`  

@@ -1,307 +1,169 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class Sensor : IOptions, IDisposable
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+
+    // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
+    public class Sensor : Base.PooledObject, IOptions
     {
-        protected readonly IntPtr m_instance;
-        
-        public IntPtr Instance 
+        internal override void Initialize()
         {
-            get { return m_instance; }
+            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
+            Options = new OptionsList(Handle);
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private frame_callback m_callback;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private FrameQueue m_queue;
+
+        internal static T Create<T>(IntPtr ptr)
+            where T : Sensor
+        {
+            return ObjectPool.Get<T>(ptr);
         }
 
         internal Sensor(IntPtr sensor)
+            : base(sensor, NativeMethods.rs2_delete_sensor)
         {
-            //if (sensor == IntPtr.Zero)
-            //    throw new ArgumentNullException();
-            m_instance = sensor;
+            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
+            Options = new OptionsList(Handle);
         }
 
-        public class CameraInfos
+        protected override void Dispose(bool disposing)
         {
-            readonly IntPtr m_sensor;
-            public CameraInfos(IntPtr sensor) { m_sensor = sensor; }
+            //m_queue.Dispose();
+            (Options as OptionsList).Dispose();
+            base.Dispose(disposing);
+        }
 
+        public class CameraInfos : IEnumerable<KeyValuePair<CameraInfo, string>>
+        {
+            private readonly IntPtr m_sensor;
+
+            public CameraInfos(IntPtr sensor)
+            {
+                m_sensor = sensor;
+            }
+
+            /// <summary>retrieve sensor specific information, like versions of various internal components</summary>
+            /// <param name="info">camera info type to retrieve</param>
+            /// <returns>the requested camera info string, in a format specific to the device model</returns>
             public string this[CameraInfo info]
             {
                 get
                 {
                     object err;
                     if (NativeMethods.rs2_supports_sensor_info(m_sensor, info, out err) > 0)
+                    {
                         return Marshal.PtrToStringAnsi(NativeMethods.rs2_get_sensor_info(m_sensor, info, out err));
+                    }
+
                     return null;
                 }
             }
-        }
 
-        CameraInfos m_info;
+            private static readonly CameraInfo[] CameraInfoValues = Enum.GetValues(typeof(CameraInfo)) as CameraInfo[];
 
-        public CameraInfos Info
-        {
-            get
-            {
-                if (m_info == null)
-                    m_info = new CameraInfos(m_instance);
-                return m_info;
-            }
-        }
-
-
-        internal class CameraOption : IOption
-        {
-            readonly IntPtr m_sensor;
-            readonly Option option;
-
-            private readonly float min;
-            private readonly float max;
-            private readonly float step;
-            private readonly float @default;
-            private string description;
-
-            public CameraOption(IntPtr sensor, Option option)
-            {
-                m_sensor = sensor;
-                this.option = option;
-
-                if (Supported)
-                {
-                    object error;
-                    NativeMethods.rs2_get_option_range(m_sensor, option, out min, out max, out step, out @default, out error);
-                }
-            }
-
-            public bool Supported
-            {
-                get
-                {
-                    try
-                    {
-                        object error;
-                        return NativeMethods.rs2_supports_option(m_sensor, option, out error) > 0;
-                    }
-                    catch (Exception)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            public Option Key
-            {
-                get
-                {
-                    return option;
-                }
-            }
-
-            public string Description
-            {
-                get
-                {
-                    if(description == null)
-                    {
-                        object error;
-                        var str = NativeMethods.rs2_get_option_description(m_sensor, option, out error);
-                        description = Marshal.PtrToStringAnsi(str);
-                    }
-                    return description;
-                }
-            }
-
-            public float Value
-            {
-                get
-                {
-                    object error;
-                    return NativeMethods.rs2_get_option(m_sensor, option, out error);
-                }
-                set
-                {
-                    object error;
-                    NativeMethods.rs2_set_option(m_sensor, option, value, out error);
-                }
-            }
-
-            public string ValueDescription
-            {
-                get
-                {
-                    return GetValueDescription(Value);
-                }
-            }
-
-            public string GetValueDescription(float value)
+            /// <inheritdoc/>
+            public IEnumerator<KeyValuePair<CameraInfo, string>> GetEnumerator()
             {
                 object error;
-                var str = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                return Marshal.PtrToStringAnsi(str);
-            }
-
-            public float Min
-            {
-                get
+                foreach (var key in CameraInfoValues)
                 {
-                    return min;
+                    if (NativeMethods.rs2_supports_sensor_info(m_sensor, key, out error) > 0)
+                    {
+                        var value = Marshal.PtrToStringAnsi(NativeMethods.rs2_get_sensor_info(m_sensor, key, out error));
+                        yield return new KeyValuePair<CameraInfo, string>(key, value);
+                    }
                 }
             }
 
-            public float Max
-            {
-                get
-                {
-                    return max;
-                }
-            }
-
-            public float Step
-            {
-                get
-                {
-                    return step;
-                }
-            }
-
-            public float Default
-            {
-                get
-                {
-                    return @default;
-                }
-            }
-
-            public bool ReadOnly
-            {
-                get
-                {
-                    object error;
-                    return NativeMethods.rs2_is_option_read_only(m_sensor, option, out error) != 0;
-                }
-            }
-
-        }
-        
-        public class SensorOptions : IOptionsContainer
-        {
-            readonly IntPtr m_sensor;
-            internal SensorOptions(IntPtr sensor)
-            {
-                m_sensor = sensor;
-            }
-
-            public IOption this[Option option]
-            {
-                get
-                {
-                    return new CameraOption(m_sensor, option);
-                }
-            }
-
-            public string OptionValueDescription(Option option, float value)
-            {
-                object error;
-                var desc = NativeMethods.rs2_get_option_value_description(m_sensor, option, value, out error);
-                if(desc != IntPtr.Zero)
-                {
-                    return Marshal.PtrToStringAnsi(desc);
-                }
-                return null;
-            }
-
-            static readonly Option[] OptionValues = Enum.GetValues(typeof(Option)) as Option[];
-
-            public IEnumerator<IOption> GetEnumerator()
-            {
-
-                foreach (var v in OptionValues)
-                {
-                    if (this[v].Supported)
-                        yield return this[v];
-                }
-            }
-
+            /// <inheritdoc/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
         }
 
-        SensorOptions m_options;
-        public IOptionsContainer Options
-        {
-            get
-            {
-                return m_options = m_options ?? new SensorOptions(m_instance);
-            }
-        }
+        public InfoCollection Info { get; private set; }
 
-        /// <summary>
-        /// open subdevice for exclusive access, by commiting to a configuration
-        /// </summary>
-        /// <param name="profile"></param>
+
+        /// <inheritdoc/>
+        public IOptionsContainer Options { get; private set; }
+
+        /// <summary>open subdevice for exclusive access, by committing to a configuration</summary>
+        /// <param name="profile">stream profile that defines single stream configuration</param>
         public void Open(StreamProfile profile)
         {
             object error;
-            NativeMethods.rs2_open(m_instance, profile.m_instance.Handle, out error);
-
+            NativeMethods.rs2_open(Handle, profile.Handle, out error);
         }
 
-        /// <summary>
-        /// open subdevice for exclusive access, by commiting to composite configuration, specifying one or more stream profiles 
-        /// this method should be used for interdendent streams, such as depth and infrared, that have to be configured together
-        /// </summary>
-        /// <param name="profiles"></param>
+        /// <summary>open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles</summary>
+        /// <remarks>
+        /// this method should be used for interdependent streams, such as depth and infrared, that have to be configured together
+        /// </remarks>
+        /// <param name="profiles">list of stream profiles</param>
         public void Open(params StreamProfile[] profiles)
         {
             object error;
             IntPtr[] handles = new IntPtr[profiles.Length];
             for (int i = 0; i < profiles.Length; i++)
-                handles[i] = profiles[i].m_instance.Handle;
-            NativeMethods.rs2_open_multiple(m_instance, handles, profiles.Length, out error);
+            {
+                handles[i] = profiles[i].Handle;
+            }
+
+            NativeMethods.rs2_open_multiple(Handle, handles, profiles.Length, out error);
         }
 
+        /// <summary>
+        /// start streaming from specified configured sensor of specific stream to frame queue
+        /// </summary>
+        /// <param name="queue">frame-queue to store new frames into</param>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public void Start(FrameQueue queue)
         {
             object error;
-            NativeMethods.rs2_start_queue(m_instance, queue.m_instance.Handle, out error);
+            NativeMethods.rs2_start_queue(Handle, queue.Handle, out error);
             m_queue = queue;
             m_callback = null;
         }
 
+        /// <summary>start streaming from specified configured sensor</summary>
+        /// <param name="cb">delegate to register as per-frame callback</param>
+        // TODO: overload with state object and Action<Frame, object> callback to avoid allocations
         public void Start(FrameCallback cb)
         {
             object error;
             frame_callback cb2 = (IntPtr f, IntPtr u) =>
             {
                 using (var frame = Frame.Create(f))
+                {
                     cb(frame);
+                }
             };
             m_callback = cb2;
             m_queue = null;
-            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
+            NativeMethods.rs2_start(Handle, cb2, IntPtr.Zero, out error);
         }
 
-        public void Start<T>(Action<T> cb) where T : Frame
-        {
-            object error;
-            frame_callback cb2 = (IntPtr f, IntPtr u) =>
-            {
-                using (var frame = Frame.Create<T>(f))
-                    cb(frame);
-            };
-            m_callback = cb2;
-            m_queue = null;
-            NativeMethods.rs2_start(m_instance, cb2, IntPtr.Zero, out error);
-        }
-
+        /// <summary>
+        /// stops streaming from specified configured device
+        /// </summary>
         public void Stop()
         {
             object error;
-            NativeMethods.rs2_stop(m_instance, out error);
+            NativeMethods.rs2_stop(Handle, out error);
             m_callback = null;
             m_queue = null;
         }
@@ -312,95 +174,79 @@ namespace Intel.RealSense
         public void Close()
         {
             object error;
-            NativeMethods.rs2_close(m_instance, out error);
+            NativeMethods.rs2_close(Handle, out error);
         }
 
-        #region Extensions
+        public bool Is(Extension ext)
+        {
+            object error;
+            return NativeMethods.rs2_is_sensor_extendable_to(Handle, ext, out error) != 0;
+        }
 
         /// <summary>
-        /// retrieve mapping between the units of the depth image and meters
+        /// Gets the mapping between the units of the depth image and meters
         /// </summary>
-        /// <returns> depth in meters corresponding to a depth value of 1</returns>
+        /// <value>depth in meters corresponding to a depth value of 1</value>
         public float DepthScale
         {
             get
             {
                 object error;
-                return NativeMethods.rs2_get_depth_scale(m_instance, out error);
+                return NativeMethods.rs2_get_depth_scale(Handle, out error);
             }
         }
 
+        /// <summary>
+        /// Gets the active region of interest to be used by auto-exposure algorithm
+        /// </summary>
         public AutoExposureROI AutoExposureSettings
         {
             get
             {
                 object error;
-                if (NativeMethods.rs2_is_sensor_extendable_to(m_instance, Extension.Roi, out error) > 0)
+                if (NativeMethods.rs2_is_sensor_extendable_to(Handle, Extension.Roi, out error) != 0)
                 {
-                    return new AutoExposureROI { m_instance = m_instance };
+                    return new AutoExposureROI { m_instance = Handle };
                 }
+
+                // TODO: consider making AutoExposureROI a struct and throwing instead
                 return null;
             }
         }
-        #endregion
 
-        public StreamProfileList StreamProfiles
+        /// <summary>Gets the list of supported stream profiles</summary>
+        /// <value>list of stream profiles that given subdevice can provide</value>
+        public ReadOnlyCollection<StreamProfile> StreamProfiles
         {
             get
             {
                 object error;
-                return new StreamProfileList(NativeMethods.rs2_get_stream_profiles(m_instance, out error));
-            }
-        }
-
-        public ProcessingBlockList ProcessingBlocks
-        {
-            get
-            {
-                object error;
-                return new ProcessingBlockList(NativeMethods.rs2_get_recommended_processing_blocks(m_instance, out error));
-            }
-        }
-
-        private frame_callback m_callback;
-        private FrameQueue m_queue;
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
+                using (var pl = new StreamProfileList(NativeMethods.rs2_get_stream_profiles(Handle, out error)))
                 {
-                    // TODO: dispose managed state (managed objects).
-                    m_callback = null;
+                    var profiles = new StreamProfile[pl.Count];
+                    pl.CopyTo(profiles, 0);
+                    return Array.AsReadOnly(profiles);
                 }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_sensor(m_instance);
-
-                disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~Sensor()
+        /// <summary>Gets the list of recommended processing blocks for a specific sensor.</summary>
+        /// <remarks>
+        /// Order and configuration of the blocks are decided by the sensor
+        /// </remarks>
+        /// <value>list of supported sensor recommended processing blocks</value>
+        public ReadOnlyCollection<ProcessingBlock> ProcessingBlocks
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
+            get
+            {
+                object error;
+                using (var pl = new ProcessingBlockList(NativeMethods.rs2_get_recommended_processing_blocks(Handle, out error)))
+                {
+                    var blocks = new ProcessingBlock[pl.Count];
+                    pl.CopyTo(blocks, 0);
+                    return Array.AsReadOnly(blocks);
+                }
+            }
         }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

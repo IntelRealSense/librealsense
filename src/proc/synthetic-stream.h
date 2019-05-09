@@ -44,7 +44,7 @@ namespace librealsense
     class LRS_EXTENSION_API processing_block : public processing_block_interface, public options_container, public info_container
     {
     public:
-        processing_block(std::string name);
+        processing_block(const char* name);
 
         void set_processing_callback(frame_processor_callback_ptr callback) override;
         void set_output_callback(frame_callback_ptr callback) override;
@@ -59,10 +59,10 @@ namespace librealsense
         synthetic_source _source_wrapper;
     };
 
-    class generic_processing_block : public processing_block
+    class LRS_EXTENSION_API generic_processing_block : public processing_block
     {
     public:
-        generic_processing_block(std::string name);
+        generic_processing_block(const char* name);
         virtual ~generic_processing_block() { _source.flush(); }
 
     protected:
@@ -125,7 +125,7 @@ namespace librealsense
     class LRS_EXTENSION_API stream_filter_processing_block : public generic_processing_block
     {
     public:
-        stream_filter_processing_block(std::string name);
+        stream_filter_processing_block(const char* name);
         virtual ~stream_filter_processing_block() { _source.flush(); }
 
     protected:
@@ -137,8 +137,8 @@ namespace librealsense
     class depth_processing_block : public stream_filter_processing_block
     {
     public:
-        depth_processing_block(std::string name) :stream_filter_processing_block(name)
-        {}
+        depth_processing_block(const char* name) : stream_filter_processing_block(name) {}
+
         virtual ~depth_processing_block() { _source.flush(); }
 
     protected:

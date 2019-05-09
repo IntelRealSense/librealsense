@@ -73,6 +73,7 @@ extern "C" {
         RS2_OPTION_LLD_TEMPERATURE, /**< LLD temperature*/
         RS2_OPTION_MC_TEMPERATURE, /**< MC temperature*/
         RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
+        RS2_OPTION_HARDWARE_PRESET, /**< Hardware stream configuration */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

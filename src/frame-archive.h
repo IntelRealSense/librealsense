@@ -78,7 +78,7 @@ namespace librealsense
             return nullptr;
         }
 
-        void unpublish_frame(frame_interface* frame)
+        void unpublish_frame(frame_interface* frame) override
         {
             if (frame)
             {
@@ -101,12 +101,12 @@ namespace librealsense
             }
         }
 
-        void keep_frame(frame_interface* frame)
+        void keep_frame(frame_interface* frame) override
         {
             --published_frames_count;
         }
 
-        frame_interface* publish_frame(frame_interface* frame)
+        frame_interface* publish_frame(frame_interface* frame) override
         {
             auto f = (T*)frame;
 
@@ -156,7 +156,7 @@ namespace librealsense
             }
         }
 
-        std::shared_ptr<metadata_parser_map> get_md_parsers() const { return _metadata_parsers; };
+        std::shared_ptr<metadata_parser_map> get_md_parsers() const override { return _metadata_parsers; };
 
         friend class frame;
 
@@ -171,7 +171,7 @@ namespace librealsense
             published_frames_count = 0;
         }
 
-        callback_invocation_holder begin_callback()
+        callback_invocation_holder begin_callback() override
         {
             return { callback_inflight.allocate(), &callback_inflight };
         }
@@ -181,13 +181,13 @@ namespace librealsense
             ref->release();
         }
 
-        frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
+        frame_interface* alloc_and_track(const size_t size, const frame_additional_data& additional_data, bool requires_memory) override
         {
             auto frame = alloc_frame(size, additional_data, requires_memory);
             return track_frame(frame);
         }
 
-        void flush()
+        void flush() override
         {
             published_frames.stop_allocation();
             callback_inflight.stop_allocation();

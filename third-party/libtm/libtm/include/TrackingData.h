@@ -12,7 +12,7 @@ namespace perc
     #define SENSOR_TYPE_MASK (0x001F << SENSOR_TYPE_POS) /**< Bits 0-4 */
     #define SENSOR_INDEX_POS (5)
     #define SENSOR_INDEX_MASK (0x0007 << SENSOR_INDEX_POS) /**< Bits 5-7 */
-    #define SET_SENSOR_ID(_type, _index) (((_type << SENSOR_TYPE_POS) & SENSOR_TYPE_MASK) | ((_index << SENSOR_INDEX_POS) & SENSOR_INDEX_MASK))
+    #define SET_SENSOR_ID(_type, _index) ((((_type) << SENSOR_TYPE_POS) & SENSOR_TYPE_MASK) | (((_index) << SENSOR_INDEX_POS) & SENSOR_INDEX_MASK))
     #define GET_SENSOR_INDEX(_sensorID) ((_sensorID & SENSOR_INDEX_MASK) >> SENSOR_INDEX_POS)
     #define GET_SENSOR_TYPE(_sensorID) ((_sensorID & SENSOR_TYPE_MASK) >> SENSOR_TYPE_POS)
     #define MAX_VIDEO_STREAMS 8
@@ -229,7 +229,7 @@ namespace perc
             VelocimeterFrame() : temperature(0), sensorIndex(0), frameId(0) {};
             uint8_t sensorIndex;  /**< Zero based index of sensor with the same type within device         */
             uint32_t frameId;     /**< A running index of frames from every unique sensor, starting from 0 */
-            Axis angularVelocity; /**< X, Y, Z values of velocimeter, in radians/sec                       */
+            Axis translationalVelocity; /**< X, Y, Z values of velocimeter, in meters/sec                       */
             float temperature;    /**< Velocimeter temperature                                             */
         };
 
@@ -677,7 +677,7 @@ namespace perc
             float_t ppy;              /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge                                           */
             float_t fx;               /**< Focal length of the image plane, as a multiple of pixel width                                                                          */
             float_t fy;               /**< Focal length of the image plane, as a multiple of pixel Height                                                                         */
-            uint32_t distortionModel; /**< Distortion model of the image: NONE = 0, MODIFIED_BROWN_CONRADY = 1, INVERSE_BROWN_CONRADY = 2, FTHETA = 3, KANNALA_BRANDT4 = 4        */
+            uint32_t distortionModel; /**< Distortion model of the image: F-THETA = 1, NONE (UNDISTORTED) = 3, KANNALA_BRANDT4 = 4                                                */
             float_t coeffs[5];        /**< Distortion coefficients                                                                                                                */
         };
 

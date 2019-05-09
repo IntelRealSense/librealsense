@@ -18,8 +18,8 @@
 #include "Utils.h"
 #include "UsbPlugListener.h"
 #include "TrackingData.h"
-#include "CentralAppFw.h"
-#include "CentralBlFw.h"
+#include "fw_central_app.h"
+#include "fw_central_bl.h"
 
 #define CHUNK_SIZE 512
 #define BUFFER_SIZE 1024
@@ -122,11 +122,11 @@ namespace perc {
             mDeviceStatus = Status::INIT_FAILED;
         }
 
-        /* Enable low power mode */
-        status = SetLowPowerModeInternal(true);
+        /* Disable low power mode */
+        status = SetLowPowerModeInternal(false);
         if (status != Status::SUCCESS)
         {
-            DEVICELOGE("Error: Failed to enable low power mode (0x%X)", status);
+            DEVICELOGE("Error: Failed to disable low power mode (0x%X)", status);
         }
 
         status = GetDeviceInfoInternal();
@@ -1769,34 +1769,6 @@ namespace perc {
         return setMsg.Result == 0 ? Status::SUCCESS : Status::COMMON_ERROR;
     }
 
-    Status Device::ResetLocalizationData(uint8_t flag)
-    {
-        bulk_message_request_reset_localization_data request = {0};
-        bulk_message_response_reset_localization_data response = {0};
-
-        if (flag > 1)
-        {
-            DEVICELOGE("Error: Flag (%d) is unknown", flag);
-            return Status::ERROR_PARAMETER_INVALID;
-        }
-
-        request.header.wMessageID = SLAM_RESET_LOCALIZATION_DATA;
-        request.header.dwLength = sizeof(request);
-        request.bFlag = flag;
-
-        DEVICELOGD("Set Reset Localization Data - Flag 0x%X", flag);
-        Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
-
-        mDispatcher->sendMessage(&mFsm, msg);
-        if (msg.Result != toUnderlying(Status::SUCCESS))
-        {
-            DEVICELOGE("USB Error (0x%X)", msg.Result);
-            return Status::ERROR_USB_TRANSFER;
-        }
-
-        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
-    }
-
     Status Device::SetStaticNode(const char* guid, const TrackingData::RelativePose& relativePose)
     {
         bulk_message_request_set_static_node request = { 0 };
@@ -2213,9 +2185,9 @@ namespace perc {
         req->metadata.dwMetadataLength = offsetof(bulk_message_velocimeter_stream_metadata, dwFrameLength) - sizeof(req->metadata.dwMetadataLength);
         req->metadata.flTemperature = frame.temperature;
         req->metadata.dwFrameLength = sizeof(bulk_message_velocimeter_stream_metadata) - offsetof(bulk_message_velocimeter_stream_metadata, dwFrameLength) - sizeof(req->metadata.dwFrameLength);
-        req->metadata.flVx = frame.angularVelocity.x;
-        req->metadata.flVy = frame.angularVelocity.y;
-        req->metadata.flVz = frame.angularVelocity.z;
+        req->metadata.flVx = frame.translationalVelocity.x;
+        req->metadata.flVy = frame.translationalVelocity.y;
+        req->metadata.flVz = frame.translationalVelocity.z;
 
         int actual;
         auto rc = libusb_bulk_transfer(mDevice, mStreamEndpoint | TO_DEVICE, (unsigned char*)req, (int)buf.size(), &actual, 100);
@@ -2567,7 +2539,7 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
-    Status Device::CentralLoadFW(uint8_t* buffer)
+    Status Device::CentralLoadFW(const uint8_t* buffer, int size)
     {
         if (mDeviceInfo.bSKUInfo == SKU_INFO_TYPE::SKU_INFO_TYPE_WITHOUT_BLUETOOTH)
         {
@@ -2575,8 +2547,8 @@ namespace perc {
             return Status::FEATURE_UNSUPPORTED;
         }
         uint32_t addressSize = offsetof(message_fw_update_request, bNumFiles);
-        std::vector<uint8_t> msgArr(addressSize + CENTRAL_APP_SIZE, 0);
-        perc::copy(msgArr.data() + addressSize, buffer, CENTRAL_APP_SIZE);
+        std::vector<uint8_t> msgArr(addressSize + size, 0);
+        perc::copy(msgArr.data() + addressSize, buffer, size);
         message_fw_update_request* msg = (message_fw_update_request*)(msgArr.data());
         MessageON_ASYNC_START setMsg(&mCentralListener, DEV_FIRMWARE_UPDATE, (uint32_t)msgArr.size(), (uint8_t*)msg);
         mFsm.fireEvent(setMsg);
@@ -2611,14 +2583,16 @@ namespace perc {
 
         bool updateApp = false;
 
-        if (CentralBlFw::Version[0] != mDeviceInfo.bCentralBootloaderVersionMajor ||
-            CentralBlFw::Version[1] != mDeviceInfo.bCentralBootloaderVersionMinor ||
-            CentralBlFw::Version[2] != mDeviceInfo.bCentralBootloaderVersionPatch)
+        if (fw_central_bl_version[0] != mDeviceInfo.bCentralBootloaderVersionMajor ||
+            fw_central_bl_version[1] != mDeviceInfo.bCentralBootloaderVersionMinor ||
+            fw_central_bl_version[2] != mDeviceInfo.bCentralBootloaderVersionPatch)
         {
             DEVICELOGD("Updating Central Boot Loader FW [%u.%u.%u] --> [%u.%u.%u]", 
                 mDeviceInfo.bCentralBootloaderVersionMajor, mDeviceInfo.bCentralBootloaderVersionMinor, mDeviceInfo.bCentralBootloaderVersionPatch, 
-                CentralBlFw::Version[0], CentralBlFw::Version[1], CentralBlFw::Version[2]);
-            auto status = CentralLoadFW((uint8_t*)CentralBlFw::Buffer);
+                fw_central_bl_version[0], fw_central_bl_version[1], fw_central_bl_version[2]);
+            int size;
+            auto buffer = fw_get_central_bl(size);
+            auto status = CentralLoadFW(buffer, size);
             if (status != Status::SUCCESS)
             {
                 return status;
@@ -2627,15 +2601,17 @@ namespace perc {
         }
 
         if (updateApp == true ||
-            CentralAppFw::Version[0] != mDeviceInfo.bCentralAppVersionMajor ||
-            CentralAppFw::Version[1] != mDeviceInfo.bCentralAppVersionMinor ||
-            CentralAppFw::Version[2] != mDeviceInfo.bCentralAppVersionPatch ||
-            CentralAppFw::Version[3] != mDeviceInfo.dwCentralAppVersionBuild)
+            fw_central_app_version[0] != mDeviceInfo.bCentralAppVersionMajor ||
+            fw_central_app_version[1] != mDeviceInfo.bCentralAppVersionMinor ||
+            fw_central_app_version[2] != mDeviceInfo.bCentralAppVersionPatch ||
+            fw_central_app_version[3] != mDeviceInfo.dwCentralAppVersionBuild)
         {
             DEVICELOGD("Updating Central Application FW [%u.%u.%u.%u] --> [%u.%u.%u.%u]", 
                 mDeviceInfo.bCentralAppVersionMajor, mDeviceInfo.bCentralAppVersionMinor, mDeviceInfo.bCentralAppVersionPatch, mDeviceInfo.dwCentralAppVersionBuild,
-                CentralAppFw::Version[0], CentralAppFw::Version[1], CentralAppFw::Version[2], CentralAppFw::Version[3]);
-            auto status = CentralLoadFW((uint8_t*)CentralAppFw::Buffer);
+                fw_central_app_version[0], fw_central_app_version[1], fw_central_app_version[2], fw_central_app_version[3]);
+            int size;
+            auto buffer = fw_get_central_app(size);
+            auto status = CentralLoadFW(buffer, size);
             if (status != Status::SUCCESS)
             {
                 return status;
@@ -2709,7 +2685,7 @@ namespace perc {
                 break;
             }
 
-            // Add some statistics calculations            
+            // Add some statistics calculations
             totalBytesReceived += actual;
             if (timeOfFirstByte == 0)
                 timeOfFirstByte = systemTime();

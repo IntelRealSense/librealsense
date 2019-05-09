@@ -79,15 +79,15 @@ namespace librealsense
     {
     public:
         matcher(std::vector<stream_id> streams_id = {});
-        virtual void sync(frame_holder f, syncronization_environment env);
-        virtual void set_callback(sync_callback f);
+        virtual void sync(frame_holder f, syncronization_environment env) override;
+        virtual void set_callback(sync_callback f) override;
         const std::vector<stream_id>& get_streams() const override;
         const std::vector<rs2_stream>& get_streams_types() const override;
 
         callback_invocation_holder begin_callback();
         virtual ~matcher();
 
-        virtual std::string get_name() const;
+        virtual std::string get_name() const override;
         bool get_active() const;
         void set_active(const bool active);
 

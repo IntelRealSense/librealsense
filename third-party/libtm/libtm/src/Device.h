@@ -61,7 +61,6 @@ namespace perc
         virtual Status DeleteConfiguration(uint16_t tableType) override;
         virtual Status GetLocalizationData(Listener* listener) override;
         virtual Status SetLocalizationData(Listener* listener, uint32_t length, const uint8_t* buffer) override;
-        virtual Status ResetLocalizationData(uint8_t flag) override;
         virtual Status SetStaticNode(const char* guid, const TrackingData::RelativePose& relativePose) override;
         virtual Status GetStaticNode(const char* guid, TrackingData::RelativePose& relativePose) override;
         virtual Status SetGeoLocation(const TrackingData::GeoLocalization& geoLocation) override;
@@ -372,7 +371,7 @@ namespace perc
         void onControlMessage(const Message& msg);
         void SendLargeMessage(const Message& msg);
         Status CentralFWUpdate();
-        Status CentralLoadFW(uint8_t* buffer);
+        Status CentralLoadFW(const uint8_t* buffer, int size);
         std::mutex mDeletionMutex;
         bool mCleared;
         unsigned int mFrameTempBufferSize;

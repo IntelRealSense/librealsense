@@ -55,7 +55,7 @@ public class RsPoseStreamTransformer : MonoBehaviour
     {
         if (f.IsComposite)
         {
-            using (var fs = FrameSet.FromFrame(f))
+            using (var fs = f.As<FrameSet>())
             using (var poseFrame = fs.FirstOrDefault(Stream.Pose, Format.SixDOF))
                 if (poseFrame != null)
                     q.Enqueue(poseFrame);

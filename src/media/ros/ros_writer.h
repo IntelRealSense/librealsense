@@ -14,7 +14,7 @@ namespace librealsense
     public:
         explicit ros_writer(const std::string& file, bool compress_while_record);
         void write_device_description(const librealsense::device_snapshot& device_description) override;
-        void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);
+        void write_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame) override;
         void write_snapshot(uint32_t device_index, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) override;
         void write_snapshot(const sensor_identifier& sensor_id, const nanoseconds& timestamp, rs2_extension type, const std::shared_ptr<extension_snapshot>& snapshot) override;
         const std::string& get_file_name() const override;
@@ -24,7 +24,7 @@ namespace librealsense
         void write_frame_metadata(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_interface* frame);
         void write_extrinsics(const stream_identifier& stream_id, frame_interface* frame);
         realsense_msgs::Notification to_notification_msg(const notification& n);
-        void write_notification(const sensor_identifier& sensor_id, const nanoseconds& timestamp, const notification& n);
+        void write_notification(const sensor_identifier& sensor_id, const nanoseconds& timestamp, const notification& n) override;
         void write_additional_frame_messages(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_interface* frame);
         void write_video_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);
         void write_motion_frame(const stream_identifier& stream_id, const nanoseconds& timestamp, frame_holder&& frame);

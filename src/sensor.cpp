@@ -15,7 +15,7 @@
 
 namespace librealsense
 {
-    sensor_base::sensor_base(std::string name, device* dev, 
+    sensor_base::sensor_base(std::string name, device* dev,
         recommended_proccesing_blocks_interface* owner)
         : recommended_proccesing_blocks_base(owner),
         _is_streaming(false),
@@ -307,7 +307,6 @@ namespace librealsense
         std::unordered_set<std::shared_ptr<video_stream_profile>> results;
         std::set<uint32_t> unregistered_formats;
         std::set<uint32_t> supported_formats;
-        std::set<uint32_t> registered_formats;
 
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
         if (_uvc_profiles.empty()){}
@@ -354,7 +353,7 @@ namespace librealsense
             }
 
             ss << "]; Supported: [ ";
-            for (auto& elem : registered_formats)
+            for (auto& elem : supported_formats)
             {
                 uint32_t device_fourcc = reinterpret_cast<const big_endian<uint32_t>&>(elem);
                 char fourcc[sizeof(device_fourcc) + 1];
@@ -1082,5 +1081,77 @@ namespace librealsense
           _timestamp_reader(std::move(timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP,     make_additional_data_parser(&frame_additional_data::backend_timestamp));
+    }
+
+    iio_hid_timestamp_reader::iio_hid_timestamp_reader()
+    {
+        counter.resize(sensors);
+        reset();
+    }
+
+    void iio_hid_timestamp_reader::reset()
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        started = false;
+        for (auto i = 0; i < sensors; ++i)
+        {
+            counter[i] = 0;
+        }
+    }
+
+    rs2_time_t iio_hid_timestamp_reader::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        if (has_metadata(mode, fo.metadata, fo.metadata_size))
+        {
+            //  The timestamps conversions path comprise of:
+            // FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit
+            // The flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends.
+            // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
+            // To revert to the extended 64 bit TS uncomment the next line instead
+            //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
+            auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
+
+            // HID timestamps are aligned to FW Default - usec units
+            return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);
+        }
+
+        if (!started)
+        {
+            LOG_WARNING("HID timestamp not found! please apply HID patch.");
+            started = true;
+        }
+
+        return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+    }
+
+    bool iio_hid_timestamp_reader::has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const
+    {
+        if (metadata != nullptr && metadata_size > 0)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    unsigned long long iio_hid_timestamp_reader::get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+        if (nullptr == mode.pf) return 0;                   // Windows support is limited
+        int index = 0;
+        if (mode.pf->fourcc == 'GYRO')
+            index = 1;
+
+        return ++counter[index];
+    }
+
+    rs2_timestamp_domain iio_hid_timestamp_reader::get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const
+    {
+        if (has_metadata(mode, fo.metadata, fo.metadata_size))
+        {
+            return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+        }
+        return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
 }

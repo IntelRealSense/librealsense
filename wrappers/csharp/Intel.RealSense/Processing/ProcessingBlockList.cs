@@ -1,27 +1,28 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
-    public class ProcessingBlockList : IDisposable, IEnumerable<ProcessingBlock>
-    {
-        internal IntPtr m_instance;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
 
+    internal sealed class ProcessingBlockList : Base.Object, IEnumerable<ProcessingBlock>, ICollection
+    {
         public ProcessingBlockList(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_recommended_processing_blocks)
         {
-            m_instance = ptr;
         }
 
         public IEnumerator<ProcessingBlock> GetEnumerator()
         {
             object error;
 
-            int deviceCount = NativeMethods.rs2_get_recommended_processing_blocks_count(m_instance, out error);
+            int deviceCount = NativeMethods.rs2_get_recommended_processing_blocks_count(Handle, out error);
             for (int i = 0; i < deviceCount; i++)
             {
-                var ptr = NativeMethods.rs2_get_processing_block(m_instance, i, out error);
+                var ptr = NativeMethods.rs2_get_processing_block(Handle, i, out error);
                 yield return new ProcessingBlock(ptr);
             }
         }
@@ -36,15 +37,33 @@ namespace Intel.RealSense
             get
             {
                 object error;
-                int deviceCount = NativeMethods.rs2_get_recommended_processing_blocks_count(m_instance, out error);
+                int deviceCount = NativeMethods.rs2_get_recommended_processing_blocks_count(Handle, out error);
                 return deviceCount;
             }
         }
 
-        public T GetProcessingBlock<T>(int index) where T : ProcessingBlock
+        public object SyncRoot => this;
+
+        public bool IsSynchronized => false;
+
+        public T GetProcessingBlock<T>(int index)
+            where T : ProcessingBlock
         {
             object error;
-            return new ProcessingBlock(NativeMethods.rs2_get_processing_block(m_instance, index, out error)) as T;
+            return new ProcessingBlock(NativeMethods.rs2_get_processing_block(Handle, index, out error)) as T;
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException("array");
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                array.SetValue(this[i], i + index);
+            }
         }
 
         public ProcessingBlock this[int index]
@@ -54,43 +73,5 @@ namespace Intel.RealSense
                 return GetProcessingBlock<ProcessingBlock>(index);
             }
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                NativeMethods.rs2_delete_recommended_processing_blocks(m_instance);
-                m_instance = IntPtr.Zero;
-
-                disposedValue = true;
-            }
-        }
-
-        //TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~ProcessingBlockList()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }

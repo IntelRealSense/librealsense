@@ -357,7 +357,8 @@ namespace librealsense
                 for (auto index : synced_frames)
                 {
                     frame_holder frame;
-                    _frames_queue[index].dequeue(&frame);
+                    int timeout_ms = 5000;
+                    _frames_queue[index].dequeue(&frame, timeout_ms);
                     if (old_frames)
                     {
                         s  << "--> " << frame_to_string(frame) << "\n";

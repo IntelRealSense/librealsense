@@ -1,127 +1,127 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
+﻿// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 namespace Intel.RealSense
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using Intel.RealSense.Base;
+    using System.Reflection;
+
     public interface IProcessingBlock : IOptions
     {
         Frame Process(Frame original);
-        FrameSet Process(FrameSet original);
     }
 
-    public class ProcessingBlock : IProcessingBlock, IDisposable
+    /// <summary>
+    /// Base class for processing blocks
+    /// </summary>
+    public class ProcessingBlock : Base.Object, IProcessingBlock
     {
-        public readonly FrameQueue queue = new FrameQueue(1);
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private readonly FrameQueue queue = new FrameQueue(1);
 
-        internal HandleRef m_instance;
+        /// <inheritdoc/>
+        public IOptionsContainer Options { get; private set; }
 
-        Sensor.SensorOptions m_options;
-        public IOptionsContainer Options
+        public InfoCollection Info { get; private set; }
+
+        /// <summary>
+        /// Gets the internal queue
+        /// </summary>
+        public FrameQueue Queue
         {
             get
             {
-                return m_options = m_options ?? new Sensor.SensorOptions(m_instance.Handle);
+                return queue;
             }
         }
 
-        internal ProcessingBlock(IntPtr ptr)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProcessingBlock"/> class.
+        /// <para>
+        /// Starts the processing block directing it's output to the <see cref="Queue"/>
+        /// </para>
+        /// </summary>
+        /// <param name="ptr">native <c>rs2_processing_block*</c> pointer</param>
+        public ProcessingBlock(IntPtr ptr)
+            : base(ptr, NativeMethods.rs2_delete_processing_block)
         {
-            m_instance = new HandleRef(this, ptr);
-        }
+            object error;
+            Options = new OptionsList(Handle);
+            Info = new InfoCollection(NativeMethods.rs2_supports_processing_block_info, NativeMethods.rs2_get_processing_block_info, Handle);
 
-        protected ProcessingBlock()
-        {}
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    // TODO: dispose managed state (managed objects).
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
-                Release();
-                disposedValue = true;
-            }
-        }
-
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        ~ProcessingBlock()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(false);
-        }
-
-        // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-        public void Release()
-        {
-            if (m_instance.Handle != IntPtr.Zero)
-                NativeMethods.rs2_delete_processing_block(m_instance.Handle);
-            m_instance = new HandleRef(this, IntPtr.Zero);
+            NativeMethods.rs2_start_processing_queue(Handle, queue.Handle, out error);
         }
 
         /// <summary>
         /// Process frame and return the result
         /// </summary>
-        /// <param name="original"></param>
-        /// <returns></returns>
+        /// <param name="original">Frame to process</param>
+        /// <returns>Processed frame</returns>
         public Frame Process(Frame original)
         {
+            return Process<Frame>(original);
+        }
+
+        /// <summary>
+        /// Process frame and return the result
+        /// </summary>
+        /// <typeparam name="T">Type of frame to return</typeparam>
+        /// <param name="original">Frame to process</param>
+        /// <returns>Processed frame</returns>
+        /// <exception cref="InvalidOperationException">Thrown when errors occur during processing</exception>
+        public T Process<T>(Frame original)
+            where T : Frame
+        {
             object error;
-            NativeMethods.rs2_frame_add_ref(original.m_instance.Handle, out error);
-            NativeMethods.rs2_process_frame(m_instance.Handle, original.m_instance.Handle, out error);
-            Frame f;
-            if (queue.PollForFrame(out f))
+            NativeMethods.rs2_frame_add_ref(original.Handle, out error);
+            NativeMethods.rs2_process_frame(Handle, original.Handle, out error);
+            T f;
+            if (queue.PollForFrame<T>(out f))
             {
                 return f;
             }
-            return original;
+
+            // this occurs when the sdk runs out of frame resources and allocate_video_frame fails
+            // sadly, that exception doesn't propagate here...
+            // usually a sign of not properly disposing of frames
+            throw new InvalidOperationException($"Error while running {GetType().Name} processing block, check the log for info");
         }
 
-        public FrameSet Process(FrameSet original)
+        protected override void Dispose(bool disposing)
         {
-            FrameSet rv;
-            using (var singleOriginal = original.AsFrame())
-            {
-                using (var processed = Process(singleOriginal))
-                {
-                    rv = FrameSet.FromFrame(processed);
-                }
-            }
-            return rv;
+            queue.Dispose();
+            (Options as OptionsList).Dispose();
+            base.Dispose(disposing);
         }
 
-        #region Extensions
-
-        /// <summary>
-        /// retrieve mapping between the units of the depth image and meters
-        /// </summary>
-        /// <returns> depth in meters corresponding to a depth value of 1</returns>
-
-        public bool Is(Extension e)
+        /// <summary>Test if the given processing block can be extended to the requested extension</summary>
+        /// <param name="extension">The extension to which the processing block should be tested if it is extendable</param>
+        /// <returns><see langword="true"/> iff the processing block can be extended to the given extension</returns>
+        public bool Is(Extension extension)
         {
             object error;
-            return NativeMethods.rs2_is_processing_block_extendable_to(m_instance.Handle, e, out error) > 0;
+            return NativeMethods.rs2_is_processing_block_extendable_to(Handle, extension, out error) > 0;
         }
 
-        #endregion
+        /// <summary>Cast to a strongly-typed <see cref="ProcessingBlock"/> subclass</summary>
+        /// <typeparam name="T"><see cref="ProcessingBlock"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T As<T>()
+            where T : ProcessingBlock
+        {
+            return (T)Activator.CreateInstance(
+                typeof(T),
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                null,
+                new object[] { Handle },
+                null);
+        }
     }
 
     public static class IProcessingBlockExtensions
@@ -129,11 +129,6 @@ namespace Intel.RealSense
         public static Frame ApplyFilter(this Frame frame, IProcessingBlock block)
         {
             return block.Process(frame);
-        }
-
-        public static FrameSet ApplyFilter(this FrameSet frames, IProcessingBlock block)
-        {
-            return block.Process(frames);
         }
     }
 }

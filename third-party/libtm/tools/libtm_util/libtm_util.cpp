@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "Version.h"
 #include "Utils.h"
-#include "fw.h"
+#include "fw_target.h"
 
 #define LIBTM_UTIL_VERSION_MAJOR 1
 #define LIBTM_UTIL_VERSION_MINOR 0
@@ -174,8 +174,7 @@ enum LocalizationType
 {
     LocalizationTypeGet = 0,
     LocalizationTypeSet = 1,
-    LocalizationTypeReset = 2,
-    LocalizationTypeMax = 3,
+    LocalizationTypeMax = 2,
 };
 
 enum ControllerBurnState
@@ -1579,7 +1578,7 @@ public:
         gStatistics.inc(message);
 
         LOGV("Got Velocimeter[%u] frame (%" PRId64 "): Timestamp %" PRId64 ", FrameID = %d, Temperature = %.0f, AngularVelocity[%f, %f, %f]", message.sensorIndex, gStatistics.velocimeter[message.sensorIndex].frames,
-            message.timestamp, message.frameId, message.temperature, message.angularVelocity.x, message.angularVelocity.y, message.angularVelocity.z);
+            message.timestamp, message.frameId, message.temperature, message.translationalVelocity.x, message.translationalVelocity.y, message.translationalVelocity.z);
 
         if (gConfiguration.statistics == true)
         {
@@ -1588,7 +1587,7 @@ public:
 
             velocimeterCSV << std::fixed << unsigned(message.sensorIndex) << "," << gStatistics.velocimeter[message.sensorIndex].frames << ","
                 << timeStamp.hostCurrentSystemTime << "," << message.systemTimestamp << "," << timeStamp.fwTimeStamp << "," << timeStamp.arrivalTimeStamp << "," << timeStamp.latency << ","
-                << message.frameId << "," << message.temperature << "," << message.angularVelocity.x << "," << message.angularVelocity.y << "," << message.angularVelocity.z << "\n";
+                << message.frameId << "," << message.temperature << "," << message.translationalVelocity.x << "," << message.translationalVelocity.y << "," << message.translationalVelocity.z << "\n";
         }
     };
 
@@ -2818,12 +2817,8 @@ int parseArguments(int argc, char *argv[])
             /* Make sure we aren't at the end of argv */
             if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
             {
-                if (strncmp("reset", argv[++i], 3) == 0)
-                {
-                    gConfiguration.localization[LocalizationTypeReset].enabled = true;
-                    parseError = false;
-                }
-                else if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+                ++i;
+                if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
                 {
                     if (strncmp("set", argv[i], 3) == 0)
                     {
@@ -2842,10 +2837,9 @@ int parseArguments(int argc, char *argv[])
 
             if (parseError == true)
             {
-                printf("-map : Reset/Set/Get localization map from/to an external file\n");
-                printf("       On multiple call, the order will be:  Get, Set, Reset\n");
-                printf("       Parameters: <reset/set/get> <filename>\n");
-                printf("       Example: \"libtm_util.exe -map reset\"                            : reset localization map\n");
+                printf("-map : Set/Get localization map from/to an external file\n");
+                printf("       On multiple call, the order will be:  Get, Set\n");
+                printf("       Parameters: <set/get> <filename>\n");
                 printf("       Example: \"libtm_util.exe -map set localization_map_input_file\"  : set localization from file localization_map_input_file\n");
                 printf("       Example: \"libtm_util.exe -map get localization_map_output_file\" : get localization to a new file localization_map_output_file\n");
                 printf("       Notice:  To get localization map, 6dof must be enabled\n");
@@ -2998,7 +2992,7 @@ int parseArguments(int argc, char *argv[])
                 printf("               Parameters: <filename>\n");
                 printf("               Example: \"libtm_util.exe -velocimeter velocimeterfile.csv\" : Enable Velocimeter and sends all velocimeter frames input file to the FW\n");
                 printf("               Velocimeter file must include the following line(s) in the following pattern:\n");
-                printf("               FrameId,angularVelocity.X,angularVelocity.Y,angularVelocity.Z,timestamp,arrivaltimeStamp\n");
+                printf("               FrameId,translationalVelocity.X,translationalVelocity.Y,translationalVelocity.Z,timestamp,arrivaltimeStamp\n");
                 printf("               File example: 0,1.0,2.0,3.0,0,0 : Velocimeter frame ID 0 with velocity (1.0,2.0,3.0) and timestamp 0\n");
                 return -1;
             }
@@ -3387,7 +3381,7 @@ void saveOutput()
             std::ostringstream csvHeader;
             csvHeader << "Velocimeter Index," << "Frame Number,"
                 << "Host Timestamp (NanoSec)," << "Host Correlated to FW Timestamp (NanoSec)," << "FW Timestamp (NanoSec)," << "Arrival Timestamp (NanoSec)," << "FW to Host Latency (NanoSec),"
-                << "Frame Id," << "Temperature (Celsius)," << "Angular Velocity X (Radians/Sec)," << "Angular Velocity Y (Radians/Sec)," << "Angular Velocity Z (Radians/Sec)," << "\n";
+                << "Frame Id," << "Temperature (Celsius)," << "Translational Velocity X (Meters/Sec)," << "Translational Velocity Y (Meters/Sec)," << "Translational Velocity Z (Meters/Sec)," << "\n";
 
             static int velocimeterCount = 0;
             std::string fileHeaderName(gFileHeaderName);
@@ -3535,7 +3529,7 @@ void printSupportedProfiles(TrackingData::Profile& profile)
 
     for (uint8_t i = 0; i < VelocimeterProfileMax; i++)
     {
-        LOGD("%02d | Velocimeter   | 0x%02X |  %01d  | %-6d | %-5d | %-6d | %-5d  |  %-5d | %-7d | %d", totalProfiles, SensorType::Velocimeter, profile.gyro[i].sensorIndex,
+        LOGD("%02d | Velocimeter   | 0x%02X |  %01d  | %-6d | %-5d | %-6d | %-5d  |  %-5d | %-7d | %d", totalProfiles, SensorType::Velocimeter, profile.velocimeter[i].sensorIndex,
             0, 0, 0, 0, 0, profile.velocimeter[i].enabled, profile.velocimeter[i].outputEnabled);
         totalProfiles++;
     }
@@ -3942,17 +3936,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (gConfiguration.localization[LocalizationTypeReset].enabled == true)
-    {
-        LOGD("Reseting localization map");
-        status = gDevice->ResetLocalizationData(0);
-        if (status != Status::SUCCESS)
-        {
-            LOGE("Failed to reset localization map, status = %s (0x%X)", statusToString(status).c_str(), status);
-            goto cleanup;
-        }
-    }
-
     if (gConfiguration.gpioEnabled == true)
     {
         LOGD("Setting GPIO control bitMask 0x%X", gConfiguration.gpioControlBitMask);
@@ -4214,7 +4197,7 @@ int main(int argc, char *argv[])
                 {
                     std::string cell;
                     uint32_t frameId = 0;
-                    float_t angularVelocity[3] = { 0 };
+                    float_t translationalVelocity[3] = { 0 };
                     int64_t timestamp[2] = { 0 };
 
                     uint32_t i = 0;
@@ -4226,7 +4209,7 @@ int main(int argc, char *argv[])
                         }
                         else if ((i == 1) || (i == 2) || (i == 3))
                         {
-                            angularVelocity[i - 1] = stof(cell.c_str());
+                            translationalVelocity[i - 1] = stof(cell.c_str());
                         }
                         else
                         {
@@ -4238,13 +4221,13 @@ int main(int argc, char *argv[])
 
                     TrackingData::VelocimeterFrame frame;
                     frame.frameId = frameId;
-                    frame.angularVelocity.x = angularVelocity[0];
-                    frame.angularVelocity.y = angularVelocity[1];
-                    frame.angularVelocity.z = angularVelocity[2];
+                    frame.translationalVelocity.x = translationalVelocity[0];
+                    frame.translationalVelocity.y = translationalVelocity[1];
+                    frame.translationalVelocity.z = translationalVelocity[2];
                     frame.timestamp = timestamp[0];
                     frame.arrivalTimeStamp = timestamp[1];
 
-                    LOGD("Sending velocimeter frame[%d]: AngularVelocity[%f, %f, %f], Timestamp %" PRId64 ", ArrivalTimestamp %" PRId64 "", frame.frameId, frame.angularVelocity.x, frame.angularVelocity.y, frame.angularVelocity.z, frame.timestamp, frame.arrivalTimeStamp);
+                    LOGD("Sending velocimeter frame[%d]: TranslationalVelocity[%f, %f, %f], Timestamp %" PRId64 ", ArrivalTimestamp %" PRId64 "", frame.frameId, frame.translationalVelocity.x, frame.translationalVelocity.y, frame.translationalVelocity.z, frame.timestamp, frame.arrivalTimeStamp);
 
                     status = gDevice->SendFrame(frame);
                     if (status != Status::SUCCESS)

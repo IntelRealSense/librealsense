@@ -42,116 +42,63 @@ namespace librealsense
     {
         switch (source)
         {
-        case RS2_FORMAT_Z16: target = sensor_msgs::image_encodings::MONO16;     return;
-        case RS2_FORMAT_RGB8: target = sensor_msgs::image_encodings::RGB8;       return;
-        case RS2_FORMAT_BGR8: target = sensor_msgs::image_encodings::BGR8;       return;
-        case RS2_FORMAT_RGBA8: target = sensor_msgs::image_encodings::RGBA8;      return;
-        case RS2_FORMAT_BGRA8: target = sensor_msgs::image_encodings::BGRA8;      return;
-        case RS2_FORMAT_Y8: target = sensor_msgs::image_encodings::TYPE_8UC1;  return;
-        case RS2_FORMAT_Y16: target = sensor_msgs::image_encodings::TYPE_16UC1; return;
-        case RS2_FORMAT_RAW8: target = sensor_msgs::image_encodings::MONO8;      return;
-        case RS2_FORMAT_UYVY: target = sensor_msgs::image_encodings::YUV422;     return;
+        case RS2_FORMAT_Z16: target = sensor_msgs::image_encodings::MONO16;     break;
+        case RS2_FORMAT_RGB8: target = sensor_msgs::image_encodings::RGB8;      break;
+        case RS2_FORMAT_BGR8: target = sensor_msgs::image_encodings::BGR8;      break;
+        case RS2_FORMAT_RGBA8: target = sensor_msgs::image_encodings::RGBA8;    break;
+        case RS2_FORMAT_BGRA8: target = sensor_msgs::image_encodings::BGRA8;    break;
+        case RS2_FORMAT_Y8: target = sensor_msgs::image_encodings::TYPE_8UC1;   break;
+        case RS2_FORMAT_Y16: target = sensor_msgs::image_encodings::TYPE_16UC1; break;
+        case RS2_FORMAT_RAW8: target = sensor_msgs::image_encodings::MONO8;     break;
+        case RS2_FORMAT_UYVY: target = sensor_msgs::image_encodings::YUV422;    break;
         default: target = rs2_format_to_string(source);
         }
     }
 
-    inline void convert(const std::string& source, rs2_format& target)
-    {
-        if (source == sensor_msgs::image_encodings::MONO16) { target = RS2_FORMAT_Z16; return; }
-        if (source == sensor_msgs::image_encodings::RGB8) { target = RS2_FORMAT_RGB8; return; }
-        if (source == sensor_msgs::image_encodings::BGR8) { target = RS2_FORMAT_BGR8; return; }
-        if (source == sensor_msgs::image_encodings::RGBA8) { target = RS2_FORMAT_RGBA8; return; }
-        if (source == sensor_msgs::image_encodings::BGRA8) { target = RS2_FORMAT_BGRA8; return; }
-        if (source == sensor_msgs::image_encodings::TYPE_8UC1) { target = RS2_FORMAT_Y8; return; }
-        if (source == sensor_msgs::image_encodings::TYPE_16UC1) { target = RS2_FORMAT_Y16; return; }
-        if (source == sensor_msgs::image_encodings::MONO8) { target = RS2_FORMAT_RAW8; return; }
-        if (source == sensor_msgs::image_encodings::YUV422) { target = RS2_FORMAT_UYVY; return; }
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_format");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_stream& target)
-    {
-        if(!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_stream");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_distortion& target)
+    template <typename T>
+    inline bool convert(const std::string& source, T& target)
     {
         if (!try_parse(source, target))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_distortion");
+            LOG_INFO("Failed to convert source: " << source << " to matching " << typeid(T).name());
+            return false;
         }
+        return true;
     }
 
-    inline void convert(const std::string& source, rs2_option& target)
+    // Specialized methods for selected types
+    template <>
+    inline bool convert(const std::string& source, rs2_format& target)
     {
-        if (!try_parse(source, target))
+        bool ret = true;
+        if (source == sensor_msgs::image_encodings::MONO16)     target = RS2_FORMAT_Z16;
+        if (source == sensor_msgs::image_encodings::RGB8)       target = RS2_FORMAT_RGB8;
+        if (source == sensor_msgs::image_encodings::BGR8)       target = RS2_FORMAT_BGR8;
+        if (source == sensor_msgs::image_encodings::RGBA8)      target = RS2_FORMAT_RGBA8;
+        if (source == sensor_msgs::image_encodings::BGRA8)      target = RS2_FORMAT_BGRA8;
+        if (source == sensor_msgs::image_encodings::TYPE_8UC1)  target = RS2_FORMAT_Y8;
+        if (source == sensor_msgs::image_encodings::TYPE_16UC1) target = RS2_FORMAT_Y16;
+        if (source == sensor_msgs::image_encodings::MONO8)      target = RS2_FORMAT_RAW8;
+        if (source == sensor_msgs::image_encodings::YUV422)     target = RS2_FORMAT_UYVY;
+        if (!(ret = try_parse(source, target)))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_option");
+            LOG_INFO("Failed to convert source: " << source << " to matching rs2_format");
         }
+        return ret;
     }
 
-    inline void convert(const std::string& source, rs2_extension& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_extension");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_frame_metadata_value& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_frame_metadata");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_camera_info& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_camera_info");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_timestamp_domain& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_timestamp_domain");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_notification_category& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_notification_category");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_log_severity& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_log_severity");
-        }
-    }
-
-    inline void convert(const std::string& source, double& target)
+    template <>
+    inline bool convert(const std::string& source, double& target)
     {
         target = std::stod(source);
+        return std::isfinite(target);
     }
 
-    inline void convert(const std::string& source, long long& target)
+    template <>
+    inline bool convert(const std::string& source, long long& target)
     {
         target = std::stoll(source);
+        return true;
     }
     /*
     quat2rot(), rot2quat()
@@ -186,22 +133,25 @@ namespace librealsense
         q.z = (r[1] - r[3]) / (4 * q.w);         // qz = (m10 - m01)/( 4 *qw)
     }
 
-    inline void convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
+    inline bool convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
     {
         target.translation[0] = source.translation.x;
         target.translation[1] = source.translation.y;
         target.translation[2] = source.translation.z;
         quat2rot(source.rotation, target.rotation);
+        return true;
     }
 
-    inline void convert(const rs2_extrinsics& source, geometry_msgs::Transform& target)
+    inline bool convert(const rs2_extrinsics& source, geometry_msgs::Transform& target)
     {
         target.translation.x = source.translation[0];
         target.translation.y = source.translation[1];
         target.translation.z = source.translation[2];
         rot2quat(source.rotation, target.rotation);
+        return true;
     }
 
+    constexpr const char* FRAME_NUMBER_MD_STR = "Frame number";
     constexpr const char* TIMESTAMP_DOMAIN_MD_STR = "timestamp_domain";
     constexpr const char* SYSTEM_TIME_MD_STR = "system_time";
     constexpr const char* MAPPER_CONFIDENCE_MD_STR = "Mapper Confidence";

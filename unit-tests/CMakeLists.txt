@@ -6,20 +6,6 @@ project(RealsenseUnitTests)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 set(DEPENDENCIES realsense2)
 
 set (unit_tests_sources
@@ -32,6 +18,7 @@ set (unit_tests_sources
 )
 
 add_executable(live-test ${unit_tests_sources})
+set_property(TARGET live-test PROPERTY CXX_STANDARD 11)
 target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
 
 set_target_properties (live-test PROPERTIES
@@ -129,10 +116,10 @@ endfunction()
 function(is_file_empty empty filename)
     set (data "")
     if(EXISTS ${filename})
-        file(READ ${filename} data [OFFSET 0] [LIMIT 1] [HEX])
+        file(STRINGS  ${filename} data)
     endif()
     string(LENGTH "${data}" data_length)
-    #message(STATUS "Read ${data_length}  bytes from  ${Deployment_Location}${i}")
+    #message(STATUS "Read ${data_length}  bytes from  ${filename}")
     set(res TRUE)
     if (NOT ${data_length} STREQUAL "0")
         set(res FALSE)
@@ -160,9 +147,9 @@ foreach(i ${PP_Tests_List})
       set(Test_File_Name "${Test_Pattern}${idx}${ext}")
       set(source ${PP_TESTS_URL}${Test_File_Name})
       set(destination ${Deployment_Location}${Test_File_Name})
-      #message(STATUS "Checking for a required test record ${Test_File_Name}")
       set (empty FALSE)
       is_file_empty(empty, ${destination} )
+      #message(STATUS "Checked " ${empty} " for " ${Test_File_Name} " in " ${destination})
       if(NOT EXISTS "${destination}" OR ${empty})
           message(STATUS "Downloading ${source}")
           file(DOWNLOAD "${source}" "${destination}" LOG log STATUS status TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status

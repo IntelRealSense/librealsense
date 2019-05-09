@@ -1182,7 +1182,8 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(file);
 
-    return new rs2_device{ ctx->ctx, nullptr, ctx->ctx->add_device(file) };
+    auto dev_info = ctx->ctx->add_device(file);
+    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device(false) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 
@@ -2276,7 +2277,7 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
     float3 t_pos{};
     float4 t_or {};
     int ret = 0;
-    if (ret = pose_snr->get_static_node(s_guid, t_pos, t_or))
+    if ((ret = pose_snr->get_static_node(s_guid, t_pos, t_or)))
     {
         pos->x = t_pos.x;
         pos->y = t_pos.y;
@@ -2307,11 +2308,11 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, odometry_blob, blob_size)
 
 int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
-                            const rs2_vector angular_velocity, rs2_error** error) BEGIN_API_CALL
+                            const rs2_vector translational_velocity, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
     auto wo_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::wheel_odometry_interface);
 
-    return wo_snr->send_wheel_odometry(wo_sensor_id, frame_num, { angular_velocity.x, angular_velocity.y, angular_velocity.z });
+    return wo_snr->send_wheel_odometry(wo_sensor_id, frame_num, { translational_velocity.x, translational_velocity.y, translational_velocity.z });
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, angular_velocity)
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)

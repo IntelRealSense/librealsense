@@ -35,6 +35,10 @@ cv::Mat frame_to_mat(const rs2::frame& f)
     {
         return Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP);
     }
+    else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32)
+    {
+        return Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), Mat::AUTO_STEP);
+    }
 
     throw std::runtime_error("Frame format is not supported yet!");
 }

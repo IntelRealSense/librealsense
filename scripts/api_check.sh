@@ -2,7 +2,7 @@
 
 # This script makes sure every API header can be included in isolation
 
-for filename in $(find ../include -name *.hpp); do
+for filename in $(find ../include/librealsense2 -name *.hpp); do
     echo Checking that $filename is self-contained
     rm 1.cpp
     echo "#include \"$filename\"" >> 1.cpp
@@ -12,7 +12,7 @@ for filename in $(find ../include -name *.hpp); do
     echo
 done
 
-for filename in $(find ../include -name *.h); do
+for filename in $(find ../include/librealsense2 -name *.h); do
     echo Checking that $filename is self-contained
     rm 1.c
     echo "#include \"$filename\"" >> 1.c

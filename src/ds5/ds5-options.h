@@ -198,7 +198,7 @@ namespace librealsense
         {
             return "Number of meters represented by a single depth unit";
         }
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _record_action = record_action;
         }
@@ -224,7 +224,7 @@ namespace librealsense
         {
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
         }
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _record_action = record_action;
         }
@@ -247,7 +247,7 @@ namespace librealsense
         {
             return "Emitter On/Off Mode: 0:disabled(default), 1:enabled(emitter toggles between on and off). Can only be set before streaming";
         }
-        virtual void enable_recording(std::function<void(const option &)> record_action) {_record_action = record_action;}
+        virtual void enable_recording(std::function<void(const option &)> record_action) override {_record_action = record_action;}
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
@@ -269,7 +269,7 @@ namespace librealsense
         {
             return "Alternating Emitter Pattern: 0:disabled(default), 1:enabled( emitter is toggled on/off on per-frame basis)";
         }
-        virtual void enable_recording(std::function<void(const option &)> record_action) { _record_action = record_action; }
+        virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};

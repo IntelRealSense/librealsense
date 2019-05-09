@@ -481,7 +481,7 @@ namespace rs2
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
         * \return                 Set of time synchronized frames, one from each active stream
         */
-        frameset wait_for_frames(unsigned int timeout_ms = 5000) const
+        frameset wait_for_frames(unsigned int timeout_ms = RS2_DEFAULT_TIMEOUT) const
         {
             rs2_error* e = nullptr;
             frame f(rs2_pipeline_wait_for_frames(_pipeline.get(), timeout_ms, &e));
@@ -519,7 +519,7 @@ namespace rs2
             return res > 0;
         }
 
-        bool try_wait_for_frames(frameset* f, unsigned int timeout_ms = 5000) const
+        bool try_wait_for_frames(frameset* f, unsigned int timeout_ms = RS2_DEFAULT_TIMEOUT) const
         {
             if (!f)
             {

@@ -17,12 +17,9 @@
 #include <signal.h>
 #include "utlist.h"
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-#ifdef USE_SYSTEM_LIBUSB
-    #include <libusb.h>
-#else
-    #include "libusb/libusb.h"
-#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic push ignored "-Wpedantic"
+#include <libusb.h>
 #pragma GCC diagnostic pop
 
 /** Converts an unaligned four-byte little-endian integer into an int32 */

@@ -64,7 +64,7 @@ auto_exposure_mechanism::auto_exposure_mechanism(option& gain_option, option& ex
                 return;
 
             frame_and_callback frame_callback;
-            auto frame_sts = _data_queue.dequeue(&frame_callback);
+            auto frame_sts = _data_queue.dequeue(&frame_callback, RS2_DEFAULT_TIMEOUT);
 
             lk.unlock();
 

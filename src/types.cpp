@@ -41,17 +41,6 @@ namespace librealsense
         return res;
     }
 
-
-    std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
-    }
-
     recoverable_exception::recoverable_exception(const std::string& msg,
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)
@@ -114,16 +103,16 @@ namespace librealsense
 #define CASE(X) STRCASE(STREAM, X)
         switch (value)
         {
-            STRCASE(STREAM, ANY)
-            STRCASE(STREAM, DEPTH)
-            STRCASE(STREAM, COLOR)
-            STRCASE(STREAM, INFRARED)
-            STRCASE(STREAM, FISHEYE)
-            STRCASE(STREAM, GYRO)
-            STRCASE(STREAM, ACCEL)
-            STRCASE(STREAM, GPIO)
-            STRCASE(STREAM, POSE)
-            STRCASE(STREAM, CONFIDENCE)
+            CASE(ANY)
+            CASE(DEPTH)
+            CASE(COLOR)
+            CASE(INFRARED)
+            CASE(FISHEYE)
+            CASE(GYRO)
+            CASE(ACCEL)
+            CASE(GPIO)
+            CASE(POSE)
+            CASE(CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -283,6 +272,7 @@ namespace librealsense
             CASE(LLD_TEMPERATURE)
             CASE(MC_TEMPERATURE)
             CASE(MA_TEMPERATURE)
+            CASE(HARDWARE_PRESET)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -313,6 +303,7 @@ namespace librealsense
             CASE(MOTION_XYZ32F)
             CASE(GPIO_RAW)
             CASE(6DOF)
+            CASE(Y10BPACK)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -328,6 +319,7 @@ namespace librealsense
             CASE(INVERSE_BROWN_CONRADY)
             CASE(FTHETA)
             CASE(BROWN_CONRADY)
+            CASE(KANNALA_BRANDT4)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
