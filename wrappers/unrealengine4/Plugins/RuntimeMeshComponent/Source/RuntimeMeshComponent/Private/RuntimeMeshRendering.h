@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine.h"
+#include "Engine/Engine.h"
 #include "RuntimeMeshCore.h"
 #include "RuntimeMeshGenericVertex.h"
 
@@ -120,17 +120,22 @@ public:
 		}
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 19
- 		DataType.TangentBasisComponents[1] = FVertexStreamComponent(this, TangentXOffset, TangentSizeInBytes, TangentElementType, EVertexStreamUsage::ManualFetch);
- 		DataType.TangentBasisComponents[0] = FVertexStreamComponent(this, TangentZOffset, TangentSizeInBytes, TangentElementType, EVertexStreamUsage::ManualFetch);
+ 		DataType.TangentBasisComponents[0] = FVertexStreamComponent(this, TangentXOffset, TangentSizeInBytes, TangentElementType, EVertexStreamUsage::ManualFetch);
+ 		DataType.TangentBasisComponents[1] = FVertexStreamComponent(this, TangentZOffset, TangentSizeInBytes, TangentElementType, EVertexStreamUsage::ManualFetch);
 		DataType.TangentsSRV = ShaderResourceView;
 #else
-		DataType.TangentBasisComponents[1] = FVertexStreamComponent(this, TangentXOffset, TangentSizeInBytes, TangentElementType);
-		DataType.TangentBasisComponents[0] = FVertexStreamComponent(this, TangentZOffset, TangentSizeInBytes, TangentElementType);
+		DataType.TangentBasisComponents[0] = FVertexStreamComponent(this, TangentXOffset, TangentSizeInBytes, TangentElementType);
+		DataType.TangentBasisComponents[1] = FVertexStreamComponent(this, TangentZOffset, TangentSizeInBytes, TangentElementType);
 #endif
 	}
 
 protected:
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 19
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 20
+	virtual void CreateSRV() override
+	{
+		ShaderResourceView = RHICreateShaderResourceView(VertexBufferRHI, bUseHighPrecision ? 8 : 4, bUseHighPrecision ? PF_R16G16B16A16_SNORM : PF_R8G8B8A8_SNORM);
+	}
+#elif ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 19
 	virtual void CreateSRV() override
 	{
 		ShaderResourceView = RHICreateShaderResourceView(VertexBufferRHI, bUseHighPrecision? 8 : 4, bUseHighPrecision? PF_A16B16G16R16 : PF_R8G8B8A8);

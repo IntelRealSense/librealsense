@@ -116,7 +116,11 @@ void URuntimeMesh::Serialize(FArchive& Ar)
 
 	// Serialize the entire data object.
 	Ar.UsingCustomVersion(FRuntimeMeshVersion::GUID);
-	Ar << Data.Get();
+
+	if (Ar.CustomVer(FRuntimeMeshVersion::GUID) < FRuntimeMeshVersion::SerializationUpgradeToConfigurable || bShouldSerializeMeshData)
+	{
+		Ar << Data.Get();
+	}
 }
 
 void URuntimeMesh::PostLoad()
@@ -138,6 +142,11 @@ UMaterialInterface* URuntimeMesh::GetMaterialFromCollisionFaceIndex(int32 FaceIn
 	return nullptr;
 }
 
+int32 URuntimeMesh::GetSectionIdFromCollisionFaceIndex(int32 FaceIndex) const
+{
+	return GetRuntimeMeshData()->GetSectionFromCollisionFaceIndex(FaceIndex);
+}
+
 void URuntimeMesh::MarkCollisionDirty()
 {
 	// Flag the collision as dirty
@@ -149,6 +158,7 @@ void URuntimeMesh::MarkCollisionDirty()
 	}
 }
 
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 21
 UBodySetup* URuntimeMesh::CreateNewBodySetup()
 {
 	UBodySetup* NewBodySetup = NewObject<UBodySetup>(this, NAME_None, (IsTemplate() ? RF_Public : RF_NoFlags));
@@ -156,14 +166,7 @@ UBodySetup* URuntimeMesh::CreateNewBodySetup()
 
 	return NewBodySetup;
 }
-
-void URuntimeMesh::EnsureBodySetupCreated()
-{
-	if (BodySetup == nullptr)
-	{
-		BodySetup = CreateNewBodySetup();
-	}
-}
+#endif
 
 void URuntimeMesh::CopyCollisionElementsToBodySetup(UBodySetup* Setup)
 {
@@ -181,6 +184,13 @@ void URuntimeMesh::SetBasicBodySetupParameters(UBodySetup* Setup)
 
 void URuntimeMesh::UpdateCollision(bool bForceCookNow)
 {
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION < 21
+	DoForAllLinkedComponents([bForceCookNow](URuntimeMeshComponent* Mesh)
+	{
+		Mesh->UpdateCollision(bForceCookNow);
+	});
+
+#else
 	SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_CollisionUpdate);
 	check(IsInGameThread());
 	
@@ -189,14 +199,20 @@ void URuntimeMesh::UpdateCollision(bool bForceCookNow)
 
 	if (bShouldCookAsync)
 	{
-		UBodySetup* CurrentBodySetup = CreateNewBodySetup();
-		AsyncBodySetupQueue.Add(CurrentBodySetup);
+		// Abort all previous ones still standing
+		for (UBodySetup* OldBody : AsyncBodySetupQueue)
+		{
+			OldBody->AbortPhysicsMeshAsyncCreation();
+		}
 
-		SetBasicBodySetupParameters(CurrentBodySetup);
-		CopyCollisionElementsToBodySetup(CurrentBodySetup);
+		UBodySetup* NewBodySetup = CreateNewBodySetup();
+		AsyncBodySetupQueue.Add(NewBodySetup);
 
-		CurrentBodySetup->CreatePhysicsMeshesAsync(
-			FOnAsyncPhysicsCookFinished::CreateUObject(this, &URuntimeMesh::FinishPhysicsAsyncCook, CurrentBodySetup));
+		SetBasicBodySetupParameters(NewBodySetup);
+		CopyCollisionElementsToBodySetup(NewBodySetup);
+
+		NewBodySetup->CreatePhysicsMeshesAsync(
+			FOnAsyncPhysicsCookFinished::CreateUObject(this, &URuntimeMesh::FinishPhysicsAsyncCook, NewBodySetup));
 	}
 	else
 	{
@@ -217,9 +233,11 @@ void URuntimeMesh::UpdateCollision(bool bForceCookNow)
 		BodySetup = NewBodySetup;
 		FinalizeNewCookedData();
 	}
+#endif
 }
 
-void URuntimeMesh::FinishPhysicsAsyncCook(UBodySetup* FinishedBodySetup)
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 21
+void URuntimeMesh::FinishPhysicsAsyncCook(bool bSuccess, UBodySetup* FinishedBodySetup)
 {
 	SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_AsyncCollisionFinish);
 	check(IsInGameThread());
@@ -227,18 +245,26 @@ void URuntimeMesh::FinishPhysicsAsyncCook(UBodySetup* FinishedBodySetup)
 	int32 FoundIdx;
 	if (AsyncBodySetupQueue.Find(FinishedBodySetup, FoundIdx))
 	{
-		// The new body was found in the array meaning it's newer so use it
-		BodySetup = FinishedBodySetup;
+		if (bSuccess)
+		{			
+			// The new body was found in the array meaning it's newer so use it
+			BodySetup = FinishedBodySetup;
 
-		// Shift down all remaining body setups, removing any old setups
-		for (int32 Index = FoundIdx + 1; Index < AsyncBodySetupQueue.Num(); Index++)
-		{
-			AsyncBodySetupQueue[Index - (FoundIdx + 1)] = AsyncBodySetupQueue[Index];
-			AsyncBodySetupQueue[Index] = nullptr;
+			// Shift down all remaining body setups, removing any old setups
+			for (int32 Index = FoundIdx + 1; Index < AsyncBodySetupQueue.Num(); Index++)
+			{
+				AsyncBodySetupQueue[Index - (FoundIdx + 1)] = AsyncBodySetupQueue[Index];
+				AsyncBodySetupQueue[Index] = nullptr;
+			}
+			AsyncBodySetupQueue.SetNum(AsyncBodySetupQueue.Num() - (FoundIdx + 1));
+
+			FinalizeNewCookedData();
+
 		}
-		AsyncBodySetupQueue.SetNum(AsyncBodySetupQueue.Num() - (FoundIdx + 1));
-
-		FinalizeNewCookedData();
+		else
+		{
+			AsyncBodySetupQueue.RemoveAt(FoundIdx);
+		}
 	}
 }
 
@@ -259,6 +285,7 @@ void URuntimeMesh::FinalizeNewCookedData()
 		CollisionUpdated.Broadcast();
 	}
 }
+#endif
 
 void URuntimeMesh::UpdateLocalBounds()
 {
