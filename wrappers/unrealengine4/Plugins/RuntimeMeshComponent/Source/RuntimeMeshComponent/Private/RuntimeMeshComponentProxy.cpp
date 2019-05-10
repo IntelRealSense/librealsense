@@ -100,7 +100,12 @@ void FRuntimeMeshComponentSceneProxy::DrawStaticElements(FStaticPrimitiveDrawInt
 		if (SectionRenderData.Contains(SectionEntry.Key) && Section.IsValid() && Section->ShouldRender() && Section->WantsToRenderInStaticPath())
 		{
 			const FRuntimeMeshSectionRenderData& RenderData = SectionRenderData[SectionEntry.Key];
+
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION < 20
+			FMaterialRenderProxy* Material = RenderData.Material->GetRenderProxy(false);
+#else
 			FMaterialRenderProxy* Material = RenderData.Material->GetRenderProxy();
+#endif
 
 			FMeshBatch MeshBatch;
 			CreateMeshBatch(MeshBatch, Section, RenderData, Material, nullptr);
@@ -118,7 +123,11 @@ void FRuntimeMeshComponentSceneProxy::GetDynamicMeshElements(const TArray<const 
 	if (bWireframe)
 	{
 		WireframeMaterialInstance = new FColoredMaterialRenderProxy(
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION < 20
+			GEngine->WireframeMaterial ? GEngine->WireframeMaterial->GetRenderProxy(IsSelected()) : nullptr,
+#else
 			GEngine->WireframeMaterial ? GEngine->WireframeMaterial->GetRenderProxy() : nullptr,
+#endif
 			FLinearColor(0, 0.5f, 1.f)
 		);
 
@@ -141,7 +150,11 @@ void FRuntimeMeshComponentSceneProxy::GetDynamicMeshElements(const TArray<const 
 					if (bForceDynamicPath || !Section->WantsToRenderInStaticPath())
 					{
 						const FRuntimeMeshSectionRenderData& RenderData = SectionRenderData[SectionEntry.Key];
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION < 20
+						FMaterialRenderProxy* Material = RenderData.Material->GetRenderProxy(IsSelected());
+#else
 						FMaterialRenderProxy* Material = RenderData.Material->GetRenderProxy();
+#endif
 
 						FMeshBatch& MeshBatch = Collector.AllocateMesh();
 						CreateMeshBatch(MeshBatch, Section, RenderData, Material, WireframeMaterialInstance);

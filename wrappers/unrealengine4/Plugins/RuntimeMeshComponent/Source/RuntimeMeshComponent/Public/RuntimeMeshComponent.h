@@ -218,7 +218,9 @@ public:
 	}
 
 
-
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION < 22
+#define UE_DEPRECATED(VERSION, MESSAGE) DEPRECATED(VERSION, MESSAGE)
+#endif
 
 	/** DEPRECATED! Use UpdateMeshSectionDualBuffer() instead.  Updates the dual buffer mesh section */
 	template<typename VertexType>

@@ -31,8 +31,13 @@ public class RuntimeMeshComponentEditor : ModuleRules
                 "Slate",
                 "SlateCore",
                 "RenderCore",
-                "RHI",
-                "NavigationSystem",
+#if !UE_4_22_OR_LATER
+				"ShaderCore", // ShaderCore was Merged into RenderCore in 4.22
+#endif
+				"RHI",
+#if UE_4_20_OR_LATER
+				"NavigationSystem",
+#endif
                 "UnrealEd",
                 "LevelEditor",
                 "PropertyEditor",

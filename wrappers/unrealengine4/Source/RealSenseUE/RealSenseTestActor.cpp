@@ -1,5 +1,5 @@
-#include "RealSenseUE.h"
 #include "RealSenseTestActor.h"
+#include "RealSenseUE.h"
 
 // wrapper headers
 #include "RealSensePlugin.h"

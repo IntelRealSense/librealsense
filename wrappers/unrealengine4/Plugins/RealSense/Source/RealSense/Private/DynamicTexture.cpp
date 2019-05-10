@@ -1,3 +1,4 @@
+#include "DynamicTexture.h"
 #include "PCH.h"
 
 FDynamicTexture::FDynamicTexture(FString Name, 
