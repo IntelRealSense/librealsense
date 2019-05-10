@@ -15,12 +15,11 @@ FDynamicTexture::FDynamicTexture(FString Name,
 	this->Compression = Compression;
 
 	CommandCounter.Increment();
-	ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-		CreateTextureCmd,
-		FDynamicTexture*, Context, this,
-	{
-		Context->RenderCmd_CreateTexture();
-	});
+	ENQUEUE_RENDER_COMMAND(CreateTextureCmd)(
+		[this](FRHICommandListImmediate& RHICmdList)
+		{
+			this->RenderCmd_CreateTexture();
+		});
 }
 
 FDynamicTexture::~FDynamicTexture()
@@ -97,12 +96,11 @@ void FDynamicTexture::EnqueUpdateCommand(FTextureUpdateData* Tud)
 	else if (TextureObject && TextureObject->Resource)
 	{
 		CommandCounter.Increment();
-		ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-			UpdateTextureCmd,
-			FTextureUpdateData*, Tud, Tud,
-		{
-			Tud->Context->RenderCmd_UpdateTexture(Tud);
-		});
+		ENQUEUE_RENDER_COMMAND(UpdateTextureCmd)(
+			[Tud](FRHICommandListImmediate& RHICmdList)
+			{
+				Tud->Context->RenderCmd_UpdateTexture(Tud);
+			});
 	}
 }
 

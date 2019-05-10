@@ -1,6 +1,7 @@
 // Copyright 2016-2018 Chris Conway (Koderz). All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class RuntimeMeshComponent : ModuleRules
 {
