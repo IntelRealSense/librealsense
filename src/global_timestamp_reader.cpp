@@ -187,9 +187,12 @@ namespace librealsense
         return _coefs.calc_value(crnt_hw_time);
     }
 
-    global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, std::shared_ptr<time_diff_keeper> timediff) :
+    global_timestamp_reader::global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, 
+                                                     std::shared_ptr<time_diff_keeper> timediff,
+                                                     std::shared_ptr<global_time_option> enable_option) :
         _device_timestamp_reader(std::move(device_timestamp_reader)),
-        _time_diff_keeper(timediff)
+        _time_diff_keeper(timediff),
+        _option_is_enabled(enable_option)
     {
         LOG_DEBUG("global_timestamp_reader created");
     }
@@ -198,7 +201,7 @@ namespace librealsense
     {
         double frame_time = _device_timestamp_reader->get_frame_timestamp(mode, fo);
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
-        if (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+        if (_option_is_enabled->is_true() && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
         {
             auto sp = _time_diff_keeper.lock();
             if (sp)
@@ -218,13 +221,11 @@ namespace librealsense
     rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const request_mapping& mode, const platform::frame_object& fo) const
     {
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
-        return (ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;
+        return (_option_is_enabled->is_true() && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;
     }
 
     void global_timestamp_reader::reset()
     {
         _device_timestamp_reader->reset();
     }
-
-
 }

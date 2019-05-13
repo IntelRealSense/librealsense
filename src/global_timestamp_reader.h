@@ -10,6 +10,14 @@
 
 namespace librealsense
 {
+    class LRS_EXTENSION_API global_time_option : public bool_option
+    {
+    public:
+        global_time_option() {}
+        // TODO: expose this outwards
+        const char* get_description() const override { return "Enable/Disable global timestamp."; }
+    };
+
     class CSample
     {
     public:
@@ -69,7 +77,9 @@ namespace librealsense
     class global_timestamp_reader : public frame_timestamp_reader
     {
     public:
-        global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, std::shared_ptr<time_diff_keeper> timediff);
+        global_timestamp_reader(std::unique_ptr<frame_timestamp_reader> device_timestamp_reader, 
+                                std::shared_ptr<time_diff_keeper> timediff,
+                                std::shared_ptr<global_time_option>);
 
         rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
         unsigned long long get_frame_counter(const request_mapping& mode, const platform::frame_object& fo) const override;
@@ -80,5 +90,6 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> _device_timestamp_reader;
         std::weak_ptr<time_diff_keeper> _time_diff_keeper;
         mutable std::recursive_mutex _mtx;
+        std::shared_ptr<global_time_option> _option_is_enabled;
     };
 }
