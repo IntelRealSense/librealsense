@@ -56,9 +56,8 @@ struct rs2_processing_block_list
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor(rs2_device parent,
-        librealsense::sensor_interface* sensor,
-        size_t index)
-        : rs2_options((librealsense::options_interface*)sensor),
+        librealsense::sensor_interface* sensor) :
+        rs2_options((librealsense::options_interface*)sensor),
         parent(parent), sensor(sensor)
     {}
 
@@ -284,8 +283,7 @@ rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error*
 
     return new rs2_sensor{
             list->dev,
-            &list->dev.device->get_sensor(index),
-            (size_t)index
+            &list->dev.device->get_sensor(index)
     };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
@@ -770,10 +768,7 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
     device_interface& dev = sensor->get_device();
     auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev.shared_from_this());
     rs2_device dev2{ dev.get_context(), dev_info, dev.shared_from_this() };
-    return new rs2_sensor(
-        dev2,
-        (((frame_interface*)frame)->get_sensor()).get(),
-        (size_t)0);
+    return new rs2_sensor(dev2, sensor.get());
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
@@ -2038,8 +2033,7 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
 
     return new rs2_sensor(
         *dev,
-        &df->add_software_sensor(sensor_name),
-        0);
+        &df->add_software_sensor(sensor_name));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
 
