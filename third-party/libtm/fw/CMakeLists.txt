@@ -15,14 +15,6 @@ set( BL_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/bl")
 
 add_library(fw STATIC empty.c)
 
-if (MSVC)
-  # lib.exe can't handle multiple .res files, so include them in one.
-  # even then, the linker won't grab a .res out of a .lib object, so it needs to be explicitly listed
-  # and to find the name of the .res file (across cmake generators) we need to create our own rule. :(
-  add_custom_command(TARGET fw BYPRODUCTS fw.res COMMAND ${CMAKE_RC_COMPILER} ${CMAKE_RC_FLAGS} /I . /fo "fw.res" "${CMAKE_CURRENT_SOURCE_DIR}/fw.rc")
-  target_link_libraries(fw PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/fw.res")
-endif()
-
 target_include_directories(fw PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 function(target_binary url version sha1 symbol ext)
@@ -44,9 +36,8 @@ function(target_binary url version sha1 symbol ext)
   configure_file(fw.rc.in "${CMAKE_CURRENT_BINARY_DIR}/fw_${symbol}.rc" @ONLY)
   if (MSVC)
     enable_language(RC)
-    set_source_files_properties("fw.rc" OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/fw_${symbol}.rc")
-   #target_sources(fw PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/fw_${symbol}.rc")
-    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/fw_${symbol}.rc" OBJECT_DEPENDS "${binary}")
+    set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/fw.rc" OBJECT_DEPENDS "${binary}")
+    set(FW_RC_CONTENT "${FW_RC_CONTENT}${SYMBOL}_DATA ${SYMBOL}_RC \"${binary_escaped}\"\n" PARENT_SCOPE)
   else()
     set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/fw_${symbol}.c" OBJECT_DEPENDS "${binary}")
   endif()
@@ -56,6 +47,16 @@ endfunction()
 target_binary( "${FW_URL}"  "${FW_VERSION}"  "${FW_SHA1}" target .mvcmd)
 target_binary("${APP_URL}" "${APP_VERSION}" "${APP_SHA1}" central_app .bin)
 target_binary( "${BL_URL}"  "${BL_VERSION}"  "${BL_SHA1}" central_bl .bin)
+
+if (MSVC)
+  # lib.exe can't handle multiple .res files, so include them in one.
+  configure_file("fw.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/fw.rc")
+  target_sources(fw PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/fw.rc")
+  # even then, the linker won't grab a .res out of a .lib object, so it needs to be explicitly listed
+  target_link_libraries(fw PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/fw.res")
+  # and to find the name of the .res file (across cmake generators) we need to create our own rule. :(
+  add_custom_command(TARGET fw BYPRODUCTS fw.res COMMAND ${CMAKE_RC_COMPILER} ${CMAKE_RC_FLAGS} /I . /fo fw.res fw.rc)
+endif()
 
 install(TARGETS fw EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
