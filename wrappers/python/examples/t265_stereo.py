@@ -37,6 +37,7 @@ import pyrealsense2 as rs
 # Import OpenCV and numpy
 import cv2
 import numpy as np
+from math import tan, pi
 
 """
 In this section, we will set up the functions that will translate the camera
@@ -112,64 +113,14 @@ cfg = rs.config()
 pipe.start(cfg, callback)
 
 try:
-    # Retreive the stream and intrinsic properties for both cameras
-    profiles = pipe.get_active_profile()
-    streams = {"left"  : profiles.get_stream(rs.stream.fisheye, 1).as_video_stream_profile(),
-               "right" : profiles.get_stream(rs.stream.fisheye, 2).as_video_stream_profile()}
-    intrinsics = {"left"  : streams["left"].get_intrinsics(),
-                  "right" : streams["right"].get_intrinsics()}
-
     # Set up an OpenCV window to visualize the results
     WINDOW_TITLE = 'Realsense'
     cv2.namedWindow(WINDOW_TITLE, cv2.WINDOW_NORMAL)
 
-    # Print information about both cameras
-    print("Left camera:",  intrinsics["left"])
-    print("Right camera:", intrinsics["right"])
-
-    # Translate the intrinsics from librealsense into OpenCV
-    K_left  = camera_matrix(intrinsics["left"])
-    D_left  = fisheye_distortion(intrinsics["left"])
-    K_right = camera_matrix(intrinsics["right"])
-    D_right = fisheye_distortion(intrinsics["right"])
-    (width, height) = (intrinsics["left"].width, intrinsics["left"].height)
-
-    # Get thre relative extrinsics between the left and right camera
-    (R, T) = get_extrinsics(streams["left"], streams["right"])
-
-    # Use OpenCV stereoRectify to compute a rectifying transform composed of two
-    # rotations, two projection matrices, and a Q matrix that transforms
-    # disparity to 3D points
-    (R_left, R_right, P_left, P_right, Q) = \
-    cv2.fisheye.stereoRectify(K1 = K_left, 
-                              D1 = D_left, 
-                              K2 = K_right,
-                              D2 = D_right,
-                              imageSize = (width, height),
-                              R = R,
-                              tvec = T,
-                              flags = cv2.CALIB_ZERO_DISPARITY,
-                              newImageSize = (width, height),
-                              balance = 0,
-                              fov_scale = 1.0)[0:5]
-
-    # Make sure the undisorted principal point is in the center of the image 
-    P_left[0][2] = P_right[0][2] = width/2
-    P_left[1][2] = P_right[1][2] = height/2
-
-    # Create an undistortion map for the left and right camera which applies the
-    # rectification and undoes the camera distortion. This only has to be done
-    # once
-    m1type = cv2.CV_32FC1
-    (lm1, lm2) = cv2.fisheye.initUndistortRectifyMap(K_left, D_left, R_left, P_left, (width, height), m1type)
-    (rm1, rm2) = cv2.fisheye.initUndistortRectifyMap(K_right, D_right, R_right, P_right, (width, height), m1type)
-    undistort_rectify = {"left"  : (lm1, lm2),
-                         "right" : (rm1, rm2)}
-
     # Configure the OpenCV stereo algorithm. See
     # https://docs.opencv.org/3.4/d2/d85/classcv_1_1StereoSGBM.html for a
     # description of the parameters
-    window_size = 3
+    window_size = 5
     min_disp = 0
     # must be divisible by 16
     num_disp = 112 - min_disp
@@ -184,27 +135,82 @@ try:
                                    speckleWindowSize = 100,
                                    speckleRange = 32)
 
-    # Since the field of view of T265 is very wide, stereo computed on the edges
-    # of the images are not very informative. So, here we set up a region to
-    # crop in the center of the image. We also need to modify Q since we have
-    # adjusted the center of the disparity image
-    half_center_size = int((height/3)/2)
-    (rs,re) = (int(height/2 - half_center_size), int(height/2 + half_center_size))
-    (cs,ce) = (int( width/2 - half_center_size), int( width/2 + half_center_size))
-    (Q[0][3], Q[1][3]) = (-half_center_size, -half_center_size)
+    # Retreive the stream and intrinsic properties for both cameras
+    profiles = pipe.get_active_profile()
+    streams = {"left"  : profiles.get_stream(rs.stream.fisheye, 1).as_video_stream_profile(),
+               "right" : profiles.get_stream(rs.stream.fisheye, 2).as_video_stream_profile()}
+    intrinsics = {"left"  : streams["left"].get_intrinsics(),
+                  "right" : streams["right"].get_intrinsics()}
 
-    # Calculate the undistorted field of view
-    import math
-    focal_length = Q[2][3]
-    normalized_half_height = (re - rs)/focal_length/2
-    normalized_half_width  = (ce - cs)/focal_length/2
-    horizontal_fov = 2*math.atan(normalized_half_width)*180/math.pi
-    vertical_fov   = 2*math.atan(normalized_half_height)*180/math.pi
-    print("Undistorted FOV: %.1fdeg wide, %.1fdeg high" % (horizontal_fov, vertical_fov))
+    # Print information about both cameras
+    print("Left camera:",  intrinsics["left"])
+    print("Right camera:", intrinsics["right"])
 
-    # start with max_disp more pixels if possible, since SGBM leaves an empty max_disp pixels on the left
-    cs_offset = min(max_disp,cs)
-    cs -= cs_offset
+    # Translate the intrinsics from librealsense into OpenCV
+    K_left  = camera_matrix(intrinsics["left"])
+    D_left  = fisheye_distortion(intrinsics["left"])
+    K_right = camera_matrix(intrinsics["right"])
+    D_right = fisheye_distortion(intrinsics["right"])
+    (width, height) = (intrinsics["left"].width, intrinsics["left"].height)
+
+    # Get the relative extrinsics between the left and right camera
+    (R, T) = get_extrinsics(streams["left"], streams["right"])
+
+    # We need to determine what focal length our undistorted images should have
+    # in order to set up the camera matrices for initUndistortRectifyMap.  We
+    # could use stereoRectify, but here we show how to derive these projection
+    # matrices from the calibration and a desired height and field of view
+
+    # We calculate the undistorted focal length:
+    #
+    #         h
+    # -----------------
+    #  \      |      /
+    #    \    | f  /
+    #     \   |   /
+    #      \ fov /
+    #        \|/
+    stereo_fov_rad = 90 * (pi/180)  # 90 degree desired fov
+    stereo_height_px = 300          # 300x300 pixel stereo output
+    stereo_focal_px = stereo_height_px/2 / tan(stereo_fov_rad/2)
+
+    # We set the left rotation to identity and the right rotation
+    # the rotation between the cameras
+    R_left = np.eye(3)
+    R_right = R
+
+    # The stereo algorithm needs max_disp extra pixels in order to produce valid
+    # disparity on the desired output region. This changes the width, but the
+    # center of projection should be on the center of the cropped image
+    stereo_width_px = stereo_height_px + max_disp
+    stereo_size = (stereo_width_px, stereo_height_px)
+    stereo_cx = (stereo_height_px - 1)/2 + max_disp
+    stereo_cy = (stereo_height_px - 1)/2
+
+    # Construct the left and right projection matrices, the only difference is
+    # that the right projection matrix should have a shift along the x axis of
+    # baseline*focal_length
+    P_left = np.array([[stereo_focal_px, 0, stereo_cx, 0],
+                       [0, stereo_focal_px, stereo_cy, 0],
+                       [0,               0,         1, 0]])
+    P_right = P_left.copy()
+    P_right[0][3] = T[0]*stereo_focal_px
+
+    # Construct Q for use with cv2.reprojectImageTo3D. Subtract max_disp from x
+    # since we will crop the disparity later
+    Q = np.array([[1, 0,       0, -(stereo_cx - max_disp)],
+                  [0, 1,       0, -stereo_cy],
+                  [0, 0,       0, stereo_focal_px],
+                  [0, 0, -1/T[0], 0]])
+
+    # Create an undistortion map for the left and right camera which applies the
+    # rectification and undoes the camera distortion. This only has to be done
+    # once
+    m1type = cv2.CV_32FC1
+    (lm1, lm2) = cv2.fisheye.initUndistortRectifyMap(K_left, D_left, R_left, P_left, stereo_size, m1type)
+    (rm1, rm2) = cv2.fisheye.initUndistortRectifyMap(K_right, D_right, R_right, P_right, stereo_size, m1type)
+    undistort_rectify = {"left"  : (lm1, lm2),
+                         "right" : (rm1, rm2)}
 
     mode = "stack"
     while True:
@@ -225,22 +231,22 @@ try:
             center_undistorted = {"left" : cv2.remap(src = frame_copy["left"],
                                           map1 = undistort_rectify["left"][0],
                                           map2 = undistort_rectify["left"][1],
-                                          interpolation = cv2.INTER_LINEAR)[rs:re, cs:ce],
+                                          interpolation = cv2.INTER_LINEAR),
                                   "right" : cv2.remap(src = frame_copy["right"],
                                           map1 = undistort_rectify["right"][0],
                                           map2 = undistort_rectify["right"][1],
-                                          interpolation = cv2.INTER_LINEAR)[rs:re, cs:ce]}
+                                          interpolation = cv2.INTER_LINEAR)}
 
             # compute the disparity on the center of the frames and convert it to a pixel disparity (divide by DISP_SCALE=16)
             disparity = stereo.compute(center_undistorted["left"], center_undistorted["right"]).astype(np.float32) / 16.0
 
             # re-crop just the valid part of the disparity
-            disparity = disparity[:,cs_offset:]
+            disparity = disparity[:,max_disp:]
 
             # convert disparity to 0-255 and color it
             disp_vis = 255*(disparity - min_disp)/ num_disp
             disp_color = cv2.applyColorMap(cv2.convertScaleAbs(disp_vis,1), cv2.COLORMAP_JET)
-            color_image = cv2.cvtColor(center_undistorted["left"][:,cs_offset:], cv2.COLOR_GRAY2RGB)
+            color_image = cv2.cvtColor(center_undistorted["left"][:,max_disp:], cv2.COLOR_GRAY2RGB)
 
             if mode == "stack":
                 cv2.imshow(WINDOW_TITLE, np.hstack((color_image, disp_color)))
