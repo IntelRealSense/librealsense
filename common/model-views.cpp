@@ -944,7 +944,7 @@ namespace rs2
             if (shared_filter->is<zero_order_invalidation>())
                 zero_order_artifact_fix = model;
 
-            if (shared_filter->is<hole_filling_filter>() || shared_filter->is<zero_order_invalidation>())
+            if (shared_filter->is<hole_filling_filter>())
                 model->enabled = false;
 
             post_processing.push_back(model);
