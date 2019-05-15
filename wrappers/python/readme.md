@@ -66,11 +66,11 @@ For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
 # First import the library
 import pyrealsense2 as rs
 
-try:
-    # Create a context object. This object owns the handles to all connected realsense devices
-    pipeline = rs.pipeline()
-    pipeline.start()
+# Create a context object. This object owns the handles to all connected realsense devices
+pipeline = rs.pipeline()
+pipeline.start()
 
+try:
     while True:
         # Create a pipeline object. This object configures the streaming camera and owns it's handle
         frames = pipeline.wait_for_frames()
@@ -91,6 +91,9 @@ try:
                     line += " .:nhBXWW"[c/25]
                 coverage = [0]*64
                 print(line)
+
+finally:
+    pipeline.stop()
 ```
 
 #### NumPy Integration
