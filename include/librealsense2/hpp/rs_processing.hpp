@@ -250,7 +250,7 @@ namespace rs2
         * \param[in] block - low level rs2_processing_block created before.
         */
         processing_block(std::shared_ptr<rs2_processing_block> block)
-            : _block(block), options((rs2_options*)block.get())
+            : options((rs2_options*)block.get()), _block(block)
         {
         }
 

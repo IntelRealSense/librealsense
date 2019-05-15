@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PCH.h"
 #include "RealSenseTypes.h"
 #include "RuntimeMeshComponent.h"
 #include "RealSenseInspector.generated.h"
