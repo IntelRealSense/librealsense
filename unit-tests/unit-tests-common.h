@@ -213,9 +213,6 @@ inline void disable_sensitive_options_for(rs2::sensor& sen)
         REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
         REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
     }
-
-    if (sen.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 0));
 }
 
 inline void disable_sensitive_options_for(rs2::device& dev)

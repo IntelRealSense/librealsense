@@ -72,7 +72,10 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        _tf_keeper->start();
+        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
+            _tf_keeper->start();
+        else
+            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     std::shared_ptr<uvc_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
