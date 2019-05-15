@@ -20,7 +20,7 @@ namespace librealsense
     protected:
         void update_configuration(const rs2::frame& f);
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
-		bool should_process(const rs2::frame& frame) override;
+	    bool should_process(const rs2::frame& frame) override;
 
     private:
         rs2::stream_profile     _target_stream_profile;

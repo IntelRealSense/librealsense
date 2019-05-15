@@ -304,7 +304,7 @@ namespace librealsense
             CASE(GPIO_RAW)
             CASE(6DOF)
             CASE(Y10BPACK)
-			CASE(DISTANCE)
+            CASE(DISTANCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

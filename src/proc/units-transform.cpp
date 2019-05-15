@@ -42,12 +42,12 @@ namespace librealsense
 
     rs2::frame units_transform::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-		if (!f.is<rs2::depth_frame>()) return f;
+        if (!f.is<rs2::depth_frame>()) return f;
 
         update_configuration(f);
 
-		auto new_f = source.allocate_video_frame(_target_stream_profile, f,
-			_bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
+        auto new_f = source.allocate_video_frame(_target_stream_profile, f,
+            _bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
 
         if (new_f)
         {
@@ -72,9 +72,9 @@ namespace librealsense
         return f;
     }
 
-	bool units_transform::should_process(const rs2::frame& frame)
-	{
-		if (!frame.is<rs2::depth_frame>()) return false;
-		return true;
-	}
+    bool units_transform::should_process(const rs2::frame& frame)
+    {
+        if (!frame.is<rs2::depth_frame>()) return false;
+        return true;
+    }
 }
