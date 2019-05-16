@@ -728,7 +728,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("set_status_changed_callback", [](rs2::playback& self, std::function<void(rs2_playback_status)> callback) {
             self.set_status_changed_callback(callback);
         }, "Register to receive callback from playback device upon its status changes. Callbacks are invoked from the reading thread, "
-           "and as such any heavy processing in the callback handler will affect the reading thread and may cause frame drops\ high latency.", "callback"_a)
+           "and as such any heavy processing in the callback handler will affect the reading thread and may cause frame drops/high latency.", "callback"_a)
         .def("current_status", &rs2::playback::current_status, "Returns the current state of the playback device");
         // Stop?
 
