@@ -84,6 +84,12 @@ namespace librealsense
         void detach_controller(int id);
         void dispose();
         perc::TrackingData::Temperature get_temperature();
+        void set_exposure(float value);
+        float get_exposure() const;
+        void set_gain(float value);
+        float get_gain() const;
+        bool is_manual_exposure() const { return manual_exposure; }
+        void set_manual_exposure(bool manual);
 
         // Pose interfaces
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const override;
@@ -127,5 +133,9 @@ namespace librealsense
         mutable std::condition_variable _async_op;
         mutable async_op_state          _async_op_status;
         mutable std::vector<uint8_t>    _async_op_res_buffer;
+
+        float last_exposure = 200.f;
+        float last_gain = 1.f;
+        bool manual_exposure = false;
     };
 }
