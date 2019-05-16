@@ -574,7 +574,7 @@ namespace librealsense
             //write the calibration to its correct address
             command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);
             cmd.data = calib;
-            auto res = ds5_device::_hw_monitor->send(cmd);
+            ds5_device::_hw_monitor->send(cmd);
 
             _color_calib_table_raw = [this]() { return get_raw_calibration_table(ds::rgb_calibration_id); };
             _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(ds::get_color_stream_extrinsic(*_color_calib_table_raw)); });
