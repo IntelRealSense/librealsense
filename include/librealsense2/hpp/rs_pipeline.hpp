@@ -11,7 +11,7 @@
 namespace rs2
 {
     /**
-    * The pipeline profile includes a device and a selection of active streams, with specific profile.
+    * The pipeline profile includes a device and a selection of active streams, with specific profiles.
     * The profile is a selection of the above under filters and conditions defined by the pipeline.
     * Streams may belong to more than one sensor of the device.
     */
@@ -50,7 +50,7 @@ namespace rs2
         }
 
         /**
-        * Return the selected stream profile, which are enabled in this profile.
+        * Return the stream profile enabled for the specified stream in this profile.
         *
         * \param[in] stream_type     Stream type of the desired profile
         * \param[in] stream_index    Stream index of the desired profile. -1 for any matching.
@@ -160,25 +160,25 @@ namespace rs2
             error::handle(e);
         }
 
-        //Stream type and possibly also stream index
+        // Stream type and possibly also stream index
         void enable_stream(rs2_stream stream_type, int stream_index = -1)
         {
             enable_stream(stream_type, stream_index, 0, 0, RS2_FORMAT_ANY, 0);
         }
 
-        //Stream type and resolution, and possibly format and frame rate
+        // Stream type and resolution, and possibly format and frame rate
         void enable_stream(rs2_stream stream_type, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
         {
             enable_stream(stream_type, -1, width, height, format, framerate);
         }
 
-        //Stream type and format
+        // Stream type and format, and possibly frame rate
         void enable_stream(rs2_stream stream_type, rs2_format format, int framerate = 0)
         {
             enable_stream(stream_type, -1, 0, 0, format, framerate);
         }
 
-        //Stream type and format
+        // Stream type, index, and format, and possibly framerate
         void enable_stream(rs2_stream stream_type, int stream_index, rs2_format format, int framerate = 0)
         {
             enable_stream(stream_type, stream_index, 0, 0, format, framerate);
@@ -216,7 +216,7 @@ namespace rs2
         * Select a recorded device from a file, to be used by the pipeline through playback.
         * The device available streams are as recorded to the file, and \c resolve() considers only this device and
         * configuration as available.
-        * This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+        * This request cannot be used if \c enable_record_to_file() is called for the current config, and vise versa
         *
         * \param[in] file_name  The playback file of the device
         */
@@ -228,8 +228,8 @@ namespace rs2
         }
 
         /**
-        * Requires that the resolved device would be recorded to file
-        * This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
+        * Requires that the resolved device would be recorded to file.
+        * This request cannot be used if \c enable_device_from_file() is called for the current config, and vise versa
         * as available.
         *
         * \param[in] file_name  The desired file for the output record
@@ -476,7 +476,7 @@ namespace rs2
         * should be called as fast as the device frame rate.
         * The application can maintain the frames handles to defer processing. However, if the application maintains too long
         * history, the device may lack memory resources to produce new frames, and the following call to this method shall fail
-        * to retrieve new frames, until resources are retained.
+        * to retrieve new frames, until resources become available.
         *
         * \param[in] timeout_ms   Max time in milliseconds to wait until an exception will be thrown
         * \return                 Set of time synchronized frames, one from each active stream
@@ -499,7 +499,7 @@ namespace rs2
         * To avoid frame drops, this method should be called as fast as the device frame rate.
         * The application can maintain the frames handles to defer processing. However, if the application maintains too long
         * history, the device may lack memory resources to produce new frames, and the following calls to this method shall
-        * return no new frames, until resources are retained.
+        * return no new frames, until resources become available.
         *
         * \param[out] f     Frames set handle
         * \return           True if new set of time synchronized frames was stored to f, false if no new frames set is available
