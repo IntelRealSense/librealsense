@@ -1,0 +1,58 @@
+pyrealsense2.frame_metadata_value
+=================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: frame_metadata_value
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~frame_metadata_value.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~frame_metadata_value.actual_exposure
+      ~frame_metadata_value.actual_fps
+      ~frame_metadata_value.auto_exposure
+      ~frame_metadata_value.auto_white_balance_temperature
+      ~frame_metadata_value.backend_timestamp
+      ~frame_metadata_value.backlight_compensation
+      ~frame_metadata_value.brightness
+      ~frame_metadata_value.contrast
+      ~frame_metadata_value.exposure_priority
+      ~frame_metadata_value.exposure_roi_bottom
+      ~frame_metadata_value.exposure_roi_left
+      ~frame_metadata_value.exposure_roi_right
+      ~frame_metadata_value.exposure_roi_top
+      ~frame_metadata_value.frame_counter
+      ~frame_metadata_value.frame_laser_power
+      ~frame_metadata_value.frame_laser_power_mode
+      ~frame_metadata_value.frame_timestamp
+      ~frame_metadata_value.gain_level
+      ~frame_metadata_value.gamma
+      ~frame_metadata_value.hue
+      ~frame_metadata_value.low_light_compensation
+      ~frame_metadata_value.manual_white_balance
+      ~frame_metadata_value.power_line_frequency
+      ~frame_metadata_value.saturation
+      ~frame_metadata_value.sensor_timestamp
+      ~frame_metadata_value.sharpness
+      ~frame_metadata_value.temperature
+      ~frame_metadata_value.time_of_arrival
+      ~frame_metadata_value.white_balance
+   
+   

@@ -1,0 +1,50 @@
+pyrealsense2.tm2
+================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: tm2
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~tm2.__init__
+      ~tm2.as_debug_protocol
+      ~tm2.as_playback
+      ~tm2.as_recorder
+      ~tm2.as_tm2
+      ~tm2.connect_controller
+      ~tm2.disable_loopback
+      ~tm2.disconnect_controller
+      ~tm2.enable_loopback
+      ~tm2.first_depth_sensor
+      ~tm2.first_pose_sensor
+      ~tm2.first_roi_sensor
+      ~tm2.get_info
+      ~tm2.hardware_reset
+      ~tm2.is_debug_protocol
+      ~tm2.is_loopback_enabled
+      ~tm2.is_playback
+      ~tm2.is_recorder
+      ~tm2.is_tm2
+      ~tm2.query_sensors
+      ~tm2.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~tm2.sensors
+   
+   

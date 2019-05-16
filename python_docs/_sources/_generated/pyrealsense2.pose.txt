@@ -1,0 +1,37 @@
+pyrealsense2.pose
+=================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pose
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pose.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~pose.acceleration
+      ~pose.angular_acceleration
+      ~pose.angular_velocity
+      ~pose.mapper_confidence
+      ~pose.rotation
+      ~pose.tracker_confidence
+      ~pose.translation
+      ~pose.velocity
+   
+   

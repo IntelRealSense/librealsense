@@ -1,0 +1,27 @@
+pyrealsense2.frame_source
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: frame_source
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~frame_source.allocate_composite_frame
+      ~frame_source.allocate_points
+      ~frame_source.allocate_video_frame
+      ~frame_source.frame_ready
+   
+   
+   
+   
+   
+   

@@ -1,0 +1,35 @@
+pyrealsense2.STSloPenaltyControl
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STSloPenaltyControl
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STSloPenaltyControl.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STSloPenaltyControl.sloK1Penalty
+      ~STSloPenaltyControl.sloK1PenaltyMod1
+      ~STSloPenaltyControl.sloK1PenaltyMod2
+      ~STSloPenaltyControl.sloK2Penalty
+      ~STSloPenaltyControl.sloK2PenaltyMod1
+      ~STSloPenaltyControl.sloK2PenaltyMod2
+   
+   

@@ -1,0 +1,32 @@
+pyrealsense2.vertex
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: vertex
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~vertex.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~vertex.x
+      ~vertex.y
+      ~vertex.z
+   
+   

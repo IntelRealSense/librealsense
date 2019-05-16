@@ -1,0 +1,27 @@
+pyrealsense2.syncer
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: syncer
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~syncer.__init__
+      ~syncer.poll_for_frames
+      ~syncer.try_wait_for_frames
+      ~syncer.wait_for_frames
+   
+   
+   
+   
+   
+   

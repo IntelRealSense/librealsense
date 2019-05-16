@@ -1,0 +1,39 @@
+pyrealsense2.camera_info
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: camera_info
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~camera_info.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~camera_info.advanced_mode
+      ~camera_info.camera_locked
+      ~camera_info.debug_op_code
+      ~camera_info.firmware_version
+      ~camera_info.name
+      ~camera_info.physical_port
+      ~camera_info.product_id
+      ~camera_info.recommended_firmware_version
+      ~camera_info.serial_number
+      ~camera_info.usb_type_descriptor
+   
+   

@@ -1,0 +1,57 @@
+pyrealsense2.frame
+==================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~frame.__init__
+      ~frame.as_depth_frame
+      ~frame.as_frame
+      ~frame.as_frameset
+      ~frame.as_motion_frame
+      ~frame.as_points
+      ~frame.as_pose_frame
+      ~frame.as_video_frame
+      ~frame.get_data
+      ~frame.get_frame_metadata
+      ~frame.get_frame_number
+      ~frame.get_frame_timestamp_domain
+      ~frame.get_profile
+      ~frame.get_timestamp
+      ~frame.is_depth_frame
+      ~frame.is_frame
+      ~frame.is_frameset
+      ~frame.is_motion_frame
+      ~frame.is_points
+      ~frame.is_pose_frame
+      ~frame.is_video_frame
+      ~frame.keep
+      ~frame.supports_frame_metadata
+      ~frame.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~frame.data
+      ~frame.frame_number
+      ~frame.frame_timestamp_domain
+      ~frame.profile
+      ~frame.timestamp
+   
+   

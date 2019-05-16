@@ -1,0 +1,56 @@
+pyrealsense2.roi_sensor
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: roi_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~roi_sensor.__init__
+      ~roi_sensor.as_depth_sensor
+      ~roi_sensor.as_pose_sensor
+      ~roi_sensor.as_roi_sensor
+      ~roi_sensor.as_wheel_odometer
+      ~roi_sensor.close
+      ~roi_sensor.get_info
+      ~roi_sensor.get_option
+      ~roi_sensor.get_option_description
+      ~roi_sensor.get_option_range
+      ~roi_sensor.get_option_value_description
+      ~roi_sensor.get_recommended_filters
+      ~roi_sensor.get_region_of_interest
+      ~roi_sensor.get_stream_profiles
+      ~roi_sensor.get_supported_options
+      ~roi_sensor.is_depth_sensor
+      ~roi_sensor.is_option_read_only
+      ~roi_sensor.is_pose_sensor
+      ~roi_sensor.is_roi_sensor
+      ~roi_sensor.is_wheel_odometer
+      ~roi_sensor.open
+      ~roi_sensor.set_notifications_callback
+      ~roi_sensor.set_option
+      ~roi_sensor.set_region_of_interest
+      ~roi_sensor.start
+      ~roi_sensor.stop
+      ~roi_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~roi_sensor.profiles
+   
+   

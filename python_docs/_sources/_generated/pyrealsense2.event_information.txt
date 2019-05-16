@@ -1,0 +1,26 @@
+pyrealsense2.event_information
+==============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: event_information
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~event_information.get_new_devices
+      ~event_information.was_added
+      ~event_information.was_removed
+   
+   
+   
+   
+   
+   

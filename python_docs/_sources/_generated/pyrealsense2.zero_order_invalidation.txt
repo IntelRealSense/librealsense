@@ -1,0 +1,35 @@
+pyrealsense2.zero_order_invalidation
+====================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: zero_order_invalidation
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~zero_order_invalidation.__init__
+      ~zero_order_invalidation.get_option
+      ~zero_order_invalidation.get_option_description
+      ~zero_order_invalidation.get_option_range
+      ~zero_order_invalidation.get_option_value_description
+      ~zero_order_invalidation.get_supported_options
+      ~zero_order_invalidation.invoke
+      ~zero_order_invalidation.is_option_read_only
+      ~zero_order_invalidation.process
+      ~zero_order_invalidation.set_option
+      ~zero_order_invalidation.start
+      ~zero_order_invalidation.supports
+   
+   
+   
+   
+   
+   

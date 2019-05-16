@@ -1,0 +1,55 @@
+pyrealsense2.depth_sensor
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: depth_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~depth_sensor.__init__
+      ~depth_sensor.as_depth_sensor
+      ~depth_sensor.as_pose_sensor
+      ~depth_sensor.as_roi_sensor
+      ~depth_sensor.as_wheel_odometer
+      ~depth_sensor.close
+      ~depth_sensor.get_depth_scale
+      ~depth_sensor.get_info
+      ~depth_sensor.get_option
+      ~depth_sensor.get_option_description
+      ~depth_sensor.get_option_range
+      ~depth_sensor.get_option_value_description
+      ~depth_sensor.get_recommended_filters
+      ~depth_sensor.get_stream_profiles
+      ~depth_sensor.get_supported_options
+      ~depth_sensor.is_depth_sensor
+      ~depth_sensor.is_option_read_only
+      ~depth_sensor.is_pose_sensor
+      ~depth_sensor.is_roi_sensor
+      ~depth_sensor.is_wheel_odometer
+      ~depth_sensor.open
+      ~depth_sensor.set_notifications_callback
+      ~depth_sensor.set_option
+      ~depth_sensor.start
+      ~depth_sensor.stop
+      ~depth_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~depth_sensor.profiles
+   
+   

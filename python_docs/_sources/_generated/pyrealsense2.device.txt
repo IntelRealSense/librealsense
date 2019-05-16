@@ -1,0 +1,45 @@
+pyrealsense2.device
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: device
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~device.__init__
+      ~device.as_debug_protocol
+      ~device.as_playback
+      ~device.as_recorder
+      ~device.as_tm2
+      ~device.first_depth_sensor
+      ~device.first_pose_sensor
+      ~device.first_roi_sensor
+      ~device.get_info
+      ~device.hardware_reset
+      ~device.is_debug_protocol
+      ~device.is_playback
+      ~device.is_recorder
+      ~device.is_tm2
+      ~device.query_sensors
+      ~device.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~device.sensors
+   
+   

@@ -1,0 +1,18 @@
+pyrealsense2.BufData
+====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: BufData
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   
+   
+   
+   
+   

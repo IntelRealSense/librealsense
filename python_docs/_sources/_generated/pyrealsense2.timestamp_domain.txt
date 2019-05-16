@@ -1,0 +1,32 @@
+pyrealsense2.timestamp_domain
+=============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: timestamp_domain
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~timestamp_domain.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~timestamp_domain.global_time
+      ~timestamp_domain.hardware_clock
+      ~timestamp_domain.system_time
+   
+   

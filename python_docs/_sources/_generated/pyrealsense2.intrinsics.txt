@@ -1,0 +1,37 @@
+pyrealsense2.intrinsics
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: intrinsics
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~intrinsics.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~intrinsics.coeffs
+      ~intrinsics.fx
+      ~intrinsics.fy
+      ~intrinsics.height
+      ~intrinsics.model
+      ~intrinsics.ppx
+      ~intrinsics.ppy
+      ~intrinsics.width
+   
+   

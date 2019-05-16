@@ -1,0 +1,35 @@
+pyrealsense2.align
+==================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: align
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~align.__init__
+      ~align.get_option
+      ~align.get_option_description
+      ~align.get_option_range
+      ~align.get_option_value_description
+      ~align.get_supported_options
+      ~align.invoke
+      ~align.is_option_read_only
+      ~align.process
+      ~align.set_option
+      ~align.start
+      ~align.supports
+   
+   
+   
+   
+   
+   

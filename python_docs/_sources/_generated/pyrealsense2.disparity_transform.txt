@@ -1,0 +1,35 @@
+pyrealsense2.disparity_transform
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: disparity_transform
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~disparity_transform.__init__
+      ~disparity_transform.get_option
+      ~disparity_transform.get_option_description
+      ~disparity_transform.get_option_range
+      ~disparity_transform.get_option_value_description
+      ~disparity_transform.get_supported_options
+      ~disparity_transform.invoke
+      ~disparity_transform.is_option_read_only
+      ~disparity_transform.process
+      ~disparity_transform.set_option
+      ~disparity_transform.start
+      ~disparity_transform.supports
+   
+   
+   
+   
+   
+   

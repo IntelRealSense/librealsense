@@ -1,0 +1,37 @@
+pyrealsense2.pointcloud
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pointcloud
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pointcloud.__init__
+      ~pointcloud.calculate
+      ~pointcloud.get_option
+      ~pointcloud.get_option_description
+      ~pointcloud.get_option_range
+      ~pointcloud.get_option_value_description
+      ~pointcloud.get_supported_options
+      ~pointcloud.invoke
+      ~pointcloud.is_option_read_only
+      ~pointcloud.map_to
+      ~pointcloud.process
+      ~pointcloud.set_option
+      ~pointcloud.start
+      ~pointcloud.supports
+   
+   
+   
+   
+   
+   

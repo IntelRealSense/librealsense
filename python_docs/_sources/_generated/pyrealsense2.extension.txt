@@ -1,0 +1,65 @@
+pyrealsense2.extension
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: extension
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~extension.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~extension.advanced_mode
+      ~extension.composite_frame
+      ~extension.debug
+      ~extension.decimation_filter
+      ~extension.depth_frame
+      ~extension.depth_sensor
+      ~extension.depth_stereo_sensor
+      ~extension.disparity_filter
+      ~extension.disparity_frame
+      ~extension.hole_filling_filter
+      ~extension.info
+      ~extension.motion
+      ~extension.motion_frame
+      ~extension.motion_profile
+      ~extension.options
+      ~extension.playback
+      ~extension.points
+      ~extension.pose
+      ~extension.pose_frame
+      ~extension.pose_profile
+      ~extension.pose_sensor
+      ~extension.recommended_filters
+      ~extension.record
+      ~extension.roi
+      ~extension.software_device
+      ~extension.software_sensor
+      ~extension.spatial_filter
+      ~extension.temporal_filter
+      ~extension.threshold_filter
+      ~extension.tm2
+      ~extension.unknown
+      ~extension.video
+      ~extension.video_frame
+      ~extension.video_profile
+      ~extension.wheel_odometer
+      ~extension.zero_order_filter
+   
+   

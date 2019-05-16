@@ -1,0 +1,35 @@
+pyrealsense2.notification_category
+==================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: notification_category
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~notification_category.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~notification_category.firmware_update_recommended
+      ~notification_category.frame_corrupted
+      ~notification_category.frames_timeout
+      ~notification_category.hardware_error
+      ~notification_category.hardware_event
+      ~notification_category.unknown_error
+   
+   

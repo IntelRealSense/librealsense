@@ -1,0 +1,31 @@
+pyrealsense2.options
+====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: options
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~options.get_option
+      ~options.get_option_description
+      ~options.get_option_range
+      ~options.get_option_value_description
+      ~options.get_supported_options
+      ~options.is_option_read_only
+      ~options.set_option
+      ~options.supports
+   
+   
+   
+   
+   
+   

@@ -1,0 +1,41 @@
+pyrealsense2.STColorCorrection
+==============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STColorCorrection
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STColorCorrection.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STColorCorrection.colorCorrection1
+      ~STColorCorrection.colorCorrection10
+      ~STColorCorrection.colorCorrection11
+      ~STColorCorrection.colorCorrection12
+      ~STColorCorrection.colorCorrection2
+      ~STColorCorrection.colorCorrection3
+      ~STColorCorrection.colorCorrection4
+      ~STColorCorrection.colorCorrection5
+      ~STColorCorrection.colorCorrection6
+      ~STColorCorrection.colorCorrection7
+      ~STColorCorrection.colorCorrection8
+      ~STColorCorrection.colorCorrection9
+   
+   

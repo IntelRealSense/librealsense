@@ -1,0 +1,36 @@
+pyrealsense2.colorizer
+======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: colorizer
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~colorizer.__init__
+      ~colorizer.colorize
+      ~colorizer.get_option
+      ~colorizer.get_option_description
+      ~colorizer.get_option_range
+      ~colorizer.get_option_value_description
+      ~colorizer.get_supported_options
+      ~colorizer.invoke
+      ~colorizer.is_option_read_only
+      ~colorizer.process
+      ~colorizer.set_option
+      ~colorizer.start
+      ~colorizer.supports
+   
+   
+   
+   
+   
+   

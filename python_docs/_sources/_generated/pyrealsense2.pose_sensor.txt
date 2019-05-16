@@ -1,0 +1,58 @@
+pyrealsense2.pose_sensor
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pose_sensor
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pose_sensor.__init__
+      ~pose_sensor.as_depth_sensor
+      ~pose_sensor.as_pose_sensor
+      ~pose_sensor.as_roi_sensor
+      ~pose_sensor.as_wheel_odometer
+      ~pose_sensor.close
+      ~pose_sensor.export_localization_map
+      ~pose_sensor.get_info
+      ~pose_sensor.get_option
+      ~pose_sensor.get_option_description
+      ~pose_sensor.get_option_range
+      ~pose_sensor.get_option_value_description
+      ~pose_sensor.get_recommended_filters
+      ~pose_sensor.get_static_node
+      ~pose_sensor.get_stream_profiles
+      ~pose_sensor.get_supported_options
+      ~pose_sensor.import_localization_map
+      ~pose_sensor.is_depth_sensor
+      ~pose_sensor.is_option_read_only
+      ~pose_sensor.is_pose_sensor
+      ~pose_sensor.is_roi_sensor
+      ~pose_sensor.is_wheel_odometer
+      ~pose_sensor.open
+      ~pose_sensor.set_notifications_callback
+      ~pose_sensor.set_option
+      ~pose_sensor.set_static_node
+      ~pose_sensor.start
+      ~pose_sensor.stop
+      ~pose_sensor.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~pose_sensor.profiles
+   
+   

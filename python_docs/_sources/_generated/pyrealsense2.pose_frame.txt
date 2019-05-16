@@ -1,0 +1,59 @@
+pyrealsense2.pose_frame
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pose_frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pose_frame.__init__
+      ~pose_frame.as_depth_frame
+      ~pose_frame.as_frame
+      ~pose_frame.as_frameset
+      ~pose_frame.as_motion_frame
+      ~pose_frame.as_points
+      ~pose_frame.as_pose_frame
+      ~pose_frame.as_video_frame
+      ~pose_frame.get_data
+      ~pose_frame.get_frame_metadata
+      ~pose_frame.get_frame_number
+      ~pose_frame.get_frame_timestamp_domain
+      ~pose_frame.get_pose_data
+      ~pose_frame.get_profile
+      ~pose_frame.get_timestamp
+      ~pose_frame.is_depth_frame
+      ~pose_frame.is_frame
+      ~pose_frame.is_frameset
+      ~pose_frame.is_motion_frame
+      ~pose_frame.is_points
+      ~pose_frame.is_pose_frame
+      ~pose_frame.is_video_frame
+      ~pose_frame.keep
+      ~pose_frame.supports_frame_metadata
+      ~pose_frame.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~pose_frame.data
+      ~pose_frame.frame_number
+      ~pose_frame.frame_timestamp_domain
+      ~pose_frame.pose_data
+      ~pose_frame.profile
+      ~pose_frame.timestamp
+   
+   

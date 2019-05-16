@@ -1,0 +1,37 @@
+pyrealsense2.context
+====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: context
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~context.__init__
+      ~context.get_sensor_parent
+      ~context.load_device
+      ~context.query_all_sensors
+      ~context.query_devices
+      ~context.set_devices_changed_callback
+      ~context.unload_device
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~context.devices
+      ~context.sensors
+   
+   

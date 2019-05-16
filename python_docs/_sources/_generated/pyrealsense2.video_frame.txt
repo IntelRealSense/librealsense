@@ -1,0 +1,67 @@
+pyrealsense2.video_frame
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: video_frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~video_frame.__init__
+      ~video_frame.as_depth_frame
+      ~video_frame.as_frame
+      ~video_frame.as_frameset
+      ~video_frame.as_motion_frame
+      ~video_frame.as_points
+      ~video_frame.as_pose_frame
+      ~video_frame.as_video_frame
+      ~video_frame.get_bits_per_pixel
+      ~video_frame.get_bytes_per_pixel
+      ~video_frame.get_data
+      ~video_frame.get_frame_metadata
+      ~video_frame.get_frame_number
+      ~video_frame.get_frame_timestamp_domain
+      ~video_frame.get_height
+      ~video_frame.get_profile
+      ~video_frame.get_stride_in_bytes
+      ~video_frame.get_timestamp
+      ~video_frame.get_width
+      ~video_frame.is_depth_frame
+      ~video_frame.is_frame
+      ~video_frame.is_frameset
+      ~video_frame.is_motion_frame
+      ~video_frame.is_points
+      ~video_frame.is_pose_frame
+      ~video_frame.is_video_frame
+      ~video_frame.keep
+      ~video_frame.supports_frame_metadata
+      ~video_frame.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~video_frame.bits_per_pixel
+      ~video_frame.bytes_per_pixel
+      ~video_frame.data
+      ~video_frame.frame_number
+      ~video_frame.frame_timestamp_domain
+      ~video_frame.height
+      ~video_frame.profile
+      ~video_frame.stride_in_bytes
+      ~video_frame.timestamp
+      ~video_frame.width
+   
+   

@@ -1,0 +1,52 @@
+pyrealsense2.rs400_advanced_mode
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: rs400_advanced_mode
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~rs400_advanced_mode.__init__
+      ~rs400_advanced_mode.get_ae_control
+      ~rs400_advanced_mode.get_census
+      ~rs400_advanced_mode.get_color_control
+      ~rs400_advanced_mode.get_color_correction
+      ~rs400_advanced_mode.get_depth_control
+      ~rs400_advanced_mode.get_depth_table
+      ~rs400_advanced_mode.get_hdad
+      ~rs400_advanced_mode.get_rau_support_vector_control
+      ~rs400_advanced_mode.get_rau_thresholds_control
+      ~rs400_advanced_mode.get_rsm
+      ~rs400_advanced_mode.get_slo_color_thresholds_control
+      ~rs400_advanced_mode.get_slo_penalty_control
+      ~rs400_advanced_mode.is_enabled
+      ~rs400_advanced_mode.load_json
+      ~rs400_advanced_mode.serialize_json
+      ~rs400_advanced_mode.set_ae_control
+      ~rs400_advanced_mode.set_census
+      ~rs400_advanced_mode.set_color_control
+      ~rs400_advanced_mode.set_color_correction
+      ~rs400_advanced_mode.set_depth_control
+      ~rs400_advanced_mode.set_depth_table
+      ~rs400_advanced_mode.set_hdad
+      ~rs400_advanced_mode.set_rau_support_vector_control
+      ~rs400_advanced_mode.set_rau_thresholds_control
+      ~rs400_advanced_mode.set_rsm
+      ~rs400_advanced_mode.set_slo_color_thresholds_control
+      ~rs400_advanced_mode.set_slo_penalty_control
+      ~rs400_advanced_mode.toggle_advanced_mode
+   
+   
+   
+   
+   
+   

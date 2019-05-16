@@ -1,0 +1,35 @@
+pyrealsense2.yuy_decoder
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: yuy_decoder
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~yuy_decoder.__init__
+      ~yuy_decoder.get_option
+      ~yuy_decoder.get_option_description
+      ~yuy_decoder.get_option_range
+      ~yuy_decoder.get_option_value_description
+      ~yuy_decoder.get_supported_options
+      ~yuy_decoder.invoke
+      ~yuy_decoder.is_option_read_only
+      ~yuy_decoder.process
+      ~yuy_decoder.set_option
+      ~yuy_decoder.start
+      ~yuy_decoder.supports
+   
+   
+   
+   
+   
+   

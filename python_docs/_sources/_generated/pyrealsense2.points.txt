@@ -1,0 +1,61 @@
+pyrealsense2.points
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: points
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~points.__init__
+      ~points.as_depth_frame
+      ~points.as_frame
+      ~points.as_frameset
+      ~points.as_motion_frame
+      ~points.as_points
+      ~points.as_pose_frame
+      ~points.as_video_frame
+      ~points.export_to_ply
+      ~points.get_data
+      ~points.get_frame_metadata
+      ~points.get_frame_number
+      ~points.get_frame_timestamp_domain
+      ~points.get_profile
+      ~points.get_texture_coordinates
+      ~points.get_timestamp
+      ~points.get_vertices
+      ~points.is_depth_frame
+      ~points.is_frame
+      ~points.is_frameset
+      ~points.is_motion_frame
+      ~points.is_points
+      ~points.is_pose_frame
+      ~points.is_video_frame
+      ~points.keep
+      ~points.size
+      ~points.supports_frame_metadata
+      ~points.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~points.data
+      ~points.frame_number
+      ~points.frame_timestamp_domain
+      ~points.profile
+      ~points.timestamp
+   
+   

@@ -1,0 +1,27 @@
+pyrealsense2.pipeline_profile
+=============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: pipeline_profile
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~pipeline_profile.__init__
+      ~pipeline_profile.get_device
+      ~pipeline_profile.get_stream
+      ~pipeline_profile.get_streams
+   
+   
+   
+   
+   
+   

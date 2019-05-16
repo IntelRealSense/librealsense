@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyrealsense2.device &mdash; pyrealsense2 2.22.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.22.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pyrealsense2 2.22.0 documentation" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyrealsense2-device">
+<h1>pyrealsense2.device<a class="headerlink" href="#pyrealsense2-device" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyrealsense2.device">
+<em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">device</code><a class="headerlink" href="#pyrealsense2.device" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pyrealsense2.device.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.device.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.__init__" title="pyrealsense2.device.__init__"><code class="xref py py-obj docutils literal"><span class="pre">__init__</span></code></a>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;None)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.as_debug_protocol" title="pyrealsense2.device.as_debug_protocol"><code class="xref py py-obj docutils literal"><span class="pre">as_debug_protocol</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.as_playback" title="pyrealsense2.device.as_playback"><code class="xref py py-obj docutils literal"><span class="pre">as_playback</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.as_recorder" title="pyrealsense2.device.as_recorder"><code class="xref py py-obj docutils literal"><span class="pre">as_recorder</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.as_tm2" title="pyrealsense2.device.as_tm2"><code class="xref py py-obj docutils literal"><span class="pre">as_tm2</span></code></a>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;rs2::tm2)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.first_depth_sensor" title="pyrealsense2.device.first_depth_sensor"><code class="xref py py-obj docutils literal"><span class="pre">first_depth_sensor</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.first_pose_sensor" title="pyrealsense2.device.first_pose_sensor"><code class="xref py py-obj docutils literal"><span class="pre">first_pose_sensor</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.first_roi_sensor" title="pyrealsense2.device.first_roi_sensor"><code class="xref py py-obj docutils literal"><span class="pre">first_roi_sensor</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.get_info" title="pyrealsense2.device.get_info"><code class="xref py py-obj docutils literal"><span class="pre">get_info</span></code></a>((self:&nbsp;pyrealsense2.device,&nbsp;...)</td>
+<td>Retrieve camera specific information, like versions of various internal components</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.hardware_reset" title="pyrealsense2.device.hardware_reset"><code class="xref py py-obj docutils literal"><span class="pre">hardware_reset</span></code></a>(...)</td>
+<td>Send hardware reset request to the device</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.is_debug_protocol" title="pyrealsense2.device.is_debug_protocol"><code class="xref py py-obj docutils literal"><span class="pre">is_debug_protocol</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.is_playback" title="pyrealsense2.device.is_playback"><code class="xref py py-obj docutils literal"><span class="pre">is_playback</span></code></a>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.is_recorder" title="pyrealsense2.device.is_recorder"><code class="xref py py-obj docutils literal"><span class="pre">is_recorder</span></code></a>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.is_tm2" title="pyrealsense2.device.is_tm2"><code class="xref py py-obj docutils literal"><span class="pre">is_tm2</span></code></a>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.query_sensors" title="pyrealsense2.device.query_sensors"><code class="xref py py-obj docutils literal"><span class="pre">query_sensors</span></code></a>(...)</td>
+<td>Returns the list of adjacent devices, sharing the same physical parent composite device.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.device.supports" title="pyrealsense2.device.supports"><code class="xref py py-obj docutils literal"><span class="pre">supports</span></code></a>((self:&nbsp;pyrealsense2.device,&nbsp;...)</td>
+<td>Check if specific camera info is supported.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.device.sensors" title="pyrealsense2.device.sensors"><code class="xref py py-obj docutils literal"><span class="pre">sensors</span></code></a></td>
+<td>List of adjacent devices, sharing the same physical parent composite device.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyrealsense2.device.as_debug_protocol">
+<code class="descname">as_debug_protocol</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::debug_protocol<a class="headerlink" href="#pyrealsense2.device.as_debug_protocol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.as_playback">
+<code class="descname">as_playback</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::playback<a class="headerlink" href="#pyrealsense2.device.as_playback" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.as_recorder">
+<code class="descname">as_recorder</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::recorder<a class="headerlink" href="#pyrealsense2.device.as_recorder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.as_tm2">
+<code class="descname">as_tm2</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::tm2<a class="headerlink" href="#pyrealsense2.device.as_tm2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.first_depth_sensor">
+<code class="descname">first_depth_sensor</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::depth_sensor<a class="headerlink" href="#pyrealsense2.device.first_depth_sensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.first_pose_sensor">
+<code class="descname">first_pose_sensor</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::pose_sensor<a class="headerlink" href="#pyrealsense2.device.first_pose_sensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.first_roi_sensor">
+<code class="descname">first_roi_sensor</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; rs2::roi_sensor<a class="headerlink" href="#pyrealsense2.device.first_roi_sensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.get_info">
+<code class="descname">get_info</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em>, <em>info: pyrealsense2.camera_info</em><span class="sig-paren">)</span> &rarr; str<a class="headerlink" href="#pyrealsense2.device.get_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve camera specific information, like versions of various internal components</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.hardware_reset">
+<code class="descname">hardware_reset</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.device.hardware_reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send hardware reset request to the device</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.is_debug_protocol">
+<code class="descname">is_debug_protocol</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.device.is_debug_protocol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.is_playback">
+<code class="descname">is_playback</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.device.is_playback" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.is_recorder">
+<code class="descname">is_recorder</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.device.is_recorder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.is_tm2">
+<code class="descname">is_tm2</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.device.is_tm2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.query_sensors">
+<code class="descname">query_sensors</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; List[rs2::sensor]<a class="headerlink" href="#pyrealsense2.device.query_sensors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the list of adjacent devices, sharing the same physical parent composite device.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.device.sensors">
+<code class="descname">sensors</code><a class="headerlink" href="#pyrealsense2.device.sensors" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of adjacent devices, sharing the same physical parent composite device. Identical to calling query_sensors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.device.supports">
+<code class="descname">supports</code><span class="sig-paren">(</span><em>self: pyrealsense2.device</em>, <em>info: pyrealsense2.camera_info</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.device.supports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if specific camera info is supported.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.device.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2017, Intel Realsense Team.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>

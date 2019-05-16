@@ -1,0 +1,35 @@
+pyrealsense2.spatial_filter
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: spatial_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~spatial_filter.__init__
+      ~spatial_filter.get_option
+      ~spatial_filter.get_option_description
+      ~spatial_filter.get_option_range
+      ~spatial_filter.get_option_value_description
+      ~spatial_filter.get_supported_options
+      ~spatial_filter.invoke
+      ~spatial_filter.is_option_read_only
+      ~spatial_filter.process
+      ~spatial_filter.set_option
+      ~spatial_filter.start
+      ~spatial_filter.supports
+   
+   
+   
+   
+   
+   

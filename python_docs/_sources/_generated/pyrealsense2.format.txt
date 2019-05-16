@@ -1,0 +1,50 @@
+pyrealsense2.format
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: format
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~format.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~format.any
+      ~format.bgr8
+      ~format.bgra8
+      ~format.disparity16
+      ~format.disparity32
+      ~format.gpio_raw
+      ~format.motion_raw
+      ~format.motion_xyz32f
+      ~format.raw10
+      ~format.raw16
+      ~format.raw8
+      ~format.rgb8
+      ~format.rgba8
+      ~format.six_dof
+      ~format.uyvy
+      ~format.xyz32f
+      ~format.y10bpack
+      ~format.y16
+      ~format.y8
+      ~format.yuyv
+      ~format.z16
+   
+   

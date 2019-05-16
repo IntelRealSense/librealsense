@@ -1,0 +1,28 @@
+pyrealsense2.device_list
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: device_list
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~device_list.__init__
+      ~device_list.back
+      ~device_list.contains
+      ~device_list.front
+      ~device_list.size
+   
+   
+   
+   
+   
+   

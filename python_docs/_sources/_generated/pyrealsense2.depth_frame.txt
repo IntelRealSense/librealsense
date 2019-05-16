@@ -1,0 +1,68 @@
+pyrealsense2.depth_frame
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: depth_frame
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~depth_frame.__init__
+      ~depth_frame.as_depth_frame
+      ~depth_frame.as_frame
+      ~depth_frame.as_frameset
+      ~depth_frame.as_motion_frame
+      ~depth_frame.as_points
+      ~depth_frame.as_pose_frame
+      ~depth_frame.as_video_frame
+      ~depth_frame.get_bits_per_pixel
+      ~depth_frame.get_bytes_per_pixel
+      ~depth_frame.get_data
+      ~depth_frame.get_distance
+      ~depth_frame.get_frame_metadata
+      ~depth_frame.get_frame_number
+      ~depth_frame.get_frame_timestamp_domain
+      ~depth_frame.get_height
+      ~depth_frame.get_profile
+      ~depth_frame.get_stride_in_bytes
+      ~depth_frame.get_timestamp
+      ~depth_frame.get_width
+      ~depth_frame.is_depth_frame
+      ~depth_frame.is_frame
+      ~depth_frame.is_frameset
+      ~depth_frame.is_motion_frame
+      ~depth_frame.is_points
+      ~depth_frame.is_pose_frame
+      ~depth_frame.is_video_frame
+      ~depth_frame.keep
+      ~depth_frame.supports_frame_metadata
+      ~depth_frame.swap
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~depth_frame.bits_per_pixel
+      ~depth_frame.bytes_per_pixel
+      ~depth_frame.data
+      ~depth_frame.frame_number
+      ~depth_frame.frame_timestamp_domain
+      ~depth_frame.height
+      ~depth_frame.profile
+      ~depth_frame.stride_in_bytes
+      ~depth_frame.timestamp
+      ~depth_frame.width
+   
+   

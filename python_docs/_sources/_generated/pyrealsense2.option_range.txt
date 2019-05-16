@@ -1,0 +1,27 @@
+pyrealsense2.option_range
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: option_range
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~option_range.default
+      ~option_range.max
+      ~option_range.min
+      ~option_range.step
+   
+   

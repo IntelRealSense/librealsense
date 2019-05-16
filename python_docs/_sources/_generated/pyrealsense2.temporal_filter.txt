@@ -1,0 +1,35 @@
+pyrealsense2.temporal_filter
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: temporal_filter
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~temporal_filter.__init__
+      ~temporal_filter.get_option
+      ~temporal_filter.get_option_description
+      ~temporal_filter.get_option_range
+      ~temporal_filter.get_option_value_description
+      ~temporal_filter.get_supported_options
+      ~temporal_filter.invoke
+      ~temporal_filter.is_option_read_only
+      ~temporal_filter.process
+      ~temporal_filter.set_option
+      ~temporal_filter.start
+      ~temporal_filter.supports
+   
+   
+   
+   
+   
+   

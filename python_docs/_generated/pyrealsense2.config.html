@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyrealsense2.config &mdash; pyrealsense2 2.22.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.22.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pyrealsense2 2.22.0 documentation" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyrealsense2-config">
+<h1>pyrealsense2.config<a class="headerlink" href="#pyrealsense2-config" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyrealsense2.config">
+<em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">config</code><a class="headerlink" href="#pyrealsense2.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
+This is an optional step in pipeline creation, as the pipeline resolves its streaming device internally.
+Config provides its users a way to set the filters and test if there is no conflict with the pipeline requirements from the device.
+It also allows the user to find a matching device for the config filters and the pipeline, in order to select a device explicitly, and modify its controls before streaming starts.</p>
+<dl class="method">
+<dt id="pyrealsense2.config.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.config.__init__" title="pyrealsense2.config.__init__"><code class="xref py py-obj docutils literal"><span class="pre">__init__</span></code></a>((self:&nbsp;pyrealsense2.config)&nbsp;-&gt;&nbsp;None)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.config.can_resolve" title="pyrealsense2.config.can_resolve"><code class="xref py py-obj docutils literal"><span class="pre">can_resolve</span></code></a>((self:&nbsp;pyrealsense2.config,&nbsp;...)</td>
+<td>Check if the config can resolve the configuration filters, to find a matching device and streams profiles.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.config.disable_all_streams" title="pyrealsense2.config.disable_all_streams"><code class="xref py py-obj docutils literal"><span class="pre">disable_all_streams</span></code></a>(...)</td>
+<td>Disable all device stream explicitly, to remove any requests on the streams profiles.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.config.disable_stream" title="pyrealsense2.config.disable_stream"><code class="xref py py-obj docutils literal"><span class="pre">disable_stream</span></code></a>((self:&nbsp;pyrealsense2.config,&nbsp;...)</td>
+<td>Disable a device stream explicitly, to remove any requests on this stream profile.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.config.enable_all_streams" title="pyrealsense2.config.enable_all_streams"><code class="xref py py-obj docutils literal"><span class="pre">enable_all_streams</span></code></a>(...)</td>
+<td>Enable all device streams explicitly.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.config.enable_device" title="pyrealsense2.config.enable_device"><code class="xref py py-obj docutils literal"><span class="pre">enable_device</span></code></a>((self:&nbsp;pyrealsense2.config,&nbsp;...)</td>
+<td>Select a specific device explicitly by its serial number, to be used by the pipeline.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.config.enable_device_from_file" title="pyrealsense2.config.enable_device_from_file"><code class="xref py py-obj docutils literal"><span class="pre">enable_device_from_file</span></code></a>(...)</td>
+<td>Select a recorded device from a file, to be used by the pipeline through playback.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.config.enable_record_to_file" title="pyrealsense2.config.enable_record_to_file"><code class="xref py py-obj docutils literal"><span class="pre">enable_record_to_file</span></code></a>(...)</td>
+<td>Requires that the resolved device would be recorded to file.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.config.enable_stream" title="pyrealsense2.config.enable_stream"><code class="xref py py-obj docutils literal"><span class="pre">enable_stream</span></code></a>(*args,&nbsp;**kwargs)</td>
+<td>Overloaded function.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.config.resolve" title="pyrealsense2.config.resolve"><code class="xref py py-obj docutils literal"><span class="pre">resolve</span></code></a>((self:&nbsp;pyrealsense2.config,&nbsp;...)</td>
+<td>Resolve the configuration filters, to find a matching device and streams profiles.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyrealsense2.config.can_resolve">
+<code class="descname">can_resolve</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>p: pyrealsense2.pipeline_wrapper</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.config.can_resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the config can resolve the configuration filters, to find a matching device and streams profiles. The resolution conditions are as described in resolve().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.disable_all_streams">
+<code class="descname">disable_all_streams</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.disable_all_streams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable all device stream explicitly, to remove any requests on the streams profiles.
+The streams can still be enabled due to pipeline computer vision module request. This call removes any filter on the streams configuration.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.disable_stream">
+<code class="descname">disable_stream</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>stream: pyrealsense2.stream</em>, <em>index: int=-1</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.disable_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable a device stream explicitly, to remove any requests on this stream profile.
+The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the stream configuration.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.enable_all_streams">
+<code class="descname">enable_all_streams</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_all_streams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable all device streams explicitly.
+The conditions and behavior of this method are similar to those of enable_stream().
+This filter enables all raw streams of the selected device. The device is either selected explicitly by the application, or by the pipeline requirements or default. The list of streams is device dependent.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.enable_device">
+<code class="descname">enable_device</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>serial: str</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select a specific device explicitly by its serial number, to be used by the pipeline.
+The conditions and behavior of this method are similar to those of enable_stream().
+This method is required if the application needs to set device or sensor settings prior to pipeline streaming, to enforce the pipeline to use the configured device.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.enable_device_from_file">
+<code class="descname">enable_device_from_file</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>file_name: str</em>, <em>repeat_playback: bool=True</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_device_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select a recorded device from a file, to be used by the pipeline through playback.
+The device available streams are as recorded to the file, and resolve() considers only this device and configuration as available.
+This request cannot be used if enable_record_to_file() is called for the current config, and vise versa</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.enable_record_to_file">
+<code class="descname">enable_record_to_file</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>file_name: str</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_record_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires that the resolved device would be recorded to file.
+This request cannot be used if enable_device_from_file() is called for the current config, and vise versa as available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.enable_stream">
+<code class="descname">enable_stream</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyrealsense2.config.enable_stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, stream_index: int, width: int, height: int, format: pyrealsense2.format=format.any, framerate: int=0) -&gt; None</li>
+</ol>
+<p>Enable a device stream explicitly, with selected stream parameters.
+The method allows the application to request a stream with specific configuration.
+If no stream is explicitly enabled, the pipeline configures the device and its streams according to the attached computer vision modules and processing blocks requirements, or default configuration for the first available device.
+The application can configure any of the input stream parameters according to its requirement, or set to 0 for don&#8217;t care value.
+The config accumulates the application calls for enable configuration methods, until the configuration is applied.
+Multiple enable stream calls for the same stream override each other, and the last call is maintained.
+Upon calling resolve(), the config checks for conflicts between the application configuration requests and the attached computer vision modules and processing blocks requirements, and fails if conflicts are found.
+Before resolve() is called, no conflict check is done.</p>
+<ol class="arabic simple" start="2">
+<li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, stream_index: int=-1) -&gt; None</li>
+</ol>
+<p>Stream type and possibly also stream index</p>
+<ol class="arabic simple" start="3">
+<li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, format: pyrealsense2.format, framerate: int=0) -&gt; None</li>
+</ol>
+<p>Stream type and format, and possibly frame rate</p>
+<ol class="arabic simple" start="4">
+<li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, width: int, height: int, format: pyrealsense2.format=format.any, framerate: int=0) -&gt; None</li>
+</ol>
+<p>Stream type and resolution, and possibly format and frame rate</p>
+<ol class="arabic simple" start="5">
+<li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, stream_index: int, format: pyrealsense2.format, framerate: int=0) -&gt; None</li>
+</ol>
+<p>Stream type, index, and format, and possibly framerate</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.config.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>p: pyrealsense2.pipeline_wrapper</em><span class="sig-paren">)</span> &rarr; pyrealsense2.pipeline_profile<a class="headerlink" href="#pyrealsense2.config.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve the configuration filters, to find a matching device and streams profiles.
+The method resolves the user configuration filters for the device and streams, and combines them with the requirements of the computer vision modules and processing blocks attached to the pipeline. If there are no conflicts of requests, it looks for an available device, which can satisfy all requests, and selects the first matching streams configuration.
+In the absence of any request, the config object selects the first available device and the first color and depth streams configuration.The pipeline profile selection during start() follows the same method. Thus, the selected profile is the same, if no change occurs to the available devices.Resolving the pipeline configuration provides the application access to the pipeline selected device for advanced control.The returned configuration is not applied to the device, so the application doesn&#8217;t own the device sensors. However, the application can call enable_device(), to enforce the device returned by this method is selected by pipeline start(), and configure the device and sensors options or extensions before streaming starts.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.config.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2017, Intel Realsense Team.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>

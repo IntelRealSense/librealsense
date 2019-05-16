@@ -1,0 +1,47 @@
+pyrealsense2.recorder
+=====================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: recorder
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~recorder.__init__
+      ~recorder.as_debug_protocol
+      ~recorder.as_playback
+      ~recorder.as_recorder
+      ~recorder.as_tm2
+      ~recorder.first_depth_sensor
+      ~recorder.first_pose_sensor
+      ~recorder.first_roi_sensor
+      ~recorder.get_info
+      ~recorder.hardware_reset
+      ~recorder.is_debug_protocol
+      ~recorder.is_playback
+      ~recorder.is_recorder
+      ~recorder.is_tm2
+      ~recorder.pause
+      ~recorder.query_sensors
+      ~recorder.resume
+      ~recorder.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~recorder.sensors
+   
+   

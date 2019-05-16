@@ -1,0 +1,56 @@
+pyrealsense2.wheel_odometer
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: wheel_odometer
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~wheel_odometer.__init__
+      ~wheel_odometer.as_depth_sensor
+      ~wheel_odometer.as_pose_sensor
+      ~wheel_odometer.as_roi_sensor
+      ~wheel_odometer.as_wheel_odometer
+      ~wheel_odometer.close
+      ~wheel_odometer.get_info
+      ~wheel_odometer.get_option
+      ~wheel_odometer.get_option_description
+      ~wheel_odometer.get_option_range
+      ~wheel_odometer.get_option_value_description
+      ~wheel_odometer.get_recommended_filters
+      ~wheel_odometer.get_stream_profiles
+      ~wheel_odometer.get_supported_options
+      ~wheel_odometer.is_depth_sensor
+      ~wheel_odometer.is_option_read_only
+      ~wheel_odometer.is_pose_sensor
+      ~wheel_odometer.is_roi_sensor
+      ~wheel_odometer.is_wheel_odometer
+      ~wheel_odometer.load_wheel_odometery_config
+      ~wheel_odometer.open
+      ~wheel_odometer.send_wheel_odometry
+      ~wheel_odometer.set_notifications_callback
+      ~wheel_odometer.set_option
+      ~wheel_odometer.start
+      ~wheel_odometer.stop
+      ~wheel_odometer.supports
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~wheel_odometer.profiles
+   
+   

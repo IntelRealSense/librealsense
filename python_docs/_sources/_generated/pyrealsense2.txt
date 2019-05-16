@@ -1,0 +1,117 @@
+pyrealsense2
+============
+
+.. automodule:: pyrealsense2
+
+   
+   
+   .. rubric:: Functions
+   
+   .. autosummary::
+   
+      log_to_console
+      log_to_file
+      rs2_deproject_pixel_to_point
+      rs2_fov
+      rs2_project_point_to_pixel
+      rs2_transform_point_to_point
+   
+   
+   
+   
+   
+   .. rubric:: Classes
+   
+   .. autosummary::
+      :toctree:
+	  :template: class.rst
+   
+   
+      BufData
+      STAEControl
+      STCensusRadius
+      STColorControl
+      STColorCorrection
+      STDepthControlGroup
+      STDepthTableControl
+      STHdad
+      STRauColorThresholdsControl
+      STRauSupportVectorControl
+      STRsm
+      STSloColorThresholdsControl
+      STSloPenaltyControl
+      align
+      camera_info
+      colorizer
+      composite_frame
+      config
+      context
+      debug_protocol
+      decimation_filter
+      depth_frame
+      depth_sensor
+      device
+      device_list
+      disparity_transform
+      distortion
+      event_information
+      extension
+      extrinsics
+      filter
+      filter_interface
+      format
+      frame
+      frame_metadata_value
+      frame_queue
+      frame_source
+      hole_filling_filter
+      intrinsics
+      log_severity
+      motion_device_intrinsic
+      motion_frame
+      motion_stream_profile
+      notification
+      notification_category
+      option
+      option_range
+      options
+      pipeline
+      pipeline_profile
+      pipeline_wrapper
+      playback
+      playback_status
+      pointcloud
+      points
+      pose
+      pose_frame
+      pose_sensor
+      processing_block
+      quaternion
+      recorder
+      region_of_interest
+      roi_sensor
+      rs400_advanced_mode
+      save_single_frameset
+      sensor
+      spatial_filter
+      stream
+      stream_profile
+      syncer
+      temporal_filter
+      texture_coordinate
+      threshold_filter
+      timestamp_domain
+      tm2
+      vector
+      vertex
+      video_frame
+      video_stream_profile
+      wheel_odometer
+      yuy_decoder
+      zero_order_invalidation
+   
+   
+   
+   
+   
+   

@@ -1,0 +1,25 @@
+pyrealsense2.debug_protocol
+===========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: debug_protocol
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~debug_protocol.__init__
+      ~debug_protocol.send_and_receive_raw_data
+   
+   
+   
+   
+   
+   

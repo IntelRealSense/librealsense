@@ -1,0 +1,30 @@
+pyrealsense2.STAEControl
+========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STAEControl
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STAEControl.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STAEControl.meanIntensitySetPoint
+   
+   

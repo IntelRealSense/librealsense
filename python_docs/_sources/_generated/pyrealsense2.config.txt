@@ -1,0 +1,33 @@
+pyrealsense2.config
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: config
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~config.__init__
+      ~config.can_resolve
+      ~config.disable_all_streams
+      ~config.disable_stream
+      ~config.enable_all_streams
+      ~config.enable_device
+      ~config.enable_device_from_file
+      ~config.enable_record_to_file
+      ~config.enable_stream
+      ~config.resolve
+   
+   
+   
+   
+   
+   

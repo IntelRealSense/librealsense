@@ -1,0 +1,33 @@
+pyrealsense2.playback_status
+============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: playback_status
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~playback_status.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~playback_status.paused
+      ~playback_status.playing
+      ~playback_status.stopped
+      ~playback_status.unknown
+   
+   

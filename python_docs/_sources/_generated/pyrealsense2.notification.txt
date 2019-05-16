@@ -1,0 +1,39 @@
+pyrealsense2.notification
+=========================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: notification
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~notification.__init__
+      ~notification.get_category
+      ~notification.get_description
+      ~notification.get_serialized_data
+      ~notification.get_severity
+      ~notification.get_timestamp
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~notification.category
+      ~notification.description
+      ~notification.serialized_data
+      ~notification.severity
+      ~notification.timestamp
+   
+   

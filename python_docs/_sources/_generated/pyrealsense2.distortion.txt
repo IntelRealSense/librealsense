@@ -1,0 +1,35 @@
+pyrealsense2.distortion
+=======================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: distortion
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~distortion.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~distortion.brown_conrady
+      ~distortion.ftheta
+      ~distortion.inverse_brown_conrady
+      ~distortion.kannala_brandt4
+      ~distortion.modified_brown_conrady
+      ~distortion.none
+   
+   

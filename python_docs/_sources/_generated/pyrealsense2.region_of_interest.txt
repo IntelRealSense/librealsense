@@ -1,0 +1,27 @@
+pyrealsense2.region_of_interest
+===============================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: region_of_interest
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~region_of_interest.max_x
+      ~region_of_interest.max_y
+      ~region_of_interest.min_x
+      ~region_of_interest.min_y
+   
+   

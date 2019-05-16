@@ -1,0 +1,39 @@
+pyrealsense2.STDepthControlGroup
+================================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: STDepthControlGroup
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~STDepthControlGroup.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~STDepthControlGroup.deepSeaMedianThreshold
+      ~STDepthControlGroup.deepSeaNeighborThreshold
+      ~STDepthControlGroup.deepSeaSecondPeakThreshold
+      ~STDepthControlGroup.lrAgreeThreshold
+      ~STDepthControlGroup.minusDecrement
+      ~STDepthControlGroup.plusIncrement
+      ~STDepthControlGroup.scoreThreshA
+      ~STDepthControlGroup.scoreThreshB
+      ~STDepthControlGroup.textureCountThreshold
+      ~STDepthControlGroup.textureDifferenceThreshold
+   
+   

@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyrealsense2.playback &mdash; pyrealsense2 2.22.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.22.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pyrealsense2 2.22.0 documentation" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyrealsense2-playback">
+<h1>pyrealsense2.playback<a class="headerlink" href="#pyrealsense2-playback" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyrealsense2.playback">
+<em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">playback</code><a class="headerlink" href="#pyrealsense2.playback" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pyrealsense2.playback.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em>, <em>device: pyrealsense2.device</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.__init__" title="pyrealsense2.playback.__init__"><code class="xref py py-obj docutils literal"><span class="pre">__init__</span></code></a>((self:&nbsp;pyrealsense2.playback,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">as_debug_protocol</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">as_playback</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">as_recorder</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">as_tm2</span></code>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;rs2::tm2)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.playback.current_status" title="pyrealsense2.playback.current_status"><code class="xref py py-obj docutils literal"><span class="pre">current_status</span></code></a>(...)</td>
+<td>Returns the current state of the playback device</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.file_name" title="pyrealsense2.playback.file_name"><code class="xref py py-obj docutils literal"><span class="pre">file_name</span></code></a>((self:&nbsp;pyrealsense2.playback)&nbsp;-&gt;&nbsp;str)</td>
+<td>The name of the playback file.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">first_depth_sensor</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">first_pose_sensor</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">first_roi_sensor</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.get_duration" title="pyrealsense2.playback.get_duration"><code class="xref py py-obj docutils literal"><span class="pre">get_duration</span></code></a>(...)</td>
+<td>Retrieves the total duration of the file.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">get_info</span></code>((self:&nbsp;pyrealsense2.device,&nbsp;...)</td>
+<td>Retrieve camera specific information, like versions of various internal components</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.get_position" title="pyrealsense2.playback.get_position"><code class="xref py py-obj docutils literal"><span class="pre">get_position</span></code></a>(...)</td>
+<td>Retrieves the current position of the playback in the file in terms of time.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">hardware_reset</span></code>(...)</td>
+<td>Send hardware reset request to the device</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">is_debug_protocol</span></code>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">is_playback</span></code>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.is_real_time" title="pyrealsense2.playback.is_real_time"><code class="xref py py-obj docutils literal"><span class="pre">is_real_time</span></code></a>(...)</td>
+<td>Indicates if playback is in real time mode or non real time.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">is_recorder</span></code>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">is_tm2</span></code>((self:&nbsp;pyrealsense2.device)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.playback.pause" title="pyrealsense2.playback.pause"><code class="xref py py-obj docutils literal"><span class="pre">pause</span></code></a>((self:&nbsp;pyrealsense2.playback)&nbsp;-&gt;&nbsp;None)</td>
+<td>Pauses the playback.</td>
+</tr>
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">query_sensors</span></code>(...)</td>
+<td>Returns the list of adjacent devices, sharing the same physical parent composite device.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.playback.resume" title="pyrealsense2.playback.resume"><code class="xref py py-obj docutils literal"><span class="pre">resume</span></code></a>((self:&nbsp;pyrealsense2.playback)&nbsp;-&gt;&nbsp;None)</td>
+<td>Un-pauses the playback.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.seek" title="pyrealsense2.playback.seek"><code class="xref py py-obj docutils literal"><span class="pre">seek</span></code></a>((self:&nbsp;pyrealsense2.playback,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.playback.set_real_time" title="pyrealsense2.playback.set_real_time"><code class="xref py py-obj docutils literal"><span class="pre">set_real_time</span></code></a>((self:&nbsp;pyrealsense2.playback,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.playback.set_status_changed_callback" title="pyrealsense2.playback.set_status_changed_callback"><code class="xref py py-obj docutils literal"><span class="pre">set_status_changed_callback</span></code></a>(...)</td>
+<td>Register to receive callback from playback device upon its status changes.</td>
+</tr>
+<tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">supports</span></code>((self:&nbsp;pyrealsense2.device,&nbsp;...)</td>
+<td>Check if specific camera info is supported.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">sensors</span></code></td>
+<td>List of adjacent devices, sharing the same physical parent composite device.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyrealsense2.playback.current_status">
+<code class="descname">current_status</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; pyrealsense2.playback_status<a class="headerlink" href="#pyrealsense2.playback.current_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current state of the playback device</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.file_name">
+<code class="descname">file_name</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; str<a class="headerlink" href="#pyrealsense2.playback.file_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the playback file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.get_duration">
+<code class="descname">get_duration</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; datetime.timedelta<a class="headerlink" href="#pyrealsense2.playback.get_duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the total duration of the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.get_position">
+<code class="descname">get_position</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; int<a class="headerlink" href="#pyrealsense2.playback.get_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the current position of the playback in the file in terms of time. Units are expressed in nanoseconds.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.is_real_time">
+<code class="descname">is_real_time</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.playback.is_real_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates if playback is in real time mode or non real time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.pause">
+<code class="descname">pause</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.pause" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pauses the playback. Calling pause() in &#8220;Paused&#8221; status does nothing. If pause() is called while playback status is &#8220;Playing&#8221; or &#8220;Stopped&#8221;, the playback will not play until resume() is called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.resume">
+<code class="descname">resume</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.resume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Un-pauses the playback. Calling resume() while playback status is &#8220;Playing&#8221; or &#8220;Stopped&#8221; does nothing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.seek">
+<code class="descname">seek</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em>, <em>Sets the playback to a specified time point of the played data.time: datetime.timedelta</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.seek" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.set_real_time">
+<code class="descname">set_real_time</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback</em>, <em>Set the playback to work in real time or non real time. In real time mode</em>, <em>playback will play the same way the file was recorded. If the application takes too long to handle the callback</em>, <em>frames may be dropped. In non real time mode</em>, <em>playback will wait for each callback to finish handling the data before reading the next frame. In this mode no frames will be dropped</em>, <em>and the application controls the framerate of playback via callback duration.real_time: bool</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.set_real_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.playback.set_status_changed_callback">
+<code class="descname">set_status_changed_callback</code><span class="sig-paren">(</span><em>self: pyrealsense2.playback, callback: Callable[[pyrealsense2.playback_status], None]</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.playback.set_status_changed_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register to receive callback from playback device upon its status changes. Callbacks are invoked from the reading thread, and as such any heavy processing in the callback handler will affect the reading thread and may cause frame drops/high latency.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.playback.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2017, Intel Realsense Team.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>

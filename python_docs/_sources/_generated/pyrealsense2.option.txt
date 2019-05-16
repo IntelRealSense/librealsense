@@ -1,0 +1,83 @@
+pyrealsense2.option
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: option
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~option.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~option.accuracy
+      ~option.asic_temperature
+      ~option.auto_exposure_converge_step
+      ~option.auto_exposure_mode
+      ~option.auto_exposure_priority
+      ~option.backlight_compensation
+      ~option.brightness
+      ~option.color_scheme
+      ~option.confidence_threshold
+      ~option.contrast
+      ~option.depth_units
+      ~option.emitter_enabled
+      ~option.emitter_on_off
+      ~option.enable_auto_exposure
+      ~option.enable_auto_white_balance
+      ~option.enable_motion_correction
+      ~option.error_polling_enabled
+      ~option.exposure
+      ~option.filter_magnitude
+      ~option.filter_option
+      ~option.filter_smooth_alpha
+      ~option.filter_smooth_delta
+      ~option.frames_queue_size
+      ~option.gain
+      ~option.gamma
+      ~option.global_time_enabled
+      ~option.hardware_preset
+      ~option.histogram_equalization_enabled
+      ~option.holes_fill
+      ~option.hue
+      ~option.inter_cam_sync_mode
+      ~option.laser_power
+      ~option.lld_temperature
+      ~option.ma_temperature
+      ~option.max_distance
+      ~option.mc_temperature
+      ~option.min_distance
+      ~option.motion_module_temperature
+      ~option.motion_range
+      ~option.output_trigger_enabled
+      ~option.power_line_frequency
+      ~option.projector_temperature
+      ~option.saturation
+      ~option.sharpness
+      ~option.stereo_baseline
+      ~option.stream_filter
+      ~option.stream_format_filter
+      ~option.stream_index_filter
+      ~option.texture_source
+      ~option.total_frame_drops
+      ~option.visual_preset
+      ~option.white_balance
+      ~option.zero_order_point_x
+      ~option.zero_order_point_y
+   
+   

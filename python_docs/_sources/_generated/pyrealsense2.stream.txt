@@ -1,0 +1,39 @@
+pyrealsense2.stream
+===================
+
+.. currentmodule:: pyrealsense2
+
+.. autoclass:: stream
+   :members:
+   :undoc-members:
+
+   
+   .. automethod:: __init__
+   
+   
+   .. rubric:: Methods
+   
+   .. autosummary::
+   
+      ~stream.__init__
+   
+   
+   
+   
+   
+   .. rubric:: Attributes
+   
+   .. autosummary::
+   
+      ~stream.accel
+      ~stream.any
+      ~stream.color
+      ~stream.confidence
+      ~stream.depth
+      ~stream.fisheye
+      ~stream.gpio
+      ~stream.gyro
+      ~stream.infrared
+      ~stream.pose
+   
+   

@@ -1,0 +1,373 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyrealsense2.frame &mdash; pyrealsense2 2.22.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.22.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pyrealsense2 2.22.0 documentation" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyrealsense2-frame">
+<h1>pyrealsense2.frame<a class="headerlink" href="#pyrealsense2-frame" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="pyrealsense2.frame">
+<em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">frame</code><a class="headerlink" href="#pyrealsense2.frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for multiple frame extensions</p>
+<dl class="method">
+<dt id="pyrealsense2.frame.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyrealsense2.frame.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overloaded function.</p>
+<ol class="arabic simple">
+<li>__init__(self: pyrealsense2.frame) -&gt; None</li>
+<li>__init__(self: pyrealsense2.frame, arg0: pyrealsense2.frame) -&gt; None</li>
+</ol>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.__init__" title="pyrealsense2.frame.__init__"><code class="xref py py-obj docutils literal"><span class="pre">__init__</span></code></a>(*args,&nbsp;**kwargs)</td>
+<td>Overloaded function.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.as_depth_frame" title="pyrealsense2.frame.as_depth_frame"><code class="xref py py-obj docutils literal"><span class="pre">as_depth_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.as_frame" title="pyrealsense2.frame.as_frame"><code class="xref py py-obj docutils literal"><span class="pre">as_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.as_frameset" title="pyrealsense2.frame.as_frameset"><code class="xref py py-obj docutils literal"><span class="pre">as_frameset</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.as_motion_frame" title="pyrealsense2.frame.as_motion_frame"><code class="xref py py-obj docutils literal"><span class="pre">as_motion_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.as_points" title="pyrealsense2.frame.as_points"><code class="xref py py-obj docutils literal"><span class="pre">as_points</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.as_pose_frame" title="pyrealsense2.frame.as_pose_frame"><code class="xref py py-obj docutils literal"><span class="pre">as_pose_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.as_video_frame" title="pyrealsense2.frame.as_video_frame"><code class="xref py py-obj docutils literal"><span class="pre">as_video_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.get_data" title="pyrealsense2.frame.get_data"><code class="xref py py-obj docutils literal"><span class="pre">get_data</span></code></a>(...)</td>
+<td>Retrieve data from the frame handle.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.get_frame_metadata" title="pyrealsense2.frame.get_frame_metadata"><code class="xref py py-obj docutils literal"><span class="pre">get_frame_metadata</span></code></a>(...)</td>
+<td>Retrieve the current value of a single frame_metadata.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.get_frame_number" title="pyrealsense2.frame.get_frame_number"><code class="xref py py-obj docutils literal"><span class="pre">get_frame_number</span></code></a>(...)</td>
+<td>Retrieve the frame number.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.get_frame_timestamp_domain" title="pyrealsense2.frame.get_frame_timestamp_domain"><code class="xref py py-obj docutils literal"><span class="pre">get_frame_timestamp_domain</span></code></a>(...)</td>
+<td>Retrieve the timestamp domain.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.get_profile" title="pyrealsense2.frame.get_profile"><code class="xref py py-obj docutils literal"><span class="pre">get_profile</span></code></a>(...)</td>
+<td>Retrieve stream profile from frame handle.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.get_timestamp" title="pyrealsense2.frame.get_timestamp"><code class="xref py py-obj docutils literal"><span class="pre">get_timestamp</span></code></a>(...)</td>
+<td>Retrieve the time at which the frame was captured</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.is_depth_frame" title="pyrealsense2.frame.is_depth_frame"><code class="xref py py-obj docutils literal"><span class="pre">is_depth_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.is_frame" title="pyrealsense2.frame.is_frame"><code class="xref py py-obj docutils literal"><span class="pre">is_frame</span></code></a>((self:&nbsp;pyrealsense2.frame)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.is_frameset" title="pyrealsense2.frame.is_frameset"><code class="xref py py-obj docutils literal"><span class="pre">is_frameset</span></code></a>((self:&nbsp;pyrealsense2.frame)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.is_motion_frame" title="pyrealsense2.frame.is_motion_frame"><code class="xref py py-obj docutils literal"><span class="pre">is_motion_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.is_points" title="pyrealsense2.frame.is_points"><code class="xref py py-obj docutils literal"><span class="pre">is_points</span></code></a>((self:&nbsp;pyrealsense2.frame)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.is_pose_frame" title="pyrealsense2.frame.is_pose_frame"><code class="xref py py-obj docutils literal"><span class="pre">is_pose_frame</span></code></a>((self:&nbsp;pyrealsense2.frame)&nbsp;-&gt;&nbsp;bool)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.is_video_frame" title="pyrealsense2.frame.is_video_frame"><code class="xref py py-obj docutils literal"><span class="pre">is_video_frame</span></code></a>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.keep" title="pyrealsense2.frame.keep"><code class="xref py py-obj docutils literal"><span class="pre">keep</span></code></a>((self:&nbsp;pyrealsense2.frame)&nbsp;-&gt;&nbsp;None)</td>
+<td>Keep the frame, otherwise if no refernce to the frame, the frame will be released.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.supports_frame_metadata" title="pyrealsense2.frame.supports_frame_metadata"><code class="xref py py-obj docutils literal"><span class="pre">supports_frame_metadata</span></code></a>(...)</td>
+<td>Determine if the device allows a specific metadata to be queried.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.swap" title="pyrealsense2.frame.swap"><code class="xref py py-obj docutils literal"><span class="pre">swap</span></code></a>((self:&nbsp;pyrealsense2.frame,&nbsp;...)</td>
+<td>Swap the internal frame handle with the one in parameter</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.data" title="pyrealsense2.frame.data"><code class="xref py py-obj docutils literal"><span class="pre">data</span></code></a></td>
+<td>Data from the frame handle.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.frame_number" title="pyrealsense2.frame.frame_number"><code class="xref py py-obj docutils literal"><span class="pre">frame_number</span></code></a></td>
+<td>The frame number.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.frame_timestamp_domain" title="pyrealsense2.frame.frame_timestamp_domain"><code class="xref py py-obj docutils literal"><span class="pre">frame_timestamp_domain</span></code></a></td>
+<td>The timestamp domain.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.frame.profile" title="pyrealsense2.frame.profile"><code class="xref py py-obj docutils literal"><span class="pre">profile</span></code></a></td>
+<td>Stream profile from frame handle.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.frame.timestamp" title="pyrealsense2.frame.timestamp"><code class="xref py py-obj docutils literal"><span class="pre">timestamp</span></code></a></td>
+<td>Time at which the frame was captured.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="pyrealsense2.frame.as_depth_frame">
+<code class="descname">as_depth_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::depth_frame<a class="headerlink" href="#pyrealsense2.frame.as_depth_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_frame">
+<code class="descname">as_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; pyrealsense2.frame<a class="headerlink" href="#pyrealsense2.frame.as_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_frameset">
+<code class="descname">as_frameset</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::frameset<a class="headerlink" href="#pyrealsense2.frame.as_frameset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_motion_frame">
+<code class="descname">as_motion_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::motion_frame<a class="headerlink" href="#pyrealsense2.frame.as_motion_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_points">
+<code class="descname">as_points</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::points<a class="headerlink" href="#pyrealsense2.frame.as_points" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_pose_frame">
+<code class="descname">as_pose_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::pose_frame<a class="headerlink" href="#pyrealsense2.frame.as_pose_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.as_video_frame">
+<code class="descname">as_video_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::video_frame<a class="headerlink" href="#pyrealsense2.frame.as_video_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.frame.data">
+<code class="descname">data</code><a class="headerlink" href="#pyrealsense2.frame.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data from the frame handle. Identical to calling get_data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.frame.frame_number">
+<code class="descname">frame_number</code><a class="headerlink" href="#pyrealsense2.frame.frame_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>The frame number. Identical to calling get_frame_number.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.frame.frame_timestamp_domain">
+<code class="descname">frame_timestamp_domain</code><a class="headerlink" href="#pyrealsense2.frame.frame_timestamp_domain" title="Permalink to this definition">¶</a></dt>
+<dd><p>The timestamp domain. Identical to calling get_frame_timestamp_domain.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_data">
+<code class="descname">get_data</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; pyrealsense2.BufData<a class="headerlink" href="#pyrealsense2.frame.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve data from the frame handle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_frame_metadata">
+<code class="descname">get_frame_metadata</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em>, <em>frame_metadata: pyrealsense2.frame_metadata_value</em><span class="sig-paren">)</span> &rarr; int<a class="headerlink" href="#pyrealsense2.frame.get_frame_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the current value of a single frame_metadata.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_frame_number">
+<code class="descname">get_frame_number</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; int<a class="headerlink" href="#pyrealsense2.frame.get_frame_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the frame number.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_frame_timestamp_domain">
+<code class="descname">get_frame_timestamp_domain</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; pyrealsense2.timestamp_domain<a class="headerlink" href="#pyrealsense2.frame.get_frame_timestamp_domain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the timestamp domain.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_profile">
+<code class="descname">get_profile</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; rs2::stream_profile<a class="headerlink" href="#pyrealsense2.frame.get_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve stream profile from frame handle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.get_timestamp">
+<code class="descname">get_timestamp</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; float<a class="headerlink" href="#pyrealsense2.frame.get_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the time at which the frame was captured</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_depth_frame">
+<code class="descname">is_depth_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_depth_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_frame">
+<code class="descname">is_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_frameset">
+<code class="descname">is_frameset</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_frameset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_motion_frame">
+<code class="descname">is_motion_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_motion_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_points">
+<code class="descname">is_points</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_points" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_pose_frame">
+<code class="descname">is_pose_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_pose_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.is_video_frame">
+<code class="descname">is_video_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.is_video_frame" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.keep">
+<code class="descname">keep</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.frame.keep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keep the frame, otherwise if no refernce to the frame, the frame will be released.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.frame.profile">
+<code class="descname">profile</code><a class="headerlink" href="#pyrealsense2.frame.profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream profile from frame handle. Identical to calling get_profile.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.supports_frame_metadata">
+<code class="descname">supports_frame_metadata</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em>, <em>frame_metadata: pyrealsense2.frame_metadata_value</em><span class="sig-paren">)</span> &rarr; bool<a class="headerlink" href="#pyrealsense2.frame.supports_frame_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if the device allows a specific metadata to be queried.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyrealsense2.frame.swap">
+<code class="descname">swap</code><span class="sig-paren">(</span><em>self: pyrealsense2.frame</em>, <em>other: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.frame.swap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swap the internal frame handle with the one in parameter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrealsense2.frame.timestamp">
+<code class="descname">timestamp</code><a class="headerlink" href="#pyrealsense2.frame.timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time at which the frame was captured. Identical to calling get_timestamp.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_generated/pyrealsense2.frame.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyrealsense2 2.22.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2017, Intel Realsense Team.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>
