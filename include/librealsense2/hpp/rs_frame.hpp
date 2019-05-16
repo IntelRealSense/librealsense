@@ -416,6 +416,15 @@ namespace rs2
         * retrieve the time at which the frame was captured
         * \return            the timestamp of the frame, in milliseconds since the device was started
         */
+
+        rs2_sensor* get_sensor()
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_sensor(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
         double get_timestamp() const
         {
             rs2_error* e = nullptr;

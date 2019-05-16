@@ -80,7 +80,8 @@ namespace Intel.RealSense
 
                             Dispatcher.Invoke(new Action(() =>
                             {
-                                txtTimeStamp.Text = String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
+                                String depth_dev_sn = new Sensor.CameraInfos(depthFrame.Sensor)[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = depth_dev_sn + " : " + String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
                             }));
                         }
                     }

@@ -7,7 +7,7 @@
 
 using namespace librealsense;
 
-librealsense::record_sensor::record_sensor(const device_interface& device,
+librealsense::record_sensor::record_sensor( device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
     m_is_recording(false),
@@ -168,7 +168,7 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     }
 }
 
-const device_interface& record_sensor::get_device()
+device_interface& record_sensor::get_device()
 {
     return m_parent_device;
 }

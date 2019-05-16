@@ -5549,3 +5549,43 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
         }
     }
 }
+
+
+TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.22.0"))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        pipeline pipe(ctx);
+        device dev;
+        // Configure all supported streams to run at 30 frames per second
+
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+
+        // Test sequence
+        REQUIRE_NOTHROW(pipe.start(cfg));
+        std::string dev_serial_no = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        for (auto i = 0; i < 5; i++)
+        {
+            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+            for (auto&& frame : data)
+            {
+                std::string frame_serial_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                REQUIRE(dev_serial_no == frame_serial_no);
+                // TODO: Add additinal sensor attribiutions checks.
+            }
+        }
+        REQUIRE_NOTHROW(pipe.stop());
+    }
+}
