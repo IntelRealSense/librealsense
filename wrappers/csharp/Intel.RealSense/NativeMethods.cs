@@ -174,6 +174,9 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_create_threshold([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_units_transform([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
 #endregion
