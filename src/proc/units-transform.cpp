@@ -32,7 +32,8 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    // reset depth_units in case of garbage value.
+                    // reset stream profile in case of failure.
+                    _source_stream_profile = rs2::stream_profile();
                     _depth_units = optional_value<float>();
                     LOG_ERROR("Failed obtaining depth units option");
                 }
@@ -53,7 +54,7 @@ namespace librealsense
         auto new_f = source.allocate_video_frame(_target_stream_profile, f,
             _bpp, _width, _height, _stride, RS2_EXTENSION_DEPTH_FRAME);
 
-        if (new_f)
+        if (new_f && _depth_units)
         {
             auto ptr = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)new_f.get());
             auto orig = dynamic_cast<librealsense::depth_frame*>((librealsense::frame_interface*)f.get());
