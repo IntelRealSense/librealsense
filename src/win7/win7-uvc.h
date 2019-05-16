@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../backend.h"
-#include "win7-helpers.h"
+#include "win/win-helpers.h"
 #include "winusb_uvc/winusb_uvc.h"
 
 #include <strmif.h>

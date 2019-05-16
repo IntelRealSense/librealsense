@@ -1,4 +1,4 @@
-#include "PCH.h"
+#include "RealSenseInspector.h"
 
 #define MAX_BUFFER_U16 0xFFFF
 
@@ -26,7 +26,11 @@ ARealSenseInspector::ARealSenseInspector(const FObjectInitializer& ObjectInitial
 	PclMesh->SetVisibility(false);
 	PclMesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	PclMesh->Mobility = EComponentMobility::Movable;
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 20
+	PclMesh->SetGenerateOverlapEvents(false);
+#else
 	PclMesh->bGenerateOverlapEvents = false;
+#endif
 	PclMesh->SetupAttachment(RootComponent);
 }
 
@@ -249,12 +253,13 @@ void ARealSenseInspector::Stop()
 		{
 			NAMED_PROFILER("FlushRenderingCommands");
 
-			ENQUEUE_UNIQUE_RENDER_COMMAND(FlushCommand,
-			{
-				GRHICommandList.GetImmediateCommandList().ImmediateFlush(EImmediateFlushType::FlushRHIThreadFlushResources);
-				RHIFlushResources();
-				GRHICommandList.GetImmediateCommandList().ImmediateFlush(EImmediateFlushType::FlushRHIThreadFlushResources);
-			});
+			ENQUEUE_RENDER_COMMAND(FlushCommand)(
+				[](FRHICommandListImmediate& RHICmdList)
+				{
+					GRHICommandList.GetImmediateCommandList().ImmediateFlush(EImmediateFlushType::FlushRHIThreadFlushResources);
+					RHIFlushResources();
+					GRHICommandList.GetImmediateCommandList().ImmediateFlush(EImmediateFlushType::FlushRHIThreadFlushResources);
+				});
 			FlushRenderingCommands();
 		}
 

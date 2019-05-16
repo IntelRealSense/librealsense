@@ -1,3 +1,4 @@
+#include "RealSenseOption.h"
 #include "PCH.h"
 
 URealSenseOption::URealSenseOption(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

@@ -8,8 +8,10 @@ public class RealSense : ModuleRules
 		bEnableExceptions = true;
 		bUseRTTI = false;
 
-		PrivateIncludePaths.AddRange(new string[] { "RealSense/Private" });
-		PublicIncludePaths.AddRange(new string[] { "RealSense/Public" });
+		PrivateIncludePaths.AddRange(new string[] { Path.Combine( ModuleDirectory, "Private") });
+		PublicIncludePaths.AddRange(new string[] { Path.Combine(ModuleDirectory, "Public") });
+
+		PrivatePCHHeaderFile = "Private/PCH.h";
 
 		PublicDependencyModuleNames.AddRange(
 			new string[] {
@@ -37,7 +39,7 @@ public class RealSense : ModuleRules
 		}
 
 		//string RealSenseDirectory = Environment.GetEnvironmentVariable("RSSDK_DIR");
-		string RealSenseDirectory = "c:/Program Files (x86)/Intel RealSense SDK 2.0";
+		string RealSenseDirectory = "C:/Program Files (x86)/Intel RealSense SDK 2.0";
 
 		PublicIncludePaths.Add(Path.Combine(RealSenseDirectory, "include"));
 		PublicLibraryPaths.Add(Path.Combine(RealSenseDirectory, "lib", "x64"));

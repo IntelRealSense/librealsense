@@ -8,6 +8,7 @@
 #include "hw-monitor.h"
 #include "sensor.h"
 #include "core/streaming.h"
+#include "command_transfer.h"
 
 #include <chrono>
 #include <memory>
@@ -169,8 +170,17 @@ namespace librealsense
         bool is_enabled() const override { return true; }
         // TODO: expose this outwards
         const char* get_description() const override { return "A simple custom option for a processing block"; }
-    private:
+    protected:
         float _value;
+    };
+
+    class LRS_EXTENSION_API bool_option : public float_option
+    {
+    public:
+        bool_option() : float_option(option_range{ 0, 1, 1, 1 }) {}
+        bool is_true() { return (_value > _opt_range.min); }
+        // TODO: expose this outwards
+        const char* get_description() const override { return "A simple custom option for a processing block"; }
     };
 
     class uvc_pu_option : public option

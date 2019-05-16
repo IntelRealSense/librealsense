@@ -8,6 +8,7 @@
 #include "RuntimeMeshData.h"
 #include "RuntimeMeshBlueprint.h"
 #include "RuntimeMeshCollision.h"
+#include "RuntimeMeshBlueprintMeshBuilder.h"
 #include "RuntimeMesh.generated.h"
 
 class UBodySetup;
@@ -43,7 +44,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FRuntimeMeshCollisionUpdatedDelegate);
 
 
 UCLASS(HideCategories = Object, BlueprintType)
-class RUNTIMEMESHCOMPONENT_API URuntimeMesh : public UObject, public IInterface_CollisionDataProvider/*, public IInterface_AssetUserData*/
+class RUNTIMEMESHCOMPONENT_API URuntimeMesh : public UObject, public IInterface_CollisionDataProvider
 {
 	GENERATED_UCLASS_BODY()
 
@@ -100,9 +101,16 @@ private:
 
 public:
 
-	bool HasSerializedMeshData() 
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	bool ShouldSerializeMeshData() 
 	{
 		return bShouldSerializeMeshData;			
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void SetShouldSerializeMeshData(bool bShouldSerialize)
+	{
+		bShouldSerializeMeshData = bShouldSerialize;
 	}
 
 	/** Event called when the collision has finished updated, this works both with standard following frame synchronous updates, as well as async updates */
@@ -333,6 +341,13 @@ public:
 		GetRuntimeMeshData()->CreateMeshSectionByMove(SectionId, MeshData, bCreateCollision, UpdateFrequency, UpdateFlags);
 	}
 
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void CreateMeshSectionFromBuilder(int32 SectionId, URuntimeBlueprintMeshBuilder* MeshData, bool bCreateCollision = false,
+		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average/*, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None*/)
+	{
+		check(IsInGameThread());
+		GetRuntimeMeshData()->CreateMeshSection(SectionId, MeshData->GetMeshBuilder(), bCreateCollision, UpdateFrequency/*, UpdateFlags*/);
+	}
 
 
 	FORCEINLINE void UpdateMeshSection(int32 SectionId, const TSharedPtr<FRuntimeMeshBuilder>& MeshData, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
@@ -345,6 +360,13 @@ public:
 	{
 		check(IsInGameThread());
 		GetRuntimeMeshData()->UpdateMeshSectionByMove(SectionId, MeshData, UpdateFlags);
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void UpdateMeshSectionFromBuilder(int32 SectionId, URuntimeBlueprintMeshBuilder* MeshData/*, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None*/)
+	{
+		check(IsInGameThread());
+		GetRuntimeMeshData()->UpdateMeshSection(SectionId, MeshData->GetMeshBuilder()/*, UpdateFlags*/);
 	}
 
 
@@ -790,10 +812,24 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	bool IsCollisionUsingAsyncCooking()
+	{
+		check(IsInGameThread());
+		return bUseAsyncCooking;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
 	void SetCollisionMode(ERuntimeMeshCollisionCookingMode NewMode)
 	{
 		check(IsInGameThread());
 		CollisionMode = NewMode;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	ERuntimeMeshCollisionCookingMode GetCollisionMode() const
+	{
+		check(IsInGameThread());
+		return CollisionMode;
 	}
 
 	FBoxSphereBounds GetLocalBounds() const 
@@ -852,26 +888,32 @@ private:
 		OutMaterials.Append(Materials.FilterByPredicate([](UMaterialInterface* Mat) -> bool { return Mat != nullptr; }));
 	}
 
-
-
 	//~ Begin Interface_CollisionDataProvider Interface
 	virtual bool GetPhysicsTriMeshData(struct FTriMeshCollisionData* CollisionData, bool InUseAllTriData) override;
 	virtual bool ContainsPhysicsTriMeshData(bool InUseAllTriData) const override;
 	virtual bool WantsNegXTriMesh() override { return false; }
 	//~ End Interface_CollisionDataProvider Interface
 
-	virtual void Serialize(FArchive& Ar) override; 
+	virtual void Serialize(FArchive& Ar) override;
 	void PostLoad();
 
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
 	UMaterialInterface* GetMaterialFromCollisionFaceIndex(int32 FaceIndex, int32& SectionIndex) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	int32 GetSectionIdFromCollisionFaceIndex(int32 FaceIndex) const;
 
+
+private:
 	/** Triggers a rebuild of the collision data on the next tick */
 	void MarkCollisionDirty();
+
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 21
 	/** Helper to create new body setup objects */
 	UBodySetup* CreateNewBodySetup();
-	/** Ensure ProcMeshBodySetup is allocated and configured */
-	void EnsureBodySetupCreated();
+#endif
 	/** Copies the convex element geometry to a supplied body setup */
 	void CopyCollisionElementsToBodySetup(UBodySetup* Setup);
 	/** Sets all basic configuration on body setup */
@@ -879,9 +921,11 @@ private:
 	/** Mark collision data as dirty, and re-create on instance if necessary */
 	void UpdateCollision(bool bForceCookNow = false);
 	/** Once async physics cook is done, create needed state, and then call the user event */
-	void FinishPhysicsAsyncCook(UBodySetup* FinishedBodySetup);
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 21
+	void FinishPhysicsAsyncCook(bool bSuccess, UBodySetup* FinishedBodySetup);
 	/** Runs all post cook tasks like alerting the user event and alerting linked components */
 	void FinalizeNewCookedData();
+#endif
 
 
 	FRuntimeMeshProxyPtr EnsureProxyCreated(ERHIFeatureLevel::Type InFeatureLevel)

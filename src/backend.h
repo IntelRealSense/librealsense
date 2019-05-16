@@ -7,6 +7,9 @@
 
 #include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
 #include "../include/librealsense2/h/rs_option.h"
+#include "usb/usb-types.h"
+#include "usb/usb-device.h"
+#include "command_transfer.h"
 
 #include <memory>       // For shared_ptr
 #include <functional>   // For function
@@ -24,7 +27,6 @@
 
 
 const uint16_t MAX_RETRIES                = 100;
-const uint16_t VID_INTEL_CAMERA           = 0x8086;
 const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS = 4;
 const uint16_t DELAY_FOR_RETRIES          = 50;
 
@@ -110,17 +112,6 @@ namespace librealsense
         // subdevice and node fields are assigned by Host driver; unit and GUID are hard-coded in camera firmware
         struct extension_unit { int subdevice, unit, node; guid id; };
 
-        class command_transfer
-        {
-        public:
-            virtual std::vector<uint8_t> send_receive(
-                const std::vector<uint8_t>& data,
-                int timeout_ms = 5000,
-                bool require_response = true) = 0;
-
-            virtual ~command_transfer() = default;
-        };
-
         enum power_state
         {
             D0,
@@ -176,29 +167,6 @@ namespace librealsense
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
 
-        // Binary-coded decimal represent the USB specification to which the UVC device complies
-        enum usb_spec : uint16_t {
-            usb_undefined   = 0,
-            usb1_type       = 0x0100,
-            usb1_1_type     = 0x0110,
-            usb2_type       = 0x0200,
-            usb2_1_type     = 0x0210,
-            usb3_type       = 0x0300,
-            usb3_1_type     = 0x0310,
-            usb3_2_type     = 0x0320,
-        };
-
-        static const std::map<usb_spec, std::string> usb_spec_names = {
-                { usb_undefined,"Undefined" },
-                { usb1_type,    "1.0" },
-                { usb1_1_type,  "1.1" },
-                { usb2_type,    "2.0" },
-                { usb2_1_type,  "2.1" },
-                { usb3_type,    "3.0" },
-                { usb3_1_type,  "3.1" },
-                { usb3_2_type,  "3.2" }
-        };
-
         struct uvc_device_info
         {
             std::string id = ""; // to distinguish between different pins of the same device
@@ -246,31 +214,6 @@ namespace librealsense
                    (a.device_path == b.device_path) &&
                    (a.conn_spec == b.conn_spec);
         }
-
-        struct usb_device_info
-        {
-            std::string id;
-
-            uint16_t vid;
-            uint16_t pid;
-            uint16_t mi;
-            std::string unique_id;
-            std::string serial;
-            usb_spec conn_spec;
-
-            operator std::string()
-            {
-                std::stringstream s;
-
-                s << "vid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nmi- " << mi <<
-                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
-                     "\nunique_id- " << unique_id;
-
-                return s.str();
-            }
-        };
 
         inline bool operator==(const usb_device_info& a,
             const usb_device_info& b)
@@ -581,13 +524,6 @@ namespace librealsense
             std::shared_ptr<uvc_device> _dev;
         };
 
-        class usb_device : public command_transfer
-        {
-        public:
-            // interupt endpoint and any additional USB specific stuff
-        };
-
-
 
         class device_watcher;
 
@@ -665,7 +601,7 @@ namespace librealsense
             virtual std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const = 0;
             virtual std::vector<uvc_device_info> query_uvc_devices() const = 0;
 
-            virtual std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const = 0;
+            virtual std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const = 0;
             virtual std::vector<usb_device_info> query_usb_devices() const = 0;
 
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;

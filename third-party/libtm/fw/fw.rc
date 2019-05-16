@@ -1,3 +1,0 @@
-#include "fw_target.rc"
-#include "fw_central_app.rc"
-#include "fw_central_bl.rc"

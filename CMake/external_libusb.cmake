@@ -7,7 +7,7 @@ ExternalProject_Add(
     GIT_TAG "2a7372db54094a406a755f0b8548b614ba8c78ec" # "v1.0.22" + Mac get_device_list hang fix
 
     UPDATE_COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_CURRENT_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
+            ${CMAKE_SOURCE_DIR}/third-party/libusb/CMakeLists.txt
             ${CMAKE_CURRENT_BINARY_DIR}/third-party/libusb/CMakeLists.txt
     PATCH_COMMAND ""
 

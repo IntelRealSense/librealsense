@@ -944,7 +944,7 @@ namespace rs2
             if (shared_filter->is<zero_order_invalidation>())
                 zero_order_artifact_fix = model;
 
-            if (shared_filter->is<hole_filling_filter>() || shared_filter->is<zero_order_invalidation>())
+            if (shared_filter->is<hole_filling_filter>())
                 model->enabled = false;
 
             post_processing.push_back(model);
@@ -2871,6 +2871,10 @@ namespace rs2
                     ImGui::PopStyleColor();
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
+                }
+                else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                     ImGui::SetTooltip("Timestamp: Global Time");
                 }
                 else
                 {

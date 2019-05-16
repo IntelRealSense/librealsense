@@ -19,9 +19,9 @@ struct FRuntimeMeshRenderThreadDeleter
 		}
 		else
 		{
-			ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-				FRuntimeMeshProxyDeleterCommand,
-				void*, Object, Object,
+			// HORU: 4.22 rendering
+			ENQUEUE_RENDER_COMMAND(FRuntimeMeshProxyDeleterCommand)(
+				[Object](FRHICommandListImmediate & RHICmdList)
 				{
 					delete static_cast<Type*>(Object);
 				}
