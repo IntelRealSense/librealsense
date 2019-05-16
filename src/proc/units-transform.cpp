@@ -5,11 +5,8 @@
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #include "proc/synthetic-stream.h"
-#include "context.h"
 #include "environment.h"
-#include "option.h"
 #include "units-transform.h"
-#include "image.h"
 
 namespace librealsense
 {
@@ -28,8 +25,17 @@ namespace librealsense
 
             if (!_depth_units)
             {
-                auto sensor = ((frame_interface*)f.get())->get_sensor().get();
-                _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                try 
+                {
+                    auto sensor = ((frame_interface*)f.get())->get_sensor().get();
+                    _depth_units = sensor->get_option(RS2_OPTION_DEPTH_UNITS).query();
+                }
+                catch (...)
+                {
+                    // reset depth_units in case of garbage value.
+                    _depth_units = optional_value<float>();
+                    LOG_ERROR("Failed obtaining depth units option");
+                }
             }
 
             auto vf = f.as<rs2::depth_frame>();
@@ -42,8 +48,6 @@ namespace librealsense
 
     rs2::frame units_transform::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        if (!f.is<rs2::depth_frame>()) return f;
-
         update_configuration(f);
 
         auto new_f = source.allocate_video_frame(_target_stream_profile, f,
