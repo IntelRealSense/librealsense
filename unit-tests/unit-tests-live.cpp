@@ -5555,7 +5555,7 @@ TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.22.0"))
     {
         std::vector<sensor> list;
         REQUIRE_NOTHROW(list = ctx.query_all_sensors());
@@ -5579,9 +5579,13 @@ TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
         for (auto i = 0; i < 5; i++)
         {
             rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-            auto frame = data.get_color_frame();
-            std::string frame_serail_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-            REQUIRE(dev_serial_no == frame_serail_no);
+            for (auto frame : data)
+            {
+                auto frame = data.get_color_frame();
+                std::string frame_serial_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                REQUIRE(dev_serial_no == frame_serial_no);
+                // TODO: Add additinal sensor attribiutions checks.
+            }
         }
         REQUIRE_NOTHROW(pipe.stop());
     }
