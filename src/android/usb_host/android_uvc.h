@@ -2,8 +2,9 @@
 /* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 
-#include "usbhost.h"
-#include "usb_device.h"
+#include "../../usbhost/usbhost.h"
+#include "../../usbhost/device-usbhost.h"
+#include "../../usb/usb-messenger.h"
 #include <thread>
 #include <linux/usb/ch9.h>
 #include "../../backend.h"
@@ -160,11 +161,6 @@ typedef struct usbhost_uvc_control_interface {
     uint8_t bInterfaceNumber;
 } usbhost_uvc_control_interface_t;
 
-typedef struct usbhost_uvc_interface_handle{
-    std::shared_ptr<librealsense::usb_host::device> device;
-    int         interface_index;
-} usbhost_uvc_interface_handle_t;
-
 /** VideoStream interface */
 typedef struct usbhost_uvc_streaming_interface {
     struct usbhost_uvc_device_info *parent;
@@ -176,7 +172,7 @@ typedef struct usbhost_uvc_streaming_interface {
     /** USB endpoint to use when communicating with this interface */
     uint8_t bEndpointAddress;
     uint8_t bTerminalLink;
-    usbhost_uvc_interface_handle_t interfaceHandle;
+    std::shared_ptr<librealsense::platform::usb_interface> interface;
 } usbhost_uvc_streaming_interface_t;
 
 typedef struct usbhost_uvc_device_info {
@@ -237,7 +233,7 @@ struct usbhost_uvc_stream_handle {
 struct usbhost_uvc_device
 {
     usbhost_uvc_device_info_t deviceData;
-    std::shared_ptr<librealsense::usb_host::device> device;
+    std::shared_ptr<librealsense::platform::usb_device_usbhost> device;
     usbhost_uvc_stream_handle_t *streams;
     int pid, vid;
 };
@@ -289,7 +285,7 @@ uvc_error_t usbhost_open(usbhost_uvc_device *device, int InterfaceNumber);
 uvc_error_t usbhost_close(usbhost_uvc_device *device);
 
 // Sending control packet using vendor-defined control transfer directed to WinUSB interface
-int usbhost_SendControl(std::shared_ptr<librealsense::usb_host::device> ihandle,int interface_number, int requestType, int request, int value, int index, unsigned char *buffer, int buflen);
+int usbhost_SendControl(std::shared_ptr<librealsense::platform::usb_device_usbhost> ihandle,int interface_number, int requestType, int request, int value, int index, unsigned char *buffer, int buflen);
 
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t usbhost_get_available_formats(usbhost_uvc_device *devh, int interface_idx, uvc_format_t **formats);

@@ -8,6 +8,7 @@
 #include "hw-monitor.h"
 #include "sensor.h"
 #include "core/streaming.h"
+#include "command_transfer.h"
 
 #include <chrono>
 #include <memory>

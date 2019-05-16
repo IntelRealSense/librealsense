@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../backend.h"
+#include "../command_transfer.h"
 
 namespace librealsense
 {
@@ -20,7 +21,7 @@ namespace librealsense
 
 
             // don't change
-            std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
+            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
             // Not supported
