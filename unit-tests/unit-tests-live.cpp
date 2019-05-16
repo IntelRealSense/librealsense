@@ -5579,9 +5579,8 @@ TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
         for (auto i = 0; i < 5; i++)
         {
             rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-            for (auto frame : data)
+            for (auto& frame : data)
             {
-                auto frame = data.get_color_frame();
                 std::string frame_serial_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
                 REQUIRE(dev_serial_no == frame_serial_no);
                 // TODO: Add additinal sensor attribiutions checks.
