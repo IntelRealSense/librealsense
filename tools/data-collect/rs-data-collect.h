@@ -194,16 +194,14 @@ namespace rs_data_collect
             frame_record(unsigned long long frame_number, double frame_ts, double host_ts,
                        rs2_timestamp_domain domain, rs2_stream stream_type,int stream_index,
                        double _p1=0., double _p2=0., double _p3=0.,
-                       double _p4=0., double _p5=0., double _p6=0., double _p7=0.,
-                       std::string dev_serial=std::string("")):
+                       double _p4=0., double _p5=0., double _p6=0., double _p7=0.):
             _frame_number(frame_number),
             _ts(frame_ts),
             _arrival_time(host_ts),
             _domain(domain),
             _stream_type(stream_type),
             _stream_idx(stream_index),
-            _params({_p1,_p2,_p3,_p4,_p5,_p6,_p7}),
-            _dev_serial_no(dev_serial)
+            _params({_p1,_p2,_p3,_p4,_p5,_p6,_p7})
             {};
 
             std::string to_string() const
@@ -224,7 +222,6 @@ namespace rs_data_collect
                 for (auto i=0; i<specific_attributes; i++)
                     ss << "," << _params[i];
 
-                ss << "," << _dev_serial_no;
                 return ss.str().c_str();
             }
 
@@ -235,7 +232,6 @@ namespace rs_data_collect
             rs2_stream              _stream_type;
             int                     _stream_idx;
             std::array<double,7>    _params;            // |The parameters are optional and sensor specific
-            std::string             _dev_serial_no;
         };
 
     private:
