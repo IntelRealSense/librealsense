@@ -140,6 +140,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
         .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
+        .value("global_time_enabled", RS2_OPTION_GLOBAL_TIME_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

@@ -124,8 +124,11 @@ namespace librealsense
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
+        const int REGISTER_CLOCK_0 = 0x0001613c;
+
         enum fw_cmd : uint8_t
         {
+            MRD             = 0x01,     // Read Register
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table

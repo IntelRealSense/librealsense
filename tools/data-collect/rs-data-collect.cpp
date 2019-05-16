@@ -305,6 +305,12 @@ int main(int argc, char** argv) try
 
     auto output_file       = out_file.isSet() ? out_file.getValue() : DEF_OUTPUT_FILE_NAME;
 
+    {
+        ofstream csv(output_file);
+        if (!csv.is_open())
+            throw runtime_error(stringify() << "Cannot open the requested output file " << output_file << ", please check permissions");
+    }
+
     bool succeed = false;
     rs2::context ctx;
     rs2::device_list list;

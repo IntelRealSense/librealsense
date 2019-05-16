@@ -2872,6 +2872,10 @@ namespace rs2
                     ImGui::PopTextWrapPos();
                     ImGui::EndTooltip();
                 }
+                else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                     ImGui::SetTooltip("Timestamp: Global Time");
+                }
                 else
                 {
                     ImGui::SetTooltip("Timestamp: Hardware clock");

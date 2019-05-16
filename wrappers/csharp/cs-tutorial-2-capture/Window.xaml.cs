@@ -77,6 +77,11 @@ namespace Intel.RealSense
                             // Render the frames.
                             Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                             Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+
+                            Dispatcher.Invoke(new Action(() =>
+                            {
+                                txtTimeStamp.Text = String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
+                            }));
                         }
                     }
                 }, tokenSource.Token);

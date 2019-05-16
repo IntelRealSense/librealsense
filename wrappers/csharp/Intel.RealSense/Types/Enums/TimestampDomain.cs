@@ -13,5 +13,7 @@ namespace Intel.RealSense
 
         /// <summary> Frame timestamp was measured in relation to the OS system clock</summary>
         SystemTime = 1,
+
+        GlobalTime = 2,
     }
 }

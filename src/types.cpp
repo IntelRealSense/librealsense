@@ -273,6 +273,7 @@ namespace librealsense
             CASE(MC_TEMPERATURE)
             CASE(MA_TEMPERATURE)
             CASE(HARDWARE_PRESET)
+            CASE(GLOBAL_TIME_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -392,6 +393,7 @@ namespace librealsense
         {
             CASE(HARDWARE_CLOCK)
             CASE(SYSTEM_TIME)
+            CASE(GLOBAL_TIME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

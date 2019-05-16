@@ -14,6 +14,7 @@
 #include "stream.h"
 #include "l500-private.h"
 #include "error-handling.h"
+#include "global_timestamp_reader.h"
 
 namespace librealsense
 {
@@ -41,12 +42,13 @@ namespace librealsense
 
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
+        double get_device_time();
 
     protected:
         friend class l500_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
-        const uint8_t _depth_device_idx;
+        uint8_t _depth_device_idx;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
 
@@ -56,6 +58,7 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
+        std::shared_ptr<time_diff_keeper> _tf_keeper;
 
         void force_hardware_reset() const;
     };
