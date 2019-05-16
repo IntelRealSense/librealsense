@@ -7,7 +7,7 @@ Welcome to pyrealsense2's documentation!
 ========================================
 
 .. autosummary::
-   :toctree: _generated
+   :toctree: generated
    :template: module.rst
 
    pyrealsense2

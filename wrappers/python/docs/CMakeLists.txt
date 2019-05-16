@@ -20,10 +20,10 @@ if(NOT DEFINED SPHINX_THEME_DIR)
 endif()
  
 # configured documentation tools and intermediate build results
-set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/_build")
+set(BINARY_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/build")
  
 # Sphinx cache with pickled ReST documents
-set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
+set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/doctrees")
  
 # HTML output directory
 set(SPHINX_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
