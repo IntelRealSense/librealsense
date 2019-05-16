@@ -50,3 +50,4 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 9. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore
 10. [Unofficial OpenVino example + D400](https://github.com/gbr1/ros_openvino) - example of using OpenVino with RealSense and ROS for object detection
 11. [keijiro/Rsvfx](https://github.com/keijiro/Rsvfx) - An example that shows how to connect RealSense depth camera to Unity VFX Graph
+12. [kougaku/RealSenseOSC](https://github.com/kougaku/RealSenseOSC) - Client-Server project with Processing example for T265
