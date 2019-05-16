@@ -23,7 +23,7 @@ namespace librealsense
             perc::TrackingDevice* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
-        ~tm2_device();
+        virtual ~tm2_device();
 
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
@@ -51,7 +51,7 @@ namespace librealsense
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
-        ~tm2_sensor();
+        virtual ~tm2_sensor();
 
         // sensor interface
         ////////////////////

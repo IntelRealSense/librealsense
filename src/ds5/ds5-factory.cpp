@@ -511,7 +511,11 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_motion(ctx, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) 
+        {
+            if (!validate_color_stream_extrinsic(*_color_calib_table_raw))
+                restore_color_stream_extrinsic();
+        }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -534,6 +538,114 @@ namespace librealsense
             return tags;
         };
         bool compress_while_record() const override { return false; }
+
+    private:
+        bool validate_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        {
+            try
+            {
+                // verify extrinsic calibration table structure
+                auto table = ds::check_calib<ds::rgb_calibration_table>(raw_data);
+                float3 trans_vector = table->translation_rect;
+                float3x3 rect_rot_mat = table->rotation_matrix_rect;
+
+                // check that data rotation and translation are not zero
+                for (auto i = 0; i < 3; i++)
+                {
+                    if (std::fabs(trans_vector[i]) > std::numeric_limits<float>::epsilon())
+                    {
+                        for (auto j = 0; j < 3; i++)
+                        {
+                            if (std::fabs(rect_rot_mat(i, j)) > std::numeric_limits<float>::epsilon())
+                                return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            catch (...)
+            {
+                return false;
+            }
+        }
+
+        void restore_color_stream_extrinsic(const std::vector<byte>& calib)
+        {
+            //write the calibration to its correct address
+            command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);
+            cmd.data = calib;
+            ds5_device::_hw_monitor->send(cmd);
+
+            _color_calib_table_raw = [this]() { return get_raw_calibration_table(ds::rgb_calibration_id); };
+            _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(ds::get_color_stream_extrinsic(*_color_calib_table_raw)); });
+            environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+        }
+
+        bool restore_from_address(const uint32_t address)
+        {
+            const uint32_t bytes_to_read = 0x100;
+
+            //read the calibration from the address
+            command cmd(ds::fw_cmd::FRB, address, bytes_to_read);
+            auto calib = ds5_device::_hw_monitor->send(cmd);
+            if (validate_color_stream_extrinsic(calib))
+            {
+                restore_color_stream_extrinsic(calib);
+                return true;
+            }
+            LOG_WARNING("Restoring RGB Extrinsic from address" << address << " failed");
+            return false;
+        }
+
+        bool restore_color_stream_extrinsic_from_gold_sector()
+        {
+            command cmd(ds::fw_cmd::LOADINTCAL, 0x20, 0x1);
+            auto calib = ds5_device::_hw_monitor->send(cmd);
+            if (validate_color_stream_extrinsic(calib))
+            {
+                restore_color_stream_extrinsic(calib);
+                return true;
+            }
+            LOG_WARNING("Restore from gold_sector failed");
+            return false;
+        }
+
+        bool restore_color_stream_extrinsic()
+        {
+            try
+            {
+                LOG_WARNING("invalid RGB extrinsic was identified, recovery routine was invoked");
+
+                const uint32_t gold_address = 0x17c49c;
+                const uint32_t dynamic_address = 0x17b49c;
+
+                if (!restore_color_stream_extrinsic_from_gold_sector())
+                {
+                    LOG_WARNING("RGB extrinsic recovery - Gold calibration is invalid, restore from an alternative sector");
+
+                    if (!restore_from_address(gold_address))
+                    {
+                        LOG_WARNING("RGB extrinsic recovery - Gold calibration from address " << gold_address << " is invalid, restore from an alternative sector");
+
+                        if (!restore_from_address(dynamic_address))
+                        {
+                            LOG_WARNING("RGB extrinsic recovery - Dynamic calibration from address " << dynamic_address << " is invalid, recovery routine failed");
+
+                            _color_extrinsic.reset();
+                            return false;
+                        }
+                    }
+                }
+
+                LOG_DEBUG("Suceeded to restore color stream extrinsic");
+                return true;
+            }
+            catch (...)
+            {
+                LOG_WARNING("RGB Extrinsic recovery routine failed");
+                return false;
+            }
+        }
     };
 
 
@@ -639,6 +751,7 @@ namespace librealsense
             }
 
 
+#if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
             auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::hid_sensors_pid), std::end(ds::hid_sensors_pid), pid) != std::end(ds::hid_sensors_pid); };
             bool is_device_hid_sensor = false;
             for (auto&& uvc : devices)
@@ -653,6 +766,7 @@ namespace librealsense
             {
                 all_sensors_present &= (hids.capacity() >= 2);
             }
+#endif
 
             if (!devices.empty() && all_sensors_present)
             {

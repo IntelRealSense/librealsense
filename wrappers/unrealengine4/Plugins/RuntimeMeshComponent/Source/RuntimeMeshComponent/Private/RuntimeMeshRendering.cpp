@@ -154,13 +154,13 @@ void FRuntimeMeshVertexFactory::Init(FLocalVertexFactory::FDataType VertexStruct
 	else
 	{
 		// Send the command to the render thread
-		ENQUEUE_UNIQUE_RENDER_COMMAND_TWOPARAMETER(
-			InitRuntimeMeshVertexFactory,
-			FRuntimeMeshVertexFactory*, VertexFactory, this,
-			FLocalVertexFactory::FDataType, VertexStructure, VertexStructure,
+		// HORU: 4.22 rendering
+		ENQUEUE_RENDER_COMMAND(InitRuntimeMeshVertexFactory)(
+			[this, VertexStructure](FRHICommandListImmediate & RHICmdList)
 			{
-				VertexFactory->Init(VertexStructure);
-			});
+				Init(VertexStructure);
+			}
+		);
 	}
 }
 

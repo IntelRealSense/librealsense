@@ -8,25 +8,29 @@ macro(os_set_flags)
     # Makes VS15 find the DLL when trying to run examples/tests
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    # build with multiple cores
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+
     ## Check for Windows Version ##
-    if( (${CMAKE_SYSTEM_VERSION} EQUAL 6.1) OR (FORCE_WINUSB_UVC) ) # Windows 7
-        message(STATUS "Build for Win7")
-        set(BUILD_FOR_WIN7 ON)
+    if(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
         set(FORCE_WINUSB_UVC ON)
-    else() # Some other windows version
-        message(STATUS "Build for Windows > Win7")
-        set(BUILD_FOR_OTHER_WIN ON)
-        set(BACKEND RS2_USE_WMF_BACKEND)
     endif()
 
     if(FORCE_WINUSB_UVC)
         set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
+    else()
+        set(BACKEND RS2_USE_WMF_BACKEND)
     endif()
 
-    if (MSVC)
+    if(MSVC)
+        # Set CMAKE_DEBUG_POSTFIX to "d" to add a trailing "d" to library
+        # built in debug mode. In this Windows user can compile, build and install the
+        # library in both Release and Debug configuration avoiding naming clashes in the
+        # installation directories.
+        set(CMAKE_DEBUG_POSTFIX "d")
+
+        # build with multiple cores
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /wd4819")
         set(LRS_TRY_USE_AVX true)
         add_definitions(-D_UNICODE)
@@ -51,7 +55,7 @@ macro(os_target_config)
         )
     endif()
 
-    if(BUILD_FOR_WIN7)
+    if(FORCE_WINUSB_UVC)
         if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             message("Preparing Windows 7 drivers" )
             make_directory(${CMAKE_CURRENT_BINARY_DIR}/drivers/)

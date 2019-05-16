@@ -7,7 +7,7 @@
 
 using namespace librealsense;
 
-librealsense::record_sensor::record_sensor(const device_interface& device,
+librealsense::record_sensor::record_sensor( device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
     m_is_recording(false),
@@ -163,12 +163,12 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
     //Other extensions are not expected to be extensions of a sensor
     default:
-        LOG_WARNING("Extensions type is unhandled: " << extension_type);
+        LOG_WARNING("Extensions type is unhandled: " << get_string(extension_type));
         return false;
     }
 }
 
-const device_interface& record_sensor::get_device()
+device_interface& record_sensor::get_device()
 {
     return m_parent_device;
 }

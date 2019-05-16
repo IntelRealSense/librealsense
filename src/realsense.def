@@ -55,6 +55,7 @@ EXPORTS
     rs2_supports_frame_metadata
     rs2_get_frame_timestamp
     rs2_get_frame_timestamp_domain
+    rs2_get_frame_sensor
     rs2_get_frame_number
     rs2_get_frame_data
     rs2_get_frame_width
@@ -170,6 +171,7 @@ EXPORTS
     rs2_create_colorizer
     rs2_create_yuy_decoder
     rs2_create_threshold
+    rs2_create_units_transform
     rs2_create_decimation_filter_block
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block

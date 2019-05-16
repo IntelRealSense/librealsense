@@ -229,6 +229,11 @@ void device::hardware_reset()
     throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
 }
 
+double device::get_device_time()
+{
+    throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+}
+
 std::shared_ptr<matcher> librealsense::device::create_matcher(const frame_holder& frame) const
 {
 

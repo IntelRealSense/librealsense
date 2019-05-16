@@ -15,7 +15,7 @@
     template<> struct TypeToExtension<T> {                       \
         static constexpr rs2_extension value = E;                \
         static constexpr const char* to_string() { return #T; }; \
-    }
+    }                                                            \
 
 namespace librealsense
 {

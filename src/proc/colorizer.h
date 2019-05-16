@@ -104,6 +104,8 @@ namespace librealsense {
         static const int MAX_DEPTH = 0x10000;
 
     protected:
+        colorizer(const char* name);
+
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         float _min, _max;

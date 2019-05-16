@@ -3,7 +3,6 @@
 #pragma once
 
 #include "../backend.h"
-#include "win7-helpers.h"
 
 #include <Sensorsapi.h>
 #include <atlcomcli.h>

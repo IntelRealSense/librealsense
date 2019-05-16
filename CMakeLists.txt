@@ -72,4 +72,8 @@ if (BUILD_WITH_TM2)
     add_tm2()
 endif()
 
+if (BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES)
+    add_subdirectory(src/gl)
+endif()
+
 include(CMake/install_config.cmake)

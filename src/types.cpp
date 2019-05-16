@@ -41,17 +41,6 @@ namespace librealsense
         return res;
     }
 
-
-    std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
-    }
-
     recoverable_exception::recoverable_exception(const std::string& msg,
         rs2_exception_type exception_type) noexcept
         : librealsense_exception(msg, exception_type)
@@ -284,6 +273,7 @@ namespace librealsense
             CASE(MC_TEMPERATURE)
             CASE(MA_TEMPERATURE)
             CASE(HARDWARE_PRESET)
+            CASE(GLOBAL_TIME_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -315,6 +305,7 @@ namespace librealsense
             CASE(GPIO_RAW)
             CASE(6DOF)
             CASE(Y10BPACK)
+            CASE(DISTANCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -403,6 +394,7 @@ namespace librealsense
         {
             CASE(HARDWARE_CLOCK)
             CASE(SYSTEM_TIME)
+            CASE(GLOBAL_TIME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

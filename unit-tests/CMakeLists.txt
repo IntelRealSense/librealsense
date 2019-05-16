@@ -181,3 +181,7 @@ foreach(i ${PP_Rosbag_Recordings_List})
         file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
     endif()
 endforeach(i)
+
+if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
+    add_subdirectory(internal)
+endif()

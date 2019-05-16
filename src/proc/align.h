@@ -12,21 +12,33 @@
 
 namespace librealsense
 {
-    class align : public generic_processing_block
+    class LRS_EXTENSION_API align : public generic_processing_block
     {
     public:
-        align(rs2_stream to_stream) : generic_processing_block("Align"), _to_stream_type(to_stream), _depth_scale(0)
-        {}
+        align(rs2_stream to_stream);
 
     protected:
+        align(rs2_stream to_stream, const char* name)
+            : generic_processing_block(name), 
+              _to_stream_type(to_stream), _depth_scale(0)
+        {}
+
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
         virtual void reset_cache(rs2_stream from, rs2_stream to) {}
 
-        virtual void align_z_to_other(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile,  float z_scale);
+        virtual void align_z_to_other(rs2::video_frame& aligned, 
+                                      const rs2::video_frame& depth, 
+                                      const rs2::video_stream_profile& other_profile, 
+                                      float z_scale);
 
-        virtual void align_other_to_z(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale);
+        virtual void align_other_to_z(rs2::video_frame& aligned, 
+                                      const rs2::video_frame& depth, 
+                                      const rs2::video_frame& other, 
+                                      float z_scale);
+
+        virtual rs2_extension select_extension(const rs2::frame& input);
 
         std::shared_ptr<rs2::video_stream_profile> create_aligned_profile(
             rs2::video_stream_profile& original_profile,
@@ -38,7 +50,7 @@ namespace librealsense
         float _depth_scale;
 
     private:
-        rs2::frame allocate_aligned_frame(const rs2::frame_source& source, const rs2::video_frame& from, const rs2::video_frame& to);
-        void align_frames(const rs2::video_frame& aligned, const rs2::video_frame& from, const rs2::video_frame& to);
+        rs2::video_frame allocate_aligned_frame(const rs2::frame_source& source, const rs2::video_frame& from, const rs2::video_frame& to);
+        void align_frames(rs2::video_frame& aligned, const rs2::video_frame& from, const rs2::video_frame& to);
     };
 }

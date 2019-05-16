@@ -250,7 +250,7 @@ namespace rs2
         * \param[in] block - low level rs2_processing_block created before.
         */
         processing_block(std::shared_ptr<rs2_processing_block> block)
-            : _block(block), options((rs2_options*)block.get())
+            : options((rs2_options*)block.get()), _block(block)
         {
         }
 
@@ -519,7 +519,30 @@ namespace rs2
             return block;
         }
     };
+
+    class units_transform : public filter
+    {
+    public:
+        /**
+        * Creates depth units to meters processing block.
+        */
+        units_transform() : filter(init(), 1) {}
+
+    protected:
+        units_transform(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
         
+    private:
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_units_transform(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
 
     class asynchronous_syncer : public processing_block
     {
@@ -633,6 +656,9 @@ namespace rs2
         {
             return filter::process(frames);
         }
+
+    protected:
+        align(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
 
     private:
         friend class context;

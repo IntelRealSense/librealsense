@@ -54,13 +54,13 @@ namespace Intel.RealSense
         /// create a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <returns>The list of sensors</returns>
-        public ReadOnlyCollection<Sensor> QuerySensors()
+        public ReadOnlyCollection<T> QuerySensors<T>()  where T: Sensor
         {
             object error;
             var ptr = NativeMethods.rs2_query_sensors(Handle, out error);
-            using (var sl = new SensorList(ptr))
+            using (var sl = new SensorList<T>(ptr))
             {
-                var a = new Sensor[sl.Count];
+                var a = new T[sl.Count];
                 sl.CopyTo(a, 0);
                 return Array.AsReadOnly(a);
             }
@@ -70,7 +70,7 @@ namespace Intel.RealSense
         /// Gets a static snapshot of all connected devices at the time of the call
         /// </summary>
         /// <value>The list of sensors</value>
-        public ReadOnlyCollection<Sensor> Sensors => QuerySensors();
+        public ReadOnlyCollection<Sensor> Sensors => QuerySensors<Sensor>();
 
         /// <summary>
         /// Send hardware reset request to the device. The actual reset is asynchronous.

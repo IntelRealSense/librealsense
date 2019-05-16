@@ -321,7 +321,7 @@ inline bool make_context(const char* id, rs2::context* ctx, std::string min_api_
     std::string base_filename;
     bool record = false;
     bool playback = false;
-    for (auto i = 0; i < argc; i++)
+    for (auto i = 0u; i < argc; i++)
     {
         std::string param(argv[i]);
         if (param == "into")

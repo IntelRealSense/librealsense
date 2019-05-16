@@ -1,3 +1,4 @@
+#include "RealSenseSensor.h"
 #include "PCH.h"
 
 URealSenseSensor::URealSenseSensor(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

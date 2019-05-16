@@ -105,6 +105,18 @@ Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type,
     return rv;
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Points_nExportToPly(JNIEnv *env, jclass type, jlong handle,
+                                                          jstring filePath_, jlong textureHandle) {
+    const char *filePath = env->GetStringUTFChars(filePath_, 0);
+    rs2_error *e = NULL;
+    rs2_export_to_ply(reinterpret_cast<const rs2_frame *>(handle), filePath,
+                      reinterpret_cast<rs2_frame *>(textureHandle), &e);
+    handle_error(env, e);
+    env->ReleaseStringUTFChars(filePath_, filePath);
+}
+
 extern "C" JNIEXPORT jdouble JNICALL
 Java_com_intel_realsense_librealsense_Frame_nGetTimestamp(JNIEnv *env, jclass type, jlong handle) {
     rs2_error *e = NULL;

@@ -25,7 +25,7 @@ std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
     return os.str();
 }
 
-playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
+playback_sensor::playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
     m_is_started(false),
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
@@ -167,7 +167,7 @@ bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
     return playback_device::try_extend_snapshot(e, extension_type, ext);
 }
 
-const device_interface& playback_sensor::get_device()
+device_interface& playback_sensor::get_device()
 {
     return m_parent_device;
 }

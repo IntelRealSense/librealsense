@@ -394,7 +394,7 @@ namespace librealsense
         }
     }
 
-    const device_interface& sensor_base::get_device()
+    device_interface& sensor_base::get_device()
     {
         return *_owner;
     }

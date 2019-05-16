@@ -10,8 +10,37 @@ include(${_rel_path}/mock/CMakeLists.txt)
 include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
+include(${_rel_path}/usb/CMakeLists.txt)
 
-if(FORCE_LIBUVC)
+message(STATUS "using ${BACKEND}")
+
+if(UNIX OR FORCE_LIBUVC)
+    include(${_rel_path}/libusb/CMakeLists.txt)
+endif()
+    
+if(WIN32)
+    include(${_rel_path}/win/CMakeLists.txt)
+    include(${_rel_path}/winusb/CMakeLists.txt)    
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_ANDROID_BACKEND)
+    include(${_rel_path}/usbhost/CMakeLists.txt)
+    include(${_rel_path}/android/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
+    include(${_rel_path}/linux/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
+    include(${_rel_path}/mf/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
+    include(${_rel_path}/win7/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
 
@@ -21,20 +50,6 @@ endif()
 
 if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
-endif()
-
-if(ANDROID_USB_HOST_UVC)
-    include(${_rel_path}/android/CMakeLists.txt)
-else()
-    include(${_rel_path}/linux/CMakeLists.txt)
-endif()
-
-if(BUILD_FOR_WIN7)
-    include(${_rel_path}/win7/CMakeLists.txt)
-endif()
-
-if(BUILD_FOR_OTHER_WIN)
-    include(${_rel_path}/win/CMakeLists.txt)
 endif()
 
 if(LRS_TRY_USE_AVX)
@@ -55,6 +70,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image-avx.cpp"
@@ -78,8 +94,10 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
         "${CMAKE_CURRENT_LIST_DIR}/environment.h"
+        "${CMAKE_CURRENT_LIST_DIR}/log.h"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.h"
         "${CMAKE_CURRENT_LIST_DIR}/frame-archive.h"
+        "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"
         "${CMAKE_CURRENT_LIST_DIR}/image.h"
         "${CMAKE_CURRENT_LIST_DIR}/image-avx.h"
@@ -92,4 +110,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/stream.h"
         "${CMAKE_CURRENT_LIST_DIR}/sync.h"
         "${CMAKE_CURRENT_LIST_DIR}/types.h"
+        "${CMAKE_CURRENT_LIST_DIR}/command_transfer.h"
 )

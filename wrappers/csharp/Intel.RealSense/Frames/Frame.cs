@@ -181,6 +181,17 @@ namespace Intel.RealSense
             }
         }
 
+        /// <summary>Gets the sensor owning the frame</summary>
+        /// <value>the pointer to the sensor owning the frame</value>
+        public IntPtr Sensor
+        {
+            get
+            {
+                object error;
+                return NativeMethods.rs2_get_frame_sensor(Handle, out error);
+            }
+        }
+
         /// <summary>Gets the timestamp domain from frame handle. timestamps can only be comparable if they are in common domain</summary>
         /// <remarks>
         /// (for example, depth timestamp might come from system time while color timestamp might come from the device)

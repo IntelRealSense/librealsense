@@ -53,13 +53,20 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 */
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
 
- /**
+/**
 * Creates depth thresholding processing block
 * By controlling min and max options on the block, one could filter out depth values
 * that are either too large or too small, as a software post-processing step
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_threshold(rs2_error** error);
+
+/**
+* Creates depth units transformation processing block
+* All of the pixels are transformed from depth units into meters.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_units_transform(rs2_error** error);
 
 /**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
@@ -185,6 +192,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
 * Creates Align processing block.
+* \param[in] align_to   stream type to be used as the target of frameset alignment
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);

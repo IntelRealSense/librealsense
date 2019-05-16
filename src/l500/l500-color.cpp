@@ -13,10 +13,13 @@ namespace librealsense
     {
         auto&& backend = ctx->get_backend();
 
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ivcam2::l500_timestamp_reader_from_metadata(backend.create_time_service()));
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto color_ep = std::make_shared<l500_color_sensor>(this, ctx->get_backend().create_uvc_device(color_devices_info.front()),
-            std::unique_ptr<frame_timestamp_reader>(new ivcam2::l500_timestamp_reader_from_metadata(backend.create_time_service())),
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             ctx);
 
+        color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         color_ep->register_pixel_format(pf_yuy2);
         color_ep->register_pixel_format(pf_yuyv);
 

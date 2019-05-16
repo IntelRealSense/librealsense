@@ -12,14 +12,14 @@
 using namespace librealsense;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
+    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
     m_context(ctx),
     m_is_started(false),
     m_is_paused(false),
     m_sample_rate(1),
     m_real_time(true),
     m_prev_timestamp(0),
-    m_last_published_timestamp(0),
-    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); })
+    m_last_published_timestamp(0)
 {
     if (serializer == nullptr)
     {

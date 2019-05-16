@@ -14,9 +14,8 @@ namespace librealsense
         void preprocess() override;
         const float3 * depth_to_points(
             rs2::points output,
-            uint8_t* image, 
             const rs2_intrinsics &depth_intrinsics, 
-            const uint16_t * depth_image, 
+            const rs2::depth_frame& depth_frame, 
             float depth_scale) override;
         void get_texture_map(
             rs2::points output,
@@ -25,7 +24,6 @@ namespace librealsense
             const unsigned int height,
             const rs2_intrinsics &other_intrinsics,
             const rs2_extrinsics& extr,
-            float2* tex_ptr,
             float2* pixels_ptr) override;
 
         std::vector<float> _pre_compute_map_x;

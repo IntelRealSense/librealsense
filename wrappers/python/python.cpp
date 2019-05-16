@@ -622,6 +622,8 @@ PYBIND11_MODULE(NAME, m) {
     threshold.def(py::init<>())
 		.def(py::init<float, float>(), "min_dist"_a, "max_dist"_a);
 
+	py::class_<rs2::units_transform, rs2::filter> units_transform(m, "units_transform");
+	units_transform.def(py::init<>());
 
     py::class_<rs2::colorizer, rs2::filter> colorizer(m, "colorizer");
     colorizer.def(py::init<>())
