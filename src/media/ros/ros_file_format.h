@@ -127,10 +127,38 @@ namespace librealsense
 
     inline void rot2quat(const float(&r)[9], geometry_msgs::Transform::_rotation_type& q)
     {
-        q.w = sqrtf(1 + r[0] + r[4] + r[8]) / 2; // qw= sqrt(1 + m00 + m11 + m22) /2
-        q.x = (r[5] - r[7]) / (4 * q.w);         // qx = (m21 - m12)/( 4 *qw)
-        q.y = (r[6] - r[2]) / (4 * q.w);         // qy = (m02 - m20)/( 4 *qw)
-        q.z = (r[1] - r[3]) / (4 * q.w);         // qz = (m10 - m01)/( 4 *qw)
+        auto m = (float(&)[3][3])r; // column major
+        float tr[4];
+        tr[0] = ( m[0][0] + m[1][1] + m[2][2]);
+        tr[1] = ( m[0][0] - m[1][1] - m[2][2]);
+        tr[2] = (-m[0][0] + m[1][1] - m[2][2]);
+        tr[3] = (-m[0][0] - m[1][1] + m[2][2]);
+        if (tr[0] >= tr[1] && tr[0]>= tr[2] && tr[0] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[0] + 1);
+            q.w = s/4;
+            q.x = (m[2][1] - m[1][2]) / s;
+            q.y = (m[0][2] - m[2][0]) / s;
+            q.z = (m[1][0] - m[0][1]) / s;
+        } else if (tr[1] >= tr[2] && tr[1] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[1] + 1);
+            q.w = (m[2][1] - m[1][2]) / s;
+            q.x = s/4;
+            q.y = (m[1][0] + m[0][1]) / s;
+            q.z = (m[2][0] + m[0][2]) / s;
+        } else if (tr[2] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[2] + 1);
+            q.w = (m[0][2] - m[2][0]) / s;
+            q.x = (m[1][0] + m[0][1]) / s;
+            q.y = s/4;
+            q.z = (m[1][2] + m[2][1]) / s;
+        } else {
+            float s = 2 * std::sqrt(tr[3] + 1);
+            q.w = (m[1][0] - m[0][1]) / s;
+            q.x = (m[0][2] + m[2][0]) / s;
+            q.y = (m[1][2] + m[2][1]) / s;
+            q.z = s/4;
+        }
+        q.w = -q.w; // column major
     }
 
     inline bool convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
