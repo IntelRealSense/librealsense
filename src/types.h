@@ -486,6 +486,10 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
     RS2_ENUM_HELPERS(rs2_matchers, MATCHER)
+
+    template<typename T>
+    T from_string(const char* str);
+
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////

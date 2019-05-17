@@ -52,6 +52,7 @@ typedef enum rs2_distortion
     RS2_DISTORTION_COUNT                   /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_distortion;
 const char* rs2_distortion_to_string(rs2_distortion distortion);
+rs2_distortion rs2_distortion_from_string(const char* str);
 
 /** \brief Video stream intrinsics. */
 typedef struct rs2_intrinsics

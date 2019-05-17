@@ -1133,7 +1133,11 @@ namespace librealsense
         intrinsics.ppx = ci.K[2];
         intrinsics.fy = ci.K[4];
         intrinsics.ppy = ci.K[5];
-        memcpy(intrinsics.coeffs, ci.D.data(), sizeof(intrinsics.coeffs));
+        intrinsics.model = rs2_distortion_from_string(ci.distortion_model.c_str());
+        for (size_t i = 0; i < ci.D.size() && i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]); ++i)
+        {
+            intrinsics.coeffs[i] = ci.D[i];
+        }
         profile->set_intrinsics([intrinsics]() {return intrinsics; });
         profile->set_stream_index(sd.index);
         profile->set_stream_type(sd.type);

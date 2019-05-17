@@ -9,6 +9,7 @@
 #include <numeric>
 #include <fstream>
 #include <cmath>
+#include <cstring>
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
@@ -327,6 +328,20 @@ namespace librealsense
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
+    }
+
+    template<>
+    rs2_distortion from_string<rs2_distortion>(const char* str)
+    {
+#define CASE(X) { if (strcmp(str, get_string(RS2_DISTORTION_##X)) == 0) return RS2_DISTORTION_##X; }
+        CASE(NONE)
+        CASE(MODIFIED_BROWN_CONRADY)
+        CASE(INVERSE_BROWN_CONRADY)
+        CASE(FTHETA)
+        CASE(BROWN_CONRADY)
+        CASE(KANNALA_BRANDT4)
+#undef CASE
+        assert(false); return RS2_DISTORTION_NONE;
     }
 
     const char* get_string(rs2_camera_info value)
