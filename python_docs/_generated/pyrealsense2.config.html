@@ -138,14 +138,14 @@ This method is required if the application needs to set device or sensor setting
 <code class="descname">enable_device_from_file</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>file_name: str</em>, <em>repeat_playback: bool=True</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_device_from_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select a recorded device from a file, to be used by the pipeline through playback.
 The device available streams are as recorded to the file, and resolve() considers only this device and configuration as available.
-This request cannot be used if enable_record_to_file() is called for the current config, and vise versa</p>
+This request cannot be used if enable_record_to_file() is called for the current config, and vice versa.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyrealsense2.config.enable_record_to_file">
 <code class="descname">enable_record_to_file</code><span class="sig-paren">(</span><em>self: pyrealsense2.config</em>, <em>file_name: str</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.config.enable_record_to_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Requires that the resolved device would be recorded to file.
-This request cannot be used if enable_device_from_file() is called for the current config, and vise versa as available.</p>
+This request cannot be used if enable_device_from_file() is called for the current config, and vice versa as available.</p>
 </dd></dl>
 
 <dl class="method">
@@ -166,19 +166,19 @@ Before resolve() is called, no conflict check is done.</p>
 <ol class="arabic simple" start="2">
 <li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, stream_index: int=-1) -&gt; None</li>
 </ol>
-<p>Stream type and possibly also stream index</p>
+<p>Stream type and possibly also stream index. Other parameters are resolved internally.</p>
 <ol class="arabic simple" start="3">
 <li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, format: pyrealsense2.format, framerate: int=0) -&gt; None</li>
 </ol>
-<p>Stream type and format, and possibly frame rate</p>
+<p>Stream type and format, and possibly frame rate. Other parameters are resolved internally.</p>
 <ol class="arabic simple" start="4">
 <li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, width: int, height: int, format: pyrealsense2.format=format.any, framerate: int=0) -&gt; None</li>
 </ol>
-<p>Stream type and resolution, and possibly format and frame rate</p>
+<p>Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.</p>
 <ol class="arabic simple" start="5">
 <li>enable_stream(self: pyrealsense2.config, stream_type: pyrealsense2.stream, stream_index: int, format: pyrealsense2.format, framerate: int=0) -&gt; None</li>
 </ol>
-<p>Stream type, index, and format, and possibly framerate</p>
+<p>Stream type, index, and format, and possibly framerate. Other parameters are resolved internally.</p>
 </dd></dl>
 
 <dl class="method">

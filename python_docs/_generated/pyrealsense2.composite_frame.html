@@ -49,7 +49,7 @@
 <dl class="class">
 <dt id="pyrealsense2.composite_frame">
 <em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">composite_frame</code><a class="headerlink" href="#pyrealsense2.composite_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extend frame class with additional frameset related attributes and functions</p>
+<dd><p>Extends the frame class with additional frameset related attributes and functions</p>
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em>, <em>arg0: pyrealsense2.frame</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.composite_frame.__init__" title="Permalink to this definition">¶</a></dt>
@@ -87,22 +87,22 @@
 <td></td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.composite_frame.first" title="pyrealsense2.composite_frame.first"><code class="xref py py-obj docutils literal"><span class="pre">first</span></code></a>((self:&nbsp;pyrealsense2.composite_frame,&nbsp;...)</td>
-<td>Retrieve the first frame of specific stream type, if no frame found, an error will be thrown.</td>
+<td>Retrieve the first frame of a specific stream type and optionally with a specific format.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.composite_frame.first_or_default" title="pyrealsense2.composite_frame.first_or_default"><code class="xref py py-obj docutils literal"><span class="pre">first_or_default</span></code></a>(...)</td>
-<td>Retrieve the first frame of specific stream and format types, if no frame found, return the default one.</td>
+<td>Retrieve the first frame of a specific stream and optionally with a specific format.</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.composite_frame.foreach" title="pyrealsense2.composite_frame.foreach"><code class="xref py py-obj docutils literal"><span class="pre">foreach</span></code></a>((self:&nbsp;pyrealsense2.composite_frame,&nbsp;...)</td>
 <td>Extract internal frame handles from the frameset and invoke the action function</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.composite_frame.get_color_frame" title="pyrealsense2.composite_frame.get_color_frame"><code class="xref py py-obj docutils literal"><span class="pre">get_color_frame</span></code></a>(...)</td>
-<td>Retrieve the first color frame, if no frame found, search the color frame from IR stream.</td>
+<td>Retrieve the first color frame, if no frame is found, search for the color frame from IR stream.</td>
 </tr>
 <tr class="row-odd"><td><code class="xref py py-obj docutils literal"><span class="pre">get_data</span></code>(...)</td>
 <td>Retrieve data from the frame handle.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.composite_frame.get_depth_frame" title="pyrealsense2.composite_frame.get_depth_frame"><code class="xref py py-obj docutils literal"><span class="pre">get_depth_frame</span></code></a>(...)</td>
-<td>Retrieve the first depth frame, if no frame found, return the default one.</td>
+<td>Retrieve the first depth frame, if no frame is found, return an empty frame instance.</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.composite_frame.get_fisheye_frame" title="pyrealsense2.composite_frame.get_fisheye_frame"><code class="xref py py-obj docutils literal"><span class="pre">get_fisheye_frame</span></code></a>(...)</td>
 <td>Retrieve the fisheye monochrome video frame</td>
@@ -117,7 +117,7 @@
 <td>Retrieve the timestamp domain.</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.composite_frame.get_infrared_frame" title="pyrealsense2.composite_frame.get_infrared_frame"><code class="xref py py-obj docutils literal"><span class="pre">get_infrared_frame</span></code></a>(...)</td>
-<td>Retrieve the first infrared frame, if no frame found, return the default one (frame instance)</td>
+<td>Retrieve the first infrared frame, if no frame is found, return an empty frame instance.</td>
 </tr>
 <tr class="row-even"><td><a class="reference internal" href="#pyrealsense2.composite_frame.get_pose_frame" title="pyrealsense2.composite_frame.get_pose_frame"><code class="xref py py-obj docutils literal"><span class="pre">get_pose_frame</span></code></a>(*args,&nbsp;**kwargs)</td>
 <td>Overloaded function.</td>
@@ -190,13 +190,13 @@
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.first">
 <code class="descname">first</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em>, <em>s: pyrealsense2.stream</em>, <em>f: pyrealsense2.format=format.any</em><span class="sig-paren">)</span> &rarr; pyrealsense2.frame<a class="headerlink" href="#pyrealsense2.composite_frame.first" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the first frame of specific stream type, if no frame found, an error will be thrown.</p>
+<dd><p>Retrieve the first frame of a specific stream type and optionally with a specific format. If no frame is found, an error will be thrown.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.first_or_default">
 <code class="descname">first_or_default</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em>, <em>s: pyrealsense2.stream</em>, <em>f: pyrealsense2.format=format.any</em><span class="sig-paren">)</span> &rarr; pyrealsense2.frame<a class="headerlink" href="#pyrealsense2.composite_frame.first_or_default" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the first frame of specific stream and format types, if no frame found, return the default one. (frame instance)</p>
+<dd><p>Retrieve the first frame of a specific stream and optionally with a specific format. If no frame is found, return an empty frame instance.</p>
 </dd></dl>
 
 <dl class="method">
@@ -208,13 +208,13 @@
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.get_color_frame">
 <code class="descname">get_color_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em><span class="sig-paren">)</span> &rarr; pyrealsense2.video_frame<a class="headerlink" href="#pyrealsense2.composite_frame.get_color_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the first color frame, if no frame found, search the color frame from IR stream. If one still can&#8217;t be found, return the default one. (frame instance)</p>
+<dd><p>Retrieve the first color frame, if no frame is found, search for the color frame from IR stream. If one still can&#8217;t be found, return an empty frame instance.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.get_depth_frame">
 <code class="descname">get_depth_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em><span class="sig-paren">)</span> &rarr; rs2::depth_frame<a class="headerlink" href="#pyrealsense2.composite_frame.get_depth_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the first depth frame, if no frame found, return the default one. (frame instance)</p>
+<dd><p>Retrieve the first depth frame, if no frame is found, return an empty frame instance.</p>
 </dd></dl>
 
 <dl class="method">
@@ -226,7 +226,7 @@
 <dl class="method">
 <dt id="pyrealsense2.composite_frame.get_infrared_frame">
 <code class="descname">get_infrared_frame</code><span class="sig-paren">(</span><em>self: pyrealsense2.composite_frame</em>, <em>index: int=0</em><span class="sig-paren">)</span> &rarr; pyrealsense2.video_frame<a class="headerlink" href="#pyrealsense2.composite_frame.get_infrared_frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the first infrared frame, if no frame found, return the default one (frame instance)</p>
+<dd><p>Retrieve the first infrared frame, if no frame is found, return an empty frame instance.</p>
 </dd></dl>
 
 <dl class="method">

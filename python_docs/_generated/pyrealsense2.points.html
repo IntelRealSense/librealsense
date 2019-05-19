@@ -49,7 +49,7 @@
 <dl class="class">
 <dt id="pyrealsense2.points">
 <em class="property">class </em><code class="descclassname">pyrealsense2.</code><code class="descname">points</code><a class="headerlink" href="#pyrealsense2.points" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extend frame class with additional point cloud related attributes and functions.</p>
+<dd><p>Extends the frame class with additional point cloud related attributes and functions.</p>
 <dl class="method">
 <dt id="pyrealsense2.points.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyrealsense2.points.__init__" title="Permalink to this definition">¶</a></dt>
@@ -92,7 +92,7 @@
 <td></td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.points.export_to_ply" title="pyrealsense2.points.export_to_ply"><code class="xref py py-obj docutils literal"><span class="pre">export_to_ply</span></code></a>((self:&nbsp;pyrealsense2.points,&nbsp;...)</td>
-<td>Export the point cloud to PLY file</td>
+<td>Export the point cloud to a PLY file</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">get_data</span></code>(...)</td>
 <td>Retrieve data from the frame handle.</td>
@@ -116,7 +116,7 @@
 <td>Retrieve the time at which the frame was captured</td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="#pyrealsense2.points.get_vertices" title="pyrealsense2.points.get_vertices"><code class="xref py py-obj docutils literal"><span class="pre">get_vertices</span></code></a>((self:&nbsp;pyrealsense2.points,&nbsp;...)</td>
-<td>Retrieve the vertices for the point cloud</td>
+<td>Retrieve the vertices of the point cloud</td>
 </tr>
 <tr class="row-even"><td><code class="xref py py-obj docutils literal"><span class="pre">is_depth_frame</span></code>(...)</td>
 <td></td>
@@ -180,7 +180,7 @@
 <dl class="method">
 <dt id="pyrealsense2.points.export_to_ply">
 <code class="descname">export_to_ply</code><span class="sig-paren">(</span><em>self: pyrealsense2.points</em>, <em>arg0: str</em>, <em>arg1: pyrealsense2.video_frame</em><span class="sig-paren">)</span> &rarr; None<a class="headerlink" href="#pyrealsense2.points.export_to_ply" title="Permalink to this definition">¶</a></dt>
-<dd><p>Export the point cloud to PLY file</p>
+<dd><p>Export the point cloud to a PLY file</p>
 </dd></dl>
 
 <dl class="method">
@@ -192,7 +192,7 @@
 <dl class="method">
 <dt id="pyrealsense2.points.get_vertices">
 <code class="descname">get_vertices</code><span class="sig-paren">(</span><em>self: pyrealsense2.points</em>, <em>dims: int=1</em><span class="sig-paren">)</span> &rarr; pyrealsense2.BufData<a class="headerlink" href="#pyrealsense2.points.get_vertices" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve the vertices for the point cloud</p>
+<dd><p>Retrieve the vertices of the point cloud</p>
 </dd></dl>
 
 <dl class="method">
