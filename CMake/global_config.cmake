@@ -63,6 +63,10 @@ macro(global_set_flags)
         include(CMake/cuda_config.cmake)
     endif()
 
+    if(BUILD_PYTHON_BINDINGS)
+        include(libusb_config)
+    endif()
+
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
