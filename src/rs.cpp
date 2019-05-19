@@ -119,10 +119,11 @@ struct rs2_error
     rs2_exception_type exception_type;
 };
 
-rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type)
+rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
     return new rs2_error{ what, name, args, type };
 }
+NOEXCEPT_RETURN(nullptr, what, name, args, type)
 
 void notifications_processor::raise_notification(const notification n)
 {
@@ -2262,7 +2263,7 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
     std::vector<uint8_t> recv_buffer;
     if (pose_snr->export_relocalization_map(recv_buffer))
         return new rs2_raw_data_buffer{ recv_buffer };
-    return nullptr;
+    return (rs2_raw_data_buffer*)nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
