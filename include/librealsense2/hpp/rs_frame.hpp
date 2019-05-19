@@ -32,7 +32,7 @@ namespace rs2
         */
         int stream_index() const { return _index; }
         /**
-        * Return the stream format
+        * Return the stream type
         * \return rs2_stream - stream type
         */
         rs2_stream stream_type() const { return _type; }
@@ -53,7 +53,7 @@ namespace rs2
         int unique_id() const { return _uid; }
 
         /**
-        * Clone current profile and change the type, index and format to input parameters
+        * Clone the current profile and change the type, index and format to input parameters
         * \param[in] type - will change the stream type from the cloned profile.
         * \param[in] index - will change the stream index from the cloned profile.
         * \param[in] format - will change the stream format from the cloned profile.
@@ -118,13 +118,13 @@ namespace rs2
         }
 
         /**
-        * Checking if stream profile is marked/assigned as default, the meaning is that the profile will be selected when the user will request stream configuration using wildcards (RS2_DEPTH, -1,-1,...
+        * Checks if stream profile is marked/assigned as default, meaning that the profile will be selected when the user requests stream configuration using wildcards (RS2_DEPTH, -1,-1,...
         * \return bool - true or false.
         */
         bool is_default() const { return _default; }
 
         /**
-        * Parenthesis operator check that the profile is valid
+        * Checks if the profile is valid
         * \return bool - true or false.
         */
         operator bool() const { return _profile != nullptr; }
@@ -153,8 +153,8 @@ namespace rs2
             return res;
         }
         /**
-        * Assign extrinsic transformation parameters to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, and librealsense is responsible to retrieve and assign these parameters where appropriate.
-        * The specific function is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.
+        * Assign extrinsic transformation parameters to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, and librealsense is responsible for retrieving and assigning these parameters where appropriate.
+        * This specific function is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.
         * \param[in] stream_profile to - which stream profile to be registered with the extrinsic.
         * \param[in] rs2_extrinsics extrinsics - the extrinsics to be registered.
         */
@@ -201,7 +201,7 @@ namespace rs2
     {
     public:
         /**
-        * Video stream profile instance which contans additional video attributes
+        * Stream profile instance which contains additional video attributes
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit video_stream_profile(const stream_profile& sp)
@@ -231,7 +231,7 @@ namespace rs2
             return _height;
         }
         /**
-        * Get stream profile instrinsics attribute
+        * Get stream profile instrinsics attributes
         * \return rs2_intrinsics - stream intrinsics.
         */
         rs2_intrinsics get_intrinsics() const
@@ -253,7 +253,7 @@ namespace rs2
     {
     public:
         /**
-        * Motion stream profile instance which contans IMU-specific intrinsic
+        * Stream profile instance which contains IMU-specific intrinsics.
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit motion_stream_profile(const stream_profile& sp)
@@ -407,7 +407,7 @@ namespace rs2
         void keep() { rs2_keep_frame(frame_ref); }
 
         /**
-        * Parenthesis operator check internal frame handle is valid.
+        * Parenthesis operator check if internal frame handle is valid.
         * \return bool - true or false.
         */
         operator bool() const { return frame_ref != nullptr; }
@@ -579,7 +579,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional video related attributs/functions
+        * Extends the frame class with additional video related attributes and functions
         * \param[in] frame - existing frame instance
         */
         video_frame(const frame& f)
@@ -662,12 +662,12 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional point cloud related attributs/functions
+        * Extends the frame class with additional point cloud related attributes and functions
         */
         points() : frame(), _size(0) {}
 
         /**
-        * Inherit frame class with additional point cloud related attributs/functions
+        * Extends the frame class with additional point cloud related attributes and functions
         * \param[in] frame - existing frame instance
         */
         points(const frame& f)
@@ -687,7 +687,7 @@ namespace rs2
             }
         }
         /**
-        * Retrieve back the vertices
+        * Retrieve the vertices of the point cloud
         * \param[in] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
@@ -699,7 +699,7 @@ namespace rs2
         }
 
         /**
-        * Export current point cloud to PLY file
+        * Export the point cloud to a PLY file
         * \param[in] string fname - file name of the PLY to be saved
         * \param[in] video_frame texture - the texture for the PLY.
         */
@@ -712,7 +712,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * return the texture coordinate(uv map) for the point cloud
+        * Retrieve the texture coordinates (uv map) for the point cloud
         * \return texture_coordinate* - pointer of texture coordinates.
         */
         const texture_coordinate* get_texture_coordinates() const
@@ -736,7 +736,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit video_frame class with additional depth related attributs/functions
+        * Extends the video_frame class with additional depth related attributes and functions
         * \param[in] frame - existing frame instance
         */
         depth_frame(const frame& f)
@@ -751,10 +751,10 @@ namespace rs2
         }
 
         /**
-        * Return the distance between two depth pixels
-        * \param[in] int x - first pixel position.
-        * \param[in] int y - second pixel position.
-        * \return float - distance between to points.
+        * Provide the depth in meters at the given pixel
+        * \param[in] int x - pixel's x coordinate.
+        * \param[in] int y - pixel's y coordinate.
+        * \return float - depth in metric units at given pixel
         */
         float get_distance(int x, int y) const
         {
@@ -799,7 +799,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional motion related attributs/functions
+        * Extends the frame class with additional motion related attributes and functions
         * \param[in] frame - existing frame instance
         */
         motion_frame(const frame& f)
@@ -813,7 +813,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the motion data from IMU sensor
+        * Retrieve the motion data from IMU sensor
         * \return rs2_vector - 3D vector in Euclidean coordinate space.
         */
         rs2_vector get_motion_data() const
@@ -827,7 +827,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional pose related attributs/functions
+        * Extends the frame class with additional pose related attributes and functions
         * \param[in] frame - existing frame instance
         */
         pose_frame(const frame& f)
@@ -841,7 +841,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the pose data from T2xx position tracking sensor
+        * Retrieve the pose data from T2xx position tracking sensor
         * \return rs2_pose - orientation and velocity data.
         */
         rs2_pose get_pose_data() const
@@ -858,11 +858,11 @@ namespace rs2
     {
     public:
         /**
-        * Inherit frame class with additional frameset related attributs/functions
+        * Extends the frame class with additional frameset related attributes and functions
         */
         frameset() :_size(0) {};
         /**
-        * Inherit frame class with additional frameset related attributs/functions
+        * Extends the frame class with additional frameset related attributes and functions
         * \param[in] frame - existing frame instance
         */
         frameset(const frame& f)
@@ -884,7 +884,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first frame of specific stream and format types, if no frame found, return the default one(frame instance)
+        * Retrieve the first frame of a specific stream and optionally with a specific format. If no frame is found, return an empty frame instance.
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -901,7 +901,7 @@ namespace rs2
             return result;
         }
         /**
-        * Retrieve back the first frame of specific stream type, if no frame found, error will be thrown
+        * Retrieve the first frame of a specific stream type and optionally with a specific format. If no frame is found, an error will be thrown.
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -914,7 +914,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve back the first depth frame, if no frame found, return the default one(frame instance)
+        * Retrieve the first depth frame, if no frame is found, return an empty frame instance.
         * \return depth_frame - first found depth frame.
         */
         depth_frame get_depth_frame() const
@@ -923,7 +923,7 @@ namespace rs2
             return f.as<depth_frame>();
         }
         /**
-        * Retrieve back the first color frame, if no frame found, search the color frame from IR stream. If still can't find, return the default one(frame instance)
+        * Retrieve the first color frame, if no frame is found, search for the color frame from IR stream. If one still can't be found, return an empty frame instance.
         * \return video_frame - first found color frame.
         */
         video_frame get_color_frame() const
@@ -939,7 +939,7 @@ namespace rs2
             return f;
         }
         /**
-        * Retrieve back the first infrared frame, return the default one(frame instance)
+        * Retrieve the first infrared frame, if no frame is found, return an empty frame instance.
         * \param[in] size_t index
         * \return video_frame - first found infrared frame.
         */
@@ -1014,7 +1014,7 @@ namespace rs2
         }
 
         /**
-        * Template function, extract internal frame handle from the frameset and invoke the action function
+        * Template function, extract internal frame handles from the frameset and invoke the action function
         * \param[in] action - instance with () operator implemented will be invoke after frame extraction.
         */
         template<class T>

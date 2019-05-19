@@ -145,7 +145,7 @@ namespace rs2
         /**
         * Register to receive callback from playback device upon its status changes
         *
-        * Callbacks are invoked from the reading thread, any heavy processing in the callback handler will affect
+        * Callbacks are invoked from the reading thread, and as such any heavy processing in the callback handler will affect
         * the reading thread and may cause frame drops\ high latency
         * \param[in] callback   A callback handler that will be invoked when the playback status changes, can be any callable object accepting rs2_playback_status
         */
@@ -246,7 +246,7 @@ namespace rs2
         }
 
         /**
-        * Unpauses the recording device, making it resume recording
+        * Unpauses the recording device, making it resume recording.
         */
         void resume()
         {
