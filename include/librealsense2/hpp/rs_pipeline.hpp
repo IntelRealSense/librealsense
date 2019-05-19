@@ -160,25 +160,51 @@ namespace rs2
             error::handle(e);
         }
 
-        // Stream type and possibly also stream index
+        /**
+        * Stream type and possibly also stream index. Other parameters are resolved internally.
+        *
+        * \param[in] stream_type    Stream type to be enabled
+        * \param[in] stream_index   Stream index, used for multiple streams of the same type. -1 indicates any.
+        */
         void enable_stream(rs2_stream stream_type, int stream_index = -1)
         {
             enable_stream(stream_type, stream_index, 0, 0, RS2_FORMAT_ANY, 0);
         }
 
-        // Stream type and resolution, and possibly format and frame rate
+        /**
+        * Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.
+        *
+        * \param[in] stream_type    Stream type to be enabled
+        * \param[in] width          Stream image width - for images streams. 0 indicates any.
+        * \param[in] height         Stream image height - for images streams. 0 indicates any.
+        * \param[in] format         Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+        * \param[in] framerate      Stream frames per second. 0 indicates any.
+        */
         void enable_stream(rs2_stream stream_type, int width, int height, rs2_format format = RS2_FORMAT_ANY, int framerate = 0)
         {
             enable_stream(stream_type, -1, width, height, format, framerate);
         }
 
-        // Stream type and format, and possibly frame rate
+        /**
+        * Stream type and format, and possibly frame rate. Other parameters are resolved internally.
+        *
+        * \param[in] stream_type    Stream type to be enabled
+        * \param[in] format         Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+        * \param[in] framerate      Stream frames per second. 0 indicates any.
+        */
         void enable_stream(rs2_stream stream_type, rs2_format format, int framerate = 0)
         {
             enable_stream(stream_type, -1, 0, 0, format, framerate);
         }
 
-        // Stream type, index, and format, and possibly framerate
+        /**
+        * Stream type, index, and format, and possibly framerate. Other parameters are resolved internally.
+        *
+        * \param[in] stream_type    Stream type to be enabled
+        * \param[in] stream_index   Stream index, used for multiple streams of the same type. -1 indicates any.
+        * \param[in] format         Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any.
+        * \param[in] framerate      Stream frames per second. 0 indicates any.
+        */
         void enable_stream(rs2_stream stream_type, int stream_index, rs2_format format, int framerate = 0)
         {
             enable_stream(stream_type, stream_index, 0, 0, format, framerate);

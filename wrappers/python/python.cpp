@@ -528,7 +528,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame", "Extends the video_frame class with additional depth related attributes and functions.");
     depth_frame.def(py::init<rs2::frame>())
-        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in metric units at the given pixel");
+        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in meters at the given pixel");
 
     /* rs2_processing.hpp */
     py::class_<rs2::filter_interface> filter_interface(m, "filter_interface", "Interface for frame filtering functionality");
@@ -1001,10 +1001,10 @@ PYBIND11_MODULE(NAME, m) {
              "Upon calling resolve(), the config checks for conflicts between the application configuration requests and the attached computer vision "
              "modules and processing blocks requirements, and fails if conflicts are found.\n"
              "Before resolve() is called, no conflict check is done.", "stream_type"_a, "stream_index"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "Stream type and possibly also stream index", "stream_type"_a, "stream_index"_a = -1)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "Stream type and format, and possibly frame rate", "stream_type"_a, "format"_a, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type and resolution, and possibly format and frame rate", "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
-        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type, index, and format, and possibly framerate", "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int)) &rs2::config::enable_stream, "Stream type and possibly also stream index. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a = -1)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, rs2_format, int))&rs2::config::enable_stream, "Stream type and format, and possibly frame rate. Other parameters are resolved internally.", "stream_type"_a, "format"_a, "framerate"_a = 0)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type and resolution, and possibly format and frame rate. Other parameters are resolved internally.", "stream_type"_a, "width"_a, "height"_a, "format"_a = RS2_FORMAT_ANY, "framerate"_a = 0)
+        .def("enable_stream", (void (rs2::config::*)(rs2_stream, int, rs2_format, int)) &rs2::config::enable_stream, "Stream type, index, and format, and possibly framerate. Other parameters are resolved internally.", "stream_type"_a, "stream_index"_a, "format"_a, "framerate"_a = 0)
         .def("enable_all_streams", &rs2::config::enable_all_streams, "Enable all device streams explicitly.\n"
              "The conditions and behavior of this method are similar to those of enable_stream().\n"
              "This filter enables all raw streams of the selected device. The device is either selected explicitly by the application, "

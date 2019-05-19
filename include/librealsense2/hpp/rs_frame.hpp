@@ -742,7 +742,7 @@ namespace rs2
         }
 
         /**
-        * Provide the depth in metric units at the given pixel
+        * Provide the depth in meters at the given pixel
         * \param[in] int x - pixel's x coordinate.
         * \param[in] int y - pixel's y coordinate.
         * \return float - depth in metric units at given pixel
