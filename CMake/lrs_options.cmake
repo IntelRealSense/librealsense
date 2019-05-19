@@ -1,6 +1,7 @@
 option(ENABLE_CCACHE "Build with ccache." ON)
 option(BUILD_WITH_CUDA "Enable CUDA" OFF)
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools. Implies BUILD_GLSL_EXTENSIONS" ON)
+option(BUILD_GLSL_EXTENSIONS "Build GLSL extensions API" ON)
 option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
 option(ENABLE_ZERO_COPY "Enable zero copy functionality" OFF)
 option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" ON)
