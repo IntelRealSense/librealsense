@@ -118,13 +118,13 @@ namespace rs2
         }
 
         /**
-        * Checking if stream profile is marked/assigned as default, meaning that the profile will be selected when the user requests stream configuration using wildcards (RS2_DEPTH, -1,-1,...
+        * Checks if stream profile is marked/assigned as default, meaning that the profile will be selected when the user requests stream configuration using wildcards (RS2_DEPTH, -1,-1,...
         * \return bool - true or false.
         */
         bool is_default() const { return _default; }
 
         /**
-        * Parenthesis operator check that the profile is valid
+        * Checks if the profile is valid
         * \return bool - true or false.
         */
         operator bool() const { return _profile != nullptr; }
@@ -570,7 +570,7 @@ namespace rs2
     {
     public:
         /**
-        * Extend frame class with additional video related attributes and functions
+        * Extends the frame class with additional video related attributes and functions
         * \param[in] frame - existing frame instance
         */
         video_frame(const frame& f)
@@ -653,12 +653,12 @@ namespace rs2
     {
     public:
         /**
-        * Extend frame class with additional point cloud related attributes and functions
+        * Extends the frame class with additional point cloud related attributes and functions
         */
         points() : frame(), _size(0) {}
 
         /**
-        * Extend frame class with additional point cloud related attributes and functions
+        * Extends the frame class with additional point cloud related attributes and functions
         * \param[in] frame - existing frame instance
         */
         points(const frame& f)
@@ -678,7 +678,7 @@ namespace rs2
             }
         }
         /**
-        * Retrieve the vertices for the point cloud
+        * Retrieve the vertices of the point cloud
         * \param[in] vertex* - pointer of vertex sturcture
         */
         const vertex* get_vertices() const
@@ -690,7 +690,7 @@ namespace rs2
         }
 
         /**
-        * Export the point cloud to PLY file
+        * Export the point cloud to a PLY file
         * \param[in] string fname - file name of the PLY to be saved
         * \param[in] video_frame texture - the texture for the PLY.
         */
@@ -727,7 +727,7 @@ namespace rs2
     {
     public:
         /**
-        * Extend video_frame class with additional depth related attributes and functions
+        * Extends the video_frame class with additional depth related attributes and functions
         * \param[in] frame - existing frame instance
         */
         depth_frame(const frame& f)
@@ -790,7 +790,7 @@ namespace rs2
     {
     public:
         /**
-        * Extends frame class with additional motion related attributes and functions
+        * Extends the frame class with additional motion related attributes and functions
         * \param[in] frame - existing frame instance
         */
         motion_frame(const frame& f)
@@ -818,7 +818,7 @@ namespace rs2
     {
     public:
         /**
-        * Extends frame class with additional pose related attributes and functions
+        * Extends the frame class with additional pose related attributes and functions
         * \param[in] frame - existing frame instance
         */
         pose_frame(const frame& f)
@@ -849,11 +849,11 @@ namespace rs2
     {
     public:
         /**
-        * Extend frame class with additional frameset related attributes and functions
+        * Extends the frame class with additional frameset related attributes and functions
         */
         frameset() :_size(0) {};
         /**
-        * Extend frame class with additional frameset related attributes and functions
+        * Extends the frame class with additional frameset related attributes and functions
         * \param[in] frame - existing frame instance
         */
         frameset(const frame& f)
@@ -875,7 +875,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve the first frame of specific stream and format types, if no frame found, return the default one (frame instance)
+        * Retrieve the first frame of a specific stream and optionally with a specific format. If no frame is found, return an empty frame instance.
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -892,7 +892,7 @@ namespace rs2
             return result;
         }
         /**
-        * Retrieve the first frame of specific stream type, if no frame found, an error will be thrown
+        * Retrieve the first frame of a specific stream type and optionally with a specific format. If no frame is found, an error will be thrown.
         * \param[in] rs2_stream s - frame to be retrieved from this stream type.
         * \param[in] rs2_format f - frame to be retrieved from this format type.
         * \return frame - first found frame with s stream type.
@@ -905,7 +905,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve the first depth frame, if no frame found, return the default one (frame instance)
+        * Retrieve the first depth frame, if no frame is found, return an empty frame instance.
         * \return depth_frame - first found depth frame.
         */
         depth_frame get_depth_frame() const
@@ -914,7 +914,7 @@ namespace rs2
             return f.as<depth_frame>();
         }
         /**
-        * Retrieve the first color frame, if no frame found, search the color frame from IR stream. If one still can't be found, return the default one (frame instance)
+        * Retrieve the first color frame, if no frame is found, search for the color frame from IR stream. If one still can't be found, return an empty frame instance.
         * \return video_frame - first found color frame.
         */
         video_frame get_color_frame() const
@@ -930,7 +930,7 @@ namespace rs2
             return f;
         }
         /**
-        * Retrieve the first infrared frame, if no frame found, return the default one (frame instance)
+        * Retrieve the first infrared frame, if no frame is found, return an empty frame instance.
         * \param[in] size_t index
         * \return video_frame - first found infrared frame.
         */

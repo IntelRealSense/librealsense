@@ -210,7 +210,7 @@ namespace rs2
         /**
         * Start the processing block with callback function on_frame to inform the application the frame is processed.
         *
-        * \param[in] on_frame      callback function for notifing the frame to be processed is ready.
+        * \param[in] on_frame      callback function for notifying the frame to be processed is ready.
         */
         template<class S>
         void start(S on_frame)
@@ -310,7 +310,7 @@ namespace rs2
     };
 
     /**
-    * Define the filter workflow, inherit this class to generate your own filter. Best understanding is to refer to the viewer class in examples.hpp
+    * Define the filter workflow, inherit this class to generate your own filter. Refer to the viewer class in examples.hpp for a more detailed example.
     */
     class filter : public processing_block, public filter_interface
     {
@@ -379,7 +379,7 @@ namespace rs2
     };
 
     /**
-    * Generates 3D point clouds based on depth frame. Can also map textures from color frame.
+    * Generates 3D point clouds based on a depth frame. Can also map textures from a color frame.
     */
     class pointcloud : public filter
     {

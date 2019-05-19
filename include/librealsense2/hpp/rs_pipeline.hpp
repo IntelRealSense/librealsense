@@ -50,7 +50,7 @@ namespace rs2
         }
 
         /**
-        * Return the stream profile enabled for the specified stream in this profile.
+        * Return the stream profile that is enabled for the specified stream in this profile.
         *
         * \param[in] stream_type     Stream type of the desired profile
         * \param[in] stream_index    Stream index of the desired profile. -1 for any matching.
@@ -216,7 +216,7 @@ namespace rs2
         * Select a recorded device from a file, to be used by the pipeline through playback.
         * The device available streams are as recorded to the file, and \c resolve() considers only this device and
         * configuration as available.
-        * This request cannot be used if \c enable_record_to_file() is called for the current config, and vise versa
+        * This request cannot be used if \c enable_record_to_file() is called for the current config, and vice versa.
         *
         * \param[in] file_name  The playback file of the device
         */
@@ -229,7 +229,7 @@ namespace rs2
 
         /**
         * Requires that the resolved device would be recorded to file.
-        * This request cannot be used if \c enable_device_from_file() is called for the current config, and vise versa
+        * This request cannot be used if \c enable_device_from_file() is called for the current config, and vice versa.
         * as available.
         *
         * \param[in] file_name  The desired file for the output record

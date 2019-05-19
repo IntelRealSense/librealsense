@@ -150,7 +150,7 @@ PYBIND11_MODULE(NAME, m) {
     BIND_ENUM(m, rs2_format, RS2_FORMAT_COUNT, "A stream's format identifies how binary data is encoded within a frame.")
     BIND_ENUM(m, rs2_notification_category, RS2_NOTIFICATION_CATEGORY_COUNT, "Category of the librealsense notification.")
     BIND_ENUM(m, rs2_log_severity, RS2_LOG_SEVERITY_COUNT, "Severity of the librealsense logger.")
-    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set / queried at any time.")
+    BIND_ENUM(m, rs2_option, RS2_OPTION_COUNT, "Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.")
     BIND_ENUM(m, rs2_timestamp_domain, RS2_TIMESTAMP_DOMAIN_COUNT, "Specifies the clock in relation to which the frame timestamp was measured.")
     BIND_ENUM(m, rs2_distortion, RS2_DISTORTION_COUNT, "Distortion model: defines how pixel coordinates should be mapped to sensor coordinates.")
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
@@ -175,7 +175,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite("fx", &rs2_intrinsics::fx, "Focal length of the image plane, as a multiple of pixel width")
         .def_readwrite("fy", &rs2_intrinsics::fy, "Focal length of the image plane, as a multiple of pixel height")
         .def_readwrite("model", &rs2_intrinsics::model, "Distortion model of the image")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients, order: k1, k2, p1, p2, k3")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_intrinsics, coeffs, float, 5), "Distortion coefficients")
         .def("__repr__", [](const rs2_intrinsics& self) {
             std::stringstream ss;
             ss << "width: " << self.width << ", ";
@@ -218,7 +218,7 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::context> context(m, "context", "Librealsense context class. Includes realsense API version.");
     context.def(py::init<>())
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
-             " snapshot of all connected devices a the time of the call.")
+             " snapshot of all connected devices at the time of the call.")
         .def_property_readonly("devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices,
                                "A static snapshot of all connected devices at time of access. Identical to calling query_devices.")
         .def("query_all_sensors", &rs2::context::query_all_sensors, "Generate a flat list of "
@@ -367,7 +367,7 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(frame, pose_frame));
         // No apply_filter?
 
-    py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame", "Extend frame class with additional video related attributes and functions.");
+    py::class_<rs2::video_frame, rs2::frame> video_frame(m, "video_frame", "Extends the frame class with additional video related attributes and functions.");
     video_frame.def(py::init<rs2::frame>())
         .def("get_width", &rs2::video_frame::get_width, "Returns image width in pixels.")
         .def_property_readonly("width", &rs2::video_frame::get_width, "Image width in pixels. Identical to calling get_width.")
@@ -413,20 +413,20 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2_pose> pose(m, "pose"); // No docstring in C++
     pose.def(py::init<>())
         .def_readwrite("translation",           &rs2_pose::translation, "X, Y, Z values of translation, in meters (relative to initial position)")
-        .def_readwrite("velocity",              &rs2_pose::velocity, "X, Y, Z values of velocity, in meter/sec")
-        .def_readwrite("acceleration",          &rs2_pose::acceleration, "X, Y, Z values of acceleration, in meter/sec^2")
+        .def_readwrite("velocity",              &rs2_pose::velocity, "X, Y, Z values of velocity, in meters/sec")
+        .def_readwrite("acceleration",          &rs2_pose::acceleration, "X, Y, Z values of acceleration, in meters/sec^2")
         .def_readwrite("rotation",              &rs2_pose::rotation, "Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position)")
         .def_readwrite("angular_velocity",      &rs2_pose::angular_velocity, "X, Y, Z values of angular velocity, in radians/sec")
         .def_readwrite("angular_acceleration",  &rs2_pose::angular_acceleration, "X, Y, Z values of angular acceleration, in radians/sec^2")
-        .def_readwrite("tracker_confidence",    &rs2_pose::tracker_confidence, "Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High")
-        .def_readwrite("mapper_confidence",     &rs2_pose::mapper_confidence, "Pose data confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High");
+        .def_readwrite("tracker_confidence",    &rs2_pose::tracker_confidence, "Pose confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High")
+        .def_readwrite("mapper_confidence",     &rs2_pose::mapper_confidence, "Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High");
 
-    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame", "Extends frame class with additional motion related attributes and functions");
+    py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame", "Extends the frame class with additional motion related attributes and functions");
     motion_frame.def(py::init<rs2::frame>())
         .def("get_motion_data", &rs2::motion_frame::get_motion_data, "Retrieve the motion data from IMU sensor.")
         .def_property_readonly("motion_data", &rs2::motion_frame::get_motion_data, "Motion data from IMU sensor. Identical to calling get_motion_data.");
 
-    py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame", "Extends frame class with additional pose related attributes and functions.");
+    py::class_<rs2::pose_frame, rs2::frame> pose_frame(m, "pose_frame", "Extends the frame class with additional pose related attributes and functions.");
     pose_frame.def(py::init<rs2::frame>())
         .def("get_pose_data", &rs2::pose_frame::get_pose_data, "Retrieve the pose data from T2xx position tracking sensor.")
         .def_property_readonly("pose_data", &rs2::pose_frame::get_pose_data, "Pose data from T2xx position tracking sensor. Identical to calling get_pose_data.");
@@ -454,7 +454,7 @@ PYBIND11_MODULE(NAME, m) {
             return oss.str();
         });
 
-    py::class_<rs2::points, rs2::frame> points(m, "points", "Extend frame class with additional point cloud related attributes and functions.");
+    py::class_<rs2::points, rs2::frame> points(m, "points", "Extends the frame class with additional point cloud related attributes and functions.");
     points.def(py::init<>())
         .def(py::init<rs2::frame>())
         .def("get_vertices", [](rs2::points& self, int dims) {
@@ -471,7 +471,7 @@ PYBIND11_MODULE(NAME, m) {
             default:
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
-        }, "Retrieve the vertices for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
+        }, "Retrieve the vertices of the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
         .def("get_texture_coordinates", [](rs2::points& self, int dims) {
             auto tex = const_cast<rs2::texture_coordinate*>(self.get_texture_coordinates());
             auto profile = self.get_profile().as<rs2::video_stream_profile>();
@@ -487,27 +487,27 @@ PYBIND11_MODULE(NAME, m) {
                 throw std::domain_error("dims arg only supports values of 1, 2 or 3");
             }
         }, "Retrieve the texture coordinates (uv map) for the point cloud", py::keep_alive<0, 1>(), "dims"_a=1)
-        .def("export_to_ply", &rs2::points::export_to_ply, "Export the point cloud to PLY file")
+        .def("export_to_ply", &rs2::points::export_to_ply, "Export the point cloud to a PLY file")
         .def("size", &rs2::points::size); // No docstring in C++
 
     // TODO: Deprecate composite_frame, replace with frameset
-    py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extend frame class with additional frameset related attributes and functions");
+    py::class_<rs2::frameset, rs2::frame> frameset(m, "composite_frame", "Extends the frame class with additional frameset related attributes and functions");
     frameset.def(py::init<rs2::frame>())
-        .def("first_or_default", &rs2::frameset::first_or_default, "Retrieve the first frame of specific stream and "
-             "format types, if no frame found, return the default one. (frame instance)", "s"_a, "f"_a = RS2_FORMAT_ANY)
-        .def("first", &rs2::frameset::first, "Retrieve the first frame of specific stream type, "
-             "if no frame found, an error will be thrown.", "s"_a, "f"_a = RS2_FORMAT_ANY)
+        .def("first_or_default", &rs2::frameset::first_or_default, "Retrieve the first frame of a specific stream and optionally with a specific format. "
+             "If no frame is found, return an empty frame instance.", "s"_a, "f"_a = RS2_FORMAT_ANY)
+        .def("first", &rs2::frameset::first, "Retrieve the first frame of a specific stream type and optionally with a specific format. "
+             "If no frame is found, an error will be thrown.", "s"_a, "f"_a = RS2_FORMAT_ANY)
         .def("size", &rs2::frameset::size, "Return the size of the frameset")
         .def("__len__", &rs2::frameset::size, "Return the size of the frameset")
         .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable) {
             self.foreach(callable);
         }, "Extract internal frame handles from the frameset and invoke the action function", "callable"_a)
         .def("__getitem__", &rs2::frameset::operator[])
-        .def("get_depth_frame", &rs2::frameset::get_depth_frame, "Retrieve the first depth frame, if no frame found, return the default one. (frame instance)")
-        .def("get_color_frame", &rs2::frameset::get_color_frame, "Retrieve the first color frame, if no frame found, search the "
-             "color frame from IR stream. If one still can't be found, return the default one. (frame instance)")
-        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "Retrieve the first infrared frame, if no frame "
-             "found, return the default one (frame instance)", "index"_a = 0)
+        .def("get_depth_frame", &rs2::frameset::get_depth_frame, "Retrieve the first depth frame, if no frame is found, return an empty frame instance.")
+        .def("get_color_frame", &rs2::frameset::get_color_frame, "Retrieve the first color frame, if no frame is found, search for the color frame from IR stream. "
+             "If one still can't be found, return an empty frame instance.")
+        .def("get_infrared_frame", &rs2::frameset::get_infrared_frame, "Retrieve the first infrared frame, if no frame is "
+             "found, return an empty frame instance.", "index"_a = 0)
         .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame, "Retrieve the fisheye monochrome video frame", "index"_a=0)
         .def("get_pose_frame", &rs2::frameset::get_pose_frame, "Retrieve the pose frame", "index"_a = 0)
         .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
@@ -526,7 +526,7 @@ PYBIND11_MODULE(NAME, m) {
             return flist;
         });
 
-    py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame", "Extend video_frame class with additional depth related attributes and functions.");
+    py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame", "Extends the video_frame class with additional depth related attributes and functions.");
     depth_frame.def(py::init<rs2::frame>())
         .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in metric units at the given pixel");
 
@@ -608,7 +608,7 @@ PYBIND11_MODULE(NAME, m) {
 
     // Not binding syncer_processing_block, not in Python API
 
-    py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud", "Generates 3D point clouds based on depth frame. Can also map textures from color frame.");
+    py::class_<rs2::pointcloud, rs2::filter> pointcloud(m, "pointcloud", "Generates 3D point clouds based on a depth frame. Can also map textures from a color frame.");
     pointcloud.def(py::init<>())
         .def(py::init<rs2_stream, int>(), "stream"_a, "index"_a = 0)
         .def("calculate", &rs2::pointcloud::calculate, "Generate the pointcloud and texture mappings of depth map.", "depth"_a)
@@ -753,7 +753,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("stream_name", &rs2::stream_profile::stream_name, "The stream's human-readable name.")
         .def("is_default", &rs2::stream_profile::is_default, "Checks if the stream profile is marked/assigned as default, "
              "meaning that the profile will be selected when the user requests stream configuration using wildcards.")
-        .def("__nonzero__", &rs2::stream_profile::operator bool, "check that the profile is valid")
+        .def("__nonzero__", &rs2::stream_profile::operator bool, "Checks if the profile is valid")
         .def("get_extrinsics_to", &rs2::stream_profile::get_extrinsics_to, "Get the extrinsic transformation between two profiles (representing physical sensors)", "to"_a)
         .def("register_extrinsics_to", &rs2::stream_profile::register_extrinsics_to, "Assign extrinsic transformation parameters "
              "to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, "
@@ -975,7 +975,7 @@ PYBIND11_MODULE(NAME, m) {
                                                        "Streams may belong to more than one sensor of the device.");
     pipeline_profile.def(py::init<>())
         .def("get_streams", &rs2::pipeline_profile::get_streams, "Return the selected streams profiles, which are enabled in this profile.")
-        .def("get_stream", &rs2::pipeline_profile::get_stream, "Return the stream profile enabled for the specified stream in this profile.", "stream_type"_a, "stream_index"_a = -1)
+        .def("get_stream", &rs2::pipeline_profile::get_stream, "Return the stream profile that is enabled for the specified stream in this profile.", "stream_type"_a, "stream_index"_a = -1)
         .def("get_device", &rs2::pipeline_profile::get_device, "Retrieve the device used by the pipeline.\n"
              "The device class provides the application access to control camera additional settings - get device "
              "information, sensor options information, options value query and set, sensor specific extensions.\n"
@@ -1015,9 +1015,9 @@ PYBIND11_MODULE(NAME, m) {
              "to enforce the pipeline to use the configured device.", "serial"_a)
         .def("enable_device_from_file", &rs2::config::enable_device_from_file, "Select a recorded device from a file, to be used by the pipeline through playback.\n"
              "The device available streams are as recorded to the file, and resolve() considers only this device and configuration as available.\n"
-             "This request cannot be used if enable_record_to_file() is called for the current config, and vise versa", "file_name"_a, "repeat_playback"_a = true)
+             "This request cannot be used if enable_record_to_file() is called for the current config, and vice versa.", "file_name"_a, "repeat_playback"_a = true)
         .def("enable_record_to_file", &rs2::config::enable_record_to_file, "Requires that the resolved device would be recorded to file.\n"
-             "This request cannot be used if enable_device_from_file() is called for the current config, and vise versa as available.", "file_name"_a)
+             "This request cannot be used if enable_device_from_file() is called for the current config, and vice versa as available.", "file_name"_a)
         .def("disable_stream", &rs2::config::disable_stream, "Disable a device stream explicitly, to remove any requests on this stream profile.\n"
              "The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the stream configuration.", "stream"_a, "index"_a = -1)
         .def("disable_all_streams", &rs2::config::disable_all_streams, "Disable all device stream explicitly, to remove any requests on the streams profiles.\n"
