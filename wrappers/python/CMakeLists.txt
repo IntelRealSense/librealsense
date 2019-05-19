@@ -17,7 +17,7 @@ set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
 install(TARGETS pyrealsense2 EXPORT realsense2Targets
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
@@ -32,7 +32,7 @@ set(RAW_RS
     ../../third-party/easyloggingpp/src/easylogging++.h
     ../../third-party/easyloggingpp/src/easylogging++.cc
     ../../src/backend.h
-    ../../src/backend.cpp 
+    ../../src/backend.cpp
 )
 
 if(UNIX)
@@ -43,7 +43,7 @@ if(UNIX)
         ../../src/libusb/enumerator-libusb.cpp
     )
 endif()
-    
+
 if(WIN32)
     list(APPEND RAW_RS
         ../../src/win/win-helpers.cpp
@@ -91,8 +91,6 @@ endif()
 
 pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 
-include(libusb_config)
-
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()
@@ -105,11 +103,11 @@ include_directories(pybackend2 ../../include)
 
 install(TARGETS pybackend2
         EXPORT realsense2Targets
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if (BUILD_PYTHON_DOCS)
-	add_subdirectory(docs)
+    add_subdirectory(docs)
 endif()
