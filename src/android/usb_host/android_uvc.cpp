@@ -938,19 +938,27 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
         }
     });
     LOG_DEBUG("Transfer thread started for endpoint address: " << strctx->endpoint);
+    bool disconnect = false;
     do {
         auto i = strctx->stream->stream_if->interface;
         uint32_t transferred = 0;
         auto sts = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, transferred, 1000);
-        if(sts != librealsense::platform::RS2_USB_STATUS_SUCCESS)
+        switch(sts)
         {
-            if(sts == librealsense::platform::RS2_USB_STATUS_NO_DEVICE)
+            case librealsense::platform::RS2_USB_STATUS_NO_DEVICE:
+                disconnect = true;
                 break;
-            continue;
+            case librealsense::platform::RS2_USB_STATUS_OVERFLOW:
+                messenger->reset_endpoint(read_ep, reset_ep_timeout);
+                break;
+            case librealsense::platform::RS2_USB_STATUS_SUCCESS:
+                strctx->stream->got_bytes = transferred;
+                usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
+                break;
+            default:
+                break;
         }
-        strctx->stream->got_bytes = transferred;
-        usbhost_uvc_process_payload(strctx->stream, &archive, &queue);
-    } while (strctx->stream->running);
+    } while (!disconnect && strctx->stream->running);
 
     int ep = strctx->endpoint;
     messenger->reset_endpoint(read_ep, reset_ep_timeout);
