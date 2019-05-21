@@ -35,6 +35,8 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int INDEX_ADVANCE_MODE = 1;
     private static final int INDEX_PRESETS = 2;
 
+    private Device _device;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,17 +50,23 @@ public class SettingsActivity extends AppCompatActivity {
         RsContext ctx = new RsContext();
         try(DeviceList devices = ctx.queryDevices()) {
             if (devices.getDeviceCount() == 0) {
-                return;
+                throw new Exception("Failed to detect a connected device");
             }
-            Device device = ctx.queryDevices().createDevice(0);
-            loadSettingsList(device);
-            StreamProfileSelector[] profilesList = createSettingList(device);
-            loadStreamList(device, profilesList);
+            _device = devices.createDevice(0);
+            loadSettingsList(_device);
+            StreamProfileSelector[] profilesList = createSettingList(_device);
+            loadStreamList(_device, profilesList);
         } catch(Exception e){
             Log.e(TAG, "failed to load settings, error: " + e.getMessage());
             Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
             finish();
         }
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (_device != null)
+            _device.close();
     }
 
     private void loadSettingsList(final Device device){
