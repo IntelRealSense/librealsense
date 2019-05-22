@@ -151,8 +151,7 @@ if (MSVC)
     target_compile_definitions(glfw PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
-# Enforce GLFW when selecting GLSL
-if (GLFW_INSTALL OR BUILD_GLSL_EXTENSIONS)
+if (GLFW_INSTALL)
     install(TARGETS glfw
             EXPORT glfwTargets
             RUNTIME DESTINATION "bin"
