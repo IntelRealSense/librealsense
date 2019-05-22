@@ -451,8 +451,8 @@ namespace librealsense
             }
             auto depth_frame = set.get_depth_frame();
 
-            if (!_first_frame && (_zo_point_x && (_zo_point_x->query() - _options.patch_size < 0 || _zo_point_x->query() + _options.patch_size >= depth_frame.get_width())) ||
-                                 (_zo_point_y && (_zo_point_y->query() - _options.patch_size < 0 || _zo_point_y->query() + _options.patch_size >= depth_frame.get_height())))
+            if (!_first_frame && ((_zo_point_x && (_zo_point_x->query() - _options.patch_size < 0 || _zo_point_x->query() + _options.patch_size >= depth_frame.get_width())) ||
+                                  (_zo_point_y && (_zo_point_y->query() - _options.patch_size < 0 || _zo_point_y->query() + _options.patch_size >= depth_frame.get_height()))))
                 return false;
             return true;
         }
