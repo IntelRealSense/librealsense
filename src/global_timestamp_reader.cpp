@@ -113,7 +113,7 @@ namespace librealsense
     void time_diff_keeper::start()
     {
         _users_count++;
-        LOG_INFO("start: _users_count = " << _users_count);
+        LOG_DEBUG("start: _users_count = " << _users_count);
         _active_object.start();
     }
 
@@ -122,11 +122,11 @@ namespace librealsense
         if (_users_count <= 0)
             throw wrong_api_call_sequence_exception(to_string() << "time_diff_keeper users_count <= 0.");
 
-        LOG_INFO("stop: _users_count = " << _users_count);
         _users_count--;
+        LOG_DEBUG("stop: _users_count = " << _users_count);
         if (_users_count == 0)
         {
-            LOG_INFO("stop: top object.");
+            LOG_DEBUG("stop: stop object.");
             _active_object.stop();
             _coefs.reset();
         }
