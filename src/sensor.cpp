@@ -593,6 +593,7 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
+        _owner->start_time_keeper();
         set_active_streams(requests);
     }
 
@@ -609,6 +610,7 @@ namespace librealsense
             _device->close(profile);
         }
         reset_streaming();
+        _owner->stop_time_keeper();
         _power.reset();
         _is_opened = false;
         set_active_streams({});
@@ -868,6 +870,7 @@ namespace librealsense
             configured_hid_profiles.push_back(platform::hid_profile{elem.first, elem.second.fps});
         }
         _hid_device->open(configured_hid_profiles);
+        _owner->start_time_keeper();
         _is_opened = true;
         set_active_streams(requests);
     }
@@ -886,6 +889,7 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
+        _owner->stop_time_keeper();
         set_active_streams({});
     }
 

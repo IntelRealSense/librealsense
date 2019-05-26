@@ -618,10 +618,6 @@ namespace librealsense
             });
             notification_thread.detach();
         }
-        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
-            _tf_keeper->start();
-        else
-            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     notification ds5_notification_decoder::decode(int value)
@@ -671,6 +667,16 @@ namespace librealsense
         uint32_t dt = *(uint32_t*)res.data();
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
+    }
+
+    void ds5_device::start_time_keeper()
+    {
+        _tf_keeper->start();
+    }
+
+    void ds5_device::stop_time_keeper()
+    {
+        _tf_keeper->stop();
     }
 
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,

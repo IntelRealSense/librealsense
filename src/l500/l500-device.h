@@ -43,6 +43,8 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         double get_device_time();
+        void start_time_keeper();
+        void stop_time_keeper();
 
     protected:
         friend class l500_depth_sensor;

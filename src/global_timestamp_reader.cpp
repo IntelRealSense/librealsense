@@ -101,6 +101,7 @@ namespace librealsense
         _poll_intervals_ms(sampling_interval_ms),
         _last_sample_hw_time(1e+200),
         _coefs(15),
+        _users_count(0),
         _active_object([this](dispatcher::cancellable_timer cancellable_timer)
             {
                 polling(cancellable_timer);
@@ -111,7 +112,24 @@ namespace librealsense
 
     void time_diff_keeper::start()
     {
+        _users_count++;
+        LOG_INFO("start: _users_count = " << _users_count);
         _active_object.start();
+    }
+
+    void time_diff_keeper::stop()
+    {
+        if (_users_count <= 0)
+            throw wrong_api_call_sequence_exception(to_string() << "time_diff_keeper users_count <= 0.");
+
+        LOG_INFO("stop: _users_count = " << _users_count);
+        _users_count--;
+        if (_users_count == 0)
+        {
+            LOG_INFO("stop: top object.");
+            _active_object.stop();
+            _coefs.reset();
+        }
     }
 
     time_diff_keeper::~time_diff_keeper()

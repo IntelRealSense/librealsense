@@ -48,6 +48,8 @@ namespace librealsense
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         platform::usb_spec get_usb_spec() const;
         double get_device_time();
+        void start_time_keeper();
+        void stop_time_keeper();
 
     protected:
 

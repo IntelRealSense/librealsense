@@ -78,6 +78,8 @@ namespace librealsense
 
         virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override;
         virtual double get_device_time(); // Returns time in miliseconds.
+        void start_time_keeper() {};
+        void stop_time_keeper() {};
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);

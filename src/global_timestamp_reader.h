@@ -57,6 +57,7 @@ namespace librealsense
     public:
         explicit time_diff_keeper(device* dev, const unsigned int sampling_interval_ms);
         void start();   // must be called AFTER ALL initializations of _hw_monitor.
+        void stop();
         ~time_diff_keeper();
         double get_system_hw_time(double crnt_hw_time);
 
@@ -68,6 +69,7 @@ namespace librealsense
         device* _device;
         double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
+        unsigned int _users_count;
         active_object<> _active_object;
         mutable std::recursive_mutex _mtx;
         mutable std::recursive_mutex _read_mtx;
