@@ -69,10 +69,10 @@ namespace librealsense
         device* _device;
         double _last_sample_hw_time;
         unsigned int _poll_intervals_ms;
-        unsigned int _users_count;
+        std::atomic<unsigned int> _users_count;
         active_object<> _active_object;
-        mutable std::recursive_mutex _mtx;
-        mutable std::recursive_mutex _read_mtx;
+        mutable std::recursive_mutex _mtx;      // Watch the update process
+        mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         CLinearCoefficients _coefs;
     };
 
