@@ -516,7 +516,7 @@ namespace librealsense
             float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
             float3              translation_rect;           // Translation vector for rectification
-            float               reserved[24];
+            uint8_t             reserved[24];
         };
 
 
