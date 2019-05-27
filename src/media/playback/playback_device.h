@@ -57,9 +57,6 @@ namespace librealsense
 
         bool compress_while_record() const override { return true; }
         bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override { return false; }
-        double get_device_time() {return 0;}; // Returns time in miliseconds.
-        void start_time_keeper() {};
-        void stop_time_keeper() {};
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);

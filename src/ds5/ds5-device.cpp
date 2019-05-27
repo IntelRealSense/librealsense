@@ -341,12 +341,11 @@ namespace librealsense
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group),
+        : device(ctx, group), global_time_interface(), 
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -651,7 +650,7 @@ namespace librealsense
     }
 
 
-    double ds5_device::get_device_time()
+    double ds5_device::get_device_time_ms()
     {
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
@@ -667,16 +666,6 @@ namespace librealsense
         uint32_t dt = *(uint32_t*)res.data();
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
-    }
-
-    void ds5_device::start_time_keeper()
-    {
-        _tf_keeper->start();
-    }
-
-    void ds5_device::stop_time_keeper()
-    {
-        _tf_keeper->stop();
     }
 
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,

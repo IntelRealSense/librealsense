@@ -96,7 +96,7 @@ namespace librealsense
         return y;
     }
 
-    time_diff_keeper::time_diff_keeper(device* dev, const unsigned int sampling_interval_ms) :
+    time_diff_keeper::time_diff_keeper(global_time_interface* dev, const unsigned int sampling_interval_ms) :
         _device(dev),
         _poll_intervals_ms(sampling_interval_ms),
         _last_sample_hw_time(1e+200),
@@ -146,7 +146,8 @@ namespace librealsense
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             LOG_DEBUG("time_diff_keeper::update_diff_time - lock");
             double system_time_start = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
-            double sample_hw_time = _device->get_device_time();
+
+            double sample_hw_time = _device->get_device_time_ms();
             double system_time_finish = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double system_time((system_time_finish + system_time_start) / 2);
             if (sample_hw_time < _last_sample_hw_time)
@@ -245,5 +246,17 @@ namespace librealsense
     void global_timestamp_reader::reset()
     {
         _device_timestamp_reader->reset();
+    }
+
+    global_time_interface::global_time_interface() :
+        _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
+    {}
+
+    void global_time_interface::enable_time_diff_keeper(bool is_enable)
+    {
+        if (is_enable)
+            _tf_keeper->start();
+        else
+            _tf_keeper->stop();
     }
 }

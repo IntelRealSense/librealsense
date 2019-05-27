@@ -47,9 +47,6 @@ namespace librealsense
         void tag_profiles(stream_profiles profiles) const override { m_device->tag_profiles(profiles); }
         bool compress_while_record() const override { return true; }
         bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override { return m_device->contradicts(a, others); }
-        double get_device_time() { return 0; }; // Returns time in miliseconds.
-        void start_time_keeper() {};
-        void stop_time_keeper() {};
 
     private:
         template <typename T> void write_device_extension_changes(const T& ext);
