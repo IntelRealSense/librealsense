@@ -18,6 +18,9 @@
 #include <atomic>
 #include <zconf.h>
 
+#define DEQUEUE_TIMEOUT 50
+#define STREAMING_BULK_TRANSFER_TIMEOUT 1000
+
 // Data structures for Backend-Frontend queue:
 struct frame;
 // We keep no more then 2 frames in between frontend and backend
@@ -932,7 +935,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
-            if (queue.dequeue(&fp, 50)) {
+            if (queue.dequeue(&fp, DEQUEUE_TIMEOUT)) {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -942,7 +945,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     do {
         auto i = strctx->stream->stream_if->interface;
         uint32_t transferred = 0;
-        auto sts = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, transferred, 1000);
+        auto sts = messenger->bulk_transfer(read_ep, strctx->stream->outbuf, LIBUVC_XFER_BUF_SIZE, transferred, STREAMING_BULK_TRANSFER_TIMEOUT);
         switch(sts)
         {
             case librealsense::platform::RS2_USB_STATUS_NO_DEVICE:

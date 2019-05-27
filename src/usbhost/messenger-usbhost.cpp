@@ -34,7 +34,7 @@ namespace librealsense
             {
                 case EBADF:
                 case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
-                case 71: return RS2_USB_STATUS_OVERFLOW; //protocol error seems to identify FW overflow
+                case EPROTO: return RS2_USB_STATUS_OVERFLOW; //protocol error seems to identify FW overflow
                     //TODO:MK
                 default: return RS2_USB_STATUS_OTHER;
             }
