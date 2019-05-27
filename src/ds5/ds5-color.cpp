@@ -58,6 +58,7 @@ namespace librealsense
         color_ep->register_pixel_format(pf_yuyv);
         color_ep->register_pixel_format(pf_yuy2);
         color_ep->register_pixel_format(pf_bayer16);
+        color_ep->register_pixel_format(pf_uyvyc);
 
         color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         color_ep->register_pu(RS2_OPTION_BRIGHTNESS);

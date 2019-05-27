@@ -202,14 +202,14 @@ namespace librealsense
             if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 720, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_INFRARED, 0, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET });
             }
             else
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 576, 576, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_INFRARED, 0, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET });
             }
             return tags;
         };
@@ -715,6 +715,8 @@ namespace librealsense
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS415_PID:
             return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
+        case RS416_PID:
+            return std::make_shared<rs416_device>(ctx, group, register_device_notifications);
         case RS420_PID:
             return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
         case RS420_MM_PID:
