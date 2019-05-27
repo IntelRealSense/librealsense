@@ -53,6 +53,7 @@ public class SettingsActivity extends AppCompatActivity {
                 throw new Exception("Failed to detect a connected device");
             }
             _device = devices.createDevice(0);
+            loadInfosList();
             loadSettingsList(_device);
             StreamProfileSelector[] profilesList = createSettingList(_device);
             loadStreamList(_device, profilesList);
@@ -67,6 +68,17 @@ public class SettingsActivity extends AppCompatActivity {
         super.onPause();
         if (_device != null)
             _device.close();
+    }
+
+    private void loadInfosList() {
+        final ListView listview = findViewById(R.id.info_list_view);
+        String appVersion = "Camera App Version: " + BuildConfig.VERSION_NAME;
+        String lrsVersion = "LibRealSense Version: " + RsContext.getVersion();
+
+        final String[] info = { lrsVersion, appVersion};
+        final ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.files_list_view, info);
+        listview.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
     }
 
     private void loadSettingsList(final Device device){

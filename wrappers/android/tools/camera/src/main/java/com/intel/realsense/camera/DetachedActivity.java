@@ -51,6 +51,10 @@ public class DetachedActivity extends AppCompatActivity {
             return;
         }
 
+        String appVersion = BuildConfig.VERSION_NAME;
+        String lrsVersion = RsContext.getVersion();
+        TextView versions = findViewById(R.id.versionsText);
+        versions.setText("librealsense version: " + lrsVersion + "\ncamera app version: " + appVersion);
         mPermissionsGrunted = true;
     }
 
