@@ -513,8 +513,7 @@ namespace librealsense
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) 
         {
-            if (!validate_color_stream_extrinsic(*_color_calib_table_raw))
-                restore_color_stream_extrinsic();
+            validate_and_restore_color_stream_extrinsic();
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -540,6 +539,29 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
 
     private:
+        void validate_and_restore_color_stream_extrinsic()
+        {
+            try
+            {
+                std::vector<byte> cal;
+                try
+                {
+                    cal = *_color_calib_table_raw;
+                }
+                catch (...)
+                {
+                    LOG_WARNING("Cannot read RGB calibration table");
+                }
+
+                if (!validate_color_stream_extrinsic(cal))
+                    restore_color_stream_extrinsic();
+            }
+            catch (...)
+            {
+                LOG_WARNING("Validation color stream extrinsic failed");
+            }
+        }
+
         bool validate_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             try
