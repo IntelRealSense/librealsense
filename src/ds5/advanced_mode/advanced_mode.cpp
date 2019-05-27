@@ -225,6 +225,11 @@ namespace librealsense
         *ptr = get<STCensusRadius>(advanced_mode_traits<STCensusRadius>::group, nullptr, mode);
     }
 
+    void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
+    {
+        *ptr = get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode);
+    }
+
     bool ds5_advanced_mode_base::supports_option(const uvc_sensor& sensor, rs2_option opt) const
     {
         return sensor.supports_option(opt);
@@ -481,6 +486,12 @@ namespace librealsense
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
+    void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
+    {
+        set(val, advanced_mode_traits<STAFactor>::group);
+        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+    }
+
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
     {
         if (val.was_set)
@@ -679,6 +690,7 @@ namespace librealsense
         get_depth_table_control(&p.depth_table);
         get_ae_control(&p.ae);
         get_census_radius(&p.census);
+        get_amp_factor(&p.amplitude_factor);
         get_laser_power(&p.laser_power);
         get_laser_state(&p.laser_state);
         get_depth_exposure(&p.depth_exposure);
@@ -719,6 +731,7 @@ namespace librealsense
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
+        set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
 
         set_laser_state(p.laser_state);
         if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
@@ -733,12 +746,14 @@ namespace librealsense
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
+        {
             set_color_exposure(p.color_exposure);
+            set_color_gain(p.color_gain);
+        }
 
         set_color_backlight_compensation(p.color_backlight_compensation);
         set_color_brightness(p.color_brightness);
         set_color_contrast(p.color_contrast);
-        set_color_gain(p.color_gain);
         set_color_gamma(p.color_gamma);
         set_color_hue(p.color_hue);
         set_color_saturation(p.color_saturation);

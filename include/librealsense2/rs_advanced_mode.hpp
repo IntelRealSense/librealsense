@@ -244,6 +244,23 @@ namespace rs400
             return group;
         }
 
+        void set_amp_factor(const STAFactor& group)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_amp_factor(_dev.get(), &group, &e);
+            rs2::error::handle(e);
+        }
+
+        STAFactor get_amp_factor(int mode = 0) const
+        {
+            rs2_error* e = nullptr;
+            STAFactor group{};
+            rs2_get_amp_factor(_dev.get(), &group, mode, &e);
+            rs2::error::handle(e);
+
+            return group;
+        }
+
         std::string serialize_json() const
         {
             std::string results;
@@ -387,6 +404,11 @@ inline bool operator==(const STCensusRadius& a, const STCensusRadius& b)
 {
     return (a.uDiameter == b.uDiameter &&
         a.vDiameter == b.vDiameter);
+}
+
+inline bool operator==(const STAFactor& a, const STAFactor& b)
+{
+    return (std::fabs(a.amplitude - b.amplitude) < std::numeric_limits<float>::epsilon());
 }
 
 
