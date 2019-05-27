@@ -822,20 +822,12 @@ namespace librealsense
     {
         using namespace ds;
 
-        std::vector<int> ds5_PIDs =
-        {
-            RS400_PID, RS410_PID, RS415_PID, RS430_PID, RS430_MM_PID,
-            RS_USB2_PID, RS400_IMU_PID, RS420_PID, RS420_MM_PID,
-            RS410_MM_PID, RS400_MM_PID, RS430_MM_RGB_PID, RS460_PID,
-            RS435_RGB_PID, RS405_PID, RS435I_PID
-        };
-
-        auto it = std::find_if(ds5_PIDs.begin(), ds5_PIDs.end(), [&](int ds5_pid)
+        auto it = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int ds5_pid)
         {
             return pid == ds5_pid;
         });
 
-        return it != ds5_PIDs.end();
+        return it != rs400_sku_pid.end();
     }
 
     bool ros_reader::is_sr300_PID(int pid)

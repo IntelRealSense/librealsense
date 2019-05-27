@@ -1090,6 +1090,12 @@ namespace librealsense
                                                                                { true,                &unpack_uyvy<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_BGR8 } } },
                                                                                { true,                &unpack_uyvy<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_INFRARED,       RS2_FORMAT_BGRA8} } } } };
 
+    const native_pixel_format pf_uyvyc                    = { 'UYVY', 1, 2, {  { true,                &unpack_uyvy<RS2_FORMAT_RGB8 >,                { { RS2_STREAM_COLOR,       RS2_FORMAT_RGB8 } } },
+                                                                               { true,                &copy_pixels<2>,                               { { RS2_STREAM_COLOR,       RS2_FORMAT_UYVY } } },
+                                                                               { true,                &unpack_uyvy<RS2_FORMAT_RGBA8>,                { { RS2_STREAM_COLOR,       RS2_FORMAT_RGBA8} } },
+                                                                               { true,                &unpack_uyvy<RS2_FORMAT_BGR8 >,                { { RS2_STREAM_COLOR,       RS2_FORMAT_BGR8 } } },
+                                                                               { true,                &unpack_uyvy<RS2_FORMAT_BGRA8>,                { { RS2_STREAM_COLOR,       RS2_FORMAT_BGRA8} } } } };
+
     const native_pixel_format pf_rgb888                   = { 'RGB2', 1, 2, {  { true,                &unpack_rgb_from_bgr,                          { { RS2_STREAM_INFRARED,       RS2_FORMAT_RGB8 } } } } };
 
 
