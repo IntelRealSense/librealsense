@@ -13,6 +13,23 @@
         android:layout_gravity="left|top"
         android:background="@color/black"
         android:textSize="20dp"
+        android:text="Info"
+        android:textColor="#ffffff"/>
+
+    <ListView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/info_list_view"
+        android:layout_gravity="left|top"
+        android:background="@color/black"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|top"
+        android:background="@color/black"
+        android:textSize="20dp"
         android:text="Settings"
         android:textColor="#ffffff"/>
 

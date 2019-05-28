@@ -51,6 +51,10 @@ public class DetachedActivity extends AppCompatActivity {
             return;
         }
 
+        String appVersion = BuildConfig.VERSION_NAME;
+        String lrsVersion = RsContext.getVersion();
+        TextView versions = findViewById(R.id.versionsText);
+        versions.setText("librealsense version: " + lrsVersion + "\ncamera app version: " + appVersion);
         mPermissionsGrunted = true;
     }
 
@@ -86,33 +90,35 @@ public class DetachedActivity extends AppCompatActivity {
     }
 
     private boolean validated_device(){
-         DeviceList devices = mRsContext.queryDevices();
-        if(devices.getDeviceCount() == 0)
-            return false;
-        Device device = devices.createDevice(0);
-        if(!device.supportsInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION))
-            return true;
-        final String recFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
-        final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
-        String[] sFw = fw.split("\\.");
-        String[] sRecFw = recFw.split("\\.");
-        for(int i = 0; i < sRecFw.length; i++){
-            if(Integer.parseInt(sFw[i]) > Integer.parseInt(sRecFw[i]))
-                break;
-            if(Integer.parseInt(sFw[i]) < Integer.parseInt(sRecFw[i])){
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        TextView textView = findViewById(R.id.connectCameraText);
-                        textView.setText("The FW of the connected device is:\n " + fw +
-                                "\n\nThe recommended FW for this device is:\n " + recFw +
-                                "\n\nPlease update your device to the recommended FW or higher");
-                    }
-                });
-                return false;
-            }
-        }
-        return true;
+         try(DeviceList devices = mRsContext.queryDevices()){
+             if(devices.getDeviceCount() == 0)
+                 return false;
+             try(Device device = devices.createDevice(0)) {
+                 if (!device.supportsInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION))
+                     return true;
+                 final String recFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
+                 final String fw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
+                 String[] sFw = fw.split("\\.");
+                 String[] sRecFw = recFw.split("\\.");
+                 for(int i = 0; i < sRecFw.length; i++){
+                     if(Integer.parseInt(sFw[i]) > Integer.parseInt(sRecFw[i]))
+                         break;
+                     if(Integer.parseInt(sFw[i]) < Integer.parseInt(sRecFw[i])){
+                         runOnUiThread(new Runnable() {
+                             @Override
+                             public void run() {
+                                 TextView textView = findViewById(R.id.connectCameraText);
+                                 textView.setText("The FW of the connected device is:\n " + fw +
+                                         "\n\nThe recommended FW for this device is:\n " + recFw +
+                                         "\n\nPlease update your device to the recommended FW or higher");
+                             }
+                         });
+                         return false;
+                     }
+                 }
+                 return true;
+             }
+         }
     }
 
     private DeviceListener mListener = new DeviceListener() {

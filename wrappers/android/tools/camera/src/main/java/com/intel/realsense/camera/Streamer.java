@@ -58,16 +58,16 @@ public class Streamer {
     private void configStream(Config config){
         config.disableAllStreams();
         RsContext ctx = new RsContext();
+        String pid;
+        Map<Integer, List<VideoStreamProfile>> profilesMap;
         try(DeviceList devices = ctx.queryDevices()) {
             if (devices.getDeviceCount() == 0) {
                 return;
             }
-        }
-        String pid;
-        Map<Integer, List<VideoStreamProfile>> profilesMap;
-        try(Device device = ctx.queryDevices().createDevice(0)){
-            pid = device.getInfo(CameraInfo.PRODUCT_ID);
-            profilesMap = SettingsActivity.createProfilesMap(device);
+            try (Device device = devices.createDevice(0)) {
+                pid = device.getInfo(CameraInfo.PRODUCT_ID);
+                profilesMap = SettingsActivity.createProfilesMap(device);
+            }
         }
 
         SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.app_settings), Context.MODE_PRIVATE);
