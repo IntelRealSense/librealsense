@@ -534,11 +534,6 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
 
     private:
-        firmware_version get_fw_version()
-        {
-            return firmware_version(ds5_device::_hw_monitor->get_firmware_version_string(ds::GVD, ds::camera_fw_version_offset));
-        }
-
         void validate_and_restore_color_stream_extrinsic()
         {
             std::vector<byte> cal;
@@ -650,32 +645,27 @@ namespace librealsense
 
             try
             {
-                auto fw_ver = get_fw_version();
+                const uint32_t gold_address = 0x17c49c;
+                const uint32_t dynamic_address = 0x17b49c;
 
-                if (fw_ver == firmware_version(5, 11, 6, 200))
+                if (!restore_from_address(dynamic_address))
                 {
-                    const uint32_t gold_address = 0x17c49c;
-                    const uint32_t dynamic_address = 0x17b49c;
+                    LOG_WARNING("RGB extrinsic recovery - Dynamic calibration from address " << dynamic_address << " is invalid, recovery routine failed");
 
-                    if (!restore_from_address(dynamic_address))
+                    if (!restore_from_address(gold_address))
                     {
-                        LOG_WARNING("RGB extrinsic recovery - Dynamic calibration from address " << dynamic_address << " is invalid, recovery routine failed");
+                        LOG_WARNING("RGB extrinsic recovery - Gold calibration from address " << gold_address << " is invalid, restore from an alternative sector");
 
-                        if (!restore_from_address(gold_address))
+                        if (!restore_color_stream_extrinsic_from_gold_sector())
                         {
-                            LOG_WARNING("RGB extrinsic recovery - Gold calibration from address " << gold_address << " is invalid, restore from an alternative sector");
-
-                            if (!restore_color_stream_extrinsic_from_gold_sector())
-                            {
-                                LOG_WARNING("RGB extrinsic recovery - Gold calibration is invalid, restore from an alternative sector");
-                                _color_extrinsic.reset();
-                                return false;
-                            }
+                            LOG_WARNING("RGB extrinsic recovery - Gold calibration is invalid, restore from an alternative sector");
+                            _color_extrinsic.reset();
+                            return false;
                         }
                     }
-                    LOG_DEBUG("Suceeded to restore color stream extrinsic");
-                    return true;
                 }
+                LOG_DEBUG("Suceeded to restore color stream extrinsic");
+                return true;
             }
             catch (...)
             {
