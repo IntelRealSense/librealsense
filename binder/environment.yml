@@ -1,4 +1,4 @@
-name: pyrealsense2
+name: test
 channels:
   - conda-forge
   - defaults
