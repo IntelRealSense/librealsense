@@ -13,7 +13,6 @@ dependencies:
   - h5py
   - numba
   - pythreejs
-  - pyrealsense2
   - pip:
     - laspy
     - appmode
