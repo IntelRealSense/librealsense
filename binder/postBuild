@@ -15,4 +15,3 @@ wget -N http://realsense-hw-public.s3.amazonaws.com/rs-tests/TestData/MobileNetS
 # install the SDK
 pip install opencv-python
 git clone https://github.com/daavoo/pyntcloud.git
-pip install --index-url https://test.pypi.org/simple/ pyrealsense2
