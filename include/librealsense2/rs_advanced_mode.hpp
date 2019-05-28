@@ -4,6 +4,7 @@
 #ifndef R4XX_ADVANCED_MODE_HPP
 #define R4XX_ADVANCED_MODE_HPP
 
+#include <cmath>
 #include "rs.hpp"
 #include "rs_advanced_mode.h"
 
@@ -408,7 +409,7 @@ inline bool operator==(const STCensusRadius& a, const STCensusRadius& b)
 
 inline bool operator==(const STAFactor& a, const STAFactor& b)
 {
-    return (std::fabs(a.amplitude - b.amplitude) < std::numeric_limits<float>::epsilon());
+    return (fabs(a.amplitude - b.amplitude) < std::numeric_limits<float>::epsilon());
 }
 
 

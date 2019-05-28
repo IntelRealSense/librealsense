@@ -205,6 +205,8 @@ namespace librealsense
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
+        bool _rgb_exposure_gain_bind;
+        bool _amplitude_factor_support;
 
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;

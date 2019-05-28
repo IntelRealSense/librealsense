@@ -604,7 +604,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Depth Linearity"))
+    if (ImGui::TreeNode("Disparity Modulation"))
     {
         ImGui::PushItemWidth(-1);
 

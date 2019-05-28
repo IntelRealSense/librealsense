@@ -13,7 +13,9 @@ namespace librealsense
                                                    uvc_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
-          _color_sensor(nullptr)
+          _color_sensor(nullptr),
+        _rgb_exposure_gain_bind(false),
+        _amplitude_factor_support(false)
     {
         _enabled = [this]() {
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
@@ -38,6 +40,8 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
+       auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+       _amplitude_factor_support = _rgb_exposure_gain_bind = (fw_ver >= firmware_version("5.11.9.0"));
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -227,7 +231,8 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
     {
-        *ptr = get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode);
+        *ptr = _amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
+            []() { STAFactor af; af.amplitude = 0.f; return af; }();
     }
 
     bool ds5_advanced_mode_base::supports_option(const uvc_sensor& sensor, rs2_option opt) const
@@ -488,8 +493,11 @@ namespace librealsense
 
     void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
     {
-        set(val, advanced_mode_traits<STAFactor>::group);
-        _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+        if (_amplitude_factor_support)
+        {
+            set(val, advanced_mode_traits<STAFactor>::group);
+            _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+        }
     }
 
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
@@ -731,7 +739,8 @@ namespace librealsense
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
-        set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
+        if (_amplitude_factor_support)
+            set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
 
         set_laser_state(p.laser_state);
         if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
