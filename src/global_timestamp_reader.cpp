@@ -112,6 +112,7 @@ namespace librealsense
 
     void time_diff_keeper::start()
     {
+        std::lock_guard<std::recursive_mutex> lock(_enable_mtx);
         _users_count++;
         LOG_DEBUG("time_diff_keeper::start: _users_count = " << _users_count);
         _active_object.start();
@@ -119,6 +120,7 @@ namespace librealsense
 
     void time_diff_keeper::stop()
     {
+        std::lock_guard<std::recursive_mutex> lock(_enable_mtx);
         if (_users_count <= 0)
             LOG_ERROR("time_diff_keeper users_count <= 0.");
 

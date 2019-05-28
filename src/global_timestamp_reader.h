@@ -74,6 +74,7 @@ namespace librealsense
         active_object<> _active_object;
         mutable std::recursive_mutex _mtx;      // Watch the update process
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
+        mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.
         CLinearCoefficients _coefs;
     };
 
