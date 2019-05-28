@@ -11,28 +11,25 @@
 #include <functional>
 #include <thread>
 #include <string.h>
-#include<chrono>
+#include <chrono>
+#include "tclap/CmdLine.h"
+
+using namespace TCLAP;
 
 int main(int argc, char * argv[]) try
 {
-    std::string fn_bag = "test.bag";
-    int dt_s = 10;
+    // Parse command line arguments
+    CmdLine cmd("librealsense rs-record example tool", ' ');
+    ValueArg<int>    time("t", "Time", "Amount of time to record (in seconds)", false, 10, "");
+    ValueArg<std::string> out_file("f", "FullFilePath", "the file where the data will be saved to", false, "test.bag", "");
 
-    using std::cerr;
-    if (argc < 3) { usage:
-        cerr << "Usage: " << argv[0] << " <FILENAME.BAG> <DURATION_s>\n";
-        return 1;
-    }
-    else {
-        fn_bag = argv[1];
-        dt_s = atoi(argv[2]);
-    }
-    for (int i=1; i<argc; i++)
-        if (strcmp(argv[i], "-h") == 0) goto usage;
+    cmd.add(time);
+    cmd.add(out_file);
+    cmd.parse(argc, argv);
 
     rs2::pipeline pipe;
     rs2::config cfg;
-    cfg.enable_record_to_file(fn_bag);
+    cfg.enable_record_to_file(out_file.getValue());
 
     std::mutex m;
     auto callback = [&](const rs2::frame& frame)
@@ -52,7 +49,7 @@ int main(int argc, char * argv[]) try
 
     auto t = std::chrono::system_clock::now();
     auto t0 = t;
-    while(t - t0 <= std::chrono::seconds(dt_s)) {
+    while(t - t0 <= std::chrono::seconds(time.getValue())) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         t = std::chrono::system_clock::now();
     }
