@@ -576,6 +576,13 @@ namespace librealsense
                             found = true;
                     }
 
+                    if (!found)
+                    {
+                        LOG_DEBUG("Color stream extrinsic is not valid: \n" << table);
+                        return false;
+                    }
+                    
+                    auto num_found = 0;
                     // check that rotation data is valid
                     for (auto i = 0; i < 3; i++)
                     {
@@ -587,11 +594,11 @@ namespace librealsense
                                 return false;
                             }
 
-                            if (std::fabs(rect_rot_mat(i,j)) > std::numeric_limits<float>::epsilon())
-                                found = true;
+                            if (std::fabs(rect_rot_mat(i, j)) > std::numeric_limits<float>::epsilon())
+                                num_found++;
                         }
                     }
-                    if (found)
+                    if (num_found >= 3)
                         return true;
                 }
                 LOG_DEBUG("Color stream extrinsic is not valid: \n" << table);
