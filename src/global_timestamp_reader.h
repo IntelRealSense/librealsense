@@ -60,7 +60,7 @@ namespace librealsense
         void start();   // must be called AFTER ALL initializations of _hw_monitor.
         void stop();
         ~time_diff_keeper();
-        double get_system_hw_time(double crnt_hw_time);
+        double get_system_hw_time(double crnt_hw_time, bool& is_ready);
 
     private:
         bool update_diff_time();
@@ -76,6 +76,7 @@ namespace librealsense
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.
         CLinearCoefficients _coefs;
+        bool _is_ready;
     };
 
     class global_timestamp_reader : public frame_timestamp_reader
@@ -95,6 +96,7 @@ namespace librealsense
         std::weak_ptr<time_diff_keeper> _time_diff_keeper;
         mutable std::recursive_mutex _mtx;
         std::shared_ptr<global_time_option> _option_is_enabled;
+        bool _ts_is_ready;
     };
 
     class global_time_interface : public recordable<global_time_interface>

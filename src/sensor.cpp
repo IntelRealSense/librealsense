@@ -594,7 +594,7 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
-        if (Is<librealsense::global_time_interface>(_owner))
+        if (Is<librealsense::global_time_interface>(_owner) && (dynamic_cast<const platform::playback_backend*>(&(_owner->get_context()->get_backend())) == nullptr))
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
         }
@@ -614,7 +614,7 @@ namespace librealsense
             _device->close(profile);
         }
         reset_streaming();
-        if (Is<librealsense::global_time_interface>(_owner))
+        if (Is<librealsense::global_time_interface>(_owner) && (dynamic_cast<const platform::playback_backend*>(&(_owner->get_context()->get_backend())) == nullptr))
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
         }
@@ -877,7 +877,7 @@ namespace librealsense
             configured_hid_profiles.push_back(platform::hid_profile{elem.first, elem.second.fps});
         }
         _hid_device->open(configured_hid_profiles);
-        if (Is<librealsense::global_time_interface>(_owner))
+        if (Is<librealsense::global_time_interface>(_owner) && (dynamic_cast<const platform::playback_backend*>(&(_owner->get_context()->get_backend())) == nullptr))
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
         }
@@ -899,7 +899,7 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
-        if (Is<librealsense::global_time_interface>(_owner))
+        if (Is<librealsense::global_time_interface>(_owner) && (dynamic_cast<const platform::playback_backend*>(&(_owner->get_context()->get_backend())) == nullptr))
         {
             As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
         }
