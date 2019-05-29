@@ -29,6 +29,7 @@ static const char* fragment_shader_text =
 "uniform float depth_units;\n"
 "uniform float min_depth;\n"
 "uniform float max_depth;\n"
+"uniform float max_disparity;\n"
 "uniform float equalize;\n"
 "uniform float disparity;\n"
 "void main(void) {\n"
@@ -48,14 +49,14 @@ static const char* fragment_shader_text =
 "        if (equalize > 0.0){\n"
 "            float x;\n"
 "            float y;\n"
+"            vec4 hist;\n"
 "            if (disparity > 0.0) {;\n"
-"               x = mod(d, 256.0) / 256.0; \n"
-"               y = d / 65536.0;\n"
+"               hist = texture2D(histSampler, vec2(d / max_disparity, 0.0));\n"
 "            } else {\n"
 "               x = dx * 0.99;\n"
 "               y = dy + (1.0 / 256.0);\n"
+"               hist = texture2D(histSampler, vec2(x, y));\n"
 "            }\n"
-"            vec4 hist = texture2D(histSampler, vec2(x, y));\n"
 "            f = hist.x;\n"
 "        } else {\n"
 "            if (disparity > 0.0) {\n"
@@ -86,6 +87,7 @@ public:
         _depth_units_location = _shader->get_uniform_location("depth_units");
         _min_depth_location = _shader->get_uniform_location("min_depth");
         _max_depth_location = _shader->get_uniform_location("max_depth");
+        _max_disparity_location = _shader->get_uniform_location("max_disparity");
         _equalize_location = _shader->get_uniform_location("equalize");
         _is_disparity_location = _shader->get_uniform_location("disparity");
 
@@ -104,11 +106,12 @@ public:
     int color_map_slot() const { return 1; }
     int histogram_slot() const { return 2; }
 
-    void set_params(float units, float min, float max , bool equalize, bool disparity)
+    void set_params(float units, float min, float max, float max_disparity, bool equalize, bool disparity)
     {
         _shader->load_uniform(_depth_units_location, units);
         _shader->load_uniform(_min_depth_location, min);
         _shader->load_uniform(_max_depth_location, max);
+        _shader->load_uniform(_max_disparity_location, max_disparity);
         _shader->load_uniform(_equalize_location, equalize ? 1.f : 0.f);
         _shader->load_uniform(_is_disparity_location, disparity ? 1.f : 0.f);
     }
@@ -117,6 +120,7 @@ private:
     uint32_t _depth_units_location;
     uint32_t _min_depth_location;
     uint32_t _max_depth_location;
+    uint32_t _max_disparity_location;
     uint32_t _equalize_location;
     uint32_t _is_disparity_location;
 };
@@ -266,11 +270,18 @@ namespace librealsense
                         glBindTexture(GL_TEXTURE_2D, hist_texture);
 
                         if (disparity)
+                        {
                             update_histogram(_hist_data, reinterpret_cast<const float*>(f.get_data()), _width, _height);
+                            populate_floating_histogram(_fhist_data, _hist_data);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, MAX_DISPARITY, 1, 0, GL_RED, GL_FLOAT, _fhist_data);
+                        }
                         else
+                        {
                             update_histogram(_hist_data, reinterpret_cast<const uint16_t*>(f.get_data()), _width, _height);
-                        populate_floating_histogram(_fhist_data, _hist_data);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 0xFF, 0xFF, 0, GL_RED, GL_FLOAT, _fhist_data);
+                            populate_floating_histogram(_fhist_data, _hist_data);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 0xFF, 0xFF, 0, GL_RED, GL_FLOAT, _fhist_data);
+                        }
+
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                     }
@@ -308,7 +319,7 @@ namespace librealsense
                     min = _min;
                     max = _max;
                 }
-                shader.set_params(depth_units, min, max, _equalize, disparity);
+                shader.set_params(depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
                 shader.end();
 
                 glActiveTexture(GL_TEXTURE0 + shader.histogram_slot());

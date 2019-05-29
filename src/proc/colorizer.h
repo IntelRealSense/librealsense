@@ -115,6 +115,7 @@ namespace librealsense {
         }
 
         static const int MAX_DEPTH = 0x10000;
+        static const int MAX_DISPARITY = 0x2710;
 
     protected:
         colorizer(const char* name);
