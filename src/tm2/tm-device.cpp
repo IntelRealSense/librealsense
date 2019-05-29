@@ -1160,11 +1160,12 @@ namespace librealsense
         rp.rotation     = { orient_quat.x, orient_quat.y, orient_quat.z, orient_quat.w };
 
         auto status = _tm_dev->SetStaticNode(guid.data(), rp);
-        if (status != Status::SUCCESS)
-        {
-            LOG_WARNING("Set static node failed, status =" << (uint32_t)status);
-        }
-        return (status == Status::SUCCESS);
+        if (status == Status::SUCCESS)
+            return true;
+        if (status == Status::ERROR_FW_INTERNAL) // non-fatal; just means the confidence was not high enough
+            return false;
+
+        throw io_exception(to_string() << "Unexpected error setting static node, status = " << (uint32_t)status);
     }
 
     bool tm2_sensor::get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const
