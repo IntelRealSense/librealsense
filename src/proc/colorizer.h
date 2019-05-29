@@ -100,16 +100,57 @@ namespace librealsense {
     public:
         colorizer();
 
-        static void update_histogram(int* hist, const uint16_t* depth_data, int w, int h);
-        static void update_disparity_histogram(int* hist, const float* depth_data, int w, int h);
+        template<typename T>
+        static void update_histogram(int* hist, const T* depth_data, int w, int h)
+        {
+            memset(hist, 0, MAX_DEPTH * sizeof(int));
+            for (auto i = 0; i < w*h; ++i)
+            {
+                T depth_val = depth_data[i];
+                int index = depth_val;
+                hist[index] += 1;
+            }
+
+            for (auto i = 2; i < MAX_DEPTH; ++i) hist[i] += hist[i - 1]; // Build a cumulative histogram for the indices in [1,0xFFFF]
+        }
+
         static const int MAX_DEPTH = 0x10000;
-        static const int MAX_DISPARITY = 14000; // need to be checked actual setting
 
     protected:
         colorizer(const char* name);
 
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
+
+        template<typename T>
+        void make_rgb_data(const T* depth_data, uint8_t* rgb_data, int width, int height, std::function<float(T)> coloring_func)
+        {
+            auto cm = _maps[_map_index];
+            for (auto i = 0; i < width*height; ++i)
+            {
+                auto d = depth_data[i];
+                colorize_pixel(rgb_data, i, cm, d, coloring_func);
+            }
+        }
+
+        template<typename T>
+        void colorize_pixel(uint8_t* rgb_data, int idx, color_map* cm, T data, std::function<float(T)> coloring_func)
+        {
+            if (data)
+            {
+                auto f = coloring_func(data); // 0-255 based on histogram locationcolorize_pixel
+                auto c = cm->get(f);
+                rgb_data[idx * 3 + 0] = (uint8_t)c.x;
+                rgb_data[idx * 3 + 1] = (uint8_t)c.y;
+                rgb_data[idx * 3 + 2] = (uint8_t)c.z;
+            }
+            else
+            {
+                rgb_data[idx * 3 + 0] = 0;
+                rgb_data[idx * 3 + 1] = 0;
+                rgb_data[idx * 3 + 2] = 0;
+            }
+        }
 
         float _min, _max;
         bool _equalize;
@@ -124,12 +165,7 @@ namespace librealsense {
         rs2::stream_profile _target_stream_profile;
         rs2::stream_profile _source_stream_profile;
 
-    // for handling disparity values
-    private:
-        bool                    _stereoscopic_depth;
-        float                   _focal_lenght_mm;
-        float                   _stereo_baseline_meter; // in meters
-        float                   _depth_units;
-        float                   _d2d_convert_factor;
+        float   _depth_units = 0.f;
+        float   _d2d_convert_factor = 0.f;
     };
 }
