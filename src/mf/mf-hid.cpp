@@ -27,7 +27,7 @@
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
-const uint8_t HID_METADATA_SIZE = 8; // bytes
+const uint8_t HID_METADATA_SIZE = 4; // bytes
 // Windows Filetime is represented in 64 - bit number of 100 - nanosecond intervals since midnight Jan 1, 1601
 // To convert to the Unix epoch, subtract 116444736000000000LL to reach Jan 1, 1970.
 constexpr uint64_t WIN_FILETIME_2_UNIX_SYSTIME = 116444736000000000LL;

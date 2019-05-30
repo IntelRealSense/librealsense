@@ -156,6 +156,17 @@ namespace librealsense
 
         constexpr uint8_t uvc_header_size = sizeof(uvc_header);
 
+#pragma pack(push, 1)
+        struct hid_header
+        {
+            uint8_t         length;             // HID report metadata total length
+                                                // to be limited to 255 bytes
+            uint8_t        report_id;
+        };
+#pragma pack(pop)
+
+        constexpr uint8_t hid_header_size = sizeof(hid_header);
+
         struct frame_object
         {
             size_t          frame_size;
