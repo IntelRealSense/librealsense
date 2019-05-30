@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
@@ -138,10 +139,11 @@ public class MainActivity extends AppCompatActivity {
 
         mPipeline = new Pipeline();
 
-
-        if(mRsContext.queryDevices().getDeviceCount() > 0) {
-            showConnectLabel(false);
-            start(false);
+        try(DeviceList dl = mRsContext.queryDevices()){
+            if(dl.getDeviceCount() > 0) {
+                showConnectLabel(false);
+                start(false);
+            }
         }
     }
 
