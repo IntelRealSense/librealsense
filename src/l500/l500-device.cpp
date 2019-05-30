@@ -66,6 +66,17 @@ namespace librealsense
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
+        using namespace platform;
+
+        auto usb_mode = usb3_type;
+        std::string usb_type_str(usb_spec_names.at(usb_mode));
+        usb_mode = get_depth_sensor().get_usb_specification();
+        if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
+        {
+            usb_type_str = usb_spec_names.at(usb_mode);
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
+
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
