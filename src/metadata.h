@@ -191,6 +191,16 @@ namespace librealsense
         usb_counter_attribute       = (1u << 3)
     };
 
+    inline md_hid_imu_attributes operator |(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return static_cast<md_hid_imu_attributes>(static_cast<uint8_t>(l) | static_cast<uint8_t>(r));
+    }
+
+    inline md_hid_imu_attributes& operator |=(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return l = l | r;
+    }
+
     /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
 *  md_imu_report struct */
     enum class md_hid_custom_temp_attributes : uint8_t
@@ -645,6 +655,10 @@ namespace librealsense
         uint8_t     usb_counter;        // USB-layer internal counter
     };
 
+    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID);
+
+    constexpr uint8_t metadata_imu_report_size = sizeof(md_imu_report);
+
     struct md_custom_tmp_report
     {
         md_header   header;
@@ -655,7 +669,8 @@ namespace librealsense
         uint8_t     usb_counter;        // USB-layer internal counter
     };
 
-    
+    REGISTER_MD_TYPE(md_custom_tmp_report, md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID)
+
     /**\brief md_hid_types - aggrevative structure that represents the supported HID
  * metadata struct types to be handled */
     union md_hid_report
@@ -672,8 +687,7 @@ namespace librealsense
         md_hid_report          report_type;
     };
 
-#pragma pack(pop)
-    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID);
-    REGISTER_MD_TYPE(md_custom_tmp_report, md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID)
+    constexpr uint8_t metadata_imu_raw_size = sizeof(metadata_imu_raw);
 
+#pragma pack(pop)
 }
