@@ -774,6 +774,8 @@ namespace librealsense
       _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
       _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
     {
+        register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
+
         std::map<std::string, uint32_t> frequency_per_sensor;
         for (auto& elem : sensor_name_and_hid_profiles)
             frequency_per_sensor.insert(make_pair(elem.first, elem.second.fps));
@@ -781,7 +783,6 @@ namespace librealsense
         std::vector<platform::hid_profile> profiles_vector;
         for (auto& elem : frequency_per_sensor)
             profiles_vector.push_back(platform::hid_profile{elem.first, elem.second});
-
 
         _hid_device->open(profiles_vector);
         for (auto& elem : _hid_device->get_sensors())
@@ -968,6 +969,7 @@ namespace librealsense
             additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = ts_domain;
             additional_data.system_time = system_time;
+            additional_data.backend_timestamp = sensor_data.fo.backend_time;
             LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type())
                     << ",Counter," << std::dec << frame_counter << ",Index,0"
                     << ",BackEndTS," << std::fixed << sensor_data.fo.backend_time
