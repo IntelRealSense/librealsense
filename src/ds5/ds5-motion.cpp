@@ -321,7 +321,7 @@ namespace librealsense
                 register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
 
             // attributes of md_hid_imu
-            auto md_prop_offset = offsetof(metadata_imu_raw, report_type) + offsetof(md_hid_report, imu_report);
+            auto md_prop_offset = offsetof(metadata_hid_raw, report_type) + offsetof(md_hid_report, imu_report);
 
             hid_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_attribute_parser(&md_imu_report::custom_timestamp, md_hid_imu_attributes::custom_timestamp_attirbute, md_prop_offset));
         }

@@ -190,10 +190,12 @@ namespace librealsense
 
                 sensor_data d{};
                 hid_sensor_data data{};
-                // Populate HID IMU data
-                metadata_imu_raw meta_data{};
-                meta_data.header.report_id = 0; //  TBD
+                // Populate HID IMU data - Header
+                metadata_hid_raw meta_data{};
+                meta_data.header.report_type = md_hid_report_type::hid_report_imu;
                 meta_data.header.length = hid_header_size + metadata_imu_report_size;
+                meta_data.header.timestamp = customTimestampLow | (customTimestampHigh < 32);
+                // Payload:
                 meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
                 meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
                 meta_data.report_type.imu_report.flags = static_cast<uint8_t>( md_hid_imu_attributes::custom_timestamp_attirbute |
@@ -220,7 +222,7 @@ namespace librealsense
 
                 d.fo.pixels = &data;
                 d.fo.metadata = &meta_data;
-                d.fo.metadata_size = metadata_imu_raw_size;
+                d.fo.metadata_size = metadata_hid_raw_size;
                 d.fo.frame_size = sizeof(data);
                 d.fo.backend_time = 0;
                 if (SystemTimeToFileTime(&sys_time, &file_time))

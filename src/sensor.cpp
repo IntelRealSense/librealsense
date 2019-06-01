@@ -12,6 +12,7 @@
 #include "stream.h"
 #include "sensor.h"
 #include "proc/decimation-filter.h"
+#include "metadata.h"
 
 namespace librealsense
 {
@@ -962,7 +963,7 @@ namespace librealsense
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
             auto ts_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
-
+            std::cout << "HID timestamp : " << std::fixed << timestamp << std::endl;
             frame_additional_data additional_data{};
 
             additional_data.timestamp = timestamp;
@@ -1113,7 +1114,8 @@ namespace librealsense
             // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
             // To revert to the extended 64 bit TS uncomment the next line instead
             //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
+            auto timestamp = (fo.metadata_size >= platform::hid_header_size) ?
+                static_cast<uint32_t>(((platform::hid_header*)(fo.metadata))->timestamp) : *((uint32_t*)((const uint8_t*)fo.metadata));
 
             // HID timestamps are aligned to FW Default - usec units
             return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);

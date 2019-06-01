@@ -156,7 +156,8 @@ namespace librealsense
         struct hid_header
         {
             uint8_t         length;             // HID report total size. Limited to 255
-            uint8_t         report_id;
+            uint8_t         report_type;        // Curently supported: IMU/Custom Temperature
+            uint64_t        timestamp;          // Driver-produced/FW-based timestamp. Note that currently only the lower 32bit are used
         };
 #pragma pack(pop)
 

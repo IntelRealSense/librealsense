@@ -182,13 +182,22 @@ namespace librealsense
     };
 
     /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+*  md_imu_report struct */
+    enum md_hid_report_type : uint8_t
+    {
+        hid_report_unknown,
+        hid_report_imu,
+        hid_report_custom_temperature,
+        hid_report_max,
+    };
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
  *  md_imu_report struct */
     enum class md_hid_imu_attributes : uint8_t
     {
-        timestamp_attirbute         = (1u << 0),
-        custom_timestamp_attirbute  = (1u << 1),
-        imu_counter_attribute       = (1u << 2),
-        usb_counter_attribute       = (1u << 3)
+        custom_timestamp_attirbute  = (1u << 0),
+        imu_counter_attribute       = (1u << 1),
+        usb_counter_attribute       = (1u << 2)
     };
 
     inline md_hid_imu_attributes operator |(md_hid_imu_attributes l, md_hid_imu_attributes r)
@@ -649,7 +658,6 @@ namespace librealsense
     {
         md_header   header;
         uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
-        uint64_t    timestamp;          // Driver-produced Timestamp
         uint64_t    custom_timestamp;   // HW Timestamp
         uint8_t     imu_counter;        // IMU internal counter
         uint8_t     usb_counter;        // USB-layer internal counter
@@ -663,10 +671,10 @@ namespace librealsense
     {
         md_header   header;
         uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
-        uint8_t     source_id;
         uint64_t    custom_timestamp;   // HW Timestamp
         uint8_t     imu_counter;        // IMU internal counter
         uint8_t     usb_counter;        // USB-layer internal counter
+        uint8_t     source_id;
     };
 
     REGISTER_MD_TYPE(md_custom_tmp_report, md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID)
@@ -679,15 +687,15 @@ namespace librealsense
         md_custom_tmp_report    temperature_report;
     };
 
-    /**\brief metadata_imu_raw - HID metadata structure
+    /**\brief metadata_hid_raw - HID metadata structure
  *  layout populated by backend */
-    struct metadata_imu_raw
+    struct metadata_hid_raw
     {
         platform::hid_header   header;
         md_hid_report          report_type;
     };
 
-    constexpr uint8_t metadata_imu_raw_size = sizeof(metadata_imu_raw);
+    constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);
 
 #pragma pack(pop)
 }
