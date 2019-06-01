@@ -296,7 +296,7 @@ namespace librealsense
                 };
             }
             catch (const std::exception& ex){
-                LOG_INFO("Motion Module extrinsic calibration  is not available, report: " << ex.what());
+                LOG_INFO("Motion Module - no extrinsic calibration, " << ex.what());
             }
 
             try
@@ -311,7 +311,7 @@ namespace librealsense
             }
             catch (const std::exception& ex)
             {
-                LOG_INFO("Motion Module intrinsic calibration is not available, report: " << ex.what());
+                LOG_INFO("Motion Module - no intrinsic calibration, " << ex.what());
 
                 // transform IMU axes if supported
                 hid_ep->register_on_before_frame_callback(align_imu_axes);
