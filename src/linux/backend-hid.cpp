@@ -1,12 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "metadata.h"
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
 
 #include <thread>
-
+#include <chrono>
+#include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -309,7 +311,7 @@ namespace librealsense
             signal_stop();
             _hid_thread->join();
             enable(false);
-            _callback = NULL;
+            _callback = nullptr;
 
             if(::close(_fd) < 0)
                 throw linux_backend_exception("hid_custom_sensor: close(_fd) failed");
@@ -504,7 +506,7 @@ namespace librealsense
             _is_capturing = true;
             _hid_thread = std::unique_ptr<std::thread>(new std::thread([this](){
                 const uint32_t channel_size = get_channel_size();
-                auto raw_data_size = channel_size*hid_buf_len;
+                size_t raw_data_size = channel_size*hid_buf_len;
 
                 std::vector<uint8_t> raw_data(raw_data_size);
                 auto metadata = has_metadata();
@@ -516,10 +518,10 @@ namespace librealsense
                     FD_SET(_stop_pipe_fd[0], &fds);
 
                     int max_fd = std::max(_stop_pipe_fd[0], _fd);
-                    auto read_size = 0;
+                    ssize_t read_size = 0;
 
                     struct timeval tv = {5, 0};
-                    auto val = select(max_fd + 1, &fds, NULL, NULL, &tv);
+                    auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
                     if (val < 0)
                     {
                         // TODO: write to log?
@@ -550,19 +552,40 @@ namespace librealsense
                         // TODO: code refactoring to reduce latency
                         for (auto i = 0; i < read_size / channel_size; ++i)
                         {
+                            auto now_ts = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
                             auto p_raw_data = raw_data.data() + channel_size * i;
                             sensor_data sens_data{};
                             sens_data.sensor = hid_sensor{get_sensor_name()};
 
                             auto hid_data_size = channel_size - HID_METADATA_SIZE;
+                            // Populate HID IMU data - Header
+                            metadata_hid_raw meta_data{};
+                            meta_data.header.report_type = md_hid_report_type::hid_report_imu;
+                            meta_data.header.length = hid_header_size + metadata_imu_report_size;
+                            meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(&p_raw_data[16]));
+                            // Payload:
+                            meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
+                            meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
+//                            meta_data.report_type.imu_report.flags = static_cast<uint8_t>( md_hid_imu_attributes::custom_timestamp_attirbute |
+//                                                                                            md_hid_imu_attributes::imu_counter_attribute |
+//                                                                                            md_hid_imu_attributes::usb_counter_attribute);
+//                            meta_data.report_type.imu_report.custom_timestamp = meta_data.header.timestamp;
+//                            meta_data.report_type.imu_report.imu_counter = p_raw_data[30];
+//                            meta_data.report_type.imu_report.usb_counter = p_raw_data[31];
 
-                            sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE: uint8_t(0),  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
+                            sens_data.fo = {hid_data_size, metadata? meta_data.header.length: uint8_t(0),
+                                            p_raw_data,  metadata? &meta_data : nullptr, now_ts};
                             //Linux HID provides timestamps in nanosec. Convert to usec (FW default)
                             if (metadata)
                             {
-                                auto* ts_nsec = reinterpret_cast<uint64_t*>(const_cast<void*>(sens_data.fo.metadata));
-                                *ts_nsec /=1000;
+                                //auto* ts_nsec = reinterpret_cast<uint64_t*>(const_cast<void*>(sens_data.fo.metadata));
+                                //*ts_nsec /=1000;
+                                meta_data.header.timestamp /=1000;
                             }
+
+//                            for (auto i=0ul; i<channel_size; i++)
+//                                std::cout << std::hex << int(p_raw_data[i]) << " ";
+//                            std::cout << std::dec << std::endl;
 
                             this->_callback(sens_data);
                         }
@@ -584,7 +607,7 @@ namespace librealsense
             set_power(false);
             signal_stop();
             _hid_thread->join();
-            _callback = NULL;
+            _callback = nullptr;
             _channels.clear();
 
             if(::close(_fd) < 0)

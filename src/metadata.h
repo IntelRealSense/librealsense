@@ -205,7 +205,7 @@ namespace librealsense
         return static_cast<md_hid_imu_attributes>(static_cast<uint8_t>(l) | static_cast<uint8_t>(r));
     }
 
-    inline md_hid_imu_attributes& operator |=(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    inline md_hid_imu_attributes operator |=(md_hid_imu_attributes l, md_hid_imu_attributes r)
     {
         return l = l | r;
     }
@@ -663,7 +663,7 @@ namespace librealsense
         uint8_t     usb_counter;        // USB-layer internal counter
     };
 
-    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID);
+    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID)
 
     constexpr uint8_t metadata_imu_report_size = sizeof(md_imu_report);
 
