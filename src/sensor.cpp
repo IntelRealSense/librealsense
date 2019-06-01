@@ -964,13 +964,19 @@ namespace librealsense
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
             auto ts_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
             std::cout << "HID timestamp : " << std::fixed << timestamp << std::endl;
-            frame_additional_data additional_data{};
+            frame_additional_data additional_data(timestamp,
+                frame_counter,
+                system_time,
+                static_cast<uint8_t>(sensor_data.fo.metadata_size),
+                (const uint8_t*)sensor_data.fo.metadata,
+                sensor_data.fo.backend_time,
+                last_timestamp,
+                last_frame_number,
+                false);
 
-            additional_data.timestamp = timestamp;
-            additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = ts_domain;
-            additional_data.system_time = system_time;
             additional_data.backend_timestamp = sensor_data.fo.backend_time;
+
             LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type())
                     << ",Counter," << std::dec << frame_counter << ",Index,0"
                     << ",BackEndTS," << std::fixed << sensor_data.fo.backend_time
