@@ -391,6 +391,16 @@ namespace librealsense
             return *this;
         }
 
+        void reset() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_was_init)
+            {
+                _ptr.reset();
+                _was_init = false;
+            }
+        }
+
     private:
         T* operate() const
         {

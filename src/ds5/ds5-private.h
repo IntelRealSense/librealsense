@@ -148,6 +148,7 @@ namespace librealsense
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
+            CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
             SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
             SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
