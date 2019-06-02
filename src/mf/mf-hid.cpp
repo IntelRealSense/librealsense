@@ -122,13 +122,6 @@ namespace librealsense
                 auto customTimestampHigh = var.ulVal;
 
                 // Parse additional custom fields
-                //std::vector<unsigned long> props;
-                /*CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE3, &var));
-                props.push_back(var.ulVal);
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE4, &var));
-                props.push_back(var.ulVal);
-                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE5, &var));
-                props.push_back(var.ulVal);*/
                 CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE6, &var));
                 uint8_t imu_count = var.bVal;
                 CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE7, &var));
@@ -204,12 +197,6 @@ namespace librealsense
                 meta_data.report_type.imu_report.custom_timestamp = customTimestampLow | (customTimestampHigh < 32);
                 meta_data.report_type.imu_report.imu_counter = imu_count;
                 meta_data.report_type.imu_report.usb_counter = usb_count;
-
-                std::cout << "IMU Metadata: flags :" << int(meta_data.report_type.imu_report.flags)
-                        << " custom ts: " << (unsigned long long)(meta_data.report_type.imu_report.custom_timestamp)
-                        << " imu_counter: " << (int)(meta_data.report_type.imu_report.imu_counter)
-                        << " usb_counter: " << (int)(meta_data.report_type.imu_report.usb_counter)
-                    << std::endl;
 
                 data.x = static_cast<int16_t>(rawX);
                 data.y = static_cast<int16_t>(rawY);

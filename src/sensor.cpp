@@ -963,7 +963,7 @@ namespace librealsense
             auto timestamp = timestamp_reader->get_frame_timestamp(mode, sensor_data.fo);
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
             auto ts_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
-            std::cout << "HID timestamp : " << std::fixed << timestamp << std::endl;
+
             frame_additional_data additional_data(timestamp,
                 frame_counter,
                 system_time,
