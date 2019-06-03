@@ -536,11 +536,9 @@ namespace librealsense
     private:
         void check_and_restore_rgb_stream_extrinsic()
         {
-            std::vector<byte> cal;
-            int iter = 0, res = 1;
-            do
+            for(auto iter = 0, rec =0; iter < 2; iter++, rec++)
             {
-                iter++;
+                std::vector<byte> cal;
                 try
                 {
                     cal = *_color_calib_table_raw;
@@ -550,10 +548,13 @@ namespace librealsense
                     LOG_WARNING("Cannot read RGB calibration table");
                 }
 
-                if (!is_rgb_extrinsic_valid(cal))
-                    res = restore_rgb_extrinsic();
-
-            } while ((iter < 2) && (!res));
+                if (!is_rgb_extrinsic_valid(cal) && !rec)
+                {
+                    restore_rgb_extrinsic();
+                }
+                else
+                    break;
+            };
         }
 
         bool is_rgb_extrinsic_valid(const std::vector<uint8_t>& raw_data) const
@@ -626,12 +627,13 @@ namespace librealsense
             ds5_device::_hw_monitor->send(cmd);
         }
 
-        std::vector<byte> read_rgb_from_address(const uint32_t address) const
+        std::vector<byte> read_sector(const uint32_t address, const uint16_t size) const
         {
-            const uint32_t bytes_to_read = 0x100;
-
-            //read the calibration data from the address
-            command cmd(ds::fw_cmd::FRB, address, bytes_to_read);
+            if (size > ds5_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
+                throw std::runtime_error(to_string() << "Device memory read failed. max size: "
+                    << int(ds5_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
+                    << ", requested: " << int(size));
+            command cmd(ds::fw_cmd::FRB, address, size);
             return ds5_device::_hw_monitor->send(cmd);
         }
 
@@ -647,7 +649,7 @@ namespace librealsense
             return ds5_device::_hw_monitor->send(cmd);
         }
 
-        bool restore_rgb_extrinsic(void)
+        void restore_rgb_extrinsic(void)
         {
             bool res = false;
             LOG_WARNING("invalid RGB extrinsic was identified, recovery routine was invoked");
@@ -658,7 +660,8 @@ namespace librealsense
                     if (_fw_version == firmware_version("5.11.6.200"))
                     {
                         const uint32_t gold_address = 0x17c49c;
-                        auto alt_calib = read_rgb_from_address(gold_address);
+                        const uint16_t bytes_to_read = 0x100;
+                        auto alt_calib = read_sector(gold_address, bytes_to_read);
                         if (res = is_rgb_extrinsic_valid(alt_calib))
                             assign_rgb_stream_extrinsic(alt_calib);
                     }
@@ -667,7 +670,6 @@ namespace librealsense
                         restore_calib_factory_settings();
                     }
                 }
-
 
                 if (res)
                 {
@@ -681,13 +683,10 @@ namespace librealsense
                     LOG_WARNING("RGB Extrinsic recovery routine failed");
                     _color_extrinsic.reset();
                 }
-
-                return res;
             }
             catch (...)
             {
                 LOG_WARNING("RGB Extrinsic recovery routine failed");
-                return false;
             }
         }
     };

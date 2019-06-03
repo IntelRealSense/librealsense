@@ -152,6 +152,9 @@ namespace librealsense
         std::vector<uint8_t> serialize_json() const override;
         void load_json(const std::string& json_content) override;
 
+        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
+        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
+
     private:
         void set_exposure(uvc_sensor& sensor, const exposure_control& val);
         void set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val);
@@ -207,9 +210,6 @@ namespace librealsense
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
         bool _rgb_exposure_gain_bind;
         bool _amplitude_factor_support;
-
-        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
-        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
         preset get_all() const;
         void set_all(const preset& p);
