@@ -317,7 +317,7 @@ namespace librealsense
                 hid_ep->register_on_before_frame_callback(align_imu_axes);
             }
 
-            if (!motion_module_fw_version.empty())
+            if ((!motion_module_fw_version.empty()) && ("255.255.255.255" != motion_module_fw_version))
                 register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
 
             // HID metadata attributes

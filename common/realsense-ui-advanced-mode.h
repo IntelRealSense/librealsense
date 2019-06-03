@@ -195,6 +195,7 @@ struct advanced_mode_control
     param_group<STDepthTableControl> depth_table;
     param_group<STAEControl> ae;
     param_group<STCensusRadius> census;
+    param_group<STAFactor> amp_factor;
 };
 
 inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced, 
@@ -215,6 +216,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
             amc.cc.vals[k] = advanced.get_color_correction(k);
             amc.depth_table.vals[k] = advanced.get_depth_table(k);
             amc.census.vals[k] = advanced.get_census(k);
+            amc.amp_factor.vals[k] = advanced.get_amp_factor(k);
         }
         amc.hdad.vals[0] = advanced.get_hdad();
         amc.hdad.vals[1] = amc.hdad.vals[0]; //setting min/max to the same value
@@ -601,5 +603,31 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         ImGui::TreePop();
     }
-}
 
+    if (ImGui::TreeNode("Disparity Modulation"))
+    {
+        ImGui::PushItemWidth(-1);
+
+        auto to_set = false;
+
+        slider_float(error_message, "Amplitude Factor", amc.amp_factor.vals, &STAFactor::amplitude, to_set);
+
+        ImGui::PopItemWidth();
+
+        if (to_set)
+        {
+            try
+            {
+                advanced.set_amp_factor(amc.amp_factor.vals[0]);
+            }
+            catch (...)
+            {
+                ImGui::TreePop();
+                throw;
+            }
+            was_set = true;
+        }
+
+        ImGui::TreePop();
+    }
+}
