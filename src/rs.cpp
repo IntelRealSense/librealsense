@@ -1072,7 +1072,7 @@ const char* rs2_extension_type_to_string(rs2_extension type)                    
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
 const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
-rs2_distortion rs2_distortion_from_string(const char* str)                                { return librealsense::from_string<rs2_distortion>(str); }
+
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
