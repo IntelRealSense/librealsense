@@ -777,6 +777,8 @@ namespace rsimpl
                 {
                     if(sub->busnum == dev->subdevices[0]->busnum && sub->devnum == dev->subdevices[0]->devnum)
                     {
+                        if (sub->is_metastream)  // avoid inserting metadata streamer
+                            continue;
                         dev->subdevices.push_back(move(sub));
                         is_new_device = false;
                         break;
@@ -811,6 +813,8 @@ namespace rsimpl
 
                 for(auto & dev : devices)
                 {
+                    if (sub->is_metastream)  // avoid inserting metadata streamer
+                        continue;
                     if (dev->subdevices[0]->vid == VID_INTEL_CAMERA && dev->subdevices[0]->pid == ZR300_CX3_PID && 
                         sub->vid == VID_INTEL_CAMERA && sub->pid == ZR300_FISHEYE_PID && dev->subdevices[0]->parent_devnum == sub->parent_devnum)
                     {
