@@ -567,8 +567,6 @@ namespace librealsense
                 if ( (table->header.version != 0 && table->header.version != 0xffff) && (table->header.table_size >= sizeof(ds::rgb_calibration_table) - sizeof(ds::table_header)))
                 {
                     float3 trans_vector = table->translation_rect;
-                    float3x3 rect_rot_mat = table->rotation_matrix_rect;
-
                     // Translation Heuristic tests
                     auto found = false;
                     for (auto i = 0; i < 3; i++)
@@ -576,7 +574,7 @@ namespace librealsense
                         //Nan/Infinity are not allowed
                         if (!std::isfinite(trans_vector[i]))
                         {
-                            LOG_DEBUG("RGB extrinsic - translation is corrupted: \n" << table);
+                            LOG_WARNING("RGB extrinsic - translation is corrupted: " << trans_vector);
                             return false;
                         }
                         // Translation must be assigned for at least one axis 
@@ -586,12 +584,13 @@ namespace librealsense
 
                     if (!found)
                     {
-                        LOG_DEBUG("RGB extrinsic - invalid (zero) translation:\n" << table);
+                        LOG_WARNING("RGB extrinsic - invalid (zero) translation: " << trans_vector);
                         return false;
                     }
 
                     // Rotation Heuristic tests
                     auto num_found = 0;
+                    float3x3 rect_rot_mat = table->rotation_matrix_rect;
                     for (auto i = 0; i < 3; i++)
                     {
                         for (auto j = 0; j < 3; j++)
@@ -599,7 +598,7 @@ namespace librealsense
                             //Nan/Infinity are not allowed
                             if (!std::isfinite(rect_rot_mat(i, j)))
                             {
-                                LOG_DEBUG("RGB extrinsic - rotation is corrupted: \n" << table);
+                                LOG_DEBUG("RGB extrinsic - rotation matrix corrupted:\n" << rect_rot_mat);
                                 return false;
                             }
 
@@ -607,11 +606,20 @@ namespace librealsense
                                 num_found++;
                         }
                     }
-                    if (num_found >= 3) // At least three matrix indexes must be non-zero
-                        return true;
+
+                    bool res = (num_found >= 3); // At least three matrix indexes must be non-zero
+                    if (!res) // At least three matrix indexes must be non-zero
+                        LOG_DEBUG("RGB extrinsic - rotation matrix invalid:\n" << rect_rot_mat);
+
+                    return res;
                 }
-                LOG_DEBUG("RGB extrinsic - rotation data is corrupted:\n" << table);
-                return false;
+                else
+                {
+                    LOG_WARNING("RGB extrinsic - header corrupted: "
+                        << "Version: " <<std::setfill('0') << std::setw(4) << std::hex << table->header.version
+                        << ", type " << std::dec << table->header.table_type << ", size " << table->header.table_size);
+                    return false;
+                }
             }
             catch (...)
             {
@@ -657,6 +665,10 @@ namespace librealsense
             {
                 if (res = is_rgb_extrinsic_valid(read_rgb_gold()))
                 {
+                    restore_calib_factory_settings();
+                }
+                else
+                {
                     if (_fw_version == firmware_version("5.11.6.200"))
                     {
                         const uint32_t gold_address = 0x17c49c;
@@ -664,24 +676,25 @@ namespace librealsense
                         auto alt_calib = read_sector(gold_address, bytes_to_read);
                         if (res = is_rgb_extrinsic_valid(alt_calib))
                             assign_rgb_stream_extrinsic(alt_calib);
+                        else
+                            res = false;
                     }
                     else
-                    {
-                        restore_calib_factory_settings();
-                    }
+                        res = false;
                 }
 
+                // Update device's internal state
                 if (res)
                 {
-                    LOG_WARNING("RGB stream extrinsic is successfully recovered");
+                    LOG_WARNING("RGB stream extrinsic was recovered");
                     _color_calib_table_raw.reset();
-                    _color_extrinsic.reset();
+                    _color_extrinsic.get()->reset();
                     environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
                 }
                 else
                 {
                     LOG_WARNING("RGB Extrinsic recovery routine failed");
-                    _color_extrinsic.reset();
+                    _color_extrinsic.get()->reset();
                 }
             }
             catch (...)
