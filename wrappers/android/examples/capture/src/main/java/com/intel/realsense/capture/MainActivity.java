@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
@@ -34,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
 
     private Pipeline mPipeline;
-    private Config mConfig;
     private Colorizer mColorizer;
     private RsContext mRsContext;
 
@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
+        mPipeline.close();
     }
 
     private void init(){
@@ -99,15 +100,13 @@ public class MainActivity extends AppCompatActivity {
         mRsContext.setDevicesChangedCallback(mListener);
 
         mPipeline = new Pipeline();
-        mConfig  = new Config();
         mColorizer = new Colorizer();
 
-        mConfig.enableStream(StreamType.DEPTH, 640, 480);
-        mConfig.enableStream(StreamType.COLOR, 640, 480);
-
-        if(mRsContext.queryDevices().getDeviceCount() > 0) {
-            showConnectLabel(false);
-            start();
+        try(DeviceList dl = mRsContext.queryDevices()){
+            if(dl.getDeviceCount() > 0) {
+                showConnectLabel(false);
+                start();
+            }
         }
     }
 
@@ -150,13 +149,22 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void configAndStart() throws Exception {
+        try(Config config  = new Config())
+        {
+            config.enableStream(StreamType.DEPTH, 640, 480);
+            config.enableStream(StreamType.COLOR, 640, 480);
+            mPipeline.start(config);
+        }
+    }
+
     private synchronized void start() {
         if(mIsStreaming)
             return;
         try{
             Log.d(TAG, "try start streaming");
             mGLSurfaceView.clear();
-            mPipeline.start(mConfig);
+            configAndStart();
             mIsStreaming = true;
             mHandler.post(mStreaming);
             Log.d(TAG, "streaming started successfully");
@@ -174,9 +182,8 @@ public class MainActivity extends AppCompatActivity {
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
             Log.d(TAG, "streaming stopped successfully");
-        }  catch (Exception e) {
+        } catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");
-            mPipeline = null;
         }
     }
 }
