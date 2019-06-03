@@ -31,6 +31,7 @@ endif()
             ./depth-quality-model.cpp
             ./depth-metrics.h
             ../../common/rendering.h
+            ../../common/realsense-ui-advanced-mode.h
             ../../common/ux-window.h
             ../../common/ux-window.cpp
             ../../common/model-views.h

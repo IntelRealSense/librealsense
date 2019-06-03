@@ -129,13 +129,10 @@ namespace librealsense
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 1280, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
                 tags.push_back({ RS2_STREAM_INFRARED, 0, 1280, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 1280, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET });
             }
             else
             {
-                tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 0, 640, 480, RS2_FORMAT_RGB8, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_RGB8, 15, profile_tag::PROFILE_TAG_SUPERSET });
+                //TODO: F416 currntlly detected as RS_USB2_PID when connected via USB2 port
             }
             return tags;
         };
@@ -202,14 +199,12 @@ namespace librealsense
             if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
             {
                 tags.push_back({ RS2_STREAM_DEPTH, -1, 720, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 1024, 1024, RS2_FORMAT_Y10BPACK, 30, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_INFRARED, 0, 720, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             }
             else
             {
-                tags.push_back({ RS2_STREAM_DEPTH, -1, 576, 576, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, 2, 576, 576, RS2_FORMAT_Y10BPACK, 15, profile_tag::PROFILE_TAG_SUPERSET });
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             }
             return tags;
         };
@@ -513,8 +508,7 @@ namespace librealsense
               ds5_motion(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) 
         {
-            if (!validate_color_stream_extrinsic(*_color_calib_table_raw))
-                restore_color_stream_extrinsic();
+            validate_and_restore_color_stream_extrinsic();
         }
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -540,6 +534,29 @@ namespace librealsense
         bool compress_while_record() const override { return false; }
 
     private:
+        void validate_and_restore_color_stream_extrinsic()
+        {
+            try
+            {
+                std::vector<byte> cal;
+                try
+                {
+                    cal = *_color_calib_table_raw;
+                }
+                catch (...)
+                {
+                    LOG_WARNING("Cannot read RGB calibration table");
+                }
+
+                if (!validate_color_stream_extrinsic(cal))
+                    restore_color_stream_extrinsic();
+            }
+            catch (...)
+            {
+                LOG_WARNING("Validation color stream extrinsic failed");
+            }
+        }
+
         bool validate_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             try
@@ -648,6 +665,43 @@ namespace librealsense
         }
     };
 
+    class rs465_device : public ds5_rolling_shutter,
+        public ds5_active,
+        public ds5_color,
+        public ds5_advanced_mode_base
+    {
+    public:
+        rs465_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group,
+            bool register_device_notifications)
+            : device(ctx, group, register_device_notifications),
+            ds5_device(ctx, group),
+            ds5_rolling_shutter(ctx, group),
+            ds5_active(ctx, group),
+            ds5_color(ctx, group),
+            ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> tags;
+            auto usb_spec = get_usb_spec();
+            if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
+            {
+                tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 1280, 720, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, -1, 1280, 720, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET });
+            }
+            else
+            {
+                tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET });
+            }
+            return tags;
+        };
+    };
 
     class rs400_imu_device  :      public ds5_motion,
                                 public ds5_advanced_mode_base
@@ -693,6 +747,8 @@ namespace librealsense
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS415_PID:
             return std::make_shared<rs415_device>(ctx, group, register_device_notifications);
+        case RS416_PID:
+            return std::make_shared<rs416_device>(ctx, group, register_device_notifications);
         case RS420_PID:
             return std::make_shared<rs420_device>(ctx, group, register_device_notifications);
         case RS420_MM_PID:
@@ -709,6 +765,8 @@ namespace librealsense
             return std::make_shared<rs435_device>(ctx, group, register_device_notifications);
         case RS435I_PID:
             return std::make_shared<rs435i_device>(ctx, group, register_device_notifications);
+        case RS465_PID:
+            return std::make_shared<rs465_device>(ctx, group, register_device_notifications);
         case RS_USB2_PID:
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS400_IMU_PID:
@@ -836,6 +894,16 @@ namespace librealsense
     }
 
     std::shared_ptr<matcher> rs415_device::create_matcher(const frame_holder& frame) const
+    {
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
+        }
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
+    std::shared_ptr<matcher> rs465_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))

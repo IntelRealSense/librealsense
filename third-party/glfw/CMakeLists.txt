@@ -358,8 +358,7 @@ endif()
 # Install files other than the library
 # The library is installed by src/CMakeLists.txt
 #--------------------------------------------------------------------
-# Enforce GLFW when selecting GLSL
-if (GLFW_INSTALL OR BUILD_GLSL_EXTENSIONS)
+if (GLFW_INSTALL)
     install(DIRECTORY include/GLFW DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             FILES_MATCHING PATTERN glfw3.h PATTERN glfw3native.h)
 

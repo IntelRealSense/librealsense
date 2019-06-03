@@ -42,6 +42,8 @@ namespace librealsense
         META_DATA_INTEL_L500_CAPTURE_TIMING_ID  = 0x80000010,
         META_DATA_INTEL_L500_DEPTH_CONTROL_ID   = 0x80000012,
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
+        META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
+        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
     };
 
     static const std::map<md_type, std::string> md_type_desc =
@@ -59,6 +61,8 @@ namespace librealsense
         { md_type::META_DATA_CAMERA_DEBUG_ID,               "Camera Debug"},
         { md_type::META_DATA_INTEL_L500_CAPTURE_TIMING_ID,  "Intel Capture timing"},
         { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
+        { md_type::META_DATA_HID_IMU_REPORT_ID,             "HID IMU Report"},
+        { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -175,6 +179,45 @@ namespace librealsense
         right_greeen1_attribute         = (1u << 12),
         right_greeen2_attribute         = (1u << 13),
         right_blue_sum_attribute        = (1u << 14),
+    };
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+*  md_imu_report struct */
+    enum md_hid_report_type : uint8_t
+    {
+        hid_report_unknown,
+        hid_report_imu,
+        hid_report_custom_temperature,
+        hid_report_max,
+    };
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+ *  md_imu_report struct */
+    enum class md_hid_imu_attributes : uint8_t
+    {
+        custom_timestamp_attirbute  = (1u << 0),
+        imu_counter_attribute       = (1u << 1),
+        usb_counter_attribute       = (1u << 2)
+    };
+
+    inline md_hid_imu_attributes operator |(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return static_cast<md_hid_imu_attributes>(static_cast<uint8_t>(l) | static_cast<uint8_t>(r));
+    }
+
+    inline md_hid_imu_attributes operator |=(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return l = l | r;
+    }
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+*  md_imu_report struct */
+    enum class md_hid_custom_temp_attributes : uint8_t
+    {
+        source_id_attirbute         = (1u << 0),
+        custom_timestamp_attirbute  = (1u << 1),
+        imu_counter_attribute       = (1u << 2),
+        usb_counter_attribute       = (1u << 3)
     };
 
 #pragma pack(push, 1)
@@ -590,8 +633,8 @@ namespace librealsense
      *  layout as transmitted and received by backend */
     struct metadata_raw
     {
-        platform::uvc_header   header;
-        md_modes          mode;
+        platform::uvc_header    header;
+        md_modes                mode;
     };
 
     constexpr uint8_t metadata_raw_size = sizeof(metadata_raw);
@@ -610,6 +653,49 @@ namespace librealsense
                 (payload.header.md_type_id == md_type::META_DATA_INTEL_CAPTURE_TIMING_ID));
         }
     };
+
+    struct md_imu_report
+    {
+        md_header   header;
+        uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
+        uint64_t    custom_timestamp;   // HW Timestamp
+        uint8_t     imu_counter;        // IMU internal counter
+        uint8_t     usb_counter;        // USB-layer internal counter
+    };
+
+    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID)
+
+    constexpr uint8_t metadata_imu_report_size = sizeof(md_imu_report);
+
+    struct md_custom_tmp_report
+    {
+        md_header   header;
+        uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
+        uint64_t    custom_timestamp;   // HW Timestamp
+        uint8_t     imu_counter;        // IMU internal counter
+        uint8_t     usb_counter;        // USB-layer internal counter
+        uint8_t     source_id;
+    };
+
+    REGISTER_MD_TYPE(md_custom_tmp_report, md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID)
+
+    /**\brief md_hid_types - aggrevative structure that represents the supported HID
+ * metadata struct types to be handled */
+    union md_hid_report
+    {
+        md_imu_report           imu_report;
+        md_custom_tmp_report    temperature_report;
+    };
+
+    /**\brief metadata_hid_raw - HID metadata structure
+ *  layout populated by backend */
+    struct metadata_hid_raw
+    {
+        platform::hid_header   header;
+        md_hid_report          report_type;
+    };
+
+    constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);
 
 #pragma pack(pop)
 }

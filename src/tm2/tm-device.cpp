@@ -16,6 +16,54 @@ using namespace std::chrono;
 
 namespace librealsense
 {
+    void SetManualExposure(TrackingDevice* device, uint32_t integrationTimeInMili, float gain)
+    {
+        TrackingData::Exposure::StreamExposure leftStreamExposure;
+
+        leftStreamExposure.cameraId = SET_SENSOR_ID(3, 0);
+        leftStreamExposure.gain = gain;
+        leftStreamExposure.integrationTime = integrationTimeInMili;
+
+        TrackingData::Exposure::StreamExposure rightStreamExposure;
+        rightStreamExposure.cameraId = SET_SENSOR_ID(3, 1);
+        rightStreamExposure.gain = gain;
+        rightStreamExposure.integrationTime = integrationTimeInMili;
+
+        TrackingData::Exposure exp;
+        exp.numOfVideoStreams = 2;
+        exp.stream[0] = leftStreamExposure;
+        exp.stream[1] = rightStreamExposure;
+
+        Status status = device->SetExposure(exp);
+
+        if (status != Status::SUCCESS)
+            throw std::runtime_error("Failed set manual exposure");
+    }
+
+
+    void SetExposureMode(TrackingDevice* device, bool manualMode)
+    {
+        if (manualMode)
+        {
+            // Cancel autoExposure
+            TrackingData::ExposureModeControl modeControl(0, 0);
+
+            Status status = device->SetExposureModeControl(modeControl);
+            if (status != Status::SUCCESS)
+                throw std::runtime_error("Failed set manual exposure mode");
+        }
+        else
+        {
+            TrackingData::ExposureModeControl modeControl(3, 0);
+
+            Status status = device->SetExposureModeControl(modeControl);
+
+            if (status != Status::SUCCESS)
+                throw std::runtime_error("Failed set manual exposure");
+        }
+    }
+
+
     struct video_frame_metadata
     {
         int64_t arrival_ts;
@@ -56,6 +104,78 @@ namespace librealsense
         tm2_sensor&         _ep;
         temperature_type    _type;
         option_range        _range;
+    };
+
+    class exposure_option : public option_base
+    {
+    public:
+        float query() const override
+        {
+            return _ep.get_exposure();
+        }
+
+        void set(float value) override
+        {
+            return _ep.set_exposure(value);
+        }
+
+        const char* get_description() const override { return "Exposure"; }
+
+        bool is_enabled() const override { return true; }
+
+        explicit exposure_option(tm2_sensor& ep) : _ep(ep),
+            option_base(option_range{ 200, 16000, 0, 200 }) { }
+
+    private:
+        tm2_sensor&         _ep;
+    };
+
+    class exposure_mode_option : public option_base
+    {
+    public:
+        float query() const override
+        {
+            return 1.f - _ep.is_manual_exposure();
+        }
+
+        void set(float value) override
+        {
+            return _ep.set_manual_exposure(1.f - value);
+        }
+
+        const char* get_description() const override { return "Auto-Exposure"; }
+
+        bool is_enabled() const override { return true; }
+
+        explicit exposure_mode_option(tm2_sensor& ep) : _ep(ep),
+            option_base(option_range{ 0, 1, 1, 1 }) { }
+
+    private:
+        tm2_sensor&         _ep;
+    };
+
+    class gain_option : public option_base
+    {
+    public:
+        float query() const override
+        {
+            return _ep.get_gain();
+        }
+
+        void set(float value) override
+        {
+            return _ep.set_gain(value);
+        }
+
+        const char* get_description() const override { return "Gain"; }
+
+        bool is_enabled() const override { return true; }
+
+        explicit gain_option(tm2_sensor& ep) : _ep(ep),
+            option_base(option_range{ 1, 10, 0, 1 }) { }
+
+    private:
+        tm2_sensor&         _ep;
     };
 
     class asic_temperature_option : public temperature_option
@@ -482,6 +602,8 @@ namespace librealsense
 
         _is_opened = false;
         set_active_streams({});
+
+        manual_exposure = 0;
     }
 
     void tm2_sensor::pass_frames_to_fw(frame_holder fref)
@@ -755,6 +877,9 @@ namespace librealsense
         video_frame_metadata video_md{};
         video_md.arrival_ts = tm_frame.arrivalTimeStamp;
         video_md.exposure_time = tm_frame.exposuretime;
+
+        last_exposure = tm_frame.exposuretime;
+        last_gain = tm_frame.gain;
 
         frame_additional_data additional_data(ts_ms.count(), tm_frame.frameId, arrival_ts_ms.count(), sizeof(video_md), (uint8_t*)&video_md, system_ts_ms.count(), 0 ,0, false);
 
@@ -1160,11 +1285,12 @@ namespace librealsense
         rp.rotation     = { orient_quat.x, orient_quat.y, orient_quat.z, orient_quat.w };
 
         auto status = _tm_dev->SetStaticNode(guid.data(), rp);
-        if (status != Status::SUCCESS)
-        {
-            LOG_WARNING("Set static node failed, status =" << (uint32_t)status);
-        }
-        return (status == Status::SUCCESS);
+        if (status == Status::SUCCESS)
+            return true;
+        if (status == Status::ERROR_FW_INTERNAL) // non-fatal; just means the confidence was not high enough
+            return false;
+
+        throw io_exception(to_string() << "Unexpected error setting static node, status = " << (uint32_t)status);
     }
 
     bool tm2_sensor::get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const
@@ -1174,6 +1300,8 @@ namespace librealsense
 
         perc::TrackingData::RelativePose rel_pose;
         auto status = _tm_dev->GetStaticNode(guid.data(), rel_pose);
+        if (status == Status::ERROR_FW_INTERNAL) // non-fatal; just means the node is not available
+            return false;
         if (status == perc::Status::SUCCESS)
         {
             pos[0] = rel_pose.translation.x;
@@ -1183,12 +1311,10 @@ namespace librealsense
             orient_quat[1] = rel_pose.rotation.j;
             orient_quat[2] = rel_pose.rotation.k;
             orient_quat[3] = rel_pose.rotation.r;
+            return true;
         }
-        else
-        {
-            LOG_WARNING("Get static node failed, status =" << (uint32_t)status);
-        }
-        return (status == Status::SUCCESS);
+
+        throw io_exception(to_string() << "Unexpected error getting static node, status = " << (uint32_t)status);
     }
 
 
@@ -1238,6 +1364,40 @@ namespace librealsense
         return temperature;
     }
 
+    void tm2_sensor::set_exposure(float value)
+    {
+        if (!manual_exposure)
+            throw std::runtime_error("To control exposure you must set sensor to manual exposure mode prior to streaming");
+        SetManualExposure(_tm_dev, value, last_gain);
+        last_exposure = value;
+    }
+
+
+
+    float tm2_sensor::get_exposure() const
+    {
+        return last_exposure;
+    }
+
+    void tm2_sensor::set_gain(float value)
+    {
+        if (!manual_exposure)
+            throw std::runtime_error("To control gain you must set sensor to manual exposure mode prior to streaming");
+        SetManualExposure(_tm_dev, last_exposure, value);
+        last_gain = value;
+    }
+
+    float tm2_sensor::get_gain() const
+    {
+        return last_gain;
+    }
+
+    void tm2_sensor::set_manual_exposure(bool manual)
+    {
+        SetExposureMode(_tm_dev, manual);
+        manual_exposure = true;
+    }
+
     ///////////////
     // Device
 
@@ -1273,6 +1433,11 @@ namespace librealsense
 
         _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
         _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+
+        _sensor->register_option(rs2_option::RS2_OPTION_EXPOSURE, std::make_shared<exposure_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
+
 
         // Assing the extrinsic nodes to the default group
         auto tm2_profiles = _sensor->get_stream_profiles();

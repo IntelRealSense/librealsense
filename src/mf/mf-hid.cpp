@@ -12,6 +12,7 @@
 #include "../types.h"
 #include "mf-hid.h"
 #include "win/win-helpers.h"
+#include "metadata.h"
 
 #include <PortableDeviceTypes.h>
 //#include <PortableDeviceClassExtension.h>
@@ -27,7 +28,6 @@
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
 
-const uint8_t HID_METADATA_SIZE = 8; // bytes
 // Windows Filetime is represented in 64 - bit number of 100 - nanosecond intervals since midnight Jan 1, 1601
 // To convert to the Unix epoch, subtract 116444736000000000LL to reach Jan 1, 1970.
 constexpr uint64_t WIN_FILETIME_2_UNIX_SYSTIME = 116444736000000000LL;
@@ -121,6 +121,12 @@ namespace librealsense
                 CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE2, &var));
                 auto customTimestampHigh = var.ulVal;
 
+                // Parse additional custom fields
+                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE6, &var));
+                uint8_t imu_count = var.bVal;
+                CHECK_HR(report->GetSensorValue(SENSOR_DATA_TYPE_CUSTOM_VALUE7, &var));
+                uint8_t usb_count = var.bVal;
+
                 /* Retrieve sensor type - Sensor types are more specific groupings than sensor categories. Sensor type IDs are GUIDs that are defined in Sensors.h */
 
                 SENSOR_TYPE_ID type{};
@@ -175,8 +181,22 @@ namespace librealsense
 
                 PropVariantClear(&var);
 
-                sensor_data d;
-                hid_sensor_data data;
+                sensor_data d{};
+                hid_sensor_data data{};
+                // Populate HID IMU data - Header
+                metadata_hid_raw meta_data{};
+                meta_data.header.report_type = md_hid_report_type::hid_report_imu;
+                meta_data.header.length = hid_header_size + metadata_imu_report_size;
+                meta_data.header.timestamp = customTimestampLow | (customTimestampHigh < 32);
+                // Payload:
+                meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
+                meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
+                meta_data.report_type.imu_report.flags = static_cast<uint8_t>( md_hid_imu_attributes::custom_timestamp_attirbute |
+                                                                                md_hid_imu_attributes::imu_counter_attribute |
+                                                                                md_hid_imu_attributes::usb_counter_attribute);
+                meta_data.report_type.imu_report.custom_timestamp = customTimestampLow | (customTimestampHigh < 32);
+                meta_data.report_type.imu_report.imu_counter = imu_count;
+                meta_data.report_type.imu_report.usb_counter = usb_count;
 
                 data.x = static_cast<int16_t>(rawX);
                 data.y = static_cast<int16_t>(rawY);
@@ -188,8 +208,8 @@ namespace librealsense
                 d.sensor.name = CW2A(fName);
 
                 d.fo.pixels = &data;
-                d.fo.metadata = &data.ts_low;
-                d.fo.metadata_size = HID_METADATA_SIZE;
+                d.fo.metadata = &meta_data;
+                d.fo.metadata_size = metadata_hid_raw_size;
                 d.fo.frame_size = sizeof(data);
                 d.fo.backend_time = 0;
                 if (SystemTimeToFileTime(&sys_time, &file_time))

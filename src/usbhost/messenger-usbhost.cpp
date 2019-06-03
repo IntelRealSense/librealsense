@@ -34,7 +34,9 @@ namespace librealsense
             {
                 case EBADF:
                 case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
-                //TODO:MK
+                case EPROTO: return RS2_USB_STATUS_OVERFLOW; //protocol error seems to identify FW overflow
+                case ENOMEM: return RS2_USB_STATUS_NO_MEM;
+                    //TODO:MK
                 default: return RS2_USB_STATUS_OTHER;
             }
         }
@@ -116,9 +118,9 @@ namespace librealsense
             int length = 0;
             usb_status rv = control_transfer(requestType, request, value, ep, buffer, length, transferred, timeout_ms);
             if(rv == RS2_USB_STATUS_SUCCESS)
-                LOG_DEBUG("USB pipe " << ep << " reset successfully");
+                LOG_INFO("USB pipe " << ep << " reset successfully");
             else
-                LOG_DEBUG("Failed to reset the USB pipe " << ep << ", error: " << usb_status_to_string.at(rv).c_str());
+                LOG_WARNING("Failed to reset the USB pipe " << ep << ", error: " << usb_status_to_string.at(rv).c_str());
             return rv;
         }
 
@@ -129,7 +131,7 @@ namespace librealsense
             {
                 std::string strerr = strerror(errno);
                 LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
-                return usbhost_status_to_rs(sts);
+                return usbhost_status_to_rs(errno);
             }
             transferred = sts;
             return RS2_USB_STATUS_SUCCESS;
@@ -141,8 +143,8 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("bulk_transfer returned error, endpoint: " << endpoint->get_address() << ", error: " << strerr);
-                return usbhost_status_to_rs(sts);
+                LOG_WARNING("bulk_transfer returned error, endpoint: " << (int)endpoint->get_address() << ", error: " << strerr << ", number: " << (int)errno);
+                return usbhost_status_to_rs(errno);
             }
             transferred = sts;
             return RS2_USB_STATUS_SUCCESS;

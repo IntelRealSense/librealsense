@@ -59,30 +59,35 @@ public class PresetsActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
                 RsContext ctx = new RsContext();
-                DeviceList devices = ctx.queryDevices();
-                if(devices.getDeviceCount() == 0){
-                    Log.e(TAG, "failed to set preset, no device found");
-                    finish();
-                }
-                Device device = ctx.queryDevices().createDevice(0);
-                if(!device.isInAdvancedMode()){
-                    Log.e(TAG, "failed to set preset, device not in advanced mode");
-                    finish();
-                }
-                final String item = finalPresets[position];
-                try {
-                    InputStream is = resources.getAssets().open("presets/" + item);
-                    byte[] buffer = new byte[is.available()];
-                    is.read(buffer);
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    baos.write(buffer);
-                    baos.close();
-                    is.close();
-                    device.loadPresetFromJson(buffer);
-                } catch (IOException e) {
-                    Log.e(TAG, "failed to set preset, failed to open preset file, error: " + e.getMessage());
-                }finally {
-                    finish();
+                try(DeviceList devices = ctx.queryDevices()) {
+                    if(devices.getDeviceCount() == 0){
+                        Log.e(TAG, "failed to set preset, no device found");
+                        finish();
+                    }
+                    try(Device device = devices.createDevice(0)){
+                        if(!device.isInAdvancedMode()){
+                            Log.e(TAG, "failed to set preset, device not in advanced mode");
+                            finish();
+                        }
+                        final String item = finalPresets[position];
+                        try {
+                            InputStream is = resources.getAssets().open("presets/" + item);
+                            byte[] buffer = new byte[is.available()];
+                            is.read(buffer);
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            baos.write(buffer);
+                            baos.close();
+                            is.close();
+                            device.loadPresetFromJson(buffer);
+                        } catch (IOException e) {
+                            Log.e(TAG, "failed to set preset, failed to open preset file, error: " + e.getMessage());
+                        }
+                        catch (Exception e) {
+                            Log.e(TAG, "failed to set preset, error: " + e.getMessage());
+                        }finally {
+                            finish();
+                        }
+                    }
                 }
             }
         });

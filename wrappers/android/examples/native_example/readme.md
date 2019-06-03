@@ -21,40 +21,36 @@ The app should add RealSense dependency in the module build.gradle which is curr
 >    downloadSo
 >}
 >
->task copyHeaders(type: Copy) {
->    from configurations.downloadHeader
->    into "$buildDir/tmp"
->    rename ('librealsense-([0-9]+\\.[0-9]+\\.[0-9]+).zip', 'include.zip')
+>dependencies {
+>    def version = '2.+'
+>    downloadSo 'com.intel.realsense:librealsense:' + version + '@aar'
+>    implementation 'com.intel.realsense:librealsense:' + version + '@aar'
+>    downloadHeader 'com.intel.realsense:librealsense:' + version + '@zip'
 >}
 >
->task unzipHeaders(type: Copy) {
->    from zipTree("$buildDir/tmp/include.zip")
+>task extractHeaders(type: Sync) {
+>    dependsOn configurations.downloadHeader
+>    from { configurations.downloadHeader.collect { zipTree(it) } }
 >    into "$projectDir/src/main/cpp/include"
 >}
->
->dependencies {
->    downloadSo 'com.intel.realsense:librealsense:2.+@aar'
->    implementation 'com.intel.realsense:librealsense:2.+@aar'
->    downloadHeader 'com.intel.realsense:librealsense:2.+@zip'
->}
->
->task extractApi(type: Sync) {
+
+>task extractSo(type: Sync) {
 >    dependsOn configurations.downloadSo
 >    from { configurations.downloadSo.collect { zipTree(it) } }
 >    include("jni/**")
 >    into "$buildDir/"
 >}
 >
->preBuild.dependsOn(copyHeaders)
->preBuild.dependsOn(unzipHeaders)
->preBuild.dependsOn(extractApi)
+>preBuild.dependsOn(extractHeaders)
+>preBuild.dependsOn(extractSo)
 >```
 
 The example shows how to use any librealsense version which is greater than 2.0.0, it is recommended to specify a specific version for example:
 >```java
->    downloadSo 'com.intel.realsense:librealsense:2.18.0@aar'
->    implementation 'com.intel.realsense:librealsense:2.18.0@aar'
->    downloadHeader 'com.intel.realsense:librealsense:2.18.0@zip'
+>    def version = '2.18.0'
+>    downloadSo 'com.intel.realsense:librealsense:' + version + '@aar'
+>    implementation 'com.intel.realsense:librealsense:' + version + '@aar'
+>    downloadHeader 'com.intel.realsense:librealsense:' + version + '@zip'
 >```
 
 Once the gradle changes are done and the gradle sync was executed, you should be able to import librealsense classes.

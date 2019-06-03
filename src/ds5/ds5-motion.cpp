@@ -317,8 +317,11 @@ namespace librealsense
                 hid_ep->register_on_before_frame_callback(align_imu_axes);
             }
 
-            if (!motion_module_fw_version.empty())
+            if ((!motion_module_fw_version.empty()) && ("255.255.255.255" != motion_module_fw_version))
                 register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+
+            // HID metadata attributes
+            hid_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
         }
     }
 
