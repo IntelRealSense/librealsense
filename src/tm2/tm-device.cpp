@@ -1175,6 +1175,8 @@ namespace librealsense
 
         perc::TrackingData::RelativePose rel_pose;
         auto status = _tm_dev->GetStaticNode(guid.data(), rel_pose);
+        if (status == Status::ERROR_FW_INTERNAL) // non-fatal; just means the node is not available
+            return false;
         if (status == perc::Status::SUCCESS)
         {
             pos[0] = rel_pose.translation.x;
@@ -1184,12 +1186,10 @@ namespace librealsense
             orient_quat[1] = rel_pose.rotation.j;
             orient_quat[2] = rel_pose.rotation.k;
             orient_quat[3] = rel_pose.rotation.r;
+            return true;
         }
-        else
-        {
-            LOG_WARNING("Get static node failed, status =" << (uint32_t)status);
-        }
-        return (status == Status::SUCCESS);
+
+        throw io_exception(to_string() << "Unexpected error getting static node, status = " << (uint32_t)status);
     }
 
 
