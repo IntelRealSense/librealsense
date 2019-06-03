@@ -515,7 +515,7 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message, viewer_model& viewer);
         bool is_there_common_fps() ;
         bool draw_stream_selection();
         bool is_selected_combination_supported();
@@ -1031,6 +1031,7 @@ namespace rs2
         bool draw_frustrum = true;
         bool support_non_syncronized_mode = true;
         std::atomic<bool> synchronization_enable;
+        std::atomic<bool> zero_order_enabled;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
