@@ -319,6 +319,9 @@ namespace librealsense
 
             if (!motion_module_fw_version.empty())
                 register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, motion_module_fw_version);
+
+            // HID metadata attributes
+            hid_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
         }
     }
 
