@@ -3918,7 +3918,7 @@ namespace perc {
         }
         else if (res->wStatus == toUnderlying(MESSAGE_STATUS::UNSUPPORTED))
         {
-            DEVICELOGE("MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
+            DEVICELOGE("Unsupported MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
             msg.Result = toUnderlying(Status::FEATURE_UNSUPPORTED);
         }
         // Static node functions return INTERNAL_ERROR to mean "false"
