@@ -515,7 +515,7 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message, viewer_model* viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message, viewer_model& viewer);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
@@ -567,7 +567,7 @@ namespace rs2
             return false;
         }
 
-        viewer_model* viewer;
+        viewer_model& viewer;
         std::function<void()> on_frame = []{};
         std::shared_ptr<sensor> s;
         device dev;
@@ -1034,7 +1034,7 @@ namespace rs2
         bool draw_frustrum = true;
         bool support_non_syncronized_mode = true;
         std::atomic<bool> synchronization_enable;
-        std::atomic<int> num_of_zero_order_enabled;
+        std::atomic<int> zo_sensors;
 
         int selected_depth_source_uid = -1;
         int selected_tex_source_uid = -1;
