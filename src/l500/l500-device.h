@@ -19,7 +19,7 @@
 namespace librealsense
 {
 
-    class l500_device : public virtual device, public debug_interface
+    class l500_device : public virtual device, public debug_interface, public global_time_interface
     {
     public:
         l500_device(std::shared_ptr<context> ctx,
@@ -42,7 +42,7 @@ namespace librealsense
 
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
-        double get_device_time();
+        double get_device_time_ms();
 
     protected:
         friend class l500_depth_sensor;
@@ -58,7 +58,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
-        std::shared_ptr<time_diff_keeper> _tf_keeper;
 
         void force_hardware_reset() const;
     };

@@ -180,6 +180,7 @@ namespace librealsense
             CASE(POSE)
             CASE(POSE_SENSOR)
             CASE(WHEEL_ODOMETER)
+            CASE(GLOBAL_TIMER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

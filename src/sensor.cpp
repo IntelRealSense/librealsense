@@ -12,6 +12,7 @@
 #include "stream.h"
 #include "sensor.h"
 #include "proc/decimation-filter.h"
+#include "global_timestamp_reader.h"
 #include "metadata.h"
 
 namespace librealsense
@@ -594,6 +595,10 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+        }
         set_active_streams(requests);
     }
 
@@ -610,6 +615,10 @@ namespace librealsense
             _device->close(profile);
         }
         reset_streaming();
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+        }
         _power.reset();
         _is_opened = false;
         set_active_streams({});
@@ -870,6 +879,10 @@ namespace librealsense
             configured_hid_profiles.push_back(platform::hid_profile{elem.first, elem.second.fps});
         }
         _hid_device->open(configured_hid_profiles);
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+        }
         _is_opened = true;
         set_active_streams(requests);
     }
@@ -888,6 +901,10 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+        }
         set_active_streams({});
     }
 

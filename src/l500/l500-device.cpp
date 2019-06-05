@@ -20,11 +20,10 @@ namespace librealsense
 
     l500_device::l500_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        :device(ctx, group),
+        :device(ctx, group), global_time_interface(), 
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
-        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
-        _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
+        _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
@@ -83,10 +82,6 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
-            _tf_keeper->start();
-        else
-            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     std::shared_ptr<uvc_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
@@ -135,8 +130,13 @@ namespace librealsense
         throw not_implemented_exception("enable_recording(...) not implemented!");
     }
 
-    double l500_device::get_device_time()
+    double l500_device::get_device_time_ms()
     {
+        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
+        {
+            throw not_implemented_exception("device time not supported for backend.");
+        }
+
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
