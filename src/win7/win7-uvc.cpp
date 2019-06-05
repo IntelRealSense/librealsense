@@ -439,7 +439,9 @@ namespace librealsense
                             if (ptr)
                             {
                                 _keep_pulling_interrupts = false;
-                                ptr->join();
+								LOG_DEBUG(__FUNCTION__ << ": start joining interrupt thread");
+								ptr->join();
+								LOG_DEBUG(__FUNCTION__ << ": interrupt thread joined");
                                 delete ptr;
                             }
                         });

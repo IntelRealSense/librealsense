@@ -13,6 +13,8 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <future>
+
 
 // Data structures for Backend-Frontend queue:
 struct frame;
@@ -44,6 +46,7 @@ uvc_error_t winusb_uvc_scan_streaming(winusb_uvc_device *dev, winusb_uvc_device_
 uvc_error_t winusb_uvc_parse_vs(winusb_uvc_device *dev, winusb_uvc_device_info_t *info, winusb_uvc_streaming_interface_t *stream_if, const unsigned char *block, size_t block_size);
 
 void winusb_uvc_free_device_info(winusb_uvc_device_info_t *info) {
+
     uvc_input_terminal_t *input_term, *input_term_tmp;
     uvc_processing_unit_t *proc_unit, *proc_unit_tmp;
     uvc_extension_unit_t *ext_unit, *ext_unit_tmp;
@@ -577,6 +580,7 @@ uvc_error_t winusb_uvc_parse_vs(
     winusb_uvc_device_info_t *info,
     winusb_uvc_streaming_interface_t *stream_if,
     const unsigned char *block, size_t block_size) {
+
     uvc_error_t ret;
     int descriptor_subtype;
 
@@ -616,6 +620,7 @@ uvc_error_t winusb_uvc_parse_vs(
     return ret;
 }
 uvc_error_t update_stream_if_handle(winusb_uvc_device *devh, int interface_idx) {
+	LOG_DEBUG(__FUNCTION__);
     winusb_uvc_streaming_interface_t *stream_if;
 
     DL_FOREACH(devh->deviceData.stream_ifs, stream_if) {
@@ -702,7 +707,6 @@ uvc_error_t winusb_get_available_formats(
 
 // Return linked list of uvc_format_t of all available formats inside winusb device
 uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format_t **formats) {
-
     winusb_uvc_streaming_interface_t *stream_if = NULL;
     uvc_format_t *prev_format = NULL;
     uvc_format_desc_t *format;
@@ -741,6 +745,7 @@ uvc_error_t winusb_get_available_formats_all(winusb_uvc_device *devh, uvc_format
 }
 
 uvc_error_t winusb_free_formats(uvc_format_t *formats) {
+	LOG_DEBUG(__FUNCTION__);
     uvc_format_t *cur_format = formats;
     while (cur_format != NULL) {
         uvc_format_t *format = cur_format;
@@ -913,8 +918,9 @@ void winusb_uvc_process_payload(winusb_uvc_stream_handle_t *strmh,
 
 void stream_thread(winusb_uvc_stream_context *strctx)
 {
+	LOG_DEBUG(__FUNCTION__);
     PUCHAR buffer = (PUCHAR)malloc(strctx->maxPayloadTransferSize);
-    memset(buffer, 0, sizeof(strctx->maxPayloadTransferSize));
+    memset(buffer, 0, strctx->maxPayloadTransferSize);
 
     frames_archive archive;
     std::atomic_bool keep_sending_callbacks = true;
@@ -973,7 +979,9 @@ void stream_thread(winusb_uvc_stream_context *strctx)
     archive.stop_allocation();
     archive.wait_until_empty();
     keep_sending_callbacks = false;
+	LOG_DEBUG(__FUNCTION__ << ": start joining user callbacks thread");
     t.join();
+	LOG_DEBUG(__FUNCTION__ << ": user callbacks thread joined");
 };
 
 uvc_error_t winusb_uvc_stream_start(
@@ -982,6 +990,7 @@ uvc_error_t winusb_uvc_stream_start(
     void *user_ptr,
     uint8_t flags
 ) {
+	LOG_DEBUG(__FUNCTION__);
     /* USB interface we'll be using */
     winusb_uvc_interface *iface;
     int interface_id;
@@ -1027,7 +1036,7 @@ uvc_error_t winusb_uvc_stream_start(
 	// WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
 	// PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
 	ULONG timeout_milliseconds = 1000;
-	if (WinUsb_SetPipePolicy(streamctx->stream->devh->associateHandle, streamctx->endpoint, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
+	if (WinUsb_SetPipePolicy(streamctx->stream->stream_if->associateHandle, streamctx->endpoint, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
 		return UVC_ERROR_OTHER;
 
     strmh->cb_thread = std::thread(stream_thread, streamctx);
@@ -1042,17 +1051,29 @@ fail:
 
 uvc_error_t winusb_uvc_stream_stop(winusb_uvc_stream_handle_t *strmh)
 {
+	LOG_DEBUG(__FUNCTION__);
     if (!strmh->running)
         return UVC_ERROR_INVALID_PARAM;
 
     strmh->running = 0;
-    strmh->cb_thread.join();
+	// Terminate the thread.
+	LOG_DEBUG(__FUNCTION__ << ": start joining streaming thread");
+	auto future = std::async(std::launch::async, &std::thread::join, &strmh->cb_thread);
+	if (future.wait_for(std::chrono::seconds(10)) == std::future_status::timeout)
+	{
+		LOG_ERROR(__FUNCTION__ << ": app stall encountered");
+	}
+	LOG_DEBUG(__FUNCTION__ << ": streaming thread joined");
+
+    //strmh->cb_thread.join();
 
     return UVC_SUCCESS;
 }
 
 void winusb_uvc_stream_close(winusb_uvc_stream_handle_t *strmh)
 {
+	LOG_DEBUG(__FUNCTION__);
+
     if (strmh->running)
     {
         winusb_uvc_stream_stop(strmh);
@@ -1071,6 +1092,8 @@ uvc_error_t winusb_uvc_stream_open_ctrl(winusb_uvc_device *devh, winusb_uvc_stre
 
 uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *ctrl, winusb_uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
 {
+	LOG_DEBUG(__FUNCTION__);
+
     uvc_error_t ret;
     winusb_uvc_stream_handle_t *strmh;
 
@@ -1092,6 +1115,8 @@ uvc_error_t winusb_start_streaming(winusb_uvc_device *devh, uvc_stream_ctrl_t *c
 
 void winusb_stop_streaming(winusb_uvc_device *devh)
 {
+	LOG_DEBUG(__FUNCTION__);
+
     winusb_uvc_stream_handle_t *strmh, *strmh_tmp;
 
     DL_FOREACH_SAFE(devh->streams, strmh, strmh_tmp) {
@@ -2167,7 +2192,7 @@ uvc_error_t winusb_open(winusb_uvc_device *device)
 
     if (descriptors)
     {
-        delete descriptors;
+        delete[] descriptors;
         descriptors = NULL;
     }
 
@@ -2185,7 +2210,7 @@ fail:
 
     if (descriptors)
     {
-        delete descriptors;
+        delete[] descriptors;
     }
 
     if (device)
