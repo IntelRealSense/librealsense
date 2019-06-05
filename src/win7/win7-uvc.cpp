@@ -370,6 +370,8 @@ namespace librealsense
         {
             while (_keep_pulling_interrupts)
             {
+				if (_device->deviceData.ctrl_if.bEndpointAddress < 0x80)
+					continue;
                 ::poll_interrupts(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, 100);
             }
         }
@@ -420,6 +422,15 @@ namespace librealsense
                             eu; eu = eu->next) {
                             _extension_unit = eu->bUnitID;
                         }
+
+						// WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
+						// PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
+						ULONG timeout_milliseconds = 100;
+						if (WinUsb_SetPipePolicy(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
+						{
+							free(device_list);
+							throw std::runtime_error("Failed to set timeout policy!");
+						}
 
                         _keep_pulling_interrupts = true;
                         _interrupt_polling_thread = std::shared_ptr<std::thread>(new std::thread([this]() {
@@ -601,7 +612,9 @@ namespace librealsense
             context->_this = this;
             context->_profile = profile;
 
-            winusb_start_streaming(_device.get(), &ctrl, internal_winusb_uvc_callback, context, 0);
+            auto sts = winusb_start_streaming(_device.get(), &ctrl, internal_winusb_uvc_callback, context, 0);
+			if(sts != UVC_SUCCESS)
+				throw std::runtime_error("Failed to start streaming!");
         }
 
         void win7_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
