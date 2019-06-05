@@ -111,7 +111,9 @@ namespace librealsense
             std::make_shared<uvc_xu_option<int>>(
                 *depth_ep,
                 ivcam2::depth_xu,
-                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range"));
+                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range",
+                std::map<float, std::string>{ { 1, "Long range"},
+                { 2, "Short range" }}));
 
         return depth_ep;
     }

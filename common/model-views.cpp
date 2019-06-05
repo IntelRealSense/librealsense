@@ -887,11 +887,12 @@ namespace rs2
 
     subdevice_model::subdevice_model(
         device& dev,
-        std::shared_ptr<sensor> s, std::string& error_message, viewer_model& viewer)
+        std::shared_ptr<sensor> s, std::string& error_message, viewer_model* viewer)
         : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
-        yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>())
+        yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
+        viewer(viewer)
     {
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
@@ -944,7 +945,7 @@ namespace rs2
             if (shared_filter->is<zero_order_invalidation>())
             {
                 zero_order_artifact_fix = model;
-                viewer.zero_order_enabled = true;
+                viewer->num_of_zero_order_enabled++;
             }
 
             if (shared_filter->is<hole_filling_filter>())
@@ -1079,6 +1080,11 @@ namespace rs2
         }
     }
 
+    subdevice_model::~subdevice_model()
+    {
+        if(zero_order_artifact_fix)
+            viewer->num_of_zero_order_enabled--;
+    }
 
     bool subdevice_model::is_there_common_fps()
     {
@@ -1518,7 +1524,7 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.zero_order_enabled || (viewer.synchronization_enable && is_synchronized_frame(viewer, f)))
+                if (viewer.num_of_zero_order_enabled.load() > 0 || (viewer.synchronization_enable && is_synchronized_frame(viewer, f)))
                 {
                     syncer->invoke(f);
                 }
@@ -2463,7 +2469,7 @@ namespace rs2
     viewer_model::viewer_model()
             : ppf(*this), 
               synchronization_enable(true),
-              zero_order_enabled(false)
+              num_of_zero_order_enabled(0)
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -3394,7 +3400,7 @@ namespace rs2
     {
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message, viewer);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message, &viewer);
             subdevices.push_back(model);
         }
 
@@ -3916,7 +3922,7 @@ namespace rs2
         {
             try
             {
-                if(viewer.synchronization_enable || viewer.zero_order_enabled)
+                if(viewer.synchronization_enable || viewer.num_of_zero_order_enabled.load() >0)
                 {
                     auto frames = viewer.syncer->try_wait_for_frames();
                     for(auto f:frames)
