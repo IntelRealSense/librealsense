@@ -214,7 +214,7 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
             frame_processor.invoke(f);
         });
     }
-    
+
     while (composite_frames.size() < sensors.size())
     {
         rs2::frameset composite_fs;
@@ -246,7 +246,7 @@ std::vector<rs2::frame> get_frames(std::vector<rs2::sensor> sensors)
             frames.push_back(f);
         });
     }
-    
+
     while (frames.size() < sensors.size())
     {
         std::this_thread::sleep_for(std::chrono::microseconds(100));

@@ -230,7 +230,7 @@ namespace librealsense
     void copy_raw10(byte * const dest[], const byte * source, int width, int height)
     {
         auto count = width * height; // num of pixels
-        librealsense::copy(dest[0], source, (5.0 * (count / 4.0)));
+        librealsense::copy(dest[0], source, size_t(5.0 * (count / 4.0)));
     }
 
     void unpack_y10bpack(byte * const dest[], const byte * source, int width, int height)

@@ -37,7 +37,6 @@ namespace librealsense
         std::vector<uint8_t> get_raw_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
-    
 
     class l500_color_sensor : public uvc_sensor, public video_sensor_interface
         {
@@ -53,7 +52,7 @@ namespace librealsense
                 using namespace ivcam2;
 
                 auto intrinsic = check_calib<intrinsic_rgb>(*_owner->_color_intrinsics_table_raw);
-                
+
                 auto num_of_res = intrinsic->resolution.num_of_resolutions;
 
                 for (auto i = 0; i < num_of_res; i++)
