@@ -59,9 +59,9 @@ if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
 	echo -e "\e[36mThe kernel has modified files:\e[0m"
 	git status | grep 'modified:'
-	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 10 seconds to abort the operation"
+	echo -e "\e[36mProceeding will reset all local kernel changes. Press 'n' within 3 seconds to abort the operation"
 	set +e
-	read -n 1 -t 10 -r -p "Do you want to proceed? [Y/n]" response
+	read -n 1 -t 3 -r -p "Do you want to proceed? [Y/n]" response
 	set -e
 	response=${response,,}    # tolower
 	if [[ $response =~ ^(n|N)$ ]]; 
@@ -144,6 +144,8 @@ sudo cp $KBASE/drivers/media/v4l2-core/videodev.ko ~/$LINUX_BRANCH-videodev.ko
 echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
 
 # Load the newly-built modules
+# As a precausion start with unloading the core uvcvideo:
+try_unload_module uvcvideo
 try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
 try_module_insert hid_sensor_accel_3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
