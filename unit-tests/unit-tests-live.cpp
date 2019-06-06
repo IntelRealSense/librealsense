@@ -5393,7 +5393,6 @@ TEST_CASE("L500 zero order sanity", "[live]") {
 
                         REQUIRE(stream_missing == stream_arrived.end());
                     }
-                   
                 }
             }
         }

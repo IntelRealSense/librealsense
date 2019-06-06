@@ -686,20 +686,20 @@ namespace librealsense
                 // Update device's internal state
                 if (res)
                 {
-                    LOG_WARNING("RGB stream extrinsic was recovered");
+                    LOG_WARNING("RGB stream extrinsic successfully recovered");
                     _color_calib_table_raw.reset();
                     _color_extrinsic.get()->reset();
                     environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
                 }
                 else
                 {
-                    LOG_WARNING("RGB Extrinsic recovery routine failed");
+                    LOG_ERROR("RGB Extrinsic recovery routine failed");
                     _color_extrinsic.get()->reset();
                 }
             }
             catch (...)
             {
-                LOG_WARNING("RGB Extrinsic recovery routine failed");
+                LOG_ERROR("RGB Extrinsic recovery routine failed");
             }
         }
     };
