@@ -165,6 +165,9 @@ namespace Intel.RealSense
         MCTemperature = 50,
 
         /// <summary>MA temperature</summary>
-        MATemperature = 51
+        MATemperature = 51,
+
+        /// <summary>APD temperature</summary>
+        APDTemperature = 54,
     }
 }

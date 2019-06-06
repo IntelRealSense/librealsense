@@ -67,12 +67,10 @@ namespace librealsense
 
         using namespace platform;
 
-        auto usb_mode = usb3_type;
-        std::string usb_type_str(usb_spec_names.at(usb_mode));
-        usb_mode = get_depth_sensor().get_usb_specification();
+        auto usb_mode = get_depth_sensor().get_usb_specification();
         if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
         {
-            usb_type_str = usb_spec_names.at(usb_mode);
+            auto usb_type_str = usb_spec_names.at(usb_mode);
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
         }
 
@@ -104,11 +102,13 @@ namespace librealsense
         depth_ep->register_pixel_format(pf_confidence_l500);
         depth_ep->register_pixel_format(pf_y8_l500);
 
-        depth_ep->register_option(RS2_OPTION_LASER_POWER,
+        depth_ep->register_option(RS2_OPTION_VISUAL_PRESET,
             std::make_shared<uvc_xu_option<int>>(
                 *depth_ep,
                 ivcam2::depth_xu,
-                ivcam2::L500_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
+                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range",
+                std::map<float, std::string>{ { 1, "Long range"},
+                { 2, "Short range" }}));
 
         return depth_ep;
     }
