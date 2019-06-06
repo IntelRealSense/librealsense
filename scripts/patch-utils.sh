@@ -124,17 +124,22 @@ function try_module_insert {
 	#videodev              176128  4 uvcvideo,v4l2_common,videobuf2_core,videobuf2_v4l2
 	# In the above scenario videodev cannot be unloaded untill all the modules listed on the right are unloaded
 	# Note that in case of multiple dependencies we'll remove only modules one by one starting with the first on the list
+	# And that the modules stack unwinding will start from the last (i.e leaf) dependency,
+	# for instance : videobuf2_core,videobuf2_v4l2,uvcvideo will start with unloading uvcvideo as it should automatically unwind dependent modules
 	if [ $(lsmod | grep ^${module_name} | wc -l) -ne 0 ];
 	then
-		dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $1}')
-
+		dependencies=$(lsmod | grep ^${module_name} | awk '{printf $4}')
+		dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $NF}')
+		if [ ! -z "$dependencies" ];
+		then
+			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependencies\n\e[0m" ${module_name}
+		fi
 		while [ ! -z "$dependent_module" ]
 		do
-			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependent_module\n\e[0m" ${module_name}
 			printf "\e[32m\tUnloading dependency \e[34m$dependent_module\e[0m\n\t"
 			dependent_modules+="$dependent_module "
 			try_unload_module $dependent_module
-			dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $1}')
+			dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $NF}')
 		done
 
 		# Unload existing modules if resident
