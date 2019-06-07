@@ -400,7 +400,8 @@ namespace librealsense
                     winusb_uvc_device *device = device_list[i];
 
                     // initializing and filling all fields of winsub_device device_list[0]
-                    winusb_open(device);
+					if (winusb_open(device) != UVC_SUCCESS)
+						continue;
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi)
                     {
