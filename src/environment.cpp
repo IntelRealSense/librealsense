@@ -159,7 +159,7 @@ namespace librealsense
                                 return inverse(back_edge->operator*());
                         }();
 
-                        auto pose = to_pose(local) * to_pose(*extr);
+                        auto pose = to_pose(*extr) * to_pose(local);
                         *extr = from_pose(pose);
                         return true;
                     }

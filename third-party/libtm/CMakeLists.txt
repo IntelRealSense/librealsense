@@ -11,15 +11,11 @@ set(INFRA_INCLUDE_DIR "${LIBTM_ROOT}/libtm/src/infra")
 set(LIBTM_SRC_DIR "${LIBTM_ROOT}/libtm/src")
 set(LIBTM_RESOURCES_DIR "${LIBTM_ROOT}/resources")
 
-include(versions.cmake)
+set(HOST_VERSION "0.19.3.1711")
 
 add_definitions(-DBUILD_STATIC)
 
 # Build resources (FW, Central, Controller binaries)
-add_subdirectory(resources)
+add_subdirectory(fw)
 add_subdirectory(libtm)
 add_subdirectory(tools)
-
-message(STATUS "----------------------------------------------------------------------------")
-message(STATUS "CMake Done")
-message(STATUS "----------------------------------------------------------------------------")

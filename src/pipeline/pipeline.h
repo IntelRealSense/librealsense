@@ -26,7 +26,7 @@ namespace librealsense
             std::shared_ptr<profile> start(std::shared_ptr<config> conf, frame_callback_ptr callback = nullptr);
             void stop();
             std::shared_ptr<profile> get_active_profile() const;
-            frame_holder wait_for_frames(unsigned int timeout_ms = 5000);
+            frame_holder wait_for_frames(unsigned int timeout_ms);
             bool poll_for_frames(frame_holder* frame);
             bool try_wait_for_frames(frame_holder* frame, unsigned int timeout_ms);
 

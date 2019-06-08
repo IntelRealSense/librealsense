@@ -50,26 +50,6 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 
-    class ds5_iio_hid_timestamp_reader : public frame_timestamp_reader
-    {
-        static const int sensors = 2;
-        bool started;
-        mutable std::vector<int64_t> counter;
-        mutable std::recursive_mutex _mtx;
-    public:
-        ds5_iio_hid_timestamp_reader();
-
-        void reset() override;
-
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
-
-        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const;
-
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
-
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
-    };
-
     class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
     {
         static const int sensors = 4; // TODO: implement frame-counter for each GPIO or
@@ -87,6 +67,6 @@ namespace librealsense
 
         unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
     };
 }

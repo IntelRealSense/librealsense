@@ -15,6 +15,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <pybind11/functional.h>
 
 #include "core/options.h"   // Workaround for the missing DLL_EXPORT template
+#include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
@@ -139,6 +140,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
         .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
+        .value("global_time_enabled", RS2_OPTION_GLOBAL_TIME_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -328,7 +330,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("unlock", &platform::retry_controls_work_around::unlock)
         .def("get_device_location", &platform::retry_controls_work_around::get_device_location);
 
-    py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
+    //py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
 
     py::class_<platform::backend, std::shared_ptr<platform::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &platform::backend::create_uvc_device, "info"_a)
@@ -421,3 +423,11 @@ PYBIND11_MODULE(NAME, m) {
 
 // Workaroud for failure to export template <typename T> class recordable
 void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
+void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
+void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
+void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}
+void librealsense::info_container::enable_recording(std::function<void(const info_interface&)> record_action){}
+void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
+bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
+const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
+std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }

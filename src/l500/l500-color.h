@@ -5,12 +5,13 @@
 
 #include <vector>
 #include <string>
-#include "device.h"
+#include "l500-device.h"
 #include "stream.h"
+#include "l500-depth.h"
 
 namespace librealsense
 {
-    class l500_color : public virtual device
+    class l500_color : public virtual l500_device
     {
     public:
         std::shared_ptr<uvc_sensor> create_color_device(std::shared_ptr<context> ctx,
@@ -18,6 +19,8 @@ namespace librealsense
 
         l500_color(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
+
+        std::vector<tagged_profile> get_profiles_tags() const override;
 
     protected:
         std::shared_ptr<stream_interface> _color_stream;
@@ -27,8 +30,12 @@ namespace librealsense
 
         uint8_t _color_device_idx = -1;
 
-        lazy<std::vector<uint8_t>> _color_calib_table_raw;
+        lazy<std::vector<uint8_t>> _color_intrinsics_table_raw;
+        lazy<std::vector<uint8_t>> _color_extrinsics_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
+
+        std::vector<uint8_t> get_raw_intrinsics_table() const;
+        std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
     
 
@@ -43,7 +50,28 @@ namespace librealsense
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
-                return {};
+                using namespace ivcam2;
+
+                auto intrinsic = check_calib<intrinsic_rgb>(*_owner->_color_intrinsics_table_raw);
+                
+                auto num_of_res = intrinsic->resolution.num_of_resolutions;
+
+                for (auto i = 0; i < num_of_res; i++)
+                {
+                    auto model = intrinsic->resolution.intrinsic_resolution[i];
+                    if (model.height == profile.height && model.width == profile.width)
+                    {
+                        rs2_intrinsics intrinsics;
+                        intrinsics.width = model.width;
+                        intrinsics.height = model.height;
+                        intrinsics.fx = model.ipm.focal_length.x;
+                        intrinsics.fy = model.ipm.focal_length.y;
+                        intrinsics.ppx = model.ipm.principal_point.x;
+                        intrinsics.ppy = model.ipm.principal_point.y;
+                        return intrinsics;
+                    }
+                }
+                throw std::runtime_error(to_string() << "intrinsics for resolution "<< profile.width <<","<< profile.height<< " doesn't exist");
             }
 
             stream_profiles init_stream_profiles() override
@@ -79,7 +107,7 @@ namespace librealsense
                 return results;
             }
 
-            processing_blocks get_recommended_processing_blocks() const
+            processing_blocks get_recommended_processing_blocks() const override
             {
                 return get_color_recommended_proccesing_blocks();
             }

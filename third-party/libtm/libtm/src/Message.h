@@ -88,7 +88,6 @@ namespace perc
         SLAM_SET_6DOF_INTERRUPT_RATE = 0x1005,
         SLAM_6DOF_CONTROL = 0x1006,
         SLAM_OCCUPANCY_MAP_CONTROL = 0x1007,
-        SLAM_RESET_LOCALIZATION_DATA = 0x1008,
         SLAM_GET_LOCALIZATION_DATA_STREAM = 0x1009,
         SLAM_SET_STATIC_NODE = 0x100A,
         SLAM_GET_STATIC_NODE = 0x100B,
@@ -1035,22 +1034,6 @@ namespace perc
         uint16_t wIndex;                    /**< A running counter starting at 0 identifying the chunk index in a single data transaction                   */
         uint8_t bPayload[];                 /**< payload data variable sized array. Data format is algorithm specific and opaque to the USB and host stack */
     } bulk_message_large_stream;
-
-
-    /**
-    * @brief Bulk reset Localization Data Message
-    *
-    * Resets the localization data
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 8 bytes, wMessageID = SLAM_RESET_LOCALIZATION_DATA */
-        uint8_t bFlag;                      /**< 0 - Reset all localization data, 1 - Reset only the map by its bMapIndex              */
-        uint8_t bReserved;                  /**< Reserved = 0                                                                          */
-    } bulk_message_request_reset_localization_data;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = SLAM_RESET_LOCALIZATION_DATA */
-    } bulk_message_response_reset_localization_data;
 
 
     /**

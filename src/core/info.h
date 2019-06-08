@@ -19,7 +19,7 @@ namespace librealsense
 
     MAP_EXTENSION(RS2_EXTENSION_INFO, librealsense::info_interface);
 
-    class info_container : public virtual info_interface , public extension_snapshot
+    class LRS_EXTENSION_API info_container : public virtual info_interface, public extension_snapshot
     {
     public:
         const std::string& get_info(rs2_camera_info info) const override;

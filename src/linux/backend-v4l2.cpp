@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_V4L2_BACKEND
-
 #include "backend-v4l2.h"
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
+#include "usb/usb-enumerator.h"
+#include "usb/usb-device.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -400,111 +400,6 @@ namespace librealsense
                 else
                     throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
             }
-        }
-
-        v4l_usb_device::v4l_usb_device(const usb_device_info& info)
-        {
-            int status = libusb_init(&_usb_context);
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
-            std::vector<usb_device_info> results;
-            v4l_usb_device::foreach_usb_device(_usb_context,
-            [&results, info, this](const usb_device_info& i, libusb_device* dev)
-            {
-                if (i.unique_id == info.unique_id)
-                {
-                    _usb_device = dev;
-                    libusb_ref_device(dev);
-                }
-            });
-
-            _mi = info.mi;
-        }
-
-        v4l_usb_device::~v4l_usb_device()
-        {
-            try
-            {
-                if(_usb_device)
-                    libusb_unref_device(_usb_device);
-                libusb_exit(_usb_context);
-            }
-            catch(...)
-            {
-
-            }
-        }
-
-        void v4l_usb_device::foreach_usb_device(libusb_context* usb_context, std::function<void(
-                                                            const usb_device_info&,
-                                                            libusb_device*)> action)
-        {
-            // Obtain libusb_device_handle for each device
-            libusb_device ** list = nullptr;
-            int status = libusb_get_device_list(usb_context, &list);
-
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
-
-            for(int i=0; list[i]; ++i)
-            {
-                libusb_device * usb_device = list[i];
-                libusb_config_descriptor *config;
-                status = libusb_get_active_config_descriptor(usb_device, &config);
-                if(status == 0)
-                {
-                    auto parent_device = libusb_get_parent(usb_device);
-                    if (parent_device)
-                    {
-                        usb_device_info info{};
-                        auto usb_params = get_usb_descriptors(usb_device);
-                        info.unique_id = std::get<0>(usb_params);
-                        info.conn_spec = static_cast<usb_spec>(std::get<1>(usb_params));
-                        info.mi = config->bNumInterfaces - 1; // The hardware monitor USB interface is expected to be the last one
-                        action(info, usb_device);
-                    }
-                    libusb_free_config_descriptor(config);
-                }
-
-            }
-            libusb_free_device_list(list, 1);
-        }
-
-        std::vector<uint8_t> v4l_usb_device::send_receive(
-            const std::vector<uint8_t>& data,
-            int timeout_ms,
-            bool require_response)
-        {
-            libusb_device_handle* usb_handle = nullptr;
-            int status = libusb_open(_usb_device, &usb_handle);
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
-            status = libusb_claim_interface(usb_handle, _mi);
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
-
-            int actual_length;
-            status = libusb_bulk_transfer(usb_handle, 1, const_cast<uint8_t*>(data.data()), data.size(), &actual_length, timeout_ms);
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-
-            std::vector<uint8_t> result;
-
-
-            if (require_response)
-            {
-                result.resize(1024);
-                status = libusb_bulk_transfer(usb_handle, 0x81, const_cast<uint8_t*>(result.data()), result.size(), &actual_length, timeout_ms);
-                if(status < 0)
-                    throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
-
-                result.resize(actual_length);
-            }
-
-            libusb_close(usb_handle);
-
-            return result;
         }
 
         void v4l_uvc_device::foreach_uvc_device(
@@ -1684,26 +1579,17 @@ namespace librealsense
             return uvc_nodes;
         }
 
-        std::shared_ptr<usb_device> v4l_backend::create_usb_device(usb_device_info info) const
+        std::shared_ptr<command_transfer> v4l_backend::create_usb_device(usb_device_info info) const
         {
-            return std::make_shared<v4l_usb_device>(info);
+            auto dev = usb_enumerator::create_usb_device(info);
+             if(dev)
+                 return std::make_shared<platform::command_transfer_usb>(dev);
+             return nullptr;
         }
+
         std::vector<usb_device_info> v4l_backend::query_usb_devices() const
         {
-            libusb_context * usb_context = nullptr;
-            int status = libusb_init(&usb_context);
-            if(status < 0)
-                throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
-
-            std::vector<usb_device_info> results;
-            v4l_usb_device::foreach_usb_device(usb_context,
-            [&results](const usb_device_info& i, libusb_device* dev)
-            {
-                results.push_back(i);
-            });
-            libusb_exit(usb_context);
-
-            return results;
+            return usb_enumerator::query_devices_info();
         }
 
         std::shared_ptr<hid_device> v4l_backend::create_hid_device(hid_device_info info) const
@@ -1736,5 +1622,3 @@ namespace librealsense
         }
     }
 }
-
-#endif

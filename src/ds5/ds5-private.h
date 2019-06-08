@@ -18,6 +18,7 @@ namespace librealsense
         const uint16_t RS400_PID        = 0x0ad1; // PSR
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
+        const uint16_t RS416_PID        = 0x0b49;
         const uint16_t RS430_PID        = 0x0ad4; // AWG
         const uint16_t RS430I_PID       = 0x0b4b; // D430i
         const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
@@ -38,6 +39,7 @@ namespace librealsense
         const uint8_t DS5_DEPTH_EMITTER_ENABLED           = 2;
         const uint8_t DS5_EXPOSURE                        = 3;
         const uint8_t DS5_LASER_POWER                     = 4;
+        const uint8_t DS5_HARDWARE_PRESET                 = 6;
         const uint8_t DS5_ERROR_REPORTING                 = 7;
         const uint8_t DS5_EXT_TRIGGER                     = 8;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
@@ -49,6 +51,7 @@ namespace librealsense
             ds::RS400_PID,
             ds::RS410_PID,
             ds::RS415_PID,
+            ds::RS416_PID,
             ds::RS430_PID,
             ds::RS430I_PID,
             ds::RS430_MM_PID,
@@ -95,6 +98,7 @@ namespace librealsense
             { RS410_PID,        "Intel RealSense D410"},
             { RS410_MM_PID,     "Intel RealSense D410 with Tracking Module"},
             { RS415_PID,        "Intel RealSense D415"},
+            { RS416_PID,        "Intel RealSense D416"},
             { RS420_PID,        "Intel RealSense D420"},
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
@@ -120,11 +124,16 @@ namespace librealsense
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
+        const int REGISTER_CLOCK_0 = 0x0001613c;
+
         enum fw_cmd : uint8_t
         {
+            MRD             = 0x01,     // Read Register
+            FRB             = 0x09,     // Read from flash
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            LOADINTCAL      = 0x1D,     //Get Internal sub calibration table
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
             SET_ADV         = 0x2B,     // set advanced mode control
@@ -135,6 +144,7 @@ namespace librealsense
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
+            SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
             SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
             SETRGBAEROI     = 0x75,     // set RGB auto-exposure region of interest

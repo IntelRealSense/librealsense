@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "Version.h"
 #include "Utils.h"
-#include "fw.h"
+#include "fw_target.h"
 
 #define LIBTM_UTIL_VERSION_MAJOR 1
 #define LIBTM_UTIL_VERSION_MINOR 0
@@ -174,8 +174,7 @@ enum LocalizationType
 {
     LocalizationTypeGet = 0,
     LocalizationTypeSet = 1,
-    LocalizationTypeReset = 2,
-    LocalizationTypeMax = 3,
+    LocalizationTypeMax = 2,
 };
 
 enum ControllerBurnState
@@ -2818,12 +2817,8 @@ int parseArguments(int argc, char *argv[])
             /* Make sure we aren't at the end of argv */
             if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
             {
-                if (strncmp("reset", argv[++i], 3) == 0)
-                {
-                    gConfiguration.localization[LocalizationTypeReset].enabled = true;
-                    parseError = false;
-                }
-                else if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
+                ++i;
+                if ((i + 1 < argc) && (strstr(argv[i + 1], "-") != argv[i + 1]))
                 {
                     if (strncmp("set", argv[i], 3) == 0)
                     {
@@ -2842,10 +2837,9 @@ int parseArguments(int argc, char *argv[])
 
             if (parseError == true)
             {
-                printf("-map : Reset/Set/Get localization map from/to an external file\n");
-                printf("       On multiple call, the order will be:  Get, Set, Reset\n");
-                printf("       Parameters: <reset/set/get> <filename>\n");
-                printf("       Example: \"libtm_util.exe -map reset\"                            : reset localization map\n");
+                printf("-map : Set/Get localization map from/to an external file\n");
+                printf("       On multiple call, the order will be:  Get, Set\n");
+                printf("       Parameters: <set/get> <filename>\n");
                 printf("       Example: \"libtm_util.exe -map set localization_map_input_file\"  : set localization from file localization_map_input_file\n");
                 printf("       Example: \"libtm_util.exe -map get localization_map_output_file\" : get localization to a new file localization_map_output_file\n");
                 printf("       Notice:  To get localization map, 6dof must be enabled\n");
@@ -3938,17 +3932,6 @@ int main(int argc, char *argv[])
         else
         {
             LOGE("Error: File %s doesn't exists", filename.c_str());
-            goto cleanup;
-        }
-    }
-
-    if (gConfiguration.localization[LocalizationTypeReset].enabled == true)
-    {
-        LOGD("Reseting localization map");
-        status = gDevice->ResetLocalizationData(0);
-        if (status != Status::SUCCESS)
-        {
-            LOGE("Failed to reset localization map, status = %s (0x%X)", statusToString(status).c_str(), status);
             goto cleanup;
         }
     }

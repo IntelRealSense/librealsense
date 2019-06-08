@@ -15,3 +15,9 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/utlist.h"
         "${CMAKE_CURRENT_LIST_DIR}/libuvc_config.h"
 )
+
+include(libusb_config)
+target_link_libraries(${LRS_TARGET} PRIVATE usb)
+if(USE_EXTERNAL_USB)
+    add_dependencies(${LRS_TARGET} libusb)
+endif()

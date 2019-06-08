@@ -55,7 +55,7 @@ namespace Intel.RealSense
                 var pp = pipeline.Start(cfg);
 
                 // Get the recommended processing blocks for the depth sensor
-                var sensor = pp.Device.Sensors.First(s => s.Is(Extension.DepthSensor));
+                var sensor = pp.Device.QuerySensors<Sensor>().First(s => s.Is(Extension.DepthSensor));
                 var blocks = sensor.ProcessingBlocks.ToList();
 
                 // Allocate bitmaps for rendring.

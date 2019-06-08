@@ -50,8 +50,7 @@ namespace rs2
         // so for now Macs should not use the GLSL stuff
         config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
         config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
-#endif
-
+#else
         auto vendor = (const char*)glGetString(GL_VENDOR);
         auto renderer = (const char*)glGetString(GL_RENDERER);
         auto version = (const char*)glGetString(GL_VERSION);
@@ -89,6 +88,7 @@ namespace rs2
             config_file::instance().set_default(configurations::performance::glsl_for_processing, false);
             config_file::instance().set_default(configurations::performance::glsl_for_rendering, false);
         }
+#endif
     }
 
     void ux_window::reload()
@@ -98,8 +98,14 @@ namespace rs2
 
     void ux_window::refresh()
     {
+        if (_use_glsl_proc) rs2::gl::shutdown_processing();
+        rs2::gl::shutdown_rendering();
+
         _use_glsl_render = config_file::instance().get(configurations::performance::glsl_for_rendering);
         _use_glsl_proc = config_file::instance().get(configurations::performance::glsl_for_processing);
+
+        rs2::gl::init_rendering(_use_glsl_render);
+        if (_use_glsl_proc) rs2::gl::init_processing(_win, _use_glsl_proc);
     }
 
     void ux_window::link_hovered()
@@ -141,6 +147,9 @@ namespace rs2
     {
         if (_win)
         {
+            rs2::gl::shutdown_rendering();
+            if (_use_glsl_proc) rs2::gl::shutdown_processing();
+
             ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
             ImGui_ImplGlfw_Shutdown();
             glfwDestroyWindow(_win);
@@ -319,6 +328,9 @@ namespace rs2
                 data->on_file_drop(paths[i]);
             }
         });
+
+        rs2::gl::init_rendering(_use_glsl_render);
+        if (_use_glsl_proc) rs2::gl::init_processing(_win, _use_glsl_proc);
 
         glfwShowWindow(_win);
         glfwFocusWindow(_win);
@@ -532,6 +544,9 @@ namespace rs2
         }
 
         end_frame();
+
+        rs2::gl::shutdown_rendering();
+        if (_use_glsl_proc) rs2::gl::shutdown_processing();
 
         ImGui::GetIO().Fonts->ClearFonts();  // To be refactored into Viewer theme object
         ImGui_ImplGlfw_Shutdown();

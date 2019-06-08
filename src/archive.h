@@ -340,7 +340,7 @@ namespace librealsense
                 {
                     _original = {};
                 }
-            }, get_frame_data()));
+            }, nullptr));
         }
 
     protected:

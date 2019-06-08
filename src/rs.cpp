@@ -21,6 +21,7 @@
 #include "proc/colorizer.h"
 #include "proc/pointcloud.h"
 #include "proc/threshold.h"
+#include "proc/units-transform.h"
 #include "proc/disparity-transform.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/decimation-filter.h"
@@ -56,15 +57,13 @@ struct rs2_processing_block_list
 struct rs2_sensor : public rs2_options
 {
     rs2_sensor(rs2_device parent,
-        librealsense::sensor_interface* sensor,
-        size_t index)
-        : rs2_options((librealsense::options_interface*)sensor),
-        parent(parent), sensor(sensor), index(index)
+        librealsense::sensor_interface* sensor) :
+        rs2_options((librealsense::options_interface*)sensor),
+        parent(parent), sensor(sensor)
     {}
 
     rs2_device parent;
     librealsense::sensor_interface* sensor;
-    size_t index;
 
     rs2_sensor& operator=(const rs2_sensor&) = delete;
     rs2_sensor(const rs2_sensor&) = delete;
@@ -120,10 +119,11 @@ struct rs2_error
     rs2_exception_type exception_type;
 };
 
-rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type)
+rs2_error *rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type) BEGIN_API_CALL
 {
     return new rs2_error{ what, name, args, type };
 }
+NOEXCEPT_RETURN(nullptr, what, name, args, type)
 
 void notifications_processor::raise_notification(const notification n)
 {
@@ -285,8 +285,7 @@ rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error*
 
     return new rs2_sensor{
             list->dev,
-            &list->dev.device->get_sensor(index),
-            (size_t)index
+            &list->dev.device->get_sensor(index)
     };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, list, index)
@@ -764,6 +763,17 @@ rs2_timestamp_domain rs2_get_frame_timestamp_domain(const rs2_frame* frame_ref, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(RS2_TIMESTAMP_DOMAIN_COUNT, frame_ref)
 
+rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame);
+    std::shared_ptr<librealsense::sensor_interface> sensor( ((frame_interface*)frame)->get_sensor() );
+    device_interface& dev = sensor->get_device();
+    auto dev_info = std::make_shared<librealsense::readonly_device_info>(dev.shared_from_this());
+    rs2_device dev2{ dev.get_context(), dev_info, dev.shared_from_this() };
+    return new rs2_sensor(dev2, sensor.get());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
+
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
@@ -1182,7 +1192,8 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(ctx);
     VALIDATE_NOT_NULL(file);
 
-    return new rs2_device{ ctx->ctx, nullptr, ctx->ctx->add_device(file) };
+    auto dev_info = ctx->ctx->add_device(file);
+    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device(false) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 
@@ -1848,6 +1859,12 @@ rs2_processing_block* rs2_create_threshold(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
+rs2_processing_block* rs2_create_units_transform(rs2_error** error) BEGIN_API_CALL
+{
+    return new rs2_processing_block { std::make_shared<units_transform>() };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_ENUM(align_to);
@@ -2024,8 +2041,7 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
 
     return new rs2_sensor(
         *dev,
-        &df->add_software_sensor(sensor_name),
-        0);
+        &df->add_software_sensor(sensor_name));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, sensor_name)
 
@@ -2247,7 +2263,7 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
     std::vector<uint8_t> recv_buffer;
     if (pose_snr->export_relocalization_map(recv_buffer))
         return new rs2_raw_data_buffer{ recv_buffer };
-    return nullptr;
+    return (rs2_raw_data_buffer*)nullptr;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
 
@@ -2276,7 +2292,7 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
     float3 t_pos{};
     float4 t_or {};
     int ret = 0;
-    if (ret = pose_snr->get_static_node(s_guid, t_pos, t_or))
+    if ((ret = pose_snr->get_static_node(s_guid, t_pos, t_or)))
     {
         pos->x = t_pos.x;
         pos->y = t_pos.y;

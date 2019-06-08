@@ -14,6 +14,12 @@ public class StreamProfile extends LrsClass {
         public int frameRate;
     }
 
+    static StreamProfile create(long handle){
+        if (nIsProfileExtendableTo(handle, Extension.VIDEO_PROFILE.value()))
+            return new VideoStreamProfile(handle);
+        return new StreamProfile(handle);
+    }
+
     protected StreamProfile(long handle){
         mHandle = handle;
         mPp = new ProfileParams();
@@ -51,6 +57,7 @@ public class StreamProfile extends LrsClass {
 //        nDelete(mHandle);
     }
 
+    private static native boolean nIsProfileExtendableTo(long handle, int extension);
     private static native void nGetProfile(long handle, ProfileParams params);
     private static native void nDelete(long handle);
 }

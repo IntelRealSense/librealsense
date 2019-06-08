@@ -3,7 +3,8 @@
 #pragma once
 
 #include "../backend.h"
-#include "win7-helpers.h"
+#include "win/win-helpers.h"
+#include "command_transfer.h"
 
 #include <winusb.h>
 #include <SetupAPI.h>
@@ -20,11 +21,11 @@ namespace librealsense
             OutPipe
         };
 
-        class usb_interface
+        class win7_usb_interface
         {
         public:
-            explicit usb_interface(HANDLE& deviceHandle);
-            ~usb_interface();
+            explicit win7_usb_interface(HANDLE& deviceHandle);
+            ~win7_usb_interface();
 
             void wait_for_async_op(OVERLAPPED &hOvl, ULONG &lengthTransferred, DWORD TimeOut, pipe_direction pipeDirection, bool* isExitOnTimeout) const;
             bool wait_for_async_op_interrupt(OVERLAPPED &hOvl, ULONG &lengthTransferred) const;
@@ -54,7 +55,7 @@ namespace librealsense
         public:
             explicit winusb_device(std::wstring lpDevicePath);
             ~winusb_device();
-            usb_interface& get_interface() const;
+            win7_usb_interface& get_interface() const;
             void recreate_interface();
 
         private:
@@ -63,7 +64,7 @@ namespace librealsense
 
             std::wstring _lp_device_path;
             HANDLE _device_handle;
-            std::unique_ptr<usb_interface> _usb_interface;
+            std::unique_ptr<win7_usb_interface> _usb_interface;
         };
 
         class usb_enumerate {
@@ -75,7 +76,8 @@ namespace librealsense
 
         };
 
-        class winusb_bulk_transfer : public usb_device
+        //TODO_MK temp empty implementation, this all class should be removed
+        class winusb_bulk_transfer : public command_transfer
         {
         public:
             std::vector<uint8_t> send_receive(
@@ -96,16 +98,5 @@ namespace librealsense
             std::wstring _lp_device_path = L"";
             named_mutex _named_mutex;
         };
-
-        class winapi_error : public std::runtime_error
-        {
-        public:
-            explicit winapi_error(const char* message);
-
-            static std::string last_error_string(DWORD lastError);
-            static std::string generate_message(const std::string& message);
-        };
-
-
     }
 }

@@ -108,7 +108,7 @@ namespace librealsense
             if (auto a = As<librealsense::extendable_interface>(snr))
             {
                 librealsense::depth_stereo_sensor* ptr;
-                if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                if ((_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr)))
                 {
                     dss = ptr;
                     _depth_units = dss->get_depth_scale();

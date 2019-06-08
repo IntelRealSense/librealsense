@@ -9,6 +9,22 @@ namespace librealsense
 {
     namespace ivcam2
     {
+        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        {
+            if (raw_data.size() < sizeof(pose))
+                throw invalid_value_exception("size of extrinsic invalid");
+            auto res = *((pose*)raw_data.data());
+            float trans_scale = 0.001f; // Convert units from mm to meter
+
+            if (res.position.y > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
+                trans_scale *= -1;
+
+            res.position.x *= trans_scale;
+            res.position.y *= trans_scale;
+            res.position.z *= trans_scale;
+            return res;
+        }
+
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
@@ -18,7 +34,7 @@ namespace librealsense
                 {
 
                     result = *it;
-                    if (result.mi == 4 || result.mi == 6)
+                    if (result.mi == 4 || result.mi == 6 || result.mi == 7)
                     {
                         devices.erase(it);
                         return true;

@@ -1,6 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-#ifdef RS2_USE_WINUSB_UVC_BACKEND
 
 #if (_MSC_FULL_VER < 180031101)
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
@@ -66,7 +65,7 @@ namespace librealsense
             return devices;
         }
 
-        std::shared_ptr<usb_device> win7_backend::create_usb_device(usb_device_info info) const
+        std::shared_ptr<command_transfer> win7_backend::create_usb_device(usb_device_info info) const
         {
             return std::make_shared<winusb_bulk_transfer>(info);
         }
@@ -85,7 +84,7 @@ namespace librealsense
                 {
                     std::string path(id.begin(), id.end());
                     uint16_t vid, pid, mi; std::string unique_id, device_guid;
-                    if (!parse_usb_path(vid, pid, mi, unique_id, device_guid, path)) continue;
+                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, path, device_guid)) continue;
 
                     usb_device_info info{ path, vid, pid, mi, unique_id, "", usb_undefined };
 
@@ -319,5 +318,3 @@ namespace librealsense
         }
     }
 }
-
-#endif

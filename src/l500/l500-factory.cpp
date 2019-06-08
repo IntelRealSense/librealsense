@@ -13,8 +13,8 @@
 #include "metadata-parser.h"
 
 #include "l500-factory.h"
-#include "l500-private.h"
 #include "l500-depth.h"
+#include "l500-motion.h"
 #include "l500-color.h"
 
 namespace librealsense
@@ -22,15 +22,19 @@ namespace librealsense
     using namespace ivcam2;
 
     // l515
-    class rs515_device : public l500_depth, public l500_color
+    class rs515_device : public l500_depth,
+        public l500_color,
+        public l500_motion
     {
     public:
         rs515_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
+            l500_device(ctx, group),
             l500_depth(ctx, group),
-            l500_color(ctx, group)
+            l500_color(ctx, group),
+            l500_motion(ctx, group)
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -38,12 +42,13 @@ namespace librealsense
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             std::vector<tagged_profile> tags;
+            auto depth_profiles = l500_depth::get_profiles_tags();
+            auto color_profiles = l500_color::get_profiles_tags();
+            auto motion_profiles = l500_motion::get_profiles_tags();
 
-            tags.push_back({ RS2_STREAM_COLOR, -1, 640, 480, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 360, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 360, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_CONFIDENCE, -1, 640, 360, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
-
+            tags.insert(tags.begin(), depth_profiles.begin(), depth_profiles.end());
+            tags.insert(tags.begin(), color_profiles.begin(), color_profiles.end());
+            tags.insert(tags.begin(), motion_profiles.begin(), motion_profiles.end());
             return tags;
         };
     };
@@ -56,20 +61,11 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
+            l500_device(ctx, group),
             l500_depth(ctx, group) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
-        std::vector<tagged_profile> get_profiles_tags() const override
-        {
-            std::vector<tagged_profile> tags;
-
-            tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 360, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 360, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_CONFIDENCE, -1, 640, 360, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
-
-            return tags;
-        };
     };
 
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
@@ -85,7 +81,7 @@ namespace librealsense
             return std::make_shared<rs500_device>(ctx, group, register_device_notifications);
         case L515_PID:
             return std::make_shared<rs515_device>(ctx, group, register_device_notifications);
-        default:
+       default:
             throw std::runtime_error(to_string() << "Unsupported L500 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
         }
@@ -93,31 +89,34 @@ namespace librealsense
 
     std::vector<std::shared_ptr<device_info>> l500_info::pick_l500_devices(
         std::shared_ptr<context> ctx,
-        std::vector<platform::uvc_device_info>& uvc,
-        std::vector<platform::usb_device_info>& usb)
+        platform::backend_device_group& group)
     {
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(uvc, { L500_PID, L515_PID });
-        auto group_devices = group_devices_by_unique_id(correct_pid);
-        for (auto& group : group_devices)
+        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID });
+        auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(correct_pid), group.hid_devices);
+        for (auto& g : group_devices)
         {
-            if (!group.empty() && mi_present(group, 0))
+            if (!g.first.empty() && mi_present(g.first, 0))
             {
-                auto depth = get_mi(group, 0);
+                auto depth = get_mi(g.first, 0);
                 platform::usb_device_info hwm;
 
-                if (ivcam2::try_fetch_usb_device(usb, depth, hwm))
-                {
-                    auto info = std::make_shared<l500_info>(ctx, group, hwm);
-                    chosen.push_back(depth);
-                    results.push_back(info);
-                }
-                else
-                {
+                if (!ivcam2::try_fetch_usb_device(group.usb_devices, depth, hwm))
                     LOG_WARNING("try_fetch_usb_device(...) failed.");
+
+                if (g.second.size() < 2)
+                {
+                    LOG_WARNING("L500 partial enum: " << g.second.size() << " HID devices were recognized (2+ expected)");
+#if !defined(ANDROID) && !defined(__APPLE__) // Not supported by android & macos
+                    continue;
+#endif // Not supported by android & macos
                 }
+
+                auto info = std::make_shared<l500_info>(ctx, g.first, hwm, g.second);
+                chosen.push_back(depth);
+                results.push_back(info);
             }
             else
             {
@@ -125,7 +124,7 @@ namespace librealsense
             }
         }
 
-        trim_device_list(uvc, chosen);
+        trim_device_list(group.uvc_devices, chosen);
 
         return results;
     }

@@ -72,7 +72,7 @@ namespace rs2
 
             for (auto& cfg : cfgs)
             {
-                if (valid_config = cfg.can_resolve(_pipe))
+                if ((valid_config = cfg.can_resolve(_pipe)))
                 {
                     try {
                         active_profile = _pipe.start(cfg);

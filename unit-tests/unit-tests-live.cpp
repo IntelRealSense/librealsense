@@ -18,231 +18,6 @@
 
 using namespace rs2;
 
-# define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
-
-long long current_time()
-{
-    return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 10000);
-}
-
-//// disable in one place options that are sensitive to frame content
-//// this is done to make sure unit-tests are deterministic
-void disable_sensitive_options_for(sensor& sen)
-{
-    if (sen.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
-
-    if (sen.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
-
-    if (sen.supports(RS2_OPTION_EXPOSURE))
-    {
-        option_range range;
-        REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
-        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
-    }
-}
-
-void disable_sensitive_options_for(rs2::device& dev)
-{
-    for (auto&& s : dev.query_sensors())
-        disable_sensitive_options_for(s);
-}
-
-bool wait_for_reset(std::function<bool(void)> func, std::shared_ptr<device> dev)
-{
-    if (func())
-        return true;
-
-    WARN("Reset workaround");
-
-    try {
-        dev->hardware_reset();
-    }
-    catch (...)
-    {
-    }
-    return func();
-}
-
-bool is_usb3(const rs2::device& dev)
-{
-    bool usb3_device = true;
-    try
-    {
-        std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-        // Device types "3.x" and also "" (for legacy playback records) will be recognized as USB3
-        usb3_device = (std::string::npos == usb_type.find("2."));
-    }
-    catch (...) // In case the feature not provided assume USB3 device
-    {
-    }
-
-    return usb3_device;
-}
-
-// Provides for Device PID , USB3/2 (true/false)
-typedef  std::pair<std::string, bool > dev_type;
-
-dev_type get_PID(rs2::device& dev)
-{
-    dev_type designator{ "",true };
-    std::string usb_type{};
-    bool usb_descriptor = false;
-
-    REQUIRE_NOTHROW(designator.first = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
-    REQUIRE_NOTHROW(usb_descriptor = dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-    if (usb_descriptor)
-    {
-        REQUIRE_NOTHROW(usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
-        designator.second = (std::string::npos == usb_type.find("2."));
-    }
-
-    return designator;
-}
-
-struct stream_request
-{
-    rs2_stream stream;
-    rs2_format format;
-    int width;
-    int height;
-    int fps;
-    int index;
-
-    bool operator==(const video_stream_profile& other) const
-    {
-        return stream == other.stream_type() &&
-             format == other.format() &&
-            width == other.width() &&
-            height == other.height() &&
-            index == other.stream_index();
-    }
-};
-
-struct profile
-{
-    rs2_stream stream;
-    rs2_format format;
-    int width;
-    int height;
-    int index;
-    int fps;
-
-    bool operator==(const profile& other) const
-    {
-        return stream == other.stream &&
-            (format == 0 || other.format == 0 || format == other.format) &&
-            (width == 0 || other.width == 0 || width == other.width) &&
-            (height == 0 || other.height == 0 || height == other.height) &&
-            (index == 0 || other.index == 0 || index == other.index);
-
-    }
-    bool operator!=(const profile& other) const
-    {
-        return !(*this == other);
-    }
-    bool operator<(const profile& other) const
-    {
-        return stream < other.stream;
-    }
-};
-
-std::ostream& operator <<(std::ostream& stream, const profile& cap)
-{
-    stream << cap.stream << " " << cap.stream << " " << cap.format << " "
-    << cap.width << " " << cap.height << " " << cap.index << " " << cap.fps;
-    return stream;
-}
-
-struct device_profiles
-{
-    std::vector<profile> streams;
-    int fps;
-    bool sync;
-};
-
-std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
-{
-    std::vector<profile> all_profiles =
-    {
-        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,           width, height,    0, fps},
-        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
-        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
-        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
-        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
-        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
-        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
-    };
-
-    std::vector<profile> profiles;
-    std::vector<rs2::stream_profile> modes;
-    auto all_modes = sensor.get_stream_profiles();
-
-    for (auto profile : all_profiles)
-    {
-        if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
-        {
-            if (auto  video = p.as<rs2::video_stream_profile>())
-            {
-                if (p.fps() == profile.fps &&
-                p.stream_index() == profile.index &&
-                p.stream_type() == profile.stream &&
-                p.format() == profile.format &&
-                video.width() == profile.width &&
-                video.height() == profile.height)
-                {
-                    modes.push_back(p);
-                    return true;
-                }
-            }
-            else
-            {
-                if (auto  motion = p.as<rs2::motion_stream_profile>())
-                {
-                    if (p.fps() == profile.fps &&
-                        p.stream_index() == profile.index &&
-                        p.stream_type() == profile.stream &&
-                        p.format() == profile.format)
-                        {
-                            modes.push_back(p);
-                            return true;
-                        }
-                }
-                else
-                    return false;
-            }
-
-            return false;
-        }) != all_modes.end())
-        {
-            profiles.push_back(profile);
-
-        }
-    }
-    if (modes.size() > 0)
-        REQUIRE_NOTHROW(sensor.open(modes));
-    return profiles;
-}
-
-std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
-{
-    std::vector<profile> profiles;
-    std::vector<sensor> sensors;
-    auto sens = dev.query_sensors();
-    for (auto s : sens)
-    {
-        auto res = configure_all_supported_streams(s, width, height, fps);
-        profiles.insert(profiles.end(), res.begin(), res.end());
-        if (res.size() > 0)
-        {
-            sensors.push_back(s);
-        }
-    }
-
-    return{ sensors, profiles };
-}
-
 TEST_CASE("Sync sanity", "[live]") {
 
     rs2::context ctx;
@@ -3754,26 +3529,6 @@ TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline]") {
     }
 }
 
-bool compare(const rs2_extrinsics& first, const rs2_extrinsics& second, double delta = 0)
-{
-    for (auto i = 0; i < 9; i++)
-    {
-        if (std::abs(first.rotation[i] - second.rotation[i]) > delta)
-        {
-            return false;
-        }
-    }
-    for (auto i = 0; i < 3; i++)
-    {
-        if (std::abs(first.translation[i] - second.translation[i]) > delta)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-
 static const std::map<dev_type, device_profiles> pipeline_configurations_for_extrinsic = {
     /* D400/PSR*/      { {"0AD1", true},{ { { RS2_STREAM_DEPTH,    RS2_FORMAT_Z16,  640, 480, 0 },
                                      { RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
@@ -5025,6 +4780,72 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
     }
 }
 
+TEST_CASE("Unit transform test", "[live][software-device]") {
+	rs2::context ctx;
+
+	if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+		return;
+
+	log_to_file(RS2_LOG_SEVERITY_DEBUG);
+	const int W = 640;
+	const int H = 480;
+	const int BPP = 2;
+	int expected_frames = 1;
+	int fps = 60;
+	float depth_unit = 1.5;
+	units_transform ut;
+	rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
+
+	std::shared_ptr<software_device> dev = std::make_shared<software_device>();
+	auto s = dev->add_sensor("software_sensor");
+	s.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_unit);
+	s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, fps, BPP, RS2_FORMAT_Z16, intrinsics });
+
+	auto profiles = s.get_stream_profiles();
+	auto depth = profiles[0];
+
+	syncer sync;
+	s.open(profiles);
+	s.start(sync);
+
+	std::vector<uint16_t> pixels(W * H, 0);
+	for (int i = 0; i < W * H; i++) {
+		pixels[i] = i % 10;
+	}
+
+	std::weak_ptr<rs2::software_device> weak_dev(dev);
+	std::thread t([s, weak_dev, &pixels, depth, expected_frames]() mutable {
+		auto shared_dev = weak_dev.lock();
+		if (shared_dev == nullptr)
+			return;
+		for (int i = 1; i <= expected_frames; i++)
+			s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,rs2_time_t(i * 100), RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, i, depth });
+	});
+	t.detach();
+
+	for (auto i = 0; i < expected_frames; i++)
+	{
+		frame f;
+		REQUIRE_NOTHROW(f = sync.wait_for_frames(5000));
+
+		auto f_format = f.get_profile().format();
+		REQUIRE(RS2_FORMAT_Z16 == f_format);
+
+		auto depth_distance = ut.process(f);
+		auto depth_distance_format = depth_distance.get_profile().format();
+		REQUIRE(RS2_FORMAT_DISTANCE == depth_distance_format);
+
+		auto frame_data = reinterpret_cast<const uint16_t*>(f.get_data());
+		auto depth_distance_data = reinterpret_cast<const float*>(depth_distance.get_data());
+
+		for (size_t i = 0; i < W*H; i++)
+		{
+			auto frame_data_units_transformed = (frame_data[i] * depth_unit);
+			REQUIRE(depth_distance_data[i] == frame_data_units_transformed);
+		}
+	}
+}
+
 #define ADD_ENUM_TEST_CASE(rs2_enum_type, RS2_ENUM_COUNT)                                  \
 TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                         \
     int last_item_index = static_cast<int>(RS2_ENUM_COUNT);                                \
@@ -5792,5 +5613,45 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                 }
             }
         }
+    }
+}
+
+
+TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.22.0"))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        pipeline pipe(ctx);
+        device dev;
+        // Configure all supported streams to run at 30 frames per second
+
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+
+        // Test sequence
+        REQUIRE_NOTHROW(pipe.start(cfg));
+        std::string dev_serial_no = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        for (auto i = 0; i < 5; i++)
+        {
+            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+            for (auto&& frame : data)
+            {
+                std::string frame_serial_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                REQUIRE(dev_serial_no == frame_serial_no);
+                // TODO: Add additinal sensor attribiutions checks.
+            }
+        }
+        REQUIRE_NOTHROW(pipe.stop());
     }
 }

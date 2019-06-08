@@ -23,7 +23,7 @@ namespace librealsense
             perc::TrackingDevice* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
-        ~tm2_device();
+        virtual ~tm2_device();
 
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
@@ -51,7 +51,7 @@ namespace librealsense
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
-        ~tm2_sensor();
+        virtual ~tm2_sensor();
 
         // sensor interface
         ////////////////////
@@ -86,14 +86,14 @@ namespace librealsense
         perc::TrackingData::Temperature get_temperature();
 
         // Pose interfaces
-        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const;
-        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const;
-        bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const;
-        bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const;
+        bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const override;
+        bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const override;
+        bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const override;
+        bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const override;
 
         // Wheel odometer
-        bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const ;
-        bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const;
+        bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const override;
+        bool send_wheel_odometry(uint8_t wo_sensor_id, uint32_t frame_num, const float3& translational_velocity) const override;
 
         enum async_op_state {
             _async_init     = 1 << 0,
@@ -107,9 +107,9 @@ namespace librealsense
         async_op_state perform_async_transfer(std::function<perc::Status()> transfer_activator,
             std::function<void()> on_success, const std::string& op_description) const;
         // Recording interfaces
-        virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const {}
+        virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const override {}
         virtual void enable_recording(std::function<void(const pose_sensor_interface&)> record_action) override {}
-        virtual void create_snapshot(std::shared_ptr<wheel_odometry_interface>& snapshot) const {}
+        virtual void create_snapshot(std::shared_ptr<wheel_odometry_interface>& snapshot) const override {}
         virtual void enable_recording(std::function<void(const wheel_odometry_interface&)> record_action) override {}
 
     private:

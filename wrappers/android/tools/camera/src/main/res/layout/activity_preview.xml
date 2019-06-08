@@ -12,47 +12,84 @@
         android:layout_height="match_parent"
         android:id="@+id/glSurfaceView"/>
 
-    <android.support.v7.widget.LinearLayoutCompat
-        android:id="@+id/buttonPanel"
+    <TextView
+        android:id="@+id/streaming_stats_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true">
+        android:layout_centerHorizontal="true"
+        android:background="@color/black"
+        android:textSize="20dp"
+        android:text="Show stats"
+        android:textColor="#ffffff"
+        android:visibility="gone"/>
 
-    </android.support.v7.widget.LinearLayoutCompat>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="100dp">
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/preview_settings_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:textSize="14dp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#000000"
+            android:text="Settings"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/preview_stats_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:textSize="14dp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#000000"
+            android:text="Statistics"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/preview_playback_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:textSize="14dp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#000000"
+            android:text="Playback"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/startRecordFab"
+        android:id="@+id/start_record_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         android:clickable="true"
         android:backgroundTint="#ffffff"
         app:srcCompat="@android:drawable/ic_notification_overlay" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/playbackFab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="40dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="40dp"
-        android:clickable="true"
-        android:backgroundTint="#000000"
-        app:srcCompat="@android:drawable/ic_media_play" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/settingsFab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="40dp"
-        android:layout_alignParentLeft="true"
-        android:layout_marginLeft="40dp"
-        android:clickable="true"
-        android:backgroundTint="#000000"
-        app:srcCompat="@android:drawable/ic_menu_manage" />
 </RelativeLayout>

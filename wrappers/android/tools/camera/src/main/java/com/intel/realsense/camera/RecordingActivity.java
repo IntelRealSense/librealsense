@@ -12,7 +12,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 
+import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
+import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 
 import java.io.File;
@@ -24,6 +26,8 @@ public class RecordingActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_WRITE = 0;
 
     private Streamer mStreamer;
+    private GLRsSurfaceView mGLSurfaceView;
+    private Colorizer mColorizer = new Colorizer();
 
     private boolean mPermissionsGrunted = false;
 
@@ -34,6 +38,8 @@ public class RecordingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recording);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        mGLSurfaceView = findViewById(R.id.recordingGlSurfaceView);
 
         mStopRecordFab = findViewById(R.id.stopRecordFab);
         mStopRecordFab.setOnClickListener(new View.OnClickListener() {
@@ -68,13 +74,25 @@ public class RecordingActivity extends AppCompatActivity {
         super.onResume();
 
         if(mPermissionsGrunted){
-            mStreamer = new Streamer(this, (GLRsSurfaceView) findViewById(R.id.recordingGlSurfaceView), new Streamer.Listener() {
+            mStreamer = new Streamer(this,true, new Streamer.Listener() {
                 @Override
                 public void config(Config config) {
                     config.enableRecordToFile(getFilePath());
                 }
+
+                @Override
+                public void onFrameset(FrameSet frameSet) {
+                    try (FrameSet processed = frameSet.applyFilter(mColorizer)) {
+                        mGLSurfaceView.upload(processed);
+                    }
+                }
             });
-            mStreamer.start();
+            try {
+                mGLSurfaceView.clear();
+                mStreamer.start();
+            } catch (Exception e) {
+                finish();
+            }
         }
     }
 

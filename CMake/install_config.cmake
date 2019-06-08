@@ -43,9 +43,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/realsense2ConfigVersion.cmake"
         DESTINATION ${CMAKECONFIG_INSTALL_DIR}
 )
 
-install(CODE "execute_process(COMMAND ldconfig)")
-
 # Set library pkgconfig file for facilitating 3rd party integration
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
+
+install(CODE "execute_process(COMMAND ldconfig)")

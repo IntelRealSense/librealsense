@@ -4,7 +4,7 @@
 #include "ros_reader.h"
 #include "ds5/ds5-device.h"
 #include "ivcam/sr300.h"
-#include "l500/l500-factory.h"
+#include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h" 
@@ -18,11 +18,11 @@ namespace librealsense
     using namespace device_serializer;
 
     ros_reader::ros_reader(const std::string& file, const std::shared_ptr<context>& ctx) :
+        m_metadata_parser_map(md_constant_parser::create_metadata_parser_map()),
         m_total_duration(0),
         m_file_path(file),
         m_context(ctx),
-        m_version(0),
-        m_metadata_parser_map(md_constant_parser::create_metadata_parser_map())
+        m_version(0)
     {
         try
         {
@@ -370,7 +370,7 @@ namespace librealsense
             }
             else
             {
-                rs2_frame_metadata_value type;
+                rs2_frame_metadata_value type{};
                 if (!safe_convert(key_val_msg->key, type))
                 {
                     remaining[key_val_msg->key] = key_val_msg->value;
@@ -437,13 +437,13 @@ namespace librealsense
         //attaching a temp stream to the frame. Playback sensor should assign the real stream
         frame->set_stream(std::make_shared<video_stream_profile>(platform::stream_profile{}));
         frame->get_stream()->set_format(stream_format);
-        frame->get_stream()->set_stream_index(stream_id.stream_index);
+        frame->get_stream()->set_stream_index(int(stream_id.stream_index));
         frame->get_stream()->set_stream_type(stream_id.stream_type);
         video_frame->data = std::move(msg->data);
         librealsense::frame_holder fh{ video_frame };
         LOG_DEBUG("Created image frame: " << stream_id << " " << video_frame->get_width() << "x" << video_frame->get_height() << " " << stream_format);
 
-        return std::move(fh);
+        return fh;
     }
 
     frame_holder ros_reader::create_motion_sample(const rosbag::MessageInstance &motion_data) const
@@ -534,6 +534,14 @@ namespace librealsense
 
         pose_frame::pose_info pose{};
         std::chrono::duration<double, std::milli> timestamp_ms;
+        size_t frame_size = sizeof(pose);
+        rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
+        frame_additional_data additional_data{};
+
+        additional_data.fisheye_ae_mode = false;
+
+        stream_identifier stream_id;
+
         if (m_version == legacy_file_format::file_version())
         {
             auto pose_msg = instantiate_msg<realsense_legacy_msgs::pose>(msg);
@@ -569,15 +577,9 @@ namespace librealsense
             pose.acceleration = to_float3(accel_msg->linear);
             pose.angular_velocity = to_float3(twist_msg->angular);
             pose.velocity = to_float3(twist_msg->linear);
+
         }
-        size_t frame_size = sizeof(pose);
-        rs2_extension frame_type = RS2_EXTENSION_POSE_FRAME;
-        frame_additional_data additional_data{};
 
-        additional_data.frame_number = 0; //No support for frame numbers
-        additional_data.fisheye_ae_mode = false;
-
-        stream_identifier stream_id;
         if (m_version == legacy_file_format::file_version())
         {
             //Version 1 legacy
@@ -606,6 +608,10 @@ namespace librealsense
                 {
                     pose.tracker_confidence = std::stoul(kvp.second);
                 }
+                else if (kvp.first == FRAME_NUMBER_MD_STR)
+                {
+                    additional_data.frame_number = std::stoul(kvp.second);
+                }
             }
         }
 
@@ -619,15 +625,15 @@ namespace librealsense
         }
         librealsense::pose_frame* pose_frame = static_cast<librealsense::pose_frame*>(new_frame);
         //attaching a temp stream to the frame. Playback sensor should assign the real stream
-        new_frame->set_stream(std::make_shared<stream_profile_base>(platform::stream_profile{}));
+        new_frame->set_stream(std::make_shared<pose_stream_profile>(platform::stream_profile{}));
         new_frame->get_stream()->set_format(RS2_FORMAT_6DOF);
-        new_frame->get_stream()->set_stream_index(stream_id.stream_index);
+        new_frame->get_stream()->set_stream_index(int(stream_id.stream_index));
         new_frame->get_stream()->set_stream_type(stream_id.stream_type);
         byte* data = pose_frame->data.data();
         memcpy(data, &pose, frame_size);
         frame_holder fh{ new_frame };
         LOG_DEBUG("Created new frame " << frame_type);
-        return std::move(fh);
+        return fh;
     }
 
     uint32_t ros_reader::read_file_version(const rosbag::Bag& file)
@@ -1101,10 +1107,10 @@ namespace librealsense
         }
         return sensor_indices;
     }
-    std::shared_ptr<stream_profile_base> ros_reader::create_pose_profile(uint32_t stream_index, uint32_t fps)
+    std::shared_ptr<pose_stream_profile> ros_reader::create_pose_profile(uint32_t stream_index, uint32_t fps)
     {
         rs2_format format = RS2_FORMAT_6DOF;
-        auto profile = std::make_shared<stream_profile_base>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
+        auto profile = std::make_shared<pose_stream_profile>(platform::stream_profile{ 0, 0, fps, static_cast<uint32_t>(format) });
         profile->set_stream_index(stream_index);
         profile->set_stream_type(RS2_STREAM_POSE);
         profile->set_format(format);

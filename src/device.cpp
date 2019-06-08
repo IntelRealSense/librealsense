@@ -229,6 +229,11 @@ void device::hardware_reset()
     throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
 }
 
+double device::get_device_time()
+{
+    throw not_implemented_exception(to_string() << __FUNCTION__ << " is not implemented for this device!");
+}
+
 std::shared_ptr<matcher> librealsense::device::create_matcher(const frame_holder& frame) const
 {
 
@@ -292,4 +297,21 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
             }
         }
     }
+}
+
+bool librealsense::device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const 
+{
+    if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
+    {
+        for (auto request : others)
+        {
+            if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                return true;
+            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                return true;
+            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                return true;
+        }
+    }
+    return false;
 }

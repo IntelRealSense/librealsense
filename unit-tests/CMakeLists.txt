@@ -6,20 +6,6 @@ project(RealsenseUnitTests)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 set(DEPENDENCIES realsense2)
 
 set (unit_tests_sources
@@ -32,6 +18,7 @@ set (unit_tests_sources
 )
 
 add_executable(live-test ${unit_tests_sources})
+set_property(TARGET live-test PROPERTY CXX_STANDARD 11)
 target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
 
 set_target_properties (live-test PROPERTIES
@@ -194,3 +181,7 @@ foreach(i ${PP_Rosbag_Recordings_List})
         file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
     endif()
 endforeach(i)
+
+if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
+    add_subdirectory(internal)
+endif()

@@ -8,6 +8,7 @@
 #include "hw-monitor.h"
 #include "sensor.h"
 #include "core/streaming.h"
+#include "command_transfer.h"
 
 #include <chrono>
 #include <memory>
@@ -168,9 +169,18 @@ namespace librealsense
         float query() const override { return _value; }
         bool is_enabled() const override { return true; }
         // TODO: expose this outwards
-        const char* get_description() const { return "A simple custom option for a processing block"; }
-    private:
+        const char* get_description() const override { return "A simple custom option for a processing block"; }
+    protected:
         float _value;
+    };
+
+    class LRS_EXTENSION_API bool_option : public float_option
+    {
+    public:
+        bool_option() : float_option(option_range{ 0, 1, 1, 1 }) {}
+        bool is_true() { return (_value > _opt_range.min); }
+        // TODO: expose this outwards
+        const char* get_description() const override { return "A simple custom option for a processing block"; }
     };
 
     class uvc_pu_option : public option
@@ -362,18 +372,18 @@ namespace librealsense
             : _polling_error_handler(handler), _value(1)
         {}
 
-        void set(float value);
+        void set(float value) override;
 
-        float query() const;
+        float query() const override;
 
-        option_range get_range() const;
+        option_range get_range() const override;
 
-        bool is_enabled() const;
+        bool is_enabled() const override;
 
 
-        const char* get_description() const;
+        const char* get_description() const override;
 
-        const char* get_value_description(float value) const;
+        const char* get_value_description(float value) const override;
         void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;

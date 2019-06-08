@@ -38,6 +38,11 @@ public class FrameSet extends LrsClass {
         return filter.process(this);
     }
 
+    public FrameSet releaseWith(FrameReleaser frameReleaser){
+        frameReleaser.addFrame(this);
+        return this;
+    }
+
     @Override
     public void close() {
         nRelease(mHandle);

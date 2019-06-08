@@ -3,8 +3,6 @@
 // winusb_uvc.cpp : Defines the entry point for the console application.
 //
 
-#ifdef RS2_USE_WINUSB_UVC_BACKEND
-
 #define NOMINMAX
 #include "windows.h"
 #include "SETUPAPI.H"
@@ -2269,5 +2267,3 @@ bool read_all_uvc_descriptors(winusb_uvc_device *device, PUCHAR buffer, ULONG bu
 
     return 0;
 }
-
-#endif

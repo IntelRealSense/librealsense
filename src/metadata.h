@@ -39,22 +39,26 @@ namespace librealsense
         META_DATA_CAPTURE_STATS_ID              = 0x00000003,
         META_DATA_CAMERA_EXTRINSICS_ID          = 0x00000004,
         META_DATA_CAMERA_INTRINSICS_ID          = 0x00000005,
+        META_DATA_INTEL_L500_CAPTURE_TIMING_ID  = 0x80000010,
+        META_DATA_INTEL_L500_DEPTH_CONTROL_ID   = 0x80000012,
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
     };
 
     static const std::map<md_type, std::string> md_type_desc =
     {
-        { md_type::META_DATA_INTEL_DEPTH_CONTROL_ID,     "Intel Depth Control"},
-        { md_type::META_DATA_INTEL_CAPTURE_TIMING_ID,    "Intel Capture timing"},
-        { md_type::META_DATA_INTEL_CONFIGURATION_ID,     "Intel Configuration"},
-        { md_type::META_DATA_INTEL_STAT_ID,              "Intel Statistics"},
-        { md_type::META_DATA_INTEL_FISH_EYE_CONTROL_ID,  "Intel Fisheye Control"},
-        { md_type::META_DATA_INTEL_RGB_CONTROL_ID,       "Intel RGB Control"},
-        { md_type::META_DATA_INTEl_FE_FOV_MODEL_ID,      "Intel Fisheye FOV Model"},
-        { md_type::META_DATA_CAPTURE_STATS_ID,           "Capture Statistics"},
-        { md_type::META_DATA_CAMERA_EXTRINSICS_ID,       "Camera Extrinsic"},
-        { md_type::META_DATA_CAMERA_INTRINSICS_ID,       "Camera Intrinsic"},
-        { md_type::META_DATA_CAMERA_DEBUG_ID,            "Camera Debug"},
+        { md_type::META_DATA_INTEL_DEPTH_CONTROL_ID,        "Intel Depth Control"},
+        { md_type::META_DATA_INTEL_CAPTURE_TIMING_ID,       "Intel Capture timing"},
+        { md_type::META_DATA_INTEL_CONFIGURATION_ID,        "Intel Configuration"},
+        { md_type::META_DATA_INTEL_STAT_ID,                 "Intel Statistics"},
+        { md_type::META_DATA_INTEL_FISH_EYE_CONTROL_ID,     "Intel Fisheye Control"},
+        { md_type::META_DATA_INTEL_RGB_CONTROL_ID,          "Intel RGB Control"},
+        { md_type::META_DATA_INTEl_FE_FOV_MODEL_ID,         "Intel Fisheye FOV Model"},
+        { md_type::META_DATA_CAPTURE_STATS_ID,              "Capture Statistics"},
+        { md_type::META_DATA_CAMERA_EXTRINSICS_ID,          "Camera Extrinsic"},
+        { md_type::META_DATA_CAMERA_INTRINSICS_ID,          "Camera Intrinsic"},
+        { md_type::META_DATA_CAMERA_DEBUG_ID,               "Camera Debug"},
+        { md_type::META_DATA_INTEL_L500_CAPTURE_TIMING_ID,  "Intel Capture timing"},
+        { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -101,6 +105,14 @@ namespace librealsense
         preset_attribute                = (1u << 6),
     };
 
+    /**\brief md_depth_control_attributes - bit mask to find active attributes,
+     *  md_depth_control struct */
+    enum class md_l500_depth_control_attributes : uint32_t
+    {
+        laser_power                     = (1u << 0),
+        preset_id                       = (1u << 1),
+        laser_power_mode                = (1u << 2),
+    };
     /**\brief md_fisheye_control_attributes - bit mask to find active attributes,
      *  md_fisheye_control struct */
     enum class md_fisheye_control_attributes : uint32_t
@@ -271,6 +283,20 @@ namespace librealsense
 
     REGISTER_MD_TYPE(md_capture_timing, md_type::META_DATA_INTEL_CAPTURE_TIMING_ID)
 
+    struct l500_md_capture_timing
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;              // Bit array to specify attributes that are valid
+        uint32_t    frame_counter;
+        uint32_t    sensor_timestamp;   //In microsecond unit
+        uint32_t    readout_time;       //The readout time in microsecond unit
+        uint32_t    exposure_time;      //The exposure time in microsecond unit
+        uint32_t    frame_interval;     //The frame interval in microsecond unit
+        uint32_t    pipe_latency;       //The latency between start of frame to frame ready in USB buffer
+    };
+    REGISTER_MD_TYPE(l500_md_capture_timing, md_type::META_DATA_INTEL_L500_CAPTURE_TIMING_ID)
+
         /**\brief md_capture_stats - properties associated with optical sensor
          *  during video streaming. Corresponds to FW STMetaDataCaptureStats object*/
     struct md_capture_stats
@@ -316,6 +342,19 @@ namespace librealsense
 
     REGISTER_MD_TYPE(md_depth_control, md_type::META_DATA_INTEL_DEPTH_CONTROL_ID)
 
+    /**\brief md_depth_control - depth data-related parameters.
+     *  Corresponds to FW's STMetaDataIntelDepthControl object*/
+        struct md_l500_depth_control
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;
+        uint32_t    laser_power;        //value between 1 to 12
+        uint32_t    preset_id;
+        uint32_t    laser_power_mode;     //Auto or Manual laser power
+    };
+
+    REGISTER_MD_TYPE(md_l500_depth_control, md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID)
 
     /**\brief md_fisheye_control - fisheye-related parameters.
      *  Corresponds to FW's STMetaDataIntelFishEyeControl object*/
@@ -478,6 +517,14 @@ namespace librealsense
         md_configuration        intel_configuration;
     };
 
+    struct md_l500_depth
+    {
+        md_capture_timing       intel_capture_timing;
+        md_capture_stats        intel_capture_stats;
+        md_l500_depth_control   intel_depth_control;
+        md_configuration        intel_configuration;
+    };
+
     struct md_fisheye_normal_mode
     {
         md_capture_timing       intel_capture_timing;
@@ -543,7 +590,7 @@ namespace librealsense
      *  layout as transmitted and received by backend */
     struct metadata_raw
     {
-       platform::uvc_header   header;
+        platform::uvc_header   header;
         md_modes          mode;
     };
 

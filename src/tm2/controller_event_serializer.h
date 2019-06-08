@@ -5,6 +5,13 @@
 #include <string>
 #include "TrackingManager.h"
 
+namespace perc {
+    inline std::ostream& operator<<(std::ostream& os, const perc::TrackingData::Version& v)
+    {
+        return os << v.major << "." << v.minor << "." << v.patch << "." << v.build;
+    }
+}
+
 namespace librealsense
 {
     template<size_t SIZE>
@@ -21,11 +28,6 @@ namespace librealsense
             oss << (int)buff[i];
         }
         return oss.str();
-    }
-
-    inline std::ostream& operator<<(std::ostream& os, const perc::TrackingData::Version& v)
-    {
-        return os << v.major << "." << v.minor << "." << v.patch << "." << v.build;
     }
 
     //TODO: Use json library for class

@@ -153,7 +153,7 @@ namespace librealsense
         }
         catch (std::exception const& e)
         {
-            LOG_WARNING("Failed to write frame metadata for " << stream_id << ". Exception: " << e.what());
+            LOG_WARNING("Failed to write frame metadata for " << stream_id.stream_type << ". Exception: " << e.what());
         }
 
         try
@@ -162,7 +162,7 @@ namespace librealsense
         }
         catch (std::exception const& e)
         {
-            LOG_WARNING("Failed to write stream extrinsics for " << stream_id << ". Exception: " << e.what());
+            LOG_WARNING("Failed to write stream extrinsics for " << stream_id.stream_type << ". Exception: " << e.what());
         }
     }
 
@@ -270,7 +270,7 @@ namespace librealsense
         std::string accel_topic = ros_topic::pose_accel_topic(stream_id);
         std::string twist_topic = ros_topic::pose_twist_topic(stream_id);
 
-        //Write the the pose frame as 3 seperate messages (each with different topic)
+        //Write the the pose frame as 3 separate messages (each with different topic)
         write_message(transform_topic, timestamp, transform);
         write_message(accel_topic, timestamp, accel);
         write_message(twist_topic, timestamp, twist);
@@ -291,8 +291,14 @@ namespace librealsense
         //Write frame's timestamp as metadata
         diagnostic_msgs::KeyValue frame_timestamp_msg;
         frame_timestamp_msg.key = FRAME_TIMESTAMP_MD_STR;
-        frame_timestamp_msg.value = to_string() << std::hexfloat << pose->get_frame_timestamp();
+        frame_timestamp_msg.value = to_string() << std::hexfloat << std::fixed << pose->get_frame_timestamp();
         write_message(md_topic, timestamp, frame_timestamp_msg);
+
+        //Write frame's number as external param
+        diagnostic_msgs::KeyValue frame_num_msg;
+        frame_num_msg.key = FRAME_NUMBER_MD_STR;
+        frame_num_msg.value = to_string() << pose->get_frame_number();
+        write_message(md_topic, timestamp, frame_num_msg);
 
         // Write the rest of the frame metadata and stream extrinsics
         write_additional_frame_messages(stream_id, timestamp, frame);

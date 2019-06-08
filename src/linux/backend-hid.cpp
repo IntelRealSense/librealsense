@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_V4L2_BACKEND
-
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
@@ -559,6 +557,12 @@ namespace librealsense
                             auto hid_data_size = channel_size - HID_METADATA_SIZE;
 
                             sens_data.fo = {hid_data_size, metadata?HID_METADATA_SIZE: uint8_t(0),  p_raw_data,  metadata?p_raw_data + hid_data_size:nullptr};
+                            //Linux HID provides timestamps in nanosec. Convert to usec (FW default)
+                            if (metadata)
+                            {
+                                auto* ts_nsec = reinterpret_cast<uint64_t*>(const_cast<void*>(sens_data.fo.metadata));
+                                *ts_nsec /=1000;
+                            }
 
                             this->_callback(sens_data);
                         }
@@ -1208,5 +1212,3 @@ namespace librealsense
         }
     }
 }
-
-#endif

@@ -2,6 +2,8 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(librealsense2 LANGUAGES CXX C)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
+
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
@@ -49,8 +51,14 @@ option(BUILD_CV_KINFU_EXAMPLE "Build OpenCV KinectFusion example" OFF)
 
 add_subdirectory(wrappers)
 
-if (BUILD_EXAMPLES AND BUILD_GRAPHICAL_EXAMPLES)
-    add_subdirectory(third-party/glfw)
+if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
+    find_package(glfw3 3.3 QUIET)
+    if(NOT TARGET glfw)
+        message(STATUS "GLFW 3.3 not found; using internal version")
+        set(GLFW_INSTALL ON)
+        add_subdirectory(third-party/glfw)
+    endif()
+    #add_subdirectory(src/gl)
 endif()
 
 if(BUILD_EXAMPLES)
@@ -67,3 +75,8 @@ if (BUILD_WITH_TM2)
 endif()
 
 include(CMake/install_config.cmake)
+
+if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
+    add_subdirectory(src/gl)
+endif()
+

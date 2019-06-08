@@ -24,6 +24,12 @@ namespace Intel.RealSense
             return new SoftwareSensor(AddSoftwareSensor(name));
         }
 
+        public void AddTo(Context ctx)
+        {
+            object error;
+            NativeMethods.rs2_context_add_software_device(ctx.Handle, Handle, out error);
+        }
+
         public void SetMatcher(Matchers matcher)
         {
             object error;

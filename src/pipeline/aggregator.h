@@ -21,7 +21,7 @@ namespace librealsense
             void handle_frame(frame_holder frame, synthetic_source_interface* source);
         public:
             aggregator(const std::vector<int>& streams_to_aggregate, const std::vector<int>& streams_to_sync);
-            bool dequeue(frame_holder* item, unsigned int timeout_ms = 5000);
+            bool dequeue(frame_holder* item, unsigned int timeout_ms);
             bool try_dequeue(frame_holder* item);
         };
     }

@@ -5,6 +5,7 @@
 
 #include "sensor.h"
 #include <mutex>
+#include "command_transfer.h"
 
 namespace librealsense
 {
@@ -195,7 +196,7 @@ namespace librealsense
     public:
         locked_transfer(std::shared_ptr<platform::command_transfer> command_transfer, uvc_sensor& uvc_ep)
             :_command_transfer(command_transfer),
-             _uvc_sensor_base(uvc_ep)
+            _uvc_sensor_base(uvc_ep)
         {}
 
         std::vector<uint8_t> send_receive(

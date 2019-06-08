@@ -666,6 +666,7 @@ void URuntimeMeshSlicer::SliceRuntimeMesh(URuntimeMesh* InRuntimeMesh, FVector P
 					SourceMeshData->CopyTo(NewBuilder);
 
 					OutOtherHalf->CreateMeshSection(SectionIndex, MoveTemp(NewBuilder));
+					OutOtherHalf->SetSectionMaterial(SectionIndex, InRuntimeMesh->GetSectionMaterial(SectionIndex));
 				}
 
 				InRuntimeMesh->ClearMeshSection(SectionIndex);
@@ -727,6 +728,15 @@ void URuntimeMeshSlicer::SliceRuntimeMeshComponent(URuntimeMeshComponent* InRunt
 				OutOtherHalf->SetCollisionProfileName(InRuntimeMesh->GetCollisionProfileName());
 				OutOtherHalf->SetCollisionEnabled(InRuntimeMesh->GetCollisionEnabled());
 				OutOtherHalf->SetCollisionUseComplexAsSimple(InRuntimeMesh->IsCollisionUsingComplexAsSimple());
+
+				// Copy overridden materials
+				for (int32 Index = 0; Index < InRuntimeMesh->GetNumOverrideMaterials(); Index++)
+				{
+					if (UMaterialInterface* Material = InRuntimeMesh->GetOverrideMaterial(Index))
+					{
+						OutOtherHalf->SetMaterial(Index, Material);
+					}
+				}
 
 				OutOtherHalf->RegisterComponent();
 			}

@@ -158,17 +158,22 @@ namespace librealsense
     {
         if (all_hid_infos.empty())
         {
-            LOG_WARNING("HID device is missing!");
+            LOG_WARNING("No HID info provided, IMU is disabled");
             return nullptr;
         }
 
         static const char* custom_sensor_fw_ver = "5.6.0.0";
 
+        std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
+        std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds5_custom_hid_timestamp_reader());
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
-                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_iio_hid_timestamp_reader()),
-                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_custom_hid_timestamp_reader()),
+                                                        std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), _tf_keeper, enable_global_time_option)),
+                                                        std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), _tf_keeper, enable_global_time_option)),
                                                         fps_and_sampling_frequency_per_rs2_stream,
                                                         sensor_name_and_hid_profiles);
+
+        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -258,41 +263,11 @@ namespace librealsense
         // D435i to use predefined values extrinsics
         _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
         {
-            try
-            {
-                pose ex{};
-                auto extr = _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
-                ex = { { extr.rotation[0], extr.rotation[1], extr.rotation[2],
-                         extr.rotation[3], extr.rotation[4], extr.rotation[5],
-                         extr.rotation[6], extr.rotation[7], extr.rotation[8]},
-                       { extr.translation[0], extr.translation[1], extr.translation[2]} };
-                return from_pose(ex);
-            }
-            catch (const std::exception &exc)
-            {
-                LOG_INFO("IMU EEPROM extrinsic is not available" << exc.what());
-                throw;
-            }
-        });
-
-        _depth_to_imu_aligned = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            try
-            {
-                rs2_extrinsics extr = **_depth_to_imu;
-                float rot[9] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
-                librealsense::copy(&extr.rotation, &rot, arr_size_bytes(rot));
-                return extr;
-            }
-            catch (const std::exception &exc)
-            {
-                LOG_INFO("IMU EEPROM Aligned extrinsic is not available" << exc.what());
-                throw;
-            }
+            return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
         });
 
         // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu_aligned);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
@@ -306,19 +281,17 @@ namespace librealsense
             std::function<void(rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)> align_imu_axes  = nullptr;
 
             // Perform basic IMU transformation to align orientation with Depth sensor CS.
-            float3x3 rotation{ {1,0,0}, {0,1,0}, {0,0,1} };
             try
             {
-                librealsense::copy(&rotation, &(*_depth_to_imu)->rotation, sizeof(float3x3));
-                align_imu_axes = [rotation](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
+                float3x3 imu_to_depth = _mm_calib->imu_to_depth_alignment();
+                align_imu_axes = [imu_to_depth](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
                 {
                     if (fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
                     {
                         auto xyz = (float3*)(fr->get_frame_data());
 
                         // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
-                        //Reference spec : Bosch BMI055
-                        *xyz = rotation * (*xyz);
+                        *xyz = imu_to_depth * (*xyz);
                     }
                 };
             }
@@ -377,9 +350,12 @@ namespace librealsense
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
         auto&& backend = ctx->get_backend();
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(this, backend.create_uvc_device(fisheye_infos.front()),
-                                                    std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+                                std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
 
+        fisheye_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
         fisheye_ep->register_pixel_format(pf_raw8);
         fisheye_ep->register_pixel_format(pf_fe_raw8_unpatched_kernel); // W/O for unpatched kernel
