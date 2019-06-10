@@ -88,5 +88,5 @@ describe('Colorizer test', function() {
       }
     }
     pipeline.destroy();
-  });
+  }).timeout(4000);
 });
