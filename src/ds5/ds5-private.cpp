@@ -80,12 +80,13 @@ namespace librealsense
             else
             {
                 // Intrinsics not found in the calibration table - use the generic calculation
-                ds5_rect_resolutions resolution = res_1920_1080;
                 rs2_intrinsics intrinsics;
                 intrinsics.width = width;
                 intrinsics.height = height;
 
+                ds5_rect_resolutions resolution = (width == 256 && height == 144 ? res_1280_720 : res_1920_1080);
                 auto rect_params = static_cast<const float4>(table->rect_params[resolution]);
+
                 // DS5U - assume ideal intrinsic params
                 if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
                 {
@@ -94,10 +95,21 @@ namespace librealsense
                     rect_params.w = intrinsics.height * 0.5f;
                 }
 
-                intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                if (width == 256 && height == 144)
+                {
+                    intrinsics.fx = rect_params[0];
+                    intrinsics.fy = rect_params[1];
+                    intrinsics.ppx = rect_params[2] - 512;
+                    intrinsics.ppy = rect_params[3] - 288;
+                }
+                else
+                {
+                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
+                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
+                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
+                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                }
+
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
