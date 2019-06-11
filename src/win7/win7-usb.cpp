@@ -27,15 +27,11 @@ namespace librealsense
               _device_handle(nullptr),
               _usb_interface(nullptr)
         {
-			LOG_DEBUG(__FUNCTION__);
-
             open(lpDevicePath);
         }
 
         winusb_device::~winusb_device()
         {
-			LOG_DEBUG(__FUNCTION__);
-
             try
             {
                 release();
@@ -48,8 +44,6 @@ namespace librealsense
 
         void winusb_device::recreate_interface()
         {
-			LOG_DEBUG(__FUNCTION__);
-
             if (_usb_interface)
                 _usb_interface.reset();
 
@@ -65,8 +59,6 @@ namespace librealsense
 
         void winusb_device::release()
         {
-			LOG_DEBUG(__FUNCTION__);
-
             if (_device_handle)
             {
                 CloseHandle(_device_handle);
@@ -76,8 +68,6 @@ namespace librealsense
 
         void winusb_device::open(std::wstring lpDevicePath)
         {
-			LOG_DEBUG(__FUNCTION__);
-
             if (_device_handle)
                 return;
 
@@ -389,8 +379,6 @@ namespace librealsense
 
         void win7_usb_interface::init_winusb_pipe()
         {
-			LOG_DEBUG(__FUNCTION__);
-
             // initialize _dataInPipeID and _dataOutPipeID that will be used below.
             query_endpoints();
 
@@ -426,7 +414,7 @@ namespace librealsense
 
         void win7_usb_interface::reset_interrupt_pipe() const
         {
-			LOG_DEBUG(__FUNCTION__);
+            LOG_DEBUG(__FUNCTION__);
 
             auto sts = WinUsb_ResetPipe(_interface_handle, _interrupt_pipe_id);
             if (!sts)
@@ -435,7 +423,7 @@ namespace librealsense
 
         void win7_usb_interface::reset_pipe(pipe_direction pipeDirection) const
         {
-			LOG_DEBUG(__FUNCTION__);
+            LOG_DEBUG(__FUNCTION__);
 
             BOOL sts;
 

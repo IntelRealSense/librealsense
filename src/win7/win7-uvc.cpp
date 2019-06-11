@@ -370,8 +370,8 @@ namespace librealsense
         {
             while (_keep_pulling_interrupts)
             {
-				if (_device->deviceData.ctrl_if.bEndpointAddress < 0x80)
-					continue;
+                if (_device->deviceData.ctrl_if.bEndpointAddress < 0x80)
+                    continue;
                 ::poll_interrupts(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, 100);
             }
         }
@@ -400,8 +400,8 @@ namespace librealsense
                     winusb_uvc_device *device = device_list[i];
 
                     // initializing and filling all fields of winsub_device device_list[0]
-					if (winusb_open(device) != UVC_SUCCESS)
-						continue;
+                    if (winusb_open(device) != UVC_SUCCESS)
+                        continue;
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi)
                     {
@@ -424,14 +424,14 @@ namespace librealsense
                             _extension_unit = eu->bUnitID;
                         }
 
-						// WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
-						// PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
-						ULONG timeout_milliseconds = 100;
-						if (WinUsb_SetPipePolicy(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
-						{
-							free(device_list);
-							throw std::runtime_error("Failed to set timeout policy!");
-						}
+                        // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
+                        // PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
+                        ULONG timeout_milliseconds = 100;
+                        if (WinUsb_SetPipePolicy(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
+                        {
+                            free(device_list);
+                            throw std::runtime_error("Failed to set timeout policy!");
+                        }
 
                         _keep_pulling_interrupts = true;
                         _interrupt_polling_thread = std::shared_ptr<std::thread>(new std::thread([this]() {
@@ -440,9 +440,9 @@ namespace librealsense
                             if (ptr)
                             {
                                 _keep_pulling_interrupts = false;
-								LOG_DEBUG(__FUNCTION__ << ": start joining interrupt thread");
-								ptr->join();
-								LOG_DEBUG(__FUNCTION__ << ": interrupt thread joined");
+                                //LOG_DEBUG("Join interrupt thread");
+                                ptr->join();
+                                //LOG_DEBUG("Interrupt thread joined");
                                 delete ptr;
                             }
                         });
