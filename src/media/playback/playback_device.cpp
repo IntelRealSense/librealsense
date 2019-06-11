@@ -339,7 +339,7 @@ void playback_device::resume()
 
 void playback_device::set_real_time(bool real_time)
 {
-    LOG_INFO("Set real time to " << (real_time) ? "True" : "False");
+    LOG_INFO("Set real time to " << ((real_time) ? "True" : "False"));
     m_real_time = real_time;
 }
 
