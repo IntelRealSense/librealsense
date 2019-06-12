@@ -188,8 +188,6 @@ namespace librealsense
 
         rs2::frame colorizer::process_frame(const rs2::frame_source& src, const rs2::frame& f)
         {
-            //scoped_timer t("colorizer");
-
             if (f.get_profile().get() != _source_stream_profile.get())
             {
                 _source_stream_profile = f.get_profile();
