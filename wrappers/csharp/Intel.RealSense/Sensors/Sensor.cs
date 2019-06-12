@@ -32,6 +32,17 @@ namespace Intel.RealSense
             return ObjectPool.Get<T>(ptr);
         }
 
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Sensor"/> type or subclass</typeparam>
+        /// <param name="other"><see cref="Sensor"/> to clone</param>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public static T Create<T>(Sensor other)
+            where T : Frame
+        {
+            object error;
+            return ObjectPool.Get<T>(other.Handle);
+        }
+
         internal Sensor(IntPtr sensor)
             : base(sensor, NativeMethods.rs2_delete_sensor)
         {
@@ -181,6 +192,15 @@ namespace Intel.RealSense
         {
             object error;
             return NativeMethods.rs2_is_sensor_extendable_to(Handle, ext, out error) != 0;
+        }
+
+        /// <summary>Returns a strongly-typed clone</summary>
+        /// <typeparam name="T"><see cref="Sensor"/> type or subclass</typeparam>
+        /// <returns>an instance of <typeparamref name="T"/></returns>
+        public T As<T>()
+            where T : Frame
+        {
+            return Create<T>(this);
         }
 
         /// <summary>

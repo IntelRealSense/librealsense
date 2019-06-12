@@ -13,7 +13,7 @@ namespace Intel.RealSense
     /// <summary>
     /// List of adjacent devices, sharing the same physical parent composite device
     /// </summary>
-    internal sealed class SensorList<T> : Base.Object, IEnumerable<T>, ICollection where T : Sensor
+    internal sealed class SensorList : Base.Object, IEnumerable<Sensor>, ICollection
     {
         internal SensorList(IntPtr ptr)
             : base(ptr, NativeMethods.rs2_delete_sensor_list)
@@ -21,7 +21,7 @@ namespace Intel.RealSense
         }
 
         /// <inheritdoc/>
-        public IEnumerator<T> GetEnumerator()
+        public IEnumerator<Sensor> GetEnumerator()
         {
             object error;
 
@@ -29,7 +29,7 @@ namespace Intel.RealSense
             for (int i = 0; i < sensorCount; i++)
             {
                 var ptr = NativeMethods.rs2_create_sensor(Handle, i, out error);
-                yield return Sensor.Create<T>(ptr);
+                yield return Sensor.Create<Sensor>(ptr);
             }
         }
 
@@ -80,7 +80,7 @@ namespace Intel.RealSense
             {
                 object error;
                 var ptr = NativeMethods.rs2_create_sensor(Handle, index, out error);
-                return Sensor.Create<T>(ptr);
+                return Sensor.Create<Sensor>(ptr);
             }
         }
     }
