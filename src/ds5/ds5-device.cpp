@@ -341,12 +341,11 @@ namespace librealsense
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group),
+        : device(ctx, group), global_time_interface(), 
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _tf_keeper(std::make_shared<time_diff_keeper>(this, 100))
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -618,10 +617,6 @@ namespace librealsense
             });
             notification_thread.detach();
         }
-        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
-            _tf_keeper->start();
-        else
-            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     notification ds5_notification_decoder::decode(int value)
@@ -655,8 +650,14 @@ namespace librealsense
     }
 
 
-    double ds5_device::get_device_time()
+    double ds5_device::get_device_time_ms()
     {
+        // TODO: Refactor the following query with an extension.
+        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
+        {
+            throw not_implemented_exception("device time not supported for backend.");
+        }
+
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 

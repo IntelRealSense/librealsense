@@ -766,7 +766,7 @@ namespace librealsense
                 return results;
             }
 
-            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const
+            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const override
             {
                 auto dev = usb_enumerator::create_usb_device(info);
                 if(dev != nullptr)
@@ -774,7 +774,7 @@ namespace librealsense
                 return nullptr;
             }
 
-            std::vector<usb_device_info> query_usb_devices() const
+            std::vector<usb_device_info> query_usb_devices() const override
             {
                 return usb_enumerator::query_devices_info();
             }

@@ -1273,6 +1273,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_ae_control", &rs400::advanced_mode::get_ae_control, "mode"_a = 0) //STAEControl
         .def("set_census", &rs400::advanced_mode::set_census, "group"_a)    //STCensusRadius
         .def("get_census", &rs400::advanced_mode::get_census, "mode"_a = 0) //STCensusRadius
+        .def("set_amp_factor", &rs400::advanced_mode::set_amp_factor, "group"_a)    //STAFactor
+        .def("get_amp_factor", &rs400::advanced_mode::get_amp_factor, "mode"_a = 0) //STAFactor
         .def("serialize_json", &rs400::advanced_mode::serialize_json)
         .def("load_json", &rs400::advanced_mode::load_json, "json_content"_a);
 

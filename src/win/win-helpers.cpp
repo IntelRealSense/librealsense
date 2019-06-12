@@ -434,7 +434,7 @@ namespace librealsense
 
                     std::vector<WCHAR> pInstID2(buf_size + 1);
 
-                    if (CM_Get_Device_ID(instance, pInstID2.data(), vector_bytes_size(pInstID2), 0) != CR_SUCCESS) {
+                    if (CM_Get_Device_ID(instance, pInstID2.data(), ULONG(vector_bytes_size(pInstID2)), 0) != CR_SUCCESS) {
                         LOG_ERROR("CM_Get_Device_ID failed");
                         return false;
                     }
@@ -471,7 +471,7 @@ namespace librealsense
 
                     detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                     SP_DEVINFO_DATA parent_data = { sizeof(SP_DEVINFO_DATA) };
-                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data, vector_bytes_size(detail_data_buff), nullptr, &parent_data))
+                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data, ULONG(vector_bytes_size(detail_data_buff)), nullptr, &parent_data))
                     {
                         LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         return false;

@@ -1797,6 +1797,11 @@ namespace perc {
         Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
 
         mDispatcher->sendMessage(&mFsm, msg);
+        // ERROR_FW_INTERNAL just means we were unable to set the node
+        if (msg.Result == toUnderlying(Status::ERROR_FW_INTERNAL))
+        {
+            return Status::ERROR_FW_INTERNAL;
+        }
         if (msg.Result != toUnderlying(Status::SUCCESS))
         {
             DEVICELOGE("USB Error (0x%X)", msg.Result);
@@ -1825,6 +1830,11 @@ namespace perc {
         Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
 
         mDispatcher->sendMessage(&mFsm, msg);
+        // ERROR_FW_INTERNAL just means we were unable to get the node
+        if (msg.Result == toUnderlying(Status::ERROR_FW_INTERNAL))
+        {
+            return Status::ERROR_FW_INTERNAL;
+        }
         if (msg.Result != toUnderlying(Status::SUCCESS))
         {
             DEVICELOGE("USB Error (0x%X)", msg.Result);
@@ -3908,8 +3918,14 @@ namespace perc {
         }
         else if (res->wStatus == toUnderlying(MESSAGE_STATUS::UNSUPPORTED))
         {
-            DEVICELOGE("MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
+            DEVICELOGE("Unsupported MessageID 0x%X (%s) failed with status 0x%X", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
             msg.Result = toUnderlying(Status::FEATURE_UNSUPPORTED);
+        }
+        // Static node functions return INTERNAL_ERROR to mean "false"
+        else if ((res->wMessageID == SLAM_SET_STATIC_NODE || res->wMessageID == SLAM_GET_STATIC_NODE) &&
+                 res->wStatus == toUnderlying(MESSAGE_STATUS::INTERNAL_ERROR))
+        {
+            msg.Result = toUnderlying(Status::ERROR_FW_INTERNAL);
         }
         else
         {

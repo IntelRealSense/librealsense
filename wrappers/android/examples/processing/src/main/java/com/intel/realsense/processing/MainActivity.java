@@ -17,6 +17,7 @@ import com.intel.realsense.librealsense.Align;
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.DecimationFilter;
+import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameReleaser;
@@ -47,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
 
     private Pipeline mPipeline;
-    private Config mConfig;
 
     //filters
     private Align mAlign;
@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
+        mPipeline.close();
     }
 
     private void init(){
@@ -132,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         mRsContext.setDevicesChangedCallback(mListener);
 
         mPipeline = new Pipeline();
-        mConfig  = new Config();
 
         //init filters
         mAlign = new Align(StreamType.COLOR);
@@ -151,12 +151,11 @@ public class MainActivity extends AppCompatActivity {
 
         mDecimationFilter.setValue(Option.FILTER_MAGNITUDE, 8);
 
-        mConfig.enableStream(StreamType.DEPTH, 640, 480);
-        mConfig.enableStream(StreamType.COLOR, 640, 480);
-
-        if(mRsContext.queryDevices().getDeviceCount() > 0) {
-            showConnectLabel(false);
-            start();
+        try(DeviceList dl = mRsContext.queryDevices()){
+            if(dl.getDeviceCount() > 0) {
+                showConnectLabel(false);
+                start();
+            }
         }
     }
 
@@ -209,6 +208,15 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void configAndStart() throws Exception {
+        try(Config config  = new Config())
+        {
+            config.enableStream(StreamType.DEPTH, 640, 480);
+            config.enableStream(StreamType.COLOR, 640, 480);
+            mPipeline.start(config);
+        }
+    }
+
     private synchronized void start() {
         if(mIsStreaming)
             return;
@@ -216,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "try start streaming");
             mGLSurfaceViewOrg.clear();
             mGLSurfaceViewProcessed.clear();
-            mPipeline.start(mConfig);
+            configAndStart();
             mIsStreaming = true;
             mHandler.post(mStreaming);
             Log.d(TAG, "streaming started successfully");

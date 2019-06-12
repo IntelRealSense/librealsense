@@ -281,6 +281,10 @@ namespace librealsense
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {}
 
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value)
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _description_per_value(description_per_value)
+        {}
+
         const char* get_description() const override
         {
             return _desciption.c_str();
@@ -289,12 +293,19 @@ namespace librealsense
         {
             _recording_function = record_action;
         }
+        const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        }
     protected:
         uvc_sensor&       _ep;
         platform::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
         std::function<void(const option&)> _recording_function = [](const option&) {};
+        const std::map<float, std::string> _description_per_value;
     };
 
     template<class T, class R, class W, class U>

@@ -436,7 +436,7 @@ namespace librealsense
 
                 try
                 {
-                    int vid, pid, mi;
+                    uint16_t vid, pid, mi;
                     std::string busnum, devnum, devpath;
 
                     auto dev_name = "/dev/" + name;
