@@ -501,6 +501,15 @@ namespace librealsense
             depth_ep.register_option(RS2_OPTION_HARDWARE_PRESET,
                 std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_HARDWARE_PRESET,
                     "Hardware pipe configuration"));
+            depth_ep.register_option(RS2_OPTION_PROJECTOR_TYPE,
+                std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_PROJECTOR_TYPE,
+                    "Select between the projector and LED on F416 camera, 0 - for projector, 1 - for LED"));
+            depth_ep.register_option(RS2_OPTION_LED_PWR_MODE,
+                std::make_shared<uvc_xu_option<uint8_t>>(depth_ep, depth_xu, DS5_LED_PWR_MODE,
+                    "Toggle the LED on F416 camera"));
+            depth_ep.register_option(RS2_OPTION_LED_PWR,
+                std::make_shared<uvc_xu_option<uint16_t>>(depth_ep, depth_xu, DS5_LED_PWR,
+                    "Set the power level of the F416 LED, with 0 meaning projector off"));
         }
 
         std::string is_camera_locked{ "" };

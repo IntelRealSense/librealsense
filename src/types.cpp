@@ -278,6 +278,9 @@ namespace librealsense
             CASE(APD_TEMPERATURE)
             CASE(HARDWARE_PRESET)
             CASE(GLOBAL_TIME_ENABLED)
+            CASE(PROJECTOR_TYPE)
+            CASE(LED_PWR_MODE)
+            CASE(LED_PWR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
