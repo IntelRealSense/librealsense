@@ -50,7 +50,7 @@
               }
             },
             "libraries": [
-              "<(win_realsense_dir)/realsense2.lib",
+              "<(win_realsense_dir)/realsense2d.lib",
             ],
           }
         ],
@@ -105,7 +105,7 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(win_realsense_dir)/realsense2.dll']
+                'files': ['<(win_realsense_dir)/realsense2d.dll']
               }
             ]
         }]
