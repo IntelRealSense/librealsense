@@ -510,7 +510,6 @@ PYBIND11_MODULE(NAME, m) {
              "found, return an empty frame instance.", "index"_a = 0)
         .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame, "Retrieve the fisheye monochrome video frame", "index"_a=0)
         .def("get_pose_frame", &rs2::frameset::get_pose_frame, "Retrieve the pose frame", "index"_a = 0)
-        .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
         .def("__iter__", [](rs2::frameset& self) {
             return py::make_iterator(self.begin(), self.end());
         }, py::keep_alive<0, 1>())
