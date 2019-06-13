@@ -463,6 +463,28 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.get_infrared_frame(index));
             }
         });
+        frameset_factory.record("get_fisheye_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
+            // try/catch moved to outer framework
+            if (inc == 1)
+                outv[0] = MatlabParamParser::wrap(thiz.get_fisheye_frame());
+            else {
+                auto index = MatlabParamParser::parse<size_t>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.get_fisheye_frame(index));
+            }
+        });
+        frameset_factory.record("get_pose_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
+            // try/catch moved to outer framework
+            if (inc == 1)
+                outv[0] = MatlabParamParser::wrap(thiz.get_pose_frame());
+            else {
+                auto index = MatlabParamParser::parse<size_t>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.get_pose_frame(index));
+            }
+        });
         frameset_factory.record("size", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frameset>(inv[0]);
