@@ -788,7 +788,7 @@ namespace librealsense
                 if (i == _info && device)
                 {
                     _device_id.resize(DEVICE_ID_MAX_SIZE);
-                    CHECK_HR(device->GetString(did_guid, const_cast<LPWSTR>(_device_id.c_str()), _device_id.size(), nullptr));
+                    CHECK_HR(device->GetString(did_guid, const_cast<LPWSTR>(_device_id.c_str()), UINT32(_device_id.size()), nullptr));
                 }
             });
         }

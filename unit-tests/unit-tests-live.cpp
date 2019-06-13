@@ -42,6 +42,7 @@ TEST_CASE("Sync sanity", "[live]") {
         auto actual_fps = fps;
         bool hw_timestamp_domain = false;
         bool system_timestamp_domain = false;
+        bool global_timestamp_domain = false;
         for (auto i = 0; i < 200; i++)
         {
             auto frames = sync.wait_for_frames(5000);
@@ -64,6 +65,10 @@ TEST_CASE("Sync sanity", "[live]") {
                 {
                     system_timestamp_domain = true;
                 }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                    global_timestamp_domain = true;
+                }
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
@@ -76,7 +81,8 @@ TEST_CASE("Sync sanity", "[live]") {
 
         CAPTURE(hw_timestamp_domain);
         CAPTURE(system_timestamp_domain);
-        REQUIRE(hw_timestamp_domain != system_timestamp_domain);
+        CAPTURE(global_timestamp_domain);
+        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
 
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
@@ -1141,7 +1147,7 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
                     {
                         REQUIRE(video.width() >= 320);
                         REQUIRE(video.width() <= 1920);
-                        REQUIRE(video.height() >= 180);
+                        REQUIRE(video.height() >= 100);     //firmware 5.11.6.200
                         REQUIRE(video.height() <= 1080);
                     }
 
@@ -5387,7 +5393,6 @@ TEST_CASE("L500 zero order sanity", "[live]") {
 
                         REQUIRE(stream_missing == stream_arrived.end());
                     }
-                   
                 }
             }
         }

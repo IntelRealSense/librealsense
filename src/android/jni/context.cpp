@@ -26,3 +26,9 @@ Java_com_intel_realsense_librealsense_RsContext_nQueryDevices(JNIEnv *env, jclas
     handle_error(env, e);
     return (jlong) device_list_handle;
 }
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_intel_realsense_librealsense_RsContext_nGetVersion(JNIEnv *env, jclass type) {
+    return env->NewStringUTF(RS2_API_VERSION_STR);
+}

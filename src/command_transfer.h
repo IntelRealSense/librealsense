@@ -44,13 +44,13 @@ namespace librealsense
 
                 auto hwm = *it;
                 uint32_t transfered_count = 0;
-                auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), data.size(), transfered_count, timeout_ms);
+                auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), static_cast<uint32_t>(data.size()), transfered_count, timeout_ms);
 
                 if (sts != RS2_USB_STATUS_SUCCESS)
                     throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
 
                 std::vector<uint8_t> output(DEFAULT_BUFFER_SIZE);
-                sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ), output.data(), output.size(), transfered_count, timeout_ms);
+                sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ), output.data(), static_cast<uint32_t>(output.size()), transfered_count, timeout_ms);
 
                 if (sts != RS2_USB_STATUS_SUCCESS)
                     throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));

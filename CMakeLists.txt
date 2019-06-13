@@ -49,16 +49,18 @@ os_target_config()
 global_target_config()
 option(BUILD_CV_KINFU_EXAMPLE "Build OpenCV KinectFusion example" OFF)
 
+include(CMake/install_config.cmake)
+
 add_subdirectory(wrappers)
 
 if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
     find_package(glfw3 3.3 QUIET)
     if(NOT TARGET glfw)
         message(STATUS "GLFW 3.3 not found; using internal version")
-        set(GLFW_INSTALL ON)
+        set(GLFW_INSTALL ON CACHE BOOL "" FORCE)
         add_subdirectory(third-party/glfw)
     endif()
-    #add_subdirectory(src/gl)
+    add_subdirectory(src/gl)
 endif()
 
 if(BUILD_EXAMPLES)
@@ -73,10 +75,3 @@ endif()
 if (BUILD_WITH_TM2)
     add_tm2()
 endif()
-
-include(CMake/install_config.cmake)
-
-if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
-    add_subdirectory(src/gl)
-endif()
-

@@ -67,6 +67,9 @@ namespace librealsense
         get_depth_sensor().register_option(RS2_OPTION_MA_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MA_TEMPERATURE));
 
+        get_depth_sensor().register_option(RS2_OPTION_APD_TEMPERATURE,
+            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
+
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
 
@@ -87,6 +90,7 @@ namespace librealsense
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_l500_depth, intel_capture_timing);
 
+        get_depth_sensor().register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&l500_md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_attribute_parser(&l500_md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, make_attribute_parser(&l500_md_capture_timing::exposure_time, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));

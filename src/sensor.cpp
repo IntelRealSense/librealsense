@@ -12,6 +12,8 @@
 #include "stream.h"
 #include "sensor.h"
 #include "proc/decimation-filter.h"
+#include "global_timestamp_reader.h"
+#include "metadata.h"
 
 namespace librealsense
 {
@@ -593,6 +595,10 @@ namespace librealsense
             _is_opened = false;
             throw;
         }
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+        }
         set_active_streams(requests);
     }
 
@@ -609,6 +615,10 @@ namespace librealsense
             _device->close(profile);
         }
         reset_streaming();
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+        }
         _power.reset();
         _is_opened = false;
         set_active_streams({});
@@ -774,6 +784,8 @@ namespace librealsense
       _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
       _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
     {
+        register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
+
         std::map<std::string, uint32_t> frequency_per_sensor;
         for (auto& elem : sensor_name_and_hid_profiles)
             frequency_per_sensor.insert(make_pair(elem.first, elem.second.fps));
@@ -781,7 +793,6 @@ namespace librealsense
         std::vector<platform::hid_profile> profiles_vector;
         for (auto& elem : frequency_per_sensor)
             profiles_vector.push_back(platform::hid_profile{elem.first, elem.second});
-
 
         _hid_device->open(profiles_vector);
         for (auto& elem : _hid_device->get_sensors())
@@ -868,6 +879,10 @@ namespace librealsense
             configured_hid_profiles.push_back(platform::hid_profile{elem.first, elem.second.fps});
         }
         _hid_device->open(configured_hid_profiles);
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(true);
+        }
         _is_opened = true;
         set_active_streams(requests);
     }
@@ -886,6 +901,10 @@ namespace librealsense
         _is_configured_stream.resize(RS2_STREAM_COUNT);
         _hid_mapping.clear();
         _is_opened = false;
+        if (Is<librealsense::global_time_interface>(_owner))
+        {
+            As<librealsense::global_time_interface>(_owner)->enable_time_diff_keeper(false);
+        }
         set_active_streams({});
     }
 
@@ -962,12 +981,19 @@ namespace librealsense
             auto frame_counter = timestamp_reader->get_frame_counter(mode, sensor_data.fo);
             auto ts_domain = timestamp_reader->get_frame_timestamp_domain(mode, sensor_data.fo);
 
-            frame_additional_data additional_data{};
+            frame_additional_data additional_data(timestamp,
+                frame_counter,
+                system_time,
+                static_cast<uint8_t>(sensor_data.fo.metadata_size),
+                (const uint8_t*)sensor_data.fo.metadata,
+                sensor_data.fo.backend_time,
+                last_timestamp,
+                last_frame_number,
+                false);
 
-            additional_data.timestamp = timestamp;
-            additional_data.frame_number = frame_counter;
             additional_data.timestamp_domain = ts_domain;
-            additional_data.system_time = system_time;
+            additional_data.backend_timestamp = sensor_data.fo.backend_time;
+
             LOG_DEBUG("FrameAccepted," << get_string(request->get_stream_type())
                     << ",Counter," << std::dec << frame_counter << ",Index,0"
                     << ",BackEndTS," << std::fixed << sensor_data.fo.backend_time
@@ -1111,7 +1137,8 @@ namespace librealsense
             // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
             // To revert to the extended 64 bit TS uncomment the next line instead
             //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            auto timestamp = *((uint32_t*)((const uint8_t*)fo.metadata));
+            auto timestamp = (fo.metadata_size >= platform::hid_header_size) ?
+                static_cast<uint32_t>(((platform::hid_header*)(fo.metadata))->timestamp) : *((uint32_t*)((const uint8_t*)fo.metadata));
 
             // HID timestamps are aligned to FW Default - usec units
             return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);

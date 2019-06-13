@@ -13,7 +13,9 @@ namespace librealsense
                                                    uvc_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
-          _color_sensor(nullptr)
+          _color_sensor(nullptr),
+        _rgb_exposure_gain_bind(false),
+        _amplitude_factor_support(false)
     {
         _enabled = [this]() {
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
@@ -38,6 +40,8 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
+       auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+       _amplitude_factor_support = _rgb_exposure_gain_bind = (fw_ver >= firmware_version("5.11.9.0"));
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -65,6 +69,7 @@ namespace librealsense
             {
             case ds::RS410_PID:
             case ds::RS415_PID:
+            case ds::RS465_PID:
                 default_410(p);
                 break;
             case ds::RS430_PID:
@@ -145,6 +150,7 @@ namespace librealsense
             case ds::RS400_PID:
             case ds::RS410_PID:
             case ds::RS415_PID:
+            case ds::RS465_PID://TODO: verify 
                 d415_remove_ir(p);
                 break;
             case ds::RS460_PID:
@@ -221,6 +227,12 @@ namespace librealsense
     void ds5_advanced_mode_base::get_census_radius(STCensusRadius* ptr, int mode) const
     {
         *ptr = get<STCensusRadius>(advanced_mode_traits<STCensusRadius>::group, nullptr, mode);
+    }
+
+    void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
+    {
+        *ptr = _amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
+            []() { STAFactor af; af.amplitude = 0.f; return af; }();
     }
 
     bool ds5_advanced_mode_base::supports_option(const uvc_sensor& sensor, rs2_option opt) const
@@ -479,6 +491,15 @@ namespace librealsense
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
+    void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
+    {
+        if (_amplitude_factor_support)
+        {
+            set(val, advanced_mode_traits<STAFactor>::group);
+            _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
+        }
+    }
+
     void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
     {
         if (val.was_set)
@@ -677,6 +698,7 @@ namespace librealsense
         get_depth_table_control(&p.depth_table);
         get_ae_control(&p.ae);
         get_census_radius(&p.census);
+        get_amp_factor(&p.amplitude_factor);
         get_laser_power(&p.laser_power);
         get_laser_state(&p.laser_state);
         get_depth_exposure(&p.depth_exposure);
@@ -717,6 +739,8 @@ namespace librealsense
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
+        if (_amplitude_factor_support)
+            set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
 
         set_laser_state(p.laser_state);
         if (p.laser_state.was_set && p.laser_state.laser_state == 1) // 1 - on
@@ -731,12 +755,14 @@ namespace librealsense
 
         set_color_auto_exposure(p.color_auto_exposure);
         if (p.color_auto_exposure.was_set && p.color_auto_exposure.auto_exposure == 0)
+        {
             set_color_exposure(p.color_exposure);
+            set_color_gain(p.color_gain);
+        }
 
         set_color_backlight_compensation(p.color_backlight_compensation);
         set_color_brightness(p.color_brightness);
         set_color_contrast(p.color_contrast);
-        set_color_gain(p.color_gain);
         set_color_gamma(p.color_gamma);
         set_color_hue(p.color_hue);
         set_color_saturation(p.color_saturation);

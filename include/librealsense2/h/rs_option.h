@@ -75,6 +75,7 @@ extern "C" {
         RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
         RS2_OPTION_HARDWARE_PRESET, /**< Hardware stream configuration */
         RS2_OPTION_GLOBAL_TIME_ENABLED, /**< disable global time  */
+        RS2_OPTION_APD_TEMPERATURE, /**< APD temperature*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

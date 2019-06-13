@@ -52,6 +52,7 @@ namespace librealsense
     extern const native_pixel_format pf_sr300_invi; // 16-bit IR image
     extern const native_pixel_format pf_sr300_inzi; // Planar 16-bit IR image followed by 16-bit Z image
     extern const native_pixel_format pf_uyvyl;      // U Y0 V Y1 ordered chroma subsampled macropixel for Infrared stream
+    extern const native_pixel_format pf_uyvyc;      // U Y0 V Y1 ordered chroma subsampled macropixel for Color stream
     extern const native_pixel_format pf_accel_axes;   // Parse accel HID raw data to 3 axes
     extern const native_pixel_format pf_gyro_axes;   // Parse gyro HID raw data to 3 axes
     extern const native_pixel_format pf_rgb888;

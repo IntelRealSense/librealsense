@@ -33,6 +33,7 @@ endif()
             ../../third-party/imgui/imgui-fonts-karla.hpp
             ../../third-party/imgui/imgui-fonts-fontawesome.hpp
             ../../common/rendering.h
+            ../../common/realsense-ui-advanced-mode.h
             ../../common/model-views.h
             ../../common/model-views.cpp
             ../../common/ux-window.h

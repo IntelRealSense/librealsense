@@ -4,18 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Device extends LrsClass {
+    private List<Sensor> _sensors = new ArrayList<>();
 
     public Device(long handle){
         mHandle = handle;
+        long[] sensorsHandles = nQuerySensors(mHandle);
+        for(long h : sensorsHandles){
+            _sensors.add(new Sensor(h));
+        }
     }
 
     public List<Sensor> querySensors(){
-        long[] sensorsHandles = nQuerySensors(mHandle);
-        List<Sensor> rv = new ArrayList<>();
-        for(long h : sensorsHandles){
-            rv.add(new Sensor(h));
-        }
-        return rv;
+        return _sensors;
     }
 
     public boolean supportsInfo(CameraInfo info){
@@ -44,6 +44,8 @@ public class Device extends LrsClass {
 
     @Override
     public void close() {
+        for (Sensor s : _sensors)
+            s.close();
         nRelease(mHandle);
     }
 

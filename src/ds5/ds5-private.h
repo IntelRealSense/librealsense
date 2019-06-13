@@ -33,6 +33,7 @@ namespace librealsense
         const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
         const uint16_t RS405_PID        = 0x0b0c; // DS5U
         const uint16_t RS435I_PID       = 0x0b3a; // D435i
+        const uint16_t RS465_PID        = 0x0b4d;
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -66,6 +67,7 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS405_PID,
             ds::RS435I_PID,
+            ds::RS465_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -77,6 +79,7 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
+            ds::RS465_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
@@ -98,7 +101,7 @@ namespace librealsense
             { RS410_PID,        "Intel RealSense D410"},
             { RS410_MM_PID,     "Intel RealSense D410 with Tracking Module"},
             { RS415_PID,        "Intel RealSense D415"},
-            { RS416_PID,        "Intel RealSense D416"},
+            { RS416_PID,        "Intel RealSense F416"},
             { RS420_PID,        "Intel RealSense D420"},
             { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,        "Intel RealSense D430"},
@@ -109,6 +112,7 @@ namespace librealsense
             { RS460_PID,        "Intel RealSense D460" },
             { RS405_PID,        "Intel RealSense D405" },
             { RS435I_PID,       "Intel RealSense D435I" },
+            { RS465_PID,        "Intel RealSense D465" },
             { RS_USB2_PID,      "Intel RealSense USB2" },
             { RS400_IMU_PID,    "Intel RealSense IMU" }
 
@@ -144,6 +148,7 @@ namespace librealsense
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
             GET_EXTRINSICS  = 0x53,     // get extrinsics
+            CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
             SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
             SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
@@ -512,7 +517,7 @@ namespace librealsense
             float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
             float3              translation_rect;           // Translation vector for rectification
-            float               reserved[24];
+            uint8_t             reserved[24];
         };
 
 

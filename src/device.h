@@ -77,7 +77,6 @@ namespace librealsense
         virtual bool compress_while_record() const override { return true; }
 
         virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override;
-        virtual double get_device_time(); // Returns time in miliseconds.
 
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);

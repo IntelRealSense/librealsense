@@ -42,7 +42,7 @@ try:
             # transform to aeronautic coordinates (body AND reference frame!)
             H_aeroRef_aeroBody = H_aeroRef_T265Ref.dot( H_T265Ref_T265body.dot( H_T265body_aeroBody ))
 
-            rpy_rad = np.array( tf.euler_from_matrix(H_aeroRef_aeroBody, 'rxyz') )
+            rpy_rad = np.array( tf.euler_from_matrix(H_aeroRef_aeroBody, 'sxyz') ) # Rz(yaw)*Ry(pitch)*Rx(roll) body w.r.t. reference frame
 
             print("Frame #{}".format(pose.frame_number))
             print("RPY [deg]: {}".format(rpy_rad*180/m.pi))
