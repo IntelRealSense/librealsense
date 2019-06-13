@@ -606,20 +606,12 @@ PYBIND11_MODULE(NAME, m) {
     filter.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size) {
             return new rs2::filter(filter_function, queue_size);
     }), "filter_function"_a, "queue_size"_a = 1)
-        .def(BIND_DOWNCAST(filter, align))
-        .def(BIND_DOWNCAST(filter, colorizer))
         .def(BIND_DOWNCAST(filter, decimation_filter))
         .def(BIND_DOWNCAST(filter, disparity_transform))
         .def(BIND_DOWNCAST(filter, hole_filling_filter))
-        .def(BIND_DOWNCAST(filter, pointcloud))
-        // TODO: rates_printer?
-        .def(BIND_DOWNCAST(filter, save_single_frameset))
-        // .def(BIND_DOWNCAST(filter, save_to_ply))
         .def(BIND_DOWNCAST(filter, spatial_filter))
         .def(BIND_DOWNCAST(filter, temporal_filter))
         .def(BIND_DOWNCAST(filter, threshold_filter))
-        .def(BIND_DOWNCAST(filter, units_transform))
-        .def(BIND_DOWNCAST(filter, yuy_decoder))
         .def(BIND_DOWNCAST(filter, zero_order_invalidation))
         .def("__nonzero__", &rs2::filter::operator bool); // No docstring in C++
     // get_queue?
