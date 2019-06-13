@@ -85,15 +85,15 @@ classdef device < handle
             out = realsense.librealsense_mex('rs2::device', 'as', this.objectHandle, type);
             switch type
                 case 'device'
-                    dev = realsense.device(out{:});
+                    dev = realsense.device(out, -1);
                 case 'debug_protocol'
                     error('debug_protocol is not supported in Matlab');
                 case 'advanced_mode'
                     error('advanced_mode is not supported in Matlab');
                 case 'recorder'
-                    dev = realsense.recorder(out{:});
+                    dev = realsense.recorder(out, -1);
                 case 'playback'
-                    dev = realsense.playback(out{:});
+                    dev = realsense.playback(out, -1);
             end
         end
     end
