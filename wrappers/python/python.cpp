@@ -233,7 +233,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
              "On successful load, the device will be appended to the context and a devices_changed event triggered."
              "filename"_a)
-        .def("unload_device", &rs2::context::unload_device, "filename"_a);  // No docstring in C++
+        .def("unload_device", &rs2::context::unload_device, "filename"_a) // No docstring in C++
+        .def("unload_tracking_module", &rs2::context::unload_tracking_module); // No docstring in C++
 
     /* rs2_device.hpp */
     py::class_<rs2::device> device(m, "device"); // No docstring in C++
@@ -314,7 +315,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a);
 
 
-    /* rs2_frame.hpp */
+    /* rs_frame.hpp */
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
@@ -358,6 +359,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_profile", &rs2::frame::get_profile, "Retrieve stream profile from frame handle.")
         .def_property_readonly("profile", &rs2::frame::get_profile, "Stream profile from frame handle. Identical to calling get_profile.")
         .def("keep", &rs2::frame::keep, "Keep the frame, otherwise if no refernce to the frame, the frame will be released.")
+        .def("get_sensor", &rs2::frame::get_sensor) // No docstring in C++
+        .def_property_readonly("sensor", &rs2::frame::get_sensor, "Identical to calling get_sensor.")
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))
@@ -594,13 +597,31 @@ PYBIND11_MODULE(NAME, m) {
             self.start(f);
         }, "Start the processing block with callback function to inform the application the frame is processed.", "callback"_a)
         .def("invoke", &rs2::processing_block::invoke, "Ask processing block to process the frame", "f"_a)
-        /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
+        .def("supports", (bool (rs2::processing_block::*)(rs2_camera_info) const) &rs2::processing_block::supports, "Check if a specific camera info field is supported.")
+        .def("get_info", &rs2::processing_block::get_info, "Retrieve camera specific information, like versions of various internal components.");
+        /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/
         // supports(camera_info) / get_info(camera_info)?
 
-    py::class_ <rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter", "Define the filter workflow, inherit this class to generate your own filter.");
+    py::class_<rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter", "Define the filter workflow, inherit this class to generate your own filter.");
     filter.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size) {
             return new rs2::filter(filter_function, queue_size);
-        }), "filter_function"_a, "queue_size"_a = 1);
+    }), "filter_function"_a, "queue_size"_a = 1)
+        .def(BIND_DOWNCAST(filter, align))
+        .def(BIND_DOWNCAST(filter, colorizer))
+        .def(BIND_DOWNCAST(filter, decimation_filter))
+        .def(BIND_DOWNCAST(filter, disparity_transform))
+        .def(BIND_DOWNCAST(filter, hole_filling_filter))
+        .def(BIND_DOWNCAST(filter, pointcloud))
+        // TODO: rates_printer?
+        .def(BIND_DOWNCAST(filter, save_single_frameset))
+        // .def(BIND_DOWNCAST(filter, save_to_ply))
+        .def(BIND_DOWNCAST(filter, spatial_filter))
+        .def(BIND_DOWNCAST(filter, temporal_filter))
+        .def(BIND_DOWNCAST(filter, threshold_filter))
+        .def(BIND_DOWNCAST(filter, units_transform))
+        .def(BIND_DOWNCAST(filter, yuy_decoder))
+        .def(BIND_DOWNCAST(filter, zero_order_invalidation))
+        .def("__nonzero__", &rs2::filter::operator bool); // No docstring in C++
     // get_queue?
     // is/as?
 
@@ -795,6 +816,9 @@ PYBIND11_MODULE(NAME, m) {
     py::class_<rs2::motion_stream_profile, rs2::stream_profile> motion_stream_profile(m, "motion_stream_profile", "Stream profile instance which contains IMU-specific intrinsics.");
     motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
         .def("get_motion_intrinsics", &rs2::motion_stream_profile::get_motion_intrinsics, "Returns scale and bias of a motion stream.");
+
+    py::class_<rs2::pose_stream_profile, rs2::stream_profile> pose_stream_profile(m, "pose_stream_profile", "Stream profile instance with an explicit pose extension type.");
+    pose_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a);
 
     py::class_<rs2::notification> notification(m, "notification"); // No docstring in C++
     notification.def(py::init<>())

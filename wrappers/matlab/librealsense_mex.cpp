@@ -154,6 +154,11 @@ void make_factory(){
         });
         factory->record(motion_stream_profile_factory);
     }
+    //{
+    //    ClassFactory pose_stream_profile_factory("rs2::pose_stream_profile");
+    //    // rs2::pose_stream_profile::constructor(rs2::stream_profile) [?]
+    //    factory->record(pose_stream_profile_factory);
+    //}
     {
         ClassFactory frame_factory("rs2::frame");
         // rs2::frame::constructor()                                    [?]
@@ -169,6 +174,11 @@ void make_factory(){
         {
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
             outv[0] = MatlabParamParser::wrap(bool(thiz));
+        });
+        frame_factory.record("get_sensor", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.get_sensor());
         });
         frame_factory.record("get_timestamp", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -943,6 +953,7 @@ void make_factory(){
         factory->record(frame_queue_factory);
     }
 // TODO: need to understand how to call matlab functions from within C++ before async things can be implemented.
+// TODO: What to do about supports/get_info? Just attach to filter?
 // processing_block API is completely async.
 //    {
 //        ClassFactory processing_block_factory("rs2::processing_block");
@@ -1198,6 +1209,11 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::context>(inv[0]);
             auto file = MatlabParamParser::parse<std::string>(inv[1]);
             thiz.unload_device(file);
+        });
+        context_factory.record("unload_tracking_module", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::context>(inv[0]);
+            thiz.unload_tracking_module();
         });
         factory->record(context_factory);
     }

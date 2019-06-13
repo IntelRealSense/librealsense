@@ -285,7 +285,7 @@ namespace rs2
     {
     public:
         /**
-        * Pose stream profile instance with a designated extension type
+        * Stream profile instance with an explicit pose extension type.
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
         */
         explicit pose_stream_profile(const stream_profile& sp)
@@ -412,11 +412,6 @@ namespace rs2
         */
         operator bool() const { return frame_ref != nullptr; }
 
-        /**
-        * retrieve the time at which the frame was captured
-        * \return            the timestamp of the frame, in milliseconds since the device was started
-        */
-
         rs2_sensor* get_sensor()
         {
             rs2_error* e = nullptr;
@@ -425,6 +420,10 @@ namespace rs2
             return r;
         }
 
+        /**
+        * retrieve the time at which the frame was captured
+        * \return            the timestamp of the frame, in milliseconds since the device was started
+        */
         double get_timestamp() const
         {
             rs2_error* e = nullptr;
