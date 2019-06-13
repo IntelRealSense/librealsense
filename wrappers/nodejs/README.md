@@ -86,12 +86,7 @@ After C++ `librealsense` library is Built, run the following commands:
 cd wrappers/nodejs
 npm install
 ```
-Note: on Windows only, the default libraries are taken from the librealsense Debug build output. You can specify from which build configuration to obtain the sources by installing with the vs_configuration flag. e.g:
-```
-npm install --vs_configuration=Release
-or alternatively 
-npm install --vs_configuration=Debug # this is the default for windows
-```
+Note: on Windows only, the default libraries are taken from the librealsense Debug build output. You can specify from which build configuration to obtain the sources by installing with the vs_configuration flag. e.g: ``` npm install --vs_configuration=Release ``` or alternatively ``` npm install --vs_configuration=Debug # this is the default for windows ```
 ### Build with CMake
 
 Before building C++ `librealsense` library, enable the following option when calling `cmake`.
