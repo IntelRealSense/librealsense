@@ -359,8 +359,6 @@ PYBIND11_MODULE(NAME, m) {
         .def("get_profile", &rs2::frame::get_profile, "Retrieve stream profile from frame handle.")
         .def_property_readonly("profile", &rs2::frame::get_profile, "Stream profile from frame handle. Identical to calling get_profile.")
         .def("keep", &rs2::frame::keep, "Keep the frame, otherwise if no refernce to the frame, the frame will be released.")
-        .def("get_sensor", &rs2::frame::get_sensor) // No docstring in C++
-        .def_property_readonly("sensor", &rs2::frame::get_sensor, "Identical to calling get_sensor.")
         .def(BIND_DOWNCAST(frame, frame))
         .def(BIND_DOWNCAST(frame, points))
         .def(BIND_DOWNCAST(frame, frameset))

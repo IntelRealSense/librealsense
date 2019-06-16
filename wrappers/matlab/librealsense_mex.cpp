@@ -175,11 +175,6 @@ void make_factory(){
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
             outv[0] = MatlabParamParser::wrap(bool(thiz));
         });
-        frame_factory.record("get_sensor", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
-        {
-            auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
-            outv[0] = MatlabParamParser::wrap(thiz.get_sensor());
-        });
         frame_factory.record("get_timestamp", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame>(inv[0]);
