@@ -10,7 +10,9 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.intel.realsense.librealsense.CameraInfo;
@@ -41,6 +43,20 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+
+        Switch extendedTimeout = findViewById(R.id.extended_first_frame_timeout_switch);
+        SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+        extendedTimeout.setChecked(sharedPref.getBoolean(getString(R.string.extended_first_frame_timeout), false));
+
+        extendedTimeout.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean(getString(R.string.extended_first_frame_timeout), b);
+                editor.commit();
+            }
+        });
     }
 
     @Override

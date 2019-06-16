@@ -41,6 +41,18 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"/>
 
+    <Switch
+        android:id="@+id/extended_first_frame_timeout_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Extended first frame timeout"
+        android:background="@color/black"
+        android:textColor="#ffffff"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:layout_gravity="left|top"
+        android:layout_marginBottom="5dp"/>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -3,4 +3,5 @@
     <string name="title_activity_file_browser">FileBrowserActivity</string>
     <string name="intent_extra_file_path">filePath</string>
     <string name="app_settings">settings</string>
+    <string name="extended_first_frame_timeout">extendedFirstFrameTimeout</string>
 </resources>

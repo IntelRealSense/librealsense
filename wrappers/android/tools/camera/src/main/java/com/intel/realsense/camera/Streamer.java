@@ -20,6 +20,8 @@ import java.util.Map;
 public class Streamer {
     private static final String TAG = "librs camera streamer";
 
+    private int mFirstFrameTimeout = 15000;
+
     interface Listener{
         void config(Config config);
         void onFrameset(FrameSet frameSet);
@@ -71,6 +73,8 @@ public class Streamer {
         }
 
         SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.app_settings), Context.MODE_PRIVATE);
+        boolean efft = sharedPref.getBoolean(mContext.getString(R.string.extended_first_frame_timeout), false);
+        mFirstFrameTimeout = efft ? 15000 : 3000;
 
         for(Map.Entry e : profilesMap.entrySet()){
             List<VideoStreamProfile> profiles = (List<VideoStreamProfile>) e.getValue();
@@ -103,7 +107,7 @@ public class Streamer {
             mPipeline = new Pipeline();
             Log.d(TAG, "try start streaming");
             configAndStart();
-            try(FrameSet frames = mPipeline.waitForFrames(15000)){} // w/a for l500
+            try(FrameSet frames = mPipeline.waitForFrames(mFirstFrameTimeout)){} // w/a for l500
             mIsStreaming = true;
             mHandler.post(mStreaming);
             Log.d(TAG, "streaming started successfully");
