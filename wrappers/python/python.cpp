@@ -928,11 +928,11 @@ PYBIND11_MODULE(NAME, m) {
              "During the loop execution, the application can access the camera streams by calling wait_for_frames() or poll_for_frames().\n"
              "The streaming loop runs until the pipeline is stopped.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n")
-        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { self.start(f); }, "Start the pipeline streaming with its default configuration.\n"
+        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { return self.start(f); }, "Start the pipeline streaming with its default configuration.\n"
              "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
              "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.", "callback"_a)
-        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { self.start(config, f); }, "Start the pipeline streaming according to the configuraion.\n"
+        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { return self.start(config, f); }, "Start the pipeline streaming according to the configuraion.\n"
              "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
              "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.\n"
