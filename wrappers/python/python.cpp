@@ -21,10 +21,19 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "../include/librealsense2/rs.h"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_export.hpp"
+#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include "../include/librealsense2/rs_advanced_mode.hpp"
 #include "../include/librealsense2/rsutil.h"
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
+
+/**
+ * Method for cleanup of rs2_software_video_frame objects
+ */
+void deleter(void *buf) {
+    free(buf);
+}
+
 // hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 const std::string rs2_prefix{ "rs2_" };
@@ -197,7 +206,8 @@ PYBIND11_MODULE(NAME, m) {
 
     /* rs2_types.hpp */
     py::class_<rs2::option_range> option_range(m, "option_range"); // No docstring in C++
-    option_range.def_readwrite("min", &rs2::option_range::min)
+    option_range.def(py::init<>())
+        .def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
         .def_readwrite("default", &rs2::option_range::def)
         .def_readwrite("step", &rs2::option_range::step)
@@ -1049,6 +1059,126 @@ PYBIND11_MODULE(NAME, m) {
              "to enforce the device returned by this method is selected by pipeline start(), and configure the device and sensors options or extensions before streaming starts.", "p"_a)
         .def("can_resolve", [](rs2::config* c, pipeline_wrapper pw) -> bool { return c->can_resolve(pw._ptr); }, "Check if the config can resolve the configuration filters, "
              "to find a matching device and streams profiles. The resolution conditions are as described in resolve().", "p"_a);
+
+
+    /**
+     * Software device
+     */
+
+    py::class_<rs2_video_stream> video_stream(m, "video_stream", "All the parameters are required to define video stream");
+    video_stream.def(py::init<>())
+        .def_readwrite("type", &rs2_video_stream::type)
+        .def_readwrite("index", &rs2_video_stream::index)
+        .def_readwrite("uid", &rs2_video_stream::uid)
+        .def_readwrite("width", &rs2_video_stream::width)
+        .def_readwrite("height", &rs2_video_stream::height)
+        .def_readwrite("fps", &rs2_video_stream::fps)
+        .def_readwrite("bpp", &rs2_video_stream::bpp)
+        .def_readwrite("fmt", &rs2_video_stream::fmt)
+        .def_readwrite("intrinsics", &rs2_video_stream::intrinsics)
+        .def("__repr__", [](const rs2_video_stream &self) {
+            std::stringstream ss;
+            ss << "< TODO >";
+            return ss.str();
+        });
+
+    py::class_<rs2_motion_stream> motion_stream(m, "motion_stream", "All the parameters are required to define motion stream");
+    motion_stream.def(py::init<>())
+        .def_readwrite("type", &rs2_motion_stream::type)
+        .def_readwrite("index", &rs2_motion_stream::index)
+        .def_readwrite("uid", &rs2_motion_stream::uid)
+        .def_readwrite("fps", &rs2_motion_stream::fps)
+        .def_readwrite("fmt", &rs2_motion_stream::fmt)
+        .def_readwrite("intrinsics", &rs2_motion_stream::intrinsics)
+        .def("__repr__", [](const rs2_motion_stream &self) {
+            std::stringstream ss;
+            ss << "<" SNAME ".rs2_motion_stream: "
+                << self.type << "(" << self.index << ") uid:" << self.uid
+                << " @ " << self.fps << "fps "
+                << self.fmt << ">";
+            return ss.str();
+        });
+
+     py::class_<rs2_pose_stream> pose_stream(m, "pose_stream", "All the parameters are required to define pose stream");
+     pose_stream.def(py::init<>())
+         .def_readwrite("type", &rs2_pose_stream::type)
+         .def_readwrite("index", &rs2_pose_stream::index)
+         .def_readwrite("uid", &rs2_pose_stream::uid)
+         .def_readwrite("fps", &rs2_pose_stream::fps)
+         .def_readwrite("fmt", &rs2_pose_stream::fmt)
+         .def("__repr__", [](const rs2_pose_stream &self) {
+            std::stringstream ss;
+            ss << "<" SNAME ".rs2_pose_stream: "
+                << self.type << "(" << self.index << ") uid:" << self.uid
+                << " @ " << self.fps << "fps "
+                << self.fmt << ">";
+            return ss.str();
+        });
+
+     py::class_<rs2_software_video_frame> software_video_stream(m, "software_video_frame", "All the parameters are required to define video frame", py::buffer_protocol());
+     software_video_stream.def(py::init<>())
+         .def_readwrite("stride", &rs2_software_video_frame::stride)
+         .def_readwrite("bpp", &rs2_software_video_frame::bpp)
+         .def_readwrite("timestamp", &rs2_software_video_frame::timestamp)
+         .def_readwrite("domain", &rs2_software_video_frame::domain)
+         .def_readwrite("frame_number", &rs2_software_video_frame::frame_number)
+         .def("__repr__", [](const rs2_software_video_frame &self) {
+             std::stringstream ss;
+             ss << "<" SNAME ".rs2_software_video_frame: "
+                << "stride: " << self.stride << " bpp: " << self.bpp
+                << "timestamp: " << self.timestamp << " domain: " << self.domain
+                << "frame_number: " << self.frame_number << ">";
+             return ss.str();
+         })
+         .def("set_profile", [](rs2_software_video_frame &self, rs2::stream_profile &prof) {
+                 self.profile = prof.get();
+             }, "stream_profile"_a)
+         .def("set_pixels", [](rs2_software_video_frame &self, py::buffer img) {
+             py::buffer_info info = img.request();
+
+             auto numValues = std::accumulate(std::begin(info.shape), std::end(info.shape), 1, std::multiplies<ssize_t>());
+
+             // Allocate a new buffer and pass a deleter that just
+             //   calls `free` - This isn't the most efficient, but
+             //   it should work and avoids any memory reference
+             //   counting issues with Python.
+             auto totalBytes = info.itemsize * numValues;
+             self.pixels = (void *)malloc(totalBytes);
+             if ( self.pixels == NULL ) {
+                 throw std::bad_alloc();
+             }
+
+             self.deleter = deleter;
+             memcpy(self.pixels, info.ptr, totalBytes);
+
+         }, "img"_a);
+
+    py::class_<rs2::software_sensor> software_sensor(m, "software_sensor", "Simulated sensor from software\n");
+    software_sensor.def("add_video_stream", &rs2::software_sensor::add_video_stream, "video_stream"_a)
+        .def("add_motion_stream", &rs2::software_sensor::add_motion_stream, "motion_stream"_a)
+        .def("add_pose_stream", &rs2::software_sensor::add_pose_stream, "pose_stream"_a)
+        .def("set_default_profile", &rs2::software_sensor::set_default_profile, "stream_uid"_a)
+        .def("on_video_frame", &rs2::software_sensor::on_video_frame, "frame"_a)
+        .def("on_motion_frame", &rs2::software_sensor::on_motion_frame, "frame"_a)
+        .def("on_pose_frame",&rs2::software_sensor::on_pose_frame, "frame"_a)
+        .def("set_metadata", &rs2::software_sensor::set_metadata, "value"_a, "type"_a)
+        .def("add_writable_option", &rs2::software_sensor::add_writable_option, "option"_a, "desc"_a, "rng"_a )
+        .def("update_writable_option", &rs2::software_sensor::update_writable_option, "option"_a, "val"_a)
+        .def("add_read_only_option", &rs2::software_sensor::add_read_only_option, "option"_a, "val"_a)
+        .def("set_read_only_option", &rs2::software_sensor::set_read_only_option, "option"_a, "val"_a);
+
+    py::class_<rs2::software_device> software_device(m, "software_device", "Simulated device from software\n");
+    software_device.def(py::init<rs2::context&>(), "ctx"_a)
+        .def("add_sensor", &rs2::software_device::add_sensor, "name"_a)
+        .def("add_to", &rs2::software_device::add_to, "ctx"_a)
+        .def("add_emulated_to", &rs2::software_device::add_emulated_to, "ctx"_a)
+        .def ("create_matcher", &rs2::software_device::create_matcher, "matcher"_a)
+        .def("register_info", &rs2::software_device::register_info, "info"_a, "val"_a)
+        .def("update_info", &rs2::software_device::update_info, "info"_a, "val"_a)
+        .def("query_sensors", &rs2::software_device::query_sensors)
+        .def("supports", &rs2::software_device::supports, "info"_a)
+        .def("get_info", &rs2::software_device::get_info)
+        .def("hardware_reset", &rs2::software_device::hardware_reset);
 
     /**
     RS400 Advanced Mode commands
