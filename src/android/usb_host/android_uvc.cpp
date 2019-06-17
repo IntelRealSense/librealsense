@@ -20,7 +20,7 @@
 
 #define DEQUEUE_TIMEOUT 10
 #define STREAMING_BULK_TRANSFER_TIMEOUT 100
-#define UVC_PAYLOAD_HEADER_LENGTH 248
+#define UVC_PAYLOAD_HEADER_LENGTH 256
 
 // Data structures for Backend-Frontend queue:
 struct frame;
@@ -892,8 +892,11 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
                 break;
             case librealsense::platform::RS2_USB_STATUS_SUCCESS:
                 //we support only bulk transfer mode, so we expect the frame to arrive in a single payload
-                if(transferred == read_buff_length)
-                    usbhost_uvc_process_bulk_payload(std::move(fp), transferred, queue);
+                if(transferred > 0)
+                {
+                    if(transferred == (fp->pixels[0] + strctx->stream->cur_ctrl.dwMaxVideoFrameSize))
+                        usbhost_uvc_process_bulk_payload(std::move(fp), transferred, queue);
+                }
                 break;
             default:
                 break;
