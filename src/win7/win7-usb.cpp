@@ -414,8 +414,6 @@ namespace librealsense
 
         void win7_usb_interface::reset_interrupt_pipe() const
         {
-            LOG_DEBUG(__FUNCTION__);
-
             auto sts = WinUsb_ResetPipe(_interface_handle, _interrupt_pipe_id);
             if (!sts)
                 throw winapi_error("WinUsb_ResetPipe failed!");
@@ -423,9 +421,7 @@ namespace librealsense
 
         void win7_usb_interface::reset_pipe(pipe_direction pipeDirection) const
         {
-            LOG_DEBUG(__FUNCTION__);
-
-            BOOL sts;
+            BOOL sts{};
 
             if (pipeDirection == pipe_direction::InPipe)
             {

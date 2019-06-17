@@ -470,7 +470,7 @@ struct winusb_uvc_stream_handle {
 
     std::thread cb_thread;
     winusb_uvc_frame_callback_t *user_cb;
-    void *user_ptr;
+    void *user_ptr;                         // User-allocated memory
     enum uvc_frame_format frame_format;
 };
 
