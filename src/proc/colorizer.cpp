@@ -232,11 +232,9 @@ namespace librealsense
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, 0, RS2_FORMAT_RGB8);
 
-            bool is_stereoscopic_depth;
-            disparity_info::update_info_from_frame(f,
-                is_stereoscopic_depth,
-                _depth_units,
-                _d2d_convert_factor);
+            auto info = disparity_info::update_info_from_frame(f);
+            _depth_units = info.depth_units;
+            _d2d_convert_factor = info.d2d_convert_factor;
         }
 
         auto make_equalized_histogram = [this](const rs2::video_frame& depth, rs2::video_frame rgb)

@@ -198,8 +198,9 @@ namespace librealsense
                 auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
                 _width = vp.width(); _height = vp.height();
 
-                bool stereoscopic_depth;
-                disparity_info::update_info_from_frame(f, stereoscopic_depth, _depth_units, _d2d_convert_factor);
+                auto info = disparity_info::update_info_from_frame(f);
+                _depth_units = info.depth_units;
+                _d2d_convert_factor = info.d2d_convert_factor;
 
                 perform_gl_action([&]()
                 {
@@ -306,16 +307,12 @@ namespace librealsense
 
                 auto& shader = (colorize_shader&)_viz->get_shader();
                 shader.begin();
-                float max;
-                float min;
+                float max = _max;;
+                float min = _min;;
                 if (disparity)
                 {
                     max = (_d2d_convert_factor / (_min + 0.1)) * depth_units + .5f;
                     min = (_d2d_convert_factor / (_max)) * depth_units + .5f;
-                }
-                else {
-                    min = _min;
-                    max = _max;
                 }
                 shader.set_params(depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
                 shader.end();

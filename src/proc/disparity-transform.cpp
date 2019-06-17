@@ -88,13 +88,17 @@ namespace librealsense
         _update_target = true;
     }
 
-    void  disparity_transform::update_transformation_profile(const rs2::frame& f)
+    void disparity_transform::update_transformation_profile(const rs2::frame& f)
     {
         if(f.get_profile().get() != _source_stream_profile.get())
         {
             _source_stream_profile = f.get_profile();
 
-            disparity_info::update_info_from_frame(f, _stereoscopic_depth, _depth_units, _d2d_convert_factor);
+            auto info = disparity_info::update_info_from_frame(f);
+            _stereoscopic_depth = info.stereoscopic_depth;
+            _depth_units = info.depth_units;
+            _d2d_convert_factor = info.d2d_convert_factor;
+
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
             _width = vp.width();
             _height = vp.height();

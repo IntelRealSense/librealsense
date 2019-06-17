@@ -858,7 +858,8 @@ namespace rs2
             render_thread(),
             render_thread_active(false),
             pc(new gl::pointcloud()),
-            uploader(new gl::uploader())
+            uploader(new gl::uploader()),
+            disp_to_depth(false)
         {
             std::string s;
             pc_gen = std::make_shared<processing_block_model>(nullptr, "Pointcloud Engine", pc, [=](rs2::frame f) { return pc->calculate(f); }, s);
@@ -926,6 +927,7 @@ namespace rs2
         std::shared_ptr<pointcloud> pc;
         rs2::frameset model;
         std::shared_ptr<processing_block_model> pc_gen;
+        rs2::disparity_transform disp_to_depth;
 
         /* Post processing filter rendering */
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise

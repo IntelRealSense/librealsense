@@ -123,8 +123,8 @@ namespace librealsense {
         bool should_process(const rs2::frame& frame) override;
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
-        template<typename T>
-        void make_rgb_data(const T* depth_data, uint8_t* rgb_data, int width, int height, std::function<float(T)> coloring_func)
+        template<typename T, typename F>
+        void make_rgb_data(const T* depth_data, uint8_t* rgb_data, int width, int height, F coloring_func)
         {
             auto cm = _maps[_map_index];
             for (auto i = 0; i < width*height; ++i)
@@ -134,8 +134,8 @@ namespace librealsense {
             }
         }
 
-        template<typename T>
-        void colorize_pixel(uint8_t* rgb_data, int idx, color_map* cm, T data, std::function<float(T)> coloring_func)
+        template<typename T, typename F>
+        void colorize_pixel(uint8_t* rgb_data, int idx, color_map* cm, T data, F coloring_func)
         {
             if (data)
             {
