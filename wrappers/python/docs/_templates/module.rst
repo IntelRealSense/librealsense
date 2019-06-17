@@ -19,7 +19,7 @@
    .. rubric:: Classes
    
    .. autosummary::
-      :toctree: _generated
+      :toctree:
 	  :template: class.rst
    
    {% for item in classes %}

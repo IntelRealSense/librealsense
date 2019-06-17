@@ -88,24 +88,26 @@ public class MainActivity extends AppCompatActivity {
     Thread mStreaming = new Thread() {
         @Override
         public void run() {
-            Colorizer colorizer = new Colorizer();
-            Config config = new Config();
             String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
-            config.enableDeviceFromFile(filePath);
-            Pipeline pipeline = new Pipeline();
-            try {
-                pipeline.start(config);
-                while (!mStreaming.isInterrupted()) {
-                    try (FrameSet frames = pipeline.waitForFrames(1000)) {
-                        try (FrameSet processed = frames.applyFilter(colorizer)) {
-                            mGLSurfaceView.upload(processed);
+            try(Colorizer colorizer = new Colorizer()) {
+                try (Config config = new Config()) {
+                    config.enableDeviceFromFile(filePath);
+                    try (Pipeline pipeline = new Pipeline()) {
+                        try {
+                            pipeline.start(config);
+                            while (!mStreaming.isInterrupted()) {
+                                try (FrameSet frames = pipeline.waitForFrames(1000)) {
+                                    try (FrameSet processed = frames.applyFilter(colorizer)) {
+                                        mGLSurfaceView.upload(processed);
+                                    }
+                                }
+                            }
+                            pipeline.stop();
+                        } catch (Exception e) {
+                            Log.e(TAG, "streaming, error: " + e.getMessage());
                         }
                     }
                 }
-                pipeline.stop();
-            }
-            catch (Exception e) {
-                Log.e(TAG, "streaming, error: " + e.getMessage());
             }
         }
     };

@@ -140,6 +140,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
         .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
+        .value("global_time_enabled", RS2_OPTION_GLOBAL_TIME_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -329,7 +330,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("unlock", &platform::retry_controls_work_around::unlock)
         .def("get_device_location", &platform::retry_controls_work_around::get_device_location);
 
-    py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
+    //py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
 
     py::class_<platform::backend, std::shared_ptr<platform::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &platform::backend::create_uvc_device, "info"_a)

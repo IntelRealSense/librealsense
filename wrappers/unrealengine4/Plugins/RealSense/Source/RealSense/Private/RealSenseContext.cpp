@@ -1,3 +1,4 @@
+#include "RealSenseContext.h"
 #include "PCH.h"
 
 URealSenseContext::URealSenseContext(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)

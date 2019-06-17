@@ -218,28 +218,6 @@ namespace librealsense
             std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
         };
 
-        class v4l_usb_device : public usb_device
-        {
-        public:
-            v4l_usb_device(const usb_device_info& info);
-
-            ~v4l_usb_device();
-
-            static void foreach_usb_device(libusb_context* usb_context, std::function<void(
-                                                                const usb_device_info&,
-                                                                libusb_device*)> action);
-
-            std::vector<uint8_t> send_receive(
-                const std::vector<uint8_t>& data,
-                int timeout_ms = 5000,
-                bool require_response = true) override;
-
-        private:
-            libusb_context* _usb_context;
-            libusb_device* _usb_device = nullptr;
-            int _mi;
-        };
-
         class v4l_uvc_interface
         {
             virtual void capture_loop() = 0;
@@ -384,7 +362,7 @@ namespace librealsense
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
 
-            std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const override;
+            std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const override;
             std::vector<usb_device_info> query_usb_devices() const override;
 
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override;

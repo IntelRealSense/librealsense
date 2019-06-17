@@ -67,5 +67,12 @@ namespace Intel.RealSense
 
         /// <summary>32-bit float-point disparity values. Depth->Disparity conversion : Disparity = Baseline*FocalLength/Depth</summary>
         Disparity32 = 19,
+
+        /// <summary>16-bit per-pixel grayscale image unpacked from 10 bits per pixel packed ([8:8:8:8:2222]) grey-scale image. The data is unpacked to LSB and padded with 6 zero bits</summary>
+        Y10BPack = 20,
+
+        /// <summary>32-bit float-point depth distance value.</summary>
+        Distance = 21,
+
     }
 }

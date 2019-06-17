@@ -26,7 +26,8 @@ typedef enum
     etDepthTableControl         = 9,
     etAEControl                 = 10,
     etCencusRadius9             = 11,
-    etLastAdvancedModeGroup     = 12,       // Must be last
+    etAFactor                   = 12,
+    etLastAdvancedModeGroup     = 13,       // Must be last
 }
 EtAdvancedModeRegGroup;
 
@@ -51,6 +52,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STDepthTableControl, etDepthTableControl);
     MAP_ADVANCED_MODE(STAEControl, etAEControl);
     MAP_ADVANCED_MODE(STCensusRadius, etCencusRadius9);
+    MAP_ADVANCED_MODE(STAFactor, etAFactor);
 
 
     class ds5_advanced_mode_interface : public recordable<ds5_advanced_mode_interface>
@@ -76,6 +78,7 @@ namespace librealsense
         virtual void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const = 0;
         virtual void get_ae_control(STAEControl* ptr, int mode = 0) const = 0;
         virtual void get_census_radius(STCensusRadius* ptr, int mode = 0) const = 0;
+        virtual void get_amp_factor(STAFactor* ptr, int mode = 0) const = 0;
 
         virtual void set_depth_control_group(const STDepthControlGroup& val) = 0;
         virtual void set_rsm(const STRsm& val) = 0;
@@ -89,6 +92,7 @@ namespace librealsense
         virtual void set_depth_table_control(const STDepthTableControl& val) = 0;
         virtual void set_ae_control(const STAEControl& val) = 0;
         virtual void set_census_radius(const STCensusRadius& val) = 0;
+        virtual void set_amp_factor(const STAFactor& val) = 0;
 
         virtual std::vector<uint8_t> serialize_json() const = 0;
         virtual void load_json(const std::string& json_content) = 0;
@@ -129,6 +133,7 @@ namespace librealsense
         void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const override;
         void get_ae_control(STAEControl* ptr, int mode = 0) const override;
         void get_census_radius(STCensusRadius* ptr, int mode = 0) const override;
+        void get_amp_factor(STAFactor* ptr, int mode = 0) const override;
 
         void set_depth_control_group(const STDepthControlGroup& val) override;
         void set_rsm(const STRsm& val) override;
@@ -142,9 +147,13 @@ namespace librealsense
         void set_depth_table_control(const STDepthTableControl& val) override;
         void set_ae_control(const STAEControl& val) override;
         void set_census_radius(const STCensusRadius& val) override;
+        void set_amp_factor(const STAFactor& val) override;
 
         std::vector<uint8_t> serialize_json() const override;
         void load_json(const std::string& json_content) override;
+
+        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
+        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
     private:
         void set_exposure(uvc_sensor& sensor, const exposure_control& val);
@@ -199,9 +208,8 @@ namespace librealsense
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-
-        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
-        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
+        bool _rgb_exposure_gain_bind;
+        bool _amplitude_factor_support;
 
         preset get_all() const;
         void set_all(const preset& p);

@@ -1,13 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_WINUSB_UVC_BACKEND
-
 #if (_MSC_FULL_VER < 180031101)
 #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
 
 #include "win7-usb.h"
+#include "win/win-helpers.h"
 #include <atlstr.h>
 #include <Windows.h>
 #include <Sddl.h>
@@ -54,7 +53,7 @@ namespace librealsense
             }
 
             open(_lp_device_path);
-            _usb_interface = std::make_unique<usb_interface>(_device_handle);
+            _usb_interface = std::make_unique<win7_usb_interface>(_device_handle);
         }
 
         void winusb_device::release()
@@ -86,10 +85,10 @@ namespace librealsense
                 throw std::runtime_error("CreateFile failed! Probably camera not connected.");
             }
 
-            _usb_interface = std::make_unique<usb_interface>(_device_handle);
+            _usb_interface = std::make_unique<win7_usb_interface>(_device_handle);
         }
 
-        usb_interface& winusb_device::get_interface() const
+        win7_usb_interface& winusb_device::get_interface() const
         {
             return *_usb_interface;
         }
@@ -225,14 +224,14 @@ namespace librealsense
         }
 
 
-        usb_interface::usb_interface(HANDLE& deviceHandle)
+        win7_usb_interface::win7_usb_interface(HANDLE& deviceHandle)
             : _interface_handle(nullptr)
         {
             init_interface(deviceHandle);
             init_winusb_pipe();
         }
 
-        usb_interface::~usb_interface()
+        win7_usb_interface::~win7_usb_interface()
         {
             try {
                 release();
@@ -243,7 +242,7 @@ namespace librealsense
             }
         }
 
-        void usb_interface::init_interface(HANDLE deviceHandle)
+        void win7_usb_interface::init_interface(HANDLE deviceHandle)
         {
             if (_interface_handle)
                 return;
@@ -256,7 +255,7 @@ namespace librealsense
             }
         }
 
-        void usb_interface::release()
+        void win7_usb_interface::release()
         {
             if (!WinUsb_Free(_interface_handle)) // WinUsb_Free function releases all of the resources that WinUsb_Initialize allocated
                 throw winapi_error("WinUsb_Free failed.");
@@ -264,7 +263,7 @@ namespace librealsense
             _interface_handle = nullptr;
         }
 
-        void usb_interface::set_timeout_policy(unsigned char pipeID, unsigned long timeOutInMs) const
+        void win7_usb_interface::set_timeout_policy(unsigned char pipeID, unsigned long timeOutInMs) const
         {
             // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
             // PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
@@ -275,7 +274,7 @@ namespace librealsense
             }
         }
 
-        void usb_interface::wait_for_async_op(OVERLAPPED &hOvl, ULONG &lengthTransferred, DWORD TimeOut, pipe_direction pipeDirection, bool* isExitOnTimeout) const
+        void win7_usb_interface::wait_for_async_op(OVERLAPPED &hOvl, ULONG &lengthTransferred, DWORD TimeOut, pipe_direction pipeDirection, bool* isExitOnTimeout) const
         {
             *isExitOnTimeout = false;
             if (GetOverlappedResult(_interface_handle, &hOvl, &lengthTransferred, FALSE))
@@ -307,7 +306,7 @@ namespace librealsense
             }
         }
 
-        bool usb_interface::wait_for_async_op_interrupt(OVERLAPPED &hOvl, ULONG &lengthTransferred) const
+        bool win7_usb_interface::wait_for_async_op_interrupt(OVERLAPPED &hOvl, ULONG &lengthTransferred) const
         {
             if (GetOverlappedResult(_interface_handle, &hOvl, &lengthTransferred, FALSE))
                 return true;
@@ -332,7 +331,7 @@ namespace librealsense
             return true;
         }
 
-        void usb_interface::query_endpoints()
+        void win7_usb_interface::query_endpoints()
         {
             if (_interface_handle == INVALID_HANDLE_VALUE)
                 throw std::runtime_error("Interface handle is INVALID_HANDLE_VALUE!");
@@ -377,7 +376,7 @@ namespace librealsense
             }
         }
 
-        void usb_interface::init_winusb_pipe()
+        void win7_usb_interface::init_winusb_pipe()
         {
             // initialize _dataInPipeID and _dataOutPipeID that will be used below.
             query_endpoints();
@@ -394,32 +393,32 @@ namespace librealsense
                 throw winapi_error("WinUsb_ResetPipe failed.");
         }
 
-        bool usb_interface::read_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
+        bool win7_usb_interface::read_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
         {
             auto sts = WinUsb_ReadPipe(_interface_handle, _in_pipe_id, buffer, bufferLength, lengthTransferred, hOvl);
             return (sts) ? true : false;
         }
 
-        bool usb_interface::read_interupt_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
+        bool win7_usb_interface::read_interupt_pipe(unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
         {
             auto sts = WinUsb_ReadPipe(_interface_handle, _interrupt_pipe_id, buffer, bufferLength, lengthTransferred, hOvl);
             return (sts) ? true : false;
         }
 
-        bool usb_interface::write_pipe(const unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
+        bool win7_usb_interface::write_pipe(const unsigned char* buffer, ULONG bufferLength, PULONG lengthTransferred, LPOVERLAPPED hOvl) const
         {
             auto sts = WinUsb_WritePipe(_interface_handle, _out_pipe_id, const_cast<unsigned char*>(buffer), bufferLength, lengthTransferred, hOvl);
             return (sts) ? true : false;
         }
 
-        void usb_interface::reset_interrupt_pipe() const
+        void win7_usb_interface::reset_interrupt_pipe() const
         {
             auto sts = WinUsb_ResetPipe(_interface_handle, _interrupt_pipe_id);
             if (!sts)
                 throw winapi_error("WinUsb_ResetPipe failed!");
         }
 
-        void usb_interface::reset_pipe(pipe_direction pipeDirection) const
+        void win7_usb_interface::reset_pipe(pipe_direction pipeDirection) const
         {
             BOOL sts;
 
@@ -433,31 +432,6 @@ namespace librealsense
             }
             if (!sts)
                 throw winapi_error("WinUsb_ResetPipe failed!");
-        }
-
-        winapi_error::winapi_error(const char* message)
-            : runtime_error(generate_message(message).c_str())
-        { }
-
-        std::string winapi_error::generate_message(const std::string& message)
-        {
-            std::stringstream ss;
-            ss << message << " Last Error: " << last_error_string(GetLastError()) << std::endl;
-            return ss.str();
-        }
-
-        std::string winapi_error::last_error_string(DWORD lastError)
-        {
-            // TODO: Error handling
-            LPSTR messageBuffer = nullptr;
-            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                nullptr, lastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, nullptr);
-
-            std::string message(messageBuffer, size);
-
-            LocalFree(messageBuffer);
-
-            return message;
         }
 
         winusb_bulk_transfer::winusb_bulk_transfer(const usb_device_info& info)
@@ -583,5 +557,3 @@ namespace librealsense
         }
     }
 }
-
-#endif

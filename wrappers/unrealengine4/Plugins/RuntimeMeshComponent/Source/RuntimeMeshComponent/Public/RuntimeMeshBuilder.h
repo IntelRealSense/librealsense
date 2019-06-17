@@ -72,13 +72,50 @@ public:
 	FVector2D GetUV(int32 Index, int32 Channel = 0) const;
 
 
-	void SetPosition(int32 Index, FVector Value);
+	void SetPosition(int32 Index, const FVector& Value);
+	bool SetPositions(const int32 InsertAtIndex, const TArray<FVector>& Positions, const int32 Count, const bool bSizeToFit);
+	bool SetPositions(const int32 InsertAtIndex, const FVector *const Positions, const int32 Count, const bool bSizeToFit);
 	void SetNormal(int32 Index, const FVector4& Value);
-	void SetTangent(int32 Index, FVector Value);
-	void SetTangent(int32 Index, FRuntimeMeshTangent Value);
-	void SetColor(int32 Index, FColor Value);
-	void SetUV(int32 Index, FVector2D Value);
-	void SetUV(int32 Index, int32 Channel, FVector2D Value);
+	void SetTangent(int32 Index, const FVector& Value);
+	void SetTangent(int32 Index, const FRuntimeMeshTangent& Value);
+	void SetColor(int32 Index, const FColor& Value);
+	bool SetColors(const int32 InsertAtIndex, const TArray<FColor>& Colors, const int32 Count, const bool bSizeToFit);
+	bool SetColors(const int32 InsertAtIndex, const FColor *const Colors, const int32 Count, const bool bSizeToFit);
+	void SetUV(int32 Index, const FVector2D& Value);
+	void SetUV(int32 Index, int32 Channel, const FVector2D& Value);
+
+	/**
+	*	UV arrangement for 3 uv channels:
+	*	UVs[0]: vertex 0:uvChannel[0]
+	*	UVs[1]: vertex 0:uvChannel[1]
+	*	UVs[2]: vertex 0:uvChannel[2]
+	*	UVs[3]: vertex 1:uvChannel[0]
+	*	UVs[4]: vertex 1:uvChannel[1]
+	*	UVs[5]: vertex 1:uvChannel[2]
+	*	UVs[6]: vertex 2:uvChannel[0]
+	*	...
+	*
+	*	@param CountVertices			The number of vertices you want to add UV data for!
+	*/
+	bool SetUVs(const int32 InsertAtVertexIndex, const TArray<FVector2D>& UVs, const int32 CountVertices, const bool bSizeToFit);
+	bool SetUVs(const int32 InsertAtVertexIndex, const TArray<FVector2DHalf>& UVs, const int32 CountVertices, const bool bSizeToFit);
+
+	/**
+	*	UV arrangement for 3 uv channels:
+	*	UVs[0]: vertex 0:uvChannel[0]
+	*	UVs[1]: vertex 0:uvChannel[1]
+	*	UVs[2]: vertex 0:uvChannel[2]
+	*	UVs[3]: vertex 1:uvChannel[0]
+	*	UVs[4]: vertex 1:uvChannel[1]
+	*	UVs[5]: vertex 1:uvChannel[2]
+	*	UVs[6]: vertex 2:uvChannel[0]
+	*	...
+	*
+	*	@param UVs						Must point to the start of the uv data for a vertex!
+	*	@param CountVertices			The number of vertices you want to add UV data for!
+	*/
+	bool SetUVs(const int32 InsertAtVertexIndex, const FVector2D *const UVs, const int32 CountVertices, const bool bSizeToFit);
+	bool SetUVs(const int32 InsertAtVertexIndex, const FVector2DHalf *const UVs, const int32 CountVertices, const bool bSizeToFit);
 
 	void SetNormalTangent(int32 Index, FVector Normal, FRuntimeMeshTangent Tangent);
 	void SetTangents(int32 Index, FVector TangentX, FVector TangentY, FVector TangentZ);
@@ -375,6 +412,10 @@ public:
 
 	int32 GetIndex(int32 Index) const;
 	void SetIndex(int32 Index, int32 Value);
+	bool SetIndices(const int32 InsertAtIndex, const TArray<uint16>& Indices, const int32 Count, const bool bSizeToFit);
+	bool SetIndices(const int32 InsertAtIndex, const uint16 *const Indices, const int32 Count, const bool bSizeToFit);
+	bool SetIndices(const int32 InsertAtIndex, const TArray<int32>& Indices, const int32 Count, const bool bSizeToFit);
+	bool SetIndices(const int32 InsertAtIndex, const int32 *const Indices, const int32 Count, const bool bSizeToFit);
 
 protected:
 

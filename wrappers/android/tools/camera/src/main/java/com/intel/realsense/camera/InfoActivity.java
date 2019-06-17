@@ -29,20 +29,21 @@ public class InfoActivity extends AppCompatActivity {
 
         TextView message = findViewById(R.id.list_view_title);
 
-        RsContext ctx = new RsContext();
-        DeviceList devices = ctx.queryDevices();
-        if(devices.getDeviceCount() == 0){
-            finish();
-        }
-
-        message.setText("Device info:");
-
         Map<CameraInfo,String> infoMap = new TreeMap<>();
 
-        final Device device = ctx.queryDevices().createDevice(0);
-        for(CameraInfo ci : CameraInfo.values()){
-            if(device.supportsInfo(ci))
-                infoMap.put(ci, device.getInfo(ci));
+        RsContext ctx = new RsContext();
+        try(DeviceList devices = ctx.queryDevices()){
+            if(devices.getDeviceCount() == 0){
+                finish();
+            }
+            message.setText("Device info:");
+
+            try(final Device device = devices.createDevice(0)){
+                for(CameraInfo ci : CameraInfo.values()){
+                    if(device.supportsInfo(ci))
+                        infoMap.put(ci, device.getInfo(ci));
+                }
+            }
         }
 
         final String[] info = new String[infoMap.size()];
@@ -51,10 +52,9 @@ public class InfoActivity extends AppCompatActivity {
             info[i++] = e.getKey().toString() + ": " + e.getValue();
         }
 
-
         final ListView listview = findViewById(R.id.list_view);
 
         final ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.files_list_view, info);
-        listview.setAdapter(adapter);;
+        listview.setAdapter(adapter);
     }
 }

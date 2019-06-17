@@ -107,7 +107,7 @@ public:
     {
         return _block.process(f);
     };
-    virtual const std::string& name() const
+    virtual const std::string& name() const override
     {
         return _name;
     }

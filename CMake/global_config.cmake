@@ -25,6 +25,11 @@ macro(global_set_flags)
     add_definitions(-DELPP_THREAD_SAFE)
     add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
+    if (BUILD_GLSL_EXTENSIONS)
+        set(LRS_GL_TARGET realsense2-gl)
+        set(LRS_GL_LIB_NAME ${LRS_GL_TARGET})
+    endif()
+
     if (ENABLE_ZERO_COPY)
         add_definitions(-DZERO_COPY)
     endif()
@@ -56,6 +61,10 @@ macro(global_set_flags)
 
     if (BUILD_WITH_CUDA)
         include(CMake/cuda_config.cmake)
+    endif()
+
+    if(BUILD_PYTHON_BINDINGS)
+        include(libusb_config)
     endif()
 
     add_definitions(-D${BACKEND} -DUNICODE)

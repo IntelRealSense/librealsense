@@ -22,6 +22,7 @@ namespace librealsense
 
     private:
         friend class ds5_color_sensor;
+        friend class rs435i_device;
 
         uint8_t _color_device_idx = -1;
 

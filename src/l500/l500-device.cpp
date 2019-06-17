@@ -20,12 +20,12 @@ namespace librealsense
 
     l500_device::l500_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        :device(ctx, group),
-        _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices))),
+        :device(ctx, group), global_time_interface(), 
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _ir_stream(new stream(RS2_STREAM_INFRARED)),
         _confidence_stream(new stream(RS2_STREAM_CONFIDENCE))
     {
+        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         auto pid = group.uvc_devices.front().pid;
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
 
@@ -65,6 +65,15 @@ namespace librealsense
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
+        using namespace platform;
+
+        auto usb_mode = get_depth_sensor().get_usb_specification();
+        if (usb_spec_names.count(usb_mode) && (usb_undefined != usb_mode))
+        {
+            auto usb_type_str = usb_spec_names.at(usb_mode);
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }
+
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
@@ -82,19 +91,24 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new l500_timestamp_reader_from_metadata(backend.create_time_service()));
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto depth_ep = std::make_shared<l500_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-            std::unique_ptr<frame_timestamp_reader>(new l500_timestamp_reader_from_metadata(backend.create_time_service())));
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
 
+        depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->register_xu(depth_xu);
         depth_ep->register_pixel_format(pf_z16_l500);
         depth_ep->register_pixel_format(pf_confidence_l500);
         depth_ep->register_pixel_format(pf_y8_l500);
 
-        depth_ep->register_option(RS2_OPTION_LASER_POWER,
+        depth_ep->register_option(RS2_OPTION_VISUAL_PRESET,
             std::make_shared<uvc_xu_option<int>>(
                 *depth_ep,
                 ivcam2::depth_xu,
-                ivcam2::L500_DEPTH_LASER_POWER, "Power of the l500 projector, with 0 meaning projector off"));
+                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range",
+                std::map<float, std::string>{ { 1, "Long range"},
+                { 2, "Short range" }}));
 
         return depth_ep;
     }
@@ -114,6 +128,29 @@ namespace librealsense
     void l500_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         throw not_implemented_exception("enable_recording(...) not implemented!");
+    }
+
+    double l500_device::get_device_time_ms()
+    {
+        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
+        {
+            throw not_implemented_exception("device time not supported for backend.");
+        }
+
+        if (!_hw_monitor)
+            throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
+
+        command cmd(ivcam2::fw_cmd::MRD, ivcam2::REGISTER_CLOCK_0, ivcam2::REGISTER_CLOCK_0 + 4);
+        auto res = _hw_monitor->send(cmd);
+
+        if (res.size() < sizeof(uint32_t))
+        {
+            LOG_DEBUG("size(res):" << res.size());
+            throw std::runtime_error("Not enough bytes returned from the firmware!");
+        }
+        uint32_t dt = *(uint32_t*)res.data();
+        double ts = dt * TIMESTAMP_USEC_TO_MSEC;
+        return ts;
     }
 
     notification l500_notification_decoder::decode(int value)

@@ -106,12 +106,16 @@ namespace librealsense
             return nullptr;
         }
 
+        std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
+        std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new iio_hid_timestamp_reader());
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto hid_ep = std::make_shared<l500_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
-            std::unique_ptr<frame_timestamp_reader>(new iio_hid_timestamp_reader()),
-            std::unique_ptr<frame_timestamp_reader>(new iio_hid_timestamp_reader()),
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), _tf_keeper, enable_global_time_option)),
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), _tf_keeper, enable_global_time_option)),
             l500_fps_and_sampling_frequency_per_rs2_stream,
             l500_sensor_name_and_hid_profiles);
 
+        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
@@ -119,7 +123,7 @@ namespace librealsense
     }
 
     l500_motion::l500_motion(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
-        :device(ctx, group),
+        :device(ctx, group), l500_device(ctx, group), 
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
          _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
@@ -127,6 +131,8 @@ namespace librealsense
         if (hid_ep)
         {
             _motion_module_device_idx = add_sensor(hid_ep);
+            // HID metadata attributes
+            hid_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
         }
     }
 

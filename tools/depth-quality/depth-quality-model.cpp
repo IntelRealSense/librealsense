@@ -770,7 +770,7 @@ namespace rs2
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
             _depth_sensor_model = std::shared_ptr<rs2::subdevice_model>(
-                new subdevice_model(dev, dpt_sensor, _error_message));
+                new subdevice_model(dev, dpt_sensor, _error_message, _viewer_model));
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;

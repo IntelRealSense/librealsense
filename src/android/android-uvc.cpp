@@ -7,7 +7,7 @@
 #include "android-uvc.h"
 #include "../types.h"
 #include "libuvc/utlist.h"
-#include "usb_host/device_watcher.h"
+#include "../usb/usb-enumerator.h"
 #include "../libuvc/utlist.h"
 
 
@@ -19,6 +19,7 @@
 
 namespace librealsense {
     namespace platform {
+
         bool android_uvc_device::is_connected(const uvc_device_info &info) {
             auto result = true;
 
@@ -308,53 +309,50 @@ namespace librealsense {
             return result;
         }
 
+        std::shared_ptr<usbhost_uvc_device> android_uvc_device::open_uvc_device()
+        {
+            for(auto&& info : usb_enumerator::query_devices_info())
+            {
+                if(info.unique_id != _info.unique_id || info.mi != _info.mi)
+                    continue;
+                auto dev = usb_enumerator::create_usb_device(info);
+                std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
+                                                        [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
+                uvc->device = std::static_pointer_cast<usb_device_usbhost>(dev);
+                uvc->vid = info.vid;
+                uvc->pid = info.pid;
+                usbhost_open(uvc.get(), info.mi);
+                return uvc;
+            }
+            return nullptr;
+        }
+
         void android_uvc_device::set_power_state(power_state state) {
             std::lock_guard<std::mutex> lock(_power_mutex);
 
             if (state == D0 && _power_state == D3) {
-                uint16_t vid = _info.vid, pid = _info.pid, mi = _info.mi;
+                _device = open_uvc_device();
 
-                std::vector<std::shared_ptr<usbhost_uvc_device>> uvc_devices;
-                for(auto&& dev : usb_host::device_watcher::get_device_list())
-                {
-                    std::shared_ptr<usbhost_uvc_device> uvc(new usbhost_uvc_device(),
-                                                            [](usbhost_uvc_device *ptr) {usbhost_close(ptr); });
-                    uvc->device = dev;
-                    uvc->vid = dev->get_vid();
-                    uvc->pid = dev->get_pid();
-                    uvc_devices.push_back(uvc);
+                if(!_device)
+                    throw std::runtime_error("Device not found!");
+
+                for (auto ct = _device->deviceData.ctrl_if.input_term_descs;
+                     ct; ct = ct->next) {
+                    _input_terminal = ct->bTerminalID;
                 }
 
-                for (auto device : uvc_devices) {
-
-                    usbhost_open(device.get(), mi);
-
-                    if (device->deviceData.ctrl_if.bInterfaceNumber == mi) {
-                        _device = device;
-
-                        for (auto ct = _device->deviceData.ctrl_if.input_term_descs;
-                             ct; ct = ct->next) {
-                            _input_terminal = ct->bTerminalID;
-                        }
-
-                        for (auto pu = _device->deviceData.ctrl_if.processing_unit_descs;
-                             pu; pu = pu->next) {
-                            _processing_unit = pu->bUnitID;
-                        }
-
-                        for (auto eu = _device->deviceData.ctrl_if.extension_unit_descs;
-                             eu; eu = eu->next) {
-                            _extension_unit = eu->bUnitID;
-                        }
-
-                        _device->device->claim_interface(mi);
-
-                        _power_state = D0;
-                        return;
-                    }
+                for (auto pu = _device->deviceData.ctrl_if.processing_unit_descs;
+                     pu; pu = pu->next) {
+                    _processing_unit = pu->bUnitID;
                 }
 
-                throw std::runtime_error("Device not found!");
+                for (auto eu = _device->deviceData.ctrl_if.extension_unit_descs;
+                     eu; eu = eu->next) {
+                    _extension_unit = eu->bUnitID;
+                }
+
+                _power_state = D0;
+
             }
             if (state == D3 && _power_state == D0) {
                 _device.reset();

@@ -227,7 +227,7 @@ namespace librealsense
         virtual frame_callback_ptr get_frames_callback() const = 0;
         virtual void set_frames_callback(frame_callback_ptr cb) = 0;
         virtual bool is_streaming() const = 0;
-        virtual const device_interface& get_device() = 0;
+        virtual device_interface& get_device() = 0;
 
         virtual ~sensor_interface() = default;
     };

@@ -10,6 +10,7 @@
 #include "core/debug.h"
 #include "core/advanced_mode.h"
 #include "device.h"
+#include "global_timestamp_reader.h"
 
 namespace librealsense
 {
@@ -26,7 +27,7 @@ namespace librealsense
         const hw_monitor& _hw_monitor;
     };
 
-    class ds5_device : public virtual device, public debug_interface
+    class ds5_device : public virtual device, public debug_interface, public global_time_interface
     {
     public:
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -46,6 +47,7 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         platform::usb_spec get_usb_spec() const;
+        virtual double get_device_time_ms() override;
 
     protected:
 

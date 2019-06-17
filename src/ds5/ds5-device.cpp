@@ -323,9 +323,13 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-                                                       std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
+
+        depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
@@ -337,13 +341,13 @@ namespace librealsense
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group),
+        : device(ctx, group), global_time_interface(), 
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-          _depth_device_idx(add_sensor(create_depth_device(ctx, group.uvc_devices)))
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
     {
+        _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
     }
 
@@ -645,6 +649,31 @@ namespace librealsense
         return platform::usb_undefined;
     }
 
+
+    double ds5_device::get_device_time_ms()
+    {
+        // TODO: Refactor the following query with an extension.
+        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
+        {
+            throw not_implemented_exception("device time not supported for backend.");
+        }
+
+        if (!_hw_monitor)
+            throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
+
+        command cmd(ds::MRD, ds::REGISTER_CLOCK_0, ds::REGISTER_CLOCK_0 + 4);
+        auto res = _hw_monitor->send(cmd);
+
+        if (res.size() < sizeof(uint32_t))
+        {
+            LOG_DEBUG("size(res):" << res.size());
+            throw std::runtime_error("Not enough bytes returned from the firmware!");
+        }
+        uint32_t dt = *(uint32_t*)res.data();
+        double ts = dt * TIMESTAMP_USEC_TO_MSEC;
+        return ts;
+    }
+
     std::shared_ptr<uvc_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {
@@ -657,8 +686,14 @@ namespace librealsense
             depth_devices.push_back(backend.create_uvc_device(info));
 
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-                            std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
+                                std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
+
+        depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth

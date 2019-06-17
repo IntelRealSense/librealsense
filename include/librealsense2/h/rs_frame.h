@@ -20,11 +20,12 @@ typedef enum rs2_timestamp_domain
 {
     RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, /**< Frame timestamp was measured in relation to the camera clock */
     RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,    /**< Frame timestamp was measured in relation to the OS system clock */
+    RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME,    /**< Frame timestamp was measured in relation to the camera clock and converted to OS system clock by constantly measure the difference*/
     RS2_TIMESTAMP_DOMAIN_COUNT           /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_timestamp_domain;
 const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info);
 
-/** \brief Per-Frame-Metadata are set of read-only properties that might be exposed for each individual frame */
+/** \brief Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame. */
 typedef enum rs2_frame_metadata_value
 {
     RS2_FRAME_METADATA_FRAME_COUNTER                        , /**< A sequential index managed per-stream. Integer value*/
@@ -97,6 +98,14 @@ rs2_timestamp_domain rs2_get_frame_timestamp_domain(const rs2_frame* frameset, r
 * \return               the timestamp of the frame in milliseconds
 */
 rs2_time_t rs2_get_frame_timestamp(const rs2_frame* frame, rs2_error** error);
+
+/**
+* retrieve frame parent sensor from frame handle
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               the parent sensor of the frame
+*/
+rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error);
 
 /**
 * retrieve frame number from frame handle

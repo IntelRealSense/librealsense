@@ -77,6 +77,12 @@ namespace Intel.RealSense
                             // Render the frames.
                             Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                             Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+
+                            Dispatcher.Invoke(new Action(() =>
+                            {
+                                String depth_dev_sn = new Sensor.CameraInfos(depthFrame.Sensor)[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = depth_dev_sn + " : " + String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
+                            }));
                         }
                     }
                 }, tokenSource.Token);

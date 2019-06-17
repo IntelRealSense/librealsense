@@ -132,7 +132,7 @@ namespace librealsense
                 else if (model_raw.height == profile.height && model_raw.width == profile.width)
                     cam_model = model_raw;
                 else
-                    throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
+                    continue;
 
                 rs2_intrinsics intrinsics;
                 intrinsics.width = cam_model.width;
@@ -143,7 +143,7 @@ namespace librealsense
                 intrinsics.ppy = cam_model.ipm.principal_point.y;
                 return intrinsics;
             }
-
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
         }
 
         stream_profiles init_stream_profiles() override

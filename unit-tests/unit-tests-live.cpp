@@ -42,6 +42,7 @@ TEST_CASE("Sync sanity", "[live]") {
         auto actual_fps = fps;
         bool hw_timestamp_domain = false;
         bool system_timestamp_domain = false;
+        bool global_timestamp_domain = false;
         for (auto i = 0; i < 200; i++)
         {
             auto frames = sync.wait_for_frames(5000);
@@ -64,6 +65,10 @@ TEST_CASE("Sync sanity", "[live]") {
                 {
                     system_timestamp_domain = true;
                 }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                    global_timestamp_domain = true;
+                }
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
@@ -76,7 +81,8 @@ TEST_CASE("Sync sanity", "[live]") {
 
         CAPTURE(hw_timestamp_domain);
         CAPTURE(system_timestamp_domain);
-        REQUIRE(hw_timestamp_domain != system_timestamp_domain);
+        CAPTURE(global_timestamp_domain);
+        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
 
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
@@ -1141,7 +1147,7 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
                     {
                         REQUIRE(video.width() >= 320);
                         REQUIRE(video.width() <= 1920);
-                        REQUIRE(video.height() >= 180);
+                        REQUIRE(video.height() >= 100);     //firmware 5.11.6.200
                         REQUIRE(video.height() <= 1080);
                     }
 
@@ -4780,6 +4786,72 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
     }
 }
 
+TEST_CASE("Unit transform test", "[live][software-device]") {
+	rs2::context ctx;
+
+	if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+		return;
+
+	log_to_file(RS2_LOG_SEVERITY_DEBUG);
+	const int W = 640;
+	const int H = 480;
+	const int BPP = 2;
+	int expected_frames = 1;
+	int fps = 60;
+	float depth_unit = 1.5;
+	units_transform ut;
+	rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
+
+	std::shared_ptr<software_device> dev = std::make_shared<software_device>();
+	auto s = dev->add_sensor("software_sensor");
+	s.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_unit);
+	s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, fps, BPP, RS2_FORMAT_Z16, intrinsics });
+
+	auto profiles = s.get_stream_profiles();
+	auto depth = profiles[0];
+
+	syncer sync;
+	s.open(profiles);
+	s.start(sync);
+
+	std::vector<uint16_t> pixels(W * H, 0);
+	for (int i = 0; i < W * H; i++) {
+		pixels[i] = i % 10;
+	}
+
+	std::weak_ptr<rs2::software_device> weak_dev(dev);
+	std::thread t([s, weak_dev, &pixels, depth, expected_frames]() mutable {
+		auto shared_dev = weak_dev.lock();
+		if (shared_dev == nullptr)
+			return;
+		for (int i = 1; i <= expected_frames; i++)
+			s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,rs2_time_t(i * 100), RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, i, depth });
+	});
+	t.detach();
+
+	for (auto i = 0; i < expected_frames; i++)
+	{
+		frame f;
+		REQUIRE_NOTHROW(f = sync.wait_for_frames(5000));
+
+		auto f_format = f.get_profile().format();
+		REQUIRE(RS2_FORMAT_Z16 == f_format);
+
+		auto depth_distance = ut.process(f);
+		auto depth_distance_format = depth_distance.get_profile().format();
+		REQUIRE(RS2_FORMAT_DISTANCE == depth_distance_format);
+
+		auto frame_data = reinterpret_cast<const uint16_t*>(f.get_data());
+		auto depth_distance_data = reinterpret_cast<const float*>(depth_distance.get_data());
+
+		for (size_t i = 0; i < W*H; i++)
+		{
+			auto frame_data_units_transformed = (frame_data[i] * depth_unit);
+			REQUIRE(depth_distance_data[i] == frame_data_units_transformed);
+		}
+	}
+}
+
 #define ADD_ENUM_TEST_CASE(rs2_enum_type, RS2_ENUM_COUNT)                                  \
 TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                         \
     int last_item_index = static_cast<int>(RS2_ENUM_COUNT);                                \
@@ -5321,7 +5393,6 @@ TEST_CASE("L500 zero order sanity", "[live]") {
 
                         REQUIRE(stream_missing == stream_arrived.end());
                     }
-                   
                 }
             }
         }
@@ -5547,5 +5618,45 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                 }
             }
         }
+    }
+}
+
+
+TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
+{
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.22.0"))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+        pipeline pipe(ctx);
+        device dev;
+        // Configure all supported streams to run at 30 frames per second
+
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+
+        // Test sequence
+        REQUIRE_NOTHROW(pipe.start(cfg));
+        std::string dev_serial_no = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        for (auto i = 0; i < 5; i++)
+        {
+            rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+            for (auto&& frame : data)
+            {
+                std::string frame_serial_no = sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                REQUIRE(dev_serial_no == frame_serial_no);
+                // TODO: Add additinal sensor attribiutions checks.
+            }
+        }
+        REQUIRE_NOTHROW(pipe.stop());
     }
 }

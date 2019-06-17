@@ -219,8 +219,8 @@ namespace rs_data_collect
                 if (val_in_range(_stream_type,{RS2_STREAM_POSE}))
                     specific_attributes = 7;
 
-                    for (auto i=0; i<specific_attributes; i++)
-                        ss << "," << _params[i];
+                for (auto i=0; i<specific_attributes; i++)
+                    ss << "," << _params[i];
 
                 return ss.str().c_str();
             }

@@ -174,6 +174,9 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_create_threshold([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_units_transform([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
 #endregion
@@ -224,6 +227,9 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern double rs2_get_frame_timestamp(IntPtr frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_get_frame_sensor(IntPtr frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern ulong rs2_get_frame_number(IntPtr frame, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
@@ -510,6 +516,8 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_set_devices_changed_callback(IntPtr ctx, rs2_devices_changed_callback callback, IntPtr user_data, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void rs2_context_add_software_device(IntPtr ctx, IntPtr device, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 #endregion
 #region rs
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
@@ -621,6 +629,12 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_get_census(IntPtr dev, IntPtr group, int mode, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void rs2_set_amp_factor(IntPtr dev, IntPtr group, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void rs2_get_amp_factor(IntPtr dev, IntPtr group, int mode, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_load_json(IntPtr dev, [MarshalAs(UnmanagedType.LPStr)] string json_content, uint content_size, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);

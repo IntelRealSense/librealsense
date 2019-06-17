@@ -1,4 +1,5 @@
 #pragma once
+#include "RealSenseNative.h"
 
 namespace rs2_utils {
 

@@ -128,7 +128,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   `sudo make uninstall && make clean && make **-j8** && sudo make install`<br />
   This enhancement may significantly improve the build time. The side-effect, however, is that it may cause a low-end platform to hang randomly.<br />
   **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
-  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.
+  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.<br />
+  **Note:** You can find more information about the available configuration options on [this wiki page](https://github.com/IntelRealSense/librealsense/wiki/Build-Configuration).
 
   2. Install IDE (Optional):
     We use QtCreator as an IDE for Linux development on Ubuntu

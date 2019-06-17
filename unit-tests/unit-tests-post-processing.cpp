@@ -578,7 +578,7 @@ TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters]")
         rs2::pipeline pipe(ctx);
         rs2::config cfg;
         rs2::pipeline_profile pipe_profile;
- 
+
         REQUIRE_NOTHROW(cfg.enable_all_streams());
         REQUIRE_NOTHROW(pipe_profile = cfg.resolve(pipe));
         REQUIRE(pipe_profile);

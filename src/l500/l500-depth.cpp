@@ -67,6 +67,9 @@ namespace librealsense
         get_depth_sensor().register_option(RS2_OPTION_MA_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_MA_TEMPERATURE));
 
+        get_depth_sensor().register_option(RS2_OPTION_APD_TEMPERATURE,
+            std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
+
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
 
@@ -87,6 +90,7 @@ namespace librealsense
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_l500_depth, intel_capture_timing);
 
+        get_depth_sensor().register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&l500_md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_attribute_parser(&l500_md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
         get_depth_sensor().register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, make_attribute_parser(&l500_md_capture_timing::exposure_time, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
@@ -135,19 +139,15 @@ namespace librealsense
 
     std::pair<int, int> l500_depth_sensor::read_zo_point()
     {
-        if (auto ver = read_algo_version() >= 115)
+        const int zo_point_address = 0xa00e1b8c;
+        command cmd(ivcam2::fw_cmd::MRD, zo_point_address, zo_point_address + 4);
+        auto res = _owner->_hw_monitor->send(cmd);
+        if (res.size() < 2)
         {
-            const int zo_point_address = 0xa00e1b8c;
-            command cmd(ivcam2::fw_cmd::MRD, zo_point_address, zo_point_address + 4);
-            auto res = _owner->_hw_monitor->send(cmd);
-            if (res.size() < 2)
-            {
-                throw std::runtime_error("Invalid result size!");
-            }
-            auto data = (uint16_t*)res.data();
-            return { data[0], data[1] };
+            throw std::runtime_error("Invalid result size!");
         }
-        return { 0, 0 };
+        auto data = (uint16_t*)res.data();
+        return { data[0], data[1] };
     }
 
     int l500_depth_sensor::read_algo_version()
@@ -196,7 +196,7 @@ namespace librealsense
         if (has_metadata_ts(fo))
         {
             auto md = (librealsense::metadata_raw*)(fo.metadata);
-            return (double)(ts_wrap.calc(md->header.timestamp))*0.0001;
+            return (double)(md->header.timestamp)*TIMESTAMP_USEC_TO_MSEC;
         }
         else
         {
@@ -242,13 +242,14 @@ namespace librealsense
 
     float zo_point_option_x::query() const
     {
-        return _zo_point->first;
+        return static_cast<float>(_zo_point->first);
     }
 
     float zo_point_option_y::query() const
     {
-        return _zo_point->second;
+        return static_cast<float>(_zo_point->second);
     }
+
     processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
     {
         processing_blocks res;

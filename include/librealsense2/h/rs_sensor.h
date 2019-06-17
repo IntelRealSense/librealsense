@@ -34,7 +34,7 @@ typedef enum rs2_camera_info {
 } rs2_camera_info;
 const char* rs2_camera_info_to_string(rs2_camera_info info);
 
-/** \brief Streams are different types of data provided by RealSense devices */
+/** \brief Streams are different types of data provided by RealSense devices. */
 typedef enum rs2_stream
 {
     RS2_STREAM_ANY,
@@ -51,7 +51,7 @@ typedef enum rs2_stream
 } rs2_stream;
 const char* rs2_stream_to_string(rs2_stream stream);
 
-/** \brief Format identifies how binary data is encoded within a frame */
+/** \brief A stream's format identifies how binary data is encoded within a frame. */
 typedef enum rs2_format
 {
     RS2_FORMAT_ANY             , /**< When passed to enable stream, librealsense will try to provide best suited format */
@@ -75,11 +75,12 @@ typedef enum rs2_format
     RS2_FORMAT_6DOF            , /**< Pose data packed as floats array, containing translation vector, rotation quaternion and prediction velocities and accelerations vectors */
     RS2_FORMAT_DISPARITY32     , /**< 32-bit float-point disparity values. Depth->Disparity conversion : Disparity = Baseline*FocalLength/Depth */
     RS2_FORMAT_Y10BPACK        , /**< 16-bit per-pixel grayscale image unpacked from 10 bits per pixel packed ([8:8:8:8:2222]) grey-scale image. The data is unpacked to LSB and padded with 6 zero bits */
+    RS2_FORMAT_DISTANCE        , /**< 32-bit float-point depth distance value.  */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
 
-/** \brief Cross-stream extrinsics: encode the topology describing how the different devices are connected. */
+/** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
 typedef struct rs2_extrinsics
 {
     float rotation[9];    /**< Column-major 3x3 rotation matrix */

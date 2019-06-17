@@ -19,11 +19,13 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_DEPTH_LASER_POWER = 2;
+        const uint8_t L500_DEPTH_VISUAL_PRESET = 2;
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
+
+        const int REGISTER_CLOCK_0 = 0x9003021c;
 
         enum fw_cmd : uint8_t
         {

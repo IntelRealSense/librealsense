@@ -215,8 +215,8 @@ namespace rs2
 
 
         /**
-        * check if physical sensor is supported
-        * \return   list of stream profiles that given sensor can provide, should be released by rs2_delete_profiles_list
+        * Retrieves the list of stream profiles supported by the sensor.
+        * \return   list of stream profiles that given sensor can provide
         */
         std::vector<stream_profile> get_stream_profiles() const
         {
@@ -328,6 +328,12 @@ namespace rs2
 
 
     };
+
+    inline std::shared_ptr<sensor> sensor_from_frame(frame f)
+    {
+        std::shared_ptr<rs2_sensor> psens(f.get_sensor(), rs2_delete_sensor);
+        return std::make_shared<sensor>(psens);
+    }
 
     inline bool operator==(const sensor& lhs, const sensor& rhs)
     {

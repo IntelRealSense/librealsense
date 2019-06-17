@@ -10,7 +10,9 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.intel.realsense.librealsense.CameraInfo;
@@ -35,10 +37,26 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int INDEX_ADVANCE_MODE = 1;
     private static final int INDEX_PRESETS = 2;
 
+    private Device _device;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+
+        Switch extendedTimeout = findViewById(R.id.extended_first_frame_timeout_switch);
+        SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+        extendedTimeout.setChecked(sharedPref.getBoolean(getString(R.string.extended_first_frame_timeout), false));
+
+        extendedTimeout.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean(getString(R.string.extended_first_frame_timeout), b);
+                editor.commit();
+            }
+        });
     }
 
     @Override
@@ -48,17 +66,35 @@ public class SettingsActivity extends AppCompatActivity {
         RsContext ctx = new RsContext();
         try(DeviceList devices = ctx.queryDevices()) {
             if (devices.getDeviceCount() == 0) {
-                return;
+                throw new Exception("Failed to detect a connected device");
             }
-            Device device = ctx.queryDevices().createDevice(0);
-            loadSettingsList(device);
-            StreamProfileSelector[] profilesList = createSettingList(device);
-            loadStreamList(device, profilesList);
+            _device = devices.createDevice(0);
+            loadInfosList();
+            loadSettingsList(_device);
+            StreamProfileSelector[] profilesList = createSettingList(_device);
+            loadStreamList(_device, profilesList);
         } catch(Exception e){
             Log.e(TAG, "failed to load settings, error: " + e.getMessage());
             Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
             finish();
         }
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (_device != null)
+            _device.close();
+    }
+
+    private void loadInfosList() {
+        final ListView listview = findViewById(R.id.info_list_view);
+        String appVersion = "Camera App Version: " + BuildConfig.VERSION_NAME;
+        String lrsVersion = "LibRealSense Version: " + RsContext.getVersion();
+
+        final String[] info = { lrsVersion, appVersion};
+        final ArrayAdapter adapter = new ArrayAdapter<>(this, R.layout.files_list_view, info);
+        listview.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
     }
 
     private void loadSettingsList(final Device device){

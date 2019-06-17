@@ -69,7 +69,7 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 
 namespace librealsense
 {
-    static const double TIMESTAMP_USEC_TO_MSEC = 0.001f;
+    static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -391,6 +391,16 @@ namespace librealsense
             return *this;
         }
 
+        void reset() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_was_init)
+            {
+                _ptr.reset();
+                _was_init = false;
+            }
+        }
+
     private:
         T* operate() const
         {
@@ -542,6 +552,26 @@ namespace librealsense
         return true;
     }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float3& elem)
+    {
+        return stream << elem.x << " " << elem.y << " " << elem.z;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float4& elem)
+    {
+        return stream << elem.x << " " << elem.y << " " << elem.z << " " << elem.w;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float3x3& elem)
+    {
+        return stream << elem.x << "\n" << elem.y << "\n" << elem.z;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const pose& elem)
+    {
+        return stream << "Position:\n " << elem.position  << "\n Orientation :\n" << elem.orientation;
+    }
 
     ///////////////////
     // Pixel formats //
