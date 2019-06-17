@@ -939,8 +939,8 @@ namespace rs2
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
 
-            if (shared_filter->is<disparity_transform>())
-                model->visible = false;
+            //if (shared_filter->is<disparity_transform>())
+               // model->visible = false;
 
             if (shared_filter->is<zero_order_invalidation>())
             {
@@ -3874,6 +3874,8 @@ namespace rs2
         {
             if(auto depth = viewer.get_3d_depth_source(filtered))
             {
+                if (depth.get_profile().format() == RS2_FORMAT_DISPARITY32)
+                    depth = disp_to_depth.process(depth);
                 res.push_back(pc->calculate(depth));
             }
             if(auto texture = viewer.get_3d_texture_source(filtered))

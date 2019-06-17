@@ -11,7 +11,6 @@
 
 namespace librealsense
 {
-
     class disparity_transform : public generic_processing_block
     {
     public:
@@ -58,7 +57,6 @@ namespace librealsense
         rs2::stream_profile     _target_stream_profile;
         bool                    _update_target;
         bool                    _stereoscopic_depth;
-        float                   _focal_lenght_mm;
         float                   _stereo_baseline_meter; // in meters
         float                   _depth_units;
         float                   _d2d_convert_factor;
@@ -66,4 +64,61 @@ namespace librealsense
         size_t                  _bpp;
     };
     MAP_EXTENSION(RS2_EXTENSION_DISPARITY_FILTER, librealsense::disparity_transform);
+
+    struct disparity_info
+    {
+    public:
+        struct info {
+            bool stereoscopic_depth = false;
+            float depth_units = 0;
+            float d2d_convert_factor = 0;
+        };
+
+        static info update_info_from_frame(const rs2::frame& f)
+        {
+            // Check if the new frame originated from stereo-based depth sensor
+            // and retrieve the stereo baseline parameter that will be used in transformations
+            auto snr = ((frame_interface*)f.get())->get_sensor().get();
+            librealsense::depth_stereo_sensor* dss;
+            auto info = disparity_info::info();
+            float stereo_baseline_meter;
+
+            // Playback sensor
+            if (auto a = As<librealsense::extendable_interface>(snr))
+            {
+                librealsense::depth_stereo_sensor* ptr;
+                if ((info.stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr)))
+                {
+                    dss = ptr;
+                    info.depth_units = dss->get_depth_scale();
+                    stereo_baseline_meter = dss->get_stereo_baseline_mm()*0.001f;
+                }
+            }
+            else // Live sensor
+            {
+                info.stereoscopic_depth = Is<librealsense::depth_stereo_sensor>(snr);
+                if (info.stereoscopic_depth)
+                {
+                    dss = As<librealsense::depth_stereo_sensor>(snr);
+                    info.depth_units = dss->get_depth_scale();
+                    stereo_baseline_meter = dss->get_stereo_baseline_mm()* 0.001f;
+                }
+            }
+
+            if (info.stereoscopic_depth)
+            {
+                auto vp = f.get_profile().as<rs2::video_stream_profile>();
+                auto focal_lenght_mm = vp.get_intrinsics().fx;
+                const uint8_t fractional_bits = 5;
+                const uint8_t fractions = 1 << fractional_bits;
+                info.d2d_convert_factor = (stereo_baseline_meter * focal_lenght_mm * fractions) / info.depth_units;
+            }
+
+            return info;
+        }
+
+    private:
+        disparity_info() = delete;
+        disparity_info(const disparity_info& other) = delete;
+    };
 }

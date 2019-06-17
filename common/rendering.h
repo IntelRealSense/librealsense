@@ -1239,11 +1239,16 @@ namespace rs2
                     throw std::runtime_error("not a valid format");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
+                case RS2_FORMAT_DISPARITY32:
                     if (frame.is<depth_frame>())
                     {
                         if (prefered_format == RS2_FORMAT_Z16)
                         {
                             glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                        }
+                        else if (prefered_format == RS2_FORMAT_DISPARITY32)
+                        {
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, data);
                         }
                         else
                         {
@@ -1267,9 +1272,6 @@ namespace rs2
                         }
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
-                    break;
-                case RS2_FORMAT_DISPARITY32:
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
                     break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);

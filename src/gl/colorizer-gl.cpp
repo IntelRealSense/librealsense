@@ -6,6 +6,8 @@
 #include "../include/librealsense2-gl/rs_processing_gl.hpp"
 
 #include "proc/synthetic-stream.h"
+#include "synthetic-stream-gl.h"
+#include "proc/disparity-transform.h"
 #include "colorizer-gl.h"
 #include "option.h"
 
@@ -14,12 +16,8 @@
 #include <glad/glad.h>
 
 #include <iostream>
-
 #include <chrono>
 #include <strstream>
-
-#include "synthetic-stream-gl.h"
-
 
 static const char* fragment_shader_text =
 "#version 110\n"
@@ -31,21 +29,41 @@ static const char* fragment_shader_text =
 "uniform float depth_units;\n"
 "uniform float min_depth;\n"
 "uniform float max_depth;\n"
+"uniform float max_disparity;\n"
 "uniform float equalize;\n"
+"uniform float disparity;\n"
 "void main(void) {\n"
 "    vec2 tex = vec2(textCoords.x, 1.0 - textCoords.y);\n"
 "    vec4 depth = texture2D(textureSampler, tex);\n"
-"    float nd = depth.x + depth.y * 256.0;\n"
-"    float d = nd * 256.0;\n"
+"    float dx = depth.x;\n"
+"    float dy = depth.y;\n"
+"    float nd = dx + dy * 256.0;\n"
+"    float d = 0.0;\n"
+"    if (disparity > 0.0) {;\n"
+"       d = dx;\n"
+"    } else {\n"
+"       d = nd * 256.0;\n"
+"    }\n"
 "    if (d > 0.0){\n"
 "        float f = 0.0;\n"
 "        if (equalize > 0.0){\n"
-"            float x = depth.x * 0.99;\n"
-"            float y = depth.y + 1.0 / 256.0;\n"
-"            vec4 hist = texture2D(histSampler, vec2(x, y));\n"
+"            float x;\n"
+"            float y;\n"
+"            vec4 hist;\n"
+"            if (disparity > 0.0) {;\n"
+"               hist = texture2D(histSampler, vec2(d / max_disparity, 0.0));\n"
+"            } else {\n"
+"               x = dx * 0.99;\n"
+"               y = dy + (1.0 / 256.0);\n"
+"               hist = texture2D(histSampler, vec2(x, y));\n"
+"            }\n"
 "            f = hist.x;\n"
 "        } else {\n"
-"            f = (d * depth_units - min_depth) / (max_depth - min_depth);"
+"            if (disparity > 0.0) {\n"
+"               f = ((d - min_depth) / (max_depth - min_depth));\n"
+"            } else {\n"
+"               f = (d * depth_units - min_depth) / (max_depth - min_depth);\n"
+"            }\n"
 "        }\n"
 "        f = clamp(f, 0.0, 0.99);\n"
 "        vec4 color = texture2D(cmSampler, vec2(f, 0.0));\n"
@@ -69,7 +87,9 @@ public:
         _depth_units_location = _shader->get_uniform_location("depth_units");
         _min_depth_location = _shader->get_uniform_location("min_depth");
         _max_depth_location = _shader->get_uniform_location("max_depth");
+        _max_disparity_location = _shader->get_uniform_location("max_disparity");
         _equalize_location = _shader->get_uniform_location("equalize");
+        _is_disparity_location = _shader->get_uniform_location("disparity");
 
         auto texture0_sampler_location = _shader->get_uniform_location("textureSampler");
         auto texture1_sampler_location = _shader->get_uniform_location("cmSampler");
@@ -86,19 +106,23 @@ public:
     int color_map_slot() const { return 1; }
     int histogram_slot() const { return 2; }
 
-    void set_params(float units, float min, float max, bool equalize)
+    void set_params(float units, float min, float max, float max_disparity, bool equalize, bool disparity)
     {
         _shader->load_uniform(_depth_units_location, units);
         _shader->load_uniform(_min_depth_location, min);
         _shader->load_uniform(_max_depth_location, max);
+        _shader->load_uniform(_max_disparity_location, max_disparity);
         _shader->load_uniform(_equalize_location, equalize ? 1.f : 0.f);
+        _shader->load_uniform(_is_disparity_location, disparity ? 1.f : 0.f);
     }
 
 private:
     uint32_t _depth_units_location;
     uint32_t _min_depth_location;
     uint32_t _max_depth_location;
+    uint32_t _max_disparity_location;
     uint32_t _equalize_location;
+    uint32_t _is_disparity_location;
 };
 
 using namespace rs2;
@@ -164,8 +188,6 @@ namespace librealsense
 
         rs2::frame colorizer::process_frame(const rs2::frame_source& src, const rs2::frame& f)
         {
-            //scoped_timer t("colorizer");
-
             if (f.get_profile().get() != _source_stream_profile.get())
             {
                 _source_stream_profile = f.get_profile();
@@ -175,6 +197,10 @@ namespace librealsense
                                             RS2_FORMAT_RGB8);
                 auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
                 _width = vp.width(); _height = vp.height();
+
+                auto info = disparity_info::update_info_from_frame(f);
+                _depth_units = info.depth_units;
+                _d2d_convert_factor = info.d2d_convert_factor;
 
                 perform_gl_action([&]()
                 {
@@ -208,6 +234,7 @@ namespace librealsense
                 auto fi = (frame_interface*)f.get();
                 auto df = dynamic_cast<librealsense::depth_frame*>(fi);
                 auto depth_units = df->get_units();
+                bool disparity = f.get_profile().format() == RS2_FORMAT_DISPARITY32 ? true : false;
 
                 auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
 
@@ -223,21 +250,37 @@ namespace librealsense
                 {
                     glGenTextures(1, &depth_texture);
                     glBindTexture(GL_TEXTURE_2D, depth_texture);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, _width, _height, 0, GL_RG, GL_UNSIGNED_BYTE, f.get_data());
+
+                    if (disparity)
+                    {
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _width, _height, 0, GL_RED, GL_FLOAT, f.get_data());
+                    }
+                    else
+                    {
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, _width, _height, 0, GL_RG, GL_UNSIGNED_BYTE, f.get_data());
+                    }
+
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
                     if (_equalize)
                     {
-                        const auto depth_data = reinterpret_cast<const uint16_t*>(f.get_data());
-                        update_histogram(_hist_data, depth_data, _width, _height);
-                        populate_floating_histogram(_fhist_data, _hist_data);
-
                         glGenTextures(1, &hist_texture);
                         glBindTexture(GL_TEXTURE_2D, hist_texture);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
-                            0xFF, 0xFF, 0, GL_RED, GL_FLOAT, _fhist_data);
-                            
+
+                        if (disparity)
+                        {
+                            update_histogram(_hist_data, reinterpret_cast<const float*>(f.get_data()), _width, _height);
+                            populate_floating_histogram(_fhist_data, _hist_data);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, MAX_DISPARITY, 1, 0, GL_RED, GL_FLOAT, _fhist_data);
+                        }
+                        else
+                        {
+                            update_histogram(_hist_data, reinterpret_cast<const uint16_t*>(f.get_data()), _width, _height);
+                            populate_floating_histogram(_fhist_data, _hist_data);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 0xFF, 0xFF, 0, GL_RED, GL_FLOAT, _fhist_data);
+                        }
+
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                     }
@@ -264,9 +307,16 @@ namespace librealsense
 
                 auto& shader = (colorize_shader&)_viz->get_shader();
                 shader.begin();
-                shader.set_params(depth_units, _min, _max, _equalize);
+                float max = _max;;
+                float min = _min;;
+                if (disparity)
+                {
+                    max = (_d2d_convert_factor / (_min + 0.1)) * depth_units + .5f;
+                    min = (_d2d_convert_factor / (_max)) * depth_units + .5f;
+                }
+                shader.set_params(depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
                 shader.end();
-                
+
                 glActiveTexture(GL_TEXTURE0 + shader.histogram_slot());
                 glBindTexture(GL_TEXTURE_2D, hist_texture);
 
