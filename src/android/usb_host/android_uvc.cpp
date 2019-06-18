@@ -18,8 +18,8 @@
 #include <atomic>
 #include <zconf.h>
 
-#define DEQUEUE_TIMEOUT 10
-#define STREAMING_BULK_TRANSFER_TIMEOUT 100
+#define DEQUEUE_TIMEOUT 50
+#define STREAMING_BULK_TRANSFER_TIMEOUT 1000
 #define UVC_PAYLOAD_HEADER_LENGTH 256
 
 // Data structures for Backend-Frontend queue:

@@ -38,6 +38,7 @@ namespace librealsense
                 case EPROTO: return RS2_USB_STATUS_PIPE;
                 case EINVAL: return RS2_USB_STATUS_INVALID_PARAM;
                 case ENOMEM: return RS2_USB_STATUS_NO_MEM;
+                case ETIMEDOUT: return RS2_USB_STATUS_TIMEOUT;
                     //TODO:MK
                 default: return RS2_USB_STATUS_OTHER;
             }
