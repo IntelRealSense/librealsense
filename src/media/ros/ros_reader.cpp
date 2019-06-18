@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
+#include <cstring>
 #include "ros_reader.h"
 #include "ds5/ds5-device.h"
 #include "ivcam/sr300.h"
@@ -1133,7 +1134,19 @@ namespace librealsense
         intrinsics.ppx = ci.K[2];
         intrinsics.fy = ci.K[4];
         intrinsics.ppy = ci.K[5];
-        memcpy(intrinsics.coeffs, ci.D.data(), sizeof(intrinsics.coeffs));
+        intrinsics.model = RS2_DISTORTION_NONE;
+        for (std::underlying_type<rs2_distortion>::type i = 0; i < RS2_DISTORTION_COUNT; ++i)
+        {
+            if (strcmp(ci.distortion_model.c_str(), rs2_distortion_to_string(static_cast<rs2_distortion>(i))) == 0)
+            {
+                intrinsics.model = static_cast<rs2_distortion>(i);
+                break;
+            }
+        }
+        for (size_t i = 0; i < ci.D.size() && i < sizeof(intrinsics.coeffs)/sizeof(intrinsics.coeffs[0]); ++i)
+        {
+            intrinsics.coeffs[i] = ci.D[i];
+        }
         profile->set_intrinsics([intrinsics]() {return intrinsics; });
         profile->set_stream_index(sd.index);
         profile->set_stream_type(sd.type);
