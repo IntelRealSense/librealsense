@@ -7,6 +7,7 @@
 
 namespace librealsense
 {
+#if BUILD_EASYLOGGINGPP
     template<char const * NAME>
     class logger_type
     {
@@ -135,4 +136,5 @@ namespace librealsense
             open();
         }
     };
+#endif //BUILD_EASYLOGGINGPP
 }
