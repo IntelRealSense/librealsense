@@ -57,7 +57,7 @@ classdef playback < realsense.device
             out = realsense.librealsense_mex('rs2::playback', 'current_status', this.objectHandle);
             status = realsense.playback_status(out);
         end
-        function current_status(this)
+        function stop(this)
             this.do_init();
             realsense.librealsense_mex('rs2::playback', 'stop', this.objectHandle);
         end

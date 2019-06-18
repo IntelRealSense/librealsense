@@ -38,6 +38,24 @@ classdef frameset < realsense.frame
             end
             infrared_frame = realsense.video_frame(ret);
         end
+        function fisheye_frame = get_fisheye_frame(this, index)
+            if (nargin == 1)
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_fisheye_frame', this.objectHandle);
+            else
+                validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 2);
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_fisheye_frame', this.objectHandle, int64(index));
+            end
+            fisheye_frame = realsense.video_frame(ret);
+        end
+        function pose_frame = get_pose_frame(this, index)
+            if (nargin == 1)
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_pose_frame', this.objectHandle);
+            else
+                validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 2);
+                ret = realsense.librealsense_mex('rs2::frameset', 'get_pose_frame', this.objectHandle, int64(index));
+            end
+            pose_frame = realsense.video_frame(ret);
+        end
         function frameset_size = frame_count(this)
             frameset_size = realsense.librealsense_mex('rs2::frameset', 'size', this.objectHandle);
         end
