@@ -610,7 +610,7 @@ namespace librealsense
         v4l_uvc_device::~v4l_uvc_device()
         {
             _is_capturing = false;
-            if (_thread) _thread->join();
+            if (_thread && _thread->joinable()) _thread->join();
             for (auto&& fd : _fds)
             {
                 try { if (fd) ::close(fd);} catch (...) {}
