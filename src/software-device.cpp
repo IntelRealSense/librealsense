@@ -3,11 +3,12 @@
 
 #include "software-device.h"
 #include "stream.h"
+#include "backend.h"
 
 namespace librealsense
 {
-    software_device::software_device()
-        : device(std::make_shared<context>(backend_type::standard), {})
+    software_device::software_device(std::shared_ptr<context> ctx)
+        : device(ctx ? ctx : std::make_shared<context>(backend_type::standard), {})
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
     }
@@ -64,6 +65,11 @@ namespace librealsense
                 profiles.push_back(p.get());
 
         return matcher_factory::create(_matcher, profiles);
+    }
+
+    software_option::software_option(const std::string& desc, option_range rng) : float_option(rng)
+    {
+        _desc.assign(desc);
     }
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
@@ -147,6 +153,20 @@ namespace librealsense
             return std::shared_ptr<stream_profile_interface>();
         }
     }
+
+    void software_sensor::set_default_profile(int stream_uid)
+    {
+        auto profile = find_profile_by_uid(stream_uid);
+        if ( ! profile )
+        {
+            std::stringstream ss;
+            ss << "Failed to find profile with matching UID=" << stream_uid;
+            throw rs2::error(ss.str());
+        }
+
+        profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
+    }
+
 
     bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
     {
@@ -337,6 +357,17 @@ namespace librealsense
             software_frame.deleter(software_frame.data);
         }, software_frame.data });
         _source.invoke_callback(frame);
+    }
+
+    void software_sensor::add_writable_option(rs2_option option, const std::string& desc, option_range rng)
+    {
+        auto opt = std::make_shared<software_option>(desc, rng);
+        register_option(option, opt);
+    }
+
+    void software_sensor::update_writable_option(rs2_option option, float val)
+    {
+        get_option(option).set(val);
     }
 
     void software_sensor::add_read_only_option(rs2_option option, float val)

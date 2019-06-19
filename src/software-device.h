@@ -14,7 +14,7 @@ namespace librealsense
     class software_device : public device
     {
     public:
-        software_device();
+        software_device(std::shared_ptr<context> ctx=nullptr);
 
         software_sensor& add_software_sensor(const std::string& name);
 
@@ -77,9 +77,22 @@ namespace librealsense
             return _blocks;
         }
         ~software_recommended_proccesing_blocks() override {}
-       
+
     private:
         processing_blocks _blocks;
+    };
+
+    class software_option : public float_option
+    {
+    public:
+        software_option(const std::string& desc, option_range rng);
+
+        const char* get_description() const override {
+            return _desc.c_str();
+        }
+
+    private:
+        std::string _desc;
     };
 
     class software_sensor : public sensor_base, public extendable_interface
@@ -90,6 +103,7 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream);
         std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream);
         std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream);
+        void set_default_profile(int stream_uid);
 
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
@@ -104,9 +118,13 @@ namespace librealsense
         void on_video_frame(rs2_software_video_frame frame);
         void on_motion_frame(rs2_software_motion_frame frame);
         void on_pose_frame(rs2_software_pose_frame frame);
+        void add_writable_option(rs2_option option, const std::string& desc, option_range rng);
+        void update_writable_option(rs2_option option, float val);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
+        int get_unique_id() const { return _unique_id; }
+
     private:
         friend class software_device;
         stream_profiles _profiles;

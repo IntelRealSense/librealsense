@@ -153,6 +153,15 @@ rs2_context* rs2_create_mock_context_versioned(int api_version, const char* file
 rs2_device* rs2_create_software_device(rs2_error** error);
 
 /**
+ * Create software device to enable use librealsense logic without getting data from backend
+ * but inject the data from outside
+ * \param[in] ctx pointer to the context to add this device to.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return   software device object, should be released by rs2_delete_device
+ */
+rs2_device* rs2_create_software_device_with_context(rs2_context *ctx, rs2_error** error);
+
+/**
  * Add sensor to the software device
  * \param[in] dev the software device
  * \param[in] sensor_name the name of the sensor
@@ -203,6 +212,24 @@ void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_val
 void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
 
 /**
+ * Register a camera info value for the software device
+ * \param[in] dev the software device
+ * \param[in] info identifier for the camera info to add.
+ * \param[in] val string value for this new camera info.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_device_register_info(rs2_device* dev, rs2_camera_info info, const char *val, rs2_error** error);
+
+/**
+ * Update an existing camera info value for the software device
+ * \param[in] dev the software device
+ * \param[in] info identifier for the camera info to add.
+ * \param[in] val string value for this new camera info.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, const char * val, rs2_error** error);
+
+/**
  * Add video stream to sensor
  * \param[in] sensor the software sensor
  * \param[in] video_stream all the stream components
@@ -225,6 +252,38 @@ rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error);
+
+/**
+* Set a particular stream as the default stream for this sensor.
+* \param[in] sensor the software sensor
+* \param[in] stream_uid UID of the existing stream profile that we want to
+*    tag as default.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_set_default_profile(rs2_sensor* sensor, int stream_uid, rs2_error** error);
+
+/**
+ * Add writable option to sensor
+ * \param[in] sensor the software sensor
+ * \param[in] option the wanted option
+ * \param[in] desc Description string for this option.
+ * \param[in] min minimum value for range of the new option
+ * \param[in] max maximum value for range of the new option
+ * \param[in] step step size between values for the range of the new option.
+ * \param[in] def default value for the new option.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_sensor_add_writable_option(rs2_sensor* sensor, rs2_option option, const char *desc, float min, float max, float step, float def, rs2_error** error);
+
+/**
+ * Update the writable option added to sensor
+ * \param[in] sensor the software sensor
+ * \param[in] option the wanted option
+ * \param[in] val the wanted value
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+
+void rs2_software_sensor_update_writable_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
 
 /**
  * Add read only option to sensor

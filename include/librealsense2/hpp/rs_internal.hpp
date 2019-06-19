@@ -122,6 +122,18 @@ namespace rs2
         }
 
         /**
+         * Set the default stream for this sensor
+         * \param[in] stream_uid unique identifier for the stream to
+         *    tag as default.
+         */
+        void set_default_profile(int stream_uid)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_set_default_profile(_sensor.get(), stream_uid, &e);
+            error::handle(e);
+        }
+
+        /**
         * Inject video frame into the sensor
         *
         * \param[in] frame   all the parameters that required to define video frame
@@ -169,6 +181,30 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+        * Add a read/writable option to the sensor
+        * \param[in] option option id
+        * \param[in] desc string description of this option.
+        * \param[in] rng range and default value for this option
+        */
+        void add_writable_option(rs2_option option, const std::string& desc, option_range rng)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_add_writable_option(_sensor.get(), option, desc.c_str(), rng.min, rng.max, rng.step, rng.def, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Update a read/writable option for this sensor
+        * \param[in] option option id
+        * \param[in] val desired value for the option.
+        */
+        void update_writable_option(rs2_option option, float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_update_writable_option(_sensor.get(), option, val, &e);
+            error::handle(e);
+        }
         /**
         * Register option that will be supported by the sensor
         *
@@ -222,9 +258,23 @@ namespace rs2
             return dev;
         }
 
+        std::shared_ptr<rs2_device> create_device_ptr(context& ctx)
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_device> dev(
+                rs2_create_software_device_with_context(ctx._context.get(), &e),
+                rs2_delete_device);
+            error::handle(e);
+            return dev;
+        }
+
     public:
         software_device()
             : device(create_device_ptr())
+        {}
+
+        software_device(context &ctx)
+            : device(create_device_ptr(ctx))
         {}
 
         /**
@@ -255,6 +305,32 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_context_add_software_device(ctx._context.get(), _dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Add a new camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+    * \param[in] val   string value to set to this camera info type
+        */
+        void register_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+        rs2_software_device_register_info(_dev.get(), info, val.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Update an existing camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+    * \param[in] val   string value to set to this camera info type
+        */
+        void update_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+        rs2_software_device_update_info(_dev.get(), info, val.c_str(), &e);
             error::handle(e);
         }
 
