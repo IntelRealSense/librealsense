@@ -147,6 +147,76 @@ namespace rs2
 
     };
 
+    template<class T>
+    class fw_update_progress_callback : public rs2_fw_update_progress_callback
+    {
+        T _callback;
+
+    public:
+        explicit fw_update_progress_callback(T callback) : _callback(callback) {}
+
+        void on_fw_update_progress(const float progress) override
+        {
+            _callback(progress);
+        }
+
+        void release() override { delete this; }
+    };
+
+    class updatable : public device
+    {
+    public:
+        updatable() : device() {}
+        updatable(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATABLE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        void enter_update_state() const
+        {
+            rs2_error* e = nullptr;
+            rs2_enter_update_state(_dev.get(), &e);
+            error::handle(e);
+        }
+    };
+
+    class update_device : public device
+    {
+    public:
+        update_device() : device() {}
+        update_device(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATE_DEVICE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        void update(const std::vector<uint8_t>& fw_image) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), NULL, &e);
+            error::handle(e);
+        }
+
+        template<class T>
+        void update(const std::vector<uint8_t>& fw_image, T callback)
+        {
+            rs2_error* e = nullptr;
+            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), new fw_update_progress_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+    };
+
     class debug_protocol : public device
     {
     public:

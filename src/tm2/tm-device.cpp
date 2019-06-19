@@ -1424,6 +1424,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, to_string() << std::hex << (info.serialNumber >> 16));
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info.version.fw.major << "." << info.version.fw.minor << "." << info.version.fw.patch << "." << info.version.fw.build);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, productIdStr);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "T200");
 
         std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);

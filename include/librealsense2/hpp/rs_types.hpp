@@ -64,6 +64,13 @@ struct rs2_playback_status_changed_callback
     virtual                                 ~rs2_playback_status_changed_callback() {}
 };
 
+struct rs2_fw_update_progress_callback
+{
+    virtual void                            on_fw_update_progress(const float fw_update_progress) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_fw_update_progress_callback() {}
+};
+
 namespace rs2
 {
     class error : public std::runtime_error

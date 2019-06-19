@@ -28,6 +28,7 @@
 #include "proc/spatial-filter.h"
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
+#include "../common/fw/firmware-version.h"
 
 namespace librealsense
 {
@@ -76,6 +77,18 @@ namespace librealsense
     {
         command cmd(ds::HWRST);
         _hw_monitor->send(cmd);
+    }
+
+    void ds5_device::enter_update_state() const
+    {
+        try {
+            command cmd(ds::DFU);
+            cmd.param1 = 1;
+            _hw_monitor->send(cmd);
+        }
+        catch (...) {
+            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        }
     }
 
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -395,7 +408,7 @@ namespace librealsense
         auto pid = group.uvc_devices.front().pid;
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";
         _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
-        _recommended_fw_version = firmware_version("5.10.3.0");
+        _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
         if (_fw_version >= firmware_version("5.10.4.0"))
             _device_capabilities = parse_device_capabilities();
         auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
@@ -585,38 +598,18 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
-        std::string minimal_version = _recommended_fw_version;
 
-        if (_fw_version < _recommended_fw_version)
-        {
-            std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
-            std::thread notification_thread = std::thread([weak, curr_version, minimal_version]()
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                while (true)
-                {
-                    auto ptr = weak.lock();
-                    if (ptr)
-                    {
-                        std::string msg = "Current firmware version: " + curr_version + "\nMinimal firmware version: " + minimal_version +"\n";
-                        notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED, 0, RS2_LOG_SEVERITY_INFO, msg);
-                        ptr->raise_notification(n);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    std::this_thread::sleep_for(std::chrono::hours(8));
-                }
-            });
-            notification_thread.detach();
-        }
+        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
+            _tf_keeper->start();
+        else
+            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     notification ds5_notification_decoder::decode(int value)

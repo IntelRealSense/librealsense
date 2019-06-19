@@ -15,6 +15,7 @@ namespace librealsense
 {
     namespace ds
     {
+        const uint16_t RS_RECOVERY_PID  = 0x0adb; // PSR 0x0adb, 0x0ab3, 0x0adc
         const uint16_t RS400_PID        = 0x0ad1; // PSR
         const uint16_t RS410_PID        = 0x0ad2; // ASR
         const uint16_t RS415_PID        = 0x0ad3; // ASRC
@@ -96,6 +97,7 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
+            { RS_RECOVERY_PID,  "Intel RealSense D4xx Recovery"},
             { RS400_PID,        "Intel RealSense D400"},
             { RS400_MM_PID,     "Intel RealSense D400 with Tracking Module"},
             { RS410_PID,        "Intel RealSense D410"},
@@ -137,6 +139,7 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            DFU             = 0x1E,     // Enter to FW update mode
             LOADINTCAL      = 0x1D,     //Get Internal sub calibration table
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write

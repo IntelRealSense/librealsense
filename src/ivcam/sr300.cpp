@@ -156,6 +156,18 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
+    void sr300_camera::enter_update_state() const
+    {
+        try {
+            command cmd(ivcam::GoToDFU);
+            cmd.param1 = 1;
+            _hw_monitor->send(cmd);
+        }
+        catch (...) {
+            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        }
+    }
+
     struct sr300_raw_calibration
     {
         uint16_t tableVersion;
@@ -212,9 +224,10 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,         depth.device_path);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,    depth.device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE,     "SR300");
 
         register_autorange_options();
 

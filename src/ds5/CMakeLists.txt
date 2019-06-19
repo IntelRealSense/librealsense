@@ -11,6 +11,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds5-color.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-active.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-factory.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-fw-update-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/rs_advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/advanced_mode.cpp"
@@ -23,6 +24,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds5-motion.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-rolling-shutter.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-color.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-fw-update-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/json_loader.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
 )
