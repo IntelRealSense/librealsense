@@ -82,9 +82,10 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            stream_profile stream(rs2_software_sensor_add_video_stream(_sensor.get(),video_stream, &e));
+            auto profile = rs2_software_sensor_add_video_stream(_sensor.get(),video_stream, &e);
             error::handle(e);
 
+            stream_profile stream(profile);
             return stream;
         }
 
@@ -97,9 +98,10 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            stream_profile stream(rs2_software_sensor_add_motion_stream(_sensor.get(), motion_stream, &e));
+            auto profile = rs2_software_sensor_add_motion_stream(_sensor.get(), motion_stream, &e);
             error::handle(e);
 
+            stream_profile stream(profile);
             return stream;
         }
 
@@ -112,9 +114,10 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            stream_profile stream(rs2_software_sensor_add_pose_stream(_sensor.get(), pose_stream, &e));
+            auto profile = rs2_software_sensor_add_pose_stream(_sensor.get(), pose_stream, &e);
             error::handle(e);
 
+            stream_profile stream(profile);
             return stream;
         }
 
@@ -239,7 +242,7 @@ namespace rs2
 
             return software_sensor(sensor);
         }
-        
+
         /**
         * Add software device to existing context
         * Any future queries on the context
