@@ -308,6 +308,32 @@ namespace rs2
         }
 
         /**
+        * Add a new camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+        * \param[in] val   string value to set to this camera info type
+        */
+        void register_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_register_info(_dev.get(), info, val.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Update an existing camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+        * \param[in] val   string value to set to this camera info type
+        */
+        void update_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_update_info(_dev.get(), info, val.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
         * Set the wanted matcher type that will be used by the syncer
         * \param[in] matcher matcher type
         */

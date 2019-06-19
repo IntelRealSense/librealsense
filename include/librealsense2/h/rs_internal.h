@@ -239,6 +239,24 @@ void rs2_software_device_set_destruction_callback_cpp(const rs2_device* dev, rs2
 void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, rs2_error** error);
 
 /**
+ * Register a camera info value for the software device
+ * \param[in] dev the software device
+ * \param[in] info identifier for the camera info to add.
+ * \param[in] val string value for this new camera info.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_device_register_info(rs2_device* dev, rs2_camera_info info, const char *val, rs2_error** error);
+
+/**
+ * Update an existing camera info value for the software device
+ * \param[in] dev the software device
+ * \param[in] info identifier for the camera info to add.
+ * \param[in] val string value for this new camera info.
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, const char * val, rs2_error** error);
+
+/**
  * Add video stream to sensor
  * \param[in] sensor the software sensor
  * \param[in] video_stream all the stream components

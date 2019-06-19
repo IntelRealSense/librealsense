@@ -81,7 +81,7 @@ namespace librealsense
             return _blocks;
         }
         ~software_recommended_proccesing_blocks() override {}
-       
+
     private:
         processing_blocks _blocks;
     };

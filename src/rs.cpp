@@ -2127,6 +2127,22 @@ void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers m, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, m)
 
+void rs2_software_device_register_info(rs2_device* dev, rs2_camera_info info, const char * val, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    df->register_info(info, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, info, val)
+
+void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, const char * val, rs2_error** error)BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto df = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    df->update_info(info, val);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, info, val)
+
 rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
