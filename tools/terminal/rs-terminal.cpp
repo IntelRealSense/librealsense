@@ -275,7 +275,10 @@ int main(int argc, char** argv)
             selected_rs_devices.push_back(rs_device_list[dev_id]);
             std::cout << "\nDevice ID " << dev_id << " has loaded.\n";
         }
-
+        else if (rs_device_list.size() == 1)
+        {
+            selected_rs_devices.push_back(rs_device_list[0]);
+        }
         else
         {
             std::cout << "\nEnter a command line option:" << std::endl;
@@ -359,7 +362,7 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        auto dev = rs_device_list[0];
+        auto dev = selected_rs_devices[0];
         while (hub.is_connected(dev))
         {
             try
@@ -381,16 +384,22 @@ int main(int argc, char** argv)
                 {
                     return EXIT_SUCCESS;
                 }
-                if (is_application_in_hex_mode)
-                {
-                    hex_mode(line, dev);
-                }
-                else
-                {
-                    xml_mode(line, cmd_xml, dev, format_type_to_lambda);
-                }
 
-                cout << endl;
+                for (auto&& dev : selected_rs_devices)
+                {
+                    if (!hub.is_connected(dev))
+                        continue;
+
+                    if (is_application_in_hex_mode)
+                    {
+                        hex_mode(line, dev);
+                    }
+                    else
+                    {
+                        xml_mode(line, cmd_xml, dev, format_type_to_lambda);
+                    }
+                    cout << endl;
+                }
             }
             catch (const rs2::error & e)
             {
