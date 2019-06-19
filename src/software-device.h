@@ -144,6 +144,8 @@ namespace librealsense
         lazy<stereo_extension> _stereo_extension;
 
         software_recommended_proccesing_blocks _pbs;
+
+        std::shared_ptr<stream_profile_interface> find_profile_by_uid(int uid);
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);
