@@ -16,14 +16,16 @@ set(MATLAB_H Factory.h MatlabParamParser.h rs2_type_traits.h types.h)
 set(MATLAB_M align.m camera_info.m colorizer.m config.m context.m
              decimation_filter.m depth_frame.m depth_sensor.m
              depth_stereo_sensor.m device.m device_hub.m disparity_frame.m
-             disparity_transform.m depth_example.m format.m frame.m frameset.m
-             frame_metadata_value.m frame_queue.m hole_filling_filter.m
+             disparity_transform.m filter.m format.m frame.m 
+             frame_metadata_value.m frame_queue.m frameset.m hole_filling_filter.m
              motion_frame.m motion_stream_profile.m option.m options.m pipeline.m
              pipeline_profile.m playback.m playback_status.m pointcloud.m points.m
-             pose_frame.m processing_block.m recorder.m roi_sensor.m
-             rosbag_example.m sensor.m spatial_filter.m stream.m stream_profile.m
-             syncer.m temporal_filter.m timestamp_domain.m video_frame.m video_stream_profile.m
+             pose_frame.m recorder.m roi_sensor.m save_single_frameset.m 
+             save_to_ply.m sensor.m spatial_filter.m stream.m stream_profile.m
+             syncer.m temporal_filter.m timestamp_domain.m video_frame.m
+             video_stream_profile.m
    )
+set(MATLAB_EXAMPLES depth_example.m pointcloud_example.m rosbag_example.m)
 
 matlab_add_mex(NAME librealsense_mex
                SRC ${MATLAB_CPP} ${MATLAB_H}
