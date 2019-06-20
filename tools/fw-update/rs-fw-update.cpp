@@ -18,7 +18,7 @@
 
 using namespace TCLAP;
 
-#define WAIT_FOR_DEVICE_TIMEOUT 5
+#define WAIT_FOR_DEVICE_TIMEOUT 10
 
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {

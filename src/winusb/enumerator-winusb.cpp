@@ -142,7 +142,7 @@ namespace librealsense
                 for (auto&& id : query_by_interface(guid.first))
                 {
                     auto i = get_info(id.c_str());
-                    if (i.unique_id == info.unique_id)
+                    if (i.vid == info.vid && i.pid == info.pid && i.unique_id == info.unique_id)
                         devices_path.push_back(id);
                 }
             }
