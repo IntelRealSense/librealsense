@@ -10,6 +10,7 @@ namespace librealsense
 {
     class software_sensor;
     class software_device_info;
+    class emulated_device_info;
 
     class software_device : public device
     {
@@ -23,6 +24,7 @@ namespace librealsense
         void set_matcher_type(rs2_matchers matcher);
         
         std::shared_ptr<software_device_info> get_info();
+        std::shared_ptr<emulated_device_info> get_emu_info();
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -161,4 +163,48 @@ namespace librealsense
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);
+
+    /**
+     * Emulated Device Info  - this device info is for replicating
+     *   devices that have more features than strict playback devices.
+     */
+    class emulated_device_info : public device_info
+    {
+        std::weak_ptr<software_device> _dev;
+    public:
+        explicit emulated_device_info(std::shared_ptr<software_device> dev)
+            : device_info(dev->get_context()), _dev(dev)
+        {
+        }
+
+        std::shared_ptr<device_interface> create_device(bool) const override
+        {
+            return _dev.lock();
+        }
+
+        platform::backend_device_group get_device_data() const override
+        {
+            auto d = _dev.lock();
+            std::vector<platform::emulated_device_info> devInfos;
+            auto sensorCnt = d->get_sensors_count();
+            for (auto i = 0; i < sensorCnt; i++) {
+                software_sensor& sensor = d->get_software_sensor(i);
+                auto name = sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME);
+                platform::emulated_device_info info{
+                    name, RS2_PRODUCT_LINE_EMUDEV,
+                    sensor.get_unique_id()
+                };
+
+                devInfos.push_back(info);
+            }
+
+            return platform::backend_device_group(devInfos);
+        }
+
+        std::shared_ptr<device_interface> create(std::shared_ptr<context>, bool) const override
+        {
+            return _dev.lock();
+        }
+    };
+
 }

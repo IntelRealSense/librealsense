@@ -43,6 +43,10 @@ namespace librealsense
         return _info;
     }
 
+    std::shared_ptr<emulated_device_info> software_device::get_emu_info() {
+        return std::make_shared<emulated_device_info>(std::dynamic_pointer_cast<software_device>(shared_from_this()));
+    }
+
     void software_device::set_matcher_type(rs2_matchers matcher)
     {
         _matcher = matcher;

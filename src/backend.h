@@ -282,6 +282,30 @@ namespace librealsense
             return (a.file_path == b.file_path);
         }
 
+        struct emulated_device_info
+        {
+            std::string name;
+            uint16_t vid;
+            int unique_id;
+            operator std::string() const
+            {
+                std::stringstream s;
+                s << "name- " << name <<
+                    "\nvid- " << std::hex << vid <<
+                    "\nunique_id- " << unique_id;
+                return s.str();
+            }
+
+        };
+
+        inline bool operator==(const emulated_device_info& a,
+            const emulated_device_info& b)
+        {
+            return (a.name == b.name) &&
+                (a.vid == b.vid) &&
+                (a.unique_id == b.unique_id);
+        }
+
         struct tm2_device_info
         {
             void* device_ptr;
@@ -549,18 +573,20 @@ namespace librealsense
                 :uvc_devices(uvc_devices), usb_devices(usb_devices) {}
 
             backend_device_group(const std::vector<playback_device_info>& playback_devices) : playback_devices(playback_devices) {}
+            backend_device_group(const std::vector<emulated_device_info>& emu_devices) : emulated_devices(emu_devices) {}
 
             std::vector<uvc_device_info> uvc_devices;
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
             std::vector<playback_device_info> playback_devices;
+            std::vector<emulated_device_info> emulated_devices;
             std::vector<tm2_device_info> tm2_devices;
 
             bool operator == (const backend_device_group& other)
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) &&
+                    !list_changed(playback_devices, other.playback_devices) &&                    !list_changed(emulated_devices, other.emulated_devices) &&
                     !list_changed(tm2_devices, other.tm2_devices);
             }
 
@@ -592,6 +618,13 @@ namespace librealsense
                 for (auto playback_device : playback_devices)
                 {
                     s += playback_device;
+                    s += "\n\n";
+                }
+
+                s += emulated_devices.size()>0 ? "emulated devices: \n" : "";
+                for (auto emu_device : emulated_devices)
+                {
+                    s += emu_device;
                     s += "\n\n";
                 }
 

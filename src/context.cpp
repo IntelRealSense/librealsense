@@ -314,11 +314,11 @@ namespace librealsense
 #ifdef WITH_TRACKING
         if (_tm2_context) _tm2_context->create_manager();
 #endif
-        return create_devices(devices, _playback_devices, mask);
+        return create_devices(devices, _playback_devices, _emulated_devices, mask);
     }
 
     std::vector<std::shared_ptr<device_info>> context::create_devices(platform::backend_device_group devices,
-                                                                      const std::map<std::string, std::weak_ptr<device_info>>& playback_devices,
+                                                                      const std::map<std::string, std::weak_ptr<device_info>>& playback_devices, const std::vector<std::shared_ptr<device_info>>& emulated_devices,
                                                                       int mask) const
     {
         std::vector<std::shared_ptr<device_info>> list;
@@ -365,6 +365,18 @@ namespace librealsense
                 list.push_back(dev);
         }
 
+        if ( mask & RS2_PRODUCT_LINE_EMUDEV)
+        {
+            for (auto& dev : emulated_devices)
+            {
+                if ( dev ) {
+                    list.push_back(dev);
+                } else {
+                    LOG_DEBUG("\nINVALID EMU DEVICE\n");
+                }
+            }
+        }
+
         return list;
     }
 
@@ -372,10 +384,14 @@ namespace librealsense
     void context::on_device_changed(platform::backend_device_group old,
                                     platform::backend_device_group curr,
                                     const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
-                                    const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices)
+                                    const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices,
+                                    const std::vector<std::shared_ptr<device_info>>& old_emu_devices,
+                                    const std::vector<std::shared_ptr<device_info>>& new_emu_devices
+
+                                    )
     {
-        auto old_list = create_devices(old, old_playback_devices, RS2_PRODUCT_LINE_ANY);
-        auto new_list = create_devices(curr, new_playback_devices, RS2_PRODUCT_LINE_ANY);
+        auto old_list = create_devices(old, old_playback_devices, old_emu_devices, RS2_PRODUCT_LINE_ANY);
+        auto new_list = create_devices(curr, new_playback_devices, new_emu_devices, RS2_PRODUCT_LINE_ANY);
 
         if (librealsense::list_changed<std::shared_ptr<device_info>>(old_list, new_list, [](std::shared_ptr<device_info> first, std::shared_ptr<device_info> second) {return *first == *second; }))
         {
@@ -545,6 +561,17 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dev;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
+    }
+
+    void context::add_emulated_device(std::shared_ptr<device_info> dev) {
+
+        auto sensors = dev->get_device_data();
+        // @todo - double check that the device doesn't already exist
+        //    based on sensor signature?
+        auto prev_emu_devs = _emulated_devices;
+        _emulated_devices.push_back(dev);
+        on_device_changed({}, {}, {}, {}, prev_emu_devs, _emulated_devices);
+
     }
 
     void context::remove_device(const std::string& file)

@@ -63,6 +63,7 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
  */
 void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_error** error);
 
+    void rs2_context_add_emulated_device(rs2_context* ctx, rs2_device* dev, rs2_error** error);
 /**
  * Removes a playback device from the context, if exists
  * \param[in]  ctx       The context from which the device should be removed
@@ -93,6 +94,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 #define RS2_PRODUCT_LINE_NON_INTEL  0x01
 #define RS2_PRODUCT_LINE_D400       0x02
 #define RS2_PRODUCT_LINE_SR300      0x04
+#define RS2_PRODUCT_LINE_EMUDEV     0x08
 
 /**
 * create a static snapshot of all connected devices at the time of the call

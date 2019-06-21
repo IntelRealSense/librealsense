@@ -31,6 +31,14 @@ namespace librealsense
             // TODO: enable T265 filter by VID:PID via tm2_device_info
             if ((!filtered) && data.tm2_devices.size())
                 result.push_back(dev);
+
+            for (const auto& emu : data.emulated_devices)
+            {
+                if ( emu.vid == vid || vid == 0 )
+                {
+                    result.push_back(dev);
+                }
+            }
         }
         return result;
     }

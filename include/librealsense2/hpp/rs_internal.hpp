@@ -309,6 +309,21 @@ namespace rs2
         }
 
         /**
+        * Add emulated device to existing context
+        * Any future queries on the context
+        * Will return this device
+        * This operation cannot be undone (except for destroying the context)
+        *
+        * \param[in] ctx   context to add the device to
+        */
+        void add_emulated_to(context& ctx)
+        {
+            rs2_error* e = nullptr;
+            rs2_context_add_emulated_device(ctx._context.get(), _dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
         * Add a new camera info value, like serial number
         *
         * \param[in] info  Identifier of the camera info type
