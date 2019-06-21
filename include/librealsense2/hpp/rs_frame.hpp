@@ -121,7 +121,12 @@ namespace rs2
         * Checks if stream profile is marked/assigned as default, meaning that the profile will be selected when the user requests stream configuration using wildcards (RS2_DEPTH, -1,-1,...
         * \return bool - true or false.
         */
-        bool is_default() const { return _default; }
+        bool is_default() const {
+            rs2_error* e = nullptr;
+            auto ret = !!(rs2_is_stream_profile_default(_profile, &e));
+            error::handle(e);
+            return ret;
+        }
 
         /**
         * Checks if the profile is valid
@@ -172,9 +177,6 @@ namespace rs2
             rs2_get_stream_profile_data(_profile, &_type, &_format, &_index, &_uid, &_framerate, &e);
             error::handle(e);
 
-            _default = !!(rs2_is_stream_profile_default(_profile, &e));
-            error::handle(e);
-
         }
         operator const rs2_stream_profile*() { return _profile; }
         explicit operator std::shared_ptr<rs2_stream_profile>() { return _clone; }
@@ -194,7 +196,6 @@ namespace rs2
         rs2_format _format = RS2_FORMAT_ANY;
         rs2_stream _type = RS2_STREAM_ANY;
 
-        bool _default = false;
     };
 
     class video_stream_profile : public stream_profile
