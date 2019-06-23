@@ -11,7 +11,9 @@ public enum CameraInfo {
     PRODUCT_ID(7),
     CAMERA_LOCKED(8),
     USB_TYPE_DESCRIPTOR(9),
-    PRODUCT_LINE(10);
+    PRODUCT_LINE(10),
+    ASIC_SERIAL_NUMBER(11);
+
 
     private final int mValue;
 

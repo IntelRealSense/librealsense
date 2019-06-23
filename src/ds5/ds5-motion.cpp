@@ -255,7 +255,9 @@ namespace librealsense
         std::string motion_module_fw_version = "";
         if (_fw_version >= firmware_version("5.5.8.0"))
         {
-            motion_module_fw_version = _hw_monitor->get_firmware_version_string(GVD, motion_module_fw_version_offset);
+            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+            motion_module_fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
         }
 
         initialize_fisheye_sensor(ctx,group);

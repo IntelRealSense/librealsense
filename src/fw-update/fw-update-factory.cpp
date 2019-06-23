@@ -15,7 +15,7 @@ namespace librealsense
     {
         if (SR300_RECOVERY == pid && platform::RS2_USB_CLASS_VENDOR_SPECIFIC == cls)
             return RS2_PRODUCT_LINE_SR300;
-        if(ds::RS_RECOVERY_PID == pid)
+        if(ds::RS_RECOVERY_PID == pid || ds::RS_USB2_RECOVERY_PID == pid)
             return RS2_PRODUCT_LINE_D400;
         return 0;
     }
@@ -44,7 +44,7 @@ namespace librealsense
                 auto usb = platform::usb_enumerator::create_usb_device(info);
                 if (!usb)
                     continue;
-                if (ds::RS_RECOVERY_PID == info.pid)
+                if (ds::RS_RECOVERY_PID == info.pid || ds::RS_USB2_RECOVERY_PID == info.pid)
                     return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);
                 if (SR300_RECOVERY == info.pid)
                     return std::make_shared<sr300_update_device>(ctx, register_device_notifications, usb);

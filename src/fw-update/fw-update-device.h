@@ -142,12 +142,12 @@ namespace librealsense
         rs2_dfu_state get_dfu_state(std::shared_ptr<platform::usb_messenger> messenger) const;
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
-        virtual const std::string& get_serial_number() const override { return _serial_number; }
+        virtual const std::string& get_asic_serial_number() const override { return _asic_serial_number; }
 
         virtual bool wait_for_device(int mask, uint32_t timeout) const override;
 
         const std::shared_ptr<context> _context;
         const platform::rs_usb_device _usb_device;
-        std::string _serial_number;
+        std::string _asic_serial_number;
     };
 }

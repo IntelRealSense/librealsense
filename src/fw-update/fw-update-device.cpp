@@ -84,7 +84,7 @@ namespace librealsense
         for (auto i = 0; i < sizeof(paylaod.serial_number.serial); i++)
             formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(paylaod.serial_number.serial[i]);
 
-        _serial_number = formattedBuffer.str();
+        _asic_serial_number = formattedBuffer.str();
     }
 
     update_device::~update_device()
@@ -232,7 +232,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_SERIAL_NUMBER: return get_serial_number();
+        case RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER: return get_asic_serial_number();
         case RS2_CAMERA_INFO_NAME: return get_name();
         case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
         default:
@@ -244,7 +244,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_SERIAL_NUMBER:
+        case RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER:
         case RS2_CAMERA_INFO_NAME:
         case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
         default: return false;

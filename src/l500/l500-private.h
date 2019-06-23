@@ -43,7 +43,8 @@ namespace librealsense
         enum gvd_fields
         {
             fw_version_offset = 12,
-            module_serial_offset = 56,
+            module_serial_offset = 56, 
+            module_asic_serial_offset = 72,
             module_serial_size = 8
         };
 

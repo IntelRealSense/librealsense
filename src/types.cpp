@@ -347,6 +347,7 @@ namespace librealsense
             CASE(CAMERA_LOCKED)
             CASE(PRODUCT_LINE)
             CASE(USB_TYPE_DESCRIPTOR)
+            CASE(ASIC_SERIAL_NUMBER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

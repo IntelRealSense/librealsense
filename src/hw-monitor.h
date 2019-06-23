@@ -311,8 +311,8 @@ namespace librealsense
         std::vector<uint8_t> send(std::vector<uint8_t> data) const;
         std::vector<uint8_t> send(command cmd) const;
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
-        std::string get_firmware_version_string(int gvd_cmd, uint32_t offset) const;
-        std::string get_module_serial_string(uint8_t gvd_cmd, uint32_t offset, int size = 6) const;
+        static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
+        static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
     };
 }

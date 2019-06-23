@@ -98,10 +98,6 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
 #define RS2_PRODUCT_LINE_DEPTH      (RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400)
 #define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
 
-#define RS2_PRODUCT_LINE_RECOVERY   (RS2_PRODUCT_LINE_D400_RECOVERY | RS2_PRODUCT_LINE_SR300_RECOVERY)
-#define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
-
-
 /**
 * create a static snapshot of all connected devices at the time of the call
 * \param context     Object representing librealsense session
