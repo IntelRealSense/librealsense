@@ -35,7 +35,6 @@
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 
-#include <iostream>
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
 #pragma GCC diagnostic pop
@@ -157,7 +156,6 @@ namespace rsimpl
                 if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) throw std::runtime_error(dev_name + " is no video capture device");
                 if(!(cap.capabilities & V4L2_CAP_STREAMING)) throw std::runtime_error(dev_name + " does not support streaming I/O");
                 if((cap.device_caps & V4L2_CAP_META_CAPTURE)){
-                    std::cout << dev_name << " is a metadata stream" << std::endl;
                     is_metastream=true;
                 }
 
