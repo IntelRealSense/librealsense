@@ -219,7 +219,7 @@ void refresh_devices(std::mutex& m,
     }
 }
 
-int main(int argv, const char** argc) try
+int main(int argc, const char** argv) try
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
@@ -252,11 +252,11 @@ int main(int argv, const char** argc) try
         }
     };
 
-    for (int i = 1; i < argv; i++)
+    for (int i = 1; i < argc; i++)
     {
         try
         {
-            const char* arg = argc[i];
+            const char* arg = argv[i];
             std::ifstream file(arg);
             if (!file.good())
                 continue;
