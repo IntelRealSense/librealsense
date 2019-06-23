@@ -318,9 +318,9 @@ namespace librealsense
                                                                                  const option_range& opt_range,
                                                                                  const std::map<float, std::string>& description_per_value)
         : option_base(opt_range),
+          _description_per_value(description_per_value),
           _auto_exposure_state(auto_exposure_state),
-          _auto_exposure(auto_exposure),
-          _description_per_value(description_per_value)
+          _auto_exposure(auto_exposure)
     {}
 
     void auto_exposure_antiflicker_rate_option::set(float value)

@@ -105,7 +105,7 @@ namespace librealsense
                 extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
             }
             return extr;
-        };
+        }
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
         {
@@ -138,7 +138,7 @@ namespace librealsense
     public:
         mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor);
         mm_calib_handler(const mm_calib_handler&);
-        ~mm_calib_handler() {};
+        ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);
         rs2_extrinsics get_extrinsic(rs2_stream);       // The extrinsic defined as Depth->Stream rigid-body transfom.

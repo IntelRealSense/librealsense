@@ -899,7 +899,7 @@ namespace librealsense
                         }
                         else
                         {
-                            LOG_WARNING("FD_ISSET returned false - video node is not signalled (md only)");
+                            LOG_INFO("FD_ISSET returned false - video node is not signalled (md only)");
                         }
                     }
                 }
