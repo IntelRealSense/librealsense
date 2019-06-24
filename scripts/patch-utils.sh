@@ -78,7 +78,7 @@ function choose_kernel_branch {
 		"4.18")								 	# kernel 4.18 for Ubuntu 18/Bionic Beaver
 			echo hwe
 			;;
-		"5.0")								 	# kernel 5.0 for Ubuntu 18/Bionic Beaver
+		"5.0")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
 			echo hwe-edge
 			;;
 		*)
