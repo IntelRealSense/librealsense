@@ -38,12 +38,12 @@ namespace librealsense
     device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid,
                            bool register_device_notifications)
         : _ctx(ctx), _vid(vid),
-          _register_device_notifications(register_device_notifications),
-         _device_changes_callback_id(0)
+          _device_changes_callback_id(0),
+          _register_device_notifications(register_device_notifications)
     {
         _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
 
-        auto cb = new hub_devices_changed_callback([&](rs2::event_information& info)
+        auto cb = new hub_devices_changed_callback([&,mask](rs2::event_information&)
                    {
                         std::unique_lock<std::mutex> lock(_mutex);
 
