@@ -92,6 +92,55 @@ namespace librealsense
         }
     }
 
+    std::vector<uint8_t> ds5_device::backup_flash(update_progress_callback_ptr callback)
+    {
+        int flash_size = 1024 * 2048;
+        int max_bulk_size = 1016;
+        int max_iterations = int(flash_size / max_bulk_size + 1);
+
+        std::vector<uint8_t> flash;
+        flash.reserve(flash_size);
+
+        get_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
+        {
+            for (int i = 0; i < max_iterations; i++)
+            {
+                int offset = max_bulk_size * i;
+                int size = max_bulk_size;
+                if (i == max_iterations - 1)
+                {
+                    size = flash_size - offset;
+                }
+
+                bool appended = false;
+
+                const int retries = 3;
+                for (int j = 0; j < retries && !appended; j++)
+                {
+                    try
+                    {
+                        command cmd(ds::FRB);
+                        cmd.param1 = offset;
+                        cmd.param2 = size;
+                        auto res = _hw_monitor->send(cmd);
+
+                        flash.insert(flash.end(), res.begin(), res.end());
+                        appended = true;
+                    }
+                    catch (...)
+                    {
+                        if (i < retries - 1) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        else throw;
+                    }
+                }
+
+                if (callback) callback->on_update_progress((float)i / max_iterations);
+            }
+        });
+
+        return flash;
+    }
+
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:

@@ -147,7 +147,7 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
 /**
-* Update an updatable device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
+* Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
 * This call is executed on the caller's thread and it supports progress notifications via the optional callback.
 * \param[in]  device        Device to update
 * \param[in]  fw_image      Firmware image buffer
@@ -155,10 +155,10 @@ void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error**
 * \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error);
+void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error);
 
 /**
-* Update an updatable device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
+* Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
 * This call is executed on the caller's thread and it supports progress notifications via the optional callback.
 * \param[in]  device        Device to update
 * \param[in]  fw_image      Firmware image buffer
@@ -167,7 +167,26 @@ void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image
 * \param[in]  client_data   Optional client data for the callback
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+
+/**
+* Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+* loaded back to the device, but it does contain all calibration and device information.
+* \param[in]  device        Device to update
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device, rs2_update_progress_callback* callback, rs2_error** error);
+
+/**
+* Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+* loaded back to the device, but it does contain all calibration and device information.
+* \param[in]  device        Device to update
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data   Optional client data for the callback
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 /**
 * Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.

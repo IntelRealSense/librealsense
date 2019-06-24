@@ -204,6 +204,12 @@ namespace librealsense
             int timeout_ms = 5000,
             bool require_response = true)
         {
+            std::shared_ptr<int> token(_heap.allocate(), [&](int* ptr)
+            {
+                if (ptr) _heap.deallocate(ptr);
+            });
+            if (!token.get()) throw;
+
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
             return _uvc_sensor_base.invoke_powered([&]
                 (platform::uvc_device& dev)
@@ -213,10 +219,15 @@ namespace librealsense
                 });
         }
 
+        ~locked_transfer()
+        {
+            _heap.wait_until_empty();
+        }
     private:
         std::shared_ptr<platform::command_transfer> _command_transfer;
         uvc_sensor& _uvc_sensor_base;
         std::recursive_mutex _local_mtx;
+        small_heap<int, 256> _heap;
     };
 
     struct command

@@ -51,6 +51,7 @@ namespace librealsense
         virtual double get_device_time_ms() override;
 
         void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
 
     protected:
 

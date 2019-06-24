@@ -185,6 +185,47 @@ namespace rs2
             rs2_enter_update_state(_dev.get(), &e);
             error::handle(e);
         }
+
+        std::vector<uint8_t> create_flash_backup() const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        template<class T>
+        std::vector<uint8_t> create_flash_backup(T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
     };
 
     class update_device : public device
@@ -207,17 +248,17 @@ namespace rs2
         void update(const std::vector<uint8_t>& fw_image) const
         {
             rs2_error* e = nullptr;
-            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), NULL, &e);
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), NULL, &e);
             error::handle(e);
         }
 
         // Update an updatable device to the provided firmware.
         // This call is executed on the caller's thread and it supports progress notifications via the optional callback.
         template<class T>
-        void update(const std::vector<uint8_t>& fw_image, T callback)
+        void update(const std::vector<uint8_t>& fw_image, T callback) const
         {
             rs2_error* e = nullptr;
-            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
     };

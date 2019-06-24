@@ -2338,7 +2338,7 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)
 
-void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
@@ -2355,7 +2355,7 @@ void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
-void rs2_update(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
@@ -2375,6 +2375,48 @@ void rs2_update(const rs2_device* device, const void* fw_image, int fw_image_siz
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
+
+const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    std::vector<uint8_t> res;
+
+    if (callback == NULL)
+        res = fwud->backup_flash(nullptr);
+    else
+        res = fwud->backup_flash({ callback, [](rs2_update_progress_callback* p) { p->release(); } });
+
+    return new rs2_raw_data_buffer{ res };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    std::vector<uint8_t> res;
+
+    if (callback == NULL)
+        res = fwud->backup_flash(nullptr);
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data),
+            [](update_progress_callback* p) { delete p; });
+        res = fwud->backup_flash(std::move(cb));
+    }
+
+    return new rs2_raw_data_buffer{ res };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {

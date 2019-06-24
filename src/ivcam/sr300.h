@@ -522,7 +522,10 @@ namespace librealsense
         }
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
+
         void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
+
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     private:
