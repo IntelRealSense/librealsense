@@ -6,4 +6,6 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/PlaybackDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/RecordDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/SoftwareDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/UpdatableDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/UpdateDevice.cs"
 )

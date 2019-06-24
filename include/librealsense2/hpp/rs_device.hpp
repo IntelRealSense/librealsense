@@ -203,7 +203,7 @@ namespace rs2
         }
 
         // Update an updatable device to the provided firmware.
-        // This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+        // This call is executed on the caller's thread.
         void update(const std::vector<uint8_t>& fw_image) const
         {
             rs2_error* e = nullptr;
@@ -212,7 +212,7 @@ namespace rs2
         }
 
         // Update an updatable device to the provided firmware.
-        // This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+        // This call is executed on the caller's thread and it supports progress notifications via the callback.
         template<class T>
         void update(const std::vector<uint8_t>& fw_image, T callback)
         {
