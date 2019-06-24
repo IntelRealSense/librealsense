@@ -152,12 +152,18 @@ int main(int argc, char** argv) try
         auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
         for (auto&& d : devs)
         {
-            if (d.is<rs2::update_device>())
+            if (!d.is<rs2::update_device>())
+                continue;
+            try
             {
                 std::cout << std::endl << "recovering device: " << std::endl;
                 print_device_info(d);
                 update(d, fw_image);
                 recovery_executed = true;
+            }
+            catch (...)
+            {
+                std::cout << std::endl << "failed to recover device" << std::endl;
             }
         }
         if (recovery_executed)
@@ -168,7 +174,7 @@ int main(int argc, char** argv) try
         return EXIT_FAILURE;
     }
 
-    // Updaet device
+    // Update device
     ctx.set_devices_changed_callback([&](rs2::event_information& info)
     {
         if (info.get_new_devices().size() == 0)

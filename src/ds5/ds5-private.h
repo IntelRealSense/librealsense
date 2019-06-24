@@ -141,8 +141,8 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
             DFU             = 0x1E,     // Enter to FW update mode
-            LOADINTCAL      = 0x1D,     //Get Internal sub calibration table
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
             SET_ADV         = 0x2B,     // set advanced mode control

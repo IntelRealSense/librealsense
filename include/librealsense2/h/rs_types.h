@@ -223,7 +223,7 @@ typedef struct rs2_source rs2_source;
 typedef struct rs2_processing_block rs2_processing_block;
 typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
 typedef struct rs2_playback_status_changed_callback rs2_playback_status_changed_callback;
-typedef struct rs2_fw_update_progress_callback rs2_fw_update_progress_callback;
+typedef struct rs2_update_progress_callback rs2_update_progress_callback;
 typedef struct rs2_context rs2_context;
 typedef struct rs2_device_hub rs2_device_hub;
 typedef struct rs2_sensor_list rs2_sensor_list;
@@ -237,7 +237,7 @@ typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);
 typedef void (*rs2_frame_processor_callback_ptr)(rs2_frame*, rs2_source*, void*);
-typedef void(*rs2_fw_update_progress_callback_ptr)(const float, void*);
+typedef void(*rs2_update_progress_callback_ptr)(const float, void*);
 
 typedef double      rs2_time_t;     /**< Timestamp format. units are milliseconds */
 typedef long long   rs2_metadata_type; /**< Metadata attribute type is defined as 64 bit signed integer*/

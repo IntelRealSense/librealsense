@@ -148,14 +148,14 @@ namespace rs2
     };
 
     template<class T>
-    class fw_update_progress_callback : public rs2_fw_update_progress_callback
+    class update_progress_callback : public rs2_update_progress_callback
     {
         T _callback;
 
     public:
-        explicit fw_update_progress_callback(T callback) : _callback(callback) {}
+        explicit update_progress_callback(T callback) : _callback(callback) {}
 
-        void on_fw_update_progress(const float progress) override
+        void on_update_progress(const float progress) override
         {
             _callback(progress);
         }
@@ -178,6 +178,7 @@ namespace rs2
             error::handle(e);
         }
 
+        // Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.
         void enter_update_state() const
         {
             rs2_error* e = nullptr;
@@ -201,6 +202,8 @@ namespace rs2
             error::handle(e);
         }
 
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread and it supports progress notifications via the optional callback.
         void update(const std::vector<uint8_t>& fw_image) const
         {
             rs2_error* e = nullptr;
@@ -208,11 +211,13 @@ namespace rs2
             error::handle(e);
         }
 
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread and it supports progress notifications via the optional callback.
         template<class T>
         void update(const std::vector<uint8_t>& fw_image, T callback)
         {
             rs2_error* e = nullptr;
-            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), new fw_update_progress_callback<T>(std::move(callback)), &e);
+            rs2_update_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
     };

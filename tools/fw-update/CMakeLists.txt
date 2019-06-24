@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(rs-fw-update)
 
-if (IMPORT_UVC_FW)
+if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
 endif()
 

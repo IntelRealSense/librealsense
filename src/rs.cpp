@@ -2338,39 +2338,43 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_velocity)
 
-void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_fw_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
+void rs2_update_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
+
+    if(fw_image_size <= 0)
+        throw std::runtime_error("invlid firmware image size provided to rs2_update_cpp");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
     if (callback == NULL)
-    {
         fwu->update(fw_image, fw_image_size, nullptr);
-        return;
-    }
-    fwu->update(fw_image, fw_image_size, { callback, [](rs2_fw_update_progress_callback* p) { p->release(); } });
+    else
+        fwu->update(fw_image, fw_image_size, { callback, [](rs2_update_progress_callback* p) { p->release(); } });
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
-void rs2_update(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_fw_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+void rs2_update(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
 
+    if (fw_image_size <= 0)
+        throw std::runtime_error("invlid firmware image size provided to rs2_update");
+
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
     if(callback == NULL)
-    {
         fwu->update(fw_image, fw_image_size, nullptr);
-        return;
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data),
+            [](update_progress_callback* p) { delete p; });
+        fwu->update(fw_image, fw_image_size, std::move(cb));
     }
-    librealsense::fw_update_progress_callback_ptr cb(new librealsense::fw_update_progress_callback(callback, client_data),
-        [](fw_update_progress_callback* p) { delete p; });
-    fwu->update(fw_image, fw_image_size, std::move(cb));
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, device)
+HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
