@@ -272,7 +272,14 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::updatable> updatable(m, "updatable");
     updatable.def(py::init<rs2::device>())
-        .def("enter_update_state", &rs2::updatable::enter_update_state);
+        .def("enter_update_state", &rs2::updatable::enter_update_state)
+        .def("create_flash_backup", (std::vector<uint8_t>(rs2::updatable::*)() const) &rs2::updatable::create_flash_backup,
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.")
+        .def("create_flash_backup", [](rs2::updatable& self, std::function<void(float)> f) { return self.create_flash_backup(f); },
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.",
+            "callback"_a);
 
     py::class_<rs2::update_device> update_device(m, "update_device");
     update_device.def(py::init<rs2::device>())

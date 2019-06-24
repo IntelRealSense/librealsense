@@ -4,12 +4,16 @@
 namespace Intel.RealSense
 {
     using System;
+    using System.Runtime.InteropServices;
 
     public class UpdatableDevice : Device
     {
+        private readonly rs2_update_progress_callback onFlashBackupProgressCallback;
+
         internal UpdatableDevice(IntPtr dev)
             : base(dev)
         {
+            onFlashBackupProgressCallback = new rs2_update_progress_callback(OnFlashBackupProgressInternal);
         }
 
         /// <summary>
@@ -36,6 +40,25 @@ namespace Intel.RealSense
         {
             object error;
             NativeMethods.rs2_enter_update_state(Handle, out error);
+        }
+
+        public byte[] CreateFlashBackup()
+        {
+            object error;
+            var rawDataPtr = NativeMethods.rs2_create_flash_backup(Handle, onFlashBackupProgressCallback, IntPtr.Zero, out error);
+            var size = NativeMethods.rs2_get_raw_data_size(rawDataPtr, out error);
+            var flashBackupPtr = NativeMethods.rs2_get_raw_data(rawDataPtr, out error);
+            byte[] rv = new byte[size];
+            Marshal.Copy(flashBackupPtr, rv, 0, size);
+            return rv;
+        }
+
+        public delegate void OnFlashBackupProgressDelegate(float progress);
+        public event OnFlashBackupProgressDelegate OnFlashBackupProgress;
+
+        private void OnFlashBackupProgressInternal(float progress, IntPtr userData)
+        {
+            OnFlashBackupProgress?.Invoke(progress);
         }
     }
 }

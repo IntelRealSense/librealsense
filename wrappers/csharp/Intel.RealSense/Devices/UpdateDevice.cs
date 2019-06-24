@@ -42,7 +42,7 @@ namespace Intel.RealSense
             IntPtr nativeFwImage = Marshal.AllocHGlobal(fwImage.Length);
             Marshal.Copy(fwImage, 0, nativeFwImage, fwImage.Length);
             object error;
-            NativeMethods.rs2_update(Handle, nativeFwImage, fwImage.Length, onUpdateProgressCallback, IntPtr.Zero, out error);
+            NativeMethods.rs2_update_firmware(Handle, nativeFwImage, fwImage.Length, onUpdateProgressCallback, IntPtr.Zero, out error);
             Marshal.FreeHGlobal(nativeFwImage);
         }
 
