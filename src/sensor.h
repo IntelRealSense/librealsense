@@ -20,7 +20,15 @@
 #include <functional>
 #include <core/debug.h>
 
-#define rs_fourcc(a, b, c, d) (((unsigned int)(a) << 24) | ((unsigned int)(b) << 16) | ((unsigned int)(c) << 8) | ((unsigned int)(d) << 0))
+template<typename T>
+uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
+{
+    static_assert((std::is_integral<T>::value), "rs_fourcc supports integral built-in types only");
+    return ((static_cast<uint32_t>(a) << 24) |
+            (static_cast<uint32_t>(b) << 16) |
+            (static_cast<uint32_t>(c) << 8) |
+            (static_cast<uint32_t>(d) << 0));
+}
 
 namespace librealsense
 {
@@ -37,6 +45,7 @@ namespace librealsense
         explicit sensor_base(std::string name,
                              device* device, 
                              recommended_proccesing_blocks_interface* owner);
+        virtual ~sensor_base() override { _source.flush(); }
 
         virtual stream_profiles init_stream_profiles() = 0;
 
@@ -55,8 +64,6 @@ namespace librealsense
         {
             return _is_streaming;
         }
-
-        virtual ~sensor_base() { _source.flush(); }
 
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
 
@@ -154,7 +161,7 @@ namespace librealsense
                             std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
                             device* dev);
 
-        ~hid_sensor();
+        ~hid_sensor() override;
 
         void open(const stream_profiles& requests) override;
 
@@ -202,7 +209,7 @@ namespace librealsense
         explicit uvc_sensor(std::string name, std::shared_ptr<platform::uvc_device> uvc_device,
                             std::unique_ptr<frame_timestamp_reader> timestamp_reader, device* dev);
 
-        ~uvc_sensor();
+        virtual ~uvc_sensor() override;
 
         void open(const stream_profiles& requests) override;
 

@@ -612,7 +612,11 @@ namespace librealsense
 
         for (auto& profile : _internal_config)
         {
-            _device->close(profile);
+            try // Handle disconnect event
+            {
+                _device->close(profile);
+            }
+            catch (...) {}
         }
         reset_streaming();
         if (Is<librealsense::global_time_interface>(_owner))

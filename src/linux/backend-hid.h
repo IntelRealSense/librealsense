@@ -118,8 +118,8 @@ namespace librealsense
 
             void signal_stop();
 
-            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             int _fd;
+            int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
             std::map<std::string, std::string> _reports;
             std::string _custom_device_path;
             std::string _custom_sensor_name;
