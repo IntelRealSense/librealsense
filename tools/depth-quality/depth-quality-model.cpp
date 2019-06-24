@@ -4,6 +4,7 @@
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
+#include "viewer.h"
 #include "os.h"
 
 namespace rs2
@@ -437,10 +438,6 @@ namespace rs2
 
         void tool_model::render(ux_window& win)
         {
-            if (!win.is_ui_aligned())
-            {
-                _viewer_model.popup_if_ui_not_aligned(win.get_font());
-            }
             rect viewer_rect = { _viewer_model.panel_width,
                 _viewer_model.panel_y, win.width() -
                 _viewer_model.panel_width,
@@ -452,7 +449,8 @@ namespace rs2
                 _first_frame = false;
             }
 
-            _viewer_model.show_top_bar(win, viewer_rect, std::vector<device_model>{});
+            device_models_list list;
+            _viewer_model.show_top_bar(win, viewer_rect, list);
             _viewer_model.roi_rect = _metrics_model.get_plane();
 
             bool distance_guide = false;
@@ -1181,15 +1179,15 @@ namespace rs2
                     //Capture raw frame
                     auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
                     if (!save_frame_raw_data(filename, original_frame))
-                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
-                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
 
                     // And the frame's attributes
                     filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
                     if (!frame_metadata_to_csv(filename, original_frame))
-                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
-                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                 }
             }
