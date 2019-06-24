@@ -87,3 +87,5 @@ if (IMPORT_DEPTH_CAM_FW)
         set(IMPORT_DEPTH_CAM_FW OFF)
     endif()
 endif()
+
+include(CMake/embedd_udev_rules.cmake)
