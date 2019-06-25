@@ -69,6 +69,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         include_directories(rs-depth-quality ../../common  ../../third-party
                                              ../../third-party/imgui
                                              ../../third-party/glad
+                                             ../../third-party/tinyfiledialogs
                                              ../../third-party/tclap/include)
     endif()
 
