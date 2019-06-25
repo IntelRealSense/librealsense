@@ -88,11 +88,15 @@ void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error);
 */
 rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
 
-#define RS2_PRODUCT_LINE_ANY        0xff
-#define RS2_PRODUCT_LINE_ANY_INTEL  0xfe
-#define RS2_PRODUCT_LINE_NON_INTEL  0x01
-#define RS2_PRODUCT_LINE_D400       0x02
-#define RS2_PRODUCT_LINE_SR300      0x04
+#define RS2_PRODUCT_LINE_ANY            0xff
+#define RS2_PRODUCT_LINE_ANY_INTEL      0xfe
+#define RS2_PRODUCT_LINE_NON_INTEL      0x01
+#define RS2_PRODUCT_LINE_D400           0x02
+#define RS2_PRODUCT_LINE_SR300          0x04
+#define RS2_PRODUCT_LINE_L500           0x08
+#define RS2_PRODUCT_LINE_T200           0x10
+#define RS2_PRODUCT_LINE_DEPTH      (RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400)
+#define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
 
 /**
 * create a static snapshot of all connected devices at the time of the call

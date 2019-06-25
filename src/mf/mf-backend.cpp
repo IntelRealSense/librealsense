@@ -160,7 +160,7 @@ namespace librealsense
 
                 bool _stopped;
                 HWND hWnd;
-                HDEVNOTIFY hdevnotifyHW, hdevnotifyUVC, hdevnotify_sensor;
+                HDEVNOTIFY hdevnotifyHW, hdevnotifyUVC, hdevnotify_sensor, hdevnotifyUSB;
             } _data;
 
             void run()
@@ -338,6 +338,23 @@ namespace librealsense
                 {
                     UnregisterDeviceNotification(data->hdevnotify_sensor);
                     LOG_WARNING("Register UVC events Failed!\n");
+                    return FALSE;
+                }
+
+                //===========================register FW Update device events==============================
+                const GUID usbClassGuid = { 0xa5dcbf10, 0x6530, 0x11d2, 0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed };
+                DEV_BROADCAST_DEVICEINTERFACE usvDevBroadcastDeviceInterface;
+                usvDevBroadcastDeviceInterface.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+                usvDevBroadcastDeviceInterface.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+                usvDevBroadcastDeviceInterface.dbcc_classguid = usbClassGuid;
+                usvDevBroadcastDeviceInterface.dbcc_reserved = 0;
+
+                data->hdevnotifyUSB = RegisterDeviceNotification(hWnd,
+                    &usvDevBroadcastDeviceInterface,
+                    DEVICE_NOTIFY_WINDOW_HANDLE);
+                if (data->hdevnotifyUSB == NULL)
+                {
+                    LOG_WARNING("Register HW events Failed!\n");
                     return FALSE;
                 }
 

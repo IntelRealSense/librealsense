@@ -31,10 +31,22 @@ Java_com_intel_realsense_librealsense_DeviceList_nContainsDevice(JNIEnv *env, jc
     auto rv = rs2_device_list_contains(reinterpret_cast<const rs2_device_list *>(handle),
                                        reinterpret_cast<const rs2_device *>(deviceHandle), &e);
     handle_error(env, e);
-    return rv > 1;
+    return rv > 0;
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_DeviceList_nRelease(JNIEnv *env, jclass type, jlong handle) {
     rs2_delete_device_list((rs2_device_list *) handle);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_DeviceList_nIsDeviceExtendableTo(JNIEnv *env, jclass type,
+                                                                       jlong handle,
+                                                                       jint extension) {
+    rs2_error *e = NULL;
+    int rv = rs2_is_device_extendable_to(reinterpret_cast<const rs2_device *>(handle),
+                                         static_cast<rs2_extension>(extension), &e);
+    handle_error(env, e);
+    return rv > 0;
 }

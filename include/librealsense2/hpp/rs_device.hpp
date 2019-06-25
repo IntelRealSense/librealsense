@@ -147,6 +147,122 @@ namespace rs2
 
     };
 
+    template<class T>
+    class update_progress_callback : public rs2_update_progress_callback
+    {
+        T _callback;
+
+    public:
+        explicit update_progress_callback(T callback) : _callback(callback) {}
+
+        void on_update_progress(const float progress) override
+        {
+            _callback(progress);
+        }
+
+        void release() override { delete this; }
+    };
+
+    class updatable : public device
+    {
+    public:
+        updatable() : device() {}
+        updatable(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATABLE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        // Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.
+        void enter_update_state() const
+        {
+            rs2_error* e = nullptr;
+            rs2_enter_update_state(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        std::vector<uint8_t> create_flash_backup() const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        template<class T>
+        std::vector<uint8_t> create_flash_backup(T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+    };
+
+    class update_device : public device
+    {
+    public:
+        update_device() : device() {}
+        update_device(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATE_DEVICE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread.
+        void update(const std::vector<uint8_t>& fw_image) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), NULL, &e);
+            error::handle(e);
+        }
+
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread and it supports progress notifications via the callback.
+        template<class T>
+        void update(const std::vector<uint8_t>& fw_image, T callback) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+    };
+
     class debug_protocol : public device
     {
     public:

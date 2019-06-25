@@ -106,6 +106,7 @@ namespace librealsense
 
     public:
         global_time_interface();
+        ~global_time_interface() { _tf_keeper.reset(); }
         void enable_time_diff_keeper(bool is_enable);
         virtual double get_device_time_ms() = 0; // Returns time in miliseconds.
         virtual void create_snapshot(std::shared_ptr<global_time_interface>& snapshot) const override {}
