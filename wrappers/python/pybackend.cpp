@@ -86,7 +86,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<platform::extension_unit> extension_unit(m, "extension_unit");
     extension_unit.def(py::init<>())
-                  .def("__init__", [](platform::extension_unit & xu, int s, int u, int n, platform::guid g)
+                  .def("__init__", [](platform::extension_unit & xu, int s, uint8_t u, int n, platform::guid g)
                       {
                           new (&xu) platform::extension_unit { s, u, n, g };
                       }, "subdevice"_a, "unit"_a, "node"_a, "guid"_a)
