@@ -14,6 +14,8 @@
 #include <regex>
 #include <thread>
 
+#include <os.h>
+
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -24,8 +26,6 @@
 #define NOMINMAX
 #endif
 #endif
-
-#include <os.h>
 
 #include "print_helpers.h"
 #include "rosbag_content.h"
