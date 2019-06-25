@@ -151,7 +151,7 @@ namespace rs2
                 ImColor(saturate(light_blue, 1.f)), ImColor(saturate(light_blue, 0.9f)),
                 ImColor(saturate(light_blue, 0.8f)), ImColor(saturate(light_blue, 1.f)));
 
-            rs2::rect pbar{ float(pos.x + 3), float(pos.y + 3), bar_width, 17.f };
+            rs2::rect pbar{ float(pos.x + 3), float(pos.y + 3), float(bar_width), 17.f };
             auto mouse = win.get_mouse();
             if (pbar.contains(mouse.cursor))
             {
