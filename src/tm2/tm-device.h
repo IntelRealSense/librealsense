@@ -30,7 +30,6 @@ namespace librealsense
         bool is_enabled() const override;
         void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
         void disconnect_controller(int id) override;
-        void connect_sensor();
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             return std::vector<tagged_profile>();
@@ -127,6 +126,7 @@ namespace librealsense
 
         dispatcher                      _dispatcher;
         perc::TrackingDevice*           _tm_dev;
+        perc::TrackingDeviceHolder*     _tm_dev_holder;
         mutable std::mutex              _tm_op_lock;
         std::shared_ptr<playback_device>_loopback;
         perc::TrackingData::Profile     _tm_supported_profiles;

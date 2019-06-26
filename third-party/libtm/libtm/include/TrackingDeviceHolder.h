@@ -12,6 +12,7 @@ namespace perc
         virtual ~TrackingDeviceHolder() {}
 
         virtual void create() = 0;
+        virtual void destruct() = 0;
         virtual bool IsDeviceReady() = 0;
 
         virtual perc::TrackingData::DeviceInfo get_device_info() {};

@@ -23,11 +23,12 @@ public:
     virtual ~DeviceHolder();
 
     void create() override;
-    void destruct();
+    void destruct() override;
     bool IsDeviceReady() override;
 
     perc::TrackingData::DeviceInfo get_device_info() override { return m_dev_info; }
     perc::TrackingDevice *get_device() override { return m_device; }
+    perc::Manager *get_manager() { return m_manager; }
 
 private:
     perc::TrackingData::DeviceInfo m_dev_info;

@@ -308,11 +308,15 @@ namespace librealsense
         stream_profiles results;
 
         //get TM2 profiles
+//        _tm_dev_holder->create();
+//        _tm_dev = _tm_dev_holder->get_device();
         Status status = _tm_dev->GetSupportedProfile(_tm_supported_profiles);
         if (status != Status::SUCCESS)
         {
             throw io_exception("Failed to get supported raw streams");
         }
+//        _tm_dev_holder->destruct();
+//        _tm_dev = nullptr;
 
         std::map<SensorId, std::shared_ptr<stream_profile_interface> > profile_map;
         //extract video profiles
@@ -342,6 +346,7 @@ namespace librealsense
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
             profile_map[SET_SENSOR_ID(SensorType::Fisheye, profile->get_stream_index() - 1)] = profile;
             if (tm_profile.sensorIndex <= 1) results.push_back(profile);
+
 
             //TODO - need to register to have resolve_requests work
             //native_pixel_format pf;
@@ -424,8 +429,8 @@ namespace librealsense
         for (auto profile : results)
         {
             SensorId current_reference;
-            auto current_extrinsics = get_extrinsics(*profile, current_reference);
-            environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
+//            auto current_extrinsics = get_extrinsics(*profile, current_reference);
+//            environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
         }
 
         auto accel_it = std::find_if(results.begin(), results.end(),
@@ -445,6 +450,10 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("open(...) failed. TM2 device is streaming!");
         else if (_is_opened)
             throw wrong_api_call_sequence_exception("open(...) failed. TM2 device is already opened!");
+
+
+//        _tm_dev_holder->create();
+//        _tm_dev = _tm_dev_holder->get_device();
 
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
@@ -591,6 +600,9 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("close() failed. TM2 device is streaming!");
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("close() failed. TM2 device was not opened!");
+
+//        _tm_dev = nullptr;
+//        _tm_dev_holder->destruct();
 
         if (_loopback)
         {
@@ -754,15 +766,18 @@ namespace librealsense
 
     rs2_intrinsics tm2_sensor::get_intrinsics(const stream_profile& profile) const
     {
+//        _tm_dev_holder->create();
+//        _tm_dev = _tm_dev_holder->get_device();
+//        sleep(4);
         rs2_intrinsics result;
         TrackingData::CameraIntrinsics tm_intrinsics{};
         int stream_index = profile.index - 1;
 
-        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
-        if (status != Status::SUCCESS)
-        {
-            throw io_exception("Failed to read TM2 intrinsics");
-        }
+//        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
+//        if (status != Status::SUCCESS)
+//        {
+//            throw io_exception("Failed to read TM2 intrinsics");
+//        }
 
         result.width = tm_intrinsics.width;
         result.height = tm_intrinsics.height;
@@ -770,9 +785,12 @@ namespace librealsense
         result.ppy = tm_intrinsics.ppy;
         result.fx = tm_intrinsics.fx;
         result.fy = tm_intrinsics.fy;
-        result.model = convertTm2CameraModel(tm_intrinsics.distortionModel);
-        librealsense::copy_array(result.coeffs, tm_intrinsics.coeffs);
+//        result.model = convertTm2CameraModel(tm_intrinsics.distortionModel);
+//        librealsense::copy_array(result.coeffs, tm_intrinsics.coeffs);
+//        _tm_dev_holder->destruct();
+//        _tm_dev = nullptr;
         return result;
+
     }
 
     rs2_motion_device_intrinsic tm2_sensor::get_motion_intrinsics(const motion_stream_profile_interface& profile) const
@@ -796,11 +814,11 @@ namespace librealsense
         default:
             throw invalid_value_exception("Invalid motion stream type");
         }
-        auto status = _tm_dev->GetMotionModuleIntrinsics(SET_SENSOR_ID(type, stream_index), tm_intrinsics);
-        if (status != Status::SUCCESS)
-        {
-            throw io_exception("Failed to read TM2 intrinsics");
-        }
+//        auto status = _tm_dev->GetMotionModuleIntrinsics(SET_SENSOR_ID(type, stream_index), tm_intrinsics);
+//        if (status != Status::SUCCESS)
+//        {
+//            throw io_exception("Failed to read TM2 intrinsics");
+//        }
         librealsense::copy_2darray(result.data, tm_intrinsics.data);
         librealsense::copy_array(result.noise_variances, tm_intrinsics.noiseVariances);
         librealsense::copy_array(result.bias_variances, tm_intrinsics.biasVariances);
@@ -838,11 +856,11 @@ namespace librealsense
             stream_index--;
         }
 
-        auto status = _tm_dev->GetExtrinsics(SET_SENSOR_ID(type, stream_index), tm_extrinsics);
-        if (status != Status::SUCCESS)
-        {
-            throw io_exception("Failed to read TM2 intrinsics");
-        }
+//        auto status = _tm_dev->GetExtrinsics(SET_SENSOR_ID(type, stream_index), tm_extrinsics);
+//        if (status != Status::SUCCESS)
+//        {
+//            throw io_exception("Failed to read TM2 intrinsics");
+//        }
 
         librealsense::copy_array(result.rotation, tm_extrinsics.rotation);
         librealsense::copy_array(result.translation, tm_extrinsics.translation);
@@ -1422,10 +1440,11 @@ namespace librealsense
 
         std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
+        _dev->create();
+        _sensor = std::make_shared<tm2_sensor>(this, _dev->get_device());
+        add_sensor(_sensor);
 
-//        _sensor = std::make_shared<tm2_sensor>(this, dev);
-//        add_sensor(_sensor);
-//
+
 //        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
 //        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
 //
@@ -1455,28 +1474,6 @@ namespace librealsense
             }
         }
         if(_sensor) _sensor->dispose();
-    }
-
-    /**
-     * Utility function to connect the sensor and lock the device upon first access
-     */
-    void tm2_device::connect_sensor() {
-        _dev->create();
-        _sensor = std::make_shared<tm2_sensor>(this, _dev->get_device());
-        add_sensor(_sensor);
-
-        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
-
-        _sensor->register_option(rs2_option::RS2_OPTION_EXPOSURE, std::make_shared<exposure_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
-
-
-        // Assing the extrinsic nodes to the default group
-        auto tm2_profiles = _sensor->get_stream_profiles();
-        for (auto && pf : tm2_profiles)
-            register_stream_to_extrinsic_group(*pf, 0);
     }
 
     /**
