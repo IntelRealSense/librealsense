@@ -35,12 +35,11 @@ public class DetachedActivity extends AppCompatActivity {
     private boolean mPermissionsGrunted = false;
     private Button mPlaybackButton;
 
+    private Context mAppContext;
     private RsContext mRsContext = new RsContext();
-    ;
 
     private Map<ProductLine,String> mMinimalFirmwares = new HashMap<>();
     private boolean mUpdating = false;
-    private Context mAppContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,10 +63,15 @@ public class DetachedActivity extends AppCompatActivity {
             return;
         }
 
-        String appVersion = BuildConfig.VERSION_NAME;
-        String lrsVersion = RsContext.getVersion();
-        TextView versions = findViewById(R.id.versionsText);
-        versions.setText("librealsense version: " + lrsVersion + "\ncamera app version: " + appVersion);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String appVersion = BuildConfig.VERSION_NAME;
+                String lrsVersion = RsContext.getVersion();
+                TextView versions = findViewById(R.id.versionsText);
+                versions.setText("librealsense version: " + lrsVersion + "\ncamera app version: " + appVersion);
+            }
+        });
 
         mMinimalFirmwares.put(ProductLine.D400, MINIMAL_D400_FW_VERSION);
 
@@ -88,8 +92,7 @@ public class DetachedActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if(mPermissionsGrunted)
-        {
+        if(mPermissionsGrunted) {
             RsContext.init(getApplicationContext());
             mRsContext.setDevicesChangedCallback(mListener);
             validatedDevice();
@@ -183,9 +186,9 @@ public class DetachedActivity extends AppCompatActivity {
 
         @Override
         public void onDeviceDetach() {
+            finish();
             Intent intent = new Intent(mAppContext, DetachedActivity.class);
             startActivity(intent);
-            finish();
         }
     };
 }

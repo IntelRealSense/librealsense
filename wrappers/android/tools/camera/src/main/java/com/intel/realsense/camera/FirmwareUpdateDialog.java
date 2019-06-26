@@ -86,8 +86,6 @@ public class FirmwareUpdateDialog extends DialogFragment {
                     try(Device d = dl.createDevice(0)){
                         if(d.is(Extension.UPDATABLE))
                             d.<Updatable>as(Extension.UPDATABLE).enterUpdateState();
-                        else
-                            throw new RuntimeException("request to update a non updatable device");
                     }
                 }
             }
