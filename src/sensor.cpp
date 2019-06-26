@@ -364,7 +364,7 @@ namespace librealsense
                 ss << fourcc << " ";
             }
             ss << "]";
-            LOG_WARNING(ss.str());
+            LOG_INFO(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -1150,7 +1150,7 @@ namespace librealsense
 
         if (!started)
         {
-            LOG_WARNING("HID timestamp not found! please apply HID patch.");
+            LOG_WARNING("HID timestamp not found, switching to Host timestamps.");
             started = true;
         }
 

@@ -204,9 +204,9 @@ namespace librealsense
                     if (_data_buf && (!_managed))
                     {
                         //LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
-                        if (xioctl(_file_desc, VIDIOC_QBUF, &_dq_buf) < 0)
+                        if ((_file_desc > 0) && (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0))
                         {
-                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
+                            LOG_INFO("xioctl(VIDIOC_QBUF) guard failed");
                         }
                     }
                 }

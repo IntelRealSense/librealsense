@@ -905,7 +905,7 @@ namespace librealsense
                         }
                         else
                         {
-                            LOG_WARNING("FD_ISSET returned false - video node is not signalled (md only)");
+                            LOG_INFO("FD_ISSET returned false - video node is not signalled (md only)");
                         }
                     }
                 }
@@ -961,7 +961,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY) // TODO: Log?
                     return false;
 
                 throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
