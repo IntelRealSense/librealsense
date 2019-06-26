@@ -13,7 +13,7 @@ namespace perc
     public:
         virtual ~TrackingDeviceHolder() {}
 
-        virtual perc::TrackingData::DeviceInfo get_device_info() {};
+        virtual perc::TrackingData::DeviceInfo get_device_info() { return perc::TrackingData::DeviceInfo(); };
         virtual std::shared_ptr<perc::TrackingDevice> get_device() = 0;
 
     };
