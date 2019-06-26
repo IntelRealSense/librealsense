@@ -34,23 +34,33 @@ Java_com_intel_realsense_librealsense_StreamProfile_nGetProfile(JNIEnv *env, jcl
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetResolution(JNIEnv *env, jclass type,
+Java_com_intel_realsense_librealsense_VideoStreamProfile_nGetIntrinsics(JNIEnv *env, jclass type,
                                                                         jlong handle,
                                                                         jobject params) {
-    int width = -1;
-    int height = -1;
+    rs2_intrinsics intr;
+    intr={0};
     rs2_error *e = NULL;
 
-    rs2_get_video_stream_resolution((const rs2_stream_profile *) handle, &width, &height, &e);
+    rs2_get_video_stream_intrinsics((const rs2_stream_profile *) handle,&intr,&e);
     handle_error(env, e);
 
     jclass clazz = env->GetObjectClass(params);
 
     jfieldID widthField = env->GetFieldID(clazz, "width", "I");
     jfieldID heightField = env->GetFieldID(clazz, "height", "I");
+    jfieldID fxField = env->GetFieldID(clazz, "fx", "F");
+    jfieldID fyField = env->GetFieldID(clazz, "fy", "F");
+    jfieldID ppxField = env->GetFieldID(clazz, "ppx", "F");
+    jfieldID ppyField = env->GetFieldID(clazz, "ppy", "F");
 
-    env->SetIntField(params, widthField, width);
-    env->SetIntField(params, heightField, height);
+
+    env->SetIntField(params, widthField, intr.width);
+    env->SetIntField(params, heightField, intr.height);
+    env->SetFloatField(params,fxField,intr.fx);
+    env->SetFloatField(params,fyField,intr.fy);
+    env->SetFloatField(params,ppxField,intr.ppx);
+    env->SetFloatField(params,ppyField,intr.ppy);
+
 }
 
 extern "C" JNIEXPORT void JNICALL

@@ -255,6 +255,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))
         .def(BIND_DOWNCAST(device, tm2))
+        .def(BIND_DOWNCAST(device, updatable))
+        .def(BIND_DOWNCAST(device, update_device))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -267,6 +269,25 @@ PYBIND11_MODULE(NAME, m) {
     debug_protocol.def(py::init<rs2::device>())
         .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
              "input"_a);  // No docstring in C++
+
+    py::class_<rs2::updatable> updatable(m, "updatable");
+    updatable.def(py::init<rs2::device>())
+        .def("enter_update_state", &rs2::updatable::enter_update_state)
+        .def("create_flash_backup", (std::vector<uint8_t>(rs2::updatable::*)() const) &rs2::updatable::create_flash_backup,
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.")
+        .def("create_flash_backup", [](rs2::updatable& self, std::function<void(float)> f) { return self.create_flash_backup(f); },
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.",
+            "callback"_a);
+
+    py::class_<rs2::update_device> update_device(m, "update_device");
+    update_device.def(py::init<rs2::device>())
+        .def("update", (void (rs2::update_device::*)(const std::vector<uint8_t>&) const) &rs2::update_device::update,
+            "Update an updatable device to the provided firmware. this call is executed on the caller's thread", "fw_image"_a)
+        .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
+            "Update an updatable device to the provided firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",
+            "fw_image"_a, "callback"_a);
 
     py::class_<rs2::device_list> device_list(m, "device_list"); // No docstring in C++
     device_list.def(py::init<>())
