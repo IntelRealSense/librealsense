@@ -241,7 +241,9 @@ namespace rs2
                 _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
             });
 
-            log("Update completed, waiting for device to reconnect");
+            log("Firmware Download completed, await DFU transition event");
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            log("Firmware Update completed, waiting for device to reconnect");
 
             if (!check_for([this, serial, &dfu]() {
                 auto devs = _ctx.query_devices();
