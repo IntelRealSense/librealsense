@@ -242,9 +242,6 @@ int main(int argc, char** argv) try
         break;
     }
 
-    std::unique_lock<std::mutex> lk(mutex);
-    cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
-
     if (!device_found)
     {
         if(serial_number_arg.isSet())
@@ -253,7 +250,11 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "nothing to do, run again with -h for help" << std::endl;
         }
+        return EXIT_FAILURE;
     }
+
+    std::unique_lock<std::mutex> lk(mutex);
+    cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return !done || new_device; });
 
     if (done)
     {
@@ -261,7 +262,7 @@ int main(int argc, char** argv) try
         for (auto&& d : devs)
         {
             auto sn = d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) ? d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) : "unknown";
-            if (sn != selected_serial_number)
+            if (serial_number_arg.isSet() && sn != selected_serial_number)
                 continue;
 
             auto fw = d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ? d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "unknown";

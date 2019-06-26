@@ -437,19 +437,25 @@ namespace rs2
 
     void viewer_model::check_permissions()
     {
-#ifdef __linux__ 
+#ifdef __linux__
 
-        if (directory_exists("/etc/udev/rules.d"))
+        if (directory_exists("/etc/udev/rules.d") || directory_exists("/lib/udev/rules.d/"))
         {
-            std::ifstream f("/etc/udev/rules.d/99-realsense-libusb.rules");
-            std::string message = "UDEV-Rules configure correct permissions\nfor RealSense devices.`\n"
-                        "Missing UDEV-Rules will cause 'Permissions Denied' errors\nunless the application is running under 'sudo' (not recommended)\n"
-                        "To install UDEV-Rules run in terminal:\n"
+            const std::string udev_rules_man("/etc/udev/rules.d/99-realsense-libusb.rules");
+            const std::string udev_rules_deb("/lib/udev/rules.d/60-librealsense2-udev-rules.rules");
+            std::ifstream f_man(udev_rules_man);
+            std::ifstream f_deb(udev_rules_deb);
+
+            std::string message = "UDEV-Rules permissions configuration \n for RealSense devices.`\n"
+                        "Missing/outdated UDEV-Rules will cause 'Permissions Denied' errors\nunless the application is running under 'sudo' (not recommended)\n"
+                        "In case of Debians use: \n"
+                        "sudo apt-get upgrade/install librealsense2-udev-rules\n"
+                        "To manually install UDEV-Rules in terminal run:\n"
                         "$ sudo cp ~/.99-realsense-libusb.rules /etc/udev/rules.d/99-realsense-libusb.rules && sudo udevadm control --reload-rules && udevadm trigger\n";
 
             bool create_file = false;
 
-            if(!f.good())
+            if(!(f_man.good() || f_deb.good()))
             {
                 message = "RealSense UDEV-Rules are missing!\n" + message;
                 not_model.add_notification({ message,
@@ -459,19 +465,40 @@ namespace rs2
             }
             else
             {
+                std::ifstream f;
+                std::string udev_fname;
+                if(f_man.good())
+                {
+                    if (f_deb.good())
+                    {
+                        std::string duplicates = "Multiple realsense udev-rules were found! :\n1:" + udev_rules_man
+                                    + "\n2: " + udev_rules_deb+ "\nMake sure to remove redundancies!";
+                        not_model.add_notification({ duplicates,
+                             RS2_LOG_SEVERITY_WARN,
+                             RS2_NOTIFICATION_CATEGORY_COUNT });
+                    }
+                    f.swap(f_man);
+                    udev_fname = udev_rules_man;
+                    create_file = true;
+                }
+                else
+                {
+                    f.swap(f_deb);
+                    udev_fname = udev_rules_deb;
+                }
+
                 std::string str((std::istreambuf_iterator<char>(f)),
                                  std::istreambuf_iterator<char>());
-                
+
                 std::string udev = realsense_udev_rules;
 
                 if (udev != str)
                 {
-                    message = "RealSense UDEV-Rules are outdated!\n" + message;
+                    message = "RealSense UDEV-Rules file:\n " + udev_fname +"\n is not up-to date!\n" + message;
                     not_model.add_notification({ 
                         message,
                         RS2_LOG_SEVERITY_WARN,
                         RS2_NOTIFICATION_CATEGORY_COUNT });
-                    create_file = true;
                 }
             }
 
@@ -485,7 +512,6 @@ namespace rs2
             }
         }
 
-       
 #endif
     }
 
