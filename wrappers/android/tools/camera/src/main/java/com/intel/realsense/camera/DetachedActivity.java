@@ -91,12 +91,16 @@ public class DetachedActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         if(mPermissionsGrunted) {
             RsContext.init(getApplicationContext());
-            mRsContext.setDevicesChangedCallback(mListener);
-            validatedDevice();
+            mRsContext.setDevicesChangedCallback(mDetachedListener);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mRsContext.setDevicesChangedCallback(mAttachListener);
     }
 
     private synchronized void validatedDevice(){
@@ -178,11 +182,19 @@ public class DetachedActivity extends AppCompatActivity {
         });
     }
 
-    private DeviceListener mListener = new DeviceListener() {
+    private DeviceListener mDetachedListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
             validatedDevice();
         }
+
+        @Override
+        public void onDeviceDetach() { }
+    };
+
+    private DeviceListener mAttachListener = new DeviceListener() {
+        @Override
+        public void onDeviceAttach() { }
 
         @Override
         public void onDeviceDetach() {
