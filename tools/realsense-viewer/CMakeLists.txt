@@ -78,8 +78,7 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES}
                                         Threads::Threads
                                         realsense2-gl
                                         )
-
-if (IMPORT_UVC_FW)
+if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(realsense-viewer uvc_fw)
 endif()
