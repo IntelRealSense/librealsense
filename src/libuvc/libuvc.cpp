@@ -284,6 +284,7 @@ namespace librealsense
                 if (res < 0) {
                     uvc_unref_device(_device);
                     _device = NULL;
+                    _device_handle = NULL;
                     throw linux_backend_exception("Could not open device.");
                 }
 
@@ -446,6 +447,8 @@ namespace librealsense
 
             int32_t get_data_usb( uvc_req_code action, int control, int unit) const {
                 unsigned char buffer[4];
+
+                if (!_device_handle) throw linux_backend_exception("Device not opened!");
 
                 int status = libusb_control_transfer(_device_handle->usb_devh,
                                                      UVC_REQ_TYPE_GET,

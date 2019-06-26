@@ -11,13 +11,15 @@
 #include <regex>
 #include <cmath>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "os.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
-#define NOC_FILE_DIALOG_IMPLEMENTATION
-#include <noc_file_dialog.h>
+#include <tinyfiledialogs.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -152,9 +154,61 @@ Some auxillary functionalities might be affected. Please report this message if 
         return (int)(floor(scale));
     }
 
-    const char* file_dialog_open(file_dialog_mode flags, const char* filters, const char* default_path, const char* default_name)
+    bool directory_exists(const char* dir)
     {
-        return noc_file_dialog_open(flags, filters, default_path, default_name);
+        struct stat info;
+
+        if (stat(dir, &info ) != 0)
+            return false;
+        else if (info.st_mode & S_IFDIR) 
+            return true;
+        else
+            return false;
+    }
+
+    const char* file_dialog_open(file_dialog_mode flags, const char* filters, 
+        const char* default_path, const char* default_name)
+    {
+        std::string def = "";
+        if (default_path) def += default_path;
+        if (default_name && default_path) def += "/";
+        if (default_name) def += default_name;
+        const char* def_ptr = nullptr;
+        if (default_name || default_path)
+            def_ptr = def.c_str();
+        int num_filters = filters == nullptr ? 0 : 1;
+
+        char const * const * aFilterPatterns = nullptr;
+        char const * aSingleFilterDescription = nullptr;
+
+        std::vector<std::string> filters_split;
+
+        auto curr = filters;
+        while (*curr != '\0')
+        {
+            auto end = curr + strlen(curr);
+            filters_split.push_back({ curr, end });
+            curr = end + 1;
+        }
+
+        std::vector<const char*> filter;
+
+        if (filters_split.size() == 2)
+        {
+            filter.push_back(filters_split[1].c_str());
+            aFilterPatterns = filter.data();
+            aSingleFilterDescription = filters_split[0].c_str();
+        }
+
+        if (flags == save_file)
+        {
+            return tinyfd_saveFileDialog("Save File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription);
+        }
+        if (flags == open_file)
+        {
+            return tinyfd_openFileDialog("Open File", def_ptr, num_filters, aFilterPatterns, aSingleFilterDescription, 0);
+        }
+        return nullptr;
     }
 
     int save_to_png(const char* filename,
