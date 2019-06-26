@@ -6,6 +6,7 @@ abstract class LrsClass implements AutoCloseable {
     }
 
     protected long mHandle = 0;
+    protected boolean mOwner = true;
 
     public long getHandle() { return mHandle; }
 }

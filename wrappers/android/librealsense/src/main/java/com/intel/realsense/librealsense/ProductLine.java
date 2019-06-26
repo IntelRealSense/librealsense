@@ -1,6 +1,6 @@
 package com.intel.realsense.librealsense;
 
-public enum ProductClass {
+public enum ProductLine {
     ANY(0xff),
     ANY_INTEL(0xfe),
     NON_INTEL(0x01),
@@ -13,6 +13,6 @@ public enum ProductClass {
 
     private final int mValue;
 
-    private ProductClass(int value) { mValue = value; }
+    private ProductLine(int value) { mValue = value; }
     public int value() { return mValue; }
 }

@@ -12,10 +12,6 @@ public class DeviceList extends LrsClass {
 
     public Device createDevice(int index){
         long deviceHandle = nCreateDevice(mHandle, index);
-        if (nIsDeviceExtendableTo(deviceHandle, Extension.UPDATABLE.value()))
-            return new Updatable(deviceHandle);
-        if (nIsDeviceExtendableTo(deviceHandle, Extension.UPDATE_DEVICE.value()))
-            return new UpdateDevice(deviceHandle);
         return new Device(deviceHandle);
     }
 
@@ -37,7 +33,6 @@ public class DeviceList extends LrsClass {
         nRelease(mHandle);
     }
 
-    private static native boolean nIsDeviceExtendableTo(long handle, int extension);
     private static native int nGetDeviceCount(long handle);
     private static native long nCreateDevice(long handle, int index);
     private static native boolean nContainsDevice(long handle, long deviceHandle);
