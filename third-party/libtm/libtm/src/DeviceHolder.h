@@ -22,10 +22,6 @@ public:
     DeviceHolder(libusb_device *_device, std::shared_ptr<perc::Dispatcher> _dispatcher, perc::Manager *_manager);
     virtual ~DeviceHolder();
 
-    void create() override;
-    void destruct() override;
-    bool IsDeviceReady() override;
-
     perc::TrackingData::DeviceInfo get_device_info() override { return m_dev_info; }
     std::shared_ptr<perc::TrackingDevice> get_device() override;
 
@@ -33,7 +29,6 @@ private:
     perc::TrackingData::DeviceInfo m_dev_info;
     std::shared_ptr<perc::Dispatcher> m_dispatcher;
     perc::Manager *m_manager;
-    std::shared_ptr<perc::Device> m_device;
     libusb_device *m_libusb_device;
 
 };
