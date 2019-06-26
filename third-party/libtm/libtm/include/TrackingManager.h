@@ -5,6 +5,8 @@
 #include "TrackingCommon.h"
 #include "TrackingDevice.h"
 #include "TrackingData.h"
+#include "TrackingDeviceHolder.h"
+
 
 namespace perc
 {
@@ -21,8 +23,8 @@ namespace perc
         {
         public:
             // state : enum ATTACH, DETACH....
-            virtual void onStateChanged(EventType state, TrackingDevice* device, TrackingData::DeviceInfo deviceInfo) = 0;
-            virtual void onError(Status, TrackingDevice* device)= 0;
+            virtual void onStateChanged(EventType state, TrackingDeviceHolder* device) = 0;
+            virtual void onError(Status, TrackingDeviceHolder* device)= 0;
         };
 
         // factory
@@ -32,7 +34,7 @@ namespace perc
         // interface
         virtual Handle getHandle() = 0;
         virtual Status handleEvents(bool blocking = true) = 0;
-        virtual size_t getDeviceList(TrackingDevice** list, unsigned int maxListSize) = 0;
+        virtual size_t getDeviceList(TrackingDeviceHolder ** list, unsigned int maxListSize) = 0;
         virtual Status setHostLogControl(IN const TrackingData::LogControl& logControl) = 0;
         virtual Status getHostLog(OUT TrackingData::Log* log) = 0;
 

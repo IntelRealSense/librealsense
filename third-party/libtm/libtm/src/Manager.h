@@ -33,7 +33,7 @@ namespace perc
         // [interface] TrackingManager
         virtual Handle getHandle() override { return mEvent.handle(); };
         virtual Status handleEvents(bool blocking) override;
-        virtual size_t getDeviceList(TrackingDevice** list, unsigned int maxListSize) override;
+        virtual size_t getDeviceList(TrackingDeviceHolder ** list, unsigned int maxListSize) override;
         virtual Status setHostLogControl(IN const TrackingData::LogControl& logControl) override;
         virtual Status getHostLog(OUT TrackingData::Log* log) override;
         virtual uint64_t version() override;
@@ -150,7 +150,8 @@ namespace perc
         void done();
 
         TrackingManager::Listener* mListener;
-        std::map<libusb_device*,Device*> mLibUsbDeviceToTrackingDeviceMap;
+//        std::map<libusb_device*,Device*> mLibUsbDeviceToTrackingDeviceMap;
+        std::map<libusb_device*,DeviceHolder*> mLibUsbDeviceToTrackingDeviceMap;
         libusb_context * mContext;
         
         std::string mFwFileName;
@@ -158,6 +159,6 @@ namespace perc
         std::list<std::shared_ptr<CompleteTask>> mCompleteQ;
         std::mutex mCompleteQMutex;
         Event mEvent;
-        std::map<Device*, TrackingData::DeviceInfo> mTrackingDeviceInfoMap;
+        std::map<DeviceHolder*, TrackingData::DeviceInfo> mTrackingDeviceInfoMap;
     };
 }

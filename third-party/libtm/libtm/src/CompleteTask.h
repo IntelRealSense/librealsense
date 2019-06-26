@@ -94,28 +94,27 @@ namespace perc {
     class UsbCompleteTask : public CompleteTask
     {
     public:
-        UsbCompleteTask(TrackingManager::Listener* l, TrackingDevice* dev, TrackingData::DeviceInfo* deviceInfo, TrackingManager::EventType e, TrackingManager* owner) :
-            CompleteTask(USB_DEVICE_TASK, owner, true), mDevice(dev), mDeviceInfo(*deviceInfo), mEventType(e), mListener(l) {}
+        UsbCompleteTask(TrackingManager::Listener* l, TrackingDeviceHolder *device, TrackingManager::EventType e, TrackingManager* owner) :
+            CompleteTask(USB_DEVICE_TASK, owner, true), mDevice(device), mEventType(e), mListener(l) {}
         virtual ~UsbCompleteTask() {}
         virtual void complete() override
         {
             if (mListener)
             {
-                mListener->onStateChanged(mEventType, mDevice, mDeviceInfo);
+                mListener->onStateChanged(mEventType, mDevice);
         }
         }
     private:
         TrackingManager::Listener* mListener;
-        TrackingDevice* mDevice;
+        TrackingDeviceHolder* mDevice;
         TrackingManager::EventType mEventType;
-        TrackingData::DeviceInfo mDeviceInfo;
     };
 
     class ErrorTask : public CompleteTask
     {
     public:
-        ErrorTask(TrackingManager::Listener* l, TrackingDevice* dev, Status e, TrackingManager* owner) :
-            CompleteTask(ERROR_COMPLETE_TASK, owner, true), mDevice(dev), mErrorStatus(e), mListener(l) {}
+        ErrorTask(TrackingManager::Listener* l, TrackingDeviceHolder *device, Status e, TrackingManager* owner) :
+            CompleteTask(ERROR_COMPLETE_TASK, owner, true), mDevice(device), mErrorStatus(e), mListener(l) {}
         virtual ~ErrorTask() {}
         virtual void complete() override
         {
@@ -126,7 +125,7 @@ namespace perc {
         }
     private:
         TrackingManager::Listener* mListener;
-        TrackingDevice* mDevice;
+        TrackingDeviceHolder* mDevice;
         Status mErrorStatus;
 
     };

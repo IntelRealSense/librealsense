@@ -7,7 +7,8 @@
 
 
 #include "TrackingManager.h"
-#include "Dispatcher.h"
+#include "TrackingDeviceHolder.h"
+//#include "Dispatcher.h"
 #include "libusb.h"
 #include "Device.h"
 #include <memory>
@@ -16,17 +17,17 @@ namespace perc{
     class Manager;
 }
 
-class DeviceHolder : public perc::EventHandler
+class DeviceHolder : public perc::EventHandler, public perc::TrackingDeviceHolder
 {
 public:
     DeviceHolder(libusb_device *_device, std::shared_ptr<perc::Dispatcher> _dispatcher, perc::Manager *_manager);
     virtual ~DeviceHolder();
 
-    void create();
-    bool IsDeviceReady();
+    void create() override;
+    bool IsDeviceReady() override;
 
-    perc::TrackingData::DeviceInfo get_device_info() { return m_dev_info; }
-    perc::Device *get_device() { return m_device; }
+    perc::TrackingData::DeviceInfo get_device_info() override { return m_dev_info; }
+    perc::TrackingDevice *get_device() override { return m_device; }
 
     // [interface] CompleteQueueHandler
 //    virtual void addTask(std::shared_ptr<CompleteTask>&) override;

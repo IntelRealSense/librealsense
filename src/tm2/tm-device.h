@@ -20,7 +20,7 @@ namespace librealsense
     {
     public:
         tm2_device(std::shared_ptr<perc::TrackingManager> manager,
-            perc::TrackingDevice* dev,
+            perc::TrackingDeviceHolder* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
         virtual ~tm2_device();
@@ -30,6 +30,7 @@ namespace librealsense
         bool is_enabled() const override;
         void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
         void disconnect_controller(int id) override;
+        void connect_sensor();
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             return std::vector<tagged_profile>();
@@ -42,7 +43,7 @@ namespace librealsense
             return "Intel RealSense T265";
         }
         std::shared_ptr<perc::TrackingManager> _manager;
-        perc::TrackingDevice* _dev;
+        perc::TrackingDeviceHolder* _dev;
         std::shared_ptr<tm2_sensor> _sensor;
     };
 

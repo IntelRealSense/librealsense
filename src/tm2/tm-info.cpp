@@ -16,7 +16,7 @@ using namespace perc;
 namespace librealsense
 {
     tm2_info::tm2_info(std::shared_ptr<perc::TrackingManager> manager,
-        perc::TrackingDevice* dev,
+       perc::TrackingDeviceHolder* dev,
         std::shared_ptr<context> ctx)
         : device_info(ctx), _dev(dev), _manager(manager) {}
 
@@ -34,7 +34,7 @@ namespace librealsense
     }
 
     std::vector<std::shared_ptr<device_info>> tm2_info::pick_tm2_devices(
-        std::shared_ptr<context> ctx, std::shared_ptr<perc::TrackingManager> manager, const std::vector<perc::TrackingDevice*>& tm_devices)
+        std::shared_ptr<context> ctx, std::shared_ptr<perc::TrackingManager> manager, const std::vector<perc::TrackingDeviceHolder*>& tm_devices)
     {
         std::vector<std::shared_ptr<device_info>> results;
         for(auto&& dev : tm_devices)

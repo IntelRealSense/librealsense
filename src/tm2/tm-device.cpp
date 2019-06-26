@@ -1403,19 +1403,14 @@ namespace librealsense
 
     tm2_device::tm2_device(
             std::shared_ptr<perc::TrackingManager> manager,
-            perc::TrackingDevice* dev,
+            perc::TrackingDeviceHolder* dev,
             std::shared_ptr<context> ctx,
             const platform::backend_device_group& group) :
         device(ctx, group),
         _manager(manager),
         _dev(dev)
     {
-        TrackingData::DeviceInfo info;
-        auto status = dev->GetDeviceInfo(info);
-        if (status != Status::SUCCESS)
-        {
-            throw io_exception("Failed to get device info");
-        }
+        TrackingData::DeviceInfo info = dev->get_device_info();
 
         std::string vendorIdStr = hexify(info.usbDescriptor.idVendor);
         std::string productIdStr = hexify(info.usbDescriptor.idProduct);
@@ -1428,21 +1423,21 @@ namespace librealsense
         std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
-        _sensor = std::make_shared<tm2_sensor>(this, dev);
-        add_sensor(_sensor);
-
-        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
-
-        _sensor->register_option(rs2_option::RS2_OPTION_EXPOSURE, std::make_shared<exposure_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
-        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
-
-
-        // Assing the extrinsic nodes to the default group
-        auto tm2_profiles = _sensor->get_stream_profiles();
-        for (auto && pf : tm2_profiles)
-            register_stream_to_extrinsic_group(*pf, 0);
+//        _sensor = std::make_shared<tm2_sensor>(this, dev);
+//        add_sensor(_sensor);
+//
+//        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
+//        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+//
+//        _sensor->register_option(rs2_option::RS2_OPTION_EXPOSURE, std::make_shared<exposure_option>(*_sensor));
+//        _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
+//        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
+//
+//
+//        // Assing the extrinsic nodes to the default group
+//        auto tm2_profiles = _sensor->get_stream_profiles();
+//        for (auto && pf : tm2_profiles)
+//            register_stream_to_extrinsic_group(*pf, 0);
 
         //For manual testing: enable_loopback("C:\\dev\\recording\\tm2.bag");
     }
@@ -1461,8 +1456,31 @@ namespace librealsense
         }
         _sensor->dispose();
     }
+
     /**
-    * Enable loopback will replace the input and ouput of the tm2 sensor
+     * Utility function to connect the sensor and lock the device upon first access
+     */
+    void tm2_device::connect_sensor() {
+        _dev->create();
+        _sensor = std::make_shared<tm2_sensor>(this, _dev->get_device());
+        add_sensor(_sensor);
+
+        _sensor->register_option(rs2_option::RS2_OPTION_ASIC_TEMPERATURE, std::make_shared<asic_temperature_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_MOTION_MODULE_TEMPERATURE, std::make_shared<motion_temperature_option>(*_sensor));
+
+        _sensor->register_option(rs2_option::RS2_OPTION_EXPOSURE, std::make_shared<exposure_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
+
+
+        // Assing the extrinsic nodes to the default group
+        auto tm2_profiles = _sensor->get_stream_profiles();
+        for (auto && pf : tm2_profiles)
+            register_stream_to_extrinsic_group(*pf, 0);
+    }
+
+    /**
+    * Enable loopback will replace the input and output of the tm2 sensor
     */
     void tm2_device::enable_loopback(const std::string& source_file)
     {
@@ -1494,6 +1512,7 @@ namespace librealsense
 
     void tm2_device::connect_controller(const std::array<uint8_t, 6>& mac_address)
     {
+        connect_sensor();
         _sensor->attach_controller(mac_address);
     }
 

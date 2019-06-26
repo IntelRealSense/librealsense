@@ -21,8 +21,8 @@ m_manager(_manager)
 
 DeviceHolder::~DeviceHolder()
 {
-    delete m_device;
-    delete m_libusb_device;
+    if(m_device) delete m_device;
+    if(m_libusb_device) delete m_libusb_device;
     libusb_unref_device(m_libusb_device);
 }
 

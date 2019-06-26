@@ -50,7 +50,7 @@ namespace librealsense
         return _manager;
     }
 
-    std::vector<perc::TrackingDevice*> tm2_context::query_devices() const
+    std::vector<perc::TrackingDeviceHolder*> tm2_context::query_devices() const
     {
         std::lock_guard<std::mutex> lock(_manager_mutex);
 
@@ -68,7 +68,7 @@ namespace librealsense
         return _devices;
     }
 
-    void tm2_context::onStateChanged(TrackingManager::EventType state, TrackingDevice* dev, TrackingData::DeviceInfo devInfo)
+    void tm2_context::onStateChanged(TrackingManager::EventType state, perc::TrackingDeviceHolder* dev)
     {
         std::shared_ptr<tm2_info> added;
         std::shared_ptr<tm2_info> removed;
@@ -85,7 +85,7 @@ namespace librealsense
             {
                 LOG_INFO("TM2 Device Detached");
                 removed = std::make_shared<tm2_info>(get_manager(), dev, _ctx->shared_from_this());
-                auto itr = std::find_if(_devices.begin(), _devices.end(), [dev](TrackingDevice* d) { return dev == d; });
+                auto itr = std::find_if(_devices.begin(), _devices.end(), [dev](perc::TrackingDeviceHolder* d) { return dev == d; });
                 _devices.erase(itr);
                 break;
             }
@@ -93,7 +93,7 @@ namespace librealsense
         on_device_changed(removed, added);
     }
 
-    void tm2_context::onError(Status error, TrackingDevice* dev)
+    void tm2_context::onError(Status error, perc::TrackingDeviceHolder* dev)
     {
         LOG_ERROR("Error occured while connecting device:" << dev << " Error: 0x" << std::hex << static_cast<int>(error));
     }

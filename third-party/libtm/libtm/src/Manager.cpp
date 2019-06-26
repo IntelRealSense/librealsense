@@ -175,7 +175,7 @@ void Manager::done()
     }
 }
 
-size_t Manager::getDeviceList(TrackingDevice ** list, unsigned int maxListSize)
+size_t Manager::getDeviceList(TrackingDeviceHolder ** list, unsigned int maxListSize)
 {
     // TODO: move to sendmessage and dispatcher context
     auto count = maxListSize > mLibUsbDeviceToTrackingDeviceMap.size() ? mLibUsbDeviceToTrackingDeviceMap.size() : maxListSize;
@@ -480,44 +480,34 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
     {
         /* To debug libusb issues, enable logs using libusb_set_debug(mContext, LIBUSB_LOG_LEVEL_INFO) */
 
-        auto test = new DeviceHolder(m.device, mDispatcher, this);
+        auto device = new DeviceHolder(m.device, mDispatcher, this);
 
-//        auto device = new Device(m.device, mDispatcher.get(), this, this);
-//        if (device->IsDeviceReady() == false)
-//        {
-//            delete device;
-//            msg.Result = toUnderlying(Status::INIT_FAILED);
-//            return;
-//        }
+        libusb_ref_device(m.device);
+        mLibUsbDeviceToTrackingDeviceMap[m.device] = device;
 
-//        libusb_ref_device(m.device);
-//        mLibUsbDeviceToTrackingDeviceMap[m.device] = device;
-        msg.Result = toUnderlying(Status::SUCCESS);
-        return;
+        shared_ptr<CompleteTask> ptr;
+        auto deviceInfo = device->get_device_info();
+        mTrackingDeviceInfoMap[device] = deviceInfo;
 
-//        shared_ptr<CompleteTask> ptr;
-//        TrackingData::DeviceInfo deviceInfo;
-//        device->GetDeviceInfo(deviceInfo);
-//        mTrackingDeviceInfoMap[device] = deviceInfo;
-//
-//        ptr = make_shared<UsbCompleteTask>(mListener, device, &deviceInfo, ATTACH, this);
-//        this->addTask(ptr);
-//
-//        if (deviceInfo.status.hw != Status::SUCCESS)
-//        {
-//            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.hw, this);
-//            this->addTask(ptr);
-//        }
-//        else if (deviceInfo.status.host != Status::SUCCESS)
-//        {
-//            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.host, this);
-//            this->addTask(ptr);
-//        }
+        ptr = make_shared<UsbCompleteTask>(mListener, device, ATTACH, this);
+        this->addTask(ptr);
 
-//        mDispatcher->registerHandler(device);
+        if (deviceInfo.status.hw != Status::SUCCESS)
+        {
+            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.hw, this);
+            this->addTask(ptr);
+        }
+        else if (deviceInfo.status.host != Status::SUCCESS)
+        {
+            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.host, this);
+            this->addTask(ptr);
+        }
+
+        mDispatcher->registerHandler(device);
     }
-    //libusb_ref_device(m.device);
+//    libusb_ref_device(m.device);
     msg.Result = toUnderlying(Status::SUCCESS);
+    return;
 }
 
 DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_DETACH, msg)
@@ -542,7 +532,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_DETACH, msg)
         mTrackingDeviceInfoMap.erase(device);
 
         // notify listener on device erased
-        shared_ptr<CompleteTask> ptr = make_shared<UsbCompleteTask>(mListener, device, &deviceInfo, DETACH, this);
+        shared_ptr<CompleteTask> ptr = make_shared<UsbCompleteTask>(mListener, device, DETACH, this);
         this->addTask(ptr);
         delete device;
         libusb_unref_device(m.device);

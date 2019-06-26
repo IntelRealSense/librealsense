@@ -7,16 +7,18 @@ project(tm)
 
 set(SOURCE_FILES
     ../include/TrackingManager.h
+    ../include/TrackingDeviceHolder.h
     ../include/TrackingDevice.h
     ../include/TrackingCommon.h
     ../include/TrackingData.h
+
 
     Manager.h
     Manager.cpp
     Device.h
     Device.cpp
-    DeviceHolder.cpp
     DeviceHolder.h
+    DeviceHolder.cpp
     Message.h
     UsbPlugListener.h
     UsbPlugListener.cpp
