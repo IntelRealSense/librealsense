@@ -505,7 +505,6 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
 
         mDispatcher->registerHandler(device);
     }
-//    libusb_ref_device(m.device);
     msg.Result = toUnderlying(Status::SUCCESS);
     return;
 }

@@ -1454,7 +1454,7 @@ namespace librealsense
                 }
             }
         }
-        _sensor->dispose();
+        if(_sensor) _sensor->dispose();
     }
 
     /**
@@ -1512,7 +1512,6 @@ namespace librealsense
 
     void tm2_device::connect_controller(const std::array<uint8_t, 6>& mac_address)
     {
-        connect_sensor();
         _sensor->attach_controller(mac_address);
     }
 

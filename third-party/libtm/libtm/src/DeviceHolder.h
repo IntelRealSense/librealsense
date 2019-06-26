@@ -8,7 +8,6 @@
 
 #include "TrackingManager.h"
 #include "TrackingDeviceHolder.h"
-//#include "Dispatcher.h"
 #include "libusb.h"
 #include "Device.h"
 #include <memory>
@@ -24,14 +23,11 @@ public:
     virtual ~DeviceHolder();
 
     void create() override;
+    void destruct();
     bool IsDeviceReady() override;
 
     perc::TrackingData::DeviceInfo get_device_info() override { return m_dev_info; }
     perc::TrackingDevice *get_device() override { return m_device; }
-
-    // [interface] CompleteQueueHandler
-//    virtual void addTask(std::shared_ptr<CompleteTask>&) override;
-//    virtual void removeTasks(void* owner, bool completeTasks) override;
 
 private:
     perc::TrackingData::DeviceInfo m_dev_info;

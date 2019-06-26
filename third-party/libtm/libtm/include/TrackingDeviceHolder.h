@@ -14,7 +14,7 @@ namespace perc
         virtual void create() = 0;
         virtual bool IsDeviceReady() = 0;
 
-        virtual perc::TrackingData::DeviceInfo get_device_info() = 0;
+        virtual perc::TrackingData::DeviceInfo get_device_info() {};
         virtual perc::TrackingDevice *get_device() = 0;
 
     };

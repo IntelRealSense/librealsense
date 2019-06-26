@@ -13,17 +13,15 @@ m_dispatcher(_dispatcher),
 m_libusb_device(_device),
 m_manager(_manager)
 {
+//    m_device = nullptr;
     auto device = new perc::Device(m_libusb_device,m_dispatcher.get(),m_manager,m_manager);
-    auto status = device->GetDeviceInfo(m_dev_info);
-    std::cout << std::hex << (m_dev_info.serialNumber >> 16) << std::endl;
+    device->GetDeviceInfo(m_dev_info);
     delete device;
 }
 
 DeviceHolder::~DeviceHolder()
 {
-    if(m_device) delete m_device;
-    if(m_libusb_device) delete m_libusb_device;
-    libusb_unref_device(m_libusb_device);
+    destruct();
 }
 
 void DeviceHolder::create()
@@ -32,15 +30,12 @@ void DeviceHolder::create()
     libusb_ref_device(m_libusb_device);
 }
 
-//void DeviceHolder::addTask(std::shared_ptr<CompleteTask>& newTask)
-//{
-//    m_manager->addTask(newTask);
-//}
-//
-//void DeviceHolder::removeTasks(void * owner, bool completeTasks)
-//{
-//    m_manager->removeTasks(owner,completeTasks);
-//}
+void DeviceHolder::destruct()
+{
+    libusb_unref_device(m_libusb_device);
+    if(!m_device) delete m_device;
+}
+
 
 bool DeviceHolder::IsDeviceReady() {
     return m_device->IsDeviceReady();

@@ -8,6 +8,15 @@
 // and taking advantage of depth data
 int main(int argc, char * argv[]) try
 {
+    rs2::context ctx;
+
+    while (true){
+        auto devices = ctx.query_devices();
+        for(auto &&dev : devices){
+            std::cout << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
+        }
+    }
+
     // Create a Pipeline - this serves as a top-level API for streaming and processing frames
     rs2::pipeline p;
 
