@@ -482,7 +482,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
 
         auto device = new DeviceHolder(m.device, mDispatcher, this);
 
-        libusb_ref_device(m.device);
+//        libusb_ref_device(m.device); // removed to prevent double locking (already happens in deviceHolder constructor)
         mLibUsbDeviceToTrackingDeviceMap[m.device] = device;
 
         shared_ptr<CompleteTask> ptr;
@@ -534,7 +534,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_DETACH, msg)
         shared_ptr<CompleteTask> ptr = make_shared<UsbCompleteTask>(mListener, device, DETACH, this);
         this->addTask(ptr);
         delete device;
-        libusb_unref_device(m.device);
+//        libusb_unref_device(m.device); already happens in deviceHolder destructor
     }
     else if (mUsbPlugListener->identifyDFUDevice(&desc) == true)
     {

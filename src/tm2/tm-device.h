@@ -125,7 +125,7 @@ namespace librealsense
         void raise_error_notification(const std::string& msg);
 
         dispatcher                      _dispatcher;
-        std::shared_ptr<perc::TrackingDevice>  _tm_dev;
+        mutable std::shared_ptr<perc::TrackingDevice>  _tm_dev;
         perc::TrackingDeviceHolder*     _tm_dev_holder;
         mutable std::mutex              _tm_op_lock;
         std::shared_ptr<playback_device>_loopback;

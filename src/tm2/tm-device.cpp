@@ -430,8 +430,8 @@ namespace librealsense
         for (auto profile : results)
         {
             SensorId current_reference;
-//            auto current_extrinsics = get_extrinsics(*profile, current_reference);
-//            environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
+            auto current_extrinsics = get_extrinsics(*profile, current_reference);
+            environment::get_instance().get_extrinsics_graph().register_extrinsics(*profile, *(profile_map[current_reference]), current_extrinsics);
         }
 
         auto accel_it = std::find_if(results.begin(), results.end(),
@@ -764,18 +764,16 @@ namespace librealsense
 
     rs2_intrinsics tm2_sensor::get_intrinsics(const stream_profile& profile) const
     {
-//        _tm_dev_holder->create();
-//        _tm_dev = _tm_dev_holder->get_device();
-//        sleep(4);
+        _tm_dev = _tm_dev_holder->get_device();
         rs2_intrinsics result;
         TrackingData::CameraIntrinsics tm_intrinsics{};
         int stream_index = profile.index - 1;
 
-//        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
-//        if (status != Status::SUCCESS)
-//        {
-//            throw io_exception("Failed to read TM2 intrinsics");
-//        }
+        auto status = _tm_dev->GetCameraIntrinsics(SET_SENSOR_ID(SensorType::Fisheye,stream_index), tm_intrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
 
         result.width = tm_intrinsics.width;
         result.height = tm_intrinsics.height;
@@ -783,10 +781,9 @@ namespace librealsense
         result.ppy = tm_intrinsics.ppy;
         result.fx = tm_intrinsics.fx;
         result.fy = tm_intrinsics.fy;
-//        result.model = convertTm2CameraModel(tm_intrinsics.distortionModel);
-//        librealsense::copy_array(result.coeffs, tm_intrinsics.coeffs);
-//        _tm_dev_holder->destruct();
-//        _tm_dev = nullptr;
+        result.model = convertTm2CameraModel(tm_intrinsics.distortionModel);
+        librealsense::copy_array(result.coeffs, tm_intrinsics.coeffs);
+        _tm_dev = nullptr;
         return result;
 
     }
@@ -853,13 +850,13 @@ namespace librealsense
         {
             stream_index--;
         }
-
-//        auto status = _tm_dev->GetExtrinsics(SET_SENSOR_ID(type, stream_index), tm_extrinsics);
-//        if (status != Status::SUCCESS)
-//        {
-//            throw io_exception("Failed to read TM2 intrinsics");
-//        }
-
+        _tm_dev = _tm_dev_holder->get_device();
+        auto status = _tm_dev->GetExtrinsics(SET_SENSOR_ID(type, stream_index), tm_extrinsics);
+        if (status != Status::SUCCESS)
+        {
+            throw io_exception("Failed to read TM2 intrinsics");
+        }
+        _tm_dev = nullptr;
         librealsense::copy_array(result.rotation, tm_extrinsics.rotation);
         librealsense::copy_array(result.translation, tm_extrinsics.translation);
         reference_sensor_id = tm_extrinsics.referenceSensorId;
