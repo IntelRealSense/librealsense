@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#include "auto-complete.h"
+
 #include <iostream>
 #include <thread>
 #include <algorithm>
 #include <string>
 #include <cmath>
-
+#include "auto-complete.h"
 using namespace std;
 
 
