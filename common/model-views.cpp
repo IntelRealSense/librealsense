@@ -4856,29 +4856,6 @@ namespace rs2
             }
 
             ImGui::SetCursorPos({ rc.x + 225, rc.y - 107 });
-
-            if (fw_version_less_than(fw_version, min_fw_version))
-            {
-                std::string label1 = to_string() << textual_icons::exclamation_triangle << "##" << id;
-                ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, sensor_bg);
-                ImGui::PushStyleColor(ImGuiCol_Text, yellow);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, yellow + 0.1f);
-
-                if (ImGui::SmallButton(label1.c_str()))
-                {
-                    open_url(recommended_fw_url);
-                }
-
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Click here to update firmware\n(internet connection required)");
-                }
-
-                ImGui::PopStyleColor(5);
-            }
-
             ImGui::PopFont();
         }
 
