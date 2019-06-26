@@ -621,5 +621,6 @@ namespace perc
         * @return Status
         */
         virtual Status ControllerFWUpdate(const TrackingData::ControllerFW& fw) = 0;
+
     };
 }

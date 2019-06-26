@@ -26,14 +26,21 @@ DeviceHolder::~DeviceHolder()
 
 void DeviceHolder::create()
 {
-    m_device =  new perc::Device(m_libusb_device,m_dispatcher.get(), m_manager, m_manager);
+//    auto test = std::make_shared<perc::Device>(m_libusb_device,m_dispatcher.get(), m_manager, m_manager);
+//    m_device =  new perc::Device(m_libusb_device,m_dispatcher.get(), m_manager, m_manager);
     libusb_ref_device(m_libusb_device);
+}
+
+std::shared_ptr<perc::TrackingDevice> DeviceHolder::get_device() {
+    auto device = std::make_shared<perc::Device>(m_libusb_device,m_dispatcher.get(), m_manager, m_manager);
+    libusb_ref_device(m_libusb_device);
+    return device;
 }
 
 void DeviceHolder::destruct()
 {
+    m_device = nullptr;
     libusb_unref_device(m_libusb_device);
-    if(!m_device) delete m_device;
 }
 
 

@@ -27,14 +27,13 @@ public:
     bool IsDeviceReady() override;
 
     perc::TrackingData::DeviceInfo get_device_info() override { return m_dev_info; }
-    perc::TrackingDevice *get_device() override { return m_device; }
-    perc::Manager *get_manager() { return m_manager; }
+    std::shared_ptr<perc::TrackingDevice> get_device() override;
 
 private:
     perc::TrackingData::DeviceInfo m_dev_info;
     std::shared_ptr<perc::Dispatcher> m_dispatcher;
     perc::Manager *m_manager;
-    perc::Device *m_device;
+    std::shared_ptr<perc::Device> m_device;
     libusb_device *m_libusb_device;
 
 };

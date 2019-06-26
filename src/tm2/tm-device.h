@@ -50,7 +50,7 @@ namespace librealsense
                        public pose_sensor_interface, public perc::TrackingDevice::Listener
     {
     public:
-        tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
+        tm2_sensor(tm2_device* owner, perc::TrackingDeviceHolder *dev_holder);
         virtual ~tm2_sensor();
 
         // sensor interface
@@ -125,7 +125,7 @@ namespace librealsense
         void raise_error_notification(const std::string& msg);
 
         dispatcher                      _dispatcher;
-        perc::TrackingDevice*           _tm_dev;
+        std::shared_ptr<perc::TrackingDevice>  _tm_dev;
         perc::TrackingDeviceHolder*     _tm_dev_holder;
         mutable std::mutex              _tm_op_lock;
         std::shared_ptr<playback_device>_loopback;

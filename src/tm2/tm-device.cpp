@@ -268,13 +268,15 @@ namespace librealsense
         return os << buffer_to_string(mac, ':', true);
     }
 
-    tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
-        : sensor_base("Tracking Module", owner, this), _dispatcher(10), _tm_dev(dev)
+    tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDeviceHolder *dev_holder)
+        : sensor_base("Tracking Module", owner, this), _dispatcher(10), _tm_dev_holder(dev_holder)
     {
+        _tm_dev = _tm_dev_holder->get_device();
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
         _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+        _tm_dev = nullptr;
     }
 
     tm2_sensor::~tm2_sensor()
@@ -308,15 +310,14 @@ namespace librealsense
         stream_profiles results;
 
         //get TM2 profiles
-//        _tm_dev_holder->create();
-//        _tm_dev = _tm_dev_holder->get_device();
+        _tm_dev = _tm_dev_holder->get_device(); // get device from device holder
+
         Status status = _tm_dev->GetSupportedProfile(_tm_supported_profiles);
         if (status != Status::SUCCESS)
         {
             throw io_exception("Failed to get supported raw streams");
         }
-//        _tm_dev_holder->destruct();
-//        _tm_dev = nullptr;
+        _tm_dev = nullptr;
 
         std::map<SensorId, std::shared_ptr<stream_profile_interface> > profile_map;
         //extract video profiles
@@ -451,9 +452,8 @@ namespace librealsense
         else if (_is_opened)
             throw wrong_api_call_sequence_exception("open(...) failed. TM2 device is already opened!");
 
+        _tm_dev = _tm_dev_holder->get_device(); // get device from device holder
 
-//        _tm_dev_holder->create();
-//        _tm_dev = _tm_dev_holder->get_device();
 
         _source.init(_metadata_parsers);
         _source.set_sensor(this->shared_from_this());
@@ -601,8 +601,6 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("close() failed. TM2 device was not opened!");
 
-//        _tm_dev = nullptr;
-//        _tm_dev_holder->destruct();
 
         if (_loopback)
         {
@@ -1386,7 +1384,7 @@ namespace librealsense
     {
         if (!manual_exposure)
             throw std::runtime_error("To control exposure you must set sensor to manual exposure mode prior to streaming");
-        SetManualExposure(_tm_dev, value, last_gain);
+        SetManualExposure(_tm_dev.get(), value, last_gain);
         last_exposure = value;
     }
 
@@ -1401,7 +1399,7 @@ namespace librealsense
     {
         if (!manual_exposure)
             throw std::runtime_error("To control gain you must set sensor to manual exposure mode prior to streaming");
-        SetManualExposure(_tm_dev, last_exposure, value);
+        SetManualExposure(_tm_dev.get(), last_exposure, value);
         last_gain = value;
     }
 
@@ -1412,7 +1410,7 @@ namespace librealsense
 
     void tm2_sensor::set_manual_exposure(bool manual)
     {
-        SetExposureMode(_tm_dev, manual);
+        SetExposureMode(_tm_dev.get(), manual);
         manual_exposure = true;
     }
 
@@ -1440,8 +1438,9 @@ namespace librealsense
 
         std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.port);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
-        _dev->create();
-        _sensor = std::make_shared<tm2_sensor>(this, _dev->get_device());
+
+//        _dev->create();
+        _sensor = std::make_shared<tm2_sensor>(this, _dev);
         add_sensor(_sensor);
 
 

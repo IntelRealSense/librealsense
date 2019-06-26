@@ -173,7 +173,8 @@ void Dispatcher::cancelTimer (uintptr_t timerId)
 int Dispatcher::removeHandler(EventHandler *handler, unsigned int mask)
 {
     ASSERT(handler);
-    ASSERT(mThreadId == std::this_thread::get_id());
+// removed the restriction that only enables to delete handler from the same thread its initiated on
+//    ASSERT(mThreadId == std::this_thread::get_id());
     int removedHandlers = 0;
 
     if (mask & MESSAGES_MASK) {
