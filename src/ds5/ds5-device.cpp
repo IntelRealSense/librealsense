@@ -666,10 +666,6 @@ namespace librealsense
 
         std::string curr_version= _fw_version;
 
-        if (dynamic_cast<const platform::playback_backend*>(&(ctx->get_backend())) == nullptr)
-            _tf_keeper->start();
-        else
-            LOG_WARNING("playback_backend - global time_keeper unavailable.");
     }
 
     notification ds5_notification_decoder::decode(int value)
