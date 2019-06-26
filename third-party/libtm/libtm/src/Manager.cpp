@@ -9,6 +9,7 @@
 #include <chrono>
 #include "Version.h"
 #include <vector>
+#include <iostream>
 #include "fw_target.h"
 #include "Common.h"
 
@@ -479,37 +480,41 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
     {
         /* To debug libusb issues, enable logs using libusb_set_debug(mContext, LIBUSB_LOG_LEVEL_INFO) */
 
-        auto device = new Device(m.device, mDispatcher.get(), this, this);
-        if (device->IsDeviceReady() == false)
-        {
-            delete device;
-            msg.Result = toUnderlying(Status::INIT_FAILED);
-            return;
-        }
+        auto test = new DeviceHolder(m.device, mDispatcher, this);
 
-        libusb_ref_device(m.device);
-        mLibUsbDeviceToTrackingDeviceMap[m.device] = device;
+//        auto device = new Device(m.device, mDispatcher.get(), this, this);
+//        if (device->IsDeviceReady() == false)
+//        {
+//            delete device;
+//            msg.Result = toUnderlying(Status::INIT_FAILED);
+//            return;
+//        }
 
-        shared_ptr<CompleteTask> ptr;
-        TrackingData::DeviceInfo deviceInfo;
-        device->GetDeviceInfo(deviceInfo);
-        mTrackingDeviceInfoMap[device] = deviceInfo;
+//        libusb_ref_device(m.device);
+//        mLibUsbDeviceToTrackingDeviceMap[m.device] = device;
+        msg.Result = toUnderlying(Status::SUCCESS);
+        return;
 
-        ptr = make_shared<UsbCompleteTask>(mListener, device, &deviceInfo, ATTACH, this);
-        this->addTask(ptr);
+//        shared_ptr<CompleteTask> ptr;
+//        TrackingData::DeviceInfo deviceInfo;
+//        device->GetDeviceInfo(deviceInfo);
+//        mTrackingDeviceInfoMap[device] = deviceInfo;
+//
+//        ptr = make_shared<UsbCompleteTask>(mListener, device, &deviceInfo, ATTACH, this);
+//        this->addTask(ptr);
+//
+//        if (deviceInfo.status.hw != Status::SUCCESS)
+//        {
+//            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.hw, this);
+//            this->addTask(ptr);
+//        }
+//        else if (deviceInfo.status.host != Status::SUCCESS)
+//        {
+//            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.host, this);
+//            this->addTask(ptr);
+//        }
 
-        if (deviceInfo.status.hw != Status::SUCCESS)
-        {
-            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.hw, this);
-            this->addTask(ptr);
-        }
-        else if (deviceInfo.status.host != Status::SUCCESS)
-        {
-            ptr = make_shared<ErrorTask>(mListener, device, deviceInfo.status.host, this);
-            this->addTask(ptr);
-        }
-
-        mDispatcher->registerHandler(device);
+//        mDispatcher->registerHandler(device);
     }
     //libusb_ref_device(m.device);
     msg.Result = toUnderlying(Status::SUCCESS);

@@ -15,6 +15,8 @@ set(SOURCE_FILES
     Manager.cpp
     Device.h
     Device.cpp
+    DeviceHolder.cpp
+    DeviceHolder.h
     Message.h
     UsbPlugListener.h
     UsbPlugListener.cpp

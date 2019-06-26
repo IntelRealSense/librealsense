@@ -17,6 +17,7 @@
 #include "CompleteTask.h"
 #include <list>
 #include <mutex>
+#include "DeviceHolder.h"
 
 namespace perc
 {
