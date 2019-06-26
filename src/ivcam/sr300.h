@@ -18,11 +18,13 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
+#include "fw-update/fw-update-device-interface.h"
 
 namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
     const uint16_t SR300v2_PID = 0x0B48;
+    const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 
@@ -156,7 +158,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public virtual device, public debug_interface
+    class sr300_camera final : public virtual device, public debug_interface, public updatable
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -521,8 +523,11 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
 
+        void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;

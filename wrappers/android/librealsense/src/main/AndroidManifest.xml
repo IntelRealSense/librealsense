@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.intel.realsense.librealsense">
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application android:allowBackup="true" android:supportsRtl="true">
         <activity android:name=".DeviceWatcherActivity"
             android:theme="@android:style/Theme.NoDisplay"

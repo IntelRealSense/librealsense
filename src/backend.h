@@ -96,7 +96,7 @@ namespace librealsense
         {
         public:
             virtual double get_time() const = 0;
-            ~time_service() = default;
+            virtual ~time_service() = default;
         };
 
         class os_time_service: public time_service
@@ -110,7 +110,7 @@ namespace librealsense
 
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
         // subdevice and node fields are assigned by Host driver; unit and GUID are hard-coded in camera firmware
-        struct extension_unit { int subdevice, unit, node; guid id; };
+        struct extension_unit { int subdevice; uint8_t unit; int node; guid id; };
 
         enum power_state
         {

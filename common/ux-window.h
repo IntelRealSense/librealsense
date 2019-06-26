@@ -47,7 +47,7 @@ namespace rs2
 
         ~ux_window();
 
-        operator GLFWwindow*() { return _win; }
+        operator GLFWwindow*() const { return _win; }
 
         void begin_frame();
 
@@ -78,6 +78,9 @@ namespace rs2
         void open_window();
 
         void setup_icon();
+
+        void imgui_config_push();
+        void imgui_config_pop();
 
         GLFWwindow               *_win;
         int                      _width, _height, _output_height;

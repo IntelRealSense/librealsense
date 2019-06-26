@@ -6,6 +6,27 @@
 
 namespace librealsense
 {
+    std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
+    {
+        std::stringstream formattedBuffer;
+        std::string s = "";
+        for (auto i = 1; i <= length; i++)
+        {
+            formattedBuffer << s << static_cast<int>(buff[index + (length - i)]);
+            s = ".";
+        }
+
+        return formattedBuffer.str();
+    }
+
+    std::string hw_monitor::get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
+    {
+        std::stringstream formattedBuffer;
+        for (auto i = 0; i < length; i++)
+            formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(buff[index + i]);
+
+        return formattedBuffer.str();
+    }
 
     void hw_monitor::fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4,
         uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length)
@@ -145,30 +166,6 @@ namespace librealsense
         auto data = send(command);
         auto minSize = std::min(sz, data.size());
         librealsense::copy(gvd, data.data(), minSize);
-    }
-
-    std::string hw_monitor::get_firmware_version_string(int gvd_cmd, uint32_t offset) const
-    {
-        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
-        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
-        uint8_t fws[8];
-        librealsense::copy(fws, gvd.data() + offset, 8);
-        return to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
-            << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
-    }
-
-    std::string hw_monitor::get_module_serial_string(uint8_t gvd_cmd, uint32_t offset, int size) const
-    {
-        std::vector<unsigned char> gvd(HW_MONITOR_BUFFER_SIZE);
-        get_gvd(gvd.size(), gvd.data(), gvd_cmd);
-        unsigned char ss[8];
-        librealsense::copy(ss, gvd.data() + offset, 8);
-        std::stringstream formattedBuffer;
-        for (auto i = 0;i < size;i++)
-        {
-            formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(ss[i]);
-        }
-        return formattedBuffer.str();
     }
 
     bool hw_monitor::is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const

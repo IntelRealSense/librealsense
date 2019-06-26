@@ -76,7 +76,7 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_data.mutex);
 
             gladLoadGLLoader((GLADloadproc)binding.glfwGetProcAddress);
-            LOG_WARNING("Initializing rendering, GLSL=" << use_glsl);
+            LOG_INFO("Initializing rendering, GLSL=" << use_glsl);
 
             for (auto&& obj : _data.objs)
             {
@@ -85,7 +85,7 @@ namespace librealsense
             _data.active = true;
             _data.use_glsl = use_glsl;
 
-            LOG_WARNING(" " << _data.objs.size() << " GPU objects initialized");
+            LOG_INFO(" " << _data.objs.size() << " GPU objects initialized");
 
             _rendering_thread = std::this_thread::get_id();
         }
@@ -93,13 +93,13 @@ namespace librealsense
         void rendering_lane::shutdown()
         {
             std::lock_guard<std::mutex> lock(_data.mutex);
-            LOG_WARNING("Shutting down rendering");
+            LOG_INFO("Shutting down rendering");
             for (auto&& obj : _data.objs)
             {
                 obj->update_gpu_resources(false);
             }
             _data.active = false;
-            LOG_WARNING(" " << _data.objs.size() << " GPU objects cleaned-up");
+            LOG_INFO(" " << _data.objs.size() << " GPU objects cleaned-up");
         }
 
         rendering_lane& rendering_lane::instance()
@@ -128,7 +128,7 @@ namespace librealsense
         {
             std::lock_guard<std::mutex> lock(_data.mutex);
 
-            LOG_WARNING("Initializing processing, GLSL=" << use_glsl);
+            LOG_INFO("Initializing processing, GLSL=" << use_glsl);
 
             _data.active = true;
             _data.use_glsl = use_glsl;
@@ -142,14 +142,14 @@ namespace librealsense
                 obj->update_gpu_resources(use_glsl);
             }
 
-            LOG_WARNING(" " << _data.objs.size() << " GPU objects initialized");
+            LOG_INFO(" " << _data.objs.size() << " GPU objects initialized");
         }
 
         void processing_lane::shutdown()
         {
             std::lock_guard<std::mutex> lock(_data.mutex);
 
-            LOG_WARNING("Shutting down processing");
+            LOG_INFO("Shutting down processing");
 
             _data.active = false;
             auto session = _ctx->begin_session();
@@ -160,7 +160,7 @@ namespace librealsense
                 obj->update_gpu_resources(false);
             }
 
-            LOG_WARNING(" " << _data.objs.size() << " GPU objects cleaned-up");
+            LOG_INFO(" " << _data.objs.size() << " GPU objects cleaned-up");
             
             _ctx.reset();
         }
