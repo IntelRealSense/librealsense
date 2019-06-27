@@ -24,11 +24,11 @@ public class RsContext extends LrsClass{
     }
 
     public DeviceList queryDevices() {
-        return queryDevices(ProductClass.ANY_INTEL);
+        return queryDevices(ProductLine.ANY_INTEL);
     }
 
-    public DeviceList queryDevices(ProductClass productClass) {
-        return new DeviceList(nQueryDevices(mHandle, productClass.value()));
+    public DeviceList queryDevices(ProductLine productLine) {
+        return new DeviceList(nQueryDevices(mHandle, productLine.value()));
     }
 
     public synchronized void setDevicesChangedCallback(DeviceListener listener) {

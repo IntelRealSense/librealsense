@@ -13,6 +13,7 @@ public class UpdateDevice extends Device {
 
     UpdateDevice(long handle){
         super(handle);
+        mOwner = false;
     }
 
     void onProgress(float progress){

@@ -3,5 +3,7 @@
     <string name="title_activity_file_browser">FileBrowserActivity</string>
     <string name="intent_extra_file_path">filePath</string>
     <string name="app_settings">settings</string>
-    <string name="extended_first_frame_timeout">extendedFirstFrameTimeout</string>
+    <string name="show_update_firmware">show_update_firmware</string>
+    <string name="firmware_update_request">firmware_update_request</string>
+    <string name="firmware_update_required">firmware_update_required</string>
 </resources>

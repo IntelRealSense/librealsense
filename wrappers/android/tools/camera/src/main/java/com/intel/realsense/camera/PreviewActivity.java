@@ -1,6 +1,8 @@
 package com.intel.realsense.camera;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -16,10 +18,7 @@ import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 
 public class PreviewActivity extends AppCompatActivity {
-    private static final String TAG = "librs camera pr";
-
-    private static final int PLAYBACK_REQUEST_CODE = 0;
-    private static final int SETTINGS_REQUEST_CODE = 1;
+    private static final String TAG = "librs camera preview";
 
     private GLRsSurfaceView mGLSurfaceView;
     private FloatingActionButton mStartRecordFab;
@@ -32,7 +31,7 @@ public class PreviewActivity extends AppCompatActivity {
     private Streamer mStreamer;
     private Colorizer mColorizer = new Colorizer();
 
-    private StreamingStats mStreamingStats  = new StreamingStats();
+    private StreamingStats mStreamingStats;
 
     private boolean statsToggle = false;
 
@@ -75,14 +74,14 @@ public class PreviewActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(PreviewActivity.this, PlaybackActivity.class);
-                startActivityForResult(intent, PLAYBACK_REQUEST_CODE);
+                startActivity(intent);
             }
         });
         mSettingsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(PreviewActivity.this, SettingsActivity.class);
-                startActivityForResult(intent, SETTINGS_REQUEST_CODE);
+                startActivity(intent);
             }
         });
         mStatisticsButton.setOnClickListener(new View.OnClickListener() {
@@ -97,6 +96,7 @@ public class PreviewActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        mStreamingStats  = new StreamingStats();
         mStreamer = new Streamer(this, true, new Streamer.Listener() {
             @Override
             public void config(Config config) {
@@ -130,9 +130,11 @@ public class PreviewActivity extends AppCompatActivity {
             if(mStreamer != null)
                 mStreamer.stop();
             Log.e(TAG, e.getMessage());
-            Toast.makeText(this, "Invalid configuration selected", Toast.LENGTH_LONG).show();
+            SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+            sharedPref.edit().clear().commit();
+            Toast.makeText(this, "Failed to set streaming configuration ", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(PreviewActivity.this, SettingsActivity.class);
-            startActivityForResult(intent, SETTINGS_REQUEST_CODE);
+            startActivity(intent);
         }
     }
 
@@ -142,13 +144,5 @@ public class PreviewActivity extends AppCompatActivity {
 
         if(mStreamer != null)
             mStreamer.stop();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        Intent intent = new Intent(this, DetachedActivity.class);
-        startActivity(intent);
-        finish();
     }
 }
