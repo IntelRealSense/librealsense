@@ -88,7 +88,7 @@ namespace librealsense
 
             if (std::regex_search(device_str, matches, regex_camera_interface) && matches.size() == 11)
             {
-                rv.id = matches[0];
+                rv.id = device_str;
                 std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
                 std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
                 std::stringstream mi; mi << std::hex << matches[6]; mi >> rv.mi;
@@ -97,7 +97,7 @@ namespace librealsense
             }
             if (std::regex_search(device_str, matches, regex_usb_interface) && matches.size() == 9)
             {
-                rv.id = matches[0];
+                rv.id = device_str;
                 std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
                 std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
                 std::stringstream uid; uid << std::hex << matches[6]; uid >> rv.unique_id;
@@ -105,7 +105,7 @@ namespace librealsense
             }
             if (std::regex_search(device_str, matches, regex_dfu_interface))
             {
-                rv.id = matches[0];
+                rv.id = device_str;
                 std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
                 std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
                 std::stringstream uid; uid << std::hex << matches[6]; uid >> rv.unique_id;
