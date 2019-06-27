@@ -69,6 +69,20 @@ namespace librealsense
         return false;
     }
 
+    std::string get_formatted_fw_version(uint32_t fw_last_version)
+    {
+        uint8_t* ptr = (uint8_t*)(&fw_last_version);
+        std::vector<uint8_t> buffer(ptr, ptr + sizeof(fw_last_version));
+        std::stringstream fw_version;
+        std::string delimiter = "";
+        for (auto i = 1; i <= buffer.size(); i++)
+        {
+            fw_version << delimiter << static_cast<int>(buffer[buffer.size() - i]);
+            delimiter = ".";
+        }
+        return fw_version.str();
+    }
+
     update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
         : _context(ctx), _usb_device(usb_device)
     {
@@ -81,17 +95,25 @@ namespace librealsense
         if (state != RS2_DFU_STATE_DFU_IDLE)
             throw std::runtime_error("Cannot open recovery device!");
 
-        dfu_fw_status_payload paylaod;
+        dfu_fw_status_payload payload;
         uint32_t transferred = 0;
-        auto sts = messenger->control_transfer(0xa1, RS2_DFU_UPLOAD, 0, 0, reinterpret_cast<uint8_t*>(&paylaod), sizeof(paylaod), transferred, DEFAULT_TIMEOUT);
+        auto sts = messenger->control_transfer(0xa1, RS2_DFU_UPLOAD, 0, 0, reinterpret_cast<uint8_t*>(&payload), sizeof(payload), transferred, DEFAULT_TIMEOUT);
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to read serial number from recovery device!");
 
-        std::stringstream formattedBuffer;
-        for (auto i = 0; i < sizeof(paylaod.serial_number.serial); i++)
-            formattedBuffer << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(paylaod.serial_number.serial[i]);
+        std::stringstream serial_number;
+        for (auto i = 0; i < sizeof(payload.serial_number.serial); i++)
+            serial_number << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(payload.serial_number.serial[i]);
+        _asic_serial_number = serial_number.str();
 
-        _asic_serial_number = formattedBuffer.str();
+        _is_dfu_locked = payload.dfu_is_locked;
+        _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
+        _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
+
+        std::string lock_status = _is_dfu_locked ? "device is locked" : "device is unlocked";
+        LOG_INFO("This device is in DFU mode, previously-installed firmware: " << _last_fw_version <<
+            ", the highest firmware ever installed: " << _highest_fw_version <<
+            ", DFU status: " << lock_status);
     }
 
     update_device::~update_device()
@@ -118,8 +140,13 @@ namespace librealsense
 
             auto curr_block = ((uint8_t*)fw_image + offset);
             auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 1000000);
-            if(sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 100000))
-                throw std::runtime_error("Failed to download firmware");
+            if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 100000))
+            {
+                if(_is_dfu_locked)
+                    throw std::runtime_error("Device: " + _asic_serial_number  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
+                else
+                    throw std::runtime_error("Device: " + _asic_serial_number + " failed to download firmware");
+            }
 
             block_number++;
             remaining_bytes -= chunk_size;

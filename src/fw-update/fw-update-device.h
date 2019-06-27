@@ -147,5 +147,8 @@ namespace librealsense
         const std::shared_ptr<context> _context;
         const platform::rs_usb_device _usb_device;
         std::string _asic_serial_number;
+        std::string _highest_fw_version;
+        std::string _last_fw_version;
+        bool _is_dfu_locked = false;
     };
 }
