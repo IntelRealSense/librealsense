@@ -278,6 +278,9 @@ namespace librealsense
             CASE(APD_TEMPERATURE)
             CASE(HARDWARE_PRESET)
             CASE(GLOBAL_TIME_ENABLED)
+            CASE(ENABLE_MAPPING)
+            CASE(ENABLE_RELOCALIZATION)
+            CASE(ENABLE_POSE_JUMPING)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
