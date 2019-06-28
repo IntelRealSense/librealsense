@@ -29,6 +29,8 @@
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
 #endif
 
+#include <type_traits>
+
 namespace perc {
 
 #ifdef _WIN32
@@ -141,5 +143,19 @@ namespace perc {
         SIXDOF_MODE_ENABLE_RELOCALIZATION = 0x0004, 
         SIXDOF_MODE_MAX = ((SIXDOF_MODE_FAST_PLAYBACK | SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION) + 1)
     } SIXDOF_MODE;
+
+    inline SIXDOF_MODE &operator|=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) |
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE &operator&=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) &
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE operator~(SIXDOF_MODE x) {
+        return static_cast<SIXDOF_MODE>(~static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x));
+    }
+    inline SIXDOF_MODE operator|(SIXDOF_MODE x, SIXDOF_MODE y) { return x |= y; }
+    inline SIXDOF_MODE operator&(SIXDOF_MODE x, SIXDOF_MODE y) { return x &= y; }
 
 }
