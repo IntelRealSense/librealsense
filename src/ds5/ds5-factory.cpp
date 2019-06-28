@@ -663,7 +663,7 @@ namespace librealsense
             LOG_WARNING("invalid RGB extrinsic was identified, recovery routine was invoked");
             try
             {
-                if (res = is_rgb_extrinsic_valid(read_rgb_gold()))
+                if ((res = is_rgb_extrinsic_valid(read_rgb_gold())))
                 {
                     restore_calib_factory_settings();
                 }
@@ -674,7 +674,7 @@ namespace librealsense
                         const uint32_t gold_address = 0x17c49c;
                         const uint16_t bytes_to_read = 0x100;
                         auto alt_calib = read_sector(gold_address, bytes_to_read);
-                        if (res = is_rgb_extrinsic_valid(alt_calib))
+                        if ((res = is_rgb_extrinsic_valid(alt_calib)))
                             assign_rgb_stream_extrinsic(alt_calib);
                         else
                             res = false;
