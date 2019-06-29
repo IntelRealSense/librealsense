@@ -221,8 +221,7 @@ namespace perc {
         }
         SyncTime();
 
-        // schedule the listener itself for every 500 msec
-        mDispatcher->scheduleTimer(this, mSyncTimeout, Message(0));
+        // moved Listener time to open() function
 
         return;
     }
@@ -741,6 +740,10 @@ namespace perc {
     // ----------------------------------------------------------------------------
     Status Device::Start(Listener* listener, TrackingData::Profile* profile)
     {
+        // schedule the listener itself for every 500 msec - moved here from constructor
+        // The target behind it is to enable simple information query on device construction and proper init on start()
+        mDispatcher->scheduleTimer(this, mSyncTimeout, Message(0));
+
         mSyncTimeEnabled = true;
 
         if (profile != NULL)
