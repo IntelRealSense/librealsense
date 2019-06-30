@@ -139,8 +139,8 @@ namespace librealsense
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
 
             auto curr_block = ((uint8_t*)fw_image + offset);
-            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 1000000);
-            if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 100000))
+            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 5000);
+            if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 5000))
             {
                 if(_is_dfu_locked)
                     throw std::runtime_error("Device: " + _asic_serial_number  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
