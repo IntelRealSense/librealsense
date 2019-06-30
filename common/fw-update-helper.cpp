@@ -235,6 +235,7 @@ namespace rs2
             _progress = next_progress;
 
             log("Recovery device connected, starting update");
+            std::this_thread::sleep_for(std::chrono::seconds(1));
 
             dfu.update(_fw, [&](const float progress)
             {
