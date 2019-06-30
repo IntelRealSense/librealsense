@@ -10,6 +10,7 @@
 #include "win7-usb.h"
 #include "win7-hid.h"
 #include "../types.h"
+#include "usb/usb-enumerator.h"
 #include <mfapi.h>
 #include <ks.h>
 #include <chrono>
@@ -72,27 +73,7 @@ namespace librealsense
 
         std::vector<usb_device_info> win7_backend::query_usb_devices() const
         {
-            const std::vector<std::string> usb_interfaces = {
-                "{175695CD-30D9-4F87-8BE3-5A8270F49A31}",
-                "{08090549-CE78-41DC-A0FB-1BD66694BB0C}"
-            };
-
-            std::vector<usb_device_info> result;
-            for (auto&& interface_id : usb_interfaces)
-            {
-                for (auto&& id : usb_enumerate::query_by_interface(interface_id, "", ""))
-                {
-                    std::string path(id.begin(), id.end());
-                    uint16_t vid, pid, mi; std::string unique_id, device_guid;
-                    if (!parse_usb_path_multiple_interface(vid, pid, mi, unique_id, path, device_guid)) continue;
-
-                    usb_device_info info{ path, vid, pid, mi, unique_id, "", usb_undefined };
-
-                    result.push_back(info);
-                }
-            }
-
-            return result;
+            return usb_enumerator::query_devices_info();
         }
 
         std::shared_ptr<hid_device> win7_backend::create_hid_device(hid_device_info info) const

@@ -156,6 +156,65 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
+    void sr300_camera::enter_update_state() const
+    {
+        try {
+            command cmd(ivcam::GoToDFU);
+            cmd.param1 = 1;
+            _hw_monitor->send(cmd);
+        }
+        catch (...) {
+            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        }
+    }
+
+    std::vector<uint8_t> sr300_camera::backup_flash(update_progress_callback_ptr callback)
+    {
+        // TODO: Refactor, unify with DS version
+        int flash_size = 1024 * 2048;
+        int max_bulk_size = 1016;
+        int max_iterations = int(flash_size / max_bulk_size + 1);
+
+        std::vector<uint8_t> flash;
+        flash.reserve(flash_size);
+
+        for (int i = 0; i < max_iterations; i++)
+        {
+            int offset = max_bulk_size * i;
+            int size = max_bulk_size;
+            if (i == max_iterations - 1)
+            {
+                size = flash_size - offset;
+            }
+
+            bool appended = false;
+
+            const int retries = 3;
+            for (int j = 0; j < retries && !appended; j++)
+            {
+                try
+                {
+                    command cmd(ivcam::FlashRead);
+                    cmd.param1 = offset;
+                    cmd.param2 = size;
+                    auto res = _hw_monitor->send(cmd);
+
+                    flash.insert(flash.end(), res.begin(), res.end());
+                    appended = true;
+                }
+                catch (...)
+                {
+                    if (i < retries - 1) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    else throw;
+                }
+            }
+
+            if (callback) callback->on_update_progress((float)i / max_iterations);
+        }
+
+        return flash;
+    }
+
     struct sr300_raw_calibration
     {
         uint16_t tableVersion;
@@ -202,8 +261,14 @@ namespace librealsense
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";
 
-        auto fw_version = _hw_monitor->get_firmware_version_string(GVD, fw_version_offset);
-        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+        std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+        // fooling tests recordings - don't remove
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+
+        auto fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
+        auto serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+
         _camer_calib_params = [this]() { return get_calibration(); };
         enable_timestamp(true, true);
 
@@ -211,10 +276,12 @@ namespace librealsense
 
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
+        register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,         depth.device_path);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,    depth.device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE,     "SR300");
 
         register_autorange_options();
 

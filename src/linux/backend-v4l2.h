@@ -92,6 +92,8 @@ namespace librealsense
 
             named_mutex(const named_mutex&) = delete;
 
+            ~named_mutex();
+
             void lock();
 
             void unlock();
@@ -108,12 +110,12 @@ namespace librealsense
             std::mutex _mutex;
         };
 
-        static int xioctl(int fh, int request, void *arg);
+        static int xioctl(int fh, unsigned long request, void *arg);
 
         class buffer
         {
         public:
-            buffer(int fd, v4l2_buf_type type, bool use_memory_map, int index);
+            buffer(int fd, v4l2_buf_type type, bool use_memory_map, uint32_t index);
 
             void prepare_for_streaming(int fd);
 
@@ -125,8 +127,8 @@ namespace librealsense
 
             void request_next_frame(int fd);
 
-            size_t get_full_length() const { return _length; }
-            size_t get_length_frame_only() const { return _original_length; }
+            uint32_t get_full_length() const { return _length; }
+            uint32_t get_length_frame_only() const { return _original_length; }
 
             uint8_t* get_frame_start() const { return _start; }
 
@@ -135,10 +137,10 @@ namespace librealsense
         private:
             v4l2_buf_type _type;
             uint8_t* _start;
-            size_t _length;
-            size_t _original_length;
+            uint32_t _length;
+            uint32_t _original_length;
             bool _use_memory_map;
-            int _index;
+            uint32_t _index;
             v4l2_buffer _buf;
             std::mutex _mutex;
             bool _must_enqueue = false;
@@ -160,17 +162,17 @@ namespace librealsense
                 _md_start(nullptr),
                 _md_size(0),
                 _mmap_bufs(memory_mapped_buf)
-                {};
+                {}
 
-            ~buffers_mgr(){};
+            ~buffers_mgr(){}
 
             void    request_next_frame();
             void    handle_buffer(supported_kernel_buf_types buf_type, int file_desc,
                                    v4l2_buffer buf= v4l2_buffer(),
                                    std::shared_ptr<platform::buffer> data_buf=nullptr);
 
-            uint8_t metadata_size() const { return _md_size; };
-            void*   metadata_start() const { return _md_start; };
+            uint8_t metadata_size() const { return _md_size; }
+            void*   metadata_start() const { return _md_start; }
 
             void    set_md_attributes(uint8_t md_size, void* md_start)
                     { _md_start = md_start; _md_size = md_size; }
@@ -202,9 +204,9 @@ namespace librealsense
                     if (_data_buf && (!_managed))
                     {
                         //LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
-                        if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                        if ((_file_desc > 0) && (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0))
                         {
-                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed");
+                            LOG_INFO("xioctl(VIDIOC_QBUF) guard failed");
                         }
                     }
                 }
@@ -246,7 +248,7 @@ namespace librealsense
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 
-            ~v4l_uvc_device();
+            ~v4l_uvc_device() override;
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
 
@@ -267,7 +269,7 @@ namespace librealsense
             void set_power_state(power_state state) override;
             power_state get_power_state() const override { return _state; }
 
-            void init_xu(const extension_unit& xu) override {}
+            void init_xu(const extension_unit&) override {}
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
@@ -289,21 +291,21 @@ namespace librealsense
         protected:
             static uint32_t get_cid(rs2_option option);
 
-            virtual void capture_loop();
+            virtual void capture_loop() override;
 
-            virtual bool has_metadata() const;
+            virtual bool has_metadata() const override;
 
-            virtual void streamon() const;
-            virtual void streamoff() const;
-            virtual void negotiate_kernel_buffers(size_t num) const;
+            virtual void streamon() const override;
+            virtual void streamoff() const override;
+            virtual void negotiate_kernel_buffers(size_t num) const override;
 
-            virtual void allocate_io_buffers(size_t num);
-            virtual void map_device_descriptor();
-            virtual void unmap_device_descriptor();
-            virtual void set_format(stream_profile profile);
-            virtual void prepare_capture_buffers();
-            virtual void stop_data_capture();
-            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
+            virtual void allocate_io_buffers(size_t num) override;
+            virtual void map_device_descriptor() override;
+            virtual void unmap_device_descriptor() override;
+            virtual void set_format(stream_profile profile) override;
+            virtual void prepare_capture_buffers() override;
+            virtual void stop_data_capture() override;
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds) override;
 
             power_state _state = D3;
             std::string _name = "";
@@ -369,7 +371,7 @@ namespace librealsense
             std::vector<hid_device_info> query_hid_devices() const override;
 
             std::shared_ptr<time_service> create_time_service() const override;
-            std::shared_ptr<device_watcher> create_device_watcher() const;
+            std::shared_ptr<device_watcher> create_device_watcher() const override;
         };
     }
 }

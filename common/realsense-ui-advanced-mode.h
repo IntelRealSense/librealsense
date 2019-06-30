@@ -610,7 +610,7 @@ inline void draw_advanced_mode_controls(rs400::advanced_mode& advanced,
 
         auto to_set = false;
 
-        slider_float(error_message, "Amplitude Factor", amc.amp_factor.vals, &STAFactor::amplitude, to_set);
+        slider_float(error_message, "A Factor", amc.amp_factor.vals, &STAFactor::amplitude, to_set);
 
         ImGui::PopItemWidth();
 

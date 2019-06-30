@@ -233,7 +233,8 @@ PYBIND11_MODULE(NAME, m) {
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
              "On successful load, the device will be appended to the context and a devices_changed event triggered."
              "filename"_a)
-        .def("unload_device", &rs2::context::unload_device, "filename"_a);  // No docstring in C++
+        .def("unload_device", &rs2::context::unload_device, "filename"_a) // No docstring in C++
+        .def("unload_tracking_module", &rs2::context::unload_tracking_module); // No docstring in C++
 
     /* rs2_device.hpp */
     py::class_<rs2::device> device(m, "device"); // No docstring in C++
@@ -254,6 +255,8 @@ PYBIND11_MODULE(NAME, m) {
         .def(BIND_DOWNCAST(device, playback))
         .def(BIND_DOWNCAST(device, recorder))
         .def(BIND_DOWNCAST(device, tm2))
+        .def(BIND_DOWNCAST(device, updatable))
+        .def(BIND_DOWNCAST(device, update_device))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -266,6 +269,25 @@ PYBIND11_MODULE(NAME, m) {
     debug_protocol.def(py::init<rs2::device>())
         .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
              "input"_a);  // No docstring in C++
+
+    py::class_<rs2::updatable> updatable(m, "updatable");
+    updatable.def(py::init<rs2::device>())
+        .def("enter_update_state", &rs2::updatable::enter_update_state)
+        .def("create_flash_backup", (std::vector<uint8_t>(rs2::updatable::*)() const) &rs2::updatable::create_flash_backup,
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.")
+        .def("create_flash_backup", [](rs2::updatable& self, std::function<void(float)> f) { return self.create_flash_backup(f); },
+            "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
+            "loaded back to the device, but it does contain all calibration and device information.",
+            "callback"_a);
+
+    py::class_<rs2::update_device> update_device(m, "update_device");
+    update_device.def(py::init<rs2::device>())
+        .def("update", (void (rs2::update_device::*)(const std::vector<uint8_t>&) const) &rs2::update_device::update,
+            "Update an updatable device to the provided firmware. this call is executed on the caller's thread", "fw_image"_a)
+        .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
+            "Update an updatable device to the provided firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",
+            "fw_image"_a, "callback"_a);
 
     py::class_<rs2::device_list> device_list(m, "device_list"); // No docstring in C++
     device_list.def(py::init<>())
@@ -314,7 +336,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a);
 
 
-    /* rs2_frame.hpp */
+    /* rs_frame.hpp */
     auto get_frame_data = [](const rs2::frame& self) ->  BufData
     {
         if (auto vf = self.as<rs2::video_frame>()) {
@@ -510,7 +532,6 @@ PYBIND11_MODULE(NAME, m) {
              "found, return an empty frame instance.", "index"_a = 0)
         .def("get_fisheye_frame", &rs2::frameset::get_fisheye_frame, "Retrieve the fisheye monochrome video frame", "index"_a=0)
         .def("get_pose_frame", &rs2::frameset::get_pose_frame, "Retrieve the pose frame", "index"_a = 0)
-        .def("get_pose_frame", [](rs2::frameset& self){   return self.get_pose_frame(); })
         .def("__iter__", [](rs2::frameset& self) {
             return py::make_iterator(self.begin(), self.end());
         }, py::keep_alive<0, 1>())
@@ -595,13 +616,23 @@ PYBIND11_MODULE(NAME, m) {
             self.start(f);
         }, "Start the processing block with callback function to inform the application the frame is processed.", "callback"_a)
         .def("invoke", &rs2::processing_block::invoke, "Ask processing block to process the frame", "f"_a)
-        /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/;
+        .def("supports", (bool (rs2::processing_block::*)(rs2_camera_info) const) &rs2::processing_block::supports, "Check if a specific camera info field is supported.")
+        .def("get_info", &rs2::processing_block::get_info, "Retrieve camera specific information, like versions of various internal components.");
+        /*.def("__call__", &rs2::processing_block::operator(), "f"_a)*/
         // supports(camera_info) / get_info(camera_info)?
 
-    py::class_ <rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter", "Define the filter workflow, inherit this class to generate your own filter.");
+    py::class_<rs2::filter, rs2::processing_block, rs2::filter_interface> filter(m, "filter", "Define the filter workflow, inherit this class to generate your own filter.");
     filter.def(py::init([](std::function<void(rs2::frame, rs2::frame_source&)> filter_function, int queue_size) {
             return new rs2::filter(filter_function, queue_size);
-        }), "filter_function"_a, "queue_size"_a = 1);
+    }), "filter_function"_a, "queue_size"_a = 1)
+        .def(BIND_DOWNCAST(filter, decimation_filter))
+        .def(BIND_DOWNCAST(filter, disparity_transform))
+        .def(BIND_DOWNCAST(filter, hole_filling_filter))
+        .def(BIND_DOWNCAST(filter, spatial_filter))
+        .def(BIND_DOWNCAST(filter, temporal_filter))
+        .def(BIND_DOWNCAST(filter, threshold_filter))
+        .def(BIND_DOWNCAST(filter, zero_order_invalidation))
+        .def("__nonzero__", &rs2::filter::operator bool); // No docstring in C++
     // get_queue?
     // is/as?
 
@@ -797,6 +828,9 @@ PYBIND11_MODULE(NAME, m) {
     motion_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a)
         .def("get_motion_intrinsics", &rs2::motion_stream_profile::get_motion_intrinsics, "Returns scale and bias of a motion stream.");
 
+    py::class_<rs2::pose_stream_profile, rs2::stream_profile> pose_stream_profile(m, "pose_stream_profile", "Stream profile instance with an explicit pose extension type.");
+    pose_stream_profile.def(py::init<const rs2::stream_profile&>(), "sp"_a);
+
     py::class_<rs2::notification> notification(m, "notification"); // No docstring in C++
     notification.def(py::init<>())
         .def("get_category", &rs2::notification::get_category,
@@ -915,11 +949,11 @@ PYBIND11_MODULE(NAME, m) {
              "During the loop execution, the application can access the camera streams by calling wait_for_frames() or poll_for_frames().\n"
              "The streaming loop runs until the pipeline is stopped.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n")
-        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { self.start(f); }, "Start the pipeline streaming with its default configuration.\n"
+        .def("start", [](rs2::pipeline& self, std::function<void(rs2::frame)> f) { return self.start(f); }, "Start the pipeline streaming with its default configuration.\n"
              "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
              "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.", "callback"_a)
-        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { self.start(config, f); }, "Start the pipeline streaming according to the configuraion.\n"
+        .def("start", [](rs2::pipeline& self, const rs2::config& config, std::function<void(rs2::frame)> f) { return self.start(config, f); }, "Start the pipeline streaming according to the configuraion.\n"
              "The pipeline captures samples from the device, and delivers them to the through the provided frame callback.\n"
              "Starting the pipeline is possible only when it is not started. If the pipeline was started, an exception is raised.\n"
              "When starting the pipeline with a callback both wait_for_frames() and poll_for_frames() will throw exception.\n"

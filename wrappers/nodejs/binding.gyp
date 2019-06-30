@@ -2,10 +2,8 @@
   'variables': {
     'configuration%': '${BUILDTYPE}',
     'build_arch': '<!(node -p "process.arch")',
-    'variables': {
-      'vs_configuration%': "Debug",
-    },
-    'win_realsense_dir': '<(module_root_dir)/../../build/<(vs_configuration)',
+    'vs_configuration%': "Debug",
+    'win_realsense_dir': '<(module_root_dir)/../../build',
   },
   "targets": [
     {
@@ -49,9 +47,16 @@
                 'SuppressStartupBanner': 'true',
               }
             },
-            "libraries": [
-              "<(win_realsense_dir)/realsense2.lib",
-            ],
+            "conditions": [
+            	[ 'vs_configuration=="Debug"', {
+            		"libraries": [ "<(win_realsense_dir)/Debug/realsense2d.lib" ]
+            	}
+            	],
+            	[ 'vs_configuration=="Release"', {
+            		"libraries": [ "<(win_realsense_dir)/Release/realsense2.lib" ]
+            	}
+            	],
+            ]
           }
         ],
        ['OS=="mac"',
@@ -105,7 +110,16 @@
             [
               {
                 'destination': '<(module_root_dir)/build/Release',
-                'files': ['<(win_realsense_dir)/realsense2.dll']
+                "conditions": [
+            	[ 'vs_configuration=="Debug"', {
+            		'files': ['<(win_realsense_dir)/Debug/realsense2d.dll']
+            	}
+            	],
+            	[ 'vs_configuration=="Release"', {
+            		'files': ['<(win_realsense_dir)/Release/realsense2.dll']
+            	}
+            	],
+            ]
               }
             ]
         }]

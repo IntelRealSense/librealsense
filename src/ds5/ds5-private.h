@@ -15,25 +15,27 @@ namespace librealsense
 {
     namespace ds
     {
-        const uint16_t RS400_PID        = 0x0ad1; // PSR
-        const uint16_t RS410_PID        = 0x0ad2; // ASR
-        const uint16_t RS415_PID        = 0x0ad3; // ASRC
-        const uint16_t RS416_PID        = 0x0b49;
-        const uint16_t RS430_PID        = 0x0ad4; // AWG
-        const uint16_t RS430I_PID       = 0x0b4b; // D430i
-        const uint16_t RS430_MM_PID     = 0x0ad5; // AWGT
-        const uint16_t RS_USB2_PID      = 0x0ad6; // USB2
-        const uint16_t RS400_IMU_PID    = 0x0af2; // IMU
-        const uint16_t RS420_PID        = 0x0af6; // PWG
-        const uint16_t RS420_MM_PID     = 0x0afe; // PWGT
-        const uint16_t RS410_MM_PID     = 0x0aff; // ASRT
-        const uint16_t RS400_MM_PID     = 0x0b00; // PSR
-        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
-        const uint16_t RS460_PID        = 0x0b03; // DS5U
-        const uint16_t RS435_RGB_PID    = 0x0b07; // AWGC
-        const uint16_t RS405_PID        = 0x0b0c; // DS5U
-        const uint16_t RS435I_PID       = 0x0b3a; // D435i
-        const uint16_t RS465_PID        = 0x0b4d;
+        const uint16_t RS400_PID            = 0x0ad1; // PSR
+        const uint16_t RS410_PID            = 0x0ad2; // ASR
+        const uint16_t RS415_PID            = 0x0ad3; // ASRC
+        const uint16_t RS430_PID            = 0x0ad4; // AWG
+        const uint16_t RS430_MM_PID         = 0x0ad5; // AWGT
+        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2
+        const uint16_t RS_RECOVERY_PID      = 0x0adb;
+        const uint16_t RS_USB2_RECOVERY_PID = 0x0adc;
+        const uint16_t RS400_IMU_PID        = 0x0af2; // IMU
+        const uint16_t RS420_PID            = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID         = 0x0afe; // PWGT
+        const uint16_t RS410_MM_PID         = 0x0aff; // ASRT
+        const uint16_t RS400_MM_PID         = 0x0b00; // PSR
+        const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
+        const uint16_t RS460_PID            = 0x0b03; // DS5U
+        const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
+        const uint16_t RS405_PID            = 0x0b0c; // DS5U
+        const uint16_t RS435I_PID           = 0x0b3a; // D435i
+        const uint16_t RS416_PID            = 0x0b49;
+        const uint16_t RS430I_PID           = 0x0b4b; // D430i
+        const uint16_t RS465_PID            = 0x0b4d;
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -96,25 +98,27 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
-            { RS400_PID,        "Intel RealSense D400"},
-            { RS400_MM_PID,     "Intel RealSense D400 with Tracking Module"},
-            { RS410_PID,        "Intel RealSense D410"},
-            { RS410_MM_PID,     "Intel RealSense D410 with Tracking Module"},
-            { RS415_PID,        "Intel RealSense D415"},
-            { RS416_PID,        "Intel RealSense F416"},
-            { RS420_PID,        "Intel RealSense D420"},
-            { RS420_MM_PID,     "Intel RealSense D420 with Tracking Module"},
-            { RS430_PID,        "Intel RealSense D430"},
-            { RS430I_PID,       "Intel RealSense D430I"},
-            { RS430_MM_PID,     "Intel RealSense D430 with Tracking Module"},
-            { RS430_MM_RGB_PID, "Intel RealSense D430 with Tracking and RGB Modules"},
-            { RS435_RGB_PID,    "Intel RealSense D435"},
-            { RS460_PID,        "Intel RealSense D460" },
-            { RS405_PID,        "Intel RealSense D405" },
-            { RS435I_PID,       "Intel RealSense D435I" },
-            { RS465_PID,        "Intel RealSense D465" },
-            { RS_USB2_PID,      "Intel RealSense USB2" },
-            { RS400_IMU_PID,    "Intel RealSense IMU" }
+            { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
+            { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
+            { RS400_PID,            "Intel RealSense D400"},
+            { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
+            { RS410_PID,            "Intel RealSense D410"},
+            { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
+            { RS415_PID,            "Intel RealSense D415"},
+            { RS416_PID,            "Intel RealSense F416"},
+            { RS420_PID,            "Intel RealSense D420"},
+            { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
+            { RS430_PID,            "Intel RealSense D430"},
+            { RS430I_PID,           "Intel RealSense D430I"},
+            { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
+            { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
+            { RS435_RGB_PID,        "Intel RealSense D435"},
+            { RS460_PID,            "Intel RealSense D460" },
+            { RS405_PID,            "Intel RealSense D405" },
+            { RS435I_PID,           "Intel RealSense D435I" },
+            { RS465_PID,            "Intel RealSense D465" },
+            { RS_USB2_PID,          "Intel RealSense USB2" },
+            { RS400_IMU_PID,        "Intel RealSense IMU" }
 
         };
 
@@ -137,7 +141,8 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
-            LOADINTCAL      = 0x1D,     //Get Internal sub calibration table
+            LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
+            DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
             SET_ADV         = 0x2B,     // set advanced mode control
@@ -545,6 +550,7 @@ namespace librealsense
             camera_fw_version_offset        = 12,
             is_camera_locked_offset         = 25,
             module_serial_offset            = 48,
+            module_asic_serial_offset       = 64,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
             depth_sensor_type               = 166,

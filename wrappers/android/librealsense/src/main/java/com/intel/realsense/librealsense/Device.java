@@ -6,7 +6,7 @@ import java.util.List;
 public class Device extends LrsClass {
     private List<Sensor> _sensors = new ArrayList<>();
 
-    public Device(long handle){
+    Device(long handle){
         mHandle = handle;
         long[] sensorsHandles = nQuerySensors(mHandle);
         for(long h : sensorsHandles){
@@ -42,11 +42,28 @@ public class Device extends LrsClass {
         return nSerializePresetToJson(mHandle);
     }
 
+    public boolean is(Extension extension) {
+        return nIsDeviceExtendableTo(mHandle, extension.value());
+    }
+
+    public <T extends Device> T as(Extension extension) {
+        switch (extension){
+            case UPDATABLE: return (T) new Updatable(mHandle);
+            case UPDATE_DEVICE: return (T) new UpdateDevice(mHandle);
+        }
+        throw new RuntimeException("this device is not extendable to " + extension.name());
+    }
+
+    public void hardwareReset(){
+        nHardwareReset(mHandle);
+    }
+
     @Override
     public void close() {
         for (Sensor s : _sensors)
             s.close();
-        nRelease(mHandle);
+        if(mOwner)
+            nRelease(mHandle);
     }
 
     private static native boolean nSupportsInfo(long handle, int info);
@@ -56,5 +73,7 @@ public class Device extends LrsClass {
     private static native void nLoadPresetFromJson(long handle, byte[] data);
     private static native byte[] nSerializePresetToJson(long handle);
     private static native long[] nQuerySensors(long handle);
+    private static native void nHardwareReset(long handle);
+    private static native boolean nIsDeviceExtendableTo(long handle, int extension);
     private static native void nRelease(long handle);
 }

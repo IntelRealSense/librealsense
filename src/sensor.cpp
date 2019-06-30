@@ -364,7 +364,7 @@ namespace librealsense
                 ss << fourcc << " ";
             }
             ss << "]";
-            LOG_WARNING(ss.str());
+            LOG_INFO(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -612,7 +612,11 @@ namespace librealsense
 
         for (auto& profile : _internal_config)
         {
-            _device->close(profile);
+            try // Handle disconnect event
+            {
+                _device->close(profile);
+            }
+            catch (...) {}
         }
         reset_streaming();
         if (Is<librealsense::global_time_interface>(_owner))
@@ -1146,7 +1150,7 @@ namespace librealsense
 
         if (!started)
         {
-            LOG_WARNING("HID timestamp not found! please apply HID patch.");
+            LOG_WARNING("HID timestamp not found, switching to Host timestamps.");
             started = true;
         }
 

@@ -20,6 +20,7 @@ add_subdirectory(enumerate-devices)
 add_subdirectory(fw-logger)
 add_subdirectory(terminal)
 add_subdirectory(recorder)
+add_subdirectory(fw-update)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
@@ -42,4 +43,3 @@ else()
     #    set(DEPENDENCIES realsense2)
     endif()
 endif()
-

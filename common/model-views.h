@@ -24,6 +24,7 @@
 #include "../third-party/json.hpp"
 
 #include "realsense-ui-advanced-mode.h"
+#include "fw-update-helper.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -51,14 +52,28 @@ static const ImVec4 header_color = from_rgba(62, 77, 89, 255);
 static const ImVec4 title_color = from_rgba(27, 33, 38, 255);
 static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
+static const ImVec4 yellowish = from_rgba(255, 253, 191, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
-static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 200);
+static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
+static const ImVec4 greenish = from_rgba(33, 104, 0, 255, 0xff);
 
 inline ImVec4 blend(const ImVec4& c, float a)
 {
     return{ c.x, c.y, c.z, a * c.w };
 }
+
+struct fw_update_device_info
+{
+    rs2::device dev;
+    int product_line;
+    bool upgrade_recommended;
+    std::string serial_number;
+    std::string curr_fw_version;
+    std::string recommended_fw_version;
+    std::string minimal_fw_version;
+    std::vector<uint8_t> fw_image;
+};
 
 namespace rs2
 {
@@ -67,6 +82,14 @@ namespace rs2
     bool frame_metadata_to_csv(const std::string& filename, rs2::frame frame);
 
     void open_issue(std::string body);
+
+    class device_model;
+
+    typedef std::vector<std::unique_ptr<device_model>> device_models_list;
+
+    void open_issue(const device_models_list& devices);
+    
+    void hyperlink(ux_window& window, const char* title, const char* link);
 
     struct textual_icon
     {
@@ -87,6 +110,8 @@ namespace rs2
         return os << static_cast<const char*>(i);
     }
 
+    static const float FEET_TO_METER = 0.3048f;
+
     namespace configurations
     {
         namespace record
@@ -99,6 +124,7 @@ namespace rs2
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
+            static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
 
             static const char* log_to_console      { "viewer_model.log_to_console" };
@@ -106,6 +132,9 @@ namespace rs2
             static const char* log_filename        { "viewer_model.log_filename" };
             static const char* log_severity        { "viewer_model.log_severity" };
             static const char* post_processing     { "viewer_model.post_processing" };
+            static const char* show_map_ruler      { "viewer_model.show_map_ruler" };
+            static const char* show_stream_details { "viewer_model.show_stream_details" };
+            static const char* metric_system       { "viewer_model.metric_system" };
         }
         namespace window
         {
@@ -174,6 +203,10 @@ namespace rs2
         static const textual_icon window_restore           { u8"\uf2d2" };
         static const textual_icon grid                     { u8"\uf1cb" };
         static const textual_icon exit                     { u8"\uf011" };
+        static const textual_icon see_less                 { u8"\uf070" };
+        static const textual_icon dotdotdot                { u8"\uf141" };
+        static const textual_icon link                     { u8"\uf08e" };
+        static const textual_icon throphy                  { u8"\uF091" };
     }
 
     class subdevice_model;
@@ -642,10 +675,11 @@ namespace rs2
 
         bool is_stream_alive();
 
-        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse);
+        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
-        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis);
-        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, rs2_stream stream_type, bool fullScreen, float y_offset);
+        void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
+        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, 
+            rs2_stream stream_type, bool fullScreen, float y_offset, viewer_model& viewer);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
@@ -692,6 +726,7 @@ namespace rs2
 
         void reset();
         explicit device_model(device& dev, std::string& error_message, viewer_model& viewer);
+        ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
         void pause_record();
@@ -708,6 +743,8 @@ namespace rs2
             json_loading_func json_loading = [](std::function<void()> load) {load(); },
             bool draw_device_outline = true);
         void handle_hardware_events(const std::string& serialized_data);
+        void begin_update(std::vector<uint8_t> data,
+            viewer_model& viewer, std::string& error_message);
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -732,6 +769,9 @@ namespace rs2
         std::vector<std::string> restarting_device_info;
         std::set<std::string> advanced_mode_settings_file_names;
         std::string selected_file_preset;
+
+        std::function<void()> cleanup = []{};
+
     private:
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
@@ -762,87 +802,6 @@ namespace rs2
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
-    };
-
-    struct notification_data
-    {
-        notification_data(std::string description,
-                            double timestamp,
-                            rs2_log_severity severity,
-                            rs2_notification_category category);
-        rs2_notification_category get_category() const;
-        std::string get_description() const;
-        double get_timestamp() const;
-        rs2_log_severity get_severity() const;
-
-        std::string _description;
-        double _timestamp;
-        rs2_log_severity _severity;
-        rs2_notification_category _category;
-    };
-
-    struct notification_model
-    {
-        notification_model();
-        notification_model(const notification_data& n);
-        double get_age_in_ms() const;
-        void draw(int w, int y, notification_model& selected);
-        void set_color_scheme(float t) const;
-        void unset_color_scheme() const;
-        const int get_max_lifetime_ms() const;
-
-        int height = 40;
-        int index = 0;
-        std::string message;
-        double timestamp = 0.0;
-        rs2_log_severity severity = RS2_LOG_SEVERITY_NONE;
-        std::chrono::high_resolution_clock::time_point created_time;
-        rs2_notification_category category;
-        bool to_close = false; // true when user clicks on close notification
-        // TODO: Add more info
-    };
-
-    struct notifications_model
-    {
-        void add_notification(const notification_data& n);
-        void draw(ImFont* font, int w, int h);
-
-        void foreach_log(std::function<void(const std::string& line)> action)
-        {
-            std::lock_guard<std::mutex> lock(m);
-            for (auto&& l : log)
-            {
-                action(l);
-            }
-
-            auto rc = ImGui::GetCursorPos();
-            ImGui::SetCursorPos({ rc.x, rc.y + 5 });
-
-            if (new_log)
-            {
-                ImGui::SetScrollPosHere();
-                new_log = false;
-            }
-        }
-
-        void add_log(std::string line)
-        {
-            std::lock_guard<std::mutex> lock(m);
-            if (!line.size()) return;
-            if (line[line.size() - 1] != '\n') line += "\n";
-            log.push_back(line);
-            new_log = true;
-        }
-
-    private:
-        std::vector<notification_model> pending_notifications;
-        int index = 1;
-        const int MAX_SIZE = 6;
-        std::mutex m;
-        bool new_log = false;
-
-        std::vector<std::string> log;
-        notification_model selected;
     };
 
     class viewer_model;
@@ -942,161 +901,6 @@ namespace rs2
         int last_stream_id = 0;
 
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
-    };
-
-    class viewer_model
-    {
-    public:
-        void reset_camera(float3 pos = { 0.0f, 0.0f, -1.0f });
-
-        void update_configuration();
-
-        const float panel_width = 340.f;
-        const float panel_y = 50.f;
-        const float default_log_h = 110.f;
-
-        float get_output_height() const { return (is_output_collapsed ? default_log_h : 15); }
-          
-        rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
-
-        viewer_model();
-
-        ~viewer_model()
-        {
-            // Stopping post processing filter rendering thread
-            ppf.stop();
-            streams.clear();
-        }
-
-        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
-
-        std::vector<frame> get_frames(frame set);
-        frame get_3d_depth_source(frame f);
-        frame get_3d_texture_source(frame f);
-
-        bool is_3d_depth_source(frame f);
-        bool is_3d_texture_source(frame f);
-
-        std::shared_ptr<texture_buffer> upload_frame(frame&& f);
-
-        std::map<int, rect> calc_layout(const rect& r);
-
-        void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
-        void show_no_device_overlay(ImFont* font, int min_x, int min_y);
-
-        void show_paused_icon(ImFont* font, int x, int y, int id);
-        void show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta);
-
-        void popup_if_error(ImFont* font, std::string& error_message);
-
-        void popup_if_ui_not_aligned(ImFont* font);
-
-        void show_event_log(ImFont* font_14, float x, float y, float w, float h);
-
-        void render_pose(rs2::rect stream_rect, float buttons_heights, ImGuiWindowFlags flags);
-
-        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
-
-        void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
-
-        void show_top_bar(ux_window& window, const rect& viewer_rect, const std::vector<device_model>& devices);
-
-        void render_3d_view(const rect& view_rect, 
-            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1);
-
-        void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
-            ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
-
-        void gc_streams();
-
-        std::mutex streams_mutex;
-        std::map<int, stream_model> streams;
-        std::map<int, int> streams_origin;
-        bool fullscreen = false;
-        stream_model* selected_stream = nullptr;
-        std::shared_ptr<syncer_model> syncer;
-        post_processing_filters ppf;
-
-        notifications_model not_model;
-        bool is_output_collapsed = false;
-        bool is_3d_view = false;
-        bool paused = false;
-
-
-        void draw_viewport(const rect& viewer_rect, 
-            ux_window& window, int devices, std::string& error_message, 
-            std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points());
-
-        bool allow_3d_source_change = true;
-        bool allow_stream_close = true;
-
-        std::array<float3, 4> roi_rect;
-        bool draw_plane = false;
-
-        bool draw_frustrum = true;
-        bool support_non_syncronized_mode = true;
-        std::atomic<bool> synchronization_enable;
-        std::atomic<int> zo_sensors;
-
-        int selected_depth_source_uid = -1;
-        int selected_tex_source_uid = -1;
-
-        float dim_level = 1.f;
-
-        bool continue_with_ui_not_aligned = false;
-
-        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
-        press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
-        press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
-
-        bool show_pose_info_3d = false;
-
-    private:
-        struct rgb {
-            uint32_t r, g, b;
-        };
-
-        struct rgb_per_distance {
-            float depth_val;
-            rgb rgb_val;
-        };
-
-        friend class post_processing_filters;
-        std::map<int, rect> get_interpolated_layout(const std::map<int, rect>& l);
-        void show_icon(ImFont* font_18, const char* label_str, const char* text, int x, int y,
-                       int id, const ImVec4& color, const std::string& tooltip = "");
-        void draw_color_ruler(const mouse_info& mouse,
-                              const stream_model& s_model,
-                              const rect& stream_rect,
-                              std::vector<rgb_per_distance> rgb_per_distance_vec,
-                              float ruler_length,
-                              const std::string& ruler_units);
-        float calculate_ruler_max_distance(const std::vector<float>& distances) const;
-
-        streams_layout _layout;
-        streams_layout _old_layout;
-        std::chrono::high_resolution_clock::time_point _transition_start_time;
-
-        // 3D-Viewer state
-        float3 pos = { 0.0f, 0.0f, -0.5f };
-        float3 target = { 0.0f, 0.0f, 0.0f };
-        float3 up;
-        bool fixed_up = true;
-        bool render_quads = true;
-
-        float view[16];
-        bool texture_wrapping_on = true;
-        GLint texture_border_mode = GL_CLAMP_TO_EDGE; // GL_CLAMP_TO_BORDER
-
-        rs2::points last_points;
-        std::shared_ptr<texture_buffer> last_texture;
-
-        // Infinite pan / rotate feature:
-        bool manipulating = false;
-        float2 overflow = { 0.f, 0.f };
-
-        rs2::gl::camera_renderer _cam_renderer;
-        rs2::gl::pointcloud_renderer _pc_renderer;
     };
 
     void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool notify = true);
