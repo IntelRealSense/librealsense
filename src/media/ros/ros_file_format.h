@@ -525,7 +525,7 @@ namespace librealsense
     constexpr uint32_t get_device_index()
     {
         return 0; //TODO: change once SDK file supports multiple devices
-    };
+    }
 
     constexpr device_serializer::nanoseconds get_static_file_info_timestamp()
     {
