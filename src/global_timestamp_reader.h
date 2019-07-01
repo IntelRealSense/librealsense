@@ -36,6 +36,7 @@ namespace librealsense
         CLinearCoefficients(unsigned int buffer_size);
         void reset();
         void add_value(CSample val);
+        void update_linear_coefs(double x);
         double calc_value(double x) const;
         bool is_full() const;
 
@@ -45,8 +46,10 @@ namespace librealsense
     private:
         unsigned int _buffer_size;
         std::deque<CSample> _last_values;
-        double _b, _a;    //Linear regression coeffitions.
         CSample _base_sample;
+        double _prev_a, _prev_b;    //Linear regression coeffitions - previously used values.
+        double _dest_a, _dest_b;    //Linear regression coeffitions - recently calculated.
+        double _prev_time, _time_span_ms;
         mutable std::recursive_mutex _add_mtx;
         mutable std::recursive_mutex _stat_mtx;
     };
