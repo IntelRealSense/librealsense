@@ -7,6 +7,10 @@ In order to run this example, a T265 is required.
 This sample demonstrates streaming image data at 30Hz using an synchronous pipeline and running Apriltag detection on the image data on a separate thread. 
 The Apriltag detection is done on a lower rate than the image streaming rate.
 
+## Dependency
+
+This sample requires the [Apriltag library](https://github.com/AprilRobotics/apriltag) installed in either at default location by the library or path specified in cmake variable `CMAKE_PREFIX_PATH`.
+
 ## Expected Output
 
 The application will calculate and print the detected apriltag pose relative to the camera. 
