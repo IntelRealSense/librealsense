@@ -44,7 +44,6 @@ namespace librealsense
 
             defaultConf.setGlobally(el::ConfigurationType::ToFile, "false");
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
-            defaultConf.setGlobally(el::ConfigurationType::MaxLogFileSize, "2097152");
             defaultConf.setGlobally(el::ConfigurationType::LogFlushThreshold, "10");
             defaultConf.setGlobally(el::ConfigurationType::Format, " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg");
 
