@@ -207,7 +207,8 @@ int main(int argc, char * argv[]) try
         if(frame_number % 4 == 0)
         {
             fisheye_frame.keep();
-            std::async(std::launch::async, [img=fisheye_frame,fn=frame_number,pose=camera_pose,&tag_manager](){
+            
+            std::async(std::launch::async, std::bind([&tag_manager](rs2::frame img, int fn, rs2_pose pose){
                 auto tags = tag_manager.detect((unsigned char*)img.get_data(), &pose);
 
                 for(int t=0; t<tags.pose_in_camera.size(); ++t){
@@ -215,7 +216,7 @@ int main(int argc, char * argv[]) try
                     std::cout << ss.str() << "camera " << print(tags.pose_in_camera[t]) << std::endl;
                     std::cout << std::setw(ss.str().size()) << " " << "world  "<< print(tags.pose_in_world[t]) << std::endl << std::endl;
                 }
-            });
+            }, fisheye_frame, frame_number, camera_pose));
         }
     }
     
