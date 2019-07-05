@@ -9,7 +9,7 @@ The Apriltag detection is done on a lower rate than the image streaming rate.
 
 ## Dependency
 
-This sample requires the [Apriltag library](https://github.com/AprilRobotics/apriltag) installed in either at default location by the library or path specified in cmake variable `CMAKE_PREFIX_PATH`.
+This sample requires the [Apriltag library 3.1.1](https://github.com/AprilRobotics/apriltag/tree/3.1.1)  installed in either at default location by the library or path specified in cmake variable `CMAKE_PREFIX_PATH`.
 
 ## Expected Output
 
