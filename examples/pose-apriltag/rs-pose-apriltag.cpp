@@ -16,7 +16,7 @@
 
 #define FORMAT_VALUE     std::fixed << std::right << std::setprecision(3) << std::setw(6)
 
-matd_t* homography_compute2(double c[4][4]);
+void homography_compute2(const double c[4][4], matd_t* H);
 
 typedef rs2_extrinsics transformation;
 static transformation to_transform(const double R[9], const double t[3]) {
@@ -113,7 +113,6 @@ public:
         tags.pose_in_camera.resize(zarray_size(tags.det.get()));
         tags.pose_raw.resize(tags.size());
 
-
         auto info_ = info;
         for(int t=0, num_of_tags=(int)tags.size(); t<num_of_tags; ++t)
         {
@@ -158,8 +157,8 @@ protected:
             corr_arr[c][2] = src.p[c][0];
             corr_arr[c][3] = src.p[c][1];
         }
-        matd_destroy(src.H);
-        src.H = homography_compute2(corr_arr);
+        if(src.H == nullptr) { src.H = matd_create(3, 3); }
+        homography_compute2(corr_arr, src.H);
     }
     
     static void deproject(double pt[2], const rs2_intrinsics& intr, const double px[2]) {
@@ -234,7 +233,7 @@ catch (const std::exception& e)
 }
 
 
-matd_t* homography_compute2(double c[4][4]) {
+void homography_compute2(const double c[4][4], matd_t* H) {
     double A[] =  {
         c[0][0], c[0][1], 1,       0,       0, 0, -c[0][0]*c[0][2], -c[0][1]*c[0][2], c[0][2],
         0,       0, 0, c[0][0], c[0][1], 1, -c[0][0]*c[0][3], -c[0][1]*c[0][3], c[0][3],
@@ -292,5 +291,14 @@ matd_t* homography_compute2(double c[4][4]) {
         }
         A[col*9 + 8] = (A[col*9 + 8] - sum)/A[col*9 + col];
     }
-   return matd_create_data(3, 3, (double[]) { A[8], A[17], A[26], A[35], A[44], A[53], A[62], A[71], 1 });
+    //return matd_create_data(3, 3, (double[]) { A[8], A[17], A[26], A[35], A[44], A[53], A[62], A[71], 1 });
+    H->data[0] = A[8];
+    H->data[1] = A[17];
+    H->data[2] = A[26];
+    H->data[3] = A[35];
+    H->data[4] = A[44];
+    H->data[5] = A[53];
+    H->data[6] = A[62];
+    H->data[7] = A[71];
+    H->data[8] = 1;
 }
