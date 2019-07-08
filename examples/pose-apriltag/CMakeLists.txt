@@ -18,7 +18,7 @@ if(BUILD_EXAMPLES)
 
     if(TARGET apriltag)
         add_executable(rs-pose-apriltag rs-pose-apriltag.cpp)
-        set_property(TARGET rs-pose PROPERTY CXX_STANDARD 11)
+        set_property(TARGET rs-pose-apriltag PROPERTY CXX_STANDARD 11)
         target_link_libraries(rs-pose-apriltag ${DEPENDENCIES} apriltag)
         set_target_properties (rs-pose-apriltag PROPERTIES FOLDER Examples)
         install(TARGETS rs-pose-apriltag RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
