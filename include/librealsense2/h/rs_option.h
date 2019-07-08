@@ -79,6 +79,7 @@ extern "C" {
         RS2_OPTION_ENABLE_MAPPING, /**< Enable an internal map */
         RS2_OPTION_ENABLE_RELOCALIZATION, /**< Enable appearance based relocalization */
         RS2_OPTION_ENABLE_POSE_JUMPING, /**< Enable position jumping */
+        RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, /**< Enable dynamic calibration */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
