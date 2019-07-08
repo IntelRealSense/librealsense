@@ -22,6 +22,8 @@ if(BUILD_EXAMPLES)
         target_link_libraries(rs-pose-apriltag ${DEPENDENCIES} apriltag)
         set_target_properties (rs-pose-apriltag PROPERTIES FOLDER Examples)
         install(TARGETS rs-pose-apriltag RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    else()
+        message(STATUS "Unable to find apriltag library, skipping pose-apriltag example")
     endif()
 
 endif()
