@@ -205,7 +205,7 @@ int main(int argc, char * argv[]) try
         auto frame_number  = fisheye_frame.get_frame_number();
         auto camera_pose   = frames.get_pose_frame().get_pose_data();
         
-        if(frame_number % 4 == 0)
+        if(frame_number % 6 == 0)
         {
             fisheye_frame.keep();
             
