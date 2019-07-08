@@ -293,7 +293,6 @@ void homography_compute2(const double c[4][4], matd_t* H) {
         }
         A[col*9 + 8] = (A[col*9 + 8] - sum)/A[col*9 + col];
     }
-    //return matd_create_data(3, 3, (double[]) { A[8], A[17], A[26], A[35], A[44], A[53], A[62], A[71], 1 });
     H->data[0] = A[8];
     H->data[1] = A[17];
     H->data[2] = A[26];
