@@ -212,6 +212,9 @@ int main(int argc, char * argv[]) try
             std::async(std::launch::async, std::bind([&tag_manager](rs2::frame img, int fn, rs2_pose pose){
                 auto tags = tag_manager.detect((unsigned char*)img.get_data(), &pose);
 
+                if(tags.pose_in_camera.size() == 0) {
+                    std::cout << "frame " << fn << "|no Apriltag detections" << std::endl;
+                }
                 for(int t=0; t<tags.pose_in_camera.size(); ++t){
                     std::stringstream ss; ss << "frame " << fn << "|tag id: " << tags.get_id(t) << "|";
                     std::cout << ss.str() << "camera " << print(tags.pose_in_camera[t]) << std::endl;
