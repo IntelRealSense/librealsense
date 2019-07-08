@@ -71,7 +71,7 @@ static std::string print(const transformation& tf) {
 
 class apriltag_manager {
 public:
-    apriltag_manager(const rs2_intrinsics& _intr,  const rs2_extrinsics _extr_b2f, double tagsize = 0.144)
+    apriltag_manager(const rs2_intrinsics& _intr,  const rs2_extrinsics _extr_b2f, double tagsize)
     : intr(_intr), tf_body_to_fisheye(_extr_b2f) {
         tf = tag36h11_create();
         td = apriltag_detector_create();
@@ -191,9 +191,10 @@ int main(int argc, char * argv[]) try
     auto fisheye_stream     = pipe_profile.get_stream(RS2_STREAM_FISHEYE, fisheye_sensor_idx);
     auto fisheye_intrinsics = fisheye_stream.as<rs2::video_stream_profile>().get_intrinsics();
     auto body_fisheye_extr  = fisheye_stream.get_extrinsics_to(pipe_profile.get_stream(RS2_STREAM_POSE));
+    const double tag_size_m = 0.144; // The expected size of the tag in meters. This is required to get the relative pose
 
     // Create an Apriltag detection manager
-    apriltag_manager tag_manager(fisheye_intrinsics, body_fisheye_extr);
+    apriltag_manager tag_manager(fisheye_intrinsics, body_fisheye_extr, tag_size_m);
     
     // Main loop
     while (true)
