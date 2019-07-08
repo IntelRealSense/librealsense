@@ -178,16 +178,16 @@ namespace librealsense
         tm2_sensor&         _ep;
     };
 
-    template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on>
+    template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on, bool invert = false>
     class tracking_mode_option : public option_base
     {
     public:
-        float query() const override { return (s._tm_mode & flag) ? 1 : 0; }
+        float query() const override { return !!(s._tm_mode & flag) ^ invert ? 1 : 0; }
 
         void set(float value) override {
             if (s._is_streaming)
                 throw io_exception("Option is read-only while streaming");
-            s._tm_mode = value ? (s._tm_mode | flag) : (s._tm_mode & ~flag);
+            s._tm_mode = (!!value ^ invert) ? (s._tm_mode | flag) : (s._tm_mode & ~flag);
         }
 
         const char* get_description() const override { return description; }
@@ -197,7 +197,7 @@ namespace librealsense
         bool is_read_only() const override { return s._is_streaming; }
 
         explicit tracking_mode_option(tm2_sensor& sensor, const char *description_) :
-            s(sensor), description(description_), option_base(option_range{ 0, 1, (sensor._tm_mode & flag) ? 1.f : 0.f, 1 }) { }
+            s(sensor), description(description_), option_base(option_range{ 0, 1, !!(sensor._tm_mode & flag) ^ invert ? 1.f : 0.f, 1 }) { }
 
     private:
         tm2_sensor &s;
@@ -1468,7 +1468,7 @@ namespace librealsense
 
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_MAPPING,        std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_MAPPING,        perc::SIXDOF_MODE_NORMAL        >>(*_sensor, "Use an on device map"));
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_RELOCALIZATION, std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_RELOCALIZATION, perc::SIXDOF_MODE_ENABLE_MAPPING>>(*_sensor, "Use appearance based relocalization (depends on mapping)"));
-        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_POSE_JUMPING,   std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_JUMPING,        perc::SIXDOF_MODE_ENABLE_MAPPING>>(*_sensor, "Allow pose jumping (depends on mapping)"));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_POSE_JUMPING,   std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_DISABLE_JUMPING,       perc::SIXDOF_MODE_ENABLE_MAPPING, true>>(*_sensor, "Disallow pose jumping (depends on mapping)"));
 
         // Assing the extrinsic nodes to the default group
         auto tm2_profiles = _sensor->get_stream_profiles();

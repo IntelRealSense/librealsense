@@ -390,7 +390,7 @@ namespace perc
         class SixDofProfile
         {
         public:
-            SixDofProfile() : enabled(false), mode(SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION | SIXDOF_MODE_ENABLE_JUMPING), interruptRate(SIXDOF_INTERRUPT_RATE::SIXDOF_INTERRUPT_RATE_IMU), profileType(SixDofProfileMax) {};
+            SixDofProfile() : enabled(false), mode(SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION), interruptRate(SIXDOF_INTERRUPT_RATE::SIXDOF_INTERRUPT_RATE_IMU), profileType(SixDofProfileMax) {};
             SixDofProfile(bool _enabled, uint8_t _mode, SIXDOF_INTERRUPT_RATE _interruptRate, SixDofProfileType _profileType) :
                 enabled(_enabled), mode(_mode), interruptRate(_interruptRate), profileType(_profileType) {};
             void set(bool _enabled, uint8_t _mode, SIXDOF_INTERRUPT_RATE _interruptRate, SixDofProfileType _profileType)
@@ -457,7 +457,7 @@ namespace perc
                 for (uint8_t i = 0; i < SixDofProfileMax; i++)
                 {
                     sixDof[i].enabled = false;
-                    sixDof[i].mode = (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION | SIXDOF_MODE_ENABLE_JUMPING);
+                    sixDof[i].mode = (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION);
                     sixDof[i].interruptRate = SIXDOF_INTERRUPT_RATE_MAX;
                     sixDof[i].profileType = SixDofProfileMax;
                 }
@@ -503,7 +503,7 @@ namespace perc
                 for (uint8_t i = 0; i < SixDofProfileMax; i++)
                 {
                     sixDof[i].enabled = false;
-                    sixDof[i].mode = (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION | SIXDOF_MODE_ENABLE_JUMPING);
+                    sixDof[i].mode = (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION);
                     sixDof[i].interruptRate = SIXDOF_INTERRUPT_RATE_MAX;
                     sixDof[i].profileType = SixDofProfileMax;
                 }
