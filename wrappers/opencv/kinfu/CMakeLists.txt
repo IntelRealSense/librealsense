@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealSenseKinfuExample)
 
+find_package(glfw3 3.3 REQUIRED)
+find_package(OpenGL REQUIRED)
+
+set(DEPENDENCIES glfw ${OPENGL_LIBRARIES} ${DEPENDENCIES})
+
 add_executable(rs-kinfu rs-kinfu.cpp ../../../examples/example.hpp)
 set_property(TARGET rs-kinfu PROPERTY CXX_STANDARD 11)
 target_link_libraries(rs-kinfu ${DEPENDENCIES})
