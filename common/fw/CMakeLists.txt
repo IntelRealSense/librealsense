@@ -17,7 +17,7 @@ set(D4XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/
 string(REGEX MATCH "SR3XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(SR3XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
-set(SR3XX_FW_SHA1 ddc6d015ee3ec46f5e5587cc5ca17d343654ce85)
+set(SR3XX_FW_SHA1 55237dba5d7db20e7c218975375d05b4210e9460)
 set(SR3XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/SR300/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
