@@ -8,7 +8,7 @@ In order to run this example, a T265 is required.
 
 This sample demonstrates how to detect the pose of a Apriltag of a known size that is visible in a T265 fisheye frame relative to the camera. Apriltags are detected on every 6th frame (at 5Hz). The sample uses `36h11` tags, though it can be easily modified to work with any tag supported by the Apriltag library. 
 
-A sample `36h11` image pdf can be downloaded [here](./tag36_11_00000_out180mm_in144mm.pdf), and other tag images can be found [here](https://github.com/AprilRobotics/apriltag-imgs). 
+A sample `36h11` tag image (tag size is 0.144m on a letter size paper) pdf can be downloaded [here](./tag36_11_00000_out180mm_in144mm.pdf), and other tag images can be found [here](https://github.com/AprilRobotics/apriltag-imgs). 
 
 ## Dependency
 
