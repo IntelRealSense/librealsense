@@ -84,8 +84,8 @@ public:
         td->refine_edges  = 1;
         
         info.tagsize      = tagsize;
-        info.fx = info.fy = 1;
-        info.cx = info.cy = 0;
+        info.fx = info.fy = 1;       //undistorted image with focal length = 1
+        info.cx = info.cy = 0;       //undistorted image with principal point at (0,0)
     }
     ~apriltag_manager() {
         apriltag_detector_destroy(td);
@@ -153,10 +153,10 @@ protected:
         for(int c=0; c<4; ++c){
             deproject(src.p[c], intr, src.p[c]);
             
-            corr_arr[c][0] = (c==0 || c==3) ? -1 : 1;
-            corr_arr[c][1] = (c==0 || c==1) ? -1 : 1;
-            corr_arr[c][2] = src.p[c][0];
-            corr_arr[c][3] = src.p[c][1];
+            corr_arr[c][0] = (c==0 || c==3) ? -1 : 1; // tag corners in an ideal image
+            corr_arr[c][1] = (c==0 || c==1) ? -1 : 1; // tag corners in an ideal image
+            corr_arr[c][2] = src.p[c][0];             // tag corners in undistorted image focal length = 1
+            corr_arr[c][3] = src.p[c][1];             // tag corners in undistorted image focal length = 1
         }
         if(src.H == nullptr) { src.H = matd_create(3, 3); }
         homography_compute2(corr_arr, src.H);
@@ -238,7 +238,13 @@ catch (const std::exception& e)
     return EXIT_FAILURE;
 }
 
-
+//
+// Re-compute homography between ideal standard tag image and undistorted tag corners for estimage_tag_pose().
+//
+// @param[in]  c is 4 pairs of tag corners on ideal image and undistorted input image.
+// @param[out] H is the output homography between ideal and undistorted input image.
+// @see        static void apriltag_manager::undistort(...)
+//
 void homography_compute2(const double c[4][4], matd_t* H) {
     double A[] =  {
         c[0][0], c[0][1], 1,       0,       0, 0, -c[0][0]*c[0][2], -c[0][1]*c[0][2], c[0][2],
