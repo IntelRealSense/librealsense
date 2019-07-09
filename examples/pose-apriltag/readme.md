@@ -75,14 +75,26 @@ The detection will be done on the separate thread so we need to keep the fisheye
             auto tags = tag_manager.detect((unsigned char*)img.get_data(), &pose);
 ```
 
-For each detected Apriltag, we print out the Apriltag pose relative to the fisheye lens as well as the Apriltag pose in the same coordinate of the regular T265 output pose coordinate.
+For each detected Apriltag, we print out the Apriltag pose relative to the fisheye lens as well as the Apriltag pose in the same coordinate of the regular T265 output pose coordinate when T265 output has high confidence.
 ```cpp
             for(int t=0; t<tags.pose_in_camera.size(); ++t){
-                std::stringstream ss; ss << "frame " << fn << "|tag id: " << tags.get_id(t) << "|";
-                std::cout << ss.str() << "camera " << print(tags.pose_in_camera[t]) << std::endl;
-                std::cout << std::setw(ss.str().size()) << " " << "world  "<< print(tags.pose_in_world[t]) << std::endl << std::endl;
+                    std::stringstream ss; ss << "frame " << fn << "|tag id: " << tags.get_id(t) << "|";
+                    std::cout << ss.str() << "camera " << print(tags.pose_in_camera[t]) << std::endl;
+                    std::cout << std::setw(ss.str().size()) << " " << "world  " <<
+                                (pose.tracker_confidence == 3 ? print(tags.pose_in_world[t]) : " NA ") << std::endl << std::endl;
             }
-        });
     }
 }
+```
+
+### Re-compute Homography in Undistorted Image Coordinate
+
+The Apriltag library assumes the tag is detected in an undistorted image and the tag pose estimation assumes also undistorted image coordinate. Therefore, we transform our detected tag corners from fisheye image coordinate to a standard undistorted image coordinate with focal length `= 1` and principal point at `(0,0)` using librealsense utility function `rs2_deproject_pixel_to_point(...)`. The whole process can be found in:
+```cpp
+    static void apriltag_manager::undistort(apriltag_detection_t& src, const rs2_intrinsics& intr);
+```
+
+Since the tag pose estimation in the Apriltag library requires the homography matrix of tag corners between ideal tag image and input image, at the end of the above `apriltag_manager::undistort(...)`, we re-compute the homography using the newly compute undistorted corners using:
+```cpp
+void homography_compute2(const double c[4][4], matd_t* H);
 ```
