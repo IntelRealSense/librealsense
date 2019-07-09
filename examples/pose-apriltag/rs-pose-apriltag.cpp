@@ -109,14 +109,14 @@ public:
         image_u8_t img{ intr.width, intr.height, intr.width, gray};
         
         apriltag_array_t tags;
-        tags.det = std::shared_ptr<zarray_t>(apriltag_detector_detect(td, &img),apriltag_detections_destroy);
+        tags.det = std::shared_ptr<zarray_t>(apriltag_detector_detect(td, &img), apriltag_detections_destroy);
         tags.pose_in_camera.resize(zarray_size(tags.det.get()));
         tags.pose_raw.resize(tags.size());
 
         auto info_ = info;
         for(int t=0, num_of_tags=(int)tags.size(); t<num_of_tags; ++t)
         {
-            tags.pose_raw[t] = std::shared_ptr<apriltag_pose_t>(new apriltag_pose_t(),apriltag_pose_destory);
+            tags.pose_raw[t] = std::shared_ptr<apriltag_pose_t>(new apriltag_pose_t(), apriltag_pose_destory);
 
             undistort(*(info_.det = tags.get(t)), intr);
             estimate_tag_pose(&info_, tags.pose_raw[t].get());
