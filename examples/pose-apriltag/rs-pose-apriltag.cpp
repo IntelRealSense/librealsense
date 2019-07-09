@@ -219,7 +219,8 @@ int main(int argc, char * argv[]) try
                 for(int t=0; t<tags.pose_in_camera.size(); ++t){
                     std::stringstream ss; ss << "frame " << fn << "|tag id: " << tags.get_id(t) << "|";
                     std::cout << ss.str() << "camera " << print(tags.pose_in_camera[t]) << std::endl;
-                    std::cout << std::setw(ss.str().size()) << " " << "world  "<< print(tags.pose_in_world[t]) << std::endl << std::endl;
+                    std::cout << std::setw(ss.str().size()) << " " << "world  " <<
+                                (pose.tracker_confidence == 3 ? print(tags.pose_in_world[t]) : " NA ") << std::endl << std::endl;
                 }
             }, fisheye_frame, frame_number, camera_pose));
         }
