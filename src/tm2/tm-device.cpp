@@ -913,7 +913,7 @@ namespace librealsense
             auto video = (video_frame*)(frame.frame);
             video->assign(tm_frame.profile.width, tm_frame.profile.height, tm_frame.profile.stride, bpp);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
             video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
