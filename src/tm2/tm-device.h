@@ -130,6 +130,7 @@ namespace librealsense
         std::shared_ptr<playback_device>_loopback;
         perc::TrackingData::Profile     _tm_supported_profiles;
         perc::TrackingData::Profile     _tm_active_profiles;
+        perc::SIXDOF_MODE               _tm_mode = perc::SIXDOF_MODE_ENABLE_MAPPING | perc::SIXDOF_MODE_ENABLE_RELOCALIZATION;
         mutable std::condition_variable _async_op;
         mutable async_op_state          _async_op_status;
         mutable std::vector<uint8_t>    _async_op_res_buffer;
@@ -137,5 +138,7 @@ namespace librealsense
         float last_exposure = 200.f;
         float last_gain = 1.f;
         bool manual_exposure = false;
+
+        template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on, bool invert> friend class tracking_mode_option;
     };
 }

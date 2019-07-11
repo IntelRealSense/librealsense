@@ -729,7 +729,7 @@ namespace perc {
 
         for (uint8_t i = 0; i < SixDofProfileMax; i++)
         {
-            sixDofProfile.set(false, (SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION), SIXDOF_INTERRUPT_RATE::SIXDOF_INTERRUPT_RATE_IMU, (SixDofProfileType)i);
+            sixDofProfile.set(false, SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION, SIXDOF_INTERRUPT_RATE::SIXDOF_INTERRUPT_RATE_IMU, (SixDofProfileType)i);
             profile.set(sixDofProfile, false);
         }
 
