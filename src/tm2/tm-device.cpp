@@ -994,7 +994,7 @@ namespace librealsense
         {
             auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
 
             auto info = reinterpret_cast<librealsense::pose_frame::pose_info*>(pose_frame->data.data());
@@ -1131,7 +1131,7 @@ namespace librealsense
         {
             auto motion_frame = static_cast<librealsense::motion_frame*>(frame.frame);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             auto data = reinterpret_cast<float*>(motion_frame->data.data());
             data[0] = imu_data[0];
