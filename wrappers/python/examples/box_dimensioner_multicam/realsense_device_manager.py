@@ -1,7 +1,7 @@
 ##################################################################################################
-##       License: Apache 2.0. See LICENSE file in root directory.		                      ####
+##       License: Apache 2.0. See LICENSE file in root directory.                             ####
 ##################################################################################################
-##                  Box Dimensioner with multiple cameras: Helper files 					  ####
+##                  Box Dimensioner with multiple cameras: Helper files                       ####
 ##################################################################################################
 
 
@@ -14,7 +14,7 @@ import numpy as np
  | |_| | / _ \| || '_ \  / _ \| '__| | |_  | | | || '_ \  / __|| __|| | / _ \ | '_ \ / __|
  |  _  ||  __/| || |_) ||  __/| |    |  _| | |_| || | | || (__ | |_ | || (_) || | | |\__ \
  |_| |_| \___||_|| .__/  \___||_|    |_|    \__,_||_| |_| \___| \__||_| \___/ |_| |_||___/
-				  _|                                                                      
+                 |_|                                                                      
 """
 
 
@@ -53,11 +53,11 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
 
     Parameters:
     -----------
-    depth_frame 	 	 : rs.frame()
+    depth_frame          : rs.frame()
                            The depth frame to be post-processed
     decimation_magnitude : double
                            The magnitude of the decimation filter
-    spatial_magnitude 	 : double
+    spatial_magnitude    : double
                            The magnitude of the spatial filter
     spatial_smooth_alpha : double
                            The alpha value for spatial filter based smoothening
@@ -107,7 +107,7 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
  |  \/  |  __ _ (_) _ __    / ___| ___   _ __  | |_  ___  _ __  | |_ 
  | |\/| | / _` || || '_ \  | |    / _ \ | '_ \ | __|/ _ \| '_ \ | __|
  | |  | || (_| || || | | | | |___| (_) || | | || |_|  __/| | | || |_ 
- |_|  |_| \__,_||_||_| |_|  \____|\___/ |_| |_| \__|\___||_| |_| \__|																	 
+ |_|  |_| \__,_||_||_| |_|  \____|\___/ |_| |_| \__|\___||_| |_| \__|
 
 """
 
@@ -119,9 +119,9 @@ class DeviceManager:
 
         Parameters:
         -----------
-        context 	            : rs.context()
+        context                 : rs.context()
                                   The context created for using the realsense library
-        pipeline_configuration 	: rs.config()
+        pipeline_configuration  : rs.config()
                                   The realsense library configuration to be used for the application
 
         """
@@ -139,7 +139,7 @@ class DeviceManager:
 
         Parameters:
         -----------
-        device_serial 	  : string
+        device_serial     : string
                             Serial number of the realsense device
         enable_ir_emitter : bool
                             Enable/Disable the IR-Emitter of the device
@@ -222,7 +222,7 @@ class DeviceManager:
 
     def get_depth_shape(self):
         """ 
-		Retruns width and height of the depth stream for one arbitrary device
+        Retruns width and height of the depth stream for one arbitrary device
 
         Returns:
         -----------
@@ -296,7 +296,7 @@ class DeviceManager:
    | | / _ \/ __|| __|| || '_ \  / _` |
    | ||  __/\__ \| |_ | || | | || (_| |
    |_| \___||___/ \__||_||_| |_| \__, |
-								  |___/ 
+                                  |___/ 
 
 """
 if __name__ == "__main__":
