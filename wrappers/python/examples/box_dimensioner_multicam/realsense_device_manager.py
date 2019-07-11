@@ -1,7 +1,7 @@
 ##################################################################################################
-##       License: Apache 2.0. See LICENSE file in root directory.		                      ####
+##       License: Apache 2.0. See LICENSE file in root directory.                             ####
 ##################################################################################################
-##                  Box Dimensioner with multiple cameras: Helper files 					  ####
+##                  Box Dimensioner with multiple cameras: Helper files                       ####
 ##################################################################################################
 
 
@@ -14,7 +14,7 @@ import numpy as np
  | |_| | / _ \| || '_ \  / _ \| '__| | |_  | | | || '_ \  / __|| __|| | / _ \ | '_ \ / __|
  |  _  ||  __/| || |_) ||  __/| |    |  _| | |_| || | | || (__ | |_ | || (_) || | | |\__ \
  |_| |_| \___||_|| .__/  \___||_|    |_|    \__,_||_| |_| \___| \__||_| \___/ |_| |_||___/
-				 _|                                                                      
+                 |_|                                                                      
 """
 
 
@@ -30,13 +30,13 @@ def enumerate_connected_devices(context):
 
     Parameters:
     -----------
-    context 	 	  : rs.context()
-                         The context created for using the realsense library
+    context 	   : rs.context()
+                     The context created for using the realsense library
 
     Return:
     -----------
     connect_device : array
-                       Array of enumerated devices which are connected to the PC
+                     Array of enumerated devices which are connected to the PC
 
     """
     connect_device = []
@@ -53,26 +53,25 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
 
     Parameters:
     -----------
-    depth_frame 	 	 	 : rs.frame()
-                               The depth frame to be post-processed
+    depth_frame          : rs.frame()
+                           The depth frame to be post-processed
     decimation_magnitude : double
-                              The magnitude of the decimation filter
-    spatial_magnitude 	 : double
-                            The magnitude of the spatial filter
-    spatial_smooth_alpha	 : double
-                            The alpha value for spatial filter based smoothening
-    spatial_smooth_delta	 : double
-                            The delta value for spatial filter based smoothening
-    temporal_smooth_alpha : double
-                            The alpha value for temporal filter based smoothening
-    temporal_smooth_delta : double
-                            The delta value for temporal filter based smoothening
-
+                           The magnitude of the decimation filter
+    spatial_magnitude    : double
+                           The magnitude of the spatial filter
+    spatial_smooth_alpha : double
+                           The alpha value for spatial filter based smoothening
+    spatial_smooth_delta : double
+                           The delta value for spatial filter based smoothening
+    temporal_smooth_alpha: double
+                           The alpha value for temporal filter based smoothening
+    temporal_smooth_delta: double
+                           The delta value for temporal filter based smoothening
 
     Return:
     ----------
     filtered_frame : rs.frame()
-                       The post-processed depth frame
+                     The post-processed depth frame
     """
 
     # Post processing possible only on the depth_frame
@@ -108,7 +107,7 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
  |  \/  |  __ _ (_) _ __    / ___| ___   _ __  | |_  ___  _ __  | |_ 
  | |\/| | / _` || || '_ \  | |    / _ \ | '_ \ | __|/ _ \| '_ \ | __|
  | |  | || (_| || || | | | | |___| (_) || | | || |_|  __/| | | || |_ 
- |_|  |_| \__,_||_||_| |_|  \____|\___/ |_| |_| \__|\___||_| |_| \__|																	 
+ |_|  |_| \__,_||_||_| |_|  \____|\___/ |_| |_| \__|\___||_| |_| \__|
 
 """
 
@@ -120,10 +119,10 @@ class DeviceManager:
 
         Parameters:
         -----------
-        context 	: rs.context()
-                                     The context created for using the realsense library
-        pipeline_configuration 	: rs.config()
-                                   The realsense library configuration to be used for the application
+        context                 : rs.context()
+                                  The context created for using the realsense library
+        pipeline_configuration  : rs.config()
+                                  The realsense library configuration to be used for the application
 
         """
         assert isinstance(context, type(rs.context()))
@@ -140,8 +139,8 @@ class DeviceManager:
 
         Parameters:
         -----------
-        device_serial 	 : string
-                             Serial number of the realsense device
+        device_serial     : string
+                            Serial number of the realsense device
         enable_ir_emitter : bool
                             Enable/Disable the IR-Emitter of the device
 
@@ -185,9 +184,8 @@ class DeviceManager:
 
         """
 
-        file = open(path_to_settings_file, 'r')
-        json_text = file.read().strip()
-        file.close()
+        with open(path_to_settings_file, 'r') as file:
+        	json_text = file.read().strip()
 
         for (device_serial, device) in self._enabled_devices.items():
             # Get the active profile and load the json file which contains settings readable by the realsense
@@ -223,12 +221,12 @@ class DeviceManager:
         return frames
 
     def get_depth_shape(self):
-        """ Retruns width and height of the depth stream for one arbitrary device
+        """ 
+        Retruns width and height of the depth stream for one arbitrary device
 
         Returns:
         -----------
-
-        width: int
+        width : int
         height: int
         """
         width = -1
@@ -247,7 +245,7 @@ class DeviceManager:
         Parameters:
         -----------
         frames : rs::frame
-                  The frame grabbed from the imager inside the Intel RealSense for which the intrinsic is needed
+                 The frame grabbed from the imager inside the Intel RealSense for which the intrinsic is needed
 
         Return:
         -----------
@@ -271,7 +269,7 @@ class DeviceManager:
         Parameters:
         -----------
         frames : rs::frame
-                  The frame grabbed from the imager inside the Intel RealSense for which the intrinsic is needed
+                 The frame grabbed from the imager inside the Intel RealSense for which the intrinsic is needed
 
         Return:
         -----------
@@ -298,7 +296,7 @@ class DeviceManager:
    | | / _ \/ __|| __|| || '_ \  / _` |
    | ||  __/\__ \| |_ | || | | || (_| |
    |_| \___||___/ \__||_||_| |_| \__, |
-									   |___/ 
+                                  |___/ 
 
 """
 if __name__ == "__main__":
