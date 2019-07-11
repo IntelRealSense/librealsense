@@ -86,7 +86,8 @@ namespace librealsense
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
             ds::RS435I_PID,
-            ds::RS430I_PID
+            ds::RS430I_PID,
+            ds::RS465_PID
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
