@@ -32,6 +32,7 @@ namespace librealsense
         {
             switch (sts)
             {
+                case 0: return RS2_USB_STATUS_SUCCESS;
                 case EBADF:
                 case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
                 case EOVERFLOW: return RS2_USB_STATUS_OVERFLOW;
@@ -60,15 +61,13 @@ namespace librealsense
 
         usb_messenger_usbhost::~usb_messenger_usbhost()
         {
-            if(_pipe)
-                _pipe->cancel_request(_interrupt_request);
+            cancel_request(_interrupt_request);
             _pipe.reset();
         }
 
         void usb_messenger_usbhost::queue_interrupt_request()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _pipe->submit_request(_interrupt_request);
+            submit_request(_interrupt_request);
         }
 
         void usb_messenger_usbhost::listen_to_interrupts()
@@ -133,7 +132,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << (int)errno);
                 return usbhost_status_to_rs(errno);
             }
             transferred = sts;
@@ -150,6 +149,30 @@ namespace librealsense
                 return usbhost_status_to_rs(errno);
             }
             transferred = sts;
+            return RS2_USB_STATUS_SUCCESS;
+        }
+
+        usb_status usb_messenger_usbhost::submit_request(std::shared_ptr<usb_request> request)
+        {
+            auto sts = usb_request_queue(request.get());
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("usb_request_queue returned error, error: " << strerr << ", number: " << (int)errno);
+                return usbhost_status_to_rs(errno);
+            }
+            return RS2_USB_STATUS_SUCCESS;
+        }
+
+        usb_status usb_messenger_usbhost::cancel_request(std::shared_ptr<usb_request> request)
+        {
+            auto sts = usb_request_cancel(request.get());
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("usb_request_cancel returned error, error: " << strerr << ", number: " << (int)errno);
+                return usbhost_status_to_rs(errno);
+            }
             return RS2_USB_STATUS_SUCCESS;
         }
     }

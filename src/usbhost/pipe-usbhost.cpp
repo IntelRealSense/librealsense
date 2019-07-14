@@ -32,26 +32,11 @@ namespace librealsense
         {
             _pull_requests = false;
             if(_pull_thread != nullptr && _pull_thread->joinable())
-                _pull_thread->join();
-        }
-
-        void pipe::submit_request(std::shared_ptr<usb_request> request) {
-            int res = usb_request_queue(request.get());
-            if(res < 0) {
-                LOG_ERROR("Cannot queue request: " << strerror(errno));
-            }
-        }
-
-        void pipe::cancel_request(std::shared_ptr<usb_request> request)
-        {
-            if(request)
             {
-                int res = usb_request_cancel(request.get());
-                if(res < 0)
-                    LOG_ERROR("Cancel request failed: " << strerror(errno));
+                LOG_INFO("joining pipe thread");
+                _pull_thread->join();
+                LOG_INFO("pipe thread joined");
             }
-            else
-                LOG_ERROR("Invalid cancel request ignored");
         }
     }
 }

@@ -25,13 +25,20 @@ namespace librealsense
     {
         class pipe_callback{
             std::function<void(usb_request*)> _callback;
+            std::mutex _mutex;
         public:
             pipe_callback(std::function<void(usb_request*)> callback)
             {
                 _callback = callback;
             }
 
+            void cancel(){
+                std::lock_guard<std::mutex> lk(_mutex);
+                _callback = nullptr;
+            }
+
             void callback(usb_request* response){
+                std::lock_guard<std::mutex> lk(_mutex);
                 if(_callback)
                     _callback(response);
             }
@@ -46,12 +53,11 @@ namespace librealsense
             pipe(::usb_device* handle);
             ~pipe();
 
-            void submit_request(std::shared_ptr<usb_request> request);
-            void cancel_request(std::shared_ptr<usb_request> request);
             void release();
 
         private:
             ::usb_device* _handle;
+            std::mutex _mutex;
         };
     }
 }
