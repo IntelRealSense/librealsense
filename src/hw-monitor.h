@@ -300,7 +300,7 @@ namespace librealsense
         struct hwmon_cmd_details
         {
             bool                                         oneDirection;
-            std::array<uint8_t, HW_MONITOR_COMMAND_SIZE> sendCommandData;
+            std::array<uint8_t, HW_MONITOR_BUFFER_SIZE>  sendCommandData;
             int                                          sizeOfSendCommandData;
             long                                         timeOut;
             std::array<uint8_t, 4>                       receivedOpcode;

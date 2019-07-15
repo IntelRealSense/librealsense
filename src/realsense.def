@@ -315,4 +315,7 @@ EXPORTS
     rs2_update_firmware
     rs2_create_flash_backup
     rs2_create_flash_backup_cpp
+    rs2_is_flash_locked
+    rs2_update_firmware_unsigned
+    rs2_update_firmware_unsigned_cpp
     rs2_enter_update_state

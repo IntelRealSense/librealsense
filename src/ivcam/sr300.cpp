@@ -215,6 +215,16 @@ namespace librealsense
         return flash;
     }
 
+    bool sr300_camera::is_flash_locked() const
+    {
+        return _is_locked;
+    }
+
+    void sr300_camera::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, bool full_write)
+    {
+        throw std::runtime_error("update_flash is not supported by SR300");
+    }
+
     struct sr300_raw_calibration
     {
         uint16_t tableVersion;

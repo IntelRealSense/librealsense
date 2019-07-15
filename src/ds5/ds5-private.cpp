@@ -277,5 +277,15 @@ namespace librealsense
             return results;
         }
 
+        uint32_t get_read_write_segment_count(const firmware_version& fw_version, bool full_size)
+        {
+            if (fw_version > firmware_version("0.0.0.0")) //TODO
+            {
+                return full_size ? 0x200 : 0x178;
+            }
+            std::string v = fw_version;
+            throw std::runtime_error("unsupported firmware version" + v);
+        }
+
     } // librealsense::ds
 } // namespace librealsense

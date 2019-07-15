@@ -525,6 +525,8 @@ namespace librealsense
 
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, bool full_write) override;
+        bool is_flash_locked() const override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -532,6 +534,7 @@ namespace librealsense
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
+        bool _is_locked = true;
 
         template<class T>
         void register_depth_xu(uvc_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const

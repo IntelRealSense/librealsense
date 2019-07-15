@@ -2418,6 +2418,64 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+int rs2_is_flash_locked(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    return fwud->is_flash_locked();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(1, device)
+
+void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback* callback, int full_write, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(image);
+
+    if (image_size <= 0)
+        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned_cpp");
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
+
+    if (callback == NULL)
+        fwud->update_flash(buffer, nullptr, full_write);
+    else
+        fwud->update_flash(buffer, { callback, [](rs2_update_progress_callback* p) { p->release(); } }, full_write);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
+
+void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback_ptr callback, void* client_data, int full_write,  rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(image);
+
+    if (image_size <= 0)
+        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not supports update protocol!");
+
+    std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
+
+    if (callback == NULL)
+        fwud->update_flash(buffer, nullptr, full_write);
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data),
+            [](update_progress_callback* p) { delete p; });
+        fwud->update_flash(buffer, std::move(cb), full_write);
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
+
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);

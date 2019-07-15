@@ -52,7 +52,8 @@ namespace librealsense
 
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
-
+        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, bool full_write) override;
+        bool is_flash_locked() const override;
     protected:
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
@@ -83,6 +84,7 @@ namespace librealsense
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
+        bool _is_locked = true;
     };
 
     class ds5u_device : public ds5_device

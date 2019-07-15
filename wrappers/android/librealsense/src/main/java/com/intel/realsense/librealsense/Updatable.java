@@ -7,9 +7,18 @@ public class Updatable extends Device {
         nEnterUpdateState(mHandle);
     }
 
+    public synchronized void updateUnsigned(byte[] image, ProgressListener listener){
+        mListener = listener;
+        nUpdateFirmwareUnsigned(mHandle, image, false);
+    }
+
     public synchronized byte[] createFlashBackup(ProgressListener listener){
         mListener = listener;
         return nCreateFlashBackup(mHandle);
+    }
+
+    public boolean isFlashLocked(){
+        return nIsFlashLocked(mHandle);
     }
 
     Updatable(long handle){
@@ -23,4 +32,6 @@ public class Updatable extends Device {
 
     private static native void nEnterUpdateState(long handle);
     private native byte[] nCreateFlashBackup(long handle);
+    private native boolean nIsFlashLocked(long handle);
+    private native void nUpdateFirmwareUnsigned(long handle, byte[] image, boolean full_write);
 }
