@@ -115,6 +115,7 @@ public class DetachedActivity extends AppCompatActivity {
                     return;
                 if(d.is(Extension.UPDATE_DEVICE)){
                     FirmwareUpdateProgressDialog fupd = new FirmwareUpdateProgressDialog();
+                    fupd.setCancelable(false);
                     fupd.show(getFragmentManager(), null);
                     mUpdating = true;
                 }

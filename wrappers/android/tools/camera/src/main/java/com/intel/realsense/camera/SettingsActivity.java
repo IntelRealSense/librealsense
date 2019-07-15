@@ -16,12 +16,15 @@ import android.widget.Toast;
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceList;
+import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.Sensor;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamType;
+import com.intel.realsense.librealsense.Updatable;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,10 +34,14 @@ import java.util.TreeMap;
 
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "librs camera settings";
+
+    private static final int OPEN_FILE_REQUEST_CODE = 0;
+
     private static final int INDEX_DEVICE_INFO = 0;
     private static final int INDEX_ADVANCE_MODE = 1;
     private static final int INDEX_PRESETS = 2;
     private static final int INDEX_UPDATE = 3;
+    private static final int INDEX_UPDATE_UNSIGNED = 4;
 
     private Device _device;
 
@@ -88,7 +95,12 @@ public class SettingsActivity extends AppCompatActivity {
         final Map<Integer,String> settingsMap = new TreeMap<>();
         settingsMap.put(INDEX_DEVICE_INFO,"Device info");
         settingsMap.put(INDEX_ADVANCE_MODE,"Enable advanced mode");
-        settingsMap.put(INDEX_UPDATE,"Firmware update");
+        if(device.is(Extension.UPDATABLE)){
+            settingsMap.put(INDEX_UPDATE,"Firmware update");
+            Updatable fwud = device.as(Extension.UPDATABLE);
+            if(!fwud.isFlashLocked())
+                settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
+        }
 
         if(device.supportsInfo(CameraInfo.ADVANCED_MODE) && device.isInAdvancedMode()){
             settingsMap.put(INDEX_ADVANCE_MODE,"Disable advanced mode");
@@ -124,6 +136,12 @@ public class SettingsActivity extends AppCompatActivity {
                         bundle.putBoolean(getString(R.string.firmware_update_request), true);
                         fud.setArguments(bundle);
                         fud.show(getFragmentManager(), "fw_update_dialog");
+                        break;
+                    }
+                    case INDEX_UPDATE_UNSIGNED: {
+                        Intent intent = new Intent(SettingsActivity.this, FileBrowserActivity.class);
+                        intent.putExtra(getString(R.string.browse_folder), getString(R.string.realsense_folder) + File.separator +  "firmware");
+                        startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
                         break;
                     }
                     default:
@@ -203,5 +221,26 @@ public class SettingsActivity extends AppCompatActivity {
         Collections.sort(lines);
 
         return lines.toArray(new StreamProfileSelector[lines.size()]);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == OPEN_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
+            if (data != null) {
+                String filePath = data.getStringExtra(getString(R.string.intent_extra_file_path));
+                FirmwareUpdateProgressDialog fud = new FirmwareUpdateProgressDialog();
+                Bundle bundle = new Bundle();
+                bundle.putString(getString(R.string.firmware_update_file_path), filePath);
+                fud.setArguments(bundle);
+                fud.setCancelable(false);
+                fud.show(getFragmentManager(), null);
+            }
+        }
+        else{
+            Intent intent = new Intent();
+            setResult(RESULT_OK, intent);
+            finish();
+        }
     }
 }
