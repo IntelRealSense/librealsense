@@ -24,8 +24,8 @@ namespace rs2
     class firmware_update_manager : public std::enable_shared_from_this<firmware_update_manager>
     {
     public:
-        firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw) 
-            : _dev(dev), _fw(fw), _model(model), _ctx(ctx) {}
+        firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed) 
+            : _dev(dev), _fw(fw), _model(model), _ctx(ctx), _is_signed(is_signed) {}
 
         void start();
         int get_progress() const { return _progress; }
@@ -49,13 +49,14 @@ namespace rs2
         bool _started = false;
         bool _done = false;
         bool _failed = false;
+        bool _is_signed = false;
+
         int _progress = 0;
         device _dev;
         std::vector<uint8_t> _fw;
         device_model& _model;
         std::mutex _log_lock;
         std::string _last_error;
-
         context _ctx;
     };
 }
