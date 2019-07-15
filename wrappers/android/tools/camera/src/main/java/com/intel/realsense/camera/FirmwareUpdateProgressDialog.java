@@ -116,7 +116,7 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
     };
 
     private void updateFirmware(UpdateDevice device, final byte[] bytes) {
-        device.updateFirmware(bytes, new ProgressListener() {
+        device.update(bytes, new ProgressListener() {
             @Override
             public void onProgress(final float progress) {
                 getActivity().runOnUiThread(new Runnable() {

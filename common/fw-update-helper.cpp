@@ -253,7 +253,7 @@ namespace rs2
             else
             {
                 auto upd = _dev.as<updatable>();
-                upd.update_firmware_unlocked(_fw, [&](const float progress)
+                upd.update_unsigned(_fw, [&](const float progress)
                 {
                     _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
                 });

@@ -227,7 +227,7 @@ namespace rs2
             return results;
         }
 
-        void update_firmware_unlocked(const std::vector<uint8_t>& image, bool full_write = false) const
+        void update_unsigned(const std::vector<uint8_t>& image, bool full_write = false) const
         {
             rs2_error* e = nullptr;
             rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), image.size(), nullptr, full_write, &e);
@@ -235,7 +235,7 @@ namespace rs2
         }
 
         template<class T>
-        void update_firmware_unlocked(const std::vector<uint8_t>& image, T callback, bool full_write = false) const
+        void update_unsigned(const std::vector<uint8_t>& image, T callback, bool full_write = false) const
         {
             rs2_error* e = nullptr;
             rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), image.size(), new update_progress_callback<T>(std::move(callback)), full_write, &e);

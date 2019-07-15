@@ -2,11 +2,11 @@ package com.intel.realsense.librealsense;
 
 public class UpdateDevice extends Device {
     private ProgressListener mListener;
-    public void updateFirmware(byte[] image){
-        updateFirmware(image, null);
+    public void update(byte[] image){
+        update(image, null);
     }
 
-    public synchronized void updateFirmware(byte[] image, ProgressListener listener){
+    public synchronized void update(byte[] image, ProgressListener listener){
         mListener = listener;
         nUpdateFirmware(mHandle, image);
     }

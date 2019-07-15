@@ -279,11 +279,16 @@ PYBIND11_MODULE(NAME, m) {
         .def("create_flash_backup", [](rs2::updatable& self, std::function<void(float)> f) { return self.create_flash_backup(f); },
             "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
             "loaded back to the device, but it does contain all calibration and device information.",
-            "callback"_a);
+            "callback"_a)
+        .def("update_unsigned", [](rs2::updatable& self, const std::vector<uint8_t>& fw_image) { return self.update_unsigned(fw_image); },
+            "Update an updatable device to the provided unsigned firmware. this call is executed on the caller's thread", "fw_image"_a)
+        .def("update_unsigned", [](rs2::updatable& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update_unsigned(fw_image, f); },
+            "Update an updatable device to the provided unsigned firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",
+            "fw_image"_a, "callback"_a);
 
     py::class_<rs2::update_device> update_device(m, "update_device");
     update_device.def(py::init<rs2::device>())
-        .def("update", (void (rs2::update_device::*)(const std::vector<uint8_t>&) const) &rs2::update_device::update,
+        .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image) { return self.update(fw_image); },
             "Update an updatable device to the provided firmware. this call is executed on the caller's thread", "fw_image"_a)
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
             "Update an updatable device to the provided firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",

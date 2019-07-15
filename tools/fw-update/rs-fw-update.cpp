@@ -267,7 +267,7 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "firmware update started" << std::endl << std::endl;
 
-            d.as<rs2::updatable>().update_firmware_unlocked(fw_image, [&](const float progress)
+            d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
             {
                 printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
             });

@@ -4079,7 +4079,7 @@ namespace rs2
                         ImGui::SetTooltip("Install default recommended firmware for this device");
                 }
 
-                if (dev.is<rs2::updatable>() || !dev.as<rs2::updatable>().is_flash_locked())
+                if (dev.is<rs2::updatable>() && !dev.as<rs2::updatable>().is_flash_locked())
                 {
                     if (ImGui::Selectable("Update Unsigned Firmware..."))
                     {
