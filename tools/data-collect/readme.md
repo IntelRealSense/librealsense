@@ -2,7 +2,7 @@
 
 ## Goal
 
-This tool is designed to help collect statistics about various streams.
+This tool is designed to help collect statistics about various streams. For full data capture, you can use [recorder](../recorder/) or [realsense-viewer](../realsense-viewer).
 
 ## Description
 Given a configuration file the tool will configure the first Realsense device recognized to the desired streams and wait for either set number of frames or a timeout.  
