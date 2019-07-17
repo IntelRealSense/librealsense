@@ -299,7 +299,7 @@ namespace librealsense
             }
             if (_type == RS2_FRAME_METADATA_FRAME_TIMESTAMP)
             {
-	      return (dynamic_cast<const video_frame*>(&frm) != nullptr) || (dynamic_cast<const motion_frame*>(&frm) != nullptr) || (dynamic_cast<const pose_frame*>(&frm) != nullptr);
+                return (dynamic_cast<const video_frame*>(&frm) != nullptr) || (dynamic_cast<const motion_frame*>(&frm) != nullptr) || (dynamic_cast<const pose_frame*>(&frm) != nullptr);
             }
             return false;
         }
