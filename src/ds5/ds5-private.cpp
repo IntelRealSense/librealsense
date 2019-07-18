@@ -277,14 +277,38 @@ namespace librealsense
             return results;
         }
 
-        uint32_t get_read_write_segment_count(const firmware_version& fw_version, bool full_size)
+        flash_structure get_flash_structure(const uint32_t flash_version)
         {
-            if (fw_version > firmware_version("0.0.0.0")) //TODO
+            switch (flash_version)
             {
-                return full_size ? 0x200 : 0x178;
+            case 100: return { 2, { 17, 10, 40, 29, 30, 54} };
+            case 101: return { 3, { 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 103: return { 4, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            default:
+                throw std::runtime_error("unknown flash version");
             }
-            std::string v = fw_version;
-            throw std::runtime_error("unsupported firmware version" + v);
+        }
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer)
+        {
+            flash_info rv = {};
+
+            uint32_t toc_offset = 0x001fff00;
+            flash_info_header fih = {};
+            memcpy(&fih, flash_buffer.data() + toc_offset, sizeof(fih));
+
+            auto toc = parse_table_of_contents(flash_buffer, fih);
+            auto s = get_flash_structure(toc.header.version);
+
+            rv.header = fih;
+            rv.table_of_content = toc;
+            rv.payloads = parse_payloads(flash_buffer, s.payload_count);
+            rv.tables = parse_tables(flash_buffer, toc, s);
+            rv.version = toc.header.version;
+            rv.app_size = rv.payloads.back().data_offset + rv.payloads.back().data_size;
+
+            return rv;
         }
 
     } // librealsense::ds

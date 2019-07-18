@@ -5,6 +5,7 @@
 
 #include "backend.h"
 #include "types.h"
+#include "fw-update/fw-update-unsigned.h"
 
 #include <map>
 #include <iomanip>
@@ -135,9 +136,10 @@ namespace librealsense
 
         const int REGISTER_CLOCK_0 = 0x0001613c;
 
-        // unlocked camera update
-        const uint32_t FLASH_SEGMENT_SIZE = 0x1000;
-        uint32_t get_read_write_segment_count(const firmware_version& fw_version, bool full_size);
+        const uint32_t FLASH_SIZE = 0x00200000;
+        const uint32_t FLASH_SECTOR_SIZE = 0x1000;
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer);
 
         enum fw_cmd : uint8_t
         {
