@@ -7,7 +7,6 @@
 #include "messenger-usbhost.h"
 #include "../usb/usb-device.h"
 #include "usbhost.h"
-#include "pipe-usbhost.h"
 
 #include <string>
 #include <regex>

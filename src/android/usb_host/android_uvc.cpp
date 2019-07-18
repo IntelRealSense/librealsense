@@ -839,7 +839,9 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     auto dev = strctx->stream->devh->device;
     auto messenger = std::static_pointer_cast<platform::usb_messenger_usbhost>(dev->open());
 
-    auto read_ep = inf->first_endpoint(librealsense::platform::RS2_USB_ENDPOINT_DIRECTION_READ);
+    auto read_ep = std::static_pointer_cast<platform::usb_endpoint_usbhost>
+            (inf->first_endpoint(platform::RS2_USB_ENDPOINT_DIRECTION_READ));
+
     uint32_t reset_ep_timeout = 100;
     messenger->reset_endpoint(read_ep, reset_ep_timeout);
 
@@ -874,49 +876,64 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
 
     frame_ptr fp = frame_ptr(archive.allocate(), &cleanup_frame);
 
-    auto ep = std::static_pointer_cast<librealsense::platform::usb_endpoint_usbhost>(read_ep);
-    auto desc = ep->get_descriptor();
+    auto desc = read_ep->get_descriptor();
     std::shared_ptr<usb_request> request = std::shared_ptr<usb_request>(usb_request_new(dev->get_handle(),
         &desc), [](usb_request* req) {usb_request_free(req);});
+    if(!request)
+    {
+        LOG_ERROR("invalid USB request");
+        return;
+    }
 
     bool fatal_error = false;
     uint32_t frame_count = 0;
-
-    auto callback = std::make_shared<platform::pipe_callback>([&](usb_request* r)
+    int active_request_count = 0;
+    uint32_t zero_response = 0;
+    auto callback = std::make_shared<platform::usb_request_callback>([&](usb_request* r)
     {
-        if(r && r->actual_length >= strctx->stream->cur_ctrl.dwMaxVideoFrameSize){
-            frame_count++;
-            usbhost_uvc_process_bulk_payload(std::move(fp), r->actual_length, queue);
+        if(r)
+        {
+            active_request_count--;
+            if(r->actual_length == 0){
+                LOG_WARNING("read_ep: " << r->endpoint << ", zero response");
+                zero_response++;
+                if(zero_response > 10)
+                {
+                    messenger->reset_endpoint(read_ep, reset_ep_timeout);
+                    zero_response = 0;
+                }
+            }
+            if(r->actual_length >= strctx->stream->cur_ctrl.dwMaxVideoFrameSize){
+                zero_response = 0;
+                frame_count++;
+                usbhost_uvc_process_bulk_payload(std::move(fp), r->actual_length, queue);
+            }
         }
 
         if(!strctx->stream->running){
             return;
         }
 
-        while(strctx->stream->running){
-            fp = frame_ptr(archive.allocate(), &cleanup_frame);
-            if(!fp){
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                continue;
-            }
+        fp = frame_ptr(archive.allocate(), &cleanup_frame);
+        if(!fp)
+            return;
+        request->buffer = fp->pixels.data();
+        request->buffer_length = fp->pixels.size();
 
-            request->buffer = fp->pixels.data();
-            request->buffer_length = fp->pixels.size();
-
-            auto sts =  messenger->submit_request(request);
-            switch(sts)
-            {
-                case platform::RS2_USB_STATUS_SUCCESS:
-                    return;
-                case platform::RS2_USB_STATUS_OVERFLOW:
-                case platform::RS2_USB_STATUS_NO_DEVICE:
-                    fatal_error = true;
-                    return;
-                default:
-                    messenger->cancel_request(request);
-                    messenger->reset_endpoint(read_ep, reset_ep_timeout);
-                    break;
-            }
+        auto sts =  messenger->submit_request(request);
+        switch(sts)
+        {
+            case platform::RS2_USB_STATUS_SUCCESS:
+                active_request_count++;
+                return;
+            case platform::RS2_USB_STATUS_OVERFLOW:
+            case platform::RS2_USB_STATUS_NO_DEVICE:
+            case platform::RS2_USB_STATUS_NO_MEM:
+                fatal_error = true;
+                return;
+            default:
+                messenger->reset_endpoint(read_ep, reset_ep_timeout);
+                break;
         }
     });
 
@@ -925,15 +942,25 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
     while(!fatal_error && strctx->stream->running)
     {
         if(frame_count == 0){
-            messenger->cancel_request(request);
+            if(active_request_count > 0)
+            {
+                messenger->cancel_request(request);
+                active_request_count--;
+            }
             callback->callback(nullptr);
         }
         frame_count = 0;
         std::this_thread::sleep_for(std::chrono::milliseconds(STREAMING_WATCHER_TIMEOUT));
     }
 
+    if(active_request_count > 0)
+    {
+        messenger->cancel_request(request);
+        active_request_count--;
+    }
+    LOG_INFO("read endpoint: " << (int)read_ep->get_address() <<", active requests count: " << active_request_count);
+
     callback->cancel();
-    messenger->cancel_request(request);
     messenger->reset_endpoint(read_ep, reset_ep_timeout);
     free(strctx);
     queue.clear();
@@ -944,7 +971,7 @@ void stream_thread(usbhost_uvc_stream_context *strctx) {
 
     LOG_INFO("start join stream_thread");
     t.join();
-    LOG_INFO("Transfer thread stopped for endpoint address: " << (int)ep->get_address());
+    LOG_INFO("Transfer thread stopped for endpoint address: " << (int)read_ep->get_address());
 };
 
 uvc_error_t usbhost_uvc_stream_start(
@@ -987,8 +1014,6 @@ uvc_error_t usbhost_uvc_stream_start(
     iface = &strmh->devh->deviceData.interfaces->iface[interface_id];
 
     usbhost_uvc_stream_context *streamctx = new usbhost_uvc_stream_context;
-
-    //printf("Starting stream on EP = 0x%X, interface 0x%X\n", format_desc->parent->bEndpointAddress, iface);
 
     streamctx->stream = strmh;
     streamctx->endpoint = format_desc->parent->bEndpointAddress;

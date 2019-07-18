@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 /* UVC_COLOR_FORMAT_* have been replaced with UVC_FRAME_FORMAT_*. Please use
  * UVC_FRAME_FORMAT_* instead of using these. */
 #define UVC_COLOR_FORMAT_UNKNOWN UVC_FRAME_FORMAT_UNKNOWN
