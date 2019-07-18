@@ -67,18 +67,26 @@ namespace librealsense
         uint32_t read_write_size;
     };
 
-    struct flash_info
+    struct flash_section
     {
-        flash_info_header header;
         uint16_t version;
+        uint32_t offset;
         uint32_t app_size;
         flash_table table_of_content;
         std::vector<flash_payload_header> payloads;
         std::vector<flash_table> tables;
     };
 
+    struct flash_info
+    {
+        flash_info_header header;
+        flash_section read_write_section;
+        flash_section read_only_section;
+    };
+
     std::vector<flash_payload_header> parse_payloads(const std::vector<uint8_t>& flash_buffer, size_t number_of_payloads);
     std::vector<flash_table> parse_tables(const std::vector<uint8_t>& flash_buffer, flash_table toc, flash_structure structure);
-    flash_table parse_table_of_contents(const std::vector<uint8_t>& flash_buffer, flash_info_header fih);
+    flash_table parse_table_of_contents(const std::vector<uint8_t>& flash_buffer, uint32_t toc_offset);
     std::vector<uint8_t> merge_images(flash_info from, flash_info to, const std::vector<uint8_t> image);
+    flash_section parse_flash_section(const std::vector<uint8_t>& flash_buffer, flash_table toc, flash_structure s);
 }

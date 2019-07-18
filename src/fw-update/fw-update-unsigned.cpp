@@ -58,7 +58,15 @@ namespace librealsense
     {
         std::vector<uint8_t> rv(image);
 
-        for (auto&& table : from.tables)
+        for (auto&& table : from.read_write_section.tables)
+        {
+            if (!table.read_only)
+                continue;
+            memcpy(rv.data() + table.offset, &table.header, sizeof(table.header));
+            memcpy(rv.data() + table.offset + sizeof(table.header), table.data.data(), table.header.size);
+        }
+
+        for (auto&& table : from.read_only_section.tables)
         {
             if (!table.read_only)
                 continue;
@@ -69,11 +77,9 @@ namespace librealsense
         return rv;
     }
 
-    flash_table parse_table_of_contents(const std::vector<uint8_t>& flash_buffer, flash_info_header fih)
+    flash_table parse_table_of_contents(const std::vector<uint8_t>& flash_buffer, uint32_t toc_offset)
     {
         flash_table rv = {};
-
-        uint32_t toc_offset = fih.read_write_start_address + fih.read_write_size - 0x80;
 
         memcpy(&rv.header, flash_buffer.data() + toc_offset, sizeof(rv.header));
         rv.data.resize(rv.header.size);
@@ -81,6 +87,19 @@ namespace librealsense
 
         rv.read_only = false;
         rv.offset = toc_offset;
+
+        return rv;
+    }
+
+    flash_section parse_flash_section(const std::vector<uint8_t>& flash_buffer, flash_table toc, flash_structure s)
+    {
+        flash_section rv = {};
+
+        rv.table_of_content = toc;
+        rv.payloads = parse_payloads(flash_buffer, s.payload_count);
+        rv.tables = parse_tables(flash_buffer, toc, s);
+        rv.version = toc.header.version;
+        rv.app_size = rv.payloads.back().data_offset + rv.payloads.back().data_size;
 
         return rv;
     }

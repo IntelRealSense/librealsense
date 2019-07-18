@@ -148,7 +148,7 @@ namespace librealsense
         return _is_locked;
     }
 
-    void update_flash_section(std::shared_ptr<hw_monitor> hwm, flash_info info, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
+    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
         size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
@@ -186,12 +186,43 @@ namespace librealsense
         }
     }
 
-    void ds5_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, bool full_write)
+    void update_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& merged_image, flash_section fs, uint32_t tables_size,
+        update_progress_callback_ptr callback, float continue_from, float ratio)
+    {
+        auto first_table_offset = fs.tables.front().offset;
+        float total_size = fs.app_size + tables_size;
+
+        float app_ratio = fs.app_size / total_size * ratio;
+        float tables_ratio = tables_size / total_size * ratio;
+
+        update_flash_section(hwm, merged_image, fs.offset, fs.app_size, callback, continue_from, app_ratio);
+        update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
+    }
+
+    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, update_progress_callback_ptr callback, int update_mode)
+    {
+        auto flash_image_info = ds::get_flash_info(image);
+        auto flash_backup_info = ds::get_flash_info(flash_backup);
+        auto merged_image = merge_images(flash_backup_info, flash_image_info, image);
+
+        // update read-write section
+        auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
+        auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5 : 1.0);
+
+        if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
+        {
+            // update read-only section
+            auto first_table_offset = flash_image_info.read_only_section.tables.front().offset;
+            auto tables_size = flash_image_info.header.read_only_start_address + flash_image_info.header.read_only_size - first_table_offset;
+            update_section(hwm, merged_image, flash_image_info.read_only_section, tables_size, callback, 0.5, 0.5);
+        }
+    }
+
+    void ds5_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
-
-        auto flash_image_info = ds::get_flash_info(image);
 
         get_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
         {
@@ -199,26 +230,20 @@ namespace librealsense
             cmdPFD.require_response = false;
             auto res = _hw_monitor->send(cmdPFD);
 
-
-            if (full_write)
+            switch (update_mode)
             {
-                update_flash_section(_hw_monitor, flash_image_info, image, 0, ds::FLASH_SIZE, callback, 0, 1.0);
-            }
-            else
+            case RS2_UNSIGNED_UPDATE_MODE_FULL:
+                update_flash_section(_hw_monitor, image, 0, ds::FLASH_SIZE, callback, 0, 1.0);
+                break;
+            case RS2_UNSIGNED_UPDATE_MODE_UPDATE:
+            case RS2_UNSIGNED_UPDATE_MODE_READ_ONLY:
             {
                 auto flash_backup = backup_flash(nullptr);
-                auto flash_backup_info = ds::get_flash_info(flash_backup);
-                auto merged_image = merge_images(flash_backup_info, flash_image_info, image);
-
-                auto first_table_offset = flash_image_info.tables.front().offset;
-                auto tables_size = flash_image_info.header.read_write_size - first_table_offset;
-                float total_size = flash_image_info.app_size + tables_size;
-
-                float app_ratio = flash_image_info.app_size / total_size;
-                float tables_ratio = tables_size / total_size;
-
-                update_flash_section(_hw_monitor, flash_image_info, merged_image, 0, flash_image_info.app_size, callback, 0, app_ratio);
-                update_flash_section(_hw_monitor, flash_image_info, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
+                update_flash_internal(_hw_monitor, image, flash_backup, callback, update_mode);
+                break;
+            }
+            default:
+                throw std::runtime_error("invalid update mode value");
             }
 
             if (callback) callback->on_update_progress(1.0);

@@ -220,7 +220,7 @@ namespace librealsense
         return _is_locked;
     }
 
-    void sr300_camera::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, bool full_write)
+    void sr300_camera::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
         throw std::runtime_error("update_flash is not supported by SR300");
     }

@@ -277,7 +277,7 @@ namespace librealsense
             return results;
         }
 
-        flash_structure get_flash_structure(const uint32_t flash_version)
+        flash_structure get_rw_flash_structure(const uint32_t flash_version)
         {
             switch (flash_version)
             {
@@ -290,26 +290,38 @@ namespace librealsense
             }
         }
 
+        flash_structure get_ro_flash_structure(const uint32_t flash_version)
+        {
+            switch (flash_version)
+            {
+            case 100: return { 2, { 134, 25 } };
+            default:
+                throw std::runtime_error("unknown flash version");
+            }
+        }
+
         flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer)
         {
             flash_info rv = {};
 
-            uint32_t toc_offset = 0x001fff00;
-            flash_info_header fih = {};
-            memcpy(&fih, flash_buffer.data() + toc_offset, sizeof(fih));
+            uint32_t header_offset = FLASH_SIZE - 0x100;
+            memcpy(&rv.header, flash_buffer.data() + header_offset, sizeof(rv.header));
 
-            auto toc = parse_table_of_contents(flash_buffer, fih);
-            auto s = get_flash_structure(toc.header.version);
+            uint32_t ro_toc_offset = header_offset - 0x80;
+            uint32_t rw_toc_offset = rv.header.read_write_start_address + rv.header.read_write_size - 0x80;
 
-            rv.header = fih;
-            rv.table_of_content = toc;
-            rv.payloads = parse_payloads(flash_buffer, s.payload_count);
-            rv.tables = parse_tables(flash_buffer, toc, s);
-            rv.version = toc.header.version;
-            rv.app_size = rv.payloads.back().data_offset + rv.payloads.back().data_size;
+            auto ro_toc = parse_table_of_contents(flash_buffer, ro_toc_offset);
+            auto rw_toc = parse_table_of_contents(flash_buffer, rw_toc_offset);
+
+            auto ro_structure = get_ro_flash_structure(ro_toc.header.version);
+            auto rw_structure = get_rw_flash_structure(rw_toc.header.version);
+
+            rv.read_only_section = parse_flash_section(flash_buffer, ro_toc, ro_structure);
+            rv.read_only_section.offset = rv.header.read_only_start_address;
+            rv.read_write_section = parse_flash_section(flash_buffer, rw_toc, rw_structure);
+            rv.read_write_section.offset = rv.header.read_write_start_address;
 
             return rv;
         }
-
     } // librealsense::ds
 } // namespace librealsense

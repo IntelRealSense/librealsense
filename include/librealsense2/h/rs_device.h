@@ -197,6 +197,10 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 */
 int rs2_is_flash_locked(const rs2_device* device, rs2_error** error);
 
+#define RS2_UNSIGNED_UPDATE_MODE_UPDATE     0
+#define RS2_UNSIGNED_UPDATE_MODE_READ_ONLY  1
+#define RS2_UNSIGNED_UPDATE_MODE_FULL       2
+
 /**
 * Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera (see rs2_is_flash_locked).
 * The device must be extendable to RS2_EXTENSION_UPDATABLE.
@@ -205,10 +209,10 @@ int rs2_is_flash_locked(const rs2_device* device, rs2_error** error);
 * \param[in]  fw_image      Firmware image buffer
 * \param[in]  fw_image_size Firmware image buffer size
 * \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
-* \param[in]  full_write    Write the entire flash including read only sections, WARNING!!! setting to true will make this call unsafe and might damage the camera
+* \param[in]  update_mode   Select one of RS2_UNSIGNED_UPDATE_MODE, WARNING!!! setting to any option other than RS2_UNSIGNED_UPDATE_MODE_UPDATE will make this call unsafe and might damage the camera
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, int full_write, rs2_error** error);
+void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, int update_mode, rs2_error** error);
 
 /**
 * Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera.
@@ -219,10 +223,10 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* fw_i
 * \param[in]  fw_image_size Firmware image buffer size
 * \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[in]  client_data   Optional client data for the callback
-* \param[in]  full_write    Write the entire flash including read only sections, WARNING!!! setting to true will make this call unsafe and might damage the camera
+* \param[in]  update_mode   Select one of RS2_UNSIGNED_UPDATE_MODE, WARNING!!! setting to any option other than RS2_UNSIGNED_UPDATE_MODE_UPDATE will make this call unsafe and might damage the camera
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, int full_write, rs2_error** error);
+void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, int update_mode, rs2_error** error);
 
 /**
 * Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.

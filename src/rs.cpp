@@ -2430,7 +2430,7 @@ int rs2_is_flash_locked(const rs2_device* device, rs2_error** error) BEGIN_API_C
 }
 HANDLE_EXCEPTIONS_AND_RETURN(1, device)
 
-void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback* callback, int full_write, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback* callback, int update_mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
@@ -2445,13 +2445,13 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
     if (callback == NULL)
-        fwud->update_flash(buffer, nullptr, full_write);
+        fwud->update_flash(buffer, nullptr, update_mode);
     else
-        fwud->update_flash(buffer, { callback, [](rs2_update_progress_callback* p) { p->release(); } }, full_write);
+        fwud->update_flash(buffer, { callback, [](rs2_update_progress_callback* p) { p->release(); } }, update_mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
 
-void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback_ptr callback, void* client_data, int full_write,  rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback_ptr callback, void* client_data, int update_mode,  rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
@@ -2466,12 +2466,12 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
     if (callback == NULL)
-        fwud->update_flash(buffer, nullptr, full_write);
+        fwud->update_flash(buffer, nullptr, update_mode);
     else
     {
         librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data),
             [](update_progress_callback* p) { delete p; });
-        fwud->update_flash(buffer, std::move(cb), full_write);
+        fwud->update_flash(buffer, std::move(cb), update_mode);
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)

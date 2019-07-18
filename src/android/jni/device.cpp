@@ -87,7 +87,7 @@ Java_com_intel_realsense_librealsense_Updatable_nUpdateFirmwareUnsigned(JNIEnv *
                                                                         jobject instance,
                                                                         jlong handle,
                                                                         jbyteArray image_,
-                                                                        jboolean full_write) {
+                                                                        jint update_mode) {
     jbyte *image = env->GetByteArrayElements(image_, NULL);
     auto length = env->GetArrayLength(image_);
     rs2_error *e = NULL;
@@ -95,7 +95,7 @@ Java_com_intel_realsense_librealsense_Updatable_nUpdateFirmwareUnsigned(JNIEnv *
     jmethodID id = env->GetMethodID(cls, "onProgress", "(F)V");
     auto cb = [&](float progress){ env->CallVoidMethod(instance, id, progress); };
     rs2_update_firmware_unsigned_cpp(reinterpret_cast<const rs2_device *>(handle), image, length,
-                                     new rs2::update_progress_callback<decltype(cb)>(cb), full_write, &e);
+                                     new rs2::update_progress_callback<decltype(cb)>(cb), update_mode, &e);
     handle_error(env, e);
     env->ReleaseByteArrayElements(image_, image, 0);
 }
