@@ -252,7 +252,6 @@ namespace librealsense
                 {
                     return (rs2_metadata_type)(vf->additional_data.system_time);
                 }
-                
                 if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
                 {
                     return (rs2_metadata_type)(mf->additional_data.system_time);
@@ -260,6 +259,21 @@ namespace librealsense
                 if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
                 {
                     return (rs2_metadata_type)(pf->additional_data.system_time);
+                }
+            }
+            if(_type == RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+            {
+                if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(vf->additional_data.timestamp*1e+3);
+                }
+                if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(mf->additional_data.timestamp*1e+3);
+                }
+                if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(pf->additional_data.timestamp*1e+3);
                 }
             }
             if (_type == RS2_FRAME_METADATA_TEMPERATURE)
@@ -287,6 +301,10 @@ namespace librealsense
             {
                 return dynamic_cast<const video_frame*>(&frm) != nullptr || dynamic_cast<const motion_frame*>(&frm) != nullptr;
             }
+            if (_type == RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+            {
+                return (dynamic_cast<const video_frame*>(&frm) != nullptr) || (dynamic_cast<const motion_frame*>(&frm) != nullptr) || (dynamic_cast<const pose_frame*>(&frm) != nullptr);
+            }
             return false;
         }
     private:
@@ -305,6 +323,7 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
         _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+        _metadata_parsers->operator[](RS2_FRAME_METADATA_FRAME_TIMESTAMP) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
     }
 
     tm2_sensor::~tm2_sensor()
