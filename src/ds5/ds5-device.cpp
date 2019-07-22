@@ -157,10 +157,20 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
-            return get_intrinsic_by_resolution(
-                *_owner->_coefficients_table_raw,
-                ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height);
+            rs2_intrinsics result;
+            
+            if (ds::try_get_intrinsic_by_resolution_new(*_owner->_new_calib_table_raw,
+                profile.width, profile.height, &result))
+            {
+                return result;
+            }
+            else 
+            {
+                return get_intrinsic_by_resolution(
+                    *_owner->_coefficients_table_raw,
+                    ds::calibration_table_id::coefficients_table_id,
+                    profile.width, profile.height);
+            }
         }
 
         void open(const stream_profiles& requests) override
@@ -351,6 +361,16 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
+    std::vector<uint8_t> ds5_device::get_new_calibration_table() const
+    {
+        if (_fw_version >= firmware_version("5.11.9.5"))
+        {
+            command cmd(ds::RECPARAMSGET);
+            return _hw_monitor->send(cmd);
+        }
+        return {};
+    }
+
     ds::d400_caps ds5_device::parse_device_capabilities() const
     {
         using namespace ds;
@@ -454,6 +474,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+        _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         auto pid = group.uvc_devices.front().pid;
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";

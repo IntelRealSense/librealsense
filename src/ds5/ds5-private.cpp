@@ -155,6 +155,33 @@ namespace librealsense
             return calc_intrinsic;
         }
 
+        // Parse intrinsics from newly added RECPARAMSGET command
+        bool try_get_intrinsic_by_resolution_new(const vector<uint8_t>& raw_data,
+                uint32_t width, uint32_t height, rs2_intrinsics* result)
+        {
+            using namespace ds;
+            auto count = raw_data.size() / sizeof(new_calibration_item);
+            auto items = (new_calibration_item*)raw_data.data();
+            for (int i = 0; i < count; i++)
+            {
+                auto&& item = items[i];
+                if (item.width == width && item.height == height)
+                {
+                    result->width = width;
+                    result->height = height;
+                    result->ppx = item.ppx;
+                    result->ppy = item.ppy;
+                    result->fx = item.fx;
+                    result->fy = item.fy;
+                    result->model = RS2_DISTORTION_BROWN_CONRADY;
+                    memset(result->coeffs, 0, sizeof(result->coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
         rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
