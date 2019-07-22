@@ -209,7 +209,7 @@ namespace librealsense
             sr300_camera& _owner;
         };
 
-        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface
+        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface, public roi_sensor_base
         {
         public:
             explicit sr300_color_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,

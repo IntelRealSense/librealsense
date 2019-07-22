@@ -17,5 +17,8 @@ namespace librealsense
     void sr300_update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr callback) const
     {
         update_device::update(fw_image, fw_image_size, callback);
+
+        // wait for the device to come back from recovery state, TODO: check cause
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 }
