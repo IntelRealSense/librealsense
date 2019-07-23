@@ -165,6 +165,7 @@ namespace librealsense
             SETSUBPRESET    = 0x7B,     // Download sub-preset
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
+            RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
         };
 
         #define TOSTRING(arg) #arg
@@ -312,6 +313,16 @@ namespace librealsense
             uint8_t             reserved1[88];
             float4              rect_params[max_ds5_rect_resolutions];
             uint8_t             reserved2[64];
+        };
+
+        struct new_calibration_item
+        {
+            uint16_t width;
+            uint16_t height;
+            float  fx;
+            float  fy;
+            float  ppx;
+            float  ppy;
         };
 
         template<class T>
@@ -619,6 +630,9 @@ namespace librealsense
 
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
+
+        bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
+                uint32_t width, uint32_t height, rs2_intrinsics* result);
 
         rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
