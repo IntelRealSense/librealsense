@@ -36,6 +36,9 @@ namespace librealsense
         };
         bool compress_while_record() const override { return false; }
 
+    protected:
+        void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
+
     private:
         static const char* tm2_device_name()
         {

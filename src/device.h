@@ -88,8 +88,9 @@ namespace librealsense
                         const platform::backend_device_group group,
                         bool device_changed_notifications = false);
 
-    private:
         std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
+
+    private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
         std::shared_ptr<context> _context;
         const platform::backend_device_group _group;
