@@ -1671,7 +1671,23 @@ rs2_pipeline_profile* rs2_config_resolve(rs2_config* config, rs2_pipeline* pipe,
 {
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(pipe);
-    return new rs2_pipeline_profile{ config->config->resolve(pipe->pipeline) };
+
+    const int NUM_TIMES_TO_RETRY = 3;
+    rs2_pipeline_profile *profile = nullptr;
+    for (int i = 1; i <= NUM_TIMES_TO_RETRY; i++)
+    {
+        try
+        {
+            profile = new rs2_pipeline_profile{config->config->resolve(pipe->pipeline, std::chrono::seconds(5))};
+            break;
+        }
+        catch (...)
+        {
+            if (i == NUM_TIMES_TO_RETRY)
+                throw;
+        }
+    }
+    return profile;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, config, pipe)
 
