@@ -20,7 +20,7 @@ fi
 source ./scripts/patch-utils.sh
 
 # Get the required tools and headers to build the kernel
-sudo apt-get install linux-headers-generic build-essential git bc -y
+sudo apt-get install build-essential git bc -y
 #Packages to build the patched modules
 require_package libusb-1.0-0-dev
 require_package libssl-dev
@@ -30,6 +30,7 @@ retpoline_retrofit=0
 LINUX_BRANCH=$(uname -r)
 
 # Construct branch name from distribution codename {xenial,bionic,..} and kernel version
+ubuntu_version_id=`. /etc/os-release; echo ${VERSION_ID/*, /}`
 ubuntu_codename=`. /etc/os-release; echo ${UBUNTU_CODENAME/*, /}`
 if [ -z "${ubuntu_codename}" ];
 then
@@ -37,9 +38,30 @@ then
 	ubuntu_codename="xenial"
 	retpoline_retrofit=1
 fi
+
 kernel_branch=$(choose_kernel_branch ${LINUX_BRANCH} ${ubuntu_codename})
 kernel_name="ubuntu-${ubuntu_codename}-$kernel_branch"
 echo -e "\e[32mCreate patches workspace in \e[93m${kernel_name} \e[32mfolder\n\e[0m"
+
+# Split the kernel version string
+IFS='.' read -a kernel_version <<< "${LINUX_BRANCH}"
+IFS='-' read -a kernel_minors <<< "${kernel_version[2]}"
+
+# Ubuntu-hwe-4\.18\.0-.*\.25.*'
+case ${kernel_branch} in
+  "master")
+    sudo apt-get install linux-headers-generic
+    tag_name="Ubuntu-${kernel_version[0]}.${kernel_version[1]}.${kernel_minors[0]}-.*\.${kernel_minors[1]}_${ubuntu_version_id}.*"
+    ;;
+  "hwe")
+    sudo apt-get install "linux-headers-generic-${kernel_branch}-${ubuntu_version_id}"
+    tag_name="Ubuntu-hwe-${kernel_version[0]}\.${kernel_version[1]}\.${kernel_minors[0]}-.*\.${kernel_minors[1]}_${ubuntu_version_id}.*"
+    ;;
+  "hwe-edge")
+    sudo apt-get install "linux-headers-generic-${kernel_branch}-${kernel_version[0]}.${kernel_version[1]}-edge"
+    tag_name="Ubuntu-hwe-edge-${kernel_version[0]}.${kernel_version[1]}.${kernel_minors[0]}-.*\.${kernel_minors[1]}_${ubuntu_version_id}.*"
+    ;;
+esac
 
 #Distribution-specific packages
 if [ ${ubuntu_codename} == "bionic" ];
@@ -51,9 +73,17 @@ then
 	require_package flex
 fi
 
+git_tag=$(git ls-remote git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git | grep "${tag_name}")
+
+IFS='	' read -a kernel_commit <<< "${git_tag}"
+
+kernel_tag=${kernel_commit[1]#"refs/tags/"}
 
 # Get the linux kernel and change into source tree
-[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git --depth 1 ./${kernel_name}
+echo "Using kernel tag: ${kernel_tag}"
+
+[ ! -d ${kernel_name} ] && git clone -b "${kernel_tag}" git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git --depth 1 ./${kernel_name}
+
 cd ${kernel_name}
 
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
