@@ -177,5 +177,8 @@ namespace rs2
         rs2::gl::pointcloud_renderer _pc_renderer;
 
         double _last_no_pick_time = 0.0;
+        bool _pc_selected_down = false;
+        bool _pc_selected = false;
+        double _selection_started = 0.0;
     };
 }

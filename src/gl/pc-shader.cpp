@@ -87,17 +87,48 @@ static const char* fragment_shader_text =
 "    output_xyz = outPos;\n"
 "}\n";
 
-static const char* blit_shader_text =
+static const char* blit_vertex_shader_text =
 "#version 130\n"
-"varying vec2 textCoords;\n"
+"in vec3 position;\n"
+"in vec2 textureCoords;\n"
+"out vec2 textCoords[9];\n"
+"uniform vec2 elementPosition;\n"
+"uniform vec2 elementScale;\n"
+"uniform vec2 imageDims;\n"
+"void main(void)\n"
+"{\n"
+"    vec2 tex = vec2(textureCoords.x, 1.0 - textureCoords.y);\n"
+"    vec2 pixelSize = 1.0 / imageDims;\n"
+"    for (int i = -1; i <= 1; i++)\n"
+"       for (int j = -1; j <= 1; j++)\n"
+"       {\n"
+"           textCoords[(i + 1) * 3 + j + 1] = clamp(tex + pixelSize * vec2(i, j), vec2(0.0), vec2(1.0));\n"
+"       }\n"
+"    gl_Position = vec4(position * vec3(elementScale, 1.0) + vec3(elementPosition, 0.0), 1.0);\n"
+"}";
+
+static const char* blit_frag_shader_text =
+"#version 130\n"
+"in vec2 textCoords[9];\n"
 "uniform sampler2D textureSampler;\n"
 "uniform sampler2D depthSampler;\n"
 "uniform float opacity;\n"
+"uniform float is_selected;\n"
 "void main(void) {\n"
-"    vec2 tex = vec2(textCoords.x, 1.0 - textCoords.y);\n"
-"    vec4 color = texture2D(textureSampler, tex);\n"
-"    gl_FragColor = vec4(color.xyz, opacity);\n"
-"    gl_FragDepth = texture2D(depthSampler, tex).x;"
+"    vec4 color = texture2D(textureSampler, textCoords[4]);\n"
+"    float maxAlpha = 0.0;\n"
+"    for (int i = 0; i < 9; i++)\n"
+"    {\n"
+"        float a = texture2D(textureSampler, textCoords[i]).w;\n"
+"        maxAlpha = max(a, maxAlpha);\n"
+"    }\n"
+"    float alpha = texture2D(textureSampler, textCoords[4]).w;\n"
+"    float selected = 0.0;"
+"    if (alpha < maxAlpha) selected = is_selected;\n"
+"    gl_FragColor = color * (1.0 - selected) + selected * vec4(0.0, 0.68, 0.93, 0.8);\n"
+"    if (alpha > 0) gl_FragDepth = texture2D(depthSampler, textCoords[4]).x;"
+"    else if (selected > 0) gl_FragDepth = 0.0;"
+"    else gl_FragDepth = 65000.0;"
 "}";
 
 using namespace rs2;
@@ -181,10 +212,24 @@ namespace librealsense
             _shader->load_uniform(_min_delta_z_location, min_delta_z);
         }
 
+        void blit_shader::set_selected(bool selected)
+        {
+            _shader->load_uniform(_is_selected_location, selected ? 1.f : 0.f);
+        }
+
+        void blit_shader::set_image_size(int width, int height)
+        {
+            rs2::float2 xy{ width, height };
+            _shader->load_uniform(_image_dims_location, xy);
+        }
+
         blit_shader::blit_shader()
-            : texture_2d_shader(shader_program::load(default_vertex_shader(), blit_shader_text))
+            : texture_2d_shader(shader_program::load(blit_vertex_shader_text, blit_frag_shader_text))
         {
             auto texture1_sampler_location = _shader->get_uniform_location("depthSampler");
+
+            _image_dims_location = _shader->get_uniform_location("imageDims");
+            _is_selected_location = _shader->get_uniform_location("is_selected");
             
             _shader->begin();
             _shader->load_uniform(texture1_sampler_location, 1);
@@ -251,6 +296,8 @@ namespace librealsense
             register_option(OPTION_PICKED_Z, std::make_shared<librealsense::float_option>(option_range{ -1000, 1000, 0, 0 }));
             register_option(OPTION_PICKED_ID, std::make_shared<librealsense::float_option>(option_range{ 0, 32, 1, 0 }));
 
+            register_option(OPTION_SELECTED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+
             _filled_opt = &get_option(OPTION_FILLED);
             _mouse_x_opt = &get_option(OPTION_MOUSE_X);
             _mouse_y_opt = &get_option(OPTION_MOUSE_Y);
@@ -259,6 +306,7 @@ namespace librealsense
             _picked_y_opt = &get_option(OPTION_PICKED_Y);
             _picked_z_opt = &get_option(OPTION_PICKED_Z);
             _picked_id_opt = &get_option(OPTION_PICKED_ID);
+            _selected_opt = &get_option(OPTION_SELECTED);
 
             initialize();
         }
@@ -418,6 +466,11 @@ namespace librealsense
                             glBindTexture(GL_TEXTURE_2D, depth_tex);
                             glActiveTexture(GL_TEXTURE0);
                             glBindTexture(GL_TEXTURE_2D, color_tex);
+
+                            _blit->begin();
+                            _blit->set_image_size(vp[2], vp[3]);
+                            _blit->set_selected(_selected_opt->query() > 0.f);
+                            _blit->end();
 
                             _viz->draw(*_blit, color_tex);
 

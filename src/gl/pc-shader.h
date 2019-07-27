@@ -55,6 +55,11 @@ namespace librealsense
         {
         public:
             blit_shader();
+            void set_image_size(int width, int height);
+            void set_selected(bool selected);
+
+        private:
+            uint32_t _image_dims_location, _is_selected_location;
         };
 
         class pointcloud_renderer : public stream_filter_processing_block, 
@@ -77,6 +82,8 @@ namespace librealsense
 
             static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 8);
 
+            static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 9);
+
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
 
@@ -93,7 +100,7 @@ namespace librealsense
             int _width = 0;
             int _height = 0;
             option *_filled_opt, *_mouse_x_opt, *_mouse_y_opt, *_mouse_pick_opt,
-                *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt;
+                *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt, *_selected_opt;
             uint32_t color_tex;
             uint32_t depth_tex;
             uint32_t xyz_tex;

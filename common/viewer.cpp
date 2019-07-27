@@ -1668,7 +1668,8 @@ namespace rs2
 
             auto intrin = last_points.get_profile().as<video_stream_profile>().get_intrinsics();
 
-            glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
+            if (_pc_selected) glColor4f(light_blue.x, light_blue.y, light_blue.z, 0.5f);
+            else glColor4f(sensor_bg.x, sensor_bg.y, sensor_bg.z, 0.5f);
 
             for (float d = 1; d < 6; d += 2)
             {
@@ -1716,6 +1717,8 @@ namespace rs2
             _pc_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
             _pc_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
 
+            _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
+
             auto cursor = win.get_mouse().cursor;
             if (viewer_rect.contains(cursor))
             {
@@ -1736,6 +1739,18 @@ namespace rs2
                 };
                 picked = true;
                 *picked_xyz = p;
+
+                if (win.get_mouse().mouse_down && !_pc_selected_down) 
+                {
+                    _pc_selected_down = true;
+                    _selection_started = win.time();
+                }
+                if (_pc_selected_down && !win.get_mouse().mouse_down)
+                {
+                    _pc_selected_down = false;
+                    if (win.time() - _selection_started < 0.5)
+                        _pc_selected = !_pc_selected;
+                }
             }
 
             glDisable(GL_TEXTURE_2D);
