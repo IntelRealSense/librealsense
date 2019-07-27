@@ -1469,9 +1469,10 @@ namespace rs2
         }
     }
 
-    void viewer_model::render_3d_view(const rect& viewer_rect,
-        std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1)
+    bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
+        std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
+        bool picked = false;
         auto top_bar_height = 32.f;
 
         if (points)
@@ -1483,13 +1484,13 @@ namespace rs2
             last_texture = texture;
         }
 
-        glViewport(static_cast<GLint>(viewer_rect.x), static_cast<GLint>(viewer_rect.y),
-            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(viewer_rect.h));
+        glViewport(static_cast<GLint>(viewer_rect.x), 0,
+            static_cast<GLsizei>(viewer_rect.w), static_cast<GLsizei>(win.framebuf_height()));
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        matrix4 perspective_mat = create_perspective_projection_matrix(viewer_rect.w, viewer_rect.h, 60, 0.001f, 100.f);
+        matrix4 perspective_mat = create_perspective_projection_matrix(viewer_rect.w, win.framebuf_height(), 60, 0.001f, 100.f);
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -1715,8 +1716,27 @@ namespace rs2
             _pc_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
             _pc_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
 
+            auto cursor = win.get_mouse().cursor;
+            if (viewer_rect.contains(cursor))
+            {
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_PICK, 1.f);
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_X, cursor.x);
+                _pc_renderer.set_option(gl::pointcloud_renderer::OPTION_MOUSE_Y, cursor.y);
+            }
+
             // Render Point-Cloud
             last_points.apply_filter(_pc_renderer);
+
+            if (_pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_ID) > 0.f)
+            {
+                float3 p {
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_X),
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_Y),
+                    _pc_renderer.get_option(gl::pointcloud_renderer::OPTION_PICKED_Z),
+                };
+                picked = true;
+                *picked_xyz = p;
+            }
 
             glDisable(GL_TEXTURE_2D);
 
@@ -1755,6 +1775,8 @@ namespace rs2
         {
             reset_camera();
         }
+
+        return picked;
     }
 
     void viewer_model::show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices)
@@ -2623,7 +2645,16 @@ namespace rs2
             rect fb_size{ 0, 0, (float)window.framebuf_width(), (float)window.framebuf_height() };
             rect new_rect = viewer_rect.normalize(window_size).unnormalize(fb_size);
 
-            render_3d_view(new_rect, texture, points, window.get_font());
+            float3 picked_xyz;
+            auto picked = render_3d_view(new_rect, window, texture, points, window.get_font(), &picked_xyz);
+            if (!picked) _last_no_pick_time = window.time();
+
+            if (window.time() - _last_no_pick_time > 0.5)
+            {
+                std::string tt = to_string() << std::fixed << std::setprecision(2) 
+                    << picked_xyz.x << ", " << picked_xyz.y << ", " << picked_xyz.z << " meters";
+                ImGui::SetTooltip(tt.c_str());
+            }
         }
 
         if (ImGui::IsKeyPressed(' '))

@@ -31,6 +31,8 @@ namespace librealsense
 
             void set_image_size(int width, int height);
             void set_min_delta_z(float min_delta_z);
+            void set_mouse_xy(float x, float y);
+            void set_picked_id(float pid);
         protected:
             pointcloud_shader(std::unique_ptr<rs2::shader_program> shader);
 
@@ -45,6 +47,14 @@ namespace librealsense
 
             uint32_t _width_location, _height_location;
             uint32_t _min_delta_z_location;
+            uint32_t _mouse_xy_location;
+            uint32_t _picked_id_location;
+        };
+
+        class blit_shader : public rs2::texture_2d_shader
+        {
+        public:
+            blit_shader();
         };
 
         class pointcloud_renderer : public stream_filter_processing_block, 
@@ -57,6 +67,16 @@ namespace librealsense
 
             static const auto OPTION_FILLED = rs2_option(RS2_OPTION_COUNT + 1);
 
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 2);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 4);
+
+            static const auto OPTION_PICKED_X = rs2_option(RS2_OPTION_COUNT + 5);
+            static const auto OPTION_PICKED_Y = rs2_option(RS2_OPTION_COUNT + 6);
+            static const auto OPTION_PICKED_Z = rs2_option(RS2_OPTION_COUNT + 7);
+
+            static const auto OPTION_PICKED_ID = rs2_option(RS2_OPTION_COUNT + 8);
+
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
 
@@ -64,12 +84,19 @@ namespace librealsense
 
         private:
             std::shared_ptr<pointcloud_shader> _shader;
+            std::shared_ptr<blit_shader> _blit;
             std::shared_ptr<rs2::vao> _model;
             std::shared_ptr<rs2::texture_buffer> _vertex_texture;
             std::shared_ptr<rs2::texture_buffer> _uvs_texture;
+            std::shared_ptr<rs2::texture_visualizer> _viz;
+            std::shared_ptr<rs2::fbo> _fbo;
             int _width = 0;
             int _height = 0;
-            option* _filled_opt;
+            option *_filled_opt, *_mouse_x_opt, *_mouse_y_opt, *_mouse_pick_opt,
+                *_picked_id_opt, *_picked_x_opt, *_picked_y_opt, *_picked_z_opt;
+            uint32_t color_tex;
+            uint32_t depth_tex;
+            uint32_t xyz_tex;
         };
     }
 }

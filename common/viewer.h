@@ -72,8 +72,8 @@ namespace rs2
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
-        void render_3d_view(const rect& view_rect, 
-            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1);
+        bool render_3d_view(const rect& view_rect, ux_window& win, 
+            std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
             ImFont *font1, ImFont *font2, size_t dev_model_num, const mouse_info &mouse, std::string& error_message);
@@ -175,5 +175,7 @@ namespace rs2
 
         rs2::gl::camera_renderer _cam_renderer;
         rs2::gl::pointcloud_renderer _pc_renderer;
+
+        double _last_no_pick_time = 0.0;
     };
 }

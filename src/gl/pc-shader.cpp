@@ -8,13 +8,14 @@
 #include "option.h"
 
 static const char* vertex_shader_text =
-"#version 110\n"
+"#version 130\n"
 "\n"
 "attribute vec3 position;\n"
 "attribute vec2 textureCoords;\n"
 "\n"
-"varying float valid;\n"
-"varying vec2 sampledUvs;\n"
+"out float valid;\n"
+"out vec2 sampledUvs;\n"
+"out vec4 outPos;\n"
 "\n"
 "uniform mat4 transformationMatrix;\n"
 "uniform mat4 projectionMatrix;\n"
@@ -60,22 +61,44 @@ static const char* vertex_shader_text =
 "    gl_Position = projectionMatrix * cameraMatrix * worldPosition;\n"
 "\n"
 "    sampledUvs = uvs.xy;\n"
+"    outPos = pos;\n"
 "}\n";
 
 static const char* fragment_shader_text =
-"#version 110\n"
+"#version 130\n"
 "\n"
-"varying float valid;\n"
-"varying vec2 sampledUvs;\n"
+"in float valid;\n"
+"in vec4  outPos;\n"
+"in vec2 sampledUvs;\n"
+"out vec4 output_rgb;\n"
+"out vec4 output_xyz;\n"
 "\n"
 "uniform sampler2D textureSampler;\n"
+"uniform vec2 mouseXY;\n"
+"uniform float pickedID;\n"
 "\n"
 "void main(void) {\n"
 "    if (valid > 0.0) discard;\n"
 "    vec4 color = texture2D(textureSampler, sampledUvs);\n"
+"    float dist = length(mouseXY - gl_FragCoord.xy);\n"
+"    float t = 0.4 + smoothstep(0.0, 5.0, dist) * 0.6;\n" 
 "\n"
-"    gl_FragColor = vec4(color.xyz, 1.0);\n"
+"    output_rgb = t * vec4(color.xyz, 1.0) + (1.0 - t) * vec4(1.0);\n"
+"    output_xyz = outPos;\n"
 "}\n";
+
+static const char* blit_shader_text =
+"#version 130\n"
+"varying vec2 textCoords;\n"
+"uniform sampler2D textureSampler;\n"
+"uniform sampler2D depthSampler;\n"
+"uniform float opacity;\n"
+"void main(void) {\n"
+"    vec2 tex = vec2(textCoords.x, 1.0 - textCoords.y);\n"
+"    vec4 color = texture2D(textureSampler, tex);\n"
+"    gl_FragColor = vec4(color.xyz, opacity);\n"
+"    gl_FragDepth = texture2D(depthSampler, tex).x;"
+"}";
 
 using namespace rs2;
 
@@ -94,7 +117,8 @@ namespace librealsense
             _shader = shader_program::load(
                 vertex_shader_text,
                 fragment_shader_text,
-                "position", "textureCoords");
+                "position", "textureCoords",
+                "output_rgb", "output_pos");
 
             init();
         }
@@ -108,6 +132,8 @@ namespace librealsense
             _width_location = _shader->get_uniform_location("imageWidth");
             _height_location = _shader->get_uniform_location("imageHeight");
             _min_delta_z_location = _shader->get_uniform_location("minDeltaZ");
+            _mouse_xy_location = _shader->get_uniform_location("mouseXY");
+            _picked_id_location = _shader->get_uniform_location("pickedID");
 
             auto texture0_sampler_location = _shader->get_uniform_location("textureSampler");
             auto texture1_sampler_location = _shader->get_uniform_location("positionsSampler");
@@ -139,17 +165,45 @@ namespace librealsense
             _shader->load_uniform(_height_location, (float)height);
         }
 
+        void pointcloud_shader::set_mouse_xy(float x, float y)
+        {
+            rs2::float2 xy{ x, y };
+            _shader->load_uniform(_mouse_xy_location, xy);
+        }
+
+        void pointcloud_shader::set_picked_id(float pid)
+        {
+            _shader->load_uniform(_picked_id_location, pid);
+        }
+
         void pointcloud_shader::set_min_delta_z(float min_delta_z)
         {
             _shader->load_uniform(_min_delta_z_location, min_delta_z);
         }
 
+        blit_shader::blit_shader()
+            : texture_2d_shader(shader_program::load(default_vertex_shader(), blit_shader_text))
+        {
+            auto texture1_sampler_location = _shader->get_uniform_location("depthSampler");
+            
+            _shader->begin();
+            _shader->load_uniform(texture1_sampler_location, 1);
+            _shader->end();
+        }
+
         void pointcloud_renderer::cleanup_gpu_resources()
         {
+            glDeleteTextures(1, &color_tex);
+            glDeleteTextures(1, &depth_tex);
+            glDeleteTextures(1, &xyz_tex);
+
             _shader.reset();
             _model.reset();
             _vertex_texture.reset();
             _uvs_texture.reset();
+            _viz.reset();
+            _blit.reset();
+            _fbo.reset();
         }
 
         pointcloud_renderer::~pointcloud_renderer()
@@ -171,15 +225,40 @@ namespace librealsense
 
                 obj_mesh mesh = make_grid(_width, _height);
                 _model = vao::create(mesh);
+
+                _fbo = std::make_shared<fbo>(1, 1);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+                _viz = std::make_shared<rs2::texture_visualizer>();
+                _blit = std::make_shared<blit_shader>();
+
+                glGenTextures(1, &color_tex);
+                glGenTextures(1, &depth_tex);
+                glGenTextures(1, &xyz_tex);
             }
         }
 
         pointcloud_renderer::pointcloud_renderer() 
             : stream_filter_processing_block("Pointcloud Renderer")
         {
-            std::shared_ptr<option> opt = std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 });
-            register_option(OPTION_FILLED, opt);
+            register_option(OPTION_FILLED, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));
+            register_option(OPTION_MOUSE_X, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
+            register_option(OPTION_MOUSE_Y, std::make_shared<librealsense::float_option>(option_range{ 0, 10000, 1, 0 }));
+            register_option(OPTION_MOUSE_PICK, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 1, 0 }));   
+
+            register_option(OPTION_PICKED_X, std::make_shared<librealsense::float_option>(option_range{ -1000, 1000, 0, 0 }));
+            register_option(OPTION_PICKED_Y, std::make_shared<librealsense::float_option>(option_range{ -1000, 1000, 0, 0 }));
+            register_option(OPTION_PICKED_Z, std::make_shared<librealsense::float_option>(option_range{ -1000, 1000, 0, 0 }));
+            register_option(OPTION_PICKED_ID, std::make_shared<librealsense::float_option>(option_range{ 0, 32, 1, 0 }));
+
             _filled_opt = &get_option(OPTION_FILLED);
+            _mouse_x_opt = &get_option(OPTION_MOUSE_X);
+            _mouse_y_opt = &get_option(OPTION_MOUSE_Y);
+            _mouse_pick_opt = &get_option(OPTION_MOUSE_PICK);
+            _picked_x_opt = &get_option(OPTION_PICKED_X);
+            _picked_y_opt = &get_option(OPTION_PICKED_Y);
+            _picked_z_opt = &get_option(OPTION_PICKED_Z);
+            _picked_id_opt = &get_option(OPTION_PICKED_ID);
 
             initialize();
         }
@@ -195,6 +274,8 @@ namespace librealsense
 
                     GLint curr_tex;
                     glGetIntegerv(GL_TEXTURE_BINDING_2D, &curr_tex);
+
+                    clear_gl_errors();
 
                     auto vf_profile = f.get_profile().as<video_stream_profile>();
                     int width = vf_profile.width();
@@ -235,6 +316,34 @@ namespace librealsense
 
                         if (!error)
                         {
+                            int32_t vp[4];
+                            glGetIntegerv(GL_VIEWPORT, vp);
+                            check_gl_error();
+
+                            _fbo->set_dims(vp[2], vp[3]);
+
+                            glBindFramebuffer(GL_FRAMEBUFFER, _fbo->get());
+                            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+                            _fbo->createTextureAttachment(color_tex);
+                            _fbo->createDepthTextureAttachment(depth_tex);
+
+                            glBindTexture(GL_TEXTURE_2D, xyz_tex);
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, vp[2], vp[3], 0, GL_RGB, GL_FLOAT, nullptr);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+                            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, xyz_tex, 0);
+                            glBindTexture(GL_TEXTURE_2D, 0);
+
+                            _fbo->bind();
+
+                            GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                            glDrawBuffers(2, attachments);
+
+                            glClearColor(0, 0, 0, 0);
+                            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
                             _shader->begin();
                             _shader->set_mvp(get_matrix(
                                 RS2_GL_MATRIX_TRANSFORMATION),
@@ -242,6 +351,16 @@ namespace librealsense
                                 get_matrix(RS2_GL_MATRIX_PROJECTION)
                             );
                             _shader->set_image_size(vf_profile.width(), vf_profile.height());
+
+                            _shader->set_picked_id(_picked_id_opt->query());
+
+                            if (_mouse_pick_opt->query() > 0.f)
+                            {
+                                auto x = _mouse_x_opt->query() - vp[0];
+                                auto y = vp[3] + vp[1] - _mouse_y_opt->query();
+                                _shader->set_mouse_xy(x, y);
+                            }
+                            else _shader->set_mouse_xy(-1, -1);
 
                             glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
                             glBindTexture(GL_TEXTURE_2D, curr_tex);
@@ -258,6 +377,53 @@ namespace librealsense
                             glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
 
                             _shader->end();
+
+                            _fbo->unbind();
+
+                            _picked_id_opt->set(0.f);
+
+                            if (_mouse_pick_opt->query() > 0.f)
+                            {
+                                auto x = _mouse_x_opt->query() - vp[0];
+                                auto y = vp[3] + vp[1] - _mouse_y_opt->query();
+
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo->get());
+                                glReadBuffer(GL_COLOR_ATTACHMENT1);
+
+                                float3 pos;
+                                glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos);
+
+                                glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+                                uint8_t rgba[4];
+                                glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, &rgba);
+
+                                if (rgba[3] > 0)
+                                {
+                                    _picked_id_opt->set(1.f);
+                                    _picked_x_opt->set(pos.x);
+                                    _picked_y_opt->set(pos.y);
+                                    _picked_z_opt->set(pos.z);
+                                }
+
+                                glReadBuffer(GL_NONE);
+                                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+                                _mouse_pick_opt->set(0.f);
+                            }
+
+                            //glDisable(GL_DEPTH_TEST);
+
+                            glActiveTexture(GL_TEXTURE1);
+                            glBindTexture(GL_TEXTURE_2D, depth_tex);
+                            glActiveTexture(GL_TEXTURE0);
+                            glBindTexture(GL_TEXTURE_2D, color_tex);
+
+                            _viz->draw(*_blit, color_tex);
+
+                            glActiveTexture(GL_TEXTURE0 + _shader->texture_slot());
+
+                            //glEnable(GL_DEPTH_TEST);
                         }
                     }
                     else
