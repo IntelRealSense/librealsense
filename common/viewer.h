@@ -65,6 +65,7 @@ namespace rs2
         void show_event_log(ImFont* font_14, float x, float y, float w, float h);
 
         void render_pose(rs2::rect stream_rect, float buttons_heights);
+        void try_select_pointcloud(ux_window& win);
 
         void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 

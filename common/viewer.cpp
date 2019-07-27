@@ -1469,6 +1469,22 @@ namespace rs2
         }
     }
 
+    void viewer_model::try_select_pointcloud(ux_window& win)
+    {
+        win.link_hovered();
+        if (win.get_mouse().mouse_down && !_pc_selected_down) 
+        {
+            _pc_selected_down = true;
+            _selection_started = win.time();
+        }
+        if (_pc_selected_down && !win.get_mouse().mouse_down)
+        {
+            _pc_selected_down = false;
+            if (win.time() - _selection_started < 0.5)
+                _pc_selected = !_pc_selected;
+        }
+    }
+
     bool viewer_model::render_3d_view(const rect& viewer_rect, ux_window& win, 
         std::shared_ptr<texture_buffer> texture, rs2::points points, ImFont *font1, float3* picked_xyz)
     {
@@ -1647,7 +1663,7 @@ namespace rs2
             glEnd();
         }
 
-        if (!pose)
+        if (!pose && !_pc_selected)
         {
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
@@ -1740,17 +1756,7 @@ namespace rs2
                 picked = true;
                 *picked_xyz = p;
 
-                if (win.get_mouse().mouse_down && !_pc_selected_down) 
-                {
-                    _pc_selected_down = true;
-                    _selection_started = win.time();
-                }
-                if (_pc_selected_down && !win.get_mouse().mouse_down)
-                {
-                    _pc_selected_down = false;
-                    if (win.time() - _selection_started < 0.5)
-                        _pc_selected = !_pc_selected;
-                }
+                try_select_pointcloud(win);
             }
 
             glDisable(GL_TEXTURE_2D);
@@ -1768,8 +1774,22 @@ namespace rs2
 
                     glBlendFunc(GL_ONE, GL_ONE);
 
+                    _cam_renderer.set_option(gl::camera_renderer::OPTION_SELECTED, _pc_selected ? 1.f : 0.f);
+
+                    if (viewer_rect.contains(cursor))
+                    {
+                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_PICK, 1.f);
+                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_X, cursor.x);
+                        _cam_renderer.set_option(gl::camera_renderer::OPTION_MOUSE_Y, cursor.y);
+                    }
+
                     // Render camera model (based on source_frame camera type)
                     source_frame.apply_filter(_cam_renderer);
+
+                    if (_cam_renderer.get_option(gl::camera_renderer::OPTION_WAS_PICKED) > 0.f)
+                    {
+                        try_select_pointcloud(win);
+                    }
 
                     glDisable(GL_BLEND);
                     glEnable(GL_DEPTH_TEST);
@@ -2457,6 +2477,8 @@ namespace rs2
             auto cy = mouse.cursor.y + overflow.y;
             auto py = mouse.prev_cursor.y + overflow.y;
 
+            auto dragging = ImGui::IsKeyDown(GLFW_KEY_LEFT_CONTROL);
+
             // Limit how much user mouse can jump between frames
             // This can work poorly when the app FPS is really terrible (< 10)
             // but overall works resonably well
@@ -2472,8 +2494,10 @@ namespace rs2
                 static_cast<int>(viewer_rect.w), static_cast<int>(viewer_rect.h), // screen (window) size
                 static_cast<int>(px), static_cast<int>(cx),
                 static_cast<int>(py), static_cast<int>(cy),
-                (ImGui::GetIO().MouseDown[2] || ImGui::GetIO().MouseDown[1]) ? 1 : 0,
-                ImGui::GetIO().MouseDown[0] ? 1 : 0,
+                (ImGui::GetIO().MouseDown[2] || 
+                 ImGui::GetIO().MouseDown[1] || 
+                (ImGui::GetIO().MouseDown[0] && dragging)) ? 1 : 0,
+                (ImGui::GetIO().MouseDown[0] && !dragging) ? 1 : 0,
                 mouse.mouse_wheel,
                 0);
 

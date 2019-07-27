@@ -227,6 +227,11 @@ namespace rs2
                 error::handle(e);
             }
 
+            static const auto OPTION_MOUSE_X = rs2_option(RS2_OPTION_COUNT + 1);
+            static const auto OPTION_MOUSE_Y = rs2_option(RS2_OPTION_COUNT + 2);
+            static const auto OPTION_MOUSE_PICK = rs2_option(RS2_OPTION_COUNT + 3);
+            static const auto OPTION_WAS_PICKED = rs2_option(RS2_OPTION_COUNT + 4);
+            static const auto OPTION_SELECTED = rs2_option(RS2_OPTION_COUNT + 5);
         private:
             friend class context;
 
