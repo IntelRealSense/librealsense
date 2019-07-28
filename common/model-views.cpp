@@ -1518,7 +1518,7 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.zo_sensors.load() > 0 || (viewer.synchronization_enable && is_synchronized_frame(viewer, f)))
+                if (viewer.synchronization_enable && is_synchronized_frame(viewer, f))
                 {
                     syncer->invoke(f);
                 }
