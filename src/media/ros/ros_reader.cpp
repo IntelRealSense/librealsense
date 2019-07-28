@@ -893,10 +893,7 @@ namespace librealsense
         {
             if (is_depth_sensor(sensor_name))
             {
-                auto zo_point_x = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZERO_ORDER_POINT_X), [](option*) {});
-                auto zo_point_y = std::shared_ptr<option>(&options->get_option(RS2_OPTION_ZERO_ORDER_POINT_Y), [](option*) {});
-
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(l500_depth_sensor::get_l500_recommended_proccesing_blocks(zo_point_x, zo_point_y));
+                return std::make_shared<recommended_proccesing_blocks_snapshot>(l500_depth_sensor::get_l500_recommended_proccesing_blocks());
             }
             throw io_exception("Unrecognized sensor name");
         }
@@ -1369,7 +1366,7 @@ namespace librealsense
 
             zo_point_x = std::make_shared<const_value_option>("", zo_opt_x_val);
             zo_point_y = std::make_shared<const_value_option>("", zo_opt_y_val);
-            return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>(zo_point_x, zo_point_y);
+            return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>();
         default:
             return nullptr;
         }
