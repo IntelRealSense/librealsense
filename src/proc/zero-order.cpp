@@ -156,8 +156,8 @@ namespace librealsense
         return false;
     }
 
-    zero_order::zero_order(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
-       : generic_processing_block("Zero Order Fix"), _first_frame(true), _zo_point_x(zo_point_x), _zo_point_y(zo_point_y)
+    zero_order::zero_order()
+       : generic_processing_block("Zero Order Fix"), _first_frame(true)
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
             0,
@@ -208,10 +208,10 @@ namespace librealsense
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
 
         auto baseline = std::make_shared<ptr_option<float>>(
-            0,
+            -50,
             50,
             1,
-            31,
+            -10,
             &_options.baseline,
             "Baseline");
         baseline->on_set([baseline](float val)
@@ -338,20 +338,33 @@ namespace librealsense
         return false;
     }
 
+    ivcam2::intrinsic_params zero_order::try_read_intrinsics(const rs2::frame & frame)
+    {
+        if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
+        {
+            if (auto l5 = dynamic_cast<l500_depth_sensor*>(sensor.get()))
+            {
+                auto profile = frame.get_profile().as<rs2::video_stream_profile>();
+                return l5->get_intrinsic_params(profile.width(), profile.height());
+            }
+        }
+        throw std::runtime_error("didn't succeed to get intrinsics");
+    }
+
+    std::pair<int, int> zero_order::get_zo_point(const rs2::frame& frame)
+    {
+        auto intrinsics = try_read_intrinsics(frame);
+        return { intrinsics.zo.x, intrinsics.zo.y };
+    }
+
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
         std::vector<rs2::frame> result;
 
         if (_first_frame)
         {
-            if (_zo_point_x == nullptr || _zo_point_y == nullptr)
-            {
-                if (!try_get_zo_point(f))
-                {
-                    LOG_WARNING("Couldn't read the zo point");
-                    return f;
-                }
-            }
+            auto zo = get_zo_point(f);
+            LOG_DEBUG("ZO values: "<<zo.first<<", "<<zo.second);
 
             if (!try_read_baseline(f))
                 LOG_WARNING("Couldn't read the baseline value");
@@ -396,6 +409,8 @@ namespace librealsense
             confidence_output = (uint8_t*)confidence_out.get_data();
         }
 
+        auto zo = get_zo_point(f);
+
         if (zero_order_invalidation((const uint16_t*)depth_frame.get_data(),
             (const uint8_t*)ir_frame.get_data(),
             [&](int index, bool zero) 
@@ -409,7 +424,7 @@ namespace librealsense
         },
             points.get_vertices(),
             depth_intrinsics,
-            _options, _zo_point_x->query(), _zo_point_y->query()))
+            _options, zo.first, zo.second))
         {
             result.push_back(depth_out);
             result.push_back(ir_frame);
@@ -426,21 +441,6 @@ namespace librealsense
         return source.allocate_composite_frame(result);
     }
 
-    bool zero_order::try_get_zo_point(const rs2::frame & frame)
-    {
-        if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
-        {
-            if (auto l500 = As<l500_depth_sensor>(sensor))
-            {
-                _zo_point_x = l500->get_zo_point_x();
-                _zo_point_y = l500->get_zo_point_y();
-                return true;
-            }
-        }
-        LOG_WARNING("Could not read zo point values!");
-        return false;
-    }
-
     bool zero_order::should_process(const rs2::frame& frame)
     {
         if (auto set = frame.as<rs2::frameset>())
@@ -451,10 +451,13 @@ namespace librealsense
             }
             auto depth_frame = set.get_depth_frame();
 
-            if (!_first_frame && (_zo_point_x && (_zo_point_x->query() - _options.patch_size < 0 || _zo_point_x->query() + _options.patch_size >= depth_frame.get_width())) ||
-                                 (_zo_point_y && (_zo_point_y->query() - _options.patch_size < 0 || _zo_point_y->query() + _options.patch_size >= depth_frame.get_height())))
+            auto zo = get_zo_point(frame);
+
+            if (zo.first - _options.patch_size < 0 || zo.first + _options.patch_size >= depth_frame.get_width() ||
+               (zo.second - _options.patch_size < 0 || zo.second + _options.patch_size >= depth_frame.get_height()))
                 return false;
             return true;
+
         }
         return false;
     }
