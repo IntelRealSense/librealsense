@@ -31,6 +31,7 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_HUE);
         color_ep->register_pu(RS2_OPTION_SATURATION);
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
+        color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
         auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
@@ -49,6 +50,13 @@ namespace librealsense
             std::make_shared<auto_disabling_control>(
                 exposure_option,
                 auto_exposure_option));
+
+        color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::map<float, std::string>{ { 0.f, "Disabled"},
+                { 1.f, "50Hz" },
+                { 2.f, "60Hz" },
+                { 3.f, "Auto" }, }));
 
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
