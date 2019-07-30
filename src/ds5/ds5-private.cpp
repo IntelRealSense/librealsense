@@ -131,9 +131,16 @@ namespace librealsense
         {
              auto table = check_calib<ds::rgb_calibration_table>(raw_data);
 
-             // Compensate for aspect ratio as the normalized intrinsic is calculated with 16/9 factor
+             // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
              float3x3 intrin = table->intrinsic;
-             static const float base_aspect_ratio_factor = 16.f / 9.f;
+             float base_aspect_ratio_factor = 16.f / 9.f; // shall be overwritten with the actual calib resolution
+
+             if (table->calib_width && table->calib_height)
+                 base_aspect_ratio_factor = float(table->calib_width) / float(table->calib_height);
+             else
+             {
+                 LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
+             }
 
              // Compensate for aspect ratio
              intrin(0, 0) *= base_aspect_ratio_factor * (height / (float)width);

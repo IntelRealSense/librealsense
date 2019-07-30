@@ -528,8 +528,8 @@ namespace librealsense
             float3              translation;                // RGB translation vector, mm
             // RGB Projection
             float               projection[12];             // Projection matrix from depth to RGB [3 X 4]
-            uint16_t            width;                      // original calibrated resolution
-            uint16_t            height;
+            uint16_t            calib_width;                // original calibrated resolution
+            uint16_t            calib_height;
             // RGB Rectification Coefficients
             float3x3            intrinsic_matrix_rect;      // RGB intrinsic matrix after rectification
             float3x3            rotation_matrix_rect;       // Rotation matrix for rectification of RGB
