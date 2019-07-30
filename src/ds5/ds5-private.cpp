@@ -227,11 +227,8 @@ namespace librealsense
             auto table = check_calib<rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;
             float3x3 rect_rot_mat = table->rotation_matrix_rect;
-            float trans_scale = 0.001f; // Convert units from mm to meter
-            if (table->translation.x > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
-            {
-                trans_scale *= -1;
-            }
+            float trans_scale = -0.001f; // Convert units from mm to meter. Extrinsic of color is referenced to the Depth Sensor CS
+
             trans_vector.x *= trans_scale;
             trans_vector.y *= trans_scale;
             trans_vector.z *= trans_scale;

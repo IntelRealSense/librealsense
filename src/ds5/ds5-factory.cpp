@@ -704,11 +704,10 @@ namespace librealsense
         }
     };
 
-    class rs465_device : public ds5_rolling_shutter,
-        public ds5_active,
-        public ds5_color,
-        public ds5_motion,
-        public ds5_advanced_mode_base
+    class rs465_device : public ds5_active,
+                         public ds5_color,
+                         public ds5_motion,
+                         public ds5_advanced_mode_base
     {
     public:
         rs465_device(std::shared_ptr<context> ctx,
@@ -716,7 +715,6 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             ds5_device(ctx, group),
-            ds5_rolling_shutter(ctx, group),
             ds5_active(ctx, group),
             ds5_color(ctx, group),
             ds5_motion(ctx, group),
