@@ -138,8 +138,8 @@ std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std:
 
 rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
 {
-    //NOTE: Assuming here that recording is writing extrinsics **from** some reference point **to** the stream at hand
-    return from_pose(inverse(to_pose(from)) * to_pose(to));
+    //NOTE: Assuming here that recording is writing extrinsics **from** the stream at hand **to** some reference point
+    return from_pose(to_pose(to) * inverse(to_pose(from)));
 }
 
 playback_device::~playback_device()
