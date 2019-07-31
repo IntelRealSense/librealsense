@@ -5077,6 +5077,9 @@ namespace rs2
 
                 for (auto&& pb : sub->const_effects)
                 {
+                    if (!sub->s->is<depth_sensor>())
+                        continue;
+
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
                     label = to_string() << pb->get_name() << "##" << id;
