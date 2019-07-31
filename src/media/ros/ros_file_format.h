@@ -271,7 +271,9 @@ namespace librealsense
         /*version 3 and up*/
         static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", librealsense::get_string(option_type), "value" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "value" });
         }
 
         static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
@@ -282,7 +284,9 @@ namespace librealsense
         /*version 3 and up*/
         static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", librealsense::get_string(option_type), "description" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "description" });
         }
 
         static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)

@@ -1317,12 +1317,15 @@ namespace librealsense
     std::pair<rs2_option, std::shared_ptr<librealsense::option>> ros_reader::create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance)
     {
         auto option_value_msg = instantiate_msg<std_msgs::Float32>(value_message_instance);
-        std::string option_name = ros_topic::get_option_name(value_message_instance.getTopic());
+        auto value_topic = value_message_instance.getTopic();
+        std::string option_name = ros_topic::get_option_name(value_topic);
         device_serializer::sensor_identifier sensor_id = ros_topic::get_sensor_identifier(value_message_instance.getTopic());
         rs2_option id;
+        std::replace(option_name.begin(), option_name.end(), '_', ' ');
         convert(option_name, id);
         float value = option_value_msg->data;
-        std::string description = read_option_description(file, ros_topic::option_description_topic(sensor_id, id));
+        auto description_topic = value_topic.replace(value_topic.find_last_of("value") - sizeof("value") + 2, sizeof("value"), "description");
+        std::string description = read_option_description(file, description_topic);
         return std::make_pair(id, std::make_shared<const_value_option>(description, value));
     }
 
@@ -1407,8 +1410,14 @@ namespace librealsense
             for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++)
             {
                 rs2_option id = static_cast<rs2_option>(i);
-                std::string option_topic = ros_topic::option_value_topic(sensor_id, id);
-                rosbag::View option_view(file, rosbag::TopicQuery(option_topic), to_rostime(get_static_file_info_timestamp()), to_rostime(timestamp));
+                auto value_topic = ros_topic::option_value_topic(sensor_id, id);
+                std::string option_name = ros_topic::get_option_name(value_topic);
+                auto rs2_option_name = rs2_option_to_string(id); //option name with space seperator
+                auto alternate_value_topic = value_topic;
+                alternate_value_topic.replace(value_topic.find(option_name), option_name.length(), rs2_option_name);
+
+                std::vector<std::string> option_topics{ value_topic, alternate_value_topic };
+                rosbag::View option_view(file, rosbag::TopicQuery(option_topics), to_rostime(get_static_file_info_timestamp()), to_rostime(timestamp));
                 auto it = option_view.begin();
                 if (it == option_view.end())
                 {
