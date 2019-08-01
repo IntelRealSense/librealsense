@@ -599,6 +599,11 @@ namespace rs2
 
     int notifications_model::add_notification(const notification_data& n)
     {
+        for (auto&& curr : pending_notifications)
+        {
+            if (curr.message == n.get_description())
+                return 0;
+        }
         return add_notification(n, []{}, false);
     }
 
