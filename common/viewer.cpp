@@ -491,6 +491,7 @@ namespace rs2
                                  std::istreambuf_iterator<char>());
 
                 std::string udev = realsense_udev_rules;
+                udev.erase(udev.find_last_of("\n") + 1);
 
                 if (udev != str)
                 {

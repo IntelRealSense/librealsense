@@ -1,6 +1,9 @@
 package com.intel.realsense.librealsense;
 
+import android.util.Log;
+
 public class DeviceList extends LrsClass {
+    private static final String TAG = "librs api";
 
     public DeviceList(long handle){
         mHandle = handle;
@@ -11,8 +14,13 @@ public class DeviceList extends LrsClass {
     }
 
     public Device createDevice(int index){
-        long deviceHandle = nCreateDevice(mHandle, index);
-        return new Device(deviceHandle);
+        try {
+            long deviceHandle = nCreateDevice(mHandle, index);
+            return new Device(deviceHandle);
+        }catch (Exception e){
+            Log.e(TAG, e.getMessage());
+            return null;
+        }
     }
 
     public boolean containesDevice(Device device){

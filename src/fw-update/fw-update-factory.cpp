@@ -50,6 +50,6 @@ namespace librealsense
                     return std::make_shared<sr300_update_device>(ctx, register_device_notifications, usb);
             }
         }
-        throw std::runtime_error(to_string() << "Faild to create FW update device, device id: " << _dfu.id);
+        throw std::runtime_error(to_string() << "Failed to create FW update device, device id: " << _dfu.id);
     }
 }

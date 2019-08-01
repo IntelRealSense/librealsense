@@ -79,8 +79,17 @@ namespace librealsense
                 for (ssize_t i = 0; i < config->bNumInterfaces; ++i)
                 {
                     auto inf = config->interface[i];
-                    if(inf.altsetting->bInterfaceSubClass == 2)//avoid publish streaming interfaces TODO:MK
+                    
+                    //avoid publish streaming interfaces TODO:MK
+                    if(inf.altsetting->bInterfaceSubClass == 2)
                         continue;
+                    // when device is in DFU state, two USB devices are detected, one of RS2_USB_CLASS_VENDOR_SPECIFIC (255) class
+                    // and the other of RS2_USB_CLASS_APPLICATION_SPECIFIC (254) class.
+                    // in order to avoid listing two usb devices for a single physical device we ignore the application specific class
+                    // https://www.usb.org/defined-class-codes#anchor_BaseClassFEh
+                    if(inf.altsetting->bInterfaceClass == RS2_USB_CLASS_APPLICATION_SPECIFIC)
+                        continue;
+                    
                     usb_device_info info{};
                     info.id = get_usb_descriptors(device);
                     info.unique_id = get_usb_descriptors(device);

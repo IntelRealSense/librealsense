@@ -107,9 +107,9 @@ namespace librealsense
     {
         std::vector<tagged_profile> tags;
 
-        tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 360, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-        tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 360, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-        tags.push_back({ RS2_STREAM_CONFIDENCE, -1, 640, 360, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
+        tags.push_back({ RS2_STREAM_DEPTH, -1, 640, 480, RS2_FORMAT_Z16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        tags.push_back({ RS2_STREAM_INFRARED, -1, 640, 480, RS2_FORMAT_Y8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+        tags.push_back({ RS2_STREAM_CONFIDENCE, -1, 640, 480, RS2_FORMAT_RAW8, 30, profile_tag::PROFILE_TAG_SUPERSET });
         
         return tags;
     }
@@ -135,19 +135,6 @@ namespace librealsense
         }
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
-    }
-
-    std::pair<int, int> l500_depth_sensor::read_zo_point()
-    {
-        const int zo_point_address = 0xa00e1b8c;
-        command cmd(ivcam2::fw_cmd::MRD, zo_point_address, zo_point_address + 4);
-        auto res = _owner->_hw_monitor->send(cmd);
-        if (res.size() < 2)
-        {
-            throw std::runtime_error("Invalid result size!");
-        }
-        auto data = (uint16_t*)res.data();
-        return { data[0], data[1] };
     }
 
     int l500_depth_sensor::read_algo_version()
@@ -240,20 +227,10 @@ namespace librealsense
         return (has_metadata_ts(fo)) ? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(mode, fo);
     }
 
-    float zo_point_option_x::query() const
-    {
-        return static_cast<float>(_zo_point->first);
-    }
-
-    float zo_point_option_y::query() const
-    {
-        return static_cast<float>(_zo_point->second);
-    }
-
-    processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y)
+    processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks()
     {
         processing_blocks res;
-        res.push_back(std::make_shared<zero_order>(zo_point_x, zo_point_y));
+        res.push_back(std::make_shared<zero_order>());
         auto depth_standart = get_depth_recommended_proccesing_blocks();
         res.insert(res.end(), depth_standart.begin(), depth_standart.end());
         res.push_back(std::make_shared<threshold>());

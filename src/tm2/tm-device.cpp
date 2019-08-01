@@ -1,6 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#ifndef NOMINMAX
+    #define NOMINMAX
+#endif
+
 #include <memory>
 #include <thread>
 #include "tm-device.h"
@@ -178,6 +182,32 @@ namespace librealsense
         tm2_sensor&         _ep;
     };
 
+    template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on, bool invert = false>
+    class tracking_mode_option : public option_base
+    {
+    public:
+        float query() const override { return !!(s._tm_mode & flag) ^ invert ? 1 : 0; }
+
+        void set(float value) override {
+            if (s._is_streaming)
+                throw io_exception("Option is read-only while streaming");
+            s._tm_mode = (!!value ^ invert) ? (s._tm_mode | flag) : (s._tm_mode & ~flag);
+        }
+
+        const char* get_description() const override { return description; }
+
+        bool is_enabled() const override { return !depends_on || (s._tm_mode & depends_on) ? true : false; }
+
+        bool is_read_only() const override { return s._is_streaming; }
+
+        explicit tracking_mode_option(tm2_sensor& sensor, const char *description_) :
+            s(sensor), description(description_), option_base(option_range{ 0, 1, !!(sensor._tm_mode & flag) ^ invert ? 1.f : 0.f, 1 }) { }
+
+    private:
+        tm2_sensor &s;
+        const char *description;
+    };
+
     class asic_temperature_option : public temperature_option
     {
     public:
@@ -222,7 +252,6 @@ namespace librealsense
                 {
                     return (rs2_metadata_type)(vf->additional_data.system_time);
                 }
-                
                 if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
                 {
                     return (rs2_metadata_type)(mf->additional_data.system_time);
@@ -230,6 +259,21 @@ namespace librealsense
                 if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
                 {
                     return (rs2_metadata_type)(pf->additional_data.system_time);
+                }
+            }
+            if(_type == RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+            {
+                if (auto* vf = dynamic_cast<const video_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(vf->additional_data.timestamp*1e+3);
+                }
+                if (auto* mf = dynamic_cast<const motion_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(mf->additional_data.timestamp*1e+3);
+                }
+                if (auto* pf = dynamic_cast<const pose_frame*>(&frm))
+                {
+                    return (rs2_metadata_type)(pf->additional_data.timestamp*1e+3);
                 }
             }
             if (_type == RS2_FRAME_METADATA_TEMPERATURE)
@@ -257,6 +301,10 @@ namespace librealsense
             {
                 return dynamic_cast<const video_frame*>(&frm) != nullptr || dynamic_cast<const motion_frame*>(&frm) != nullptr;
             }
+            if (_type == RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+            {
+                return (dynamic_cast<const video_frame*>(&frm) != nullptr) || (dynamic_cast<const motion_frame*>(&frm) != nullptr) || (dynamic_cast<const pose_frame*>(&frm) != nullptr);
+            }
             return false;
         }
     private:
@@ -275,6 +323,7 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
         _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
+        _metadata_parsers->operator[](RS2_FRAME_METADATA_FRAME_TIMESTAMP) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
     }
 
     tm2_sensor::~tm2_sensor()
@@ -563,6 +612,7 @@ namespace librealsense
             case RS2_STREAM_POSE:
             {
                 auto tm_profile = _tm_supported_profiles.sixDof[stream_index];
+                tm_profile.mode = _tm_mode;
                 if (convertTm2InterruptRate(tm_profile.interruptRate) == sp.fps)
                 {
                     _tm_active_profiles.set(tm_profile, true);
@@ -913,7 +963,7 @@ namespace librealsense
             auto video = (video_frame*)(frame.frame);
             video->assign(tm_frame.profile.width, tm_frame.profile.height, tm_frame.profile.stride, bpp);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
             video->data.assign(tm_frame.data, tm_frame.data + (tm_frame.profile.height * tm_frame.profile.stride));
@@ -994,7 +1044,7 @@ namespace librealsense
         {
             auto pose_frame = static_cast<librealsense::pose_frame*>(frame.frame);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
 
             auto info = reinterpret_cast<librealsense::pose_frame::pose_info*>(pose_frame->data.data());
@@ -1131,7 +1181,7 @@ namespace librealsense
         {
             auto motion_frame = static_cast<librealsense::motion_frame*>(frame.frame);
             frame->set_timestamp(system_ts_ms.count());
-            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME);
+            frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             auto data = reinterpret_cast<float*>(motion_frame->data.data());
             data[0] = imu_data[0];
@@ -1439,6 +1489,10 @@ namespace librealsense
         _sensor->register_option(rs2_option::RS2_OPTION_GAIN, std::make_shared<gain_option>(*_sensor));
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_AUTO_EXPOSURE, std::make_shared<exposure_mode_option>(*_sensor));
 
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_MAPPING,             std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_MAPPING,              perc::SIXDOF_MODE_NORMAL,         false>>(*_sensor, "Use an on device map (recommended)"));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_RELOCALIZATION,      std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_RELOCALIZATION,       perc::SIXDOF_MODE_ENABLE_MAPPING, false>>(*_sensor, "Use appearance based relocalization (depends on mapping)"));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_POSE_JUMPING,        std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_DISABLE_JUMPING,             perc::SIXDOF_MODE_ENABLE_MAPPING,  true>>(*_sensor, "Allow pose jumping (depends on mapping)"));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION, perc::SIXDOF_MODE_NORMAL,          true>>(*_sensor, "Enable dynamic calibration (recommended)"));
 
         // Assing the extrinsic nodes to the default group
         auto tm2_profiles = _sensor->get_stream_profiles();

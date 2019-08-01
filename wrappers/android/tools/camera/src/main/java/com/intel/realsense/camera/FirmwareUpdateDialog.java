@@ -81,11 +81,13 @@ public class FirmwareUpdateDialog extends DialogFragment {
         mFwUpdateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                dismiss();
+                dismissAllowingStateLoss();
                 try(DeviceList dl = rsContext.queryDevices(ProductLine.DEPTH)){
                     try(Device d = dl.createDevice(0)){
-                        if(d.is(Extension.UPDATABLE))
+                        if(d != null && d.is(Extension.UPDATABLE))
                             d.<Updatable>as(Extension.UPDATABLE).enterUpdateState();
+                        else
+                            dismissAllowingStateLoss();
                     }
                 }
             }
@@ -95,7 +97,7 @@ public class FirmwareUpdateDialog extends DialogFragment {
         mSkipFwUpdateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                dismiss();
+                dismissAllowingStateLoss();
                 if(!fwUpdateRequest){
                     Intent intent = new Intent(activity, PreviewActivity.class);
                     startActivity(intent);

@@ -23,7 +23,7 @@ extern "C" {
 #include "h/rs_sensor.h"
 
 #define RS2_API_MAJOR_VERSION    2
-#define RS2_API_MINOR_VERSION    24
+#define RS2_API_MINOR_VERSION    25
 #define RS2_API_PATCH_VERSION    0
 #define RS2_API_BUILD_VERSION    0
 

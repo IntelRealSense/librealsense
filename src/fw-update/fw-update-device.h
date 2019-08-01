@@ -143,9 +143,13 @@ namespace librealsense
         void detach(std::shared_ptr<platform::usb_messenger> messenger) const;
         bool wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout = 1000) const;
         virtual const std::string& get_asic_serial_number() const override { return _asic_serial_number; }
+        void read_device_info(std::shared_ptr<platform::usb_messenger> messenger);
 
         const std::shared_ptr<context> _context;
         const platform::rs_usb_device _usb_device;
         std::string _asic_serial_number;
+        std::string _highest_fw_version;
+        std::string _last_fw_version;
+        bool _is_dfu_locked = false;
     };
 }

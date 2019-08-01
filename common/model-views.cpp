@@ -926,6 +926,17 @@ namespace rs2
         }
         catch (...) {}
 
+        auto filters = s->get_recommended_filters();
+        
+        auto it  = std::find_if(filters.begin(), filters.end(), [&](const filter &f)
+        {
+            if (f.is<zero_order_invalidation>())
+                return true;
+            return false;
+        });
+
+        auto is_zo = it != filters.end();
+
         for (auto&& f : s->get_recommended_filters())
         {
             auto shared_filter = std::make_shared<filter>(f);
@@ -936,11 +947,17 @@ namespace rs2
             //if (shared_filter->is<disparity_transform>())
                // model->visible = false;
 
-            if (shared_filter->is<zero_order_invalidation>())
+            if (is_zo)
             {
-                zero_order_artifact_fix = model;
-                viewer.zo_sensors++;
+                if (shared_filter->is<zero_order_invalidation>())
+                {
+                    zero_order_artifact_fix = model;
+                    viewer.zo_sensors++;
+                }
+                else
+                    model->enabled = false;
             }
+
 
             if (shared_filter->is<hole_filling_filter>())
                 model->enabled = false;
@@ -1518,7 +1535,7 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.zo_sensors.load() > 0 || (viewer.synchronization_enable && is_synchronized_frame(viewer, f)))
+                if (viewer.synchronization_enable && is_synchronized_frame(viewer, f))
                 {
                     syncer->invoke(f);
                 }

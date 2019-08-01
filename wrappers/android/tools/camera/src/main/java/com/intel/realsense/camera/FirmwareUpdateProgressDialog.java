@@ -92,7 +92,7 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
                 Log.e(TAG, "firmware update failed, error: " + e.getMessage());
             }finally {
                 ((DetachedActivity)getActivity()).onFwUpdateStatus(done);
-                dismiss();
+                dismissAllowingStateLoss();
             }
         }
     };

@@ -18,11 +18,10 @@
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics * intrin, const float point[3])
 {
-    //assert(intrin->model != RS2_DISTORTION_INVERSE_BROWN_CONRADY); // Cannot project to an inverse-distorted image
-
     float x = point[0] / point[2], y = point[1] / point[2];
 
-    if(intrin->model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY)
+    if ((intrin->model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY) ||
+        (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY))
     {
 
         float r2  = x*x + y*y;

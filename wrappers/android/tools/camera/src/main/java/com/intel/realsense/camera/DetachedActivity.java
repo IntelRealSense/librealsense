@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -40,6 +42,7 @@ public class DetachedActivity extends AppCompatActivity {
 
     private Map<ProductLine,String> mMinimalFirmwares = new HashMap<>();
     private boolean mUpdating = false;
+    private boolean mDetached = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +55,8 @@ public class DetachedActivity extends AppCompatActivity {
         mPlaybackButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mDetached = false;
+                finish();
                 Intent intent = new Intent(DetachedActivity.this, PlaybackActivity.class);
                 startActivityForResult(intent, PLAYBACK_REQUEST_CODE);
             }
@@ -91,16 +96,12 @@ public class DetachedActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        mDetached = true;
         if(mPermissionsGrunted) {
             RsContext.init(getApplicationContext());
-            mRsContext.setDevicesChangedCallback(mDetachedListener);
+            mRsContext.setDevicesChangedCallback(mListener);
+            validatedDevice();
         }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mRsContext.setDevicesChangedCallback(mAttachListener);
     }
 
     private synchronized void validatedDevice(){
@@ -110,6 +111,8 @@ public class DetachedActivity extends AppCompatActivity {
             if(dl.getDeviceCount() == 0)
                 return;
             try(Device d = dl.createDevice(0)){
+                if(d == null)
+                    return;
                 if(d.is(Extension.UPDATE_DEVICE)){
                     FirmwareUpdateProgressDialog fupd = new FirmwareUpdateProgressDialog();
                     fupd.show(getFragmentManager(), null);
@@ -118,9 +121,10 @@ public class DetachedActivity extends AppCompatActivity {
                 else {
                     if (!validateFwVersion(d))
                         return;
+                    mDetached = false;
+                    finish();
                     Intent intent = new Intent(this, PreviewActivity.class);
                     startActivity(intent);
-                    finish();
                 }
             }
         } catch (Exception e){
@@ -133,7 +137,7 @@ public class DetachedActivity extends AppCompatActivity {
         final ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
         if(mMinimalFirmwares.containsKey(pl)){
             final String minimalFw = mMinimalFirmwares.get(pl);
-            if(!compareFwVersion(device, currFw, minimalFw)){
+            if(!compareFwVersion(currFw, minimalFw)){
                 FirmwareUpdateDialog fud = new FirmwareUpdateDialog();
                 Bundle bundle = new Bundle();
                 bundle.putBoolean(getString(R.string.firmware_update_required), true);
@@ -149,7 +153,7 @@ public class DetachedActivity extends AppCompatActivity {
             return true;
 
         final String recommendedFw = device.getInfo(CameraInfo.RECOMMENDED_FIRMWARE_VERSION);
-        if(!compareFwVersion(device, currFw, recommendedFw)){
+        if(!compareFwVersion(currFw, recommendedFw)){
             FirmwareUpdateDialog fud = new FirmwareUpdateDialog();
             fud.show(getFragmentManager(), null);
             return false;
@@ -157,7 +161,7 @@ public class DetachedActivity extends AppCompatActivity {
         return true;
     }
 
-    private boolean compareFwVersion(Device device, String currFw, String otherFw){
+    private boolean compareFwVersion(String currFw, String otherFw){
         String[] sFw = currFw.split("\\.");
         String[] sRecFw = otherFw.split("\\.");
         for (int i = 0; i < sRecFw.length; i++) {
@@ -182,22 +186,16 @@ public class DetachedActivity extends AppCompatActivity {
         });
     }
 
-    private DeviceListener mDetachedListener = new DeviceListener() {
+    private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
             validatedDevice();
         }
 
         @Override
-        public void onDeviceDetach() { }
-    };
-
-    private DeviceListener mAttachListener = new DeviceListener() {
-        @Override
-        public void onDeviceAttach() { }
-
-        @Override
         public void onDeviceDetach() {
+            if(mDetached)
+                return;
             finish();
             Intent intent = new Intent(mAppContext, DetachedActivity.class);
             startActivity(intent);

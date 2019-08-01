@@ -24,6 +24,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
+#include <string>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -443,7 +444,9 @@ namespace librealsense
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                info.serial_number = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
+                                                auto str = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
+                                                std::transform(begin(str), end(str), begin(str), ::tolower);
+                                                info.serial_number = str;
                                             }
                                         }
 
