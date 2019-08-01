@@ -133,18 +133,27 @@ namespace librealsense
 
              // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
              float3x3 intrin = table->intrinsic;
-             float base_aspect_ratio_factor = 16.f / 9.f; // shall be overwritten with the actual calib resolution
+             float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
 
              if (table->calib_width && table->calib_height)
-                 base_aspect_ratio_factor = float(table->calib_width) / float(table->calib_height);
+                 calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
              else
              {
                  LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
              }
 
              // Compensate for aspect ratio
-             intrin(0, 0) *= base_aspect_ratio_factor * (height / (float)width);
-             intrin(2, 0) *= base_aspect_ratio_factor * (height / (float)width);
+             float actual_aspect_ratio = height / (float)width;
+             if (actual_aspect_ratio < calib_aspect_ratio)
+             {
+                 intrin(1, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+                 intrin(2, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+             }
+             else
+             {
+                 intrin(0, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+                 intrin(2, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+             }
 
             // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
             rs2_intrinsics calc_intrinsic{
@@ -154,7 +163,7 @@ namespace librealsense
                 ((1 + intrin(2, 1))*height) / 2.f,
                 intrin(0, 0) * width / 2.f,
                 intrin(1, 1) * height / 2.f,
-                RS2_DISTORTION_BROWN_CONRADY
+                RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
             };
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
