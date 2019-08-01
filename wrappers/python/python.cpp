@@ -877,6 +877,9 @@ PYBIND11_MODULE(NAME, m) {
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback) {
             self.start(callback);
         }, "Start passing frames into user provided callback.", "callback"_a)
+        .def("start", [](const rs2::sensor& self, rs2::syncer syncer) {
+            self.start(syncer);
+        }, "Start passing frames into user provided syncer.", "callback"_a)
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
             self.start(queue);
         }, "start passing frames into specified frame_queue", "queue"_a)
