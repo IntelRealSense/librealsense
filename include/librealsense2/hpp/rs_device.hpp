@@ -241,14 +241,6 @@ namespace rs2
             rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), image.size(), new update_progress_callback<T>(std::move(callback)), update_mode, &e);
             error::handle(e);
         }
-
-        bool is_flash_locked()
-        {
-            rs2_error* e = nullptr;
-            bool rv = rs2_is_flash_locked(_dev.get(), &e);
-            error::handle(e);
-            return rv;
-        }
     };
 
     class update_device : public device

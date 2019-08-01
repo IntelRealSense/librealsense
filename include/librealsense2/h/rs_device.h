@@ -188,15 +188,6 @@ const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device,
 */
 const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
-/**
-* Indicates whether the flash of the specified device is locked for writing
-* The device must be extendable to RS2_EXTENSION_UPDATABLE.
-* \param[in]  device        Device to check
-* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return true if the device flash is locked
-*/
-int rs2_is_flash_locked(const rs2_device* device, rs2_error** error);
-
 #define RS2_UNSIGNED_UPDATE_MODE_UPDATE     0
 #define RS2_UNSIGNED_UPDATE_MODE_READ_ONLY  1
 #define RS2_UNSIGNED_UPDATE_MODE_FULL       2

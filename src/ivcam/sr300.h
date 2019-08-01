@@ -526,7 +526,6 @@ namespace librealsense
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
-        bool is_flash_locked() const override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

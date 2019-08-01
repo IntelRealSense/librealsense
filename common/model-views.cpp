@@ -3721,7 +3721,7 @@ namespace rs2
         try
         {
             std::vector<uint8_t> data;
-            auto ret = file_dialog_open(open_file, "Signed Firmware Image\0*.bin\0", NULL, NULL);
+            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0", NULL, NULL);
             if (ret)
             {
                 std::ifstream file(ret, std::ios::binary | std::ios::in);
@@ -4079,7 +4079,11 @@ namespace rs2
                         ImGui::SetTooltip("Install default recommended firmware for this device");
                 }
 
-                if (dev.is<rs2::updatable>() && !dev.as<rs2::updatable>().is_flash_locked())
+                bool is_locked = true;
+                if (dev.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
+                    is_locked = std::string(dev.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED)) == "YES" ? true : false;
+
+                if (dev.is<rs2::updatable>() && !is_locked)
                 {
                     if (ImGui::Selectable("Update Unsigned Firmware..."))
                     {

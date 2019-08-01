@@ -143,11 +143,6 @@ namespace librealsense
         return flash;
     }
 
-    bool ds5_device::is_flash_locked() const
-    {
-        return _is_locked;
-    }
-
     void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
@@ -615,11 +610,9 @@ namespace librealsense
                     "Hardware pipe configuration"));
         }
 
-        std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-            is_camera_locked = (_is_locked) ? "YES" : "NO";
 
 #ifdef HWM_OVER_XU
             //if hw_monitor was created by usb replace it with xu
@@ -772,6 +765,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);

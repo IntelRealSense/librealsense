@@ -2418,18 +2418,6 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-int rs2_is_flash_locked(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(device);
-
-    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
-    if (!fwud)
-        throw std::runtime_error("This device does not supports update protocol!");
-
-    return fwud->is_flash_locked();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(1, device)
-
 void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback* callback, int update_mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
