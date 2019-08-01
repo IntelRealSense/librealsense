@@ -8,8 +8,8 @@
 #include "option.h"
 #include "l500/l500-private.h"
 
-#define IR_THRESHOLD 115
-#define RTD_THRESHOLD 200
+#define IR_THRESHOLD 120
+#define RTD_THRESHOLD 50
 #define BASELINE -10
 #define PATCH_SIZE 5
 #define Z_MAX_VALUE 1200
