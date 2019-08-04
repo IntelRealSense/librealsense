@@ -1509,7 +1509,7 @@ namespace rs2
         auto r1 = matrix4::identity();
         auto r2 = matrix4::identity();
 
-        if (draw_plane)
+        if (draw_plane && !paused)
         {
             glPushAttrib(GL_LINE_BIT);
             glLineWidth(2);
