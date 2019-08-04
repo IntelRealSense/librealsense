@@ -162,6 +162,9 @@ namespace rs2
 
         bool tool_model::draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation)
         {
+            if (_viewer_model.paused)
+                return false;
+
             auto plane_fit_found = is_valid(_metrics_model.get_plane());
             _metrics_model.set_plane_fit(plane_fit_found);
             _roi_located.add_value(plane_fit_found);
@@ -625,7 +628,18 @@ namespace rs2
                             ImGui::SetTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
+
+                        static float prev_metric_distance = 0;
+                        if (_viewer_model.paused)
+                        {
+                            ImGui::Text("%.2f mm", prev_metric_distance);
+                        }
+                        else
+                        {
+                            auto curr_metric_distance = _metrics_model.get_last_metrics().distance;
+                            ImGui::Text("%.2f mm", curr_metric_distance);
+                            prev_metric_distance = curr_metric_distance;
+                        }
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -668,7 +682,17 @@ namespace rs2
                             ImGui::SetTooltip("Estimated angle to the wall in degrees");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
+                        static float prev_metric_angle = 0;
+                        if (_viewer_model.paused)
+                        {
+                            ImGui::Text("%.2f mm", prev_metric_angle);
+                        }
+                        else
+                        {
+                            auto curr_metric_angle = _metrics_model.get_last_metrics().angle;
+                            ImGui::Text("%.2f mm", curr_metric_angle);
+                            prev_metric_angle = curr_metric_angle;
+                        }
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
