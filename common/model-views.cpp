@@ -5150,24 +5150,25 @@ namespace rs2
                     }
                 }
 
-
-                for (auto&& pb : sub->const_effects)
-                {
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-
-                    label = to_string() << pb->get_name() << "##" << id;
-                    if (ImGui::TreeNode(label.c_str()))
+                if (sub->s->is<depth_sensor>()) {
+                    for (auto&& pb : sub->const_effects)
                     {
-                        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
-                        {
-                            auto opt = static_cast<rs2_option>(i);
-                            if (skip_option(opt)) continue;
-                            pb->get_option(opt).draw_option(
-                                dev.is<playback>() || update_read_only_options,
-                                false, error_message, viewer.not_model);
-                        }
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
-                        ImGui::TreePop();
+                        label = to_string() << pb->get_name() << "##" << id;
+                        if (ImGui::TreeNode(label.c_str()))
+                        {
+                            for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                            {
+                                auto opt = static_cast<rs2_option>(i);
+                                if (skip_option(opt)) continue;
+                                pb->get_option(opt).draw_option(
+                                    dev.is<playback>() || update_read_only_options,
+                                    false, error_message, viewer.not_model);
+                            }
+
+                            ImGui::TreePop();
+                        }
                     }
                 }
 
