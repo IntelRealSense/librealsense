@@ -300,13 +300,19 @@ int main(int argc, char** argv) try
                     auto opt = static_cast<rs2_option>(j);
                     if (sensor.supports(opt))
                     {
-                        auto range = sensor.get_option_range(opt);
-                        cout << "    " << left << setw(30) << opt << " : "
-                             << setw(5) << range.min << "... " << setw(12) << range.max
-                             << setw(6) << range.step << setw(10) << range.def << "\n";
+                        try
+                        {
+                            auto range = sensor.get_option_range(opt);
+                            cout << "    " << left << setw(30) << opt << " : "
+                                << setw(5) << range.min << "... " << setw(12) << range.max
+                                << setw(6) << range.step << setw(10) << range.def << "\n";
+                        }
+                        catch (const error & e)
+                        {
+                            cerr << "RealSense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n    " << e.what() << endl;
+                        }
                     }
                 }
-
                 cout << endl;
             }
         }
