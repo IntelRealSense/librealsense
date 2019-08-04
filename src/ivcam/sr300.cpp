@@ -216,6 +216,11 @@ namespace librealsense
         return flash;
     }
 
+    void sr300_camera::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    {
+        throw std::runtime_error("update_flash is not supported by SR300");
+    }
+
     struct sr300_raw_calibration
     {
         uint16_t tableVersion;
@@ -283,6 +288,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE,     "SR300");
+        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED,    _is_locked ? "YES" : "NO");
 
         register_autorange_options();
 

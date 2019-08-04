@@ -10,6 +10,8 @@ import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 
+import java.io.File;
+
 public class PlaybackActivity extends AppCompatActivity {
     private static final String TAG = "librs camera pb";
 
@@ -36,6 +38,7 @@ public class PlaybackActivity extends AppCompatActivity {
 
         if(mFilePath == null){
             Intent intent = new Intent(this, FileBrowserActivity.class);
+            intent.putExtra(getString(R.string.browse_folder), getString(R.string.realsense_folder) + File.separator + "video");
             startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
         }
         else{

@@ -20,20 +20,26 @@ import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.ProgressListener;
 import com.intel.realsense.librealsense.RsContext;
+import com.intel.realsense.librealsense.Updatable;
 import com.intel.realsense.librealsense.UpdateDevice;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 
 public class FirmwareUpdateProgressDialog extends DialogFragment {
     private static final String TAG = "librs fwupdate";
 
     private ProgressBar mProgressBar;
-
+    private String mFirmwareFilePath;
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final Activity activity = getActivity();
+
+        Bundle bundle = getArguments();
+        mFirmwareFilePath = bundle == null ? "" : bundle.getString(getString(R.string.firmware_update_file_path), "");
+
         LayoutInflater inflater = activity.getLayoutInflater();
         View fragmentView = inflater.inflate(R.layout.firmware_update_progress, null);
 
@@ -60,15 +66,21 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
         throw new RuntimeException("FW update is not supported for the connected device");
     }
 
-    private static byte[] readFwFile(Context context, int fwResId) throws IOException {
-        InputStream in = context.getResources().openRawResource(fwResId);
+    private static byte[] readFwFile(InputStream in) throws IOException {
         int length = in.available();
-        ByteBuffer buff = ByteBuffer.allocateDirect(length);
-        int len = in.read(buff.array(),0, buff.capacity());
+        byte[] rv = new byte[length];
+        int len = in.read(rv,0, rv.length);
         in.close();
-        byte[] rv = new byte[len];
-        buff.get(rv, 0, len);
-        return buff.array();
+        return rv;
+    }
+
+    private static InputStream getInputStream(String path) throws IOException {
+        File fwFile = new File(path);
+        return new FileInputStream(fwFile);
+    }
+
+    private static InputStream getInputStream(Context context, int fwResId) throws IOException {
+        return context.getResources().openRawResource(fwResId);
     }
 
     private Runnable mFirmwareUpdate = new Runnable() {
@@ -76,22 +88,28 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
         public void run() {
             boolean done = false;
             RsContext ctx = new RsContext();
+            boolean notify = false;
             try(DeviceList dl = ctx.queryDevices()){
                 if(dl.getDeviceCount() == 0)
                     return;
                 try(Device d = dl.createDevice(0)){
                     if(d.is(Extension.UPDATE_DEVICE)) {
                         UpdateDevice fwud = d.as(Extension.UPDATE_DEVICE);
-                        int fw_image = getFwImageId(d);
-                        final byte[] bytes = readFwFile(getActivity(), fw_image);
+                        final byte[] bytes = readFwFile(getInputStream(getActivity(), getFwImageId(d)));
                         updateFirmware(fwud, bytes);
                         done = true;
+                        notify = true;
+                    } else if(d.is(Extension.UPDATABLE) && !mFirmwareFilePath.equals("")){
+                        final byte[] bytes = readFwFile(getInputStream(mFirmwareFilePath));
+                        Updatable fwud = d.as(Extension.UPDATABLE);
+                        updateFirmware(fwud, bytes);//TODO: make it work
                     }
                 }
             }catch (Exception e) {
                 Log.e(TAG, "firmware update failed, error: " + e.getMessage());
             }finally {
-                ((DetachedActivity)getActivity()).onFwUpdateStatus(done);
+                if(notify)
+                    ((DetachedActivity)getActivity()).onFwUpdateStatus(done);
                 dismissAllowingStateLoss();
             }
         }
@@ -99,6 +117,22 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
 
     private void updateFirmware(UpdateDevice device, final byte[] bytes) {
         device.update(bytes, new ProgressListener() {
+            @Override
+            public void onProgress(final float progress) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        int perc = (int) (progress * 100);
+                        mProgressBar.setProgress(perc);
+                    }
+                });
+            }
+        });
+        Log.i(TAG, "Firmware update process finished successfully");
+    }
+
+    private void updateFirmware(Updatable device, final byte[] bytes) {
+        device.updateUnsigned(bytes, new ProgressListener() {
             @Override
             public void onProgress(final float progress) {
                 getActivity().runOnUiThread(new Runnable() {

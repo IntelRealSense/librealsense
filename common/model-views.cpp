@@ -2777,7 +2777,7 @@ namespace rs2
 
                     static auto table = create_default_fw_table();
 
-                    manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line]);
+                    manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
                 }
 
                 if (is_upgradeable(fw, recommended))
@@ -3733,6 +3733,51 @@ namespace rs2
         ImGui::PopStyleColor(2);
     }
 
+    void device_model::begin_update_unsigned(viewer_model& viewer, std::string& error_message)
+    {
+        try
+        {
+            std::vector<uint8_t> data;
+            auto ret = file_dialog_open(open_file, "Unsigned Firmware Image\0*.bin\0", NULL, NULL);
+            if (ret)
+            {
+                std::ifstream file(ret, std::ios::binary | std::ios::in);
+                if (file.good())
+                {
+                    data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+                }
+                else
+                {
+                    error_message = to_string() << "Could not open file '" << ret << "'";
+                    return;
+                }
+            }
+
+            else return; // Aborted by the user
+
+            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, false);
+
+            auto id = viewer.not_model.add_notification({ "Manual Update requested",
+                RS2_LOG_SEVERITY_INFO,
+                RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED });
+
+            viewer.not_model.attach_update_manager(id, manager, true);
+
+            cleanup();
+
+            manager->start();
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        catch (const std::exception& e)
+        {
+            error_message = e.what();
+        }
+    }
+
     void device_model::begin_update(std::vector<uint8_t> data, viewer_model& viewer, std::string& error_message)
     {
         try
@@ -3757,7 +3802,7 @@ namespace rs2
                 else return; // Aborted by the user
             }
             
-            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data);
+            auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, true);
 
             auto id = viewer.not_model.add_notification({ "Manual Update requested",
                 RS2_LOG_SEVERITY_INFO,
@@ -4049,6 +4094,20 @@ namespace rs2
                     }
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install default recommended firmware for this device");
+                }
+
+                bool is_locked = true;
+                if (dev.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
+                    is_locked = std::string(dev.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED)) == "YES" ? true : false;
+
+                if (dev.is<rs2::updatable>() && !is_locked)
+                {
+                    if (ImGui::Selectable("Update Unsigned Firmware..."))
+                    {
+                        begin_update_unsigned(viewer, error_message);
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
                 }
             }
 

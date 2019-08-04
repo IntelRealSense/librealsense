@@ -13,6 +13,7 @@ namespace librealsense
     public:
         virtual void enter_update_state() const = 0;
         virtual std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) = 0;
+        virtual void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) = 0;
     };
 
     class update_device_interface : public device_interface
