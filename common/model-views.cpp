@@ -4076,22 +4076,26 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install official signed firmware from file to the device");
 
-                    if ((dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)) ||
-                        (dev.query_sensors().size() && dev.query_sensors().front().supports(RS2_CAMERA_INFO_PRODUCT_LINE)))
-                    if (ImGui::Selectable("Install Recommended Firmware "))
+                    if (is_recommended_fw_available() &&
+                        ((dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)) ||
+                        (dev.query_sensors().size() && dev.query_sensors().front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))))
                     {
-                        auto sensors = dev.query_sensors();
-                        auto product_line_str = "";
-                        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                            product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                        if (sensors.size() && sensors.front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                            product_line_str = sensors.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                        int product_line = parse_product_line(product_line_str);
+                        if (ImGui::Selectable("Install Recommended Firmware "))
+                        {
+                            auto sensors = dev.query_sensors();
+                            auto product_line_str = "";
+                            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                                product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                            if (sensors.size() && sensors.front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                                product_line_str = sensors.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+                            int product_line = parse_product_line(product_line_str);
 
-                        static auto table = create_default_fw_table();
+                            static auto table = create_default_fw_table();
 
-                        begin_update(table[product_line], viewer, error_message);
+                            begin_update(table[product_line], viewer, error_message);
+                        }
                     }
+
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install default recommended firmware for this device");
                 }

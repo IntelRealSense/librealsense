@@ -20,6 +20,7 @@ namespace rs2
     std::map<int, std::vector<uint8_t>> create_default_fw_table();
     std::vector<int> parse_fw_version(const std::string& fw);
     bool is_upgradeable(const std::string& curr, const std::string& available);
+    bool is_recommended_fw_available();
 
     class firmware_update_manager : public std::enable_shared_from_this<firmware_update_manager>
     {

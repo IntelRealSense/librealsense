@@ -2,7 +2,20 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(librealsense2 LANGUAGES CXX C)
 
+include(CMake/lrs_options.cmake)
 include(CMake/connectivity_check.cmake)
+
+# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
+if(BUILD_WITH_TM2 AND NOT INTERNET_CONNECTION)
+    message(WARNING "No internet connection, disabling BUILD_WITH_TM2")
+    set(BUILD_WITH_TM2 OFF)
+endif()
+
+# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
+if(IMPORT_DEPTH_CAM_FW AND NOT INTERNET_CONNECTION)
+    message(WARNING "No internet connection, disabling IMPORT_DEPTH_CAM_FW")
+    set(IMPORT_DEPTH_CAM_FW OFF)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
@@ -32,12 +45,6 @@ endif()
 
 # set library version
 set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
-
-# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
-if(BUILD_WITH_TM2 AND NOT INTERNET_CONNECTION)
-    message(STATUS "No internet connection, disabling BUILD_WITH_TM2")
-    set(BUILD_WITH_TM2 OFF)
-endif()
 
 include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
@@ -75,17 +82,12 @@ if(BUILD_UNIT_TESTS)
     add_subdirectory(unit-tests)
 endif()
 
-if (BUILD_WITH_TM2)
+if(BUILD_WITH_TM2)
     add_tm2()
 endif()
 
-if (IMPORT_DEPTH_CAM_FW)
-    if(INTERNET_CONNECTION)
-        add_subdirectory(common/fw)
-    else()
-        message(STATUS "No internet connection, disabling IMPORT_UVC_FW")
-        set(IMPORT_DEPTH_CAM_FW OFF)
-    endif()
+if(IMPORT_DEPTH_CAM_FW)
+    add_subdirectory(common/fw)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
