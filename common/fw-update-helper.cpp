@@ -17,10 +17,17 @@
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
+const char* fw_get_D4XX_FW_Image(int) { return NULL; }
+const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
 #endif // INTERNAL_FW
 
 namespace rs2
 {
+    bool is_recommended_fw_available()
+    {
+        return !(strcmp("", FW_D4XX_FW_IMAGE_VERSION) == 0);
+    }
+
     static std::map<int, std::string> product_line_to_fw =
     {
         {RS2_PRODUCT_LINE_D400, FW_D4XX_FW_IMAGE_VERSION},

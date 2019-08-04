@@ -8,7 +8,6 @@ include(GNUInstallDirs)
 # include librealsense helper macros
 include(CMake/lrs_macros.cmake)
 include(CMake/version_config.cmake)
-include(CMake/lrs_options.cmake)
 
 if(ENABLE_CCACHE)
   find_program(CCACHE_FOUND ccache)
