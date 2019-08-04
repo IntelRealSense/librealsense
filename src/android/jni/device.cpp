@@ -72,16 +72,6 @@ Java_com_intel_realsense_librealsense_Updatable_nEnterUpdateState(JNIEnv *env, j
 }
 
 extern "C"
-JNIEXPORT jboolean JNICALL
-Java_com_intel_realsense_librealsense_Updatable_nIsFlashLocked(JNIEnv *env, jobject instance,
-                                                               jlong handle) {
-    rs2_error *e = NULL;
-    auto rv = rs2_is_flash_locked(reinterpret_cast<const rs2_device *>(handle), &e);
-    handle_error(env, e);
-    return static_cast<jboolean>(rv);
-}
-
-extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Updatable_nUpdateFirmwareUnsigned(JNIEnv *env,
                                                                         jobject instance,

@@ -17,10 +17,6 @@ public class Updatable extends Device {
         return nCreateFlashBackup(mHandle);
     }
 
-    public boolean isFlashLocked(){
-        return nIsFlashLocked(mHandle);
-    }
-
     Updatable(long handle){
         super(handle);
         mOwner = false;
@@ -32,6 +28,5 @@ public class Updatable extends Device {
 
     private static native void nEnterUpdateState(long handle);
     private native byte[] nCreateFlashBackup(long handle);
-    private native boolean nIsFlashLocked(long handle);
     private native void nUpdateFirmwareUnsigned(long handle, byte[] image, int update_mode);
 }

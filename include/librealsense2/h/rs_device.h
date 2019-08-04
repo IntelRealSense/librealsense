@@ -193,7 +193,7 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 #define RS2_UNSIGNED_UPDATE_MODE_FULL       2
 
 /**
-* Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera (see rs2_is_flash_locked).
+* Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera.
 * The device must be extendable to RS2_EXTENSION_UPDATABLE.
 * This call is executed on the caller's thread and it supports progress notifications via the optional callback.
 * \param[in]  device        Device to update
