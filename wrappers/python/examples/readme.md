@@ -15,6 +15,7 @@ These Examples demonstrate how to use the python wrapper of the SDK.
 8. [T265 Basic](./t265_example.py) - Demonstrates how to retrieve pose data from a T265
 9. [T265 Coordinates](./t265_rpy.py) - This example shows how to change coordinate systems of a T265 pose
 10. [T265 Stereo](./t265_stereo.py) - This example shows how to use T265 intrinsics and extrinsics in OpenCV to asynchronously compute depth maps from T265 fisheye images on the host.
+11. [Realsense over Ethernet](./ethernet_client_server/README.md) - This example shows how to stream depth data from RealSense depth cameras over ethernet.
 
 ## Pointcloud Visualization
 
