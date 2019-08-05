@@ -790,6 +790,7 @@ namespace librealsense
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
 
+
         std::map<std::string, uint32_t> frequency_per_sensor;
         for (auto& elem : sensor_name_and_hid_profiles)
             frequency_per_sensor.insert(make_pair(elem.first, elem.second.fps));

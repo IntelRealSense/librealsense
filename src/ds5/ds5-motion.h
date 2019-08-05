@@ -7,6 +7,41 @@
 
 namespace librealsense
 {
+    // Enforce complile-time verification of all the assigned FPS profiles
+    enum class IMU_OUTPUT_DATA_RATES : uint16_t
+    {
+        IMU_FPS_63  = 63,
+        IMU_FPS_100 = 100,
+        IMU_FPS_200 = 200,
+        IMU_FPS_250 = 250,
+        IMU_FPS_400 = 400
+    };
+
+    using odr = IMU_OUTPUT_DATA_RATES;
+
+#ifdef _WIN32
+    static const std::string gyro_sensor_name = "HID Sensor Class Device: Gyroscope";
+    static const std::string accel_sensor_name = "HID Sensor Class Device: Accelerometer";
+    static const std::map<odr, uint16_t> hid_fps_translation =
+    {  //FPS   Value to send to the Driver
+        {odr::IMU_FPS_63,   1000},
+        {odr::IMU_FPS_100,  1000},
+        {odr::IMU_FPS_200,  500},
+        {odr::IMU_FPS_250,  400},
+        {odr::IMU_FPS_400,  250} };
+
+#else
+    static const std::string gyro_sensor_name = "gyro_3d";
+    static const std::string accel_sensor_name = "accel_3d";
+    static const std::map<IMU_OUTPUT_DATA_RATES, unsigned> hid_fps_translation =
+    {  //FPS   Value to send to the Driver
+        {IMU_FPS_63,   1},
+        {IMU_FPS_100,  1},
+        {IMU_FPS_200,  2},
+        {IMU_FPS_250,  3},
+        {IMU_FPS_400,  4} };
+#endif
+
     class mm_calib_parser
     {
     public:
@@ -184,36 +219,16 @@ namespace librealsense
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
-#ifdef _WIN32
-        // Bandwidth parameters from BOSCH BMI 055 spec'
+        // Bandwidth parameters required for HID sensors
+        // The Acceleration configuration will be resolved according to the IMU sensor type at run-time
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
-        {{ "HID Sensor Class Device: Gyroscope",     {RS2_STREAM_GYRO,  0, 1, 1, 200, RS2_FORMAT_MOTION_XYZ32F}},
-         { "HID Sensor Class Device: Gyroscope",     {RS2_STREAM_GYRO,  0, 1, 1, 400, RS2_FORMAT_MOTION_XYZ32F}},
-         { "HID Sensor Class Device: Accelerometer", {RS2_STREAM_ACCEL, 0, 1, 1, 63, RS2_FORMAT_MOTION_XYZ32F}},
-         { "HID Sensor Class Device: Accelerometer", {RS2_STREAM_ACCEL, 0, 1, 1, 250, RS2_FORMAT_MOTION_XYZ32F}}};
+        { { gyro_sensor_name,     {RS2_STREAM_GYRO,  0, 1, 1, int(odr::IMU_FPS_200), RS2_FORMAT_MOTION_XYZ32F}},
+          { gyro_sensor_name,     {RS2_STREAM_GYRO,  0, 1, 1, int(odr::IMU_FPS_400), RS2_FORMAT_MOTION_XYZ32F}}};
 
-        // Translate frequency to SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL
+        // Translate frequency to SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL.
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
-                                                           {{RS2_STREAM_ACCEL,{{63,   1000},
-                                                                               {250,  400}}},
-                                                            {RS2_STREAM_GYRO, {{200,  500},
-                                                                               {400,  250}}}};
-
-#else
-        // Bandwidth parameters from BOSCH BMI 055 spec'
-        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
-        {{"gyro_3d",  {RS2_STREAM_GYRO,  0, 1, 1, 200,  RS2_FORMAT_MOTION_XYZ32F}},
-         {"gyro_3d",  {RS2_STREAM_GYRO,  0, 1, 1, 400,  RS2_FORMAT_MOTION_XYZ32F}},
-         {"accel_3d", {RS2_STREAM_ACCEL, 0, 1, 1, 63,  RS2_FORMAT_MOTION_XYZ32F}},
-         {"accel_3d", {RS2_STREAM_ACCEL, 0, 1, 1, 250,  RS2_FORMAT_MOTION_XYZ32F}}};
-
-        // The frequency selector is vendor and model-specific
-        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
-                                                         {{RS2_STREAM_ACCEL, {{63,   1},
-                                                                              {250,  3}}},
-                                                          {RS2_STREAM_GYRO,  {{200,  2},
-                                                                              {400,  4}}}};
-#endif
+        { { RS2_STREAM_GYRO,     {{unsigned(odr::IMU_FPS_200),  hid_fps_translation.at(odr::IMU_FPS_200)},
+                                 { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
     protected:
         std::shared_ptr<stream_interface> _fisheye_stream;

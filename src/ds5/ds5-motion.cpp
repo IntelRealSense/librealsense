@@ -167,6 +167,22 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds5_custom_hid_timestamp_reader());
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
+        // Dynamically populate the supported HID profiles according to the selected IMU module
+        std::vector<odr> accel_fps_rates;
+        std::map<unsigned, unsigned> fps_and_frequency_map;
+        if (ds::d400_caps::CAP_BMI_085 && _device_capabilities)
+            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        else // Applies to BMI_055 and unrecognized sensors
+            accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
+
+        for (auto&& elem : accel_fps_rates)
+        {
+            sensor_name_and_hid_profiles.push_back({ accel_sensor_name, { RS2_STREAM_ACCEL, 0, 1, 1, static_cast<uint16_t>(elem), RS2_FORMAT_MOTION_XYZ32F } });
+            fps_and_frequency_map.emplace(unsigned(elem), hid_fps_translation.at(elem));
+        }
+        fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
+
         auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), _tf_keeper, enable_global_time_option)),
                                                         std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), _tf_keeper, enable_global_time_option)),
