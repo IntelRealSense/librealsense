@@ -9,6 +9,18 @@
 
 namespace rs2
 {
+    struct popup
+    {
+        const std::string header;
+        const std::string message;
+        std::function<void()> custom_command;
+
+        bool operator =(const popup& p)
+        {
+            return p.message == message;
+        }
+    };
+
     class viewer_model
     {
     public:
@@ -58,7 +70,7 @@ namespace rs2
 
         void popup_fw_file_select(const ux_window& window, const fw_update_device_info& ud, std::vector<uint8_t>& fw, bool& cancel);
 
-        void popup(const ux_window& window, const std::string& header, const std::string& message, std::function<void()> configure);
+        void show_popup(const ux_window& window, const popup& p);
 
         void popup_firmware_update_progress(const ux_window& window, const float progress);
 
@@ -128,7 +140,7 @@ namespace rs2
     private:
         void check_permissions();
 
-        bool popup_triggered = false;
+        std::vector<popup> _active_popups;
 
         struct rgb {
             uint32_t r, g, b;
