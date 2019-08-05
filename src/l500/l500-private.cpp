@@ -34,10 +34,24 @@ namespace librealsense
                 {
 
                     result = *it;
-                    if (result.mi == 4 || result.mi == 6 || result.mi == 7)
+                    switch(info.pid)
                     {
-                        devices.erase(it);
-                        return true;
+                    case L515_PID:
+                        if(result.mi == 7)
+                        {
+                            devices.erase(it);
+                            return true;
+                        }
+                        break;
+                    case L500_PID:
+                        if(result.mi == 4 || result.mi == 6)
+                        {
+                            devices.erase(it);
+                            return true;
+                        }
+                        break;
+                    default:
+                        break;
                     }
                 }
             }
