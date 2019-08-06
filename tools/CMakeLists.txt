@@ -9,10 +9,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-# This parameter is meant for disabling graphical examples when building for
-# headless systems
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples." ON)
-
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
 
 add_subdirectory(convert)
