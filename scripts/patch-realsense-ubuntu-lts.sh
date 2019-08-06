@@ -91,6 +91,7 @@ then
 	echo -e "\e[43mUser requested to rebuild and reinstall ubuntu-${ubuntu_codename} stock drivers\e[0m"
 else
 	# Patching kernel for RealSense devices
+	echo -e "\e[32mApplying patches for \e[36m${ubuntu_codename}-${kernel_branch}\e[32m line\e[0m"
 	echo -e "\e[32mApplying realsense-uvc patch\e[0m"
 	patch -p1 < ../scripts/realsense-camera-formats-${ubuntu_codename}-${kernel_branch}.patch
 	echo -e "\e[32mApplying realsense-metadata patch\e[0m"
