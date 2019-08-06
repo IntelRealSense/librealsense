@@ -35,11 +35,11 @@ namespace librealsense
     static const std::string accel_sensor_name = "accel_3d";
     static const std::map<IMU_OUTPUT_DATA_RATES, unsigned> hid_fps_translation =
     {  //FPS   Value to send to the Driver
-        {IMU_FPS_63,   1},
-        {IMU_FPS_100,  1},
-        {IMU_FPS_200,  2},
-        {IMU_FPS_250,  3},
-        {IMU_FPS_400,  4} };
+        {odr::IMU_FPS_63,   1},
+        {odr::IMU_FPS_100,  1},
+        {odr::IMU_FPS_200,  2},
+        {odr::IMU_FPS_250,  3},
+        {odr::IMU_FPS_400,  4} };
 #endif
 
     class mm_calib_parser
@@ -56,9 +56,9 @@ namespace librealsense
         tm1_imu_calib_parser(const std::vector<uint8_t>& raw_data)
         {
             calib_table = *(ds::check_calib<ds::tm1_eeprom>(raw_data));
-        };
+        }
         tm1_imu_calib_parser(const tm1_imu_calib_parser&);
-        ~tm1_imu_calib_parser(){};
+        virtual ~tm1_imu_calib_parser(){}
 
         float3x3 imu_to_depth_alignment() { return {{1,0,0},{0,1,0},{0,0,1}}; }
 
@@ -72,14 +72,16 @@ namespace librealsense
             auto rot = fe_calib.fisheye_to_imu.rotation;
             auto trans = fe_calib.fisheye_to_imu.translation;
 
-            pose ex = { { rot(0,0), rot(1,0),rot(2,0),rot(0,1), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2) },
-            { trans[0], trans[1], trans[2] } };
+            pose ex = { { { rot(0,0), rot(1,0),rot(2,0)},
+                          { rot(0,1), rot(1,1),rot(2,1) },
+                          { rot(0,2), rot(1,2),rot(2,2) } },
+                          { trans[0], trans[1], trans[2] } };
 
             if (RS2_STREAM_FISHEYE == stream)
                 return inverse(from_pose(ex));
             else
                 return from_pose(ex);
-        };
+        }
 
         ds::imu_intrinsic get_intrinsic(rs2_stream stream)
         {
@@ -116,9 +118,9 @@ namespace librealsense
             // default parser to be applied when no FW calibration is available
             if (valid)
                 calib_table = *(ds::check_calib<ds::dm_v2_eeprom>(raw_data));
-        };
+        }
         dm_v2_imu_calib_parser(const dm_v2_imu_calib_parser&);
-        ~dm_v2_imu_calib_parser() {};
+        virtual ~dm_v2_imu_calib_parser() {}
 
         float3x3 imu_to_depth_alignment() { return {{-1,0,0},{0,1,0},{0,0,-1}}; } //Reference spec : Bosch BMI055
 
