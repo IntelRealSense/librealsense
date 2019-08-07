@@ -263,7 +263,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor,_device_capabilities);
 
         _accel_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); };
         _gyro_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); };
@@ -459,7 +459,8 @@ namespace librealsense
         //});
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor) :  _hw_monitor(hw_monitor)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap) :
+        _hw_monitor(hw_monitor), _dev_cap(dev_cap)
     {
         _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
 
@@ -484,8 +485,8 @@ namespace librealsense
             switch (calib_id)
             {
                 case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw,valid); break;
-                case ds::tm1_eeprom_id:// TM1 id
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
+                case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
                 default:
                     throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
