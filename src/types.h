@@ -69,6 +69,20 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 
 namespace librealsense
 {
+#pragma pack (push, 1)
+
+    struct hid_data
+    {
+        short x;
+        byte reserved1[2];
+        short y;
+        byte reserved2[2];
+        short z;
+        byte reserved3[2];
+    };
+
+#pragma pack(pop)
+
     static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
     ///////////////////////////////////

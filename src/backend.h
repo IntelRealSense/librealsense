@@ -9,6 +9,7 @@
 #include "../include/librealsense2/h/rs_option.h"
 #include "usb/usb-types.h"
 #include "usb/usb-device.h"
+#include "hid/hid-types.h"
 #include "command_transfer.h"
 
 #include <memory>       // For shared_ptr
@@ -234,37 +235,7 @@ namespace librealsense
                 (a.conn_spec == b.conn_spec);
         }
 
-        struct hid_device_info
-        {
-            std::string id;
-            std::string vid;
-            std::string pid;
-            std::string unique_id;
-            std::string device_path;
-            std::string serial_number;
 
-            operator std::string()
-            {
-                std::stringstream s;
-                s << "id- " << id <<
-                    "\nvid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nunique_id- " << unique_id <<
-                    "\npath- " << device_path;
-
-                return s.str();
-            }
-        };
-
-        inline bool operator==(const hid_device_info& a,
-            const hid_device_info& b)
-        {
-            return  (a.id == b.id) &&
-                (a.vid == b.vid) &&
-                (a.pid == b.pid) &&
-                (a.unique_id == b.unique_id) &&
-                (a.device_path == b.device_path);
-        }
 
         struct playback_device_info
         {
