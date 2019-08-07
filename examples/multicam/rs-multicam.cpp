@@ -12,11 +12,11 @@ int main(int argc, char * argv[]) try
     // Create a simple OpenGL window for rendering:
     window app(1280, 960, "CPP Multi-Camera Example");
 
-    rs2::context                ctx;            // Create librealsense context for managing devices
+    rs2::context                          ctx;        // Create librealsense context for managing devices
 
-    rs2::colorizer              colorizer;      // Utility class to convert depth data RGB colorspace
+    std::map<std::string, rs2::colorizer> colorizers; // Declare map from device serial number to colorizer (utility class to convert depth data RGB colorspace)
 
-    std::vector<rs2::pipeline>  pipelines;
+    std::vector<rs2::pipeline>            pipelines;
 
     // Start a streaming pipe per each connected device
     for (auto&& dev : ctx.query_devices())
@@ -26,10 +26,9 @@ int main(int argc, char * argv[]) try
         cfg.enable_device(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
         pipe.start(cfg);
         pipelines.emplace_back(pipe);
+        // Map from each device's serial number to a different colorizer
+        colorizers[dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)] = rs2::colorizer();
     }
-
-    // We'll keep track for the last frame of each stream available to make the presentation persistent
-    std::map<int, rs2::frame> render_frames;
 
     // Main app loop
     while (app)
@@ -46,10 +45,16 @@ int main(int argc, char * argv[]) try
             }
         }
 
-        // Convert the newly-arrived frames to render-firendly format
+        // We'll keep track for the last frame of each stream available to make the presentation persistent
+        std::map<int, rs2::frame> render_frames;
+
+        // Convert the newly-arrived frames to render-friendly format
         for (const auto& frame : new_frames)
         {
-            render_frames[frame.get_profile().unique_id()] = colorizer.process(frame);
+            // Get the serial number of the current frame's device
+            auto serial = rs2::sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            // Apply the colorizer of the matching device and store the colorized frame
+            render_frames[frame.get_profile().unique_id()] = colorizers[serial].process(frame);
         }
 
         // Present all the collected frames with openGl mosaic
