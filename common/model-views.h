@@ -555,6 +555,7 @@ namespace rs2
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_supported_profile();
         void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);

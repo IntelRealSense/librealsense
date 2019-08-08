@@ -1371,7 +1371,144 @@ namespace rs2
         // TODO - review whether the comparison can be made strict (==)
         return results.size() >= size_t(std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; }));
     }
+    
+    std::vector<stream_profile> subdevice_model::get_supported_profile()
+    {
+        std::vector<stream_profile> results;
 
+        std::stringstream error_message;
+        error_message << "The profile ";
+
+        if (ui.selected_res_id != last_valid_ui.selected_res_id)
+        {
+            if (res_values.size() > 0)
+            {
+                auto width = res_values[ui.selected_res_id].first;
+                auto height = res_values[ui.selected_res_id].second;
+                for (auto&& p : profiles)
+                {
+                    if (auto vid_prof = p.as<video_stream_profile>())
+                    {
+                        if (vid_prof.width() == width &&
+                            vid_prof.height() == height)
+                        {
+                            results.push_back(p);
+                            for (auto& s : stream_enabled)
+                                s.second = false;
+                            stream_enabled[p.unique_id()] = true;
+                            auto format_vec = format_values[p.unique_id()];
+                            for (int i = 0; i < format_vec.size(); i++)
+                            {
+                                if (format_vec[i] == p.format())
+                                {
+                                    ui.selected_format_id[p.unique_id()] = i;
+                                    break;
+                                }
+                            }
+                            for (int i = 0; i < shared_fps_values.size(); i++)
+                            {
+                                if (shared_fps_values[i] == p.fps())
+                                {
+                                    ui.selected_shared_fps_id = i;
+                                    break;
+                                }
+                            }
+                            last_valid_ui = ui;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else if (ui.selected_shared_fps_id != last_valid_ui.selected_shared_fps_id)
+        {
+            // TODO: handle fps_values_per_stream (?)
+            auto fps = 0;
+            if (show_single_fps_list)
+                fps = shared_fps_values[ui.selected_shared_fps_id];
+            for (auto&& p : profiles)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                {
+                    if (vid_prof.fps() == fps)
+                    {
+                        results.push_back(p);
+                        for (auto& s : stream_enabled)
+                            s.second = false;
+                        stream_enabled[p.unique_id()] = true;
+                        auto format_vec = format_values[p.unique_id()];
+                        for (int i = 0; i < format_vec.size(); i++)
+                        {
+                            if (format_vec[i] == p.format())
+                            {
+                                ui.selected_format_id[p.unique_id()] = i;
+                                break;
+                            }
+                        }
+                        for (int i = 0; i < res_values.size(); i++)
+                        {
+                            if (res_values[i].first == vid_prof.width() && res_values[i].second == vid_prof.height())
+                            {
+                                ui.selected_res_id = i;
+                                break;
+                            }
+                        }
+                        last_valid_ui = ui;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (ui.selected_format_id != last_valid_ui.selected_format_id)
+        {
+            // the format we look for should match the current stream (TODO: handle for multiple streams)
+            int curr_stream_id;
+            for (auto& s : stream_enabled)
+            {
+                if (s.second == true)
+                {
+                    curr_stream_id = s.first;
+                    break;
+                }
+            }
+            for (auto&& p : profiles)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                {
+                    if (p.format() == format_values[curr_stream_id][ui.selected_format_id[curr_stream_id]])
+                    {
+                        results.push_back(p);
+
+                        for (int i = 0; i < res_values.size(); i++)
+                        {
+                            if (res_values[i].first == vid_prof.width() && res_values[i].second == vid_prof.height())
+                            {
+                                ui.selected_res_id = i;
+                                break;
+                            }
+                        }
+                        for (int i = 0; i < shared_fps_values.size(); i++)
+                        {
+                            if (shared_fps_values[i] == p.fps())
+                            {
+                                ui.selected_shared_fps_id = i;
+                                break;
+                            }
+                        }
+                        last_valid_ui = ui;
+                        break;
+                    }
+                }
+            }
+        }
+        if (results.size() == 0)
+        {
+            error_message << " is unsupported!";
+            throw std::runtime_error(error_message.str());
+        }
+        return results;
+    }
+    
     std::vector<stream_profile> subdevice_model::get_selected_profiles()
     {
         std::vector<stream_profile> results;
@@ -4982,14 +5119,46 @@ namespace rs2
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                        if (sub->is_selected_combination_supported())
+                        std::vector<stream_profile> profiles;
+                        auto is_comb_supported = sub->is_selected_combination_supported();
+                        bool can_stream;
+                        if (is_comb_supported)
+                            can_stream = true;
+                        else
+                        {
+                            profiles = sub->get_supported_profile();
+                            if (!profiles.empty())
+                                can_stream = true;
+                            else
+                            {
+                                std::string text = to_string() << "  " << textual_icons::toggle_off << "\noff   ";
+                                ImGui::TextDisabled("%s", text.c_str());
+                                if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        // ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                        ImGui::SetTooltip("Selected value is not supported");
+                                    }
+                                }
+                                else
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("No stream selected");
+                                    }
+                                }
+                            }
+                        }
+                        if (can_stream)
                         {
                             if (ImGui::Button(label.c_str(), { 30,30 }))
                             {
-                                auto profiles = sub->get_selected_profiles();
+                                if(profiles.empty()) // profiles might be already filled (if unsopported configuration was chosen and a random one was taken instead)
+                                    profiles = sub->get_selected_profiles();
                                 try
                                 {
-                                    if(!dev_syncer)
+                                    if (!dev_syncer)
                                         dev_syncer = viewer.syncer->create_syncer();
 
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
@@ -5020,26 +5189,6 @@ namespace rs2
                                 window.link_hovered();
                                 ImGui::SetTooltip("Start streaming data from this sensor");
                             }
-                        }
-                        else
-                        {
-                            std::string text = to_string() << "  " << textual_icons::toggle_off << "\noff   ";
-                            ImGui::TextDisabled("%s", text.c_str());
-                            if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
-                            {
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
-                                }
-                            }
-                            else
-                            {
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("No stream selected");
-                                }
-                            }
-
                         }
                     }
                     else
