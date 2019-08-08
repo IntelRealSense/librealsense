@@ -374,11 +374,11 @@ namespace librealsense
      
         auto data = f.as<rs2::frameset>();
         
-        if (!_source_profile_depth)
+        if (!(_source_profile_depth.get() == data.get_depth_frame().get_profile().get()))
+        {
             _source_profile_depth = data.get_depth_frame().get_profile();
-
-        if (!_target_profile_depth)
             _target_profile_depth = _source_profile_depth.clone(_source_profile_depth.stream_type(), _source_profile_depth.stream_index(), _source_profile_depth.format());
+        }
 
         auto depth_frame = data.get_depth_frame();
         auto ir_frame = data.get_infrared_frame();
