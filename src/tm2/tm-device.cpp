@@ -271,6 +271,7 @@ namespace librealsense
     tm2_sensor::tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev)
         : sensor_base("Tracking Module", owner, this), _dispatcher(10), _tm_dev(dev)
     {
+        _source.set_max_publish_list_size(64); //increase frame source queue size for TM2
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
