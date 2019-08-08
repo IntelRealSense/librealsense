@@ -7,6 +7,31 @@ namespace librealsense
 {
     namespace platform
     {
+        std::vector<hid_device_info> query_hid_devices_info()
+        {
+            std::vector<std::string> hid_sensors = { gyro, accel, custom };
+
+            std::vector<hid_device_info> rv;
+            auto usb_devices = platform::usb_enumerator::query_devices_info();
+            for (auto&& info : usb_devices) {
+                if(info.cls != RS2_USB_CLASS_HID)
+                    continue;
+                platform::hid_device_info device_info;
+                device_info.vid = info.vid;
+                device_info.pid = info.pid;
+                device_info.unique_id = info.unique_id;
+                device_info.device_path = info.unique_id;//the device unique_id is the USB port
+
+                for(auto&& hs : hid_sensors)
+                {
+                    device_info.id = hs;
+                    LOG_INFO("Found HID device: " << std::string(device_info).c_str());
+                    rv.push_back(device_info);
+                }
+            }
+            return rv;
+        }
+
         rs_hid_device::rs_hid_device(rs_usb_device usb_device)
                 : _usb_device(usb_device)
         {

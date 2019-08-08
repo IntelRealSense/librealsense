@@ -13,10 +13,10 @@ public class GLVideoFrame extends GLFrame {
     public int getTexture() { return mGlTexture.array()[0]; }
 
     private Rect adjustRatio(Rect in){
-        if (mFrame == null || !(mFrame instanceof VideoFrame))
+        if (mFrame == null || !(mFrame.is(Extension.VIDEO_FRAME)))
             return null;
 
-        VideoFrame vf = mFrame.as(VideoFrame.class);
+        VideoFrame vf = mFrame.as(Extension.VIDEO_FRAME);
 
         float ratio = (float)vf.getWidth() / (float)vf.getHeight();
         float newHeight = in.height();
@@ -37,7 +37,7 @@ public class GLVideoFrame extends GLFrame {
     @Override
     public synchronized void draw(Rect rect)
     {
-        if (mFrame == null || !(mFrame instanceof VideoFrame))
+        if (mFrame == null || !(mFrame.is(Extension.VIDEO_FRAME)))
             return;
 
         if(mGlTexture == null) {
@@ -45,7 +45,7 @@ public class GLVideoFrame extends GLFrame {
             GLES10.glGenTextures(1, mGlTexture);
         }
 
-        VideoFrame vf = mFrame.as(VideoFrame.class);
+        VideoFrame vf = mFrame.as(Extension.VIDEO_FRAME);
         int size = vf.getStride() * vf.getHeight();
         if(mBuffer == null || mBuffer.array().length != size){
             mBuffer = ByteBuffer.allocate(size);

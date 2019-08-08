@@ -31,7 +31,7 @@ namespace librealsense
         }
 
         usb_device_usbhost::usb_device_usbhost(::usb_device* handle) :
-            _handle(handle)
+                _handle(handle)
         {
             usb_descriptor_iter it;
             ::usb_descriptor_iter_init(handle, &it);
@@ -55,13 +55,19 @@ namespace librealsense
                 if (h->bDescriptorType == USB_DT_INTERFACE) {
                     auto id = *(usb_interface_descriptor *) h;
                     _interfaces.push_back(std::make_shared<usb_interface_usbhost>(id, it));
-                    if(id.bInterfaceClass == RS2_USB_CLASS_VENDOR_SPECIFIC)
+                    switch (id.bInterfaceClass)
                     {
-                        auto info = generate_info(_handle, id.bInterfaceNumber, conn_spec,
-                                                  static_cast<usb_class>(id.bInterfaceClass));
-                        _infos.push_back(info);
+                        case RS2_USB_CLASS_VENDOR_SPECIFIC:
+                        case RS2_USB_CLASS_HID:
+                        {
+                            auto info = generate_info(_handle, id.bInterfaceNumber, conn_spec,
+                                                      static_cast<usb_class>(id.bInterfaceClass));
+                            _infos.push_back(info);
+                            break;
+                        }
+                        default:
+                            break;
                     }
-
                 }
             } while (h != nullptr);
 

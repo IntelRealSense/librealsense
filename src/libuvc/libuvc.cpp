@@ -786,20 +786,7 @@ namespace librealsense
 
             std::vector<hid_device_info> query_hid_devices() const override
             {
-                std::vector<platform::hid_device_info> rv;
-                auto usb_devices = platform::usb_enumerator::query_devices_info();
-                for (auto&& info : usb_devices) {
-                    if(info.cls != RS2_USB_CLASS_HID)
-                        continue;
-                    platform::hid_device_info device_info;
-                    device_info.vid = info.vid;
-                    device_info.pid = info.pid;
-                    device_info.unique_id = info.unique_id;
-                    device_info.device_path = info.unique_id;//the device unique_id is the USB port
-                    LOG_INFO("Found HID device: " << std::string(device_info).c_str());
-                    rv.push_back(device_info);
-                }
-                return rv;
+                return query_hid_devices_info();
             }
 
             std::shared_ptr<time_service> create_time_service() const override

@@ -7,8 +7,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -129,12 +127,12 @@ public class DetachedActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e){
-            Log.e(TAG, "error while validateding device, error: " + e.getMessage());
+            Log.e(TAG, "error while validating device, error: " + e.getMessage());
         }
     }
 
     private boolean validateFwVersion(Device device){
-        final String currFw = device.getInfo(CameraInfo.FIRMWARE_VERSION);
+        final String currFw = device.getInfo(CameraInfo.FIRMWARE_VERSION).split("\n")[0];
         final ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
         if(mMinimalFirmwares.containsKey(pl)){
             final String minimalFw = mMinimalFirmwares.get(pl);

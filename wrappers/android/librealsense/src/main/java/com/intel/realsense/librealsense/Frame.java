@@ -2,18 +2,22 @@ package com.intel.realsense.librealsense;
 
 public class Frame extends LrsClass implements Cloneable{
 
-    protected Frame(long handle){
+    Frame(long handle){
         mHandle = handle;
     }
 
-    public static Frame create(long handle){
-        if (nIsFrameExtendableTo(handle, Extension.POINTS.value()))
-            return new Points(handle);
-        if (nIsFrameExtendableTo(handle, Extension.DEPTH_FRAME.value()))
-            return new DepthFrame(handle);
-        if (nIsFrameExtendableTo(handle, Extension.VIDEO_FRAME.value()))
-            return new VideoFrame(handle);
-        return null;
+    public boolean is(Extension extension) {
+        return nIsFrameExtendableTo(mHandle, extension.value());
+    }
+
+    public <T extends Frame> T as(Extension extension) {
+        switch (extension){
+            case VIDEO_FRAME: return (T) new VideoFrame(mHandle);
+            case DEPTH_FRAME: return (T) new DepthFrame(mHandle);
+            case MOTION_FRAME: return (T) new MotionFrame(mHandle);
+            case POINTS: return (T) new Points(mHandle);
+        }
+        throw new RuntimeException("this profile is not extendable to " + extension.name());
     }
 
     public StreamProfile getProfile() {
@@ -22,10 +26,6 @@ public class Frame extends LrsClass implements Cloneable{
 
     public void getData(byte[] data) {
         nGetData(mHandle, data);
-    }
-
-    public <T extends Frame> T as(Class<T> type) {
-        return (T) this;
     }
 
     public int getNumber(){
@@ -54,12 +54,13 @@ public class Frame extends LrsClass implements Cloneable{
 
     @Override
     public void close() {
-        nRelease(mHandle);
+        if(mOwner)
+            nRelease(mHandle);
     }
 
     @Override
     public Frame clone() {
-        Frame rv = Frame.create(mHandle);
+        Frame rv = new Frame(mHandle);
         nAddRef(mHandle);
         return rv;
     }
