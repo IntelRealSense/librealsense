@@ -778,59 +778,27 @@ namespace librealsense
                         continue;
 
                     auto dev = usb_enumerator::create_usb_device(usb_info);
-                    return std::make_shared<rs_hid_device>(generate_hid_group(info), dev);
+                    return std::make_shared<rs_hid_device>(dev);
                 }
 
                 return nullptr;
             }
 
-            std::vector<hid_device_info> generate_hid_group(hid_device_info info) const
-            {
-                std::vector<hid_device_info> rv;
-                hid_device_info hid_info;
-
-                hid_info.vid = info.vid;
-                hid_info.pid = info.pid;
-                hid_info.unique_id = info.unique_id;
-
-
-                hid_info.id = gyro;
-                hid_info.device_path = hid_info.id;
-                rv.push_back(hid_info);
-                hid_info.id = accel;
-                hid_info.device_path = hid_info.id;
-                rv.push_back(hid_info);
-                hid_info.id = custom;
-                hid_info.device_path = hid_info.id;
-                rv.push_back(hid_info);
-
-                return rv;
-            }
-
             std::vector<hid_device_info> query_hid_devices() const override
             {
-                std::vector<hid_device_info> rv;
-                auto devices = usb_enumerator::query_devices_info();
-                for (auto&& usb_info : devices)
-                {
-                    if (usb_info.cls != RS2_USB_CLASS_HID)
+                std::vector<platform::hid_device_info> rv;
+                auto usb_devices = platform::usb_enumerator::query_devices_info();
+                for (auto&& info : usb_devices) {
+                    if(info.cls != RS2_USB_CLASS_HID)
                         continue;
-
-                    std::stringstream vid, pid;
-                    vid<<std::hex<<usb_info.vid;
-                    pid<<std::hex<<usb_info.pid;
-
-                    hid_device_info hid_info;
-
-                    hid_info.vid = vid.str();
-                    hid_info.pid = pid.str();
-                    hid_info.unique_id = usb_info.unique_id;
-                    hid_info.device_path = usb_info.id;
-
-                    auto hid_group = generate_hid_group(hid_info);
-                    rv.insert(rv.end(), hid_group.begin(), hid_group.end());
+                    platform::hid_device_info device_info;
+                    device_info.vid = info.vid;
+                    device_info.pid = info.pid;
+                    device_info.unique_id = info.unique_id;
+                    device_info.device_path = info.unique_id;//the device unique_id is the USB port
+                    LOG_INFO("Found HID device: " << std::string(device_info).c_str());
+                    rv.push_back(device_info);
                 }
-
                 return rv;
             }
 

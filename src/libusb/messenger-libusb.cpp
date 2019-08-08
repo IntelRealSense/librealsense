@@ -72,7 +72,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << (int)errno);
                 return libusb_status_to_rs(sts);
             }
             transferred = sts;
@@ -91,7 +91,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("bulk_transfer returned error, endpoint: " << endpoint->get_address() << ", error: " << strerr);
+                LOG_WARNING("bulk_transfer returned error, endpoint: " << (int)endpoint->get_address() << ", error: " << strerr << ", number: " << (int)errno);
                 return libusb_status_to_rs(sts);
             }
             transferred = actual_length;

@@ -217,14 +217,8 @@ namespace librealsense
         {
             std::vector<hid_sensor> sensors;
 
-            HRESULT res = S_OK;
-            BSTR fName{};
-            LOG_HR(res = _sensor->GetFriendlyName(&fName));
-            if (FAILED(res)) fName = L"Unidentified HID Sensor";
-
-            sensors.push_back({ std::string(fName, fName + wcslen(fName)) });
-
-            SysFreeString(fName);
+            for (auto& sensor : _hid_profiles)
+                sensors.push_back({ sensor.sensor_name });
 
             return sensors;
         }

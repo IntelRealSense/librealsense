@@ -18,6 +18,7 @@ namespace librealsense
 
             explicit wmf_hid_device(CComPtr<ISensor> sensor) : _sensor(sensor) {}
 
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
             void open(const std::vector<hid_profile>&iio_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -30,6 +31,7 @@ namespace librealsense
         private:
             CComPtr<ISensor> _sensor = nullptr;
             CComPtr<ISensorEvents> _cb = nullptr;
+            std::vector<hid_profile> _hid_profiles;
         };
     }
 }

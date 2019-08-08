@@ -23,9 +23,10 @@ namespace librealsense
         class rs_hid_device : public hid_device
         {
         public:
-            rs_hid_device(std::vector<hid_device_info> infos, rs_usb_device usb_device);
+            rs_hid_device(rs_usb_device usb_device);
             virtual ~rs_hid_device();
 
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
             void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -43,7 +44,6 @@ namespace librealsense
             usb_status set_feature_report(unsigned char power, int report_id, int fps = 0);
 
             rs_usb_device _usb_device;
-            std::vector<hid_device_info> _hid_device_infos;
             std::shared_ptr<active_object<>> _handle_interrupts_thread;
             std::shared_ptr<active_object<>> _poll_interrupts_thread;
             single_consumer_queue<REALSENSE_HID_REPORT> _queue;
@@ -52,6 +52,7 @@ namespace librealsense
             std::map<int, std::string> _id_to_sensor;
             std::map<std::string, int> _sensor_to_id;
             std::vector<hid_profile> _configured_profiles;
+            std::vector<hid_profile> _hid_profiles;
         };
     }
 }

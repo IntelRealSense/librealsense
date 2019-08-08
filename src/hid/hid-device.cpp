@@ -7,8 +7,8 @@ namespace librealsense
 {
     namespace platform
     {
-        rs_hid_device::rs_hid_device(std::vector<hid_device_info> infos, rs_usb_device usb_device)
-                : _usb_device(usb_device), _hid_device_infos(infos)
+        rs_hid_device::rs_hid_device(rs_usb_device usb_device)
+                : _usb_device(usb_device)
         {
             _id_to_sensor[REPORT_ID_GYROMETER_3D] = gyro;
             _id_to_sensor[REPORT_ID_ACCELEROMETER_3D] = accel;
@@ -25,17 +25,17 @@ namespace librealsense
 
         std::vector<hid_sensor> rs_hid_device::get_sensors()
         {
-            std::vector<hid_sensor> res;
-            for(auto&& info : _hid_device_infos)
-            {
-                res.push_back({info.id});
-            }
-            return res;
+            std::vector<hid_sensor> sensors;
+
+            for (auto& sensor : _hid_profiles)
+                sensors.push_back({ sensor.sensor_name });
+
+            return sensors;
         }
 
         void rs_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
-            for(auto&& p:hid_profiles)
+            for(auto&& p : hid_profiles)
             {
                 set_feature_report(DEVICE_POWER_D0, _sensor_to_id[p.sensor_name], p.frequency);
             }
