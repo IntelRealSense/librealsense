@@ -21,6 +21,7 @@ namespace librealsense
     namespace platform
     {
         std::vector<hid_device_info> query_hid_devices_info();
+        std::shared_ptr<hid_device> create_rshid_device(hid_device_info info);
 
         class rs_hid_device : public hid_device
         {

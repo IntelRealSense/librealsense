@@ -12,6 +12,11 @@
         android:layout_height="match_parent"
         android:id="@+id/glSurfaceView"/>
 
+    <RelativeLayout
+        android:id="@+id/labels_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
     <TextView
         android:id="@+id/streaming_stats_text"
         android:layout_width="wrap_content"

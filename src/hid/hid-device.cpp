@@ -32,6 +32,21 @@ namespace librealsense
             return rv;
         }
 
+        std::shared_ptr<hid_device> create_rshid_device(hid_device_info info)
+        {
+            auto devices = usb_enumerator::query_devices_info();
+            for (auto&& usb_info : devices)
+            {
+                if(usb_info.unique_id != info.unique_id)
+                    continue;
+
+                auto dev = usb_enumerator::create_usb_device(usb_info);
+                return std::make_shared<rs_hid_device>(dev);
+            }
+
+            return nullptr;
+        }
+
         rs_hid_device::rs_hid_device(rs_usb_device usb_device)
                 : _usb_device(usb_device)
         {
