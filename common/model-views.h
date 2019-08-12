@@ -645,6 +645,7 @@ namespace rs2
         std::vector<std::string> shared_fpses;
         std::map<int, std::vector<std::string>> formats;
         std::map<int, bool> stream_enabled;
+        std::map<int, bool> prev_stream_enabled;
         std::map<int, std::string> stream_display_names;
 
         subdevice_ui_selection ui;
