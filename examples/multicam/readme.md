@@ -50,14 +50,14 @@ The `window` class resides in `example.hpp` and lets us easily open a new window
 Next, we define the objects to be used in the example.
 
 ```cpp
-rs2::context ctx;    // Create librealsense context for managing devices
+rs2::context                          ctx;        // Create librealsense context for managing devices
 
-rs2::colorizer              colorizer;      // Utility class to convert depth data RGB
+std::map<std::string, rs2::colorizer> colorizers; // Declare map from device serial number to colorizer (utility class to convert depth data RGB colorspace)
 
-std::vector<rs2::pipeline>  pipelines;
+std::vector<rs2::pipeline>            pipelines;
 ```
-The `rs2::context` encapsulates all of the devices and sensors, and provides some additional functionalities. We employ the `rs2::colorizer ` to convert depth data to RGB format.  
-In the example we use multiple `rs2::pipeline` objects, each controlling a lifetime of a single HW device.
+The `rs2::context` encapsulates all of the devices and sensors, and provides some additional functionalities. We employ the `rs2::colorizer ` to convert depth data to RGB format.
+In the example we use multiple `rs2::pipeline` objects, each controlling a lifetime of a single HW device. Similarly, we initialize a separate `rs2::colorizer` object for each device. We keep a mapping from the device's serial number to it's `rs2::colorizer` object, this way we'll be able to apply the correct `rs2::colorizer` to each frame.
 
 The example's flow starts with listing and activating all the connected Intel® RealSense™ devices:
 ```cpp
@@ -117,12 +117,15 @@ for (rs2::frame& f : fs)
     new_frames.emplace_back(f);
 ```
 
-The Depth data is delivered as `uint16_t` type which cannot be rendered directly, therefore we use `rs2::colorizer` to convert the depth representation into human-readable RGB map:
+The Depth data is delivered as `uint16_t` type which cannot be rendered directly, therefore we use `rs2::colorizer` to convert the depth representation into human-readable RGB map. We use `rs2::sensor_from_frame` function to retrieve the serial number of the frame's device. Then we can use that device's `rs2::colorizer` to process the frame:
 ```cpp
 // Convert the newly-arrived frames to render-friendly format
 for (const auto& frame : new_frames)
 {
-    render_frames[frame.get_profile().unique_id()] = colorizer.process(frame);
+    // Get the serial number of the current frame's device
+    auto serial = rs2::sensor_from_frame(frame)->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    // Apply the colorizer of the matching device and store the colorized frame
+    render_frames[frame.get_profile().unique_id()] = colorizers[serial].process(frame);
 }
 ```
 
