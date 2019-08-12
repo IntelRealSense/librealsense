@@ -130,8 +130,6 @@ public class PreviewActivity extends AppCompatActivity {
             if(mStreamer != null)
                 mStreamer.stop();
             Log.e(TAG, e.getMessage());
-            SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
-            sharedPref.edit().clear().commit();
             Toast.makeText(this, "Failed to set streaming configuration ", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(PreviewActivity.this, SettingsActivity.class);
             startActivity(intent);

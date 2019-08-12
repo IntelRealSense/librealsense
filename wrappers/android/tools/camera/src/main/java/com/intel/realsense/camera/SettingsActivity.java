@@ -68,7 +68,6 @@ public class SettingsActivity extends AppCompatActivity {
         } catch(Exception e){
             Log.e(TAG, "failed to load settings, error: " + e.getMessage());
             Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
-            finish();
         }
     }
     @Override
