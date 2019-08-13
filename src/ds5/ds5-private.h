@@ -91,6 +91,15 @@ namespace librealsense
             ds::RS465_PID
         };
 
+        static const std::set<std::uint16_t> hid_bmi_055_pid = {
+            ds::RS435I_PID,
+            ds::RS430I_PID
+        };
+
+        static const std::set<std::uint16_t> hid_bmi_085_pid = {
+            RS465_PID
+        };
+
         static const std::set<std::uint16_t> fisheye_pid = {
             ds::RS400_MM_PID,
             ds::RS410_MM_PID,
@@ -240,6 +249,8 @@ namespace librealsense
             CAP_IMU_SENSOR              = (1u << 3),
             CAP_GLOBAL_SHUTTER          = (1u << 4),
             CAP_ROLLING_SHUTTER         = (1u << 5),
+            CAP_BMI_055                 = (1u << 6),
+            CAP_BMI_085                 = (1u << 7),
             CAP_MAX
         };
 
@@ -250,7 +261,9 @@ namespace librealsense
             { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
             { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
             { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
-            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   }
+            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
+            { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
+            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -268,11 +281,17 @@ namespace librealsense
             return lhs = lhs | rhs;
         }
 
+        inline bool operator &&(d400_caps l, d400_caps r)
+        {
+            return !!(static_cast<uint8_t>(l) & static_cast<uint8_t>(r));
+        }
+
         inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
         {
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
                             d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
-                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER })
+                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
+                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
             {
                 if (i==(i&cap))
                     stream << d400_capabilities_names.at(i) << " ";

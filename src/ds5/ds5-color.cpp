@@ -60,14 +60,20 @@ namespace librealsense
         color_ep->register_pixel_format(pf_bayer16);
         color_ep->register_pixel_format(pf_uyvyc);
 
-        color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
         color_ep->register_pu(RS2_OPTION_CONTRAST);
+        color_ep->register_pu(RS2_OPTION_SATURATION);
         color_ep->register_pu(RS2_OPTION_GAIN);
         color_ep->register_pu(RS2_OPTION_GAMMA);
-        color_ep->register_pu(RS2_OPTION_HUE);
-        color_ep->register_pu(RS2_OPTION_SATURATION);
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
+
+        // Currently disabled for certain sensors
+        if (!val_in_range(color_devices_info.front().pid, { ds::RS465_PID }))
+        {
+            color_ep->register_pu(RS2_OPTION_HUE);
+            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+            color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+        }
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
         auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
@@ -93,8 +99,6 @@ namespace librealsense
                 { 1.f, "50Hz" },
                 { 2.f, "60Hz" },
                 { 3.f, "Auto" }, }));
-
-        color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
         color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> (false, [](const rs2_metadata_type& param)

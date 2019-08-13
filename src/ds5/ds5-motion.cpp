@@ -167,6 +167,22 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds5_custom_hid_timestamp_reader());
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
+        // Dynamically populate the supported HID profiles according to the selected IMU module
+        std::vector<odr> accel_fps_rates;
+        std::map<unsigned, unsigned> fps_and_frequency_map;
+        if (ds::d400_caps::CAP_BMI_085 && _device_capabilities)
+            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        else // Applies to BMI_055 and unrecognized sensors
+            accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
+
+        for (auto&& elem : accel_fps_rates)
+        {
+            sensor_name_and_hid_profiles.push_back({ accel_sensor_name, { RS2_STREAM_ACCEL, 0, 1, 1, static_cast<uint16_t>(elem), RS2_FORMAT_MOTION_XYZ32F } });
+            fps_and_frequency_map.emplace(unsigned(elem), hid_fps_translation.at(elem));
+        }
+        fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
+
         auto hid_ep = std::make_shared<ds5_hid_sensor>(this, ctx->get_backend().create_hid_device(all_hid_infos.front()),
                                                         std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), _tf_keeper, enable_global_time_option)),
                                                         std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), _tf_keeper, enable_global_time_option)),
@@ -179,7 +195,7 @@ namespace librealsense
 
         uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
 
-        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID })))
+        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) && (!val_in_range(pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID })))
         {
             hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
                                     std::make_shared<motion_module_temperature_option>(*hid_ep));
@@ -247,7 +263,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor);
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor,_device_capabilities);
 
         _accel_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); };
         _gyro_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); };
@@ -443,7 +459,8 @@ namespace librealsense
         //});
     }
 
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor) :  _hw_monitor(hw_monitor)
+    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap) :
+        _hw_monitor(hw_monitor), _dev_cap(dev_cap)
     {
         _imu_eeprom_raw = [this]() { return get_imu_eeprom_raw(); };
 
@@ -468,8 +485,8 @@ namespace librealsense
             switch (calib_id)
             {
                 case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw,valid); break;
-                case ds::tm1_eeprom_id:// TM1 id
+                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _dev_cap, valid); break;
+                case ds::tm1_eeprom_id: // TM1 id
                     prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
                 default:
                     throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
