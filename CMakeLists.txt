@@ -57,7 +57,6 @@ os_target_config()
 # global project configuration
 # macro definition located at "CMake/global_config.cmake"
 global_target_config()
-option(BUILD_CV_KINFU_EXAMPLE "Build OpenCV KinectFusion example" OFF)
 
 include(CMake/install_config.cmake)
 
