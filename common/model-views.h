@@ -609,6 +609,10 @@ namespace rs2
         bool can_enable_zero_order();
         void verify_zero_order_conditions();
 
+        void update_ui_shared_fps(stream_profile p);
+        void update_ui_format(stream_profile p);
+        void update_ui_resolution(stream_profile p);
+
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
