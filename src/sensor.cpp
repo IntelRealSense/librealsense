@@ -533,7 +533,7 @@ namespace librealsense
                     // Unpack the frame
                     if (requires_processing && (dest.size() > 0))
                     {
-                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), mode.profile.width, mode.profile.height);
+                        unpacker.unpack(dest.data(), reinterpret_cast<const byte *>(f.pixels), mode.profile.width, mode.profile.height, f.frame_size);
                     }
 
                     // If any frame callbacks were specified, dispatch them now
@@ -1018,7 +1018,7 @@ namespace librealsense
             frame->set_stream(request);
 
             std::vector<byte*> dest{const_cast<byte*>(frame->get_frame_data())};
-            mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, mode.profile.width, mode.profile.height);
+            mode.unpacker->unpack(dest.data(),(const byte*)sensor_data.fo.pixels, mode.profile.width, mode.profile.height, data_size);
 
             if (_on_before_frame_callback)
             {

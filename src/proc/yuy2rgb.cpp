@@ -42,7 +42,7 @@ namespace librealsense
         byte* planes[1];
         planes[0] = (byte*)ret.get_data();
 
-        unpack_yuy2_rgb8(planes, (const byte*)f.get_data(), vf.get_width(), vf.get_height());
+        unpack_yuy2_rgb8(planes, (const byte*)f.get_data(), vf.get_width(), vf.get_height(), vf.get_height() * vf.get_width() * _traget_bpp);
 
         return ret;
     }

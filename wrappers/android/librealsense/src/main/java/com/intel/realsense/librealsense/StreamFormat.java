@@ -21,8 +21,9 @@ public enum StreamFormat {
     GPIO_RAW(17),
     POSE(18),
     DISPARITY32(19),
-    Y10BPACK(20);
-
+    Y10BPACK(20),
+    DISTANCE(21),
+    MJPEG(22);
     private final int mValue;
 
     private StreamFormat(int value) { mValue = value; }
