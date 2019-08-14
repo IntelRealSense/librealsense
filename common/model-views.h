@@ -577,13 +577,9 @@ namespace rs2
         bool can_enable_zero_order();
         void verify_zero_order_conditions();
 
-        void update_ui_shared_fps(stream_profile p);
-        void update_ui_format(stream_profile p);
-        void update_ui_resolution(stream_profile p);
-
         template<typename T>
-        std::vector<stream_profile> get_results(int num_streams, std::map<T, std::map<int, stream_profile>> profiles_map, bool update_format,
-            bool update_resolution, bool update_fps);
+        std::vector<stream_profile> get_results(int num_streams, std::map<T, std::map<int, stream_profile>> profiles_map);
+        void update_ui(std::vector<stream_profile> profiles_vec, bool update_format, bool update_resolution, bool update_fps);
 
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
