@@ -1556,4 +1556,20 @@ namespace librealsense
     {
         _sensor->detach_controller(id);
     }
+
+    void tm2_device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    {
+        //TM2 uses POSE sensor as reference sensor for extrinsics
+        auto tm2_profiles = _sensor->get_stream_profiles();
+        int ref_index = 0;
+        for (int i = 0; i < tm2_profiles.size(); i++)
+            if (tm2_profiles[i]->get_stream_type() == RS2_STREAM_POSE)
+            {
+                ref_index = i;
+                break;
+            }
+
+        _extrinsics[stream.get_unique_id()] = std::make_pair(group_index, tm2_profiles[ref_index]);
+    }
+
 }
