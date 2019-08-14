@@ -581,6 +581,10 @@ namespace rs2
         void update_ui_format(stream_profile p);
         void update_ui_resolution(stream_profile p);
 
+        template<typename T>
+        std::vector<stream_profile> get_results(int num_streams, std::map<T, std::map<int, stream_profile>> profiles_map, bool update_format,
+            bool update_resolution, bool update_fps);
+
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
