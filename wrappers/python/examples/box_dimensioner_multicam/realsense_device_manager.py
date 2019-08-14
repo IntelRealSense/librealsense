@@ -195,28 +195,27 @@ class DeviceManager:
 
     def poll_frames(self):
         """
-        Poll for frames from the enabled Intel RealSense devices.
+        Poll for frames from the enabled Intel RealSense devices. This will return at least one frame from each device. 
         If temporal post processing is enabled, the depth stream is averaged over a certain amount of frames
-
+        
         Parameters:
         -----------
-
         """
         frames = {}
-        for (serial, device) in self._enabled_devices.items():
-            streams = device.pipeline_profile.get_streams()
-            frameset = rs.composite_frame(rs.frame())
-            device.pipeline.poll_for_frames(frameset)
-            if frameset.size() == len(streams):
-                frames[serial] = {}
-                for stream in streams:
-                    if (rs.stream.infrared == stream.stream_type()):
-                        frame = frameset.get_infrared_frame(stream.stream_index())
-                        key_ = (stream.stream_type(), stream.stream_index())
-                    else:
-                        frame = frameset.first_or_default(stream.stream_type())
-                        key_ = stream.stream_type()
-                    frames[serial][key_] = frame
+        while len(frames) < len(self._enabled_devices.items()) :
+            for (serial, device) in self._enabled_devices.items():
+                streams = device.pipeline_profile.get_streams()
+                frameset = device.pipeline.poll_for_frames() #frameset will be a pyrealsense2.composite_frame object
+                if frameset.size() == len(streams):
+                    frames[serial] = {}
+                    for stream in streams:
+                        if (rs.stream.infrared == stream.stream_type()):
+                            frame = frameset.get_infrared_frame(stream.stream_index())
+                            key_ = (stream.stream_type(), stream.stream_index())
+                        else:
+                            frame = frameset.first_or_default(stream.stream_type())
+                            key_ = stream.stream_type()
+                        frames[serial][key_] = frame
 
         return frames
 
