@@ -87,6 +87,28 @@ std::string array_to_string(const T(&arr)[N])
     return oss.str();
 }
 
+template <typename T, size_t N, size_t M>
+std::string matrix_to_string(const T(&arr)[N][M])
+{
+    std::ostringstream oss;
+    oss << "[";
+    for (int i = 0; i < N; i++)
+    {
+        if (i != 0)
+            oss << ", ";
+        oss << "[";
+        for (int j = 0; j < M; j++)
+        {
+            if (j != 0)
+                oss << ", ";
+            oss << arr[i][j];
+        }
+        oss << "]";
+    }
+    oss << "]";
+    return oss.str();
+}
+
 #define BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE) [](const T& self) -> const std::array<valueT, SIZE>& { return reinterpret_cast<const std::array<valueT, SIZE>&>(self.member); }
 #define BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE) [](T& self, const std::array<valueT, SIZE>& src) { copy_raw_array(self.member, src); }
 
@@ -189,11 +211,18 @@ PYBIND11_MODULE(NAME, m) {
             return ss.str();
         });
 
-    py::class_<rs2_motion_device_intrinsic> motion_device_inrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
-    motion_device_inrinsic.def(py::init<>())
-        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4), "Interpret data array values")
+    py::class_<rs2_motion_device_intrinsic> motion_device_intrinsic(m, "motion_device_intrinsic", "Motion device intrinsics: scale, bias, and variances.");
+    motion_device_intrinsic.def(py::init<>())
+        .def_property(BIND_RAW_2D_ARRAY_PROPERTY(rs2_motion_device_intrinsic, data, float, 3, 4), "3x4 matrix with 3x3 scale and cross axis and 3x1 biases")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, noise_variances, float, 3), "Variance of noise for X, Y, and Z axis")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3), "Variance of bias for X, Y, and Z axis");
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_motion_device_intrinsic, bias_variances, float, 3), "Variance of bias for X, Y, and Z axis")
+        .def("__repr__", [](const rs2_motion_device_intrinsic& self) {
+            std::stringstream ss;
+            ss << "data: " << matrix_to_string(self.data) << ", ";
+            ss << "noise_variances: " << array_to_string(self.noise_variances) << ", ";
+            ss << "bias_variances: " << array_to_string(self.bias_variances);
+            return ss.str();
+        });
 
     /* rs2_types.hpp */
     py::class_<rs2::option_range> option_range(m, "option_range"); // No docstring in C++
