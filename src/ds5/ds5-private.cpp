@@ -94,10 +94,21 @@ namespace librealsense
                     rect_params.w = intrinsics.height * 0.5f;
                 }
 
-                intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                if (width == 256 && height == 144)
+                {
+                    intrinsics.fx = rect_params[0];
+                    intrinsics.fy = rect_params[1];
+                    intrinsics.ppx = rect_params[2] - 832;
+                    intrinsics.ppy = rect_params[3] - 468;
+                }
+                else
+                {
+                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
+                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
+                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
+                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                }
+                
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
