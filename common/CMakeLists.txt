@@ -21,4 +21,8 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/os.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/process-manager.h"
+        "${CMAKE_CURRENT_LIST_DIR}/process-manager.cpp"
+		"${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.h"
+        "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.cpp"
 )

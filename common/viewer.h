@@ -66,10 +66,6 @@ namespace rs2
 
         void popup_if_error(const ux_window& window, std::string& error_message);
 
-        void popup_if_fw_update_required(const ux_window& window, const fw_update_device_info& ud, bool& update);
-
-        void popup_fw_file_select(const ux_window& window, const fw_update_device_info& ud, std::vector<uint8_t>& fw, bool& cancel);
-
         void show_popup(const ux_window& window, const popup& p);
 
         void popup_firmware_update_progress(const ux_window& window, const float progress);
