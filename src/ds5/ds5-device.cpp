@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "ds5-color.h"
-#include "ds5-rolling-shutter.h"
+#include "ds5-nonmonochrome.h"
 
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h"
@@ -300,7 +300,7 @@ namespace librealsense
             auto results = uvc_sensor::init_stream_profiles();
 
             auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
-            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_nonmonochrome*>(&get_device());
 
             std::vector< video_stream_profile_interface*> depth_candidates;
             std::vector< video_stream_profile_interface*> infrared_candidates;
