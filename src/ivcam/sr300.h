@@ -18,11 +18,13 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
+#include "fw-update/fw-update-device-interface.h"
 
 namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
     const uint16_t SR300v2_PID = 0x0B48;
+    const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 
@@ -156,7 +158,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public virtual device, public debug_interface
+    class sr300_camera final : public virtual device, public debug_interface, public updatable
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -207,7 +209,7 @@ namespace librealsense
             sr300_camera& _owner;
         };
 
-        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface
+        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface, public roi_sensor_base
         {
         public:
             explicit sr300_color_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
@@ -521,12 +523,17 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
 
+        void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
         std::shared_ptr<hw_monitor> _hw_monitor;
+        bool _is_locked = true;
 
         template<class T>
         void register_depth_xu(uvc_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const

@@ -973,11 +973,35 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    class update_progress_callback : public rs2_update_progress_callback
+    {
+        rs2_update_progress_callback_ptr _nptr;
+        void* _client_data;
+    public:
+        update_progress_callback() {}
+        update_progress_callback(rs2_update_progress_callback_ptr on_update_progress, void* client_data = NULL)
+        : _nptr(on_update_progress), _client_data(client_data){}
+
+        operator bool() const { return _nptr != nullptr; }
+        void on_update_progress(const float progress) {
+            if (_nptr)
+            {
+                try { _nptr(progress, _client_data); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an exception from firmware update progress callback!");
+                }
+            }
+        }
+        void release() { delete this; }
+    };
+
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
+    typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
 
     using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
     class devices_changed_callback_internal : public rs2_devices_changed_callback
@@ -1686,6 +1710,17 @@ namespace librealsense
         bool _valid;
         T _value;
     };
+
+}
+
+template<typename T>
+uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
+{
+    static_assert((std::is_integral<T>::value), "rs_fourcc supports integral built-in types only");
+    return ((static_cast<uint32_t>(a) << 24) |
+            (static_cast<uint32_t>(b) << 16) |
+            (static_cast<uint32_t>(c) << 8) |
+            (static_cast<uint32_t>(d) << 0));
 }
 
 namespace std {

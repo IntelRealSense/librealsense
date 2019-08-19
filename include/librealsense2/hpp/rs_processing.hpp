@@ -275,9 +275,9 @@ namespace rs2
         rs2_processing_block* get() const { return _block.get(); }
 
         /**
-        * check if specific  camera info is supported
+        * Check if a specific camera info field is supported.
         * \param[in] info    the parameter to check for support
-        * \return            true if the parameter both exists and well-defined for the specific sensor
+        * \return            true if the parameter both exists and well-defined for the specific processing_block
         */
         bool supports(rs2_camera_info info) const
         {
@@ -288,9 +288,9 @@ namespace rs2
         }
 
         /**
-        * retrieve camera specific information, like versions of various internal components
+        * Retrieve camera specific information, like versions of various internal components.
         * \param[in] info     camera info type to retrieve
-        * \return             the requested camera info string, in a format specific to the sensor model
+        * \return             the requested camera info string, in a format specific to the processing_block model
         */
         const char* get_info(rs2_camera_info info) const
         {
@@ -696,6 +696,7 @@ namespace rs2
         *                           6 - Warm
         *                           7 - Quantized
         *                           8 - Pattern
+        *                           9 - Hue
         */
         colorizer(float color_scheme) : filter(init(), 1)
         {

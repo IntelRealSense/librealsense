@@ -44,5 +44,8 @@ namespace Intel.RealSense
         Pose = 33,
         PoseSensor = 34,
         WheelOdometer = 35,
+        GlobalTimer = 36,
+        Updatable = 37,
+        UpdateDevice = 38,
     }
 }

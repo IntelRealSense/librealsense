@@ -144,13 +144,14 @@ namespace librealsense
         }
 
         hid_custom_sensor::hid_custom_sensor(const std::string& device_path, const std::string& sensor_name)
-            : _custom_device_path(device_path),
+            : _fd(0),
+              _stop_pipe_fd{},
+              _custom_device_path(device_path),
               _custom_sensor_name(sensor_name),
+              _custom_device_name(""),
               _callback(nullptr),
               _is_capturing(false),
-              _custom_device_name(""),
-              _fd(0),
-              _stop_pipe_fd{}
+              _hid_thread(nullptr)
         {
             init();
         }
@@ -442,9 +443,11 @@ namespace librealsense
         {
             try
             {
-                // Ensure PM sync
-                _pm_dispatcher.flush();
-                stop_capture();
+                try {
+                    // Ensure PM sync
+                    _pm_dispatcher.flush();
+                    stop_capture();
+                } catch(...){}
 
                 clear_buffer();
             }
@@ -627,23 +630,14 @@ namespace librealsense
             std::ostringstream iio_read_device_path;
             iio_read_device_path << "/dev/" << IIO_DEVICE_PREFIX << _iio_device_number;
 
-            const auto max_retries = 10;
-            auto retries = 0;
-            while(++retries < max_retries)
-            {
-                if ((_fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK)) > 0)
-                    break;
+            std::unique_ptr<int, std::function<void(int*)> > fd(
+                        new int (_fd = open(iio_read_device_path.str().c_str(), O_RDONLY | O_NONBLOCK)),
+                        [&](int* d){ if (d && (*d)) { _fd = ::close(*d);}});
 
-                LOG_WARNING("open() failed!");
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            }
-
-            if ((retries == max_retries) && (_fd <= 0))
-            {
+            if (!(*fd > 0))
                 throw linux_backend_exception("open() failed with all retries!");
-            }
 
-            // count number of enabled count elements and sort by their index.
+            // count enabled elements and sort by their index.
             create_channel_array();
 
             const uint32_t channel_size = get_channel_size();
@@ -656,8 +650,6 @@ namespace librealsense
                 read_size = read(_fd, raw_data.data(), raw_data_size);
 
             _channels.clear();
-            if(::close(_fd) < 0)
-                throw linux_backend_exception("iio_hid_sensor: close(_fd) failed");
         }
 
         void iio_hid_sensor::set_frequency(uint32_t frequency)
@@ -680,9 +672,9 @@ namespace librealsense
             auto path = _iio_device_path + "/buffer/enable";
 
             // Enqueue power management change
-            _pm_dispatcher.invoke([path,on](dispatcher::cancellable_timer t)
+            _pm_dispatcher.invoke([path,on](dispatcher::cancellable_timer /*t*/)
             {
-                auto st = std::chrono::high_resolution_clock::now();
+                //auto st = std::chrono::high_resolution_clock::now();
 
                 if (!write_fs_attribute(path, on))
                 {

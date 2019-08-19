@@ -20,11 +20,12 @@ public class FileBrowserActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_READ = 0;
 
     private boolean mPermissionsGrunted = false;
+    private String mFolder = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_view);
-
+        mFolder = getIntent().getStringExtra(getString(R.string.browse_folder));
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_READ);
             return;
@@ -52,7 +53,7 @@ public class FileBrowserActivity extends AppCompatActivity {
 
         TextView message = findViewById(R.id.list_view_title);
 
-        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "rs_bags");
+        File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + mFolder);
         if(!folder.exists()) {
             message.setText("No RealSense files found");
             return;

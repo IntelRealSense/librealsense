@@ -32,52 +32,6 @@ namespace librealsense
 
     };
 
-    class zo_point_option_x : public option_base
-    {
-    public:
-        zo_point_option_x(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
-            : option_base({ static_cast<float>(min),
-                           static_cast<float>(max),
-                           static_cast<float>(step),
-                           static_cast<float>(def) }), _owner(owner), _zo_point(zo_point)
-        {}
-        float query() const override;
-        void set(float value) override
-        {
-            _zo_point->first = static_cast<int>(value);
-        }
-        bool is_enabled() const override { return true; }
-        const char* get_description() const override { return _desc.c_str(); }
-
-    private:
-        l500_device* _owner;
-        lazy < std::pair<int, int>>& _zo_point;
-        std::string _desc;
-    };
-
-    class zo_point_option_y : public option_base
-    {
-    public:
-        zo_point_option_y(int min, int max, int step, int def, l500_device* owner, lazy < std::pair<int, int>>& zo_point, const std::string& desc)
-            : option_base({ static_cast<float>(min),
-                           static_cast<float>(max),
-                           static_cast<float>(step),
-                           static_cast<float>(def)}), _owner(owner), _zo_point(zo_point)
-        {}
-        float query() const override;
-        void set(float value) override
-        {
-            _zo_point->second = static_cast<int>(value);
-        }
-        bool is_enabled() const override { return true; }
-        const char* get_description() const override { return _desc.c_str(); }
-
-    private:
-        l500_device* _owner;
-        lazy < std::pair<int, int>>& _zo_point;
-        std::string _desc;
-    };
-
     class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
     {
     public:
@@ -85,30 +39,6 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
             : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
         {
-            _zo_point = [&]() { return read_zo_point(); };
-
-            _zo_point_x_option = std::make_shared<zo_point_option_x>(
-                20,
-                640,
-                1,
-                0,
-                owner,
-                _zo_point,
-                "zero order point x");
-
-            register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_X), _zo_point_x_option);
-
-            _zo_point_y_option = std::make_shared<zo_point_option_y>(
-                20,
-                640,
-                1,
-                0,
-                owner,
-                _zo_point,
-                "zero order point x");
-
-            register_option(static_cast<rs2_option>(RS2_OPTION_ZERO_ORDER_POINT_Y), _zo_point_y_option);
-
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
                 return read_znorm(); })));
@@ -122,28 +52,16 @@ namespace librealsense
             auto num_of_res = intrinsic->resolution.num_of_resolutions;
             pinhole_camera_model cam_model;
 
-            for (auto i = 0; i < num_of_res; i++)
-            {
-                auto model_world = intrinsic->resolution.intrinsic_resolution[i].world.pinhole_cam_model;
-                auto model_raw = intrinsic->resolution.intrinsic_resolution[i].raw.pinhole_cam_model;
+            auto intrinsic_params = get_intrinsic_params(profile.width, profile.height);
 
-                if (model_world.height == profile.height && model_world.width == profile.width)
-                    cam_model = model_world;
-                else if (model_raw.height == profile.height && model_raw.width == profile.width)
-                    cam_model = model_raw;
-                else
-                    continue;
-
-                rs2_intrinsics intrinsics;
-                intrinsics.width = cam_model.width;
-                intrinsics.height = cam_model.height;
-                intrinsics.fx = cam_model.ipm.focal_length.x;
-                intrinsics.fy = cam_model.ipm.focal_length.y;
-                intrinsics.ppx = cam_model.ipm.principal_point.x;
-                intrinsics.ppy = cam_model.ipm.principal_point.y;
-                return intrinsics;
-            }
-            throw std::runtime_error(to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist");
+            rs2_intrinsics intrinsics;
+            intrinsics.width = intrinsic_params.pinhole_cam_model.width;
+            intrinsics.height = intrinsic_params.pinhole_cam_model.height;
+            intrinsics.fx = intrinsic_params.pinhole_cam_model.ipm.focal_length.x;
+            intrinsics.fy = intrinsic_params.pinhole_cam_model.ipm.focal_length.y;
+            intrinsics.ppx = intrinsic_params.pinhole_cam_model.ipm.principal_point.x;
+            intrinsics.ppy = intrinsic_params.pinhole_cam_model.ipm.principal_point.y;
+            return intrinsics;
         }
 
         stream_profiles init_stream_profiles() override
@@ -187,6 +105,27 @@ namespace librealsense
             return results;
         }
 
+        ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height) const
+        {
+            using namespace ivcam2;
+            auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
+
+            auto num_of_res = intrinsic->resolution.num_of_resolutions;
+            intrinsic_params cam_model;
+
+            for (auto i = 0; i < num_of_res; i++)
+            {
+                auto model_world = intrinsic->resolution.intrinsic_resolution[i].world;
+                auto model_raw = intrinsic->resolution.intrinsic_resolution[i].raw;
+
+                if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
+                    return model_world;
+                else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
+                    return  model_raw;
+            }
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
+        }
+
         float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
 
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
@@ -200,22 +139,13 @@ namespace librealsense
             });
         }
 
-        static processing_blocks get_l500_recommended_proccesing_blocks(std::shared_ptr<option> zo_point_x, std::shared_ptr<option> zo_point_y);
+        static processing_blocks get_l500_recommended_proccesing_blocks();
 
         processing_blocks get_recommended_processing_blocks() const override
         {
-            return get_l500_recommended_proccesing_blocks(_zo_point_x_option, _zo_point_y_option);
+            return get_l500_recommended_proccesing_blocks();
         };
 
-        std::shared_ptr<option> get_zo_point_x() const
-        {
-            return _zo_point_x_option;
-        }
-        std::shared_ptr<option> get_zo_point_y() const
-        {
-            return _zo_point_y_option;
-        }
-        std::pair<int, int> read_zo_point();
         int read_algo_version();
         float read_baseline();
         float read_znorm();
@@ -223,8 +153,5 @@ namespace librealsense
     private:
         const l500_device* _owner;
         float _depth_units;
-        std::shared_ptr<option> _zo_point_x_option;
-        std::shared_ptr<option> _zo_point_y_option;
-        lazy<std::pair<int, int>> _zo_point;
     };
 }

@@ -11,6 +11,7 @@
 #include "core/advanced_mode.h"
 #include "device.h"
 #include "global_timestamp_reader.h"
+#include "fw-update/fw-update-device-interface.h"
 
 namespace librealsense
 {
@@ -27,7 +28,7 @@ namespace librealsense
         const hw_monitor& _hw_monitor;
     };
 
-    class ds5_device : public virtual device, public debug_interface, public global_time_interface
+    class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:
         std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -49,15 +50,19 @@ namespace librealsense
         platform::usb_spec get_usb_spec() const;
         virtual double get_device_time_ms() override;
 
+        void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
     protected:
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+        std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
 
         float get_stereo_baseline_mm() const;
 
-        ds::d400_caps  parse_device_capabilities() const;
+        ds::d400_caps  parse_device_capabilities(const uint16_t pid) const;
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
@@ -76,9 +81,11 @@ namespace librealsense
         uint8_t _depth_device_idx;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
+        lazy<std::vector<uint8_t>> _new_calib_table_raw;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
+        bool _is_locked = true;
     };
 
     class ds5u_device : public ds5_device

@@ -111,6 +111,11 @@ namespace librealsense
         {
         }
 
+        named_mutex::~named_mutex()
+        {
+            unlock();
+        }
+
         void named_mutex::lock()
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -170,7 +175,7 @@ namespace librealsense
             _fildes = -1;
         }
 
-        static int xioctl(int fh, int request, void *arg)
+        static int xioctl(int fh, unsigned long request, void *arg)
         {
             int r=0;
             do {
@@ -179,7 +184,7 @@ namespace librealsense
             return r;
         }
 
-        buffer::buffer(int fd, v4l2_buf_type type, bool use_memory_map, int index)
+        buffer::buffer(int fd, v4l2_buf_type type, bool use_memory_map, uint32_t index)
             : _type(type), _use_memory_map(use_memory_map), _index(index)
         {
             v4l2_buffer buf = {};
@@ -190,13 +195,13 @@ namespace librealsense
                 throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
             // Prior to kernel 4.16 metadata payload was attached to the end of the video payload
-            auto md_extra = (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
+            uint8_t md_extra = (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
             _original_length = buf.length;
             _length = _original_length + md_extra;
 
             if (use_memory_map)
             {
-                _start = static_cast<uint8_t*>(mmap(NULL, buf.length,
+                _start = static_cast<uint8_t*>(mmap(nullptr, buf.length,
                                                     PROT_READ | PROT_WRITE, MAP_SHARED,
                                                     fd, buf.m.offset));
                 if(_start == MAP_FAILED)
@@ -221,7 +226,7 @@ namespace librealsense
 
             if ( !_use_memory_map )
             {
-                buf.m.userptr = (unsigned long)_start;
+                buf.m.userptr = reinterpret_cast<unsigned long>(_start);
             }
             if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
@@ -307,7 +312,6 @@ namespace librealsense
             };
         }
 
-
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
@@ -318,11 +322,10 @@ namespace librealsense
             std::stringstream port_path;
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
-            auto speed = libusb_get_device_speed(usb_device);
             libusb_device_descriptor dev_desc;
-            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
+            libusb_get_device_descriptor(usb_device,&dev_desc);
 
-            for (size_t i = 0; i < port_count; ++i)
+            for (auto i = 0; i < port_count; ++i)
             {
                 port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
@@ -338,7 +341,7 @@ namespace librealsense
             usb_spec res{usb_undefined};
 
             char usb_actual_path[PATH_MAX] = {0};
-            if (realpath(path.c_str(), usb_actual_path) != NULL)
+            if (realpath(path.c_str(), usb_actual_path) != nullptr)
             {
                 path = std::string(usb_actual_path);
                 std::string val;
@@ -391,7 +394,7 @@ namespace librealsense
         void req_io_buff(int fd, uint32_t count, std::string dev_name,
                         v4l2_memory mem_type, v4l2_buf_type type)
         {
-            struct v4l2_requestbuffers req = { count, type, mem_type};
+            struct v4l2_requestbuffers req = { count, type, mem_type, {}};
 
             if(xioctl(fd, VIDIOC_REQBUFS, &req) < 0)
             {
@@ -427,7 +430,7 @@ namespace librealsense
                 std::string path = "/sys/class/video4linux/" + name;
                 std::string real_path{};
                 char buff[PATH_MAX] = {0};
-                if (realpath(path.c_str(), buff) != NULL)
+                if (realpath(path.c_str(), buff) != nullptr)
                 {
                     real_path = std::string(buff);
                     if (real_path.find("virtual") != std::string::npos)
@@ -453,7 +456,7 @@ namespace librealsense
                     std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                     auto path = ss.str();
                     auto valid_path = false;
-                    for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+                    for(auto i=0U; i < MAX_DEV_PARENT_DIR; ++i)
                     {
                         if(std::ifstream(path + "busnum") >> busnum)
                         {
@@ -607,8 +610,11 @@ namespace librealsense
         v4l_uvc_device::~v4l_uvc_device()
         {
             _is_capturing = false;
-            if (_thread) _thread->join();
-            _fds.clear();
+            if (_thread && _thread->joinable()) _thread->join();
+            for (auto&& fd : _fds)
+            {
+                try { if (fd) ::close(fd);} catch (...) {}
+            }
         }
 
         void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
@@ -677,8 +683,8 @@ namespace librealsense
                     throw linux_backend_exception("xioctl(VIDIOC_S_PARM) failed");
 
                 // Init memory mapped IO
-                negotiate_kernel_buffers(buffers);
-                allocate_io_buffers(buffers);
+                negotiate_kernel_buffers(static_cast<size_t>(buffers));
+                allocate_io_buffers(static_cast<size_t>(buffers));
 
                 _profile =  profile;
                 _callback = callback;
@@ -796,7 +802,7 @@ namespace librealsense
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
                 if (timercmp(&current_time, &expiration_time, <)) {
-                    val = select(_max_fd + 1, &fds, NULL, NULL, &remaining);
+                    val = select(_max_fd + 1, &fds, nullptr, nullptr, &remaining);
                 }
                 else {
                     val = 0;
@@ -899,7 +905,7 @@ namespace librealsense
                         }
                         else
                         {
-                            LOG_WARNING("FD_ISSET returned false - video node is not signalled (md only)");
+                            LOG_INFO("FD_ISSET returned false - video node is not signalled (md only)");
                         }
                     }
                 }
@@ -913,7 +919,7 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
+        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &)
         {
             if (has_metadata())
                 buf_mgr.set_md_from_video_node();
@@ -955,7 +961,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY) // TODO: Log?
                     return false;
 
                 throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");

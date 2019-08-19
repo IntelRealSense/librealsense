@@ -84,10 +84,11 @@ namespace librealsense
 
             std::regex regex_camera_interface("\\b(.*VID_)(.*)(&PID_)(.*)(&MI_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);
             std::regex regex_usb_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);
+            std::regex regex_dfu_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#)(.*)(#)(.*)", std::regex_constants::icase);
 
             if (std::regex_search(device_str, matches, regex_camera_interface) && matches.size() == 11)
             {
-                rv.id = matches[0];
+                rv.id = device_str;
                 std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
                 std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
                 std::stringstream mi; mi << std::hex << matches[6]; mi >> rv.mi;
@@ -96,7 +97,15 @@ namespace librealsense
             }
             if (std::regex_search(device_str, matches, regex_usb_interface) && matches.size() == 9)
             {
-                rv.id = matches[0];
+                rv.id = device_str;
+                std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
+                std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
+                std::stringstream uid; uid << std::hex << matches[6]; uid >> rv.unique_id;
+                return rv;
+            }
+            if (std::regex_search(device_str, matches, regex_dfu_interface))
+            {
+                rv.id = device_str;
                 std::stringstream vid; vid << std::hex << matches[2]; vid >> rv.vid;
                 std::stringstream pid; pid << std::hex << matches[4]; pid >> rv.pid;
                 std::stringstream uid; uid << std::hex << matches[6]; uid >> rv.unique_id;
@@ -133,7 +142,7 @@ namespace librealsense
                 for (auto&& id : query_by_interface(guid.first))
                 {
                     auto i = get_info(id.c_str());
-                    if (i.unique_id == info.unique_id)
+                    if ((i.vid == info.vid) && (i.pid == info.pid) && (i.unique_id == info.unique_id))
                         devices_path.push_back(id);
                 }
             }

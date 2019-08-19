@@ -36,9 +36,6 @@ namespace librealsense {
                                         int len) {
 
             int status = uvc_set_ctrl(_device.get(), xu.unit, ctrl, (void *) data, len);
-            if (status < 0)
-                LOG_ERROR("SetXU result:" << status);
-
             return status >= 0;
         }
 

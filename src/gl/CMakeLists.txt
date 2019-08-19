@@ -33,8 +33,6 @@ set(REALSENSE_GL_CPP
     ${LZ4_DIR}/lz4.c
 )
 
-#set(DEPENDENCIES realsense2 ${OPENGL_LIBRARIES} glfw)
-#replaced with
 include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
@@ -57,8 +55,6 @@ endif()
 
 include_directories(${LZ4_DIR})
 
-#TODO - replace glfw dependency with
-#find_package(glfw REQUIRED) 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}/..
@@ -66,11 +62,9 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_LIST_DIR}/../../common
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../third-party/glfw/include>
         $<INSTALL_INTERFACE:/../../include>
-        $<INSTALL_INTERFACE:/../../third-party/glfw/include>
 )
-    
+
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/realsense2-glConfigVersion.cmake"

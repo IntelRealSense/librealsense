@@ -9,10 +9,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-# This parameter is meant for disabling graphical examples when building for
-# headless systems
-option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples." ON)
-
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
 
 add_subdirectory(convert)
@@ -20,6 +16,7 @@ add_subdirectory(enumerate-devices)
 add_subdirectory(fw-logger)
 add_subdirectory(terminal)
 add_subdirectory(recorder)
+add_subdirectory(fw-update)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
@@ -42,4 +39,3 @@ else()
     #    set(DEPENDENCIES realsense2)
     endif()
 endif()
-

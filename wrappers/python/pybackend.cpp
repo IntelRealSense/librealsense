@@ -86,7 +86,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<platform::extension_unit> extension_unit(m, "extension_unit");
     extension_unit.def(py::init<>())
-                  .def("__init__", [](platform::extension_unit & xu, int s, int u, int n, platform::guid g)
+                  .def("__init__", [](platform::extension_unit & xu, int s, uint8_t u, int n, platform::guid g)
                       {
                           new (&xu) platform::extension_unit { s, u, n, g };
                       }, "subdevice"_a, "unit"_a, "node"_a, "guid"_a)
@@ -141,6 +141,9 @@ PYBIND11_MODULE(NAME, m) {
         .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
         .value("global_time_enabled", RS2_OPTION_GLOBAL_TIME_ENABLED)
+        .value("enable_mapping", RS2_OPTION_ENABLE_MAPPING)
+        .value("enable_pose_jumping", RS2_OPTION_ENABLE_POSE_JUMPING)
+        .value("enable_relocalization", RS2_OPTION_ENABLE_RELOCALIZATION)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

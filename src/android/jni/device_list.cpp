@@ -31,7 +31,7 @@ Java_com_intel_realsense_librealsense_DeviceList_nContainsDevice(JNIEnv *env, jc
     auto rv = rs2_device_list_contains(reinterpret_cast<const rs2_device_list *>(handle),
                                        reinterpret_cast<const rs2_device *>(deviceHandle), &e);
     handle_error(env, e);
-    return rv > 1;
+    return rv > 0;
 }
 
 extern "C" JNIEXPORT void JNICALL

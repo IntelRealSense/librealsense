@@ -1005,115 +1005,12 @@ namespace rs2
         timer _t;
     };
 
-
-    typedef enum _grid_step_unit
-    {
-        GRID_STEP_UNIT_METER,
-        GRID_STEP_UNIT_FEET,
-        GRID_STEP_UNIT_COUNT
-    } grid_step_unit;
-
-
-    class pose_grid
-    {
-    public:
-        pose_grid() : step(1.f), pixelStep(1.f), unit(GRID_STEP_UNIT_METER), boxHorizontalLength(12), boxVerticalLength(1), boxVerticalAlignment(1) {}
-
-        void set(pose_grid newGrid)
-        {
-            boxHorizontalLength = newGrid.boxHorizontalLength;
-            boxVerticalLength = newGrid.boxVerticalLength;
-            boxVerticalAlignment = newGrid.boxVerticalAlignment;
-            unit = newGrid.unit;
-            step = newGrid.step;
-
-            switch (unit)
-            {
-                case GRID_STEP_UNIT_METER:
-                    pixelStep = step;
-                    break;
-                case GRID_STEP_UNIT_FEET:
-                    pixelStep = step * FeetToMeterMultiplyer;
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-
-        void set(grid_step_unit newUnit)
-        {
-            unit = newUnit;
-
-            switch (unit)
-            {
-                case GRID_STEP_UNIT_METER:
-                    pixelStep = step;
-                    break;
-                case GRID_STEP_UNIT_FEET:
-                    pixelStep = step * FeetToMeterMultiplyer;
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-
-        void set(float newStep)
-        {
-            switch (unit)
-            {
-                case GRID_STEP_UNIT_METER:
-                    step = newStep;
-                    pixelStep = step;
-                    break;
-                case GRID_STEP_UNIT_FEET:
-                    step = newStep;
-                    pixelStep = step * FeetToMeterMultiplyer;
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-
-        std::string getUnitName()
-        {
-            switch (unit)
-            {
-                case GRID_STEP_UNIT_METER:
-                    return "Meter";
-                case GRID_STEP_UNIT_FEET:
-                    return "Feet";
-                default:
-                    assert(false);
-                    return "Unknown";
-            }
-        }
-        
-        float getPixelStep()
-        {
-            return pixelStep;
-        }
-
-
-        float step;
-        uint32_t boxHorizontalLength;
-        uint32_t boxVerticalLength;
-        uint32_t boxVerticalAlignment;
-        grid_step_unit unit;
-
-    private:
-        float pixelStep;
-        float FeetToMeterMultiplyer = 0.3048f;
-    };
-
     class texture_buffer
     {
         GLuint texture;
         rs2::frame_queue last_queue[2];
         mutable rs2::frame last[2];
     public:
-        pose_grid currentGrid;
-        pose_grid previousGrid;
-
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
         bool zoom_preview = false;
@@ -1239,11 +1136,16 @@ namespace rs2
                     throw std::runtime_error("not a valid format");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
+                case RS2_FORMAT_DISPARITY32:
                     if (frame.is<depth_frame>())
                     {
                         if (prefered_format == RS2_FORMAT_Z16)
                         {
                             glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                        }
+                        else if (prefered_format == RS2_FORMAT_DISPARITY32)
+                        {
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, data);
                         }
                         else
                         {
@@ -1267,9 +1169,6 @@ namespace rs2
                         }
                     }
                     else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
-                    break;
-                case RS2_FORMAT_DISPARITY32:
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
                     break;
                 case RS2_FORMAT_XYZ32F:
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -1617,7 +1516,7 @@ namespace rs2
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
 
-            draw_grid(currentGrid.getPixelStep());
+            draw_grid(1.f);
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:

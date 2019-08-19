@@ -20,9 +20,9 @@ Java_com_intel_realsense_librealsense_RsContext_nDelete(JNIEnv *env, jclass type
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_RsContext_nQueryDevices(JNIEnv *env, jclass type,
-                                                              jlong handle) {
+                                                              jlong handle, jint mask) {
     rs2_error* e = NULL;
-    rs2_device_list* device_list_handle = rs2_query_devices_ex((rs2_context *) handle, RS2_PRODUCT_LINE_ANY_INTEL, &e);
+    rs2_device_list* device_list_handle = rs2_query_devices_ex((rs2_context *) handle, mask, &e);
     handle_error(env, e);
     return (jlong) device_list_handle;
 }

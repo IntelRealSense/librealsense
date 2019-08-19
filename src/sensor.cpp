@@ -364,7 +364,7 @@ namespace librealsense
                 ss << fourcc << " ";
             }
             ss << "]";
-            LOG_WARNING(ss.str());
+            LOG_INFO(ss.str());
         }
 
         // Sort the results to make sure that the user will receive predictable deterministic output from the API
@@ -612,7 +612,11 @@ namespace librealsense
 
         for (auto& profile : _internal_config)
         {
-            _device->close(profile);
+            try // Handle disconnect event
+            {
+                _device->close(profile);
+            }
+            catch (...) {}
         }
         reset_streaming();
         if (Is<librealsense::global_time_interface>(_owner))
@@ -745,9 +749,9 @@ namespace librealsense
 
     void uvc_sensor::try_register_pu(rs2_option id)
     {
+        auto opt = std::make_shared<uvc_pu_option>(*this, id);
         try
         {
-            auto opt = std::make_shared<uvc_pu_option>(*this, id);
             auto range = opt->get_range();
             if (range.max <= range.min || range.step <= 0 || range.def < range.min || range.def > range.max) return;
 
@@ -759,7 +763,7 @@ namespace librealsense
         }
         catch (...)
         {
-            LOG_WARNING("Exception was thrown when inspecting properties of a sensor");
+            LOG_WARNING("Exception was thrown when inspecting " << this->get_info(RS2_CAMERA_INFO_NAME) << " property " << opt->get_description());
         }
     }
 
@@ -785,6 +789,7 @@ namespace librealsense
       _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
+
 
         std::map<std::string, uint32_t> frequency_per_sensor;
         for (auto& elem : sensor_name_and_hid_profiles)
@@ -1146,7 +1151,7 @@ namespace librealsense
 
         if (!started)
         {
-            LOG_WARNING("HID timestamp not found! please apply HID patch.");
+            LOG_WARNING("HID timestamp not found, switching to Host timestamps.");
             started = true;
         }
 

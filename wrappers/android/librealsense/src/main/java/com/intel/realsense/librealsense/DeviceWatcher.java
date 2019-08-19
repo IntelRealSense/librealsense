@@ -19,8 +19,9 @@ class DeviceWatcher extends LrsClass {
     private final List<DeviceListener> mAppDeviceListener;
 
     public synchronized void addListener(DeviceListener deviceListener){
-        if(!mAppDeviceListener.contains(deviceListener))
+        if(!mAppDeviceListener.contains(deviceListener)) {
             mAppDeviceListener.add(deviceListener);
+        }
     }
 
     public synchronized void removeListener(DeviceListener deviceListener){

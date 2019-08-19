@@ -92,7 +92,10 @@ namespace librealsense {
             UpdateCalib = 0xBC,
             BIST = 0xFF,
             GetPowerGearState = 0xFF,
-            GLD = 0x35
+            GLD = 0x35,
+            FlashRead = 0x23,
+            SetRgbAeRoi = 0xdb,
+            GetRgbAeRoi = 0xdc,
         };
 
         enum gvd_fields

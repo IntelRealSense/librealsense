@@ -28,6 +28,8 @@
 #include "proc/spatial-filter.h"
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
+#include "../common/fw/firmware-version.h"
+#include "fw-update/fw-update-unsigned.h"
 
 namespace librealsense
 {
@@ -78,6 +80,174 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
+    void ds5_device::enter_update_state() const
+    {
+        try {
+            LOG_INFO("entering to update state, device disconnect is expected");
+            command cmd(ds::DFU);
+            cmd.param1 = 1;
+            _hw_monitor->send(cmd);
+        }
+        catch (...) {
+            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        }
+    }
+
+    std::vector<uint8_t> ds5_device::backup_flash(update_progress_callback_ptr callback)
+    {
+        int flash_size = 1024 * 2048;
+        int max_bulk_size = 1016;
+        int max_iterations = int(flash_size / max_bulk_size + 1);
+
+        std::vector<uint8_t> flash;
+        flash.reserve(flash_size);
+
+        get_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
+        {
+            for (int i = 0; i < max_iterations; i++)
+            {
+                int offset = max_bulk_size * i;
+                int size = max_bulk_size;
+                if (i == max_iterations - 1)
+                {
+                    size = flash_size - offset;
+                }
+
+                bool appended = false;
+
+                const int retries = 3;
+                for (int j = 0; j < retries && !appended; j++)
+                {
+                    try
+                    {
+                        command cmd(ds::FRB);
+                        cmd.param1 = offset;
+                        cmd.param2 = size;
+                        auto res = _hw_monitor->send(cmd);
+
+                        flash.insert(flash.end(), res.begin(), res.end());
+                        appended = true;
+                    }
+                    catch (...)
+                    {
+                        if (i < retries - 1) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        else throw;
+                    }
+                }
+
+                if (callback) callback->on_update_progress((float)i / max_iterations);
+            }
+            if (callback) callback->on_update_progress(1.0);
+        });
+
+        return flash;
+    }
+
+    void update_flash_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, uint32_t offset, uint32_t size, update_progress_callback_ptr callback, float continue_from, float ratio)
+    {
+        size_t sector_count = size / ds::FLASH_SECTOR_SIZE;
+        size_t first_sector = offset / ds::FLASH_SECTOR_SIZE;
+
+        if (sector_count * ds::FLASH_SECTOR_SIZE != size)
+            sector_count++;
+
+        sector_count += first_sector;
+
+        for (size_t sector_index = first_sector; sector_index < sector_count; sector_index++)
+        {
+            command cmdFES(ds::FES);
+            cmdFES.require_response = false;
+            cmdFES.param1 = sector_index;
+            cmdFES.param2 = 1;
+            auto res = hwm->send(cmdFES);
+
+            for (int i = 0; i < ds::FLASH_SECTOR_SIZE; )
+            {
+                auto index = sector_index * ds::FLASH_SECTOR_SIZE + i;
+                if (index >= offset + size)
+                    break;
+                int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ds::FLASH_SECTOR_SIZE - i));
+                command cmdFWB(ds::FWB);
+                cmdFWB.require_response = false;
+                cmdFWB.param1 = index;
+                cmdFWB.param2 = packet_size;
+                cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
+                res = hwm->send(cmdFWB);
+                i += packet_size;
+            }
+
+            if (callback)
+                callback->on_update_progress(continue_from + (float)sector_index / (float)sector_count * ratio);
+        }
+    }
+
+    void update_section(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& merged_image, flash_section fs, uint32_t tables_size,
+        update_progress_callback_ptr callback, float continue_from, float ratio)
+    {
+        auto first_table_offset = fs.tables.front().offset;
+        float total_size = fs.app_size + tables_size;
+
+        float app_ratio = fs.app_size / total_size * ratio;
+        float tables_ratio = tables_size / total_size * ratio;
+
+        update_flash_section(hwm, merged_image, fs.offset, fs.app_size, callback, continue_from, app_ratio);
+        update_flash_section(hwm, merged_image, first_table_offset, tables_size, callback, app_ratio, tables_ratio);
+    }
+
+    void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup, update_progress_callback_ptr callback, int update_mode)
+    {
+        auto flash_image_info = ds::get_flash_info(image);
+        auto flash_backup_info = ds::get_flash_info(flash_backup);
+        auto merged_image = merge_images(flash_backup_info, flash_image_info, image);
+
+        // update read-write section
+        auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
+        auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5 : 1.0);
+
+        if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
+        {
+            // update read-only section
+            auto first_table_offset = flash_image_info.read_only_section.tables.front().offset;
+            auto tables_size = flash_image_info.header.read_only_start_address + flash_image_info.header.read_only_size - first_table_offset;
+            update_section(hwm, merged_image, flash_image_info.read_only_section, tables_size, callback, 0.5, 0.5);
+        }
+    }
+
+    void ds5_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    {
+        if (_is_locked)
+            throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
+
+        get_depth_sensor().invoke_powered([&](platform::uvc_device& dev)
+        {
+            command cmdPFD(ds::PFD);
+            cmdPFD.require_response = false;
+            auto res = _hw_monitor->send(cmdPFD);
+
+            switch (update_mode)
+            {
+            case RS2_UNSIGNED_UPDATE_MODE_FULL:
+                update_flash_section(_hw_monitor, image, 0, ds::FLASH_SIZE, callback, 0, 1.0);
+                break;
+            case RS2_UNSIGNED_UPDATE_MODE_UPDATE:
+            case RS2_UNSIGNED_UPDATE_MODE_READ_ONLY:
+            {
+                auto flash_backup = backup_flash(nullptr);
+                update_flash_internal(_hw_monitor, image, flash_backup, callback, update_mode);
+                break;
+            }
+            default:
+                throw std::runtime_error("invalid update mode value");
+            }
+
+            if (callback) callback->on_update_progress(1.0);
+
+            command cmdHWRST(ds::HWRST);
+            res = _hw_monitor->send(cmdHWRST);
+        });
+    }
+
     class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -94,10 +264,20 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
-            return get_intrinsic_by_resolution(
-                *_owner->_coefficients_table_raw,
-                ds::calibration_table_id::coefficients_table_id,
-                profile.width, profile.height);
+            rs2_intrinsics result;
+            
+            if (ds::try_get_intrinsic_by_resolution_new(*_owner->_new_calib_table_raw,
+                profile.width, profile.height, &result))
+            {
+                return result;
+            }
+            else 
+            {
+                return get_intrinsic_by_resolution(
+                    *_owner->_coefficients_table_raw,
+                    ds::calibration_table_id::coefficients_table_id,
+                    profile.width, profile.height);
+            }
         }
 
         void open(const stream_profiles& requests) override
@@ -288,7 +468,17 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    ds::d400_caps ds5_device::parse_device_capabilities() const
+    std::vector<uint8_t> ds5_device::get_new_calibration_table() const
+    {
+        if (_fw_version >= firmware_version("5.11.9.5"))
+        {
+            command cmd(ds::RECPARAMSGET);
+            return _hw_monitor->send(cmd);
+        }
+        return {};
+    }
+
+    ds::d400_caps ds5_device::parse_device_capabilities(const uint16_t pid) const
     {
         using namespace ds;
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
@@ -301,19 +491,30 @@ namespace librealsense
         if (gvd_buf[rgb_sensor])                           // WithRGB
             val |= d400_caps::CAP_RGB_SENSOR;
         if (gvd_buf[imu_sensor])
+        {
             val |= d400_caps::CAP_IMU_SENSOR;
+            if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(pid))
+                val |= d400_caps::CAP_BMI_055;
+            else
+            {
+                if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(pid))
+                    val |= d400_caps::CAP_BMI_085;
+                else
+                    LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << pid << std::dec);
+            }
+        }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
         if (0x1 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_ROLLING_SHUTTER;  // Standard depth
+            val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // Wide depth
+            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
 
         return val;
     }
 
     std::shared_ptr<uvc_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
-                                                                const std::vector<platform::uvc_device_info>& all_device_infos)
+        const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
 
@@ -340,12 +541,12 @@ namespace librealsense
     }
 
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
-        : device(ctx, group), global_time_interface(), 
-          _depth_stream(new stream(RS2_STREAM_DEPTH)),
-          _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
+        const platform::backend_device_group& group)
+        : device(ctx, group), global_time_interface(),
+        _depth_stream(new stream(RS2_STREAM_DEPTH)),
+        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
+        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
+        _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -391,14 +592,24 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+        _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         auto pid = group.uvc_devices.front().pid;
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";
-        _fw_version = firmware_version(_hw_monitor->get_firmware_version_string(GVD, camera_fw_version_offset));
-        _recommended_fw_version = firmware_version("5.10.3.0");
+
+        std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+        // fooling tests recordings - don't remove
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+
+        auto optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
+        auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+        _fw_version = firmware_version(fwv);
+
+        _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
         if (_fw_version >= firmware_version("5.10.4.0"))
-            _device_capabilities = parse_device_capabilities();
-        auto serial = _hw_monitor->get_module_serial_string(GVD, module_serial_offset);
+            _device_capabilities = parse_device_capabilities(pid);
 
         auto& depth_ep = get_depth_sensor();
         auto advanced_mode = is_camera_in_advanced_mode();
@@ -431,11 +642,9 @@ namespace librealsense
                     "Hardware pipe configuration"));
         }
 
-        std::string is_camera_locked{ "" };
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
-            auto is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-            is_camera_locked = (is_locked) ? "YES" : "NO";
+            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
 
 #ifdef HWM_OVER_XU
             //if hw_monitor was created by usb replace it with xu
@@ -579,44 +788,22 @@ namespace librealsense
         depth_ep.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
+        register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
-        std::string minimal_version = _recommended_fw_version;
 
-        if (_fw_version < _recommended_fw_version)
-        {
-            std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
-            std::thread notification_thread = std::thread([weak, curr_version, minimal_version]()
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                while (true)
-                {
-                    auto ptr = weak.lock();
-                    if (ptr)
-                    {
-                        std::string msg = "Current firmware version: " + curr_version + "\nMinimal firmware version: " + minimal_version +"\n";
-                        notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED, 0, RS2_LOG_SEVERITY_INFO, msg);
-                        ptr->raise_notification(n);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    std::this_thread::sleep_for(std::chrono::hours(8));
-                }
-            });
-            notification_thread.detach();
-        }
     }
 
     notification ds5_notification_decoder::decode(int value)
@@ -690,7 +877,7 @@ namespace librealsense
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-                                std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
