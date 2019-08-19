@@ -499,6 +499,9 @@ namespace rs2
         if (!has_snoozed) 
         {
             ImGui::ButtonEx(textual_icons::mail, { width, width }, ImGuiButtonFlags_Disabled);
+
+            if (ImGui::IsItemActive())
+                ImGui::SetTooltip("No pending notifications at this point");
         }
         else
         {
@@ -522,6 +525,9 @@ namespace rs2
                 }
                 snoozed_notifications.clear();
             }
+
+            if (ImGui::IsItemActive())
+                ImGui::SetTooltip("Pending notifications available. Click to review");
         }
 
         ImGui::PopStyleColor(2);
@@ -752,8 +758,72 @@ namespace rs2
         ImGui::Text("in this release?");
         ImGui::PopStyleColor();
     }
+
     int version_upgrade_model::calc_height()
     {
         return 80;
+    }
+
+    void process_manager::log(std::string line)
+    {
+        std::lock_guard<std::mutex> lock(_log_lock);
+        _log += line + "\n";
+    }
+
+    void process_manager::reset()
+    {
+        _progress = 0;
+        _started = false;
+        _done = false;
+        _failed = false;
+        _last_error = "";
+    }
+
+    void process_manager::fail(std::string error)
+    {
+        _last_error = error;
+        _progress = 0;
+        log("\nERROR: " + error);
+        _failed = true;
+    }
+
+    void process_manager::start(std::shared_ptr<notification_model> n)
+    {
+        auto cleanup = [n]() {
+            //n->dismiss(false);
+        };
+
+        log(to_string() << "Started " << _process_name << " process");
+
+        auto me = shared_from_this();
+        std::weak_ptr<process_manager> ptr(me);
+
+        std::thread t([ptr, cleanup]() {
+            auto self = ptr.lock();
+            if (!self) return;
+
+            try
+            {
+                self->process_flow(cleanup);
+            }
+            catch (const error& e)
+            {
+                self->fail(error_to_string(e));
+                cleanup();
+            }
+            catch (const std::exception& ex)
+            {
+                self->fail(ex.what());
+                cleanup();
+            }
+            catch (...)
+            {
+                self->fail(to_string() << "Unknown error during " << self->_process_name << " process!");
+                cleanup();
+            }
+        });
+        t.detach();
+
+        _started = true;
     }
 }

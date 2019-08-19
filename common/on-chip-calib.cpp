@@ -189,7 +189,8 @@ namespace rs2
 
             // Wait for frames to arrive
             bool frame_arrived = false;
-            while (!frame_arrived)
+            int count = 0;
+            while (!frame_arrived && count++ < 100)
             {
                 for (auto&& stream : _viewer.streams)
                 {
@@ -323,6 +324,21 @@ namespace rs2
         return { median_fill_rate, median_rms };
     }
 
+    std::vector<uint8_t> on_chip_calib_manager::safe_send_command(
+        const std::vector<uint8_t>& cmd, const std::string& name)
+    {
+        auto dp = _dev.as<debug_protocol>();
+        if (!dp) throw std::runtime_error("Device does not support debug protocol!");
+
+        auto res = dp.send_and_receive_raw_data(cmd);
+
+        if (res.size() < sizeof(int32_t)) throw std::runtime_error(to_string() << "Not enough data from " << name << "!");
+        auto return_code = *((int32_t*)res.data());
+        if (return_code < 0)  throw std::runtime_error(to_string() << "Firmware error (" << return_code << ") from " << name << "!");
+
+        return res;
+    }
+
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup)
     {
         time_t rawtime;
@@ -335,17 +351,19 @@ namespace rs2
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = true;
 
-        debug_protocol dp = _dev;
-
         // Fetch current calibration using GETINITCAL command
         std::vector<uint8_t> fetch_calib{
             0x14, 0, 0xAB, 0xCD, 0x15, 0, 0, 0, 0x19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
-        auto calib = dp.send_and_receive_raw_data(fetch_calib);
-        // TODO: Error check
+        auto calib = safe_send_command(fetch_calib, "GETINITCAL");
+        if (calib.size() < sizeof(table_header) + sizeof(int32_t)) throw std::runtime_error("Missing calibration header from GETINITCAL!");
 
-        auto table = (uint8_t*)(calib.data() + 4 + sizeof(table_header));
-        auto hd = (table_header*)(calib.data() + 4);
+        auto table = (uint8_t*)(calib.data() + sizeof(int32_t) + sizeof(table_header));
+        auto hd = (table_header*)(calib.data() + sizeof(int32_t));
+
+        if (calib.size() < sizeof(table_header) + sizeof(int32_t) + hd->table_size) 
+            throw std::runtime_error("Table truncated from GETINITCAL!");
+
         _old_calib.resize(sizeof(table_header) + hd->table_size, 0);
         memcpy(_old_calib.data(), hd, _old_calib.size()); // Copy to old_calib
 
@@ -393,8 +411,7 @@ namespace rs2
                 0x00, 0x00, 0x00, 0x00
             };
 
-            auto res = dp.send_and_receive_raw_data(cmd);
-            //TODO: Check error
+            safe_send_command(cmd, "START_CALIB");
 
             memset(&result, 0, sizeof(DirectSearchCalibrationResult));
 
@@ -416,13 +433,19 @@ namespace rs2
                     0x00, 0x00, 0x00, 0x00
                 };
 
-                res = dp.send_and_receive_raw_data(cmd);
-                int32_t code = *((int32_t*)res.data());
-
-                if (res.size() >= sizeof(DirectSearchCalibrationResult))
+                try
                 {
+                    auto res = safe_send_command(cmd, "CALIB_STATUS");
+
+                    if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
+                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
                     result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
                     done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+                catch (const std::exception& ex)
+                {
+                    log(to_string() << "Warning: " << ex.what());
                 }
 
                 _progress = count * (2 * _speed);
@@ -489,16 +512,18 @@ namespace rs2
             0x00, 0x00, 0x00, 0x00
         };
 
-        auto res = dp.send_and_receive_raw_data(cmd);
-        int32_t code = *((int32_t*)res.data());
-        if (res.size() >= sizeof(DscResultBuffer))
-        {
-            DscResultBuffer* result = reinterpret_cast<DscResultBuffer*>(res.data() + 4);
-            table_header* header = reinterpret_cast<table_header*>(res.data() + 4 + sizeof(DscResultBuffer));
+        auto res = safe_send_command(cmd, "CALIB_RESULT");
 
-            _new_calib.resize(sizeof(table_header) + header->table_size, 0);
-            memcpy(_new_calib.data(), header, _new_calib.size()); // Copy to new_calib
-        }
+        if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer))
+            throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(int32_t) + sizeof(DscResultBuffer));
+
+        if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer) + sizeof(table_header) + header->table_size)
+            throw std::runtime_error("Table truncated in CALIB_STATUS!");
+
+        _new_calib.resize(sizeof(table_header) + header->table_size, 0);
+        memcpy(_new_calib.data(), header, _new_calib.size()); // Copy to new_calib
 
         _health = abs(result.healthCheck);
 
@@ -540,6 +565,10 @@ namespace rs2
 
             _sub->post_processing_enabled = _post_processing;
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            if (_was_streaming) start_viewer(0, 0, 0);
+
             _restored = true;
         }
         catch (...) {}
@@ -559,35 +588,26 @@ namespace rs2
 
         save_calib.insert(save_calib.end(), _new_calib.data(), _new_calib.data() + _new_calib.size());
 
-        debug_protocol dp = _dev;
-        auto res = dp.send_and_receive_raw_data(save_calib);
-
+        safe_send_command(save_calib, "SETINITCAL");
     }
 
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
-        // Apply calibration without writing it to flash
-
         table_header* hd = (table_header*)(use_new ? _new_calib.data() : _old_calib.data());
         uint8_t* table = (uint8_t*)((use_new ? _new_calib.data() : _old_calib.data()) + sizeof(table_header));
 
         uint16_t size = (uint16_t)(0x14 + hd->table_size);
 
         std::vector<uint8_t> apply_calib{
-            0x14, 0, 0xAB, 0xCD, 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x34, 0x12, 0xcd, 0xab
+            0x14, 0, 0xAB, 0xCD, 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfe, 0xca, 0xfe, 0xca
         };
-        // TODO: Switch to:
-        //std::vector<uint8_t> apply_calib{
-        //    0x14, 0, 0xAB, 0xCD, 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfe, 0xca, 0xfe, 0xca
-        //};
 
         auto up = (uint16_t*)apply_calib.data();
         up[0] = size;
 
         apply_calib.insert(apply_calib.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
 
-        debug_protocol dp = _dev;
-        auto res = dp.send_and_receive_raw_data(apply_calib);
+        safe_send_command(apply_calib, "CALIBRECALC");
     }
 
     void autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)

@@ -3003,7 +3003,8 @@ namespace rs2
                 auto n = std::make_shared<autocalib_notification_model>(
                     msg, manager, false);
 
-                if (rawtime - last_time < 604800)
+                // Recommend calibration once a week per device
+                if (rawtime - last_time < 60)
                 {
                     n->snoozed = true;
                 }
@@ -4036,7 +4037,17 @@ namespace rs2
 
     bool subdevice_model::supports_on_chip_calib()
     {
-        return this->s->is<rs2::depth_sensor>(); // TODO: And firmware >= X
+        bool is_d400 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
+            std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
+
+        std::string fw_version = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
+            s->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "";
+
+        bool supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
+            is_upgradeable("05.11.12.0", fw_version) : false;
+
+        return s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
+        // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
     float device_model::draw_device_panel(float panel_width,
@@ -4282,42 +4293,6 @@ namespace rs2
                     }
                 }
 
-                for (auto&& sub : subdevices)
-                {
-                    if (sub->supports_on_chip_calib())
-                    {
-                        if (ImGui::Selectable("On-Chip Calibration"))
-                        {
-                            try
-                            {
-                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                                auto n = std::make_shared<autocalib_notification_model>(
-                                    "", manager, false);
-
-                                viewer.not_model.add_notification(n);
-                                n->forced = true;
-                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_CALIB_IN_PROCESS;
-
-                                for (auto&& n : related_notifications)
-                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                        n->dismiss(false);
-
-                                manager->start(n);
-                            }
-                            catch (const error& e)
-                            {
-                                error_message = error_to_string(e);
-                            }
-                            catch (const std::exception& e)
-                            {
-                                error_message = e.what();
-                            }
-                        }
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Start on-chip calibration process");
-                    }
-                }
-
                 if (dev.is<rs2::updatable>() || dev.is<rs2::update_device>())
                 {
                     if (ImGui::Selectable("Update Firmware..."))
@@ -4364,6 +4339,52 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
                 }
+            }
+
+            bool has_autocalib = false;
+            for (auto&& sub : subdevices)
+            {
+                if (sub->supports_on_chip_calib() && !has_autocalib)
+                {
+                    something_to_show = true;
+                    if (ImGui::Selectable("On-Chip Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>(
+                                "", manager, false);
+
+                            viewer.not_model.add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_CALIB_IN_PROCESS;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            manager->start(n);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Start on-chip calibration process");
+
+                    has_autocalib = true;
+                }
+            }
+            if (!has_autocalib)
+            {
+                bool selected = false;
+                something_to_show = true;
+                ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
             }
 
             if (!something_to_show)

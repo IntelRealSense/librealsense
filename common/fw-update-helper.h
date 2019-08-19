@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "process-manager.h"
-
 #include "notifications.h"
 
 namespace rs2

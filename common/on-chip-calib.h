@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "process-manager.h"
 #include "notifications.h"
 
 #include <random>
@@ -48,6 +47,8 @@ namespace rs2
         std::pair<float, float> get_metric(bool use_new);
 
     private:
+        std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
+
         rs2::depth_frame fetch_depth_frame();
 
         std::pair<float, float> get_depth_metrics();
