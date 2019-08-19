@@ -339,12 +339,203 @@ namespace rs2
         return res;
     }
 
-    void on_chip_calib_manager::process_flow(std::function<void()> cleanup)
+    void on_chip_calib_manager::update_last_used()
     {
         time_t rawtime;
         time(&rawtime);
         std::string id = to_string() << configurations::viewer::last_calib_notice << "." << _sub->s->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         config_file::instance().set(id.c_str(), (long long)rawtime);
+    }
+
+    void on_chip_calib_manager::calibrate()
+    {
+        rs2_dsc_status status = RS2_DSC_STATUS_BURN_SUCCESS;
+
+        DirectSearchCalibrationResult result;
+
+        if (tare)
+        {
+            std::vector<uint8_t> cmd =
+            {
+                0x14, 0x00, 0xab, 0xcd,
+                0x80, 0x00, 0x00, 0x00,
+                0x0b, 0x00, 0x00, 0x00,
+                0xb8, 0x0b, 0x00, 0x00,
+                0x1e, 0x1e, 0x03, 0x00,
+                0x00, 0x00, 0x00, 0x00
+            };
+            float* param2 = (float*)cmd.data() + 3;
+            *param2 = ground_truth;
+            cmd.data()[16] = average_step_count;
+            cmd.data()[17] = step_count;
+            cmd.data()[18] = accuracy;
+
+            safe_send_command(cmd, "START_TARE");
+
+            // While not ready...
+            int count = 0;
+            bool done = false;
+            do
+            {
+                memset(&result, 0, sizeof(DirectSearchCalibrationResult));
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                // Check calibration status
+                cmd =
+                {
+                    0x14, 0x00, 0xab, 0xcd,
+                    0x80, 0x00, 0x00, 0x00,
+                    0x0c, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00
+                };
+
+                try
+                {
+                    auto res = safe_send_command(cmd, "CALIB_STATUS");
+
+                    if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
+                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+                catch (const std::exception& ex)
+                {
+                    log(to_string() << "Warning: " << ex.what());
+                }
+
+                _progress = count * (2 * _speed);
+            } while (count++ < 200 && !done);
+
+            // If we exit due to counter, report timeout
+            if (!done)
+            {
+                throw std::runtime_error("Operation timed-out!\n"
+                    "Calibration state did not converged in time");
+            }
+
+            status = (rs2_dsc_status)result.status;
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            uint8_t speed = 4 - _speed;
+
+            bool repeat = true;
+            while (repeat) // Repeat until we got a result
+            {
+                // Begin auto-calibration
+                std::vector<uint8_t> cmd =
+                {
+                    0x14, 0x00, 0xab, 0xcd,
+                    0x80, 0x00, 0x00, 0x00,
+                    0x08, 0x00, 0x00, 0x00,
+                    speed, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00
+                };
+
+                safe_send_command(cmd, "START_CALIB");
+
+                memset(&result, 0, sizeof(DirectSearchCalibrationResult));
+
+                // While not ready...
+                int count = 0;
+                bool done = false;
+                do
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+                    // Check calibration status
+                    cmd =
+                    {
+                        0x14, 0x00, 0xab, 0xcd,
+                        0x80, 0x00, 0x00, 0x00,
+                        0x03, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00
+                    };
+
+                    try
+                    {
+                        auto res = safe_send_command(cmd, "CALIB_STATUS");
+
+                        if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
+                            throw std::runtime_error("Not enough data from CALIB_STATUS!");
+
+                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                    }
+                    catch (const std::exception& ex)
+                    {
+                        log(to_string() << "Warning: " << ex.what());
+                    }
+
+                    _progress = count * (2 * _speed);
+
+                } while (count++ < 200 && !done);
+
+                // If we exit due to counter, report timeout
+                if (!done)
+                {
+                    throw std::runtime_error("Operation timed-out!\n"
+                        "Calibration state did not converged in time");
+                }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+                if (result.status != RS2_DSC_STATUS_EDGE_TOO_CLOSE)
+                {
+                    repeat = false;
+                }
+                else
+                {
+                    // Edge to Close means not enough "samples" to identify fit curve
+                    // Slow down to capture more samples next cycle
+                    log("Edge too close... Slowing down");
+                    speed++;
+                    if (speed > 4) repeat = false;
+                }
+            }
+
+            status = (rs2_dsc_status)result.status;
+        }
+
+        // Handle errors from firmware
+        if (status != RS2_DSC_STATUS_SUCCESS)
+        {
+            if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
+            {
+                throw std::runtime_error("Calibration didn't converge! (EDGE_TO_CLOSE)\n"
+                    "Please retry in different lighting conditions");
+            }
+            else if (status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
+            {
+                throw std::runtime_error("Not enough depth pixels! (FILL_FACTOR_LOW)\n"
+                    "Please retry in different lighting conditions");
+            }
+            else if (status == RS2_DSC_STATUS_NOT_CONVERGE)
+            {
+                throw std::runtime_error("Calibration didn't converge! (NOT_CONVERGE)\n"
+                    "Please retry in different lighting conditions");
+            }
+            else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
+            {
+                throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
+                    "Please retry in different lighting conditions");
+            }
+            else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << result.status << ")");
+        }
+    }
+
+    void on_chip_calib_manager::process_flow(std::function<void()> cleanup)
+    {
+        update_last_used();
 
         log(to_string() << "Starting calibration at speed " << _speed);
 
@@ -368,6 +559,10 @@ namespace rs2
         memcpy(_old_calib.data(), hd, _old_calib.size()); // Copy to old_calib
 
         _was_streaming = _sub->streaming;
+        _synchronized = _viewer.synchronization_enable.load();
+        _post_processing = _sub->post_processing_enabled;
+        _sub->post_processing_enabled = false;
+        _viewer.synchronization_enable = false;
 
         _restored = false;
 
@@ -383,123 +578,11 @@ namespace rs2
         stop_viewer();
 
         _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
-        _synchronized = _viewer.synchronization_enable.load();
-        _post_processing = _sub->post_processing_enabled;
-        _sub->post_processing_enabled = false;
-        _viewer.synchronization_enable = false;
         
         // Switch into special Auto-Calibration mode
         start_viewer(256, 144, 90);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-        uint8_t speed = 4 - _speed;
-
-        DirectSearchCalibrationResult result;
-
-        bool repeat = true;
-        while (repeat) // Repeat until we got a result
-        {
-            // Begin auto-calibration
-            std::vector<uint8_t> cmd =
-            {
-                0x14, 0x00, 0xab, 0xcd,
-                0x80, 0x00, 0x00, 0x00,
-                0x08, 0x00, 0x00, 0x00,
-                speed, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00
-            };
-
-            safe_send_command(cmd, "START_CALIB");
-
-            memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
-            // While not ready...
-            int count = 0;
-            bool done = false;
-            do
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-                // Check calibration status
-                cmd =
-                {
-                    0x14, 0x00, 0xab, 0xcd,
-                    0x80, 0x00, 0x00, 0x00,
-                    0x03, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00
-                };
-
-                try
-                {
-                    auto res = safe_send_command(cmd, "CALIB_STATUS");
-
-                    if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
-                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
-                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                }
-                catch (const std::exception& ex)
-                {
-                    log(to_string() << "Warning: " << ex.what());
-                }
-
-                _progress = count * (2 * _speed);
-
-            } while (count++ < 200 && !done);
-
-            // If we exit due to counter, report timeout
-            if (!done)
-            {
-                throw std::runtime_error("Operation timed-out!\n"
-                "Calibration state did not converged in time");
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            if (result.status != RS2_DSC_STATUS_EDGE_TOO_CLOSE)
-            {
-                repeat = false;
-            }
-            else
-            {
-                // Edge to Close means not enough "samples" to identify fit curve
-                // Slow down to capture more samples next cycle
-                log("Edge too close... Slowing down");
-                speed++;
-                if (speed > 4) repeat = false;
-            }
-        }
-
-        // Handle errors from firmware
-        if (result.status != RS2_DSC_STATUS_SUCCESS)
-        {
-            if (result.status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (EDGE_TO_CLOSE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (result.status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
-            {
-                throw std::runtime_error("Not enough depth pixels! (FILL_FACTOR_LOW)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (result.status == RS2_DSC_STATUS_NOT_CONVERGE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (NOT_CONVERGE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (result.status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << result.status << ")");
-        }
+        calibrate();
 
         // Get new calibration from the firmware
         std::vector<uint8_t> cmd =
@@ -517,6 +600,8 @@ namespace rs2
         if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer))
             throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
+        auto result = (DscResultBuffer*)(res.data() + sizeof(int32_t));
+
         table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(int32_t) + sizeof(DscResultBuffer));
 
         if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer) + sizeof(table_header) + header->table_size)
@@ -525,7 +610,7 @@ namespace rs2
         _new_calib.resize(sizeof(table_header) + header->table_size, 0);
         memcpy(_new_calib.data(), header, _new_calib.size()); // Copy to new_calib
 
-        _health = abs(result.healthCheck);
+        _health = abs(result->m_dscResultParams.m_healthCheck);
 
         log(to_string() << "Calibration completed, health factor = " << _health);
 
@@ -628,8 +713,10 @@ namespace rs2
             if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
                 ImGui::Text("Calibration Health-Check");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
-                update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
+                     update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
                 ImGui::Text("On-Chip Calibration");
+            else if (update_state == RS2_CALIB_STATE_TARE_INPUT)
+                ImGui::Text("Tare Calibration");
             if (update_state == RS2_CALIB_STATE_FAILED)
                 ImGui::Text("Calibration Failed");
 
@@ -655,6 +742,96 @@ namespace rs2
             {
                 enable_dismiss = false;
                 ImGui::Text("Camera is being calibrated...\nKeep the camera stationary pointing at a wall");
+            }
+            else if (update_state == RS2_CALIB_STATE_TARE_INPUT)
+            {
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::Text("Avg Step Count:");
+
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
+
+                std::string id = to_string() << "##avg_step_count_" << index;
+                ImGui::PushItemWidth(width - 145);
+                ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
+                ImGui::PopItemWidth();
+
+                //-------------------------
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Step Count:");
+
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
+
+                id = to_string() << "##step_count_" << index;
+
+                ImGui::PushItemWidth(width - 145);
+                ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
+                ImGui::PopItemWidth();
+
+                //-------------------------
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 43 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Accuracy:");
+
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+
+                id = to_string() << "##accuracy_" << index;
+
+                std::vector<std::string> vals{ "Very High", "High", "Medium", "Low" };
+                std::vector<const char*> vals_cstr;
+                for (auto&& s : vals) vals_cstr.push_back(s.c_str());
+
+                ImGui::PushItemWidth(width - 145);
+                ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), vals.size());
+                ImGui::PopItemWidth();
+
+                //-------------------------
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 48 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("Ground Truth(mm):");
+
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+
+                id = to_string() << "##ground_truth_for_tare" << index;
+
+                std::string gt = to_string() << std::fixed << std::setprecision(2) << get_manager().ground_truth;
+                const int MAX_SIZE = 256;
+                char buff[MAX_SIZE];
+                memcpy(buff, gt.c_str(), gt.size() + 1);
+
+                ImGui::PushItemWidth(width - 145);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)gt.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> get_manager().ground_truth;
+                }
+                ImGui::PopItemWidth();
+
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+
+                ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+                std::string button_name = to_string() << "Calibrate" << "##tare" << index;
+
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                {
+                    get_manager().restore_workspace();
+                    get_manager().reset();
+                    get_manager().tare = true;
+                    get_manager().start(shared_from_this());
+                    update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                    enable_dismiss = false;
+                }
+
+                ImGui::PopStyleColor(2);
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Begin Tare Calibration");
+                }
             }
             else if (update_state == RS2_CALIB_STATE_FAILED)
             {
@@ -914,12 +1091,15 @@ namespace rs2
 
     void autocalib_notification_model::dismiss(bool snooze)
     {
+        get_manager().update_last_used();
+
         if (!use_new_calib && get_manager().done()) 
             get_manager().apply_calib(false);
 
         get_manager().restore_workspace();
 
-        update_state = RS2_CALIB_STATE_INITIAL_PROMPT;
+        if (update_state != RS2_CALIB_STATE_TARE_INPUT)
+            update_state = RS2_CALIB_STATE_INITIAL_PROMPT;
         get_manager().reset();
 
         notification_model::dismiss(snooze);
@@ -1003,6 +1183,7 @@ namespace rs2
         if (update_state == RS2_CALIB_STATE_COMPLETE) return 65;
         else if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT) return 120;
         else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE) return 170;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 160;
         else return 100;
     }
 

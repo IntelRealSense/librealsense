@@ -46,7 +46,18 @@ namespace rs2
         // Get depth metrics for before/after calibration tables
         std::pair<float, float> get_metric(bool use_new);
 
+        void update_last_used();
+
+        float ground_truth = 2500.f;
+        int average_step_count = 1;
+        int step_count = 1;
+        int accuracy = 1;
+        bool tare = false;
+
+        void calibrate();
+
     private:
+
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
 
         rs2::depth_frame fetch_depth_frame();
@@ -88,6 +99,7 @@ namespace rs2
             RS2_CALIB_STATE_COMPLETE,        // After write, quick blue notification
             RS2_CALIB_STATE_CALIB_IN_PROCESS,// Calibration in process... Shows progressbar
             RS2_CALIB_STATE_CALIB_COMPLETE,  // Calibration complete, show before/after toggle and metrics
+            RS2_CALIB_STATE_TARE_INPUT,      // Collect input parameters for Tare calib
         };
 
         autocalib_notification_model(std::string name,

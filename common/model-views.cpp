@@ -4377,6 +4377,34 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Start on-chip calibration process");
 
+                    if (ImGui::Selectable("Tare Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>(
+                                "", manager, false);
+
+                            viewer.not_model.add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Start on-chip tare calibration process");
+
                     has_autocalib = true;
                 }
             }
@@ -4385,6 +4413,7 @@ namespace rs2
                 bool selected = false;
                 something_to_show = true;
                 ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
+                ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
             }
 
             if (!something_to_show)
