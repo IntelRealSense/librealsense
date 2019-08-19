@@ -577,7 +577,11 @@ namespace rs2
         bool can_enable_zero_order();
         void verify_zero_order_conditions();
 
-        void update_ui(std::vector<stream_profile> profiles_vec, bool update_format, bool update_resolution, bool update_fps);
+        void update_ui(std::vector<stream_profile> profiles_vec);
+
+        template<typename T, typename V>
+        bool check_profile(stream_profile p, T cond, std::map<V, std::map<int, stream_profile>>& profiles_map,
+            std::vector<stream_profile>& results, V key, int num_streams, stream_profile& def_p);
 
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
