@@ -48,7 +48,6 @@ namespace librealsense
     void extrinsics_graph::register_extrinsics(const stream_interface & from, const stream_interface & to, rs2_extrinsics extr)
     {
         auto lazy_extr = std::make_shared<lazy<rs2_extrinsics>>([=]() {return extr; });
-        _external_extrinsics.push_back(lazy_extr);
         register_extrinsics(from, to, lazy_extr);
     }
 
@@ -62,21 +61,21 @@ namespace librealsense
         {
             if (!kvp.second.lock())
             {
-                auto dead_id = kvp.first;
+                auto invalid_id = kvp.first;
                 // Delete all extrinsics going out of this stream
-                _extrinsics.erase(dead_id);
+                _extrinsics.erase(invalid_id);
                 ++counter;
-                invalid_ids.push_back(dead_id);
+                invalid_ids.push_back(invalid_id);
             }
         }
 
-        for (auto dead_id : invalid_ids)
+        for (auto removed_id : invalid_ids)
         {
-            _streams.erase(dead_id);
+            _streams.erase(removed_id);
             for (auto&& elem : _extrinsics)
             {
                 // Delete any extrinsics going into the stream
-                elem.second.erase(dead_id);
+                elem.second.erase(removed_id);
                 ++counter;
             }
         }

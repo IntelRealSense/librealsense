@@ -398,7 +398,8 @@ namespace librealsense
                     winusb_uvc_device *device = device_list[i];
 
                     // initializing and filling all fields of winsub_device device_list[0]
-                    winusb_open(device);
+                    if (winusb_open(device) != UVC_SUCCESS)
+                        continue;
 
                     if (device->deviceData.ctrl_if.bInterfaceNumber == mi)
                     {
@@ -421,18 +422,29 @@ namespace librealsense
                             _extension_unit = eu->bUnitID;
                         }
 
-                        _keep_pulling_interrupts = true;
-                        _interrupt_polling_thread = std::shared_ptr<std::thread>(new std::thread([this]() {
-                            poll_interrupts();
-                        }), [this](std::thread* ptr) { 
-                            if (ptr)
-                            {
-                                _keep_pulling_interrupts = false;
-                                ptr->join();
-                                delete ptr;
-                            }
-                        });
+                        // WinUsb_SetPipePolicy function sets the policy for a specific pipe associated with an endpoint on the device
+                        // PIPE_TRANSFER_TIMEOUT: Waits for a time-out interval before canceling the request
+                        ULONG timeout_milliseconds = 100;
+                        if (WinUsb_SetPipePolicy(_device->winusbHandle, _device->deviceData.ctrl_if.bEndpointAddress, PIPE_TRANSFER_TIMEOUT, sizeof(timeout_milliseconds), &timeout_milliseconds) == FALSE)
+                        {
+                            free(device_list);
+                            throw std::runtime_error("Failed to set timeout policy!");
+                        }
 
+                        if (_device->deviceData.ctrl_if.bEndpointAddress >= 0x80) // Poll Upstream endpoints only
+                        {
+                            _keep_pulling_interrupts = true;
+                            _interrupt_polling_thread = std::shared_ptr<std::thread>(new std::thread([device, this]() {
+                                poll_interrupts();
+                            }), [this](std::thread* ptr) {
+                                if (ptr)
+                                {
+                                    _keep_pulling_interrupts = false;
+                                    ptr->join();
+                                    delete ptr;
+                                }
+                            });
+                        }
                         _power_state = D0;
                         free(device_list);
 
@@ -596,12 +608,14 @@ namespace librealsense
 
             winusb_free_formats(formats);
 
-            callback_context *context = new callback_context();
-            context->_callback = callback;
-            context->_this = this;
-            context->_profile = profile;
+            _cb_context = std::make_shared<callback_context>();
+            _cb_context->_callback = callback;
+            _cb_context->_profile = profile;
+            _cb_context->_this = this;
 
-            winusb_start_streaming(_device.get(), &ctrl, internal_winusb_uvc_callback, context, 0);
+            auto sts = winusb_start_streaming(_device.get(), &ctrl, internal_winusb_uvc_callback, _cb_context.get(), 0);
+            if(sts != UVC_SUCCESS)
+                throw std::runtime_error("Failed to start streaming!");
         }
 
         void win7_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)

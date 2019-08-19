@@ -14,6 +14,7 @@
 #include <regex>
 #include <sstream>
 #include <mutex>
+#include "types.h"
 
 #pragma comment(lib, "winusb.lib")
 
@@ -420,7 +421,7 @@ namespace librealsense
 
         void win7_usb_interface::reset_pipe(pipe_direction pipeDirection) const
         {
-            BOOL sts;
+            BOOL sts{};
 
             if (pipeDirection == pipe_direction::InPipe)
             {

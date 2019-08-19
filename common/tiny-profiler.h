@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <chrono>
+#include <iostream>
 
 class scoped_timer
 {

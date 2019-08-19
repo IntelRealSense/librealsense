@@ -346,7 +346,6 @@ namespace librealsense
                     });
                 }
             }
-
             auto dev = dynamic_cast<const ds5_device*>(&get_device());
             auto dev_name = (dev) ? dev->get_info(RS2_CAMERA_INFO_NAME) : "";
 
