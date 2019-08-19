@@ -1387,8 +1387,7 @@ namespace rs2
         return results.size() >= size_t(std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; }));
     }
 
-    void subdevice_model::update_ui(std::vector<stream_profile> profiles_vec, bool update_format,
-        bool update_resolution, bool update_fps)
+    void subdevice_model::update_ui(std::vector<stream_profile> profiles_vec)
     {
         if (profiles_vec.empty())
             return;
@@ -1397,44 +1396,70 @@ namespace rs2
         for (auto& p : profiles_vec)
         {
             stream_enabled[p.unique_id()] = true;
-            if (update_format)
+
+            auto format_vec = format_values[p.unique_id()];
+            for (int i = 0; i < format_vec.size(); i++)
             {
-                auto format_vec = format_values[p.unique_id()];
-                for (int i = 0; i < format_vec.size(); i++)
+                if (format_vec[i] == p.format())
                 {
-                    if (format_vec[i] == p.format())
-                    {
-                        ui.selected_format_id[p.unique_id()] = i;
-                        break;
-                    }
+                    ui.selected_format_id[p.unique_id()] = i;
+                    break;
                 }
             }
-            if (update_resolution)
+            for (int i = 0; i < res_values.size(); i++)
             {
-                for (int i = 0; i < res_values.size(); i++)
-                {
-                    if (auto vid_prof = p.as<video_stream_profile>())
-                        if (res_values[i].first == vid_prof.width() && res_values[i].second == vid_prof.height())
-                        {
-                            ui.selected_res_id = i;
-                            break;
-                        }
-                }
-            }
-            if (update_fps)
-            {
-                for (int i = 0; i < shared_fps_values.size(); i++)
-                {
-                    if (shared_fps_values[i] == p.fps())
+                if (auto vid_prof = p.as<video_stream_profile>())
+                    if (res_values[i].first == vid_prof.width() && res_values[i].second == vid_prof.height())
                     {
-                        ui.selected_shared_fps_id = i;
+                        ui.selected_res_id = i;
                         break;
                     }
+            }
+            for (int i = 0; i < shared_fps_values.size(); i++)
+            {
+                if (shared_fps_values[i] == p.fps())
+                {
+                    ui.selected_shared_fps_id = i;
+                    break;
                 }
             }
         }
         last_valid_ui = ui;
     }
+
+    template<typename T, typename V>
+    bool subdevice_model::check_profile (stream_profile p, T cond, std::map<V, std::map<int, stream_profile>>& profiles_map,
+        std::vector<stream_profile>& results, V key, int num_streams, stream_profile& def_p)
+    {
+        bool found = false;
+        if (auto vid_prof = p.as<video_stream_profile>())
+        {
+            for (auto& s : stream_enabled)
+            {
+                // find profiles that have an enabled stream and match the required condition
+                if (s.second == true && vid_prof.unique_id() == s.first && cond(vid_prof))
+                {
+                    profiles_map[key][p.unique_id()] = p;
+                    if (profiles_map[key].size() == num_streams)
+                    {
+                        results.clear(); // make sure only current profiles are saved
+                        for (auto& it : profiles_map[key])
+                            results.push_back(it.second);
+                        found = true;
+                    }
+                    else if (results.empty() && num_streams > 1 && profiles_map[key].size() == num_streams-1)
+                    {
+                        for (auto& it : profiles_map[key])
+                            results.push_back(it.second);
+                    }
+                }
+                else if (!def_p.get() && cond(vid_prof))
+                    def_p = p; // in case no matching profile for current stream will be found, we'll use a random profile with given resolution
+            }
+        }
+        return found;
+    }
+
 
     std::vector<stream_profile> subdevice_model::get_supported_profile()
     {
@@ -1442,13 +1467,12 @@ namespace rs2
         std::stringstream error_message;
         error_message << "The profile ";
         int num_streams = 0;
-        bool found = false;
         stream_profile def_p;
+        auto rev_profiles = profiles;
+        std::reverse(std::begin(rev_profiles), std::end(rev_profiles));
         for (auto& s : stream_enabled)
-        {
             if (s.second == true)
                 num_streams++;
-        }
 
         if (ui.selected_res_id != last_valid_ui.selected_res_id)
         {
@@ -1458,35 +1482,13 @@ namespace rs2
                 auto height = res_values[ui.selected_res_id].second;
                 std::vector<stream_profile> matching_profiles;
                 std::map<int, std::map<int, stream_profile>> profiles_by_fps;
-                std::map<int, stream_profile> match;
-                for (auto&& p : profiles)
+                for (auto&& p : rev_profiles)
                 {
-                    if (auto vid_prof = p.as<video_stream_profile>())
-                    {
-                        for (auto& s : stream_enabled)
-                        {
-                            // find profiles that have the required resolution and also unique_id is of an enabled stream
-                            if (s.second == true && p.unique_id() == s.first && vid_prof.width() == width && vid_prof.height() == height)
-                            { 
-                                profiles_by_fps[p.fps()][p.unique_id()] = p;
-                                if (profiles_by_fps[p.fps()].size() == num_streams)
-                                {
-                                    for (auto& p : profiles_by_fps[p.fps()])
-                                        results.push_back(p.second);
-                                    found = true;
-                                }
-                            }
-                            else if (!def_p.get() && vid_prof.width() == width && vid_prof.height() == height)
-                                def_p = p; // in case no matching profile for current stream will be found, we'll use a random profile with given resolution
-                        }
-                    }
-                    if (found)
+                    if (check_profile(p, [&](video_stream_profile vid_prof)
+                    { return (vid_prof.width() == width && vid_prof.height() == height); },
+                        profiles_by_fps, results, p.fps(), num_streams, def_p))
                         break;
                 }
-
-                if (results.empty())
-                    results.push_back(def_p);
-                update_ui(results, true, false, true);
             }
         }
         else if (ui.selected_shared_fps_id != last_valid_ui.selected_shared_fps_id)
@@ -1497,39 +1499,18 @@ namespace rs2
                 fps = shared_fps_values[ui.selected_shared_fps_id];
             std::vector<stream_profile> matching_profiles;
             std::map<std::tuple<int,int>, std::map<int, stream_profile>> profiles_by_res;
-            std::map<int, stream_profile> match;
-          //  for (auto&& p : profiles)
-            for (auto it = profiles.rbegin(); it != profiles.rend(); it++)
+
+            for (auto&& p : rev_profiles)
             {
-                auto p = *it;
                 if (auto vid_prof = p.as<video_stream_profile>())
                 {
-                    for (auto& s : stream_enabled)
-                    {
-                        if (s.second == true && p.unique_id() == s.first && p.fps() == fps)
-                        {
-                            auto key = std::make_tuple(vid_prof.width(), vid_prof.height());
-                            profiles_by_res[key][p.unique_id()] = p;
-                            if (profiles_by_res[key].size() == num_streams)
-                            {
-                                for (auto& p : profiles_by_res[key])
-                                    results.push_back(p.second);
-                                found = true;
-                            }
-                        }
-                        else if (!def_p.get() && p.fps() == fps)
-                            def_p = p;
-                    }
+                    if (check_profile(p, [&](video_stream_profile vsp) { return (vsp.fps() == fps); },
+                        profiles_by_res, results, std::make_tuple(vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                        break;
                 }
-                if (found)
-                    break;
             }
-
-            if (results.empty())
-                results.push_back(def_p);
-            update_ui(results, true, true, false);
         }
-        else if (ui.selected_format_id != last_valid_ui.selected_format_id)
+        else if (num_streams > 0 && ui.selected_format_id != last_valid_ui.selected_format_id)
         {
             std::vector<stream_profile> matching_profiles;
             std::map<std::tuple<int,int,int>, std::map<int, stream_profile>> profiles_by_fps_res; //fps, width, height
@@ -1542,61 +1523,42 @@ namespace rs2
             {
                 auto last_valid_it = last_valid_ui.selected_format_id.find(it.first);
                 // find the stream that didn't exist in previous configuration or had a different format
-                if (last_valid_it == last_valid_ui.selected_format_id.end() || 
-                    it.second != last_valid_it->second)
+                if (last_valid_it == last_valid_ui.selected_format_id.end() || it.second != last_valid_it->second)
                 {
                     format = format_values[it.first][it.second];
                     stream_id = it.first;
                 }
             }
 
-            for (auto&& p : profiles)
+            for (auto&& p : rev_profiles)
             {
                 if (auto vid_prof = p.as<video_stream_profile>())
                     if (p.unique_id() == stream_id && p.format() == format) // && stream_enabled[stream_id]
                     {
                         profiles_by_fps_res[std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height())][p.unique_id()] = p;
+                        matching_profiles.push_back(p);
                         if (!def_p.get())
                             def_p = p;
                     }
             }
 
-            for (auto&& p : profiles)
+            // take only profiles we still didn't add to matching_profiles, which belong to an active stream and have fps+resolution compatible
+            // with some profile in matching_profiles
+            for (auto&& p : rev_profiles)
             {
-                for (auto& s : stream_enabled)
+                if (auto vid_prof = p.as<video_stream_profile>())
                 {
-                    if (auto vid_prof = p.as<video_stream_profile>())
-                    {
-                        // take only profiles we still didn't add to matching_profiles, which belong to an active stream and have fps+resolution compatible
-                        // with some profile in matching_profiles
-                        if (s.first != stream_id && s.second == true && p.unique_id() == s.first &&
-                            std::find_if(matching_profiles.begin(), matching_profiles.end(), [&](stream_profile sp)
-                        {
-                            if (auto vsp = sp.as<video_stream_profile>())
-                                return (sp.fps() == p.fps() && vsp.width() == vid_prof.width() && vsp.height() == vid_prof.height());
-                        }) != matching_profiles.end())
-                        {
-                            auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
-                            profiles_by_fps_res[key][p.unique_id()] = p;
-                            if (profiles_by_fps_res[key].size() == num_streams)
-                            {
-                                for (auto& p : profiles_by_fps_res[key])
-                                    results.push_back(p.second);
-                                found = true;
-                            }
-                        }
-                    }
+                    auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
+                    if (check_profile(p, [&](stream_profile prof) { return (std::find_if(matching_profiles.begin(), matching_profiles.end(), [&](stream_profile sp)
+                                { return (sp.fps() == p.fps() && sp.as<video_stream_profile>().width() == vid_prof.width() &&
+                                sp.as<video_stream_profile>().height() == vid_prof.height()); })  != matching_profiles.end()); },
+                        profiles_by_fps_res, results, std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                        break;
                 }
-                if (found)
-                    break;
             }
-
-            if (results.empty())
-                results.push_back(def_p);
-            update_ui(results, true, true, true);
         }
         else if (stream_enabled != prev_stream_enabled)
-        { 
+        {
             std::vector<stream_profile> matching_profiles;
             std::map<rs2_format, std::map<int, stream_profile>> profiles_by_format;
             int fps = 0;
@@ -1607,59 +1569,31 @@ namespace rs2
 
             prev_stream_enabled = stream_enabled; // make sure stream_enabeld and prev_stream_enabled differ only after user input
 
-            for (auto&& p : profiles)
+            for (auto&& p : rev_profiles)
             {
-                if (auto vid_prof = p.as<video_stream_profile>())
-                {
-                    for (auto& s : stream_enabled)
-                    {
-                        if (s.second == true && p.unique_id() == s.first && p.fps() == fps &&
-                            vid_prof.width() == width && vid_prof.height() == height)
-                        {
-                            profiles_by_format[p.format()][p.unique_id()] = p;
-                            if (profiles_by_format[p.format()].size() == num_streams)
-                            {
-                                for (auto& p : profiles_by_format[p.format()])
-                                    results.push_back(p.second);
-                                found = true;
-                            }
-                        }
-                    }
-                }
-                if (found)
+                if (check_profile(p, [&](video_stream_profile vid_prof)
+                { return (p.fps() == fps && vid_prof.width() == width && vid_prof.height() == height); },
+                    profiles_by_format, results, p.format(), num_streams, def_p))
                     break;
             }
-
-            if (results.empty()) // find a profile that 
+            if (num_streams > 0 && results.size() < num_streams)
             {
+                results.clear();
                 std::map<std::tuple<int, int, int>, std::map<int, stream_profile>> profiles_by_fps_res;
-                std::map<int, stream_profile> match;
-                for (auto&& p : profiles)
+                for (auto&& p : rev_profiles)
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                     {
-                        for (auto& s : stream_enabled)
-                        {
-                            // find profiles that have the required resolution and also unique_id is of an enabled stream
-                            if (p.unique_id() == s.first && s.second == true)
-                            {
-                                auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
-                                profiles_by_fps_res[key][p.unique_id()] = p;
-                                if (profiles_by_fps_res[key].size() == num_streams)
-                                {
-                                    for (auto& p : profiles_by_fps_res[key])
-                                        results.push_back(p.second);
-                                    found = true;
-                                }
-                            }
-                        }
+                        if (check_profile(p, [&](video_stream_profile vsp) { return true; }, profiles_by_fps_res, results,
+                            std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                            break;
                     }
-                    if (found)
-                        break;
                 }
             }
-            update_ui(results, true, true, true);
         }
+        if (num_streams > 0  && results.empty())
+            results.push_back(def_p);
+        update_ui(results);
         return results;
     }
     
