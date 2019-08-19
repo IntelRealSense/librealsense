@@ -13,7 +13,7 @@ public class FrameQueue extends LrsClass {
     public Frame pollForFrame() {
         long rv = nPollForFrame(mHandle);
         if(rv != 0) {
-            return Frame.create(rv);
+            return new Frame(rv);
         }
         return null;
     }
@@ -32,7 +32,7 @@ public class FrameQueue extends LrsClass {
 
     public Frame waitForFrame(int timeout) {
         long rv = nWaitForFrames(mHandle, timeout);
-        return Frame.create(rv);
+        return new Frame(rv);
     }
 
     public FrameSet waitForFrames() {

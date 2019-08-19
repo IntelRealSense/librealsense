@@ -3,6 +3,7 @@ package com.intel.realsense.librealsense;
 public class DepthFrame extends VideoFrame {
     protected DepthFrame(long handle) {
         super(handle);
+        mOwner = false;
     }
 
     public float getDistance(int x, int y) {

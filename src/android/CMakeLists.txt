@@ -5,8 +5,6 @@ target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/android-uvc.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/android-uvc.h"
-        "${CMAKE_CURRENT_LIST_DIR}/android-hid.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/android-hid.h"
         "${CMAKE_CURRENT_LIST_DIR}/android-backend.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/android-backend.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_watcher.h"

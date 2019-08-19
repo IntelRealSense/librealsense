@@ -3,6 +3,7 @@ package com.intel.realsense.librealsense;
 public class Points extends Frame {
     protected Points(long handle) {
         super(handle);
+        mOwner = false;
     }
 
     public int getCount(){

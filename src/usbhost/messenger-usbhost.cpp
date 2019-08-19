@@ -32,6 +32,7 @@ namespace librealsense
         {
             switch (sts)
             {
+                case 0: return RS2_USB_STATUS_SUCCESS;
                 case EBADF:
                 case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
                 case EOVERFLOW: return RS2_USB_STATUS_OVERFLOW;
@@ -45,14 +46,14 @@ namespace librealsense
         }
 
         usb_messenger_usbhost::usb_messenger_usbhost(const std::shared_ptr<usb_device_usbhost>& device)
-            : _device(device)
+                : _device(device)
         {
             auto interfaces = _device->get_interfaces();
             for(auto&& i : interfaces)
             {
                 claim_interface(i->get_number());
                 auto iep = i->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ, RS2_USB_ENDPOINT_INTERRUPT);
-                if(iep)
+                if(iep && !_interrupt_endpoint)
                     _interrupt_endpoint = std::dynamic_pointer_cast<usb_endpoint_usbhost>(iep);
             }
             listen_to_interrupts();
@@ -60,43 +61,61 @@ namespace librealsense
 
         usb_messenger_usbhost::~usb_messenger_usbhost()
         {
-            if(_pipe)
-                _pipe->cancel_request(_interrupt_request);
-            _pipe.reset();
+            cancel_request(_interrupt_request);
+            if(_dispatcher)
+            {
+                _dispatcher->stop();
+                _dispatcher.reset();
+            }
         }
 
         void usb_messenger_usbhost::queue_interrupt_request()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _pipe->submit_request(_interrupt_request);
+            submit_request(_interrupt_request);
+        }
+
+        void usb_messenger_usbhost::repeating_request()
+        {
+            _dispatcher->invoke([&](dispatcher::cancellable_timer c)
+            {
+                auto response = usb_request_wait(_device->get_handle(), 10);
+                if(response != nullptr)
+                {
+                    auto cb = reinterpret_cast<usb_request_callback*>(response->client_data);
+                    cb->callback(response);
+                }
+                repeating_request();
+            });
         }
 
         void usb_messenger_usbhost::listen_to_interrupts()
         {
-            _pipe = std::make_shared<pipe>(_device->get_handle());
+            _dispatcher = std::make_shared<dispatcher>(10);
+            _dispatcher->start();
+            repeating_request();
 
             if(!_interrupt_endpoint)//recovery device
                 return;
 
             auto desc = _interrupt_endpoint->get_descriptor();
             _interrupt_request = std::shared_ptr<usb_request>(usb_request_new(_device->get_handle(),
-                    &desc), [](usb_request* req) {usb_request_free(req);});
-            _interrupt_callback = std::make_shared<pipe_callback>
+                                                                              &desc), [](usb_request* req) {usb_request_free(req);});
+            _interrupt_callback = std::make_shared<usb_request_callback>
                     ([&](usb_request* response)
-                    {
-                        if (response->actual_length > 0) {//TODO:MK status check is currently for d4xx fw
-                            std::string buff = "";
-                            for (int i = 0; i < response->actual_length; i++)
-                                buff += std::to_string(((uint8_t*)response->buffer)[i]) + ", ";
-                            LOG_DEBUG("interrupt_request: " << buff.c_str());
-                            if (response->actual_length == INTERRUPT_PACKET_SIZE) {
-                                auto sts = ((uint8_t*)response->buffer)[INTERRUPT_NOTIFICATION_INDEX];
-                                if (sts == DEPTH_SENSOR_OVERFLOW_NOTIFICATION || sts == COLOR_SENSOR_OVERFLOW_NOTIFICATION)
-                                    LOG_ERROR("overflow status sent from the device");
-                            }
-                        }
-                        queue_interrupt_request();
-                    });
+                     {
+                         if (response->actual_length > 0) {//TODO:MK status check is currently for d4xx fw
+                             std::string buff = "";
+                             for (int i = 0; i < response->actual_length; i++)
+                                 buff += std::to_string(((uint8_t*)response->buffer)[i]) + ", ";
+                             LOG_DEBUG("interrupt_request: " << buff.c_str());
+                             if (response->actual_length == INTERRUPT_PACKET_SIZE) {
+                                 auto sts = ((uint8_t*)response->buffer)[INTERRUPT_NOTIFICATION_INDEX];
+                                 if (sts == DEPTH_SENSOR_OVERFLOW_NOTIFICATION || sts == COLOR_SENSOR_OVERFLOW_NOTIFICATION)
+                                     LOG_ERROR("overflow status sent from the device");
+                             }
+                         }
+                         queue_interrupt_request();
+                     });
             _interrupt_buffer = std::vector<uint8_t>(INTERRUPT_BUFFER_SIZE);
             _interrupt_request->buffer = _interrupt_buffer.data();
             _interrupt_request->buffer_length = _interrupt_buffer.size();
@@ -133,7 +152,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << (int)errno);
                 return usbhost_status_to_rs(errno);
             }
             transferred = sts;
@@ -150,6 +169,30 @@ namespace librealsense
                 return usbhost_status_to_rs(errno);
             }
             transferred = sts;
+            return RS2_USB_STATUS_SUCCESS;
+        }
+
+        usb_status usb_messenger_usbhost::submit_request(std::shared_ptr<usb_request> request)
+        {
+            auto sts = usb_request_queue(request.get());
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("usb_request_queue returned error, endpoint: " << request->endpoint << " error: " << strerr << ", number: " << (int)errno);
+                return usbhost_status_to_rs(errno);
+            }
+            return RS2_USB_STATUS_SUCCESS;
+        }
+
+        usb_status usb_messenger_usbhost::cancel_request(std::shared_ptr<usb_request> request)
+        {
+            auto sts = usb_request_cancel(request.get());
+            if(sts < 0)
+            {
+                std::string strerr = strerror(errno);
+                LOG_WARNING("usb_request_cancel returned error, endpoint: " << request->endpoint << ", error: " << strerr << ", number: " << (int)errno);
+                return usbhost_status_to_rs(errno);
+            }
             return RS2_USB_STATUS_SUCCESS;
         }
     }

@@ -46,6 +46,7 @@ namespace librealsense
             uvc_frame,
             create_hid_device,
             query_hid_devices,
+            hid_register_profiles,
             hid_open,
             hid_close,
             hid_stop_capture,
@@ -363,6 +364,7 @@ namespace librealsense
         class record_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override;
             void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -561,6 +563,7 @@ namespace librealsense
         class playback_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override;
             void open(const std::vector<hid_profile>& hid_profiles) override;
             void close() override;
             void stop_capture() override;

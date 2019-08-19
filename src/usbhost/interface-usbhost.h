@@ -7,7 +7,6 @@
 #include "../usb/usb-interface.h"
 #include "../usb/usb-device.h"
 #include "usbhost.h"
-#include "pipe-usbhost.h"
 #include <map>
 
 namespace librealsense

@@ -127,7 +127,7 @@ public class DetachedActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e){
-            Log.e(TAG, "error while validateding device, error: " + e.getMessage());
+            Log.e(TAG, "error while validating device, error: " + e.getMessage());
         }
     }
 

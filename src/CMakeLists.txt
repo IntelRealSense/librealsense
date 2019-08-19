@@ -41,6 +41,10 @@ if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
     include(${_rel_path}/win7/CMakeLists.txt)
 endif()
 
+if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND OR ${BACKEND} STREQUAL RS2_USE_ANDROID_BACKEND)
+    include(${_rel_path}/hid/CMakeLists.txt)
+endif()
+
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()

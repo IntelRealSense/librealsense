@@ -8,6 +8,7 @@
 #include "../usbhost/device-usbhost.h"
 #include "../backend.h"
 #include "../usb/usb-enumerator.h"
+#include "../hid/hid-device.h"
 
 using namespace std;
 using namespace librealsense;
@@ -24,8 +25,9 @@ void device_watcher_usbhost::notify()
     backend_device_group curr;
     backend_device_group prev;
     librealsense::platform::device_changed_callback callback;
-    
+
     curr.uvc_devices = query_uvc_devices();
+    curr.hid_devices = query_hid_devices_info();
 
     {
         std::lock_guard<std::mutex> lk(_mutex);
@@ -63,7 +65,7 @@ std::vector<platform::uvc_device_info> device_watcher_usbhost::query_uvc_devices
         device_info.unique_id = info.unique_id;
         device_info.device_path = info.unique_id;//the device unique_id is the USB port
         device_info.conn_spec = info.conn_spec;
-        LOG_INFO("Found UVC Device vid: " << std::string(device_info).c_str());
+        LOG_INFO("Found UVC device: " << std::string(device_info).c_str());
         rv.push_back(device_info);
     }
     return rv;

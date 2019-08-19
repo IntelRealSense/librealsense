@@ -799,11 +799,9 @@ namespace librealsense
         for (auto& elem : frequency_per_sensor)
             profiles_vector.push_back(platform::hid_profile{elem.first, elem.second});
 
-        _hid_device->open(profiles_vector);
+        _hid_device->register_profiles(profiles_vector);
         for (auto& elem : _hid_device->get_sensors())
             _hid_sensors.push_back(elem);
-
-        _hid_device->close();
     }
 
     hid_sensor::~hid_sensor()

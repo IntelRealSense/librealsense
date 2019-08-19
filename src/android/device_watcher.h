@@ -20,6 +20,7 @@ namespace librealsense
 
             void notify();
             std::vector<uvc_device_info> query_uvc_devices();
+            std::vector<hid_device_info> query_hid_devices();
 
             static std::shared_ptr<device_watcher_usbhost> instance();
 

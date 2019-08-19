@@ -5,15 +5,18 @@
 
 #include "android-backend.h"
 #include "android-uvc.h"
-#include "android-hid.h"
 #include "../types.h"
 #include "device_watcher.h"
 #include "../usb/usb-enumerator.h"
 #include <chrono>
 #include <cctype> // std::tolower
+#include "hid/hid-types.h"
+#include "hid/hid-device.h"
 
-namespace librealsense {
-    namespace platform {
+namespace librealsense
+{
+    namespace platform
+    {
         android_backend::android_backend() {
         }
 
@@ -54,13 +57,11 @@ namespace librealsense {
         }
 
         std::shared_ptr<hid_device> android_backend::create_hid_device(hid_device_info info) const {
-            throw std::runtime_error("create_hid_device Not supported");
+            return create_rshid_device(info);
         }
 
         std::vector<hid_device_info> android_backend::query_hid_devices() const {
-            std::vector<hid_device_info> devices;
-            // Not supported 
-            return devices;
+            return query_hid_devices_info();
         }
 
         std::shared_ptr<time_service> android_backend::create_time_service() const {

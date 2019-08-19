@@ -13,7 +13,7 @@ public class Sensor extends LrsClass {
         long[] streamProfilesHandles = nGetStreamProfiles(mHandle);
         List<StreamProfile> rv = new ArrayList<>();
         for(long h : streamProfilesHandles){
-            rv.add(StreamProfile.create(h));
+            rv.add(new StreamProfile(h));
         }
         return rv;
     }

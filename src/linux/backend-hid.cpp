@@ -990,10 +990,10 @@ namespace librealsense
         std::vector<hid_sensor> v4l_hid_device::get_sensors()
         {
             std::vector<hid_sensor> iio_sensors;
-            for (auto& elem : _iio_hid_sensors)
-            {
-                iio_sensors.push_back(hid_sensor{elem->get_sensor_name()});
-            }
+
+            for (auto& sensor : _hid_profiles)
+                iio_sensors.push_back({ sensor.sensor_name });
+
 
             for (auto& elem : _hid_custom_sensors)
             {

@@ -33,11 +33,12 @@
 #include <regex>
 #include <list>
 #include <unordered_map>
-
+#include "hid/hid-device.h"
 #include <signal.h>
 
 #include "libuvc.h"
 #include "libuvc_internal.h"
+#include "usb/usb-enumerator.h"
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
@@ -263,7 +264,6 @@ namespace librealsense
                 _stream_ctrls.clear();
                 _profiles.clear();
                 _callbacks.clear();
-                
             }
 
             void power_D0() {
@@ -494,7 +494,6 @@ namespace librealsense
             {
                 // Value may be translated according to action/option value
                 int32_t translated_value = value;
-                
                 switch (action)
                 {
                     case UVC_GET_CUR: // Translating from UVC 1.5 Spec up to RS
@@ -513,7 +512,6 @@ namespace librealsense
                             }
                         }
                         break;
-                        
                     case UVC_SET_CUR: // Translating from RS down to UVC 1.5 Spec
                         if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                         {
@@ -532,42 +530,36 @@ namespace librealsense
                             }
                         }
                         break;
-                        
                     case UVC_GET_MIN:
                         if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                         {
                             translated_value = 0; // Hardcoded MIN value
                         }
                         break;
-                        
                     case UVC_GET_MAX:
                         if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                         {
                             translated_value = 1; // Hardcoded MAX value
                         }
                         break;
-                        
                     case UVC_GET_RES:
                         if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                         {
                             translated_value = 1; // Hardcoded RES (step) value
                         }
                         break;
-                        
                     case UVC_GET_DEF:
                         if (option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                         {
                             translated_value = 1; // Hardcoded DEF value
                         }
                         break;
-                        
                     default:
                         throw std::runtime_error("Unsupported action translation");
                 }
                 return translated_value;
             }
 
-            
             bool get_pu(rs2_option opt, int32_t& value) const override
             {
                 int unit;
@@ -592,16 +584,12 @@ namespace librealsense
             {
                 int unit;
                 int control = rs2_option_to_ctrl_selector(option, unit);
-                
                 int min = get_data_usb( UVC_GET_MIN, control, unit);
                 min = rs2_value_translate(UVC_GET_MIN, option, value);
-                
                 int max = get_data_usb( UVC_GET_MAX, control, unit);
                 max = rs2_value_translate(UVC_GET_MAX, option, value);
-                
                 int step = get_data_usb( UVC_GET_RES, control, unit);
                 step = rs2_value_translate(UVC_GET_RES, option, value);
-                
                 int def = get_data_usb( UVC_GET_DEF, control, unit);
                 def = rs2_value_translate(UVC_GET_DEF, option, value);
 
@@ -734,7 +722,6 @@ namespace librealsense
 
             device->uvc_callback(frame, context->_callback, context->_profile);
         }
-      
       /* implements backend. provide a libuvc backend. */
         class libuvc_backend : public backend
         {
@@ -784,13 +771,12 @@ namespace librealsense
 
             std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const override
             {
-                return nullptr;
+                return create_rshid_device(info);
             }
 
             std::vector<hid_device_info> query_hid_devices() const override
             {
-                std::vector<hid_device_info> devices;
-                return devices;
+                return query_hid_devices_info();
             }
 
             std::shared_ptr<time_service> create_time_service() const override

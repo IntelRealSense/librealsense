@@ -46,7 +46,11 @@ namespace librealsense
                 if(sts != LIBUSB_SUCCESS)
                     return libusb_status_to_rs(sts);
 
-                libusb_set_auto_detach_kernel_driver(_handle, true);
+                // libusb_set_auto_detach_kernel_driver(_handle, true);
+
+                if (libusb_kernel_driver_active(_handle, interface) == 1)//find out if kernel driver is attached
+                    if (libusb_detach_kernel_driver(_handle, interface) == 0)// detach driver from device if attached.
+                        LOG_DEBUG("handle_libusb - detach kernel driver");
 
                 sts = libusb_claim_interface(_handle, interface);
                 if(sts != LIBUSB_SUCCESS)
