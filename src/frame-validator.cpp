@@ -76,10 +76,13 @@ namespace librealsense
             auto uc = _user_callback;
             _reset_thread = std::thread([s, cr, uc]()
             {
-                s->stop();
-                s->close();
-                s->open(cr);
-                s->start(uc);
+                try {
+                    s->stop();
+                    s->close();
+                    s->open(cr);
+                    s->start(uc);
+                }
+                catch (...) {}
             });
             _reset_thread.detach();
             //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
