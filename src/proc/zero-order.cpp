@@ -374,10 +374,11 @@ namespace librealsense
      
         auto data = f.as<rs2::frameset>();
         
-        if (!(_source_profile_depth.get() == data.get_depth_frame().get_profile().get()))
+        if (_source_profile_depth.get() != data.get_depth_frame().get_profile().get())
         {
             _source_profile_depth = data.get_depth_frame().get_profile();
             _target_profile_depth = _source_profile_depth.clone(_source_profile_depth.stream_type(), _source_profile_depth.stream_index(), _source_profile_depth.format());
+
         }
 
         auto depth_frame = data.get_depth_frame();
@@ -391,12 +392,12 @@ namespace librealsense
         rs2::frame confidence_out;
         if (confidence_frame)
         {
-            if(!_source_profile_confidence)
+            if (_source_profile_confidence.get() != confidence_frame.get_profile().get())
+            {
                 _source_profile_confidence = confidence_frame.get_profile();
-
-            if (!_target_profile_confidence)
                 _target_profile_confidence = _source_profile_confidence.clone(_source_profile_confidence.stream_type(), _source_profile_confidence.stream_index(), _source_profile_confidence.format());
 
+            }
             confidence_out = source.allocate_video_frame(_source_profile_confidence, confidence_frame, 0, 0, 0, 0, RS2_EXTENSION_VIDEO_FRAME);
         }
         auto depth_intrinsics = depth_frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics();

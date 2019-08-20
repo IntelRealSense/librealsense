@@ -240,6 +240,11 @@ namespace librealsense
         return it->second->supports(*this);
     }
 
+    int frame::get_frame_data_size() const
+    {
+        return data.size();
+    }
+
     const byte* frame::get_frame_data() const
     {
         const byte* frame_data = data.data();

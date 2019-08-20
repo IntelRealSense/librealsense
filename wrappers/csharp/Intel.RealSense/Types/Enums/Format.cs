@@ -74,5 +74,8 @@ namespace Intel.RealSense
         /// <summary>32-bit float-point depth distance value.</summary>
         Distance = 21,
 
+        /// <summary>Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB.</summary>
+        Mjpeg = 22,
+
     }
 }

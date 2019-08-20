@@ -57,6 +57,7 @@ EXPORTS
     rs2_get_frame_timestamp_domain
     rs2_get_frame_sensor
     rs2_get_frame_number
+    rs2_get_frame_data_size
     rs2_get_frame_data
     rs2_get_frame_width
     rs2_get_frame_height

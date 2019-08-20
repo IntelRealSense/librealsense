@@ -75,6 +75,9 @@ namespace librealsense
             color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
         }
 
+        if (color_devices_info.front().pid == ds::RS465_PID)
+            color_ep->register_pixel_format(pf_mjpg);
+
         auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
         auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
         color_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);

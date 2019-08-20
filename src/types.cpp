@@ -282,6 +282,7 @@ namespace librealsense
             CASE(ENABLE_RELOCALIZATION)
             CASE(ENABLE_POSE_JUMPING)
             CASE(ENABLE_DYNAMIC_CALIBRATION)
+            CASE(DEPTH_OFFSET)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -314,6 +315,7 @@ namespace librealsense
             CASE(6DOF)
             CASE(Y10BPACK)
             CASE(DISTANCE)
+            CASE(MJPEG)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

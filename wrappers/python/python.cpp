@@ -409,6 +409,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
         .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
         .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "The frame number. Identical to calling get_frame_number.")
+        .def("get_data_size", &rs2::frame::get_data_size, "Retrieve data size from frame handle.")
         .def("get_data", get_frame_data, "Retrieve data from the frame handle.", py::keep_alive<0, 1>())
         .def_property_readonly("data", get_frame_data, "Data from the frame handle. Identical to calling get_data.", py::keep_alive<0, 1>())
         .def("get_profile", &rs2::frame::get_profile, "Retrieve stream profile from frame handle.")

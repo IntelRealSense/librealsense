@@ -83,6 +83,7 @@ namespace librealsense
     public:
         virtual rs2_metadata_type get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const = 0;
         virtual bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const = 0;
+        virtual int get_frame_data_size() const = 0;
         virtual const byte* get_frame_data() const = 0;
         //TODO: add virtual uint64_t get_frame_data_size() const = 0;
         virtual rs2_time_t get_frame_timestamp() const = 0;

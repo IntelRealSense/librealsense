@@ -177,6 +177,13 @@ namespace librealsense
         return 1/znorm* MM_TO_METER;
     }
 
+    float l500_depth_sensor::get_depth_offset() const
+    {
+        using namespace ivcam2;
+        auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
+        return intrinsic->orient.depth_offset;
+    }
+
     rs2_time_t l500_timestamp_reader_from_metadata::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
