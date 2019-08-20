@@ -42,6 +42,10 @@ namespace librealsense
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
                 return read_znorm(); })));
+
+            register_option(RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>("Offset from sensor to depth origin in millimetrers",
+                lazy<float>([&]() {
+                return get_depth_offset(); })));
         }
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -149,7 +153,7 @@ namespace librealsense
         int read_algo_version();
         float read_baseline();
         float read_znorm();
-
+        float get_depth_offset() const;
     private:
         const l500_device* _owner;
         float _depth_units;
