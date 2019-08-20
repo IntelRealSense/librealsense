@@ -150,8 +150,11 @@ namespace librealsense
         float read_baseline();
         float read_znorm();
 
+        void start(frame_callback_ptr callback) override;
+        void open(const stream_profiles& requests) override;
     private:
         const l500_device* _owner;
         float _depth_units;
+        stream_profiles _current_requests;
     };
 }
