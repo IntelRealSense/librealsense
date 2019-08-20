@@ -555,7 +555,7 @@ namespace rs2
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
-        std::vector<stream_profile> get_supported_profile();
+        std::vector<stream_profile> get_supported_profiles();
         void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
@@ -578,6 +578,7 @@ namespace rs2
         void verify_zero_order_conditions();
 
         void update_ui(std::vector<stream_profile> profiles_vec);
+        void get_sorted_profiles(std::vector<stream_profile>& profiles);
 
         template<typename T, typename V>
         bool check_profile(stream_profile p, T cond, std::map<V, std::map<int, stream_profile>>& profiles_map,
