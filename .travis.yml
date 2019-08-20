@@ -16,7 +16,7 @@ matrix:
         - ./live-test.exe -d yes -i [software-device]
         - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam] from "$i"; done
         - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam] from "$i"; done
-        
+
     - name: "Windows - cpp"
       os: windows
       language: cpp
@@ -94,6 +94,18 @@ matrix:
         - cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r16b/build/cmake/android.toolchain.cmake
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
+
+    - name: "ROS industrial-ci Kinetic"
+      env: ROS_DISTRO="kinetic"
+      script:
+        - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
+        - .industrial_ci/travis.sh
+
+    - name: "ROS industrial-ci Melodic"
+      env: ROS_DISTRO="melodic"
+      script:
+        - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
+        - .industrial_ci/travis.sh
 
 before_install:
   - cd scripts && ./api_check.sh && cd ..
