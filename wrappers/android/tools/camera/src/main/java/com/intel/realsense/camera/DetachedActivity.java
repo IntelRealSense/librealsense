@@ -181,7 +181,6 @@ public class DetachedActivity extends AppCompatActivity {
             public void run() {
                 String msg = status ? "firmware update done" : "firmware update failed";
                 Toast.makeText(DetachedActivity.this, msg, Toast.LENGTH_LONG).show();
-                recreate();
             }
         });
     }
