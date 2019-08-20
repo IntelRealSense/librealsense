@@ -9,12 +9,12 @@
 
 namespace librealsense
 {
-    void unpack_yuy2_y8(byte * const d[], const byte * s, int w, int h);
-    void unpack_yuy2_y16(byte * const d[], const byte * s, int w, int h);
-    void unpack_yuy2_rgb8(byte * const d[], const byte * s, int w, int h);
-    void unpack_yuy2_rgba8(byte * const d[], const byte * s, int w, int h);
-    void unpack_yuy2_bgr8(byte * const d[], const byte * s, int w, int h);
-    void unpack_yuy2_bgra8(byte * const d[], const byte * s, int w, int h);
+    void unpack_yuy2_y8(byte * const d[], const byte * s, int w, int h, int actual_size);
+    void unpack_yuy2_y16(byte * const d[], const byte * s, int w, int h, int actual_size);
+    void unpack_yuy2_rgb8(byte * const d[], const byte * s, int w, int h, int actual_size);
+    void unpack_yuy2_rgba8(byte * const d[], const byte * s, int w, int h, int actual_size);
+    void unpack_yuy2_bgr8(byte * const d[], const byte * s, int w, int h, int actual_size);
+    void unpack_yuy2_bgra8(byte * const d[], const byte * s, int w, int h, int actual_size);
 
     size_t           get_image_size                 (int width, int height, rs2_format format);
     int              get_image_bpp                  (rs2_format format);
@@ -60,6 +60,7 @@ namespace librealsense
     extern const native_pixel_format pf_confidence_l500;
     extern const native_pixel_format pf_z16_l500;
     extern const native_pixel_format pf_y8_l500;
+    extern const native_pixel_format pf_mjpg;
 }
 
 #endif

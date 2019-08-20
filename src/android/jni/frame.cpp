@@ -26,6 +26,16 @@ Java_com_intel_realsense_librealsense_Frame_nGetStreamProfile(JNIEnv *env, jclas
     return (jlong) rv;
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_intel_realsense_librealsense_Frame_nGetDataSize(JNIEnv *env, jclass type, jlong handle) {
+
+    rs2_error *e = NULL;
+    auto rv = rs2_get_frame_data_size(reinterpret_cast<const rs2_frame *>(handle), &e);
+    handle_error(env, e);
+    return (jint)rv;
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Frame_nGetData(JNIEnv *env, jclass type, jlong handle,
                                                      jbyteArray data_) {

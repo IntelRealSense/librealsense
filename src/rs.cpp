@@ -777,6 +777,13 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
+int rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    return ((frame_interface*)frame_ref)->get_frame_data_size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);

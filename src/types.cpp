@@ -314,6 +314,7 @@ namespace librealsense
             CASE(6DOF)
             CASE(Y10BPACK)
             CASE(DISTANCE)
+            CASE(MJPEG)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
