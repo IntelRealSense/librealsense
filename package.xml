@@ -33,6 +33,12 @@
   <depend>libssl-dev</depend>
   <depend>dkms</depend>
   <depend>udev</depend>
+  <depend>libx11</depend>
+  <depend>libxrandr</depend>
+  <depend>libxinerama-dev</depend>
+  <depend>libxcursor-dev</depend>
+  <depend>opengl</depend>
+  <depend>libxi-dev</depend>
 
   <export>
     <build_type>cmake</build_type>
