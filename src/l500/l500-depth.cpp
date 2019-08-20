@@ -15,6 +15,7 @@
 #include "proc/zero-order.h"
 #include <cstddef>
 #include "metadata-parser.h"
+#include "frame-validator.h"
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -245,6 +246,17 @@ namespace librealsense
         res.push_back(std::make_shared<temporal_filter>());
         res.push_back(std::make_shared<hole_filling_filter>());
         return res;
+    }
+
+    void l500_depth_sensor::start(frame_callback_ptr callback)
+    {
+        uvc_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _current_requests));
+    }
+
+    void l500_depth_sensor::open(const stream_profiles& requests)
+    {
+        _current_requests = requests;
+        uvc_sensor::open(requests);
     }
 
 }
