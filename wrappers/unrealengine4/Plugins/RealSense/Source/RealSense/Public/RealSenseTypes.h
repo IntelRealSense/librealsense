@@ -95,6 +95,23 @@ enum class ERealSenseOptionType : uint8
     HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/Rolling Shutter SKUs */
+    STREAM_FILTER                              , /**< Select a stream to process */
+    STREAM_FORMAT_FILTER                       , /**< Select a stream format to process */
+    STREAM_INDEX_FILTER                        , /**< Select a stream index to process */
+    EMITTER_ON_OFF                             , /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
+    ZERO_ORDER_POINT_X                         , /**< Zero order point x*/
+    ZERO_ORDER_POINT_Y                         , /**< Zero order point y*/
+    LLD_TEMPERATURE                            , /**< LLD temperature*/
+    MC_TEMPERATURE                             , /**< MC temperature*/
+    MA_TEMPERATURE                             , /**< MA temperature*/
+    HARDWARE_PRESET                            , /**< Hardware stream configuration */
+    GLOBAL_TIME_ENABLED                        , /**< disable global time  */
+    APD_TEMPERATURE                            , /**< APD temperature*/
+    ENABLE_MAPPING                             , /**< Enable an internal map */
+    ENABLE_RELOCALIZATION                      , /**< Enable appearance based relocalization */
+    ENABLE_POSE_JUMPING                        , /**< Enable position jumping */
+    ENABLE_DYNAMIC_CALIBRATION                 , /**< Enable dynamic calibration */
 };
 
 UENUM(Blueprintable)
