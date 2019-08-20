@@ -95,9 +95,45 @@ namespace librealsense
         void set_manual_exposure(bool manual);
 
         // Pose interfaces
+
+        /**
+         * Get relocalization map from T265
+         * \param[out] lmap_buf map data as a binary blob
+         * \return true if success
+         */
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const override;
+
+        /**
+         * Send relocalization map to T265. Only one relocalization map can be imported.
+         * This operation must be done before starting streaming from T265.
+         * \param[in] lmap_buf map data as a binary blob
+         * \return true if success
+         */
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const override;
+
+        /**
+         * Creates a named virtual landmark in the current map, known as static node.
+         * The static node's pose must be giving relative to the origin of coordinates of T265 poses.
+         * This function fails if the current tracker confidence is not high.
+         * \param[in] guid unique name of the static node. If a static node with the same name alrady exists
+         * in the current map or the imported map, the static node is overwritten.
+         * \param[in] pos position of the static node in the 3D space.
+         * \param[in] orient_quat orientation of the static node in the 3D space, represented by a unit quaternion.
+         * \return true if success.
+         */
         bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const override;
+
+        /**
+         * Gets the current pose of a static node that was created in the current map or in an imported map.
+         * Static nodes of imported maps are available after relocalizing the imported map.
+         * The static node's pose is returned relative to the origin of coordinates of T265 poses.
+         * Thus, poses of static nodes of an imported map are consistent with T265 poses after relocalization.
+         * This function fails if the current tracker confidence is not high.
+         * \param[in] guid unique name of the static node.
+         * \param[out] pos position of the static node in the 3D space.
+         * \param[out] orient_quat orientation of the static node in the 3D space, represented by a unit quaternion.
+         * \return true if success.
+         */
         bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const override;
 
         // Wheel odometer
