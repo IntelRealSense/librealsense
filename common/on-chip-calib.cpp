@@ -364,7 +364,7 @@ namespace rs2
                 0x1e, 0x1e, 0x03, 0x00,
                 0x00, 0x00, 0x00, 0x00
             };
-            float* param2 = (float*)cmd.data() + 3;
+            uint32_t* param2 = (uint32_t*)cmd.data() + 3;
             *param2 = ground_truth;
             cmd.data()[16] = average_step_count;
             cmd.data()[17] = step_count;
@@ -794,7 +794,7 @@ namespace rs2
 
                 id = to_string() << "##ground_truth_for_tare" << index;
 
-                std::string gt = to_string() << std::fixed << std::setprecision(2) << get_manager().ground_truth;
+                std::string gt = to_string() << get_manager().ground_truth;
                 const int MAX_SIZE = 256;
                 char buff[MAX_SIZE];
                 memcpy(buff, gt.c_str(), gt.size() + 1);

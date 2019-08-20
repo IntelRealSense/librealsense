@@ -48,7 +48,7 @@ namespace rs2
 
         void update_last_used();
 
-        float ground_truth = 2500.f;
+        uint32_t ground_truth = 2500;
         int average_step_count = 1;
         int step_count = 1;
         int accuracy = 1;
