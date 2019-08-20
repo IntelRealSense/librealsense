@@ -46,6 +46,29 @@ Java_com_intel_realsense_librealsense_Frame_nGetData(JNIEnv *env, jclass type, j
     handle_error(env, e);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Points_nGetData(JNIEnv *env, jclass type, jlong handle,
+                                                      jfloatArray data_) {
+    jsize length = env->GetArrayLength(data_);
+    rs2_error *e = NULL;
+    env->SetFloatArrayRegion(data_, 0, length, static_cast<const jfloat *>(rs2_get_frame_data(
+            reinterpret_cast<const rs2_frame *>(handle), &e)));
+    handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Points_nGetTextureCoordinates(JNIEnv *env, jclass type,
+                                                                    jlong handle,
+                                                                    jfloatArray data_) {
+    jsize length = env->GetArrayLength(data_);
+    rs2_error *e = NULL;
+    env->SetFloatArrayRegion(data_, 0, length, reinterpret_cast<const jfloat *>(rs2_get_frame_texture_coordinates(
+            reinterpret_cast<const rs2_frame *>(handle), &e)));
+    handle_error(env, e);
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_intel_realsense_librealsense_Frame_nIsFrameExtendableTo(JNIEnv *env, jclass type,
                                                                  jlong handle, jint extension) {

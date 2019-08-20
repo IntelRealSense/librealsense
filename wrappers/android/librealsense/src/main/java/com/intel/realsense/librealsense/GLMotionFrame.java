@@ -189,6 +189,18 @@ public class GLMotionFrame extends GLFrame {
     }
 
     @Override
+    public synchronized String getLabel() {
+        MotionFrame mf = mFrame.as(Extension.MOTION_FRAME);
+        Float3 d = mf.getMotionData();
+        try(StreamProfile sp = mFrame.getProfile()){
+            return sp.getType().name() +
+                    " [ X: " + String.format("%+.2f", d.x) +
+                    ", Y: " + String.format("%+.2f", d.y) +
+                    ", Z: " + String.format("%+.2f", d.z) + " ]";
+        }
+    }
+
+    @Override
     public synchronized void close() {
         if(mFrame != null)
             mFrame.close();
