@@ -70,7 +70,7 @@ namespace librealsense
             return true;
         else
         {
-            LOG_ERROR("frame_source recieved an empty depth frame, restarting the sensor...");
+            LOG_ERROR("frame_source received an empty depth frame, restarting the sensor...");
             auto s = _sensor;
             auto cr = _current_requests;
             auto uc = _user_callback;
