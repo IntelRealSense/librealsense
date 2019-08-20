@@ -751,7 +751,7 @@ namespace rs2
         if (ImGui::IsItemHovered())
         {
             win.link_hovered();
-            ImGui::SetTooltip("Open release notes. Internet connection is required");
+            ImGui::SetTooltip("Open the Release Notes. Internet connection is required");
         }
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 5);

@@ -94,6 +94,7 @@ namespace librealsense
                     rect_params.w = intrinsics.height * 0.5f;
                 }
 
+                // Special resolution for auto-calibration requires special treatment...
                 if (width == 256 && height == 144)
                 {
                     intrinsics.fx = rect_params[0];

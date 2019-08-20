@@ -324,7 +324,7 @@ namespace rs2
             if (update_state == RS2_FWU_STATE_INITIAL_PROMPT)
                 ImGui::Text("Firmware updates offer critical bug fixes and\nunlock new camera capabilities.");
             else
-                ImGui::Text("Firmware updates is underway...\nPlease do not disconnect the device");
+                ImGui::Text("Firmware update is underway...\nPlease do not disconnect the device");
 
             ImGui::PopStyleColor();
         }

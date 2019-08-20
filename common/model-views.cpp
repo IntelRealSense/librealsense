@@ -2308,20 +2308,20 @@ namespace rs2
                     to_string() << std::fixed << std::setprecision(1) << timestamp, 
                     "Frame Timestamp is normalized represetation of when the frame was taken.\n"
                     "It's a property of every frame, so when exact creation time is not provided by the hardware, an approximation will be used.\n"
-                    "Clock Domain feilds helps interpret the meaning of timestamp\n"
+                    "Clock Domain feilds helps to interpret the meaning of timestamp\n"
                     "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to zero) in some situations" });
                 stream_details.push_back({ "Clock Domain",
                     to_string() << rs2_timestamp_domain_to_string(timestamp_domain), 
-                    "Clock Domain describes the format of Timestamp feild. It can be one of the following:\n"
+                    "Clock Domain describes the format of Timestamp field. It can be one of the following:\n"
                     "1. System Time - When no hardware timestamp is available, system time of arrival will be used.\n"
                     "                 System time benefits from being comparable between device, but suffers from not being able to approximate latency.\n"
                     "2. Hardware Clock - Hardware timestamp is attached to the frame by the device, and is consistent accross device sensors.\n"
-                    "                    Hardware timestamp encodes percisely when frame was captured, but cannot be compared across devices\n"
+                    "                    Hardware timestamp encodes precisely when frame was captured, but cannot be compared across devices\n"
                     "3. Global Time - Global time is provided when the device can both offer hardware timestamp and implements Global Timestamp Protocol.\n"
                     "                 Global timestamps encode exact time of capture and at the same time are comparable accross devices." });
                 stream_details.push_back({ "Frame Number",
                     to_string() << frame_number, "Frame Number is a rolling ID assigned to frames.\n"
-                    "Most device do not guaranty consequitive frames to have conseuquitive frame numbers\n"
+                    "Most devices do not guarantee consequitive frames to have conseuquitive frame numbers\n"
                     "But it is true most of the time" });
 
                 if (profile.as<rs2::video_stream_profile>())
@@ -2331,14 +2331,14 @@ namespace rs2
 
                     stream_details.push_back({ "Display Size",
                         to_string() << size.x << " x " << size.y, 
-                        "When Post-Processing is enabled, actual display size of the frame may differ from original capture size" });
+                        "When Post-Processing is enabled, the actual display size of the frame may differ from original capture size" });
                 }
                 stream_details.push_back({ "Pixel Format",
                     to_string() << rs2_format_to_string(profile.format()), "" });
 
                 stream_details.push_back({ "Hardware FPS",
                     to_string() << std::setprecision(2) << std::fixed << fps.get_fps(), 
-                    "Hardware FPS captures number of frames per second produced by the device.\n"
+                    "Hardware FPS captures the number of frames per second produced by the device.\n"
                     "It is possible and likely that not all of these frames will make it to the application." });
                 
                 stream_details.push_back({ "Viewer FPS",
@@ -2358,7 +2358,7 @@ namespace rs2
 
             std::map<rs2_frame_metadata_value, std::string> descriptions = {
                 { RS2_FRAME_METADATA_FRAME_COUNTER                        , "A sequential index managed per-stream. Integer value" },
-                { RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , "Timestamp set by device clock when data readout and transmit commence. usec" },
+                { RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
                 { RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , "Timestamp of the middle of sensor's exposure calculated by device. usec" },
                 { RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
                 { RS2_FRAME_METADATA_GAIN_LEVEL                           , "A relative value increasing which will increase the Sensor's gain factor.\n"
@@ -2991,7 +2991,7 @@ namespace rs2
 
             if (model->supports_on_chip_calib())
             {
-                // Make sure we don't spam calibration remainers too often:
+                // Make sure we don't spam calibration remainders too often:
                 time_t rawtime;
                 time(&rawtime);
                 std::string id = to_string() << configurations::viewer::last_calib_notice << "." << name.second;
