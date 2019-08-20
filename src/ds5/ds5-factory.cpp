@@ -16,7 +16,7 @@
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
-#include "ds5-rolling-shutter.h"
+#include "ds5-nonmonochrome.h"
 #include "ds5-active.h"
 #include "ds5-color.h"
 #include "ds5-motion.h"
@@ -25,7 +25,7 @@
 namespace librealsense
 {
     // PSR
-    class rs400_device : public ds5_rolling_shutter, public ds5_advanced_mode_base
+    class rs400_device : public ds5_nonmonochrome, public ds5_advanced_mode_base
     {
     public:
         rs400_device(std::shared_ptr<context> ctx,
@@ -33,7 +33,7 @@ namespace librealsense
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
-              ds5_rolling_shutter(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -106,7 +106,7 @@ namespace librealsense
     };
 
     // ASR (D460)
-    class rs410_device : public ds5_rolling_shutter,
+    class rs410_device : public ds5_nonmonochrome,
                          public ds5_active, public ds5_advanced_mode_base
     {
     public:
@@ -115,7 +115,7 @@ namespace librealsense
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
-              ds5_rolling_shutter(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_active(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
 
@@ -139,7 +139,7 @@ namespace librealsense
     };
 
     // ASRC
-    class rs415_device : public ds5_rolling_shutter,
+    class rs415_device : public ds5_nonmonochrome,
                          public ds5_active,
                          public ds5_color,
                          public ds5_advanced_mode_base
@@ -150,7 +150,7 @@ namespace librealsense
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
               ds5_device(ctx, group),
-              ds5_rolling_shutter(ctx, group),
+              ds5_nonmonochrome(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx, group),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor())  {}
@@ -177,7 +177,7 @@ namespace librealsense
         };
     };
 
-    class rs416_device : public ds5_rolling_shutter,
+    class rs416_device : public ds5_nonmonochrome,
         public ds5_active, public ds5_advanced_mode_base
     {
     public:
@@ -186,7 +186,7 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             ds5_device(ctx, group),
-            ds5_rolling_shutter(ctx, group),
+            ds5_nonmonochrome(ctx, group),
             ds5_active(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
@@ -705,6 +705,7 @@ namespace librealsense
     };
 
     class rs465_device : public ds5_active,
+                         public ds5_nonmonochrome,
                          public ds5_color,
                          public ds5_motion,
                          public ds5_advanced_mode_base
@@ -718,6 +719,7 @@ namespace librealsense
             ds5_active(ctx, group),
             ds5_color(ctx, group),
             ds5_motion(ctx, group),
+            ds5_nonmonochrome(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

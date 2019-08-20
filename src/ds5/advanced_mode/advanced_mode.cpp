@@ -3,7 +3,7 @@
 
 #include "core/advanced_mode.h"
 #include "ds5/ds5-active.h"
-#include "ds5/ds5-rolling-shutter.h"
+#include "ds5/ds5-nonmonochrome.h"
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
 
