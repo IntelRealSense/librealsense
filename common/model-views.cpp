@@ -1455,7 +1455,7 @@ namespace rs2
                     }
                 }
                 else if (!def_p.get() && cond(vid_prof))
-                    def_p = p; // in case no matching profile for current stream will be found, we'll use a random profile with given resolution
+                    def_p = p; // in case no matching profile for current stream will be found, we'll use some profile that matches the condition
             }
         }
         return found;
@@ -1592,6 +1592,7 @@ namespace rs2
 
             for (auto&& p : sorted_profiles)
             {
+                // first try to find profile from the new stream to meatch the current configuration
                 if (check_profile(p, [&](video_stream_profile vid_prof)
                 { return (p.fps() == fps && vid_prof.width() == width && vid_prof.height() == height); },
                     profiles_by_format, results, p.format(), num_streams, def_p))
@@ -1605,6 +1606,7 @@ namespace rs2
                 {
                     if (auto vid_prof = p.as<video_stream_profile>())
                     {
+                        // if no stream with current configuration was found, try to find some configuration to match all enabled streams
                         if (check_profile(p, [&](video_stream_profile vsp) { return true; }, profiles_by_fps_res, results,
                             std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height()), num_streams, def_p))
                             break;
@@ -1612,6 +1614,7 @@ namespace rs2
                 }
             }
         }
+
         if (results.empty())
             results.push_back(def_p);
         update_ui(results);
