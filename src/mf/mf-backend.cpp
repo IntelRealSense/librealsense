@@ -126,7 +126,7 @@ namespace librealsense
             win_event_device_watcher(const backend * backend)
             {
                 _data._backend = backend;
-                _data._stopped = false;
+                _data._stopped = true;
                 _data._last = backend_device_group(backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices());
             }
             ~win_event_device_watcher() { stop(); }

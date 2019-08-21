@@ -21,6 +21,7 @@
 #include "environment.h"
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
+#include "backend.h"
 
 #ifdef WITH_TRACKING
 #include "tm2/tm-context.h"
@@ -132,6 +133,10 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
+       _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+       {
+            on_device_changed(old, curr, _playback_devices, _playback_devices);
+       });
     }
 
 
