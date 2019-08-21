@@ -1265,8 +1265,14 @@ namespace rs2
                 //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
                 //}
                 //break;
-                default:
-                    throw std::runtime_error("The requested format is not supported for rendering");
+                //case RS2_FORMAT_RAW10:
+                //{
+                //  memset((void*)data, 0, height*width);
+                //  glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                //  break;
+                //}
+               // default:
+               //     throw std::runtime_error("The requested format is not supported for rendering");
                 }
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

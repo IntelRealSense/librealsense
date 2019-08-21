@@ -827,6 +827,23 @@ namespace rs2
         ImGui::PopFont();
     }
 
+    void viewer_model::show_rendering_not_supported(ImFont* font_18, int min_x, int min_y, int max_x, int max_y)
+    {
+        ImGui::PushFont(font_18);
+
+        auto pos = ImGui::GetCursorScreenPos();
+        ImGui::SetCursorScreenPos({ min_x + max_x / 2.f - 200, min_y + max_y / 2.f - 20 });
+
+        ImGui::PushStyleColor(ImGuiCol_Text, sensor_header_light_blue);
+        std::string text = to_string() << textual_icons::exclamation_triangle << " The requested format is not supported for rendering ";
+        ImGui::Text("%s", text.c_str());
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorScreenPos(pos);
+
+        ImGui::PopFont();
+    }
+
     void viewer_model::show_no_device_overlay(ImFont* font_18, int x, int y)
     {
         auto pos = ImGui::GetCursorScreenPos();
@@ -1281,6 +1298,11 @@ namespace rs2
 
             stream_mv.show_stream_header(font1, stream_rect, *this);
             stream_mv.show_stream_footer(font1, stream_rect, mouse, *this);
+            
+            if (stream_mv.profile.format() == RS2_FORMAT_RAW10 || stream_mv.profile.format() == RS2_FORMAT_RAW16)
+            {
+                show_rendering_not_supported(font2, static_cast<int>(stream_rect.x), static_cast<int>(stream_rect.y), static_cast<int>(stream_rect.w), static_cast<int>(stream_rect.h));
+            }
 
             if (stream_mv.dev->_is_being_recorded)
             {
@@ -1293,8 +1315,8 @@ namespace rs2
             auto stream_type = stream_mv.profile.stream_type();
 
             if (streams[stream].is_stream_visible())
-            {
                 switch (stream_type)
+            {
                 {
                     case RS2_STREAM_GYRO: /* Fall Through */
                     case RS2_STREAM_ACCEL:
