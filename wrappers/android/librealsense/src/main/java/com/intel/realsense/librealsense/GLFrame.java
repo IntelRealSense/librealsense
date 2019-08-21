@@ -31,4 +31,10 @@ public abstract class GLFrame implements AutoCloseable {
             return sp.getType() + " - " + sp.getFormat();
         }
     }
+
+    @Override
+    public void close() {
+        if(mFrame != null)
+            mFrame.close();
+    }
 }

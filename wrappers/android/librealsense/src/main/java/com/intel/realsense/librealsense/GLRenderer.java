@@ -14,7 +14,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class GLRenderer implements GLSurfaceView.Renderer{
+public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
     private final Map<Integer,GLFrame> mFrames = new HashMap<>();
     private int mWindowHeight = 0;
@@ -156,6 +156,8 @@ public class GLRenderer implements GLSurfaceView.Renderer{
 
     public void clear() {
         synchronized (mFrames) {
+            for(Map.Entry<Integer,GLFrame> f : mFrames.entrySet())
+                f.getValue().close();
             mFrames.clear();
             mIsDirty = true;
             mDeltaX = 0;
@@ -259,5 +261,10 @@ public class GLRenderer implements GLSurfaceView.Renderer{
             }
             mPointcloud = null;
         }
+    }
+
+    @Override
+    public void close() {
+        clear();
     }
 }
