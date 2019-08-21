@@ -46,6 +46,8 @@ namespace librealsense
     private:
         std::mutex _mutex;
         std::shared_ptr<lazy<rs2_extrinsics>> _id;
+        // Required by current implementation to hold the reference instead of the device for certain types. TODO
+        std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> _external_extrinsics;
 
     PRIVATE_TESTABLE:
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
