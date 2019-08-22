@@ -3422,25 +3422,19 @@ namespace rs2
 
         //////////////////// Step Backwards Button ////////////////////
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
-
-        std::string label = to_string() << textual_icons::step_backward << "##Step Backwards " << id;
-
-        if (pause_required) 
+        std::string label = to_string() << textual_icons::step_backward << "##Step Backward " << id;
+        if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
-            p.pause();
-            for (auto&& s : subdevices)
+            int fps = 0;
+            for (auto&& s : viewer.streams)
             {
-                if (s->streaming)
-                    s->pause();
-                s->on_frame = []{};
+                if (s.second.profile.fps() > fps)
+                    fps = s.second.profile.fps();
             }
-            syncer->on_frame = []{};
-            pause_required = false;
+            auto curr_frame = p.get_position();
+            uint64_t step = 1000.0 / (float)fps * 1e6;
+            p.seek(std::chrono::nanoseconds(curr_frame - step));
         }
-
-        // TODO: Figure out how to properly step-back
-        ImGui::ButtonEx(label.c_str(), button_dim, ImGuiButtonFlags_Disabled);
-
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = to_string() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
@@ -3531,23 +3525,15 @@ namespace rs2
         label = to_string() << textual_icons::step_forward << "##Step Forward " << id;
         if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
-            pause_required = false;
-            auto action = [this]() {
-                    pause_required = true;
-                };
-            for (auto& s : subdevices)
+            int fps = 0;
+            for (auto&& s : viewer.streams)
             {
-                s->on_frame = action;
+                if (s.second.profile.fps() > fps)
+                    fps = s.second.profile.fps();
             }
-            syncer->on_frame = action;
-
-            p.resume();
-            for (auto&& s : subdevices)
-            {
-                if (s->streaming)
-                    s->resume();
-            }
-            viewer.paused = false;
+            auto curr_frame = p.get_position();
+            uint64_t step = 1000.0 / (float)fps * 1e6;
+            p.seek(std::chrono::nanoseconds(curr_frame + step));
         }
         if (ImGui::IsItemHovered())
         {
