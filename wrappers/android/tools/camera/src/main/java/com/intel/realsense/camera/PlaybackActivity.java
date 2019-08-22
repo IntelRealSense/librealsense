@@ -107,6 +107,8 @@ public class PlaybackActivity extends AppCompatActivity {
 
         if(mStreamer != null)
             mStreamer.stop();
+        if(mGLSurfaceView != null)
+            mGLSurfaceView.clear();
     }
 
     @Override

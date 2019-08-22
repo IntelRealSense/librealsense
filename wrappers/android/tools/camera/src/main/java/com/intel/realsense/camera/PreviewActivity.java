@@ -227,5 +227,7 @@ public class PreviewActivity extends AppCompatActivity {
         clearLables();
         if(mStreamer != null)
             mStreamer.stop();
+        if(mGLSurfaceView != null)
+            mGLSurfaceView.clear();
     }
 }

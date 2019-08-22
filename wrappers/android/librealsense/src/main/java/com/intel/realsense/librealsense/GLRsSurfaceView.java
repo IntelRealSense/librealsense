@@ -9,7 +9,7 @@ import android.view.MotionEvent;
 
 import java.util.Map;
 
-public class GLRsSurfaceView extends GLSurfaceView {
+public class GLRsSurfaceView extends GLSurfaceView implements AutoCloseable{
 
     private final GLRenderer mRenderer;
     private float mPreviousX = 0;
@@ -63,5 +63,11 @@ public class GLRsSurfaceView extends GLSurfaceView {
 
     public void showPointcloud(boolean showPoints) {
         mRenderer.showPointcloud(showPoints);
+    }
+
+    @Override
+    public void close() {
+        if(mRenderer != null)
+            mRenderer.close();
     }
 }
