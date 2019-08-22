@@ -54,7 +54,7 @@ namespace rs2
         uint32_t rightPy;   // 1/1000000 of normalized unit
         float healthCheck;
         float rightRotation[9]; // Right rotation
-        uint16_t results[0]; // 1/100 of a percent
+        //uint16_t results[0]; // 1/100 of a percent
     };
 
     typedef struct
