@@ -1048,8 +1048,14 @@ namespace librealsense
     void tm2_sensor::reset_to_factory_calibration()
     {
         auto status = _tm_dev->DeleteConfiguration(ID_OEM_CAL);
-        if (status != perc::Status::SUCCESS) {
-            throw io_exception(to_string() << "Error in T2xx reset to factory calibration, status = " << (uint32_t)status);
+        switch(status){
+            case perc::Status::SUCCESS:
+                break;
+            case perc::Status::TABLE_NOT_EXIST:
+                LOG_WARNING("Warning, T2xx has already been using factory calibration, status = TABLE_NOT_EXIST");
+                break;
+            default:
+                throw io_exception(to_string() << "Error in T2xx reset to factory calibration, status = " << (uint32_t)status);
         }
     }
 
