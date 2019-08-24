@@ -183,6 +183,7 @@ namespace librealsense
             CASE(UPDATABLE)
             CASE(UPDATE_DEVICE)
             CASE(GLOBAL_TIMER)
+            CASE(TM2_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
