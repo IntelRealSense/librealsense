@@ -47,10 +47,11 @@ namespace librealsense
         std::shared_ptr<perc::TrackingManager> _manager;
         perc::TrackingDevice* _dev;
         std::shared_ptr<tm2_sensor> _sensor;
+
     };
 
     class tm2_sensor : public sensor_base, public video_sensor_interface, public wheel_odometry_interface,
-                       public pose_sensor_interface, public perc::TrackingDevice::Listener
+                       public pose_sensor_interface, public tm2_sensor_interface, public perc::TrackingDevice::Listener
     {
     public:
         tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
@@ -120,6 +121,15 @@ namespace librealsense
         virtual void enable_recording(std::function<void(const pose_sensor_interface&)> record_action) override {}
         virtual void create_snapshot(std::shared_ptr<wheel_odometry_interface>& snapshot) const override {}
         virtual void enable_recording(std::function<void(const wheel_odometry_interface&)> record_action) override {}
+
+        //calibration write interface
+        static const uint16_t ID_OEM_CAL = 6;
+        void set_intrinsics(const stream_profile_interface& stream_profile, const rs2_intrinsics& intr) override;
+        void set_extrinsics(const stream_profile_interface& from_profile, const stream_profile_interface& to_profile, const rs2_extrinsics& extr) override;
+        void set_motion_device_intrinsics(const stream_profile_interface& stream_profile, const rs2_motion_device_intrinsic& intr) override;
+        void reset_to_factory_calibration() override;
+        void write_calibration() override;
+        void set_extrinsics_to_ref(rs2_stream stream_type, int stream_index, const rs2_extrinsics& extr);
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
