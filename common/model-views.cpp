@@ -1290,6 +1290,7 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                         ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                             static_cast<int>(formats_chars.size()));
+                      //  last_valid_ui.
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
                     }
@@ -1546,15 +1547,17 @@ namespace rs2
             std::map<std::tuple<int,int,int>, std::map<int, stream_profile>> profiles_by_fps_res; //fps, width, height
             rs2_format format;
             int stream_id;
-
-            for (auto& it : ui.selected_format_id) // iterate pairs of stream uid + format
+            // find the stream to which the user made changes
+            for (auto& it : ui.selected_format_id)
             {
-                auto last_valid_it = last_valid_ui.selected_format_id.find(it.first);
-                // find the stream to which the user made changes
-                if (last_valid_it == last_valid_ui.selected_format_id.end() || it.second != last_valid_it->second)
+                if (stream_enabled[it.first])
                 {
-                    format = format_values[it.first][it.second];
-                    stream_id = it.first;
+                    auto last_valid_it = last_valid_ui.selected_format_id.find(it.first);
+                    if ((last_valid_it == last_valid_ui.selected_format_id.end() || it.second != last_valid_it->second))
+                    {
+                        format = format_values[it.first][it.second];
+                        stream_id = it.first;
+                    }
                 }
             }
             for (auto&& p : sorted_profiles)
