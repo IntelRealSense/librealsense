@@ -329,10 +329,19 @@ namespace librealsense
     {
         if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
         {
-            if(auto l5 = dynamic_cast<l500_depth_sensor*>(sensor.get()))
+            if(auto l5 = dynamic_cast<l500_depth_sensor_interface*>(sensor.get()))
             {
                 _options.baseline = l5->read_baseline();
                 return true;
+            }
+            // For playback
+            else
+            {
+                auto extendable = As<librealsense::extendable_interface>(sensor);
+                if (extendable && extendable->extend_to(TypeToExtension<librealsense::l500_depth_sensor_interface>::value, (void**)(&l5)))
+                {
+                    return l5->read_baseline();
+                }
             }
         }
         return false;
@@ -342,10 +351,20 @@ namespace librealsense
     {
         if (auto sensor = ((frame_interface*)frame.get())->get_sensor())
         {
-            if (auto l5 = dynamic_cast<l500_depth_sensor*>(sensor.get()))
+            auto profile = frame.get_profile().as<rs2::video_stream_profile>();
+
+            if (auto l5 = dynamic_cast<l500_depth_sensor_interface*>(sensor.get()))
             {
-                auto profile = frame.get_profile().as<rs2::video_stream_profile>();
-                return l5->get_intrinsic_params(profile.width(), profile.height());
+                return l500_depth_sensor::get_intrinsic_params(profile.width(), profile.height(), l5->get_intrinsic());
+            }
+            // For playback
+            else
+            {
+                auto extendable = As<librealsense::extendable_interface>(sensor);
+                if (extendable && extendable->extend_to(TypeToExtension<librealsense::l500_depth_sensor_interface>::value, (void**)(&l5)))
+                {
+                    return l500_depth_sensor::get_intrinsic_params(profile.width(), profile.height(), l5->get_intrinsic());
+                }
             }
         }
         throw std::runtime_error("didn't succeed to get intrinsics");
