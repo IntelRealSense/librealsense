@@ -1614,7 +1614,6 @@ namespace rs2
                 }
             }
         }
-
         if (results.empty())
             results.push_back(def_p);
         update_ui(results);
