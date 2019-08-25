@@ -95,15 +95,38 @@ namespace librealsense
         operator std::string() const { return ss.str(); }
     };
 
-    template<typename T, size_t size>
-    inline size_t copy_array(T(&dst)[size], const T(&src)[size])
+    template<typename T, size_t sz>
+    constexpr size_t arr_size(T(&)[sz])
     {
-        assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < size; i++)
+        return sz;
+    }
+
+    template<typename T, size_t sz>
+    constexpr size_t arr_size_bytes(T(&)[sz])
+    {
+        return sz * sizeof(T);
+    }
+
+    template<typename T>
+    std::string array2str(T& data)
+    {
+        std::stringstream ss;
+        for (auto i = 0; i < arr_size(data); i++)
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
+    template<typename T, typename S, size_t size_tgt, size_t size_src>
+    inline size_t copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
+    {
+        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert(std::numeric_limits<S>::max() > std::numeric_limits<T>::max(), "copy_array cannot support narrowing conversions from T to S");
+
+        for (size_t i = 0; i < size_tgt; i++)
         {
-            dst[i] = src[i];
+            dst[i] = static_cast<T>(src[i]);
         }
-        return size;
+        return size_tgt;
     }
 
     template<typename T, size_t sizem, size_t sizen>
@@ -450,27 +473,6 @@ namespace librealsense
         unique_id(const unique_id&) = delete;
         unique_id& operator=(const unique_id&) = delete;
     };
-
-    template<typename T, int sz>
-    int arr_size(T(&)[sz])
-    {
-        return sz;
-    }
-
-    template<typename T, int sz>
-    int arr_size_bytes(T(&)[sz])
-    {
-        return sz*sizeof(T);
-    }
-
-    template<typename T>
-    std::string array2str(T& data)
-    {
-        std::stringstream ss;
-        for (auto i = 0; i < arr_size(data); i++)
-            ss << " [" << i << "] = " << data[i] << "\t";
-        return ss.str();
-    }
 
     typedef float float_4[4];
 
