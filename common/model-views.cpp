@@ -1290,7 +1290,6 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                         ImGui::Combo(label.c_str(), &ui.selected_format_id[f.first], formats_chars.data(),
                             static_cast<int>(formats_chars.size()));
-                      //  last_valid_ui.
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
                     }
