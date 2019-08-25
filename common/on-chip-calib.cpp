@@ -732,7 +732,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 47) });
 
                 ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::Text(message.c_str());
+                ImGui::Text("%s", message.c_str());
                 ImGui::PopStyleColor();
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 65) });
@@ -835,7 +835,7 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_FAILED)
             {
-                ImGui::Text(_error_message.c_str());
+                ImGui::Text("%s", _error_message.c_str());
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
@@ -906,11 +906,11 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90) });
                     ImGui::PushFont(win.get_large_font());
-                    ImGui::Text(textual_icons::check);
+                    ImGui::Text("%s", static_cast<const char *>(textual_icons::check));
                     ImGui::PopFont();
 
                     ImGui::SetCursorScreenPos({ float(x + 35), float(y + 92) });
-                    ImGui::Text(txt.c_str());
+                    ImGui::Text("%s", txt.c_str());
 
                     if (use_new_calib)
                     {
@@ -918,7 +918,7 @@ namespace rs2
 
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
                         txt = to_string() << " ( +" << std::fixed << std::setprecision(0) << fr_improvement << "%% )";
-                        ImGui::Text(txt.c_str());
+                        ImGui::Text("%s", txt.c_str());
                         ImGui::PopStyleColor();
                     }
 
@@ -935,11 +935,11 @@ namespace rs2
 
                         ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90 + ImGui::GetTextLineHeight() + 6) });
                         ImGui::PushFont(win.get_large_font());
-                        ImGui::Text(textual_icons::check);
+                        ImGui::Text("%s", static_cast<const char *>(textual_icons::check));
                         ImGui::PopFont();
 
                         ImGui::SetCursorScreenPos({ float(x + 35), float(y + 92 + ImGui::GetTextLineHeight() + 6) });
-                        ImGui::Text(txt.c_str());
+                        ImGui::Text("%s", txt.c_str());
 
                         if (use_new_calib)
                         {
@@ -947,7 +947,7 @@ namespace rs2
 
                             ImGui::PushStyleColor(ImGuiCol_Text, white);
                             txt = to_string() << " ( -" << std::setprecision(0) << std::fixed << rms_improvement << "%% )";
-                            ImGui::Text(txt.c_str());
+                            ImGui::Text("%s", txt.c_str());
                             ImGui::PopStyleColor();
                         }
                     }

@@ -734,7 +734,7 @@ namespace rs2
         std::string txt = to_string() << "librealsense " << RS2_API_VERSION_STR << "!";
 
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
-        ImGui::Text(txt.c_str());
+        ImGui::Text("%s", txt.c_str());
         ImGui::PopStyleColor();
         ImGui::PopFont();
 

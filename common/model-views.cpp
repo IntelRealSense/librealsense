@@ -2408,7 +2408,7 @@ namespace rs2
                             ImColor(alpha(sensor_bg, 0.1f)));
 
                         ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                        ImGui::Text(text);
+                        ImGui::Text("%s", text);
                         ImGui::PopStyleColor();
 
                         line_y += ImGui::GetTextLineHeight() + 3;
@@ -2425,13 +2425,13 @@ namespace rs2
                             ImColor(alpha(sensor_bg, 0.1f)));
 
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
-                        ImGui::Text(text.c_str()); ImGui::SameLine();
+                        ImGui::Text("%s", text.c_str()); ImGui::SameLine();
 
                         if (at.description != "")
                         {
                             if (ImGui::IsItemHovered())
                             {
-                                ImGui::SetTooltip(at.description.c_str());
+                                ImGui::SetTooltip("%s", at.description.c_str());
                             }
                         }
 
