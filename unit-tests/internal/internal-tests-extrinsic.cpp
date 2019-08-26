@@ -49,7 +49,7 @@ TEST_CASE("Extrinsic graph management", "[live]")
                     dev = list[j];
                 }
 
-                //std::cout << __LINE__ << " Iteration " << i << " : Extrinsic graph map size is " << b._streams.size() << std::endl;
+                std::cout << __LINE__ << " Iteration " << i << " : Extrinsic graph map size is " << b._streams.size() << std::endl;
                 for (auto&& snr : dev.query_sensors())
                 {
                     std::vector<rs2::stream_profile> profs;

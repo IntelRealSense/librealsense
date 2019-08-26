@@ -95,16 +95,19 @@ namespace librealsense
         operator std::string() const { return ss.str(); }
     };
 
+    template<typename T>
+    constexpr size_t arr_size(T const&) { return 1; }
+
     template<typename T, size_t sz>
-    constexpr size_t arr_size(T(&)[sz])
+    constexpr size_t arr_size(T(&arr)[sz])
     {
-        return sz;
+        return sz * arr_size(arr[0]);
     }
 
     template<typename T, size_t sz>
-    constexpr size_t arr_size_bytes(T(&)[sz])
+    constexpr size_t arr_size_bytes(T(&arr)[sz])
     {
-        return sz * sizeof(T);
+        return arr_size(arr) * sizeof(T);
     }
 
     template<typename T>
@@ -116,12 +119,20 @@ namespace librealsense
         return ss.str();
     }
 
-    template<typename T, typename S, size_t size_tgt, size_t size_src>
-    inline size_t copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
-    {
-        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
-        static_assert(std::numeric_limits<S>::max() > std::numeric_limits<T>::max(), "copy_array cannot support narrowing conversions from T to S");
+    // Auxillary function for compiler to highlight the invoking user code
+    template <typename T, typename S>
+    struct isNarrowing { static bool const value = std::numeric_limits<S>::max() > std::numeric_limits<T>::max(); };
 
+    // specialization for an array copy with a narrowing conversion
+    template<typename T, typename S, size_t size_tgt, size_t size_src>
+    inline typename std::enable_if<isNarrowing<T, S>::value, size_t > ::type copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
+    {
+#pragma message(": Note<librealsense::copy_array> using narrowing conversion")
+
+        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_array supports arithmetic types only");
+
+        assert(dst != nullptr && src != nullptr);
         for (size_t i = 0; i < size_tgt; i++)
         {
             dst[i] = static_cast<T>(src[i]);
@@ -129,18 +140,54 @@ namespace librealsense
         return size_tgt;
     }
 
-    template<typename T, size_t sizem, size_t sizen>
-    inline size_t copy_2darray(T(&dst)[sizem][sizen], const T(&src)[sizem][sizen])
+    template<typename T, typename S, size_t size_tgt, size_t size_src>
+    inline typename std::enable_if < !isNarrowing<T, S>::value, int> ::type copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
     {
+        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_array supports arithmetic types only");
+
         assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < sizem; i++)
+        for (size_t i = 0; i < size_tgt; i++)
         {
-            for (size_t j = 0; j < sizen; j++)
+            dst[i] = static_cast<T>(src[i]);
+        }
+        return size_tgt;
+    }
+
+    // specialization for an 2D-array copy with a narrowing conversion
+    template<typename T, typename S, size_t tgt_m, size_t tgt_n, size_t src_m, size_t src_n>
+    inline typename std::enable_if<isNarrowing<T, S>::value, size_t >::type copy_2darray(T(&dst)[tgt_m][tgt_n], const S(&src)[src_m][src_n])
+    {
+#pragma message(": Note<librealsense::copy_2darray> using narrowing conversion")
+        static_assert((src_m && src_n && (tgt_n == src_n) && (tgt_m == src_m)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_2darray supports arithmetic types only");
+
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < src_m; i++)
+        {
+            for (size_t j = 0; j < src_n; j++)
             {
                 dst[i][j] = src[i][j];
             }
         }
-        return sizem * sizen;
+        return src_m * src_n;
+    }
+
+    template<typename T, typename S, size_t tgt_m, size_t tgt_n, size_t src_m, size_t src_n>
+    inline typename std::enable_if<!isNarrowing<T, S>::value, int>::type copy_2darray(T(&dst)[tgt_m][tgt_n], const S(&src)[src_m][src_n])
+    {
+        static_assert((src_m && src_n && (tgt_n == src_n) && (tgt_m == src_m)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_array supports arithmetic types only");
+
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < src_m; i++)
+        {
+            for (size_t j = 0; j < src_n; j++)
+            {
+                dst[i][j] = src[i][j];
+            }
+        }
+        return src_m * src_n;
     }
 
     // Comparing parameter against a range of values of the same type
@@ -228,7 +275,7 @@ namespace librealsense
 #endif
     }
 
-#if RS2_BUILD_INTERNAL_UNIT_TESTS
+#ifdef BUILD_INTERNAL_UNIT_TESTS
 #define PRIVATE_TESTABLE public
 #else
 #define PRIVATE_TESTABLE private
