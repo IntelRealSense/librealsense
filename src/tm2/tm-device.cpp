@@ -942,7 +942,9 @@ namespace librealsense
                 rs2_extrinsics dst; 
                 auto dst_rotation = dst.rotation;
                 for (auto i : { 0,3,6,1,4,7,2,5,8 }) { *dst_rotation++ = dst.rotation[i]; }
-                for (auto i : { 0,1,2 }) { dst.translation[i] = -src.translation[i]; }
+                dst.translation[0] = - src.rotation[0] * src.translation[0] - src.rotation[3] * src.translation[1] - src.rotation[6] * src.translation[2];
+                dst.translation[1] = - src.rotation[1] * src.translation[0] - src.rotation[4] * src.translation[1] - src.rotation[7] * src.translation[2];
+                dst.translation[2] = - src.rotation[2] * src.translation[0] - src.rotation[5] * src.translation[1] - src.rotation[8] * src.translation[2];
                 return dst;
             };
 
