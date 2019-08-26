@@ -73,8 +73,6 @@ TEST_CASE("copy_2darray", "")
     float       tgt_float[2][6] = { 0 };
     double      tgt_double[2][6] = { 0 };
 
-    std::cout << " array size is " << arr_size(src_float) << std::endl;
-
     // Check that precision is preserved when using identical or a larger data type
     elem = librealsense::copy_2darray(tgt_float, src_float);
     REQUIRE(elem == src_size);
