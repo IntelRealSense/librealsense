@@ -365,7 +365,7 @@ namespace rs2
                 0x00, 0x00, 0x00, 0x00
             };
             uint32_t* param2 = (uint32_t*)cmd.data() + 3;
-            *param2 = ground_truth;
+            *param2 = ground_truth * 100;
             cmd.data()[16] = average_step_count;
             cmd.data()[17] = step_count;
             cmd.data()[18] = accuracy;
