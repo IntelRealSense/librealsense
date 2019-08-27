@@ -8,7 +8,8 @@ Examples in this folder are designed to complement existing [SDK examples](../..
 1. [ImShow](./imshow) - Minimal OpenCV application for visualizing depth data
 2. [GrabCuts](./grabcuts) - Simple background removal using the GrabCut algorithm
 3. [Latency-Tool](./latency-tool) - Basic latency estimation using computer vision
-3. [DNN](./dnn) - Intel RealSense camera used for real-time object-detection
+4. [DNN](./dnn) - Intel RealSense camera used for real-time object-detection
+5. [Depth Filter](./depth-filter) - Depth Filtering for Collision Avoidance
 
 ## Getting Started:
 This page is certainly **not** a comprehensive guide to getting started with OpenCV and CMake, but it can help get on the right track. 
