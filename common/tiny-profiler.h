@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <iostream>
+#include <cstring> // strlen
 
 class scoped_timer
 {
