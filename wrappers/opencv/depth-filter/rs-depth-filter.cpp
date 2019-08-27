@@ -246,6 +246,10 @@ int main(int argc, char * argv[]) try
 
     rs2::pipeline pipe;
 
+    // NOTE: This example is strongly coupled with D43x cameras
+    // With minor modifications it can be executed with other D400 cameras,
+    // and even the SR300.
+    // However, part of the value of this example is the real-life case-study it is based on
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1);
@@ -256,6 +260,7 @@ int main(int argc, char * argv[]) try
 
     high_confidence_filter filter;
 
+    // See camera-settings.json next to the source / binaries
     std::ifstream file("./camera-settings.json");
     if (file.good())
     {

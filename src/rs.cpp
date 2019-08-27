@@ -424,6 +424,7 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
     VALIDATE_NOT_NULL(mode);
     VALIDATE_ENUM(stream);
     VALIDATE_ENUM(format);
+    VALIDATE_NOT_NULL(intr);
 
     auto sp = mode->profile->clone();
     sp->set_stream_type(stream);
