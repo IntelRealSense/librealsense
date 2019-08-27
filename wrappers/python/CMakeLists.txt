@@ -11,7 +11,25 @@ set(DEPENDENCIES realsense2)
 
 add_subdirectory(third_party/pybind11)
 
-pybind11_add_module(pyrealsense2 SHARED python.cpp)
+set(PYRS_CPP
+    python.cpp
+    c_files.cpp
+    rs_advanced_mode.cpp
+    rs_context.cpp
+    rs_device.cpp
+    rs_export.cpp
+    rs_frame.cpp
+    rs_internal.cpp
+    rs_options.cpp
+    rs_pipeline.cpp
+    rs_processing.cpp
+    rs_record_playback.cpp
+    rs_sensor.cpp
+    rs_types.cpp
+    rsutil.cpp
+)
+
+pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
