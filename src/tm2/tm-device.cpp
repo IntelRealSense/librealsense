@@ -822,7 +822,7 @@ namespace librealsense
         result.fx = tm_intrinsics.fx;
         result.fy = tm_intrinsics.fy;
         result.model = convertTm2CameraModel(tm_intrinsics.distortionModel);
-        librealsense::copy_array(result.coeffs, tm_intrinsics.coeffs);
+        librealsense::copy_array<true>(result.coeffs, tm_intrinsics.coeffs);
         return result;
     }
 
@@ -852,9 +852,9 @@ namespace librealsense
         {
             throw io_exception("Failed to read TM2 intrinsics");
         }
-        librealsense::copy_2darray(result.data, tm_intrinsics.data);
-        librealsense::copy_array(result.noise_variances, tm_intrinsics.noiseVariances);
-        librealsense::copy_array(result.bias_variances, tm_intrinsics.biasVariances);
+        librealsense::copy_2darray<true>(result.data, tm_intrinsics.data);
+        librealsense::copy_array<true>(result.noise_variances, tm_intrinsics.noiseVariances);
+        librealsense::copy_array<true>(result.bias_variances, tm_intrinsics.biasVariances);
 
         return result;
     }
@@ -895,8 +895,8 @@ namespace librealsense
             throw io_exception("Failed to read TM2 intrinsics");
         }
 
-        librealsense::copy_array(result.rotation, tm_extrinsics.rotation);
-        librealsense::copy_array(result.translation, tm_extrinsics.translation);
+        librealsense::copy_array<true>(result.rotation, tm_extrinsics.rotation);
+        librealsense::copy_array<true>(result.translation, tm_extrinsics.translation);
         reference_sensor_id = tm_extrinsics.referenceSensorId;
 
         return result;

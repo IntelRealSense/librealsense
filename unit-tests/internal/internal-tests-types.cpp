@@ -16,7 +16,7 @@
 using namespace librealsense;
 using namespace librealsense::platform;
 
-TEST_CASE("copy_array", "")
+TEST_CASE("copy_array", "[code]")
 {
     size_t elem = 0;
     float src_float[]   = { 1.1f, 2.2f, 3.3f, -5.5f, 0.f, 123534.f };
@@ -45,7 +45,7 @@ TEST_CASE("copy_array", "")
 
     // Check that precision is lost when narrowing data type
     memset(&tgt_float, 0, sizeof(float)*src_size);
-    elem = librealsense::copy_array(tgt_float, src_double);
+    elem = librealsense::copy_array<true>(tgt_float, src_double);
     REQUIRE(elem == src_size);
 
     for (size_t i = 0; i < src_size; ++i)
@@ -56,7 +56,7 @@ TEST_CASE("copy_array", "")
     }
 }
 
-TEST_CASE("copy_2darray", "")
+TEST_CASE("copy_2darray", "[code]")
 {
     size_t elem = 0;
     float src_float[2][6] = { { 1.1f, 2.2f, 3.3f, -5.5f, 0.f, 123534.f },
@@ -91,7 +91,7 @@ TEST_CASE("copy_2darray", "")
 
     // Check that precision is lost when narrowing data type
     memset(&tgt_float, 0, sizeof(float)*src_size);
-    elem = librealsense::copy_2darray(tgt_float, src_double);
+    elem = librealsense::copy_2darray<true>(tgt_float, src_double);
     REQUIRE(elem == src_size);
 
     for (size_t i = 0; i < h; ++i)
