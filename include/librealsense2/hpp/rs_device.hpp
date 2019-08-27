@@ -508,7 +508,7 @@ namespace rs2
         * \param[in] from_stream     only support RS2_STREAM_FISHEYE
         * \param[in] from_id         only support left fisheye = 1
         * \param[in] to_stream       only support RS2_STREAM_FISHEYE
-        * \param[in] to_id           only support left fisheye = 2
+        * \param[in] to_id           only support right fisheye = 2
         * \param[in] extrinsics      extrinsics value to be written to the device
         */
         void set_extrinsics(rs2_stream from_stream, int from_id, rs2_stream to_stream, int to_id, rs2_extrinsics& extrinsics)
