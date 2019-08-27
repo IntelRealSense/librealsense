@@ -78,6 +78,7 @@ typedef enum rs2_format
     RS2_FORMAT_DISPARITY32     , /**< 32-bit float-point disparity values. Depth->Disparity conversion : Disparity = Baseline*FocalLength/Depth */
     RS2_FORMAT_Y10BPACK        , /**< 16-bit per-pixel grayscale image unpacked from 10 bits per pixel packed ([8:8:8:8:2222]) grey-scale image. The data is unpacked to LSB and padded with 6 zero bits */
     RS2_FORMAT_DISTANCE        , /**< 32-bit float-point depth distance value.  */
+    RS2_FORMAT_MJPEG           , /**< Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB   */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
@@ -528,6 +529,36 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
 */
 int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
     const rs2_vector translational_velocity, rs2_error** error);
+
+/**
+* Set intrinsics of a given sensor
+* \param[in] sensor       The RealSense device
+* \param[in] profile      Target stream profile
+* \param[in] intrinsics   Intrinsics value to be written to the device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile , const rs2_intrinsics* intrinsics, rs2_error** error);
+
+/**
+ * Set extrinsics between two sensors
+ * \param[in]  from_sensor  Origin sensor
+ * \param[in]  from_profile Origin profile
+ * \param[in]  to_sensor    Target sensor
+ * \param[in]  to_profile   Target profile
+ * \param[out] extrinsics   Extrinsics from origin to target
+ * \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error);
+
+/**
+* Set motion device intrinsics
+* \param[in]  sensor       Motion sensor 
+* \param[in]  profile      Motion stream profile
+* \param[out] intrinsics   Pointer to the struct to store the data in
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error);
+
 
 #ifdef __cplusplus
 }

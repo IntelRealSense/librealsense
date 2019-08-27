@@ -2,6 +2,7 @@ package com.intel.realsense.camera;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -39,6 +40,10 @@ public class InfoActivity extends AppCompatActivity {
             message.setText("Device info:");
 
             try(final Device device = devices.createDevice(0)){
+                if(device == null){
+                    Log.e(TAG, "failed to create device");
+                    return;
+                }
                 for(CameraInfo ci : CameraInfo.values()){
                     if(device.supportsInfo(ci))
                         infoMap.put(ci, device.getInfo(ci));

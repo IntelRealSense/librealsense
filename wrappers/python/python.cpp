@@ -367,7 +367,12 @@ PYBIND11_MODULE(NAME, m) {
         .def("disable_loopback", &rs2::tm2::disable_loopback, "Restores the given device into normal operation mode")
         .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled, "Checks if the device is in loopback mode or not")
         .def("connect_controller", &rs2::tm2::connect_controller, "Connects to a given tm2 controller", "mac_address"_a)
-        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a);
+        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a)
+        .def("set_intrinsics", &rs2::tm2::set_intrinsics, "Set camera intrinsics", "sensor_id"_a, "intrinsics"_a)
+        .def("set_extrinsics", &rs2::tm2::set_extrinsics, "Set camera extrinsics", "from_stream"_a, "from_id"_a, "to_stream"_a, "to_id"_a, "extrinsics"_a)
+        .def("set_motion_device_intrinsics", &rs2::tm2::set_motion_device_intrinsics, "Set motion device intrinsics", "stream_type"_a, "motion_intrinsics"_a)
+        .def("reset_to_factory_calibration", &rs2::tm2::reset_to_factory_calibration, "Reset to factory calibration")
+        .def("write_calibration", &rs2::tm2::write_calibration, "Write calibration to device's EEPROM");
 
 
     /* rs_frame.hpp */
@@ -409,6 +414,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("supports_frame_metadata", &rs2::frame::supports_frame_metadata, "Determine if the device allows a specific metadata to be queried.", "frame_metadata"_a)
         .def("get_frame_number", &rs2::frame::get_frame_number, "Retrieve the frame number.")
         .def_property_readonly("frame_number", &rs2::frame::get_frame_number, "The frame number. Identical to calling get_frame_number.")
+        .def("get_data_size", &rs2::frame::get_data_size, "Retrieve data size from frame handle.")
         .def("get_data", get_frame_data, "Retrieve data from the frame handle.", py::keep_alive<0, 1>())
         .def_property_readonly("data", get_frame_data, "Data from the frame handle. Identical to calling get_data.", py::keep_alive<0, 1>())
         .def("get_profile", &rs2::frame::get_profile, "Retrieve stream profile from frame handle.")

@@ -61,7 +61,8 @@ namespace librealsense
 
         usb_messenger_usbhost::~usb_messenger_usbhost()
         {
-            cancel_request(_interrupt_request);
+            if(_interrupt_request)
+                cancel_request(_interrupt_request);
             if(_dispatcher)
             {
                 _dispatcher->stop();

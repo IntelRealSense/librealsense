@@ -24,6 +24,10 @@ public class Frame extends LrsClass implements Cloneable{
         return new StreamProfile(nGetStreamProfile(mHandle));
     }
 
+    public int getDataSize() {
+        return nGetDataSize(mHandle);
+    }
+
     public void getData(byte[] data) {
         nGetData(mHandle, data);
     }
@@ -69,6 +73,7 @@ public class Frame extends LrsClass implements Cloneable{
     private static native void nAddRef(long handle);
     private static native void nRelease(long handle);
     protected static native long nGetStreamProfile(long handle);
+    private static native int nGetDataSize(long handle);
     private static native void nGetData(long handle, byte[] data);
     private static native int nGetNumber(long handle);
     private static native double nGetTimestamp(long handle);

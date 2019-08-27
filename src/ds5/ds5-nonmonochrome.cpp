@@ -12,15 +12,15 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds5-rolling-shutter.h"
+#include "ds5-nonmonochrome.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
 #include "ds5-timestamp.h"
 
 namespace librealsense
 {
-    ds5_rolling_shutter::ds5_rolling_shutter(std::shared_ptr<context> ctx,
-                                             const platform::backend_device_group& group)
+    ds5_nonmonochrome::ds5_nonmonochrome(std::shared_ptr<context> ctx,
+                                         const platform::backend_device_group& group)
         : device(ctx, group), ds5_device(ctx, group)
     {
         using namespace ds;

@@ -23,6 +23,8 @@ import java.util.Map;
 
 public class Streamer {
     private static final String TAG = "librs camera streamer";
+    private static final int DEFAULT_TIMEOUT = 3000;
+    private static final int L500_TIMEOUT = 15000;
 
     interface Listener{
         void config(Config config);
@@ -63,11 +65,13 @@ public class Streamer {
         RsContext ctx = new RsContext();
         try(DeviceList devices = ctx.queryDevices()) {
             if (devices.getDeviceCount() == 0) {
-                return 0;
+                return DEFAULT_TIMEOUT;
             }
             try (Device device = devices.createDevice(0)) {
+                if(device == null)
+                    return DEFAULT_TIMEOUT;
                 ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
-                return pl == ProductLine.L500 ? 15000 : 3000;
+                return pl == ProductLine.L500 ? L500_TIMEOUT : DEFAULT_TIMEOUT;
             }
         }
     }
@@ -82,6 +86,10 @@ public class Streamer {
                 return;
             }
             try (Device device = devices.createDevice(0)) {
+                if(device == null){
+                    Log.e(TAG, "failed to create device");
+                    return;
+                }
                 pid = device.getInfo(CameraInfo.PRODUCT_ID);
                 profilesMap = SettingsActivity.createProfilesMap(device);
 

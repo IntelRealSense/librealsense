@@ -184,6 +184,7 @@ namespace librealsense
             CASE(UPDATE_DEVICE)
             CASE(GLOBAL_TIMER)
             CASE(L500_DEPTH_SENSOR)
+            CASE(TM2_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -316,6 +317,7 @@ namespace librealsense
             CASE(6DOF)
             CASE(Y10BPACK)
             CASE(DISTANCE)
+            CASE(MJPEG)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

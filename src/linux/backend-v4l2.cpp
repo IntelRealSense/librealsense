@@ -857,8 +857,14 @@ namespace librealsense
 
                             if (_is_started)
                             {
-                                if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
-                                        buf.bytesused > 0)
+                                if(buf.bytesused == 0)
+                                {
+                                    LOG_INFO("Empty video frame arrived");
+                                    return;
+                                }
+
+                                if(_profile.format != 1296715847 && // allow JPEG frames size to be smaller than the uncompressed frame
+                                        (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE))
                                 {
                                     auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
                                     std::stringstream s;
@@ -870,32 +876,25 @@ namespace librealsense
                                 }
                                 else
                                 {
-                                    if (buf.bytesused > 0)
-                                    {
-                                        auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
-                                        timestamp = monotonic_to_realtime(timestamp);
+                                    auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                                    timestamp = monotonic_to_realtime(timestamp);
 
-                                        // read metadata from the frame appendix
-                                        acquire_metadata(buf_mgr,fds);
+                                    // read metadata from the frame appendix
+                                    acquire_metadata(buf_mgr,fds);
 
-                                        if (val > 1)
-                                            LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
-                                        frame_object fo{ buffer->get_length_frame_only(), buf_mgr.metadata_size(),
-                                            buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
+                                    if (val > 1)
+                                        LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
+                                    frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
+                                        buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
-                                         buffer->attach_buffer(buf);
-                                         buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
+                                     buffer->attach_buffer(buf);
+                                     buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
 
-                                         //Invoke user callback and enqueue next frame
-                                         _callback(_profile, fo,
-                                                   [buf_mgr]() mutable {
-                                             buf_mgr.request_next_frame();
-                                         });
-                                    }
-                                    else
-                                    {
-                                        LOG_INFO("Empty video frame arrived");
-                                    }
+                                     //Invoke user callback and enqueue next frame
+                                     _callback(_profile, fo,
+                                               [buf_mgr]() mutable {
+                                         buf_mgr.request_next_frame();
+                                     });
                                 }
                             }
                             else

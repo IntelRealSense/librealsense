@@ -48,6 +48,7 @@ namespace librealsense
     void extrinsics_graph::register_extrinsics(const stream_interface & from, const stream_interface & to, rs2_extrinsics extr)
     {
         auto lazy_extr = std::make_shared<lazy<rs2_extrinsics>>([=]() {return extr; });
+        _external_extrinsics.push_back(lazy_extr);
         register_extrinsics(from, to, lazy_extr);
     }
 

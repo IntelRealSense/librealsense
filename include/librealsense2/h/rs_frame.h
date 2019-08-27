@@ -116,6 +116,14 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error);
 unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** error);
 
 /**
+* retrieve data size from frame handle
+* \param[in] frame      handle returned from a callback
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               the size of the frame data
+*/
+int rs2_get_frame_data_size(const rs2_frame* frame, rs2_error** error);
+
+/**
 * retrieve data from frame handle
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored

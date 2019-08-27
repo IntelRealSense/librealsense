@@ -57,6 +57,7 @@ EXPORTS
     rs2_get_frame_timestamp_domain
     rs2_get_frame_sensor
     rs2_get_frame_number
+    rs2_get_frame_data_size
     rs2_get_frame_data
     rs2_get_frame_width
     rs2_get_frame_height
@@ -298,6 +299,11 @@ EXPORTS
     rs2_loopback_is_enabled
     rs2_connect_tm2_controller
     rs2_disconnect_tm2_controller
+    rs2_set_intrinsics
+    rs2_set_extrinsics
+    rs2_set_motion_device_intrinsics
+    rs2_reset_to_factory_calibration
+    rs2_write_calibration
     rs2_import_localization_map
     rs2_export_localization_map
     rs2_set_static_node

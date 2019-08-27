@@ -480,6 +480,18 @@ namespace rs2
         }
 
         /**
+        * retrieve data size from frame handle
+        * \return               the pointer to the start of the frame data
+        */
+        const int get_data_size() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_data_size(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
         * retrieve data from frame handle
         * \return               the pointer to the start of the frame data
         */

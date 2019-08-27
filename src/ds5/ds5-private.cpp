@@ -94,10 +94,22 @@ namespace librealsense
                     rect_params.w = intrinsics.height * 0.5f;
                 }
 
-                intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                // Special resolution for auto-calibration requires special treatment...
+                if (width == 256 && height == 144)
+                {
+                    intrinsics.fx = rect_params[0];
+                    intrinsics.fy = rect_params[1];
+                    intrinsics.ppx = rect_params[2] - 832;
+                    intrinsics.ppy = rect_params[3] - 468;
+                }
+                else
+                {
+                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
+                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
+                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
+                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                }
+                
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
@@ -326,7 +338,7 @@ namespace librealsense
             case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 103: return { 4, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             default:
-                throw std::runtime_error("Unsupported flash version: " + flash_version);
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
             }
         }
 
@@ -336,7 +348,7 @@ namespace librealsense
             {
             case 100: return { 2, { 134, 25 } };
             default:
-                throw std::runtime_error("Unsupported flash version: " + flash_version);
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
             }
         }
 
