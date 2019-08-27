@@ -41,6 +41,10 @@
 
 #pragma GCC diagnostic ignored "-Woverflow"
 
+#ifndef V4L2_CAP_META_CAPTURE
+#define V4L2_CAP_META_CAPTURE    0x00800000  /* Specified in kernel header v4.16, required for back-compat */
+#endif // V4L2_CAP_META_CAPTURE
+
 namespace rsimpl
 {
     namespace uvc
