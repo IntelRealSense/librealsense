@@ -358,6 +358,21 @@ void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, in
 rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
 /**
+* Creates a copy of stream profile, assigning new values to some of the fields
+* \param[in] mode        input stream profile
+* \param[in] stream      stream type for the profile
+* \param[in] format      binary data format of the profile
+* \param[in] width       new width for the profile
+* \param[in] height      new height for the profile
+* \param[in] intr        new intrinsics for the profile
+* \param[in] index       stream index the profile in case there are multiple streams of the same type
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                new stream profile, must be deleted by rs2_delete_stream_profile
+*/
+rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, int width, int height, const rs2_intrinsics* intr, rs2_error** error);
+
+
+/**
 * Delete stream profile allocated by rs2_clone_stream_profile
 * Should not be called on stream profiles returned by the device
 * \param[in] mode        input stream profile

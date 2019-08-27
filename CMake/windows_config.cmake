@@ -9,6 +9,13 @@ macro(os_set_flags)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+    if(BUILD_WITH_OPENMP)
+        find_package(OpenMP REQUIRED)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    endif()
+
     ## Check for Windows Version ##
     if(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
         set(FORCE_WINUSB_UVC ON)
