@@ -3314,7 +3314,7 @@ namespace rs2
         {
             try
             {
-                if(viewer.synchronization_enable || viewer.zo_sensors.load() >0)
+                if(viewer.synchronization_enable)
                 {
                     auto frames = viewer.syncer->try_wait_for_frames();
                     for(auto f:frames)

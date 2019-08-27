@@ -78,6 +78,8 @@ namespace librealsense
         bool try_read_stream_extrinsic(const stream_identifier& stream_id, uint32_t& group_id, rs2_extrinsics& extrinsic) const;
         static void update_sensor_options(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version);
         void update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
+        void update_l500_depth_sensor(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name);
+       
         bool is_depth_sensor(std::string sensor_name);
         bool is_color_sensor(std::string sensor_name);
         bool is_motion_module_sensor(std::string sensor_name);
@@ -105,6 +107,25 @@ namespace librealsense
         /*Starting version 3*/
         static std::pair<rs2_option, std::shared_ptr<librealsense::option>> create_option(const rosbag::Bag& file, const rosbag::MessageInstance& value_message_instance);
         static std::shared_ptr<librealsense::processing_block_interface> create_processing_block(const rosbag::MessageInstance& value_message_instance, bool& depth_to_disparity, std::shared_ptr<options_interface> options);
+
+        struct l500_data_per_resolution
+        {
+            float2 res_raw;
+            float2 zo_raw;
+            float2 res_world;
+            float2 zo_world;
+        };
+
+        struct l500_depth_data
+        {
+            float num_of_resolution;
+            l500_data_per_resolution data[NUM_OF_DEPTH_RESOLUTIONS];
+            float baseline;
+        };
+
+        l500_depth_data create_l500_intrinsic_depth(const rosbag::MessageInstance& value_message_instance);
+        ivcam2::intrinsic_depth ros_l500_depth_data_to_intrinsic_depth(ros_reader::l500_depth_data data);
+
         static notification create_notification(const rosbag::Bag& file, const rosbag::MessageInstance& message_instance);
         static std::shared_ptr<options_container> read_sensor_options(const rosbag::Bag& file, device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, uint32_t file_version);
         static std::vector<std::string> get_topics(std::unique_ptr<rosbag::View>& view);

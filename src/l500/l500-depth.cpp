@@ -152,7 +152,7 @@ namespace librealsense
         return ver;
     }
 
-    float l500_depth_sensor::read_baseline()
+    float l500_depth_sensor::read_baseline() const
     {
         const int baseline_address = 0xa00e0868;
         command cmd(ivcam2::fw_cmd::MRD, baseline_address, baseline_address + 4);

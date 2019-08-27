@@ -4,6 +4,7 @@
 #include "record_sensor.h"
 #include "api.h"
 #include "stream.h"
+#include "l500/l500-depth.h"
 
 using namespace librealsense;
 
@@ -160,7 +161,9 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_L500_DEPTH_SENSOR: return extend_to_aux<RS2_EXTENSION_L500_DEPTH_SENSOR   >(&m_sensor, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
+
     //Other extensions are not expected to be extensions of a sensor
     default:
         LOG_WARNING("Extensions type is unhandled: " << get_string(extension_type));
