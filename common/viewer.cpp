@@ -303,9 +303,9 @@ namespace rs2
         }
 
         ImGui::SameLine();
-
         if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
         {
+            auto mesh = config_file::instance().get_or_default(configurations::ply::mesh, 1);
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
                 auto model = ppf.get_points();
@@ -319,7 +319,7 @@ namespace rs2
 
                 std::string fname(ret);
                 if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
-                export_to_ply(fname.c_str(), not_model, last_points, last_texture->get_last_frame());
+                export_to_ply(fname.c_str(), not_model, last_points, last_texture->get_last_frame(), mesh);
             }
         }
         if (ImGui::IsItemHovered())
@@ -1871,8 +1871,8 @@ namespace rs2
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                 }
                 ImGui::PopStyleColor(2);
-
                 ImGui::SameLine();
+
                 ImGui::PushStyleColor(ImGuiCol_Text, tab != 3 ? light_grey : light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 3 ? light_grey : light_blue);
                 if (ImGui::Button("Updates", { 120, 30 }))

@@ -50,7 +50,7 @@ namespace rs2
             source.frame_ready(data); // passthrough filter because processing_block::process doesn't support sinks
         }
 
-        void export_to_ply(points p, video_frame color) {
+        void export_to_ply(points p, video_frame color, bool mesh = true) {
             const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
@@ -91,8 +91,11 @@ namespace rs2
                         if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
                             idx_map.count(d) == 0)
                             continue;
-                        faces.push_back({ idx_map[a], idx_map[b], idx_map[d] });
-                        faces.push_back({ idx_map[d], idx_map[c], idx_map[a] });
+                        if (mesh)
+                        {
+                            faces.push_back({ idx_map[a], idx_map[b], idx_map[d] });
+                            faces.push_back({ idx_map[d], idx_map[c], idx_map[a] });
+                        }
                     }
                 }
             }
@@ -113,8 +116,11 @@ namespace rs2
                 out << "property uchar green\n";
                 out << "property uchar blue\n";
             }
-            out << "element face " << faces.size() << "\n";
-            out << "property list uchar int vertex_indices\n";
+            if (mesh)
+            {
+                out << "element face " << faces.size() << "\n";
+                out << "property list uchar int vertex_indices\n";
+            }
             out << "end_header\n";
             out.close();
 
@@ -133,13 +139,16 @@ namespace rs2
                     out.write(reinterpret_cast<const char*>(&(new_tex[i][2])), sizeof(uint8_t));
                 }
             }
-            auto size = faces.size();
-            for (int i = 0; i < size; ++i) {
-                static const int three = 3;
-                out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(faces[i][1])), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(faces[i][2])), sizeof(int));
+            if (mesh)
+            {
+                auto size = faces.size();
+                for (int i = 0; i < size; ++i) {
+                    static const int three = 3;
+                    out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
+                    out.write(reinterpret_cast<const char*>(&(faces[i][1])), sizeof(int));
+                    out.write(reinterpret_cast<const char*>(&(faces[i][2])), sizeof(int));
+                }
             }
         }
 

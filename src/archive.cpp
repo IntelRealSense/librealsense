@@ -45,7 +45,7 @@ namespace librealsense
     }
 
 
-    void points::export_to_ply(const std::string& fname, const frame_holder& texture)
+    void points::export_to_ply(const std::string& fname, const frame_holder& texture, bool mesh)
     {
         auto stream_profile = get_stream().get();
         auto video_stream_profile = dynamic_cast<video_stream_profile_interface*>(stream_profile);
@@ -73,22 +73,25 @@ namespace librealsense
                 }
             }
 
-        const auto threshold = 0.05f;
-        auto width = video_stream_profile->get_width();
         std::vector<std::tuple<int, int, int>> faces;
-        for (int x = 0; x < width - 1; ++x) {
-            for (int y = 0; y < video_stream_profile->get_height() - 1; ++y) {
-                auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
-                if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
-                    && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
-                    && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold)
-                {
-                    if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 ||
-                        index2reducedIndex.count(d) == 0)
-                        continue;
+        if (mesh)
+        {
+            const auto threshold = 0.05f;
+            auto width = video_stream_profile->get_width();
+            for (int x = 0; x < width - 1; ++x) {
+                for (int y = 0; y < video_stream_profile->get_height() - 1; ++y) {
+                    auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                    if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
+                        && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold
+                        && abs(vertices[b].z - vertices[d].z) < threshold && abs(vertices[c].z - vertices[d].z) < threshold)
+                    {
+                        if (index2reducedIndex.count(a) == 0 || index2reducedIndex.count(b) == 0 || index2reducedIndex.count(c) == 0 ||
+                            index2reducedIndex.count(d) == 0)
+                            continue;
 
-                    faces.emplace_back(index2reducedIndex[a], index2reducedIndex[d], index2reducedIndex[b]);
-                    faces.emplace_back(index2reducedIndex[d], index2reducedIndex[a], index2reducedIndex[c]);
+                        faces.emplace_back(index2reducedIndex[a], index2reducedIndex[d], index2reducedIndex[b]);
+                        faces.emplace_back(index2reducedIndex[d], index2reducedIndex[a], index2reducedIndex[c]);
+                    }
                 }
             }
         }
@@ -107,8 +110,11 @@ namespace librealsense
             out << "property uchar green\n";
             out << "property uchar blue\n";
         }
-        out << "element face " << faces.size() << "\n";
-        out << "property list uchar int vertex_indices\n";
+        if (mesh)
+        {
+            out << "element face " << faces.size() << "\n";
+            out << "property list uchar int vertex_indices\n";
+        }
         out << "end_header\n";
         out.close();
 
@@ -129,13 +135,16 @@ namespace librealsense
                 out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
             }
         }
-        auto size = faces.size();
-        for (int i = 0; i < size; ++i) {
-            int three = 3;
-            out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
-            out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
-            out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
-            out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
+        if (mesh)
+        {
+            auto size = faces.size();
+            for (int i = 0; i < size; ++i) {
+                int three = 3;
+                out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
+                out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
+                out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
+                out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
+            }
         }
     }
 

@@ -754,12 +754,12 @@ namespace rs2
         * \param[in] string fname - file name of the PLY to be saved
         * \param[in] video_frame texture - the texture for the PLY.
         */
-        void export_to_ply(const std::string& fname, video_frame texture)
+        void export_to_ply(const std::string& fname, video_frame texture, bool mesh = true)
         {
             rs2_frame* ptr = nullptr;
             std::swap(texture.frame_ref, ptr);
             rs2_error* e = nullptr;
-            rs2_export_to_ply(get(), fname.c_str(), ptr, &e);
+            rs2_export_to_ply(get(), fname.c_str(), ptr, mesh, &e);
             error::handle(e);
         }
         /**
