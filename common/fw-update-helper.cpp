@@ -167,6 +167,8 @@ namespace rs2
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
 
+        _model.related_notifications.clear();
+
         _progress = 5;
 
         int next_progress = 10;
