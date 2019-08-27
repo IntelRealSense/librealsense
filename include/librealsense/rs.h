@@ -16,7 +16,7 @@ extern "C" {
 
 #define RS_API_MAJOR_VERSION    1
 #define RS_API_MINOR_VERSION    12
-#define RS_API_PATCH_VERSION    3
+#define RS_API_PATCH_VERSION    4
 
 #define STRINGIFY(arg) #arg
 #define VAR_ARG_STRING(arg) STRINGIFY(arg)
