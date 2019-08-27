@@ -421,7 +421,7 @@ namespace rs2
         }
 
         /**
-        * Retrieve the stereoscopic baseline value from sensor
+        * Retrieve the stereoscopic baseline value from the sensor.
         */
         float get_stereo_baseline() const
         {

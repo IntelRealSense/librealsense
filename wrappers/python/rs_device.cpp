@@ -37,9 +37,9 @@ void init_device(py::module &m) {
 
     // not binding update_progress_callback, templated
 
-    py::class_<rs2::updatable> updatable(m, "updatable");
+    py::class_<rs2::updatable, rs2::device> updatable(m, "updatable"); // No docstring in C++
     updatable.def(py::init<rs2::device>())
-        .def("enter_update_state", &rs2::updatable::enter_update_state)
+        .def("enter_update_state", &rs2::updatable::enter_update_state, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.")
         .def("create_flash_backup", (std::vector<uint8_t>(rs2::updatable::*)() const) &rs2::updatable::create_flash_backup,
              "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
              "loaded back to the device, but it does contain all calibration and device information.")
@@ -47,18 +47,18 @@ void init_device(py::module &m) {
              "Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be "
              "loaded back to the device, but it does contain all calibration and device information.",
              "callback"_a)
-        .def("update_unsigned", [](rs2::updatable& self, const std::vector<uint8_t>& fw_image, int update_mode) { return self.update_unsigned(fw_image, update_mode); },
-             "Update an updatable device to the provided unsigned firmware. this call is executed on the caller's thread", "fw_image"_a, "update_mode"_a = RS2_UNSIGNED_UPDATE_MODE_UPDATE)
+        .def("update_unsigned", (void(rs2::updatable::*)(const std::vector<uint8_t>&, int) const) &rs2::updatable::update_unsigned,
+             "Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.", "fw_image"_a, "update_mode"_a = RS2_UNSIGNED_UPDATE_MODE_UPDATE)
         .def("update_unsigned", [](rs2::updatable& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f, int update_mode) { return self.update_unsigned(fw_image, f, update_mode); },
-             "Update an updatable device to the provided unsigned firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",
+             "Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.",
              "fw_image"_a, "callback"_a, "update_mode"_a = RS2_UNSIGNED_UPDATE_MODE_UPDATE);
 
-    py::class_<rs2::update_device> update_device(m, "update_device");
+    py::class_<rs2::update_device, rs2::device> update_device(m, "update_device");
     update_device.def(py::init<rs2::device>())
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image) { return self.update(fw_image); },
-             "Update an updatable device to the provided firmware. this call is executed on the caller's thread", "fw_image"_a)
+             "Update an updatable device to the provided firmware. This call is executed on the caller's thread.", "fw_image"_a)
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
-             "Update an updatable device to the provided firmware. this call is executed on the caller's thread and it supports progress notifications via the callback",
+             "Update an updatable device to the provided firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.",
              "fw_image"_a, "callback"_a);
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
@@ -100,7 +100,7 @@ void init_device(py::module &m) {
         .def("disable_loopback", &rs2::tm2::disable_loopback, "Restores the given device into normal operation mode")
         .def("is_loopback_enabled", &rs2::tm2::is_loopback_enabled, "Checks if the device is in loopback mode or not")
         .def("connect_controller", &rs2::tm2::connect_controller, "Connects to a given tm2 controller", "mac_address"_a)
-        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a);
+        .def("disconnect_controller", &rs2::tm2::disconnect_controller, "Disconnects a given tm2 controller", "id"_a)
         .def("set_intrinsics", &rs2::tm2::set_intrinsics, "Set camera intrinsics", "sensor_id"_a, "intrinsics"_a)
         .def("set_extrinsics", &rs2::tm2::set_extrinsics, "Set camera extrinsics", "from_stream"_a, "from_id"_a, "to_stream"_a, "to_id"_a, "extrinsics"_a)
         .def("set_motion_device_intrinsics", &rs2::tm2::set_motion_device_intrinsics, "Set motion device intrinsics", "stream_type"_a, "motion_intrinsics"_a)

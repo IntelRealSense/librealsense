@@ -53,9 +53,9 @@ void init_sensor(py::module &m) {
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback) {
             self.start(callback);
         }, "Start passing frames into user provided callback.", "callback"_a)
-        .def("start", [](const rs2::sensor& self, rs2::syncer syncer) {
+        .def("start", [](const rs2::sensor& self, rs2::syncer& syncer) {
             self.start(syncer);
-        }, "Start passing frames into user provided syncer.", "callback"_a)
+        }, "Start passing frames into user provided syncer.", "syncer"_a)
         .def("start", [](const rs2::sensor& self, rs2::frame_queue& queue) {
             self.start(queue);
         }, "start passing frames into specified frame_queue", "queue"_a)
@@ -86,6 +86,9 @@ void init_sensor(py::module &m) {
         .def("__nonzero__", &rs2::depth_sensor::operator bool); // No docstring in C++
 
     // rs2::depth_stereo_sensor
+    py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++
+    depth_stereo_sensor.def(py::init<rs2::sensor>())
+        .def("get_stereo_baseline", &rs2::depth_stereo_sensor::get_stereo_baseline, "Retrieve the stereoscopic baseline value from the sensor.");
 
     py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor"); // No docstring in C++
     pose_sensor.def(py::init<rs2::sensor>(), "sensor"_a)

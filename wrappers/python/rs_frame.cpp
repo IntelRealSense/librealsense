@@ -232,6 +232,9 @@ void init_frame(py::module &m) {
         .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in meters at the given pixel");
     
     // rs2::disparity_frame
+    py::class_<rs2::disparity_frame, rs2::depth_frame> disparity_frame(m, "disparity_frame", "Extends the depth_frame class with additional disparity related attributes and functions.");
+    disparity_frame.def(py::init<rs2::frame>())
+        .def("get_baseline", &rs2::disparity_frame::get_baseline, "Retrieve the distance between the two IR sensors.");
 
     py::class_<rs2::motion_frame, rs2::frame> motion_frame(m, "motion_frame", "Extends the frame class with additional motion related attributes and functions");
     motion_frame.def(py::init<rs2::frame>())
