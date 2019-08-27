@@ -941,7 +941,7 @@ namespace librealsense
             auto inv = [](const rs2_extrinsics& src) {
                 rs2_extrinsics dst; 
                 auto dst_rotation = dst.rotation;
-                for (auto i : { 0,3,6,1,4,7,2,5,8 }) { *dst_rotation++ = dst.rotation[i]; }
+                for (auto i : { 0,3,6,1,4,7,2,5,8 }) { *dst_rotation++ = src.rotation[i]; }
                 dst.translation[0] = - src.rotation[0] * src.translation[0] - src.rotation[3] * src.translation[1] - src.rotation[6] * src.translation[2];
                 dst.translation[1] = - src.rotation[1] * src.translation[0] - src.rotation[4] * src.translation[1] - src.rotation[7] * src.translation[2];
                 dst.translation[2] = - src.rotation[2] * src.translation[0] - src.rotation[5] * src.translation[1] - src.rotation[8] * src.translation[2];
@@ -967,9 +967,9 @@ namespace librealsense
 
             perc::SensorId reference_sensor_id;
             auto& H_fe1_fe2 = extr;
+            auto H_fe2_fe1  = inv(H_fe1_fe2);
             auto H_fe1_pose = get_extrinsics(from_profile, reference_sensor_id);
-            //H_fe2_pose = H_fe2_fe1 * H_fe1_pose
-            auto H_fe2_pose = mult(inv(H_fe1_fe2), H_fe1_pose);
+            auto H_fe2_pose = mult(H_fe2_fe1, H_fe1_pose);  //H_fe2_pose = H_fe2_fe1 * H_fe1_pose
             set_extrinsics_to_ref(RS2_STREAM_FISHEYE, 2, H_fe2_pose);
             break;
         }
