@@ -422,7 +422,24 @@ namespace rs2
 
         /**
         * retrieve the time at which the frame was captured
-        * \return            the timestamp of the frame, in milliseconds since the device was started
+        * During the frame's lifetime it receives timestamps both at the device and host levels.
+        * The different timestamps are gathered and managed under the frame's Metadata attributes.
+        * Chronologically the list of timestamps comprises of:
+        * SENSOR_TIMESTAMP  - Device clock. For video sensors designates the middle of exposure. Requires metadata support.
+        * FRAME_TIMESTAMP   - Device clock. Stamped at the beginning of frame readout and transfer. Requires metadata support.
+        * BACKEND_TIMESTAMP - Host (EPOCH) clock in Kernel space. Frame transfer from USB Controller to the USB Driver.
+        * TIME_OF_ARRIVAL   - Host (EPOCH) clock in User space. Frame transfer from the USB Driver to Librealsense.
+        *
+        * During runtime the SDK dynamically selects the most correct representaion, based on both device and host capabilities:
+        * In case the frame metadata is not configured:
+        *   -   The function call provides the TIME_OF_ARRIVAL stamp.
+        * In case the metadata is available the function returns:
+        *   -   `HW Timestamp` (SENSOR_TIMESTAMP), or
+        *   -   `Global Timestamp`  Host-corrected derivative of `HW Timestamp` required for multi-sensor/device synchronization
+        *   -   The user can select between the unmodified and the host-calculated Hardware Timestamp by toggling
+        *       the `RS2_OPTION_GLOBAL_TIME_ENABLED` option.
+        * To query which of the three alternatives is active use `get_frame_timestamp_domain()` function call
+        * \return            the timestamp of the frame, in milliseconds according to the elaborated flow
         */
         double get_timestamp() const
         {
