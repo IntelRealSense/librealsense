@@ -1750,7 +1750,7 @@ namespace perc {
         Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
 
         mDispatcher->sendMessage(&mFsm, msg);
-        if (msg.Result != toUnderlying(Status::SUCCESS))
+        if (msg.Result != toUnderlying(Status::SUCCESS) && msg.Result != toUnderlying(Status::TABLE_NOT_EXIST))
         {
             DEVICELOGE("USB Error (0x%X)", msg.Result);
             return Status::ERROR_USB_TRANSFER;
@@ -3966,6 +3966,11 @@ namespace perc {
                  res->wStatus == toUnderlying(MESSAGE_STATUS::INTERNAL_ERROR))
         {
             msg.Result = toUnderlying(Status::ERROR_FW_INTERNAL);
+        }
+        else if (res->wMessageID == DEV_RESET_CONFIGURATION && res->wStatus == toUnderlying(MESSAGE_STATUS::TABLE_NOT_EXIST))
+        { 
+            DEVICELOGW("MessageID 0x%X (%s) warning with status 0x%X TABLE_NOT_EXIST", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
+            msg.Result = toUnderlying(Status::TABLE_NOT_EXIST);
         }
         else
         {
