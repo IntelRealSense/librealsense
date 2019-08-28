@@ -306,6 +306,7 @@ namespace rs2
         if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
         {
             auto mesh = config_file::instance().get_or_default(configurations::ply::mesh, 1);
+            auto binary = config_file::instance().get_or_default(configurations::ply::encoding, 1);
             if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
             {
                 auto model = ppf.get_points();
@@ -319,7 +320,7 @@ namespace rs2
 
                 std::string fname(ret);
                 if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
-                export_to_ply(fname.c_str(), not_model, last_points, last_texture->get_last_frame(), mesh);
+                export_to_ply(fname.c_str(), not_model, last_points, last_texture->get_last_frame(), mesh, binary);
             }
         }
         if (ImGui::IsItemHovered())

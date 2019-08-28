@@ -45,7 +45,7 @@ namespace librealsense
     }
 
 
-    void points::export_to_ply(const std::string& fname, const frame_holder& texture, bool mesh)
+    void points::export_to_ply(const std::string& fname, const frame_holder& texture, bool mesh, bool binary)
     {
         auto stream_profile = get_stream().get();
         auto video_stream_profile = dynamic_cast<video_stream_profile_interface*>(stream_profile);
@@ -98,7 +98,10 @@ namespace librealsense
 
         std::ofstream out(fname);
         out << "ply\n";
-        out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
+        if (binary)
+            out << "format binary_little_endian 1.0\n";
+        else
+            out << "format ascii 1.0\n";
         out << "comment pointcloud saved from Realsense Viewer\n";
         out << "element vertex " << new_vertices.size() << "\n";
         out << "property float" << sizeof(float) * 8 << " x\n";
@@ -116,34 +119,69 @@ namespace librealsense
             out << "property list uchar int vertex_indices\n";
         }
         out << "end_header\n";
-        out.close();
-
-        out.open(fname, std::ios_base::app | std::ios_base::binary);
-        for (int i = 0; i < new_vertices.size(); ++i)
+       
+        if (binary)
         {
-            // we assume little endian architecture on your device
-            out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
-            out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
-            out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
-
-            if (texture)
+            out.close();
+            out.open(fname, std::ios_base::app | std::ios_base::binary);
+            for (int i = 0; i < new_vertices.size(); ++i)
             {
-                uint8_t x, y, z;
-                std::tie(x, y, z) = new_tex[i];
-                out.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
+                // we assume little endian architecture on your device
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].x)), sizeof(float));
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].y)), sizeof(float));
+                out.write(reinterpret_cast<const char*>(&(new_vertices[i].z)), sizeof(float));
+
+                if (texture)
+                {
+                    uint8_t x, y, z;
+                    std::tie(x, y, z) = new_tex[i];
+                    out.write(reinterpret_cast<const char*>(&x), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&y), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&z), sizeof(uint8_t));
+                }
+            }
+            if (mesh)
+            {
+                auto size = faces.size();
+                for (int i = 0; i < size; ++i) {
+                    int three = 3;
+                    out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
+                    out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
+                    out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
+                    out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
+                }
             }
         }
-        if (mesh)
+        else
         {
-            auto size = faces.size();
-            for (int i = 0; i < size; ++i) {
-                int three = 3;
-                out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
-                out.write(reinterpret_cast<const char*>(&(std::get<0>(faces[i]))), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(std::get<1>(faces[i]))), sizeof(int));
-                out.write(reinterpret_cast<const char*>(&(std::get<2>(faces[i]))), sizeof(int));
+            for (int i = 0; i < new_vertices.size(); ++i)
+            {
+                out << new_vertices[i].x << " ";
+                out << new_vertices[i].y << " ";
+                out << new_vertices[i].z << " ";
+                out << "\n";
+
+                if (texture)
+                {
+                    uint8_t x, y, z;
+                    std::tie(x, y, z) = new_tex[i];
+                    out << unsigned(x) << " ";
+                    out << unsigned(y) << " ";
+                    out << unsigned(z) << " ";
+                    out << "\n";
+                }
+            }
+            if (mesh)
+            {
+                auto size = faces.size();
+                for (int i = 0; i < size; ++i) {
+                    int three = 3;
+                    out << three << " ";
+                    out << std::get<0>(faces[i]) << " ";
+                    out << std::get<1>(faces[i]) << " ";
+                    out << std::get<2>(faces[i]) << " ";
+                    out << "\n";
+                }
             }
         }
     }

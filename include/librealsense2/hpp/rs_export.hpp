@@ -50,7 +50,7 @@ namespace rs2
             source.frame_ready(data); // passthrough filter because processing_block::process doesn't support sinks
         }
 
-        void export_to_ply(points p, video_frame color, bool mesh = true) {
+        void export_to_ply(points p, video_frame color, bool mesh = true, bool binary = true) {
             const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
@@ -81,18 +81,18 @@ namespace rs2
             auto width = profile.width(), height = profile.height();
             static const auto threshold = 0.05f;
             std::vector<std::array<int, 3>> faces;
-            for (int x = 0; x < width - 1; ++x) {
-                for (int y = 0; y < height - 1; ++y) {
-                    auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
-                    if (verts[a].z && verts[b].z && verts[c].z && verts[d].z
-                        && fabs(verts[a].z - verts[b].z) < threshold && fabs(verts[a].z - verts[c].z) < threshold
-                        && fabs(verts[b].z - verts[d].z) < threshold && fabs(verts[c].z - verts[d].z) < threshold)
-                    {
-                        if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
-                            idx_map.count(d) == 0)
-                            continue;
-                        if (mesh)
+            if (mesh)
+            {
+                for (int x = 0; x < width - 1; ++x) {
+                    for (int y = 0; y < height - 1; ++y) {
+                        auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
+                        if (verts[a].z && verts[b].z && verts[c].z && verts[d].z
+                            && fabs(verts[a].z - verts[b].z) < threshold && fabs(verts[a].z - verts[c].z) < threshold
+                            && fabs(verts[b].z - verts[d].z) < threshold && fabs(verts[c].z - verts[d].z) < threshold)
                         {
+                            if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
+                                idx_map.count(d) == 0)
+                                continue;
                             faces.push_back({ idx_map[a], idx_map[b], idx_map[d] });
                             faces.push_back({ idx_map[d], idx_map[c], idx_map[a] });
                         }
@@ -104,7 +104,10 @@ namespace rs2
             name << fname << p.get_frame_number() << ".ply";
             std::ofstream out(name.str());
             out << "ply\n";
-            out << "format binary_little_endian 1.0\n";
+            if (binary)
+                out << "format binary_little_endian 1.0\n";
+            else
+                out << "format ascii 1.0\n";
             out << "comment pointcloud saved from Realsense Viewer\n";
             out << "element vertex " << new_verts.size() << "\n";
             out << "property float" << sizeof(float) * 8 << " x\n";
@@ -122,32 +125,67 @@ namespace rs2
                 out << "property list uchar int vertex_indices\n";
             }
             out << "end_header\n";
-            out.close();
 
-            out.open(name.str(), std::ios_base::app | std::ios_base::binary);
-            for (int i = 0; i < new_verts.size(); ++i)
+            if (binary)
             {
-                // we assume little endian architecture on your device
-                out.write(reinterpret_cast<const char*>(&(new_verts[i].x)), sizeof(float));
-                out.write(reinterpret_cast<const char*>(&(new_verts[i].y)), sizeof(float));
-                out.write(reinterpret_cast<const char*>(&(new_verts[i].z)), sizeof(float));
-
-                if (use_texcoords)
+                out.close();
+                out.open(name.str(), std::ios_base::app | std::ios_base::binary);
+                for (int i = 0; i < new_verts.size(); ++i)
                 {
-                    out.write(reinterpret_cast<const char*>(&(new_tex[i][0])), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&(new_tex[i][1])), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&(new_tex[i][2])), sizeof(uint8_t));
+                    // we assume little endian architecture on your device
+                    out.write(reinterpret_cast<const char*>(&(new_verts[i].x)), sizeof(float));
+                    out.write(reinterpret_cast<const char*>(&(new_verts[i].y)), sizeof(float));
+                    out.write(reinterpret_cast<const char*>(&(new_verts[i].z)), sizeof(float));
+
+                    if (use_texcoords)
+                    {
+                        out.write(reinterpret_cast<const char*>(&(new_tex[i][0])), sizeof(uint8_t));
+                        out.write(reinterpret_cast<const char*>(&(new_tex[i][1])), sizeof(uint8_t));
+                        out.write(reinterpret_cast<const char*>(&(new_tex[i][2])), sizeof(uint8_t));
+                    }
+                }
+                if (mesh)
+                {
+                    auto size = faces.size();
+                    for (int i = 0; i < size; ++i) {
+                        static const int three = 3;
+                        out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
+                        out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
+                        out.write(reinterpret_cast<const char*>(&(faces[i][1])), sizeof(int));
+                        out.write(reinterpret_cast<const char*>(&(faces[i][2])), sizeof(int));
+                    }
                 }
             }
-            if (mesh)
+            else
             {
-                auto size = faces.size();
-                for (int i = 0; i < size; ++i) {
-                    static const int three = 3;
-                    out.write(reinterpret_cast<const char*>(&three), sizeof(uint8_t));
-                    out.write(reinterpret_cast<const char*>(&(faces[i][0])), sizeof(int));
-                    out.write(reinterpret_cast<const char*>(&(faces[i][1])), sizeof(int));
-                    out.write(reinterpret_cast<const char*>(&(faces[i][2])), sizeof(int));
+                for (int i = 0; i < new_verts.size(); ++i)
+                {
+                    out << new_verts[i].x << " ";
+                    out << new_verts[i].y << " ";
+                    out << new_verts[i].z << " ";
+                    out << "\n";
+
+                    if (use_texcoords)
+                    {
+                        uint8_t x, y, z;
+                        std::tie(x, y, z) = new_tex[i];
+                        out << unsigned(x) << " ";
+                        out << unsigned(y) << " ";
+                        out << unsigned(z) << " ";
+                        out << "\n";
+                    }
+                }
+                if (mesh)
+                {
+                    auto size = faces.size();
+                    for (int i = 0; i < size; ++i) {
+                        int three = 3;
+                        out << three << " ";
+                        out << std::get<0>(faces[i]) << " ";
+                        out << std::get<1>(faces[i]) << " ";
+                        out << std::get<2>(faces[i]) << " ";
+                        out << "\n";
+                    }
                 }
             }
         }

@@ -954,7 +954,7 @@ namespace rs2
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool mesh, bool notify = true);
+    void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool mesh, bool binary, bool notify = true);
 
     // Auxillary function to save stream data in its internal (raw) format
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame);

@@ -289,12 +289,12 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(const std::string& fname, notifications_model& ns, points p, video_frame texture, bool mesh, bool notify)
+    void export_to_ply(const std::string& fname, notifications_model& ns, points p, video_frame texture, bool mesh, bool binary, bool notify)
     {
-        std::thread([&ns, p, texture, fname, notify, mesh]() mutable {
+        std::thread([&ns, p, texture, fname, notify, mesh, binary]() mutable {
             if (p)
             {
-                p.export_to_ply(fname, texture, mesh);
+                p.export_to_ply(fname, texture, mesh, binary);
                 if (notify) ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
                     RS2_LOG_SEVERITY_INFO,
                     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });

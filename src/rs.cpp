@@ -1851,12 +1851,12 @@ rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error) BE
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
-void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, int mesh, rs2_error** error) BEGIN_API_CALL
+void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, int mesh, int binary, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame);
     VALIDATE_NOT_NULL(fname);
     auto points = VALIDATE_INTERFACE((frame_interface*)frame, librealsense::points);
-    points->export_to_ply(fname, (frame_interface*)texture, mesh);
+    points->export_to_ply(fname, (frame_interface*)texture, mesh, binary);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame, fname)
 
