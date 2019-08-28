@@ -146,6 +146,12 @@ namespace rs2
             static const char* default_path        { "record.default_path" };
             static const char* compression_mode    { "record.compression" };
         }
+        namespace update
+        {
+            static const char* allow_rc_firmware   { "update.allow_rc_firmware" };
+            static const char* recommend_updates   { "update.recommend_updates" };
+            static const char* recommend_calibration { "update.recommend_calibration" };
+        }
         namespace viewer
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
@@ -765,6 +771,9 @@ namespace rs2
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
+
+        void refresh_notifications(viewer_model& viewer);
+
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
         void draw_controls(float panel_width, float panel_height,
