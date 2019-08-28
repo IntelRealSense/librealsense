@@ -2935,6 +2935,98 @@ namespace rs2
         for (auto&& n : related_notifications) n->dismiss(false);
     }
 
+    void device_model::refresh_notifications(viewer_model& viewer)
+    {
+        for (auto&& n : related_notifications) n->dismiss(false);
+
+        auto name = get_device_name(dev);
+
+        if ((bool)config_file::instance().get(configurations::update::recommend_updates))
+        {
+            bool fw_update_required = false;
+            for (auto&& sub : dev.query_sensors())
+            {
+                if (sub.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
+                    sub.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
+                    sub.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                {
+                    std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+                    std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+
+                    int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
+
+                    bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+                    bool is_rc = (product_line == RS2_PRODUCT_LINE_D400) && allow_rc_firmware;
+                    std::string available = get_available_firmware_version(product_line);
+
+                    std::shared_ptr<firmware_update_manager> manager = nullptr;
+
+                    if (is_upgradeable(fw, available))
+                    {
+                        recommended = available;
+
+                        static auto table = create_default_fw_table();
+
+                        manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+                    }
+
+                    if (is_upgradeable(fw, recommended))
+                    {
+                        std::stringstream msg;
+                        msg << name.first << " (S/N " << name.second << ")\n"
+                            << "Current Version: " << fw << "\n";
+
+                        if (is_rc)
+                            msg << "Release Candidate: " << recommended << " Pre-Release";
+                        else
+                            msg << "Recommended Version: " << recommended;
+
+                        if (!fw_update_required)
+                        {
+                            auto n = std::make_shared<fw_update_notification_model>(
+                                msg.str(), manager, false);
+                            viewer.not_model.add_notification(n);
+
+                            fw_update_required = true;
+
+                            related_notifications.push_back(n);
+                        }
+                    }
+                }
+            }
+        }
+
+        if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
+        {
+            for (auto&& model : subdevices)
+            {
+                if (model->supports_on_chip_calib())
+                {
+                    // Make sure we don't spam calibration remainders too often:
+                    time_t rawtime;
+                    time(&rawtime);
+                    std::string id = to_string() << configurations::viewer::last_calib_notice << "." << name.second;
+                    long long last_time = config_file::instance().get_or_default(id.c_str(), (long long)0);
+
+                    std::string msg = to_string()
+                        << name.first << " (S/N " << name.second << ")";
+                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, model, *this, dev);
+                    auto n = std::make_shared<autocalib_notification_model>(
+                        msg, manager, false);
+
+                    // Recommend calibration once a week per device
+                    if (rawtime - last_time < 60)
+                    {
+                        n->snoozed = true;
+                    }
+
+                    viewer.not_model.add_notification(n);
+                    related_notifications.push_back(n);
+                }
+            }
+        }
+    }
+
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
         : dev(dev),
           syncer(viewer.syncer),
@@ -2943,75 +3035,10 @@ namespace rs2
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
-        bool fw_update_required = false;   
         for (auto&& sub : dev.query_sensors())
         {
-            if (sub.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) && 
-                sub.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
-                sub.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-            {
-                std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-                std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
-
-                int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)); 
-
-                std::string available = get_available_firmware_version(product_line);
-
-                std::shared_ptr<firmware_update_manager> manager = nullptr;
-
-                if (is_upgradeable(fw, available))
-                {
-                    recommended = available;
-
-                    static auto table = create_default_fw_table();
-
-                    manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
-                }
-
-                if (is_upgradeable(fw, recommended))
-                {
-                    std::string msg = to_string()
-                        << name.first << " (S/N " << name.second << ")\n"
-                        << "Current Version: " + fw + "\nRecommended Version: " + recommended;
-                    if (!fw_update_required)
-                    {
-                        auto n = std::make_shared<fw_update_notification_model>(
-                            msg, manager, false);
-                        viewer.not_model.add_notification(n);
-
-                        fw_update_required = true;
-
-                        related_notifications.push_back(n);
-                    }
-                }                
-            }
-
             auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message, viewer);
             subdevices.push_back(model);
-
-            if (model->supports_on_chip_calib())
-            {
-                // Make sure we don't spam calibration remainders too often:
-                time_t rawtime;
-                time(&rawtime);
-                std::string id = to_string() << configurations::viewer::last_calib_notice << "." << name.second;
-                long long last_time = config_file::instance().get_or_default(id.c_str(), (long long)0);
-                
-                std::string msg = to_string()
-                    << name.first << " (S/N " << name.second << ")";
-                auto manager = std::make_shared<on_chip_calib_manager>(viewer, model, *this, dev);
-                auto n = std::make_shared<autocalib_notification_model>(
-                    msg, manager, false);
-
-                // Recommend calibration once a week per device
-                if (rawtime - last_time < 60)
-                {
-                    n->snoozed = true;
-                }
-                
-                viewer.not_model.add_notification(n);
-                related_notifications.push_back(n);
-            }
         }
 
         // Initialize static camera info:
@@ -3046,6 +3073,8 @@ namespace rs2
             }
             play_defaults(viewer);
         }
+
+        refresh_notifications(viewer);
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
@@ -4302,7 +4331,7 @@ namespace rs2
                                 product_line_str = sensors.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                             int product_line = parse_product_line(product_line_str);
 
-                            static auto table = create_default_fw_table();
+                            auto table = create_default_fw_table();
 
                             begin_update(table[product_line], viewer, error_message);
                         }
