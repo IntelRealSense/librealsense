@@ -96,13 +96,13 @@ matrix:
         - ls
 
     - name: "ROS industrial-ci Kinetic"
-      env: ROS_DISTRO="kinetic"
+      env: ROS_DISTRO="kinetic" CATKIN_CONFIG="-DENABLE_CCACHE=OFF -DBUILD_GRAPHICAL_EXAMPLES=OFF -DBUILD_EXAMPLES=OFF -DFORCE_LIBUVC=ON"
       script:
         - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
         - .industrial_ci/travis.sh
 
     - name: "ROS industrial-ci Melodic"
-      env: ROS_DISTRO="melodic"
+      env: ROS_DISTRO="melodic" CATKIN_CONFIG="-DENABLE_CCACHE=OFF -DBUILD_GRAPHICAL_EXAMPLES=OFF -DBUILD_EXAMPLES=OFF -DFORCE_LIBUVC=ON"
       script:
         - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
         - .industrial_ci/travis.sh
