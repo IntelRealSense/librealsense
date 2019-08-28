@@ -26,6 +26,7 @@ void init_processing(py::module &m) {
                                              "developers who are not using async APIs.");
     frame_queue.def(py::init<unsigned int>())
         .def(py::init<>())
+        .def(py::init<unsigned int, bool>(), "capacity"_a, "keep_frames"_a = false)
         .def("enqueue", &rs2::frame_queue::enqueue, "Enqueue a new frame into the queue.", "f"_a)
         .def("wait_for_frame", &rs2::frame_queue::wait_for_frame, "Wait until a new frame "
              "becomes available in the queue and dequeue it.", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
@@ -39,8 +40,9 @@ void init_processing(py::module &m) {
             auto success = self.try_wait_for_frame(&frame, timeout_ms);
             return std::make_tuple(success, frame);
         }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>()) // No docstring in C++
-        .def("__call__", &rs2::frame_queue::operator(), "Identical to calling enqueue", "f"_a)
-        .def("capacity", &rs2::frame_queue::capacity, "Return the capacity of the queue");
+        .def("__call__", &rs2::frame_queue::operator(), "Identical to calling enqueue.", "f"_a)
+        .def("capacity", &rs2::frame_queue::capacity, "Return the capacity of the queue.")
+        .def("keep_frames", &rs2::frame_queue::keep_frames, "Return whether or not the queue calls keep on enqueued frames.");
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block workflow, inherit this class to "
                                                                      "generate your own processing_block.");
