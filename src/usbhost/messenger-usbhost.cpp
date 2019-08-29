@@ -79,7 +79,7 @@ namespace librealsense
         {
             _dispatcher->invoke([&](dispatcher::cancellable_timer c)
             {
-                auto response = usb_request_wait(_device->get_handle(), 10);
+                auto response = usb_request_wait(_device->get_handle(), 100);
                 if(response != nullptr)
                 {
                     auto cb = reinterpret_cast<usb_request_callback*>(response->client_data);
