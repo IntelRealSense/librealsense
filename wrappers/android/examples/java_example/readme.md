@@ -96,8 +96,9 @@ Start streaming using a Pipeline, wait for new frames to arrive on each iteratio
 >        while (!mStreamingThread.isInterrupted())
 >        {
 >            try (FrameSet frames = pipe.waitForFrames()) {
->                try (final DepthFrame depth = frames.first(StreamType.DEPTH).as(DepthFrame.class))
+>                try (Frame f = frames.first(StreamType.DEPTH))
 >                {
+>                    DepthFrame depth = f.as(Extension.DEPTH_FRAME);
 >                    final float deptValue = depth.getDistance(depth.getWidth()/2, depth.getHeight()/2);
 >                    runOnUiThread(new Runnable() {
 >                        @Override

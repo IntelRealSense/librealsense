@@ -48,6 +48,7 @@ namespace perc
         virtual Status GetMotionModuleIntrinsics(SensorId id, TrackingData::MotionIntrinsics& intrinsics) override;
         virtual Status SetMotionModuleIntrinsics(SensorId id, const TrackingData::MotionIntrinsics& intrinsics) override;
         virtual Status GetExtrinsics(SensorId id, TrackingData::SensorExtrinsics& extrinsics) override;
+        virtual Status SetExtrinsics(SensorId id, const TrackingData::SensorExtrinsics& extrinsics) override;
         virtual Status SetOccupancyMapControl(uint8_t enable);
         virtual Status GetPose(TrackingData::PoseFrame& pose, uint8_t sourceIndex);
         virtual Status SetExposureModeControl(const TrackingData::ExposureModeControl& mode) override;

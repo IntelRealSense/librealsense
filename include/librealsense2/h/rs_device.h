@@ -146,6 +146,21 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 */
 void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
+
+/** 
+* Reset device to factory calibration
+* \param[in] device       The RealSense device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_reset_to_factory_calibration(const rs2_device* device, rs2_error** e);
+
+/**
+* Write calibration to device's EEPROM
+* \param[in] device       The RealSense device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_write_calibration(const rs2_device* device, rs2_error** e);
+
 /**
 * Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
 * This call is executed on the caller's thread and it supports progress notifications via the optional callback.

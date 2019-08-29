@@ -8,7 +8,7 @@
 #include "option.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
-static const int NUM_OF_DEPTH_RESOLUTIONS = 1;
+static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
 namespace librealsense
 {
@@ -291,5 +291,6 @@ namespace librealsense
 
             rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
         };
+
     } // librealsense::ivcam2
 } // namespace librealsense

@@ -358,6 +358,21 @@ void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, in
 rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error);
 
 /**
+* Creates a copy of stream profile, assigning new values to some of the fields
+* \param[in] mode        input stream profile
+* \param[in] stream      stream type for the profile
+* \param[in] format      binary data format of the profile
+* \param[in] width       new width for the profile
+* \param[in] height      new height for the profile
+* \param[in] intr        new intrinsics for the profile
+* \param[in] index       stream index the profile in case there are multiple streams of the same type
+* \param[out] error      if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                new stream profile, must be deleted by rs2_delete_stream_profile
+*/
+rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, int width, int height, const rs2_intrinsics* intr, rs2_error** error);
+
+
+/**
 * Delete stream profile allocated by rs2_clone_stream_profile
 * Should not be called on stream profiles returned by the device
 * \param[in] mode        input stream profile
@@ -529,6 +544,36 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
 */
 int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigned int frame_num,
     const rs2_vector translational_velocity, rs2_error** error);
+
+/**
+* Set intrinsics of a given sensor
+* \param[in] sensor       The RealSense device
+* \param[in] profile      Target stream profile
+* \param[in] intrinsics   Intrinsics value to be written to the device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile , const rs2_intrinsics* intrinsics, rs2_error** error);
+
+/**
+ * Set extrinsics between two sensors
+ * \param[in]  from_sensor  Origin sensor
+ * \param[in]  from_profile Origin profile
+ * \param[in]  to_sensor    Target sensor
+ * \param[in]  to_profile   Target profile
+ * \param[out] extrinsics   Extrinsics from origin to target
+ * \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error);
+
+/**
+* Set motion device intrinsics
+* \param[in]  sensor       Motion sensor 
+* \param[in]  profile      Motion stream profile
+* \param[out] intrinsics   Pointer to the struct to store the data in
+* \param[out] error        If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error);
+
 
 #ifdef __cplusplus
 }

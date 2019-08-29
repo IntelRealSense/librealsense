@@ -1806,6 +1806,7 @@ namespace rs2
         static config_file temp_cfg;
         static bool reload_required = false;
         static bool refresh_required = false;
+        static bool refresh_updates = false;
 
         static int tab = 0;
 
@@ -1838,7 +1839,7 @@ namespace rs2
 
             if (ImGui::BeginPopupModal(settings, nullptr, flags))
             {
-                ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 220), (float)(y0 + 27) });
+                ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 280), (float)(y0 + 27) });
                 ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
                 ImGui::PushFont(window.get_large_font());
@@ -1874,7 +1875,17 @@ namespace rs2
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                 }
                 ImGui::PopStyleColor(2);
-                //ImGui::SameLine();
+
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, tab != 3 ? light_grey : light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 3 ? light_grey : light_blue);
+                if (ImGui::Button("Updates", { 120, 30 }))
+                {
+                    tab = 3;
+                    config_file::instance().set(configurations::viewer::settings_tab, tab);
+                    temp_cfg.set(configurations::viewer::settings_tab, tab);
+                }
+                ImGui::PopStyleColor(2);
 
                 ImGui::PopFont();
                 ImGui::PopStyleColor(2); // button color
@@ -2126,6 +2137,43 @@ namespace rs2
                     }
                 }
 
+                if (tab == 3)
+                {
+                    bool recommend_calibration = temp_cfg.get(configurations::update::recommend_calibration);
+                    if (ImGui::Checkbox("Recommend Camera Calibration", &recommend_calibration))
+                    {
+                        temp_cfg.set(configurations::update::recommend_calibration, recommend_calibration);
+                        refresh_updates = true;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "When checked, the Viewer / DQT will post weekly remainders for on-chip calibration");
+                    }
+
+                    bool recommend_fw_updates = temp_cfg.get(configurations::update::recommend_updates);
+                    if (ImGui::Checkbox("Recommend Firmware Updates", &recommend_fw_updates))
+                    {
+                        temp_cfg.set(configurations::update::recommend_updates, recommend_fw_updates);
+                        refresh_updates = true;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "When firmware of the device is below the version bundled with this software release\nsuggest firmware update");
+                    }
+
+                    bool allow_rc_firmware = temp_cfg.get(configurations::update::allow_rc_firmware);
+                    if (ImGui::Checkbox("Access Pre-Release Firmware Updates", &allow_rc_firmware))
+                    {
+                        temp_cfg.set(configurations::update::allow_rc_firmware, allow_rc_firmware);
+                        refresh_updates = true;
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Firmware Releases recommended for production-use are published at dev.intelrealsense.com/docs/firmware-releases\n"
+                        "After firmware version passes basic regression tests and until it is published on the site, it is available as a Pre-Release\n");
+                    }
+                }
+
                 ImGui::Separator();
 
                 ImGui::GetWindowDrawList()->AddRectFilled({ (float)x0, (float)(y0 + h - 60) },
@@ -2144,6 +2192,10 @@ namespace rs2
                     if (reload_required) window.reload();
                     else if (refresh_required) window.refresh();
                     update_configuration();
+
+                    if (refresh_updates)
+                        for (auto&& dev : devices)
+                            dev->refresh_notifications(*this);
                 };
         
                 ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 190), (float)(y0 + h - 30) });

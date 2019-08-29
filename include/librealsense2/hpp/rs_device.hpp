@@ -489,6 +489,85 @@ namespace rs2
             rs2_disconnect_tm2_controller(_dev.get(), id, &e);
             error::handle(e);
         }
+
+        /**
+        * Set tm2 camera intrinsics
+        * \param[in] fisheye_senor_id The ID of the fisheye sensor
+        * \param[in] intrinsics       value to be written to the device
+        */
+        void set_intrinsics(int fisheye_sensor_id, const rs2_intrinsics& intrinsics)
+        {
+            rs2_error* e = nullptr;
+            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
+            rs2_set_intrinsics(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), &intrinsics, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Set tm2 camera extrinsics
+        * \param[in] from_stream     only support RS2_STREAM_FISHEYE
+        * \param[in] from_id         only support left fisheye = 1
+        * \param[in] to_stream       only support RS2_STREAM_FISHEYE
+        * \param[in] to_id           only support right fisheye = 2
+        * \param[in] extrinsics      extrinsics value to be written to the device
+        */
+        void set_extrinsics(rs2_stream from_stream, int from_id, rs2_stream to_stream, int to_id, rs2_extrinsics& extrinsics)
+        {
+            rs2_error* e = nullptr;
+            auto from_sensor = get_sensor_profile(from_stream, from_id);
+            auto to_sensor   = get_sensor_profile(to_stream, to_id);
+            rs2_set_extrinsics(from_sensor.first.get().get(), from_sensor.second.get(), to_sensor.first.get().get(), to_sensor.second.get(), &extrinsics, &e);
+            error::handle(e);
+        }
+
+        /** 
+        * Set tm2 motion device intrinsics
+        * \param[in] stream_type       stream type of the motion device
+        * \param[in] motion_intriniscs intrinsics value to be written to the device
+        */
+        void set_motion_device_intrinsics(rs2_stream stream_type, const rs2_motion_device_intrinsic& motion_intriniscs)
+        {
+            rs2_error* e = nullptr;
+            auto motion_sensor = get_sensor_profile(stream_type, 0);
+            rs2_set_motion_device_intrinsics(motion_sensor.first.get().get(), motion_sensor.second.get(), &motion_intriniscs, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Reset tm2 to factory calibration
+        * \param[in] device       tm2 device
+        * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        void reset_to_factory_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_reset_to_factory_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Write calibration to tm2 device's EEPROM
+        * \param[in] device       tm2 device
+        * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        void write_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_write_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+
+    private:
+
+        std::pair<sensor, stream_profile> get_sensor_profile(rs2_stream stream_type, int stream_index) {
+            for (auto s : query_sensors()) {
+                for (auto p : s.get_stream_profiles()) {
+                    if (p.stream_type() == stream_type && p.stream_index() == stream_index)
+                        return std::pair<sensor, stream_profile>(s, p);
+                }
+            }
+            return std::pair<sensor, stream_profile>();
+         }
     };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

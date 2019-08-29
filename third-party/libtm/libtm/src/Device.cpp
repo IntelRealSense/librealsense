@@ -1278,6 +1278,52 @@ namespace perc {
         return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
     }
 
+    Status Device::SetExtrinsics(SensorId id, const TrackingData::SensorExtrinsics& extrinsics)
+    {
+        bulk_message_request_set_extrinsics request = { 0 };
+        bulk_message_response_set_extrinsics response;
+
+        if (GET_SENSOR_TYPE(id) >= SensorType::Max)
+        {
+            DEVICELOGE("Unsupported SensorId (0x%X)", id);
+            return Status::ERROR_PARAMETER_INVALID;
+        }
+
+        request.header.wMessageID = DEV_SET_EXTRINSICS;
+        request.header.dwLength = sizeof(request);
+        request.bSensorID = id;
+        for (int r = 0; r < 9; ++r) { request.extrinsics.flRotation[r] = extrinsics.rotation[r]; }
+        for (int t = 0; t < 3; ++t) { request.extrinsics.flTranslation[t] = extrinsics.translation[t]; }
+
+        DEVICELOGD("Set Extrinsics pose for sensor [%d,%d]", GET_SENSOR_TYPE(id), GET_SENSOR_INDEX(id));
+        Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
+
+        mDispatcher->sendMessage(&mFsm, msg);
+        if (msg.Result != toUnderlying(Status::SUCCESS))
+        {
+            DEVICELOGE("USB Error (0x%X)", msg.Result);
+            return Status::ERROR_USB_TRANSFER;
+        }
+
+        if ((MESSAGE_STATUS)response.header.wStatus == MESSAGE_STATUS::SUCCESS)
+        {
+            DEVICELOGD("Reference sensor [%d,%d]", GET_SENSOR_TYPE(id), GET_SENSOR_INDEX(id));
+
+            for (uint8_t i = 0; i < 9; i++)
+            {
+                DEVICELOGD("Rotation[%d] = %f", i, extrinsics.rotation[i]);
+            }
+
+            for (uint8_t i = 0; i < 3; i++)
+            {
+                DEVICELOGD("Translation[%d] = %f", i, extrinsics.translation[i]);
+            }
+        }
+
+        return fwToHostStatus((MESSAGE_STATUS)response.header.wStatus);
+    }
+
+
     Status Device::SetOccupancyMapControl(uint8_t enable)
     {
         bulk_message_request_occupancy_map_control request = {0};
@@ -1669,12 +1715,6 @@ namespace perc {
     
     Status Device::WriteConfiguration(uint16_t configurationId, uint16_t size, uint8_t* buffer)
     {
-        if ((buffer == NULL) || (size == 0) || (size > MAX_CONFIGURATION_SIZE))
-        {
-            DEVICELOGE("Error: Invalid parameters: buffer = 0x%p, size = %d", buffer, size);
-            return Status::ERROR_PARAMETER_INVALID;
-        }
-
         uint8_t requestBuffer[BUFFER_SIZE] = {0};
         bulk_message_request_write_configuration* request = (bulk_message_request_write_configuration*)requestBuffer;
         bulk_message_response_write_configuration response = {0};
@@ -1710,7 +1750,7 @@ namespace perc {
         Bulk_Message msg((uint8_t*)&request, request.header.dwLength, (uint8_t*)&response, sizeof(response), mEndpointBulkMessages | TO_DEVICE, mEndpointBulkMessages | TO_HOST);
 
         mDispatcher->sendMessage(&mFsm, msg);
-        if (msg.Result != toUnderlying(Status::SUCCESS))
+        if (msg.Result != toUnderlying(Status::SUCCESS) && msg.Result != toUnderlying(Status::TABLE_NOT_EXIST))
         {
             DEVICELOGE("USB Error (0x%X)", msg.Result);
             return Status::ERROR_USB_TRANSFER;
@@ -3926,6 +3966,11 @@ namespace perc {
                  res->wStatus == toUnderlying(MESSAGE_STATUS::INTERNAL_ERROR))
         {
             msg.Result = toUnderlying(Status::ERROR_FW_INTERNAL);
+        }
+        else if (res->wMessageID == DEV_RESET_CONFIGURATION && res->wStatus == toUnderlying(MESSAGE_STATUS::TABLE_NOT_EXIST))
+        { 
+            DEVICELOGW("MessageID 0x%X (%s) warning with status 0x%X TABLE_NOT_EXIST", res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), res->wStatus);
+            msg.Result = toUnderlying(Status::TABLE_NOT_EXIST);
         }
         else
         {

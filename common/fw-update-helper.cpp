@@ -15,15 +15,18 @@
 
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
+#include "common/fw/D4XX_RC_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
+#define FW_D4XX_RC_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
+const char* fw_get_D4XX_RC_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
 #endif // INTERNAL_FW
 
-constexpr const char* recommended_fw_url = "https://downloadcenter.intel.com/download/27522/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?v=t";
+constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-releases";
 
 namespace rs2
 {
@@ -40,12 +43,6 @@ namespace rs2
         return !(strcmp("", FW_D4XX_FW_IMAGE_VERSION) == 0);
     }
 
-    static std::map<int, std::string> product_line_to_fw =
-    {
-        {RS2_PRODUCT_LINE_D400, FW_D4XX_FW_IMAGE_VERSION},
-        {RS2_PRODUCT_LINE_SR300, FW_SR3XX_FW_IMAGE_VERSION},
-    };
-
     int parse_product_line(std::string id)
     {
         if (id == "D400") return RS2_PRODUCT_LINE_D400;
@@ -55,20 +52,32 @@ namespace rs2
 
     std::string get_available_firmware_version(int product_line)
     {
-        auto it = product_line_to_fw.find(product_line);
-        if (it != product_line_to_fw.end())
-            return it->second;
-        return "";
+        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+
+        if (product_line == RS2_PRODUCT_LINE_D400 && allow_rc_firmware) return FW_D4XX_RC_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
+        else return "";
     }
 
     std::map<int, std::vector<uint8_t>> create_default_fw_table()
     {
+        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+
         std::map<int, std::vector<uint8_t>> rv;
 
-        if ("" != FW_D4XX_FW_IMAGE_VERSION)
+        if ("" != FW_D4XX_FW_IMAGE_VERSION && !allow_rc_firmware)
         {
             int size = 0;
             auto hex = fw_get_D4XX_FW_Image(size);
+            auto vec = std::vector<uint8_t>(hex, hex + size);
+            rv[RS2_PRODUCT_LINE_D400] = vec;
+        }
+
+        if ("" != FW_D4XX_RC_IMAGE_VERSION && allow_rc_firmware)
+        {
+            int size = 0;
+            auto hex = fw_get_D4XX_RC_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_D400] = vec;
         }
@@ -166,6 +175,8 @@ namespace rs2
             serial = _dev.get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
+
+        _model.related_notifications.clear();
 
         _progress = 5;
 

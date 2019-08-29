@@ -265,6 +265,15 @@ namespace perc
          */
          virtual Status GetExtrinsics(IN SensorId id, OUT TrackingData::SensorExtrinsics& extrinsics) = 0;
 
+         /**
+         * @brief SetExtrinsics
+         *        Set extrinsic pose of on individual sensor in the device relative to the default one
+         * @param id - Sensor Id (Sensor type + sensor index)
+         * @param extrinsics - Input container for extrinsic parameters
+         * @return Status
+         */
+         virtual Status SetExtrinsics(IN SensorId id, IN const TrackingData::SensorExtrinsics& extrinsics) = 0;
+
         /**
         * @brief SetOccupancyMapControl
         *        Enables/disables occupancy map calculation. Occupancy map calculation is based on 6DoF calculation, 

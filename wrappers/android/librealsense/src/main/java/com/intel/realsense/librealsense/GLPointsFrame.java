@@ -58,11 +58,11 @@ public class GLPointsFrame extends GLFrame {
         GLES10.glPushMatrix();
         GLES10.glLoadIdentity();
 
-        GLES10.glOrthof(-1f, 1f, -1f, 1f, -7f, 0f);
+        GLES10.glOrthof(1f, -1f, -1f, 1f, -7f, 0f);
 
         GLES10.glRotatef(180, 0.0f, 0.0f, 1.0f);
         GLES10.glRotatef(-mDeltaY * mRotationFactor, 1.0f, 0.0f, 0.0f);
-        GLES10.glRotatef(-mDeltaX * mRotationFactor, 0.0f, 1.0f, 0.0f);
+        GLES10.glRotatef(mDeltaX * mRotationFactor, 0.0f, 1.0f, 0.0f);
 
         Points points = mFrame.as(Extension.POINTS);
         float[] data = points.getVertices();

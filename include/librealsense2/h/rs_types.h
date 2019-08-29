@@ -170,6 +170,8 @@ typedef enum rs2_extension
     RS2_EXTENSION_GLOBAL_TIMER,
     RS2_EXTENSION_UPDATABLE,
     RS2_EXTENSION_UPDATE_DEVICE,
+    RS2_EXTENSION_L500_DEPTH_SENSOR,
+    RS2_EXTENSION_TM2_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
