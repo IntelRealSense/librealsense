@@ -14,19 +14,19 @@ add_subdirectory(third_party/pybind11)
 set(PYRS_CPP
     python.cpp
     c_files.cpp
-    rs_advanced_mode.cpp
-    rs_context.cpp
-    rs_device.cpp
-    rs_export.cpp
-    rs_frame.cpp
-    rs_internal.cpp
-    rs_options.cpp
-    rs_pipeline.cpp
-    rs_processing.cpp
-    rs_record_playback.cpp
-    rs_sensor.cpp
-    rs_types.cpp
-    rsutil.cpp
+    pyrs_advanced_mode.cpp
+    pyrs_context.cpp
+    pyrs_device.cpp
+    pyrs_export.cpp
+    pyrs_frame.cpp
+    pyrs_internal.cpp
+    pyrs_options.cpp
+    pyrs_pipeline.cpp
+    pyrs_processing.cpp
+    pyrs_record_playback.cpp
+    pyrs_sensor.cpp
+    pyrs_types.cpp
+    pyrsutil.cpp
 )
 
 pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})

@@ -27,4 +27,3 @@ void init_types(py::module &m) {
         .def_readwrite("max_y", &rs2::region_of_interest::max_y);
     /** end rs_types.hpp **/
 }
-
