@@ -178,7 +178,7 @@ namespace rs2
             error::handle(e);
         }
 
-        // Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.
+        // Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.
         void enter_update_state() const
         {
             rs2_error* e = nullptr;
@@ -186,6 +186,8 @@ namespace rs2
             error::handle(e);
         }
 
+        // Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+        // loaded back to the device, but it does contain all calibration and device information."
         std::vector<uint8_t> create_flash_backup() const
         {
             std::vector<uint8_t> results;
@@ -227,6 +229,7 @@ namespace rs2
             return results;
         }
 
+        // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
         void update_unsigned(const std::vector<uint8_t>& image, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
         {
             rs2_error* e = nullptr;
@@ -234,6 +237,7 @@ namespace rs2
             error::handle(e);
         }
 
+        // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.
         template<class T>
         void update_unsigned(const std::vector<uint8_t>& image, T callback, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
         {

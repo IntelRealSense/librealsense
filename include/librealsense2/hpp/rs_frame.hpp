@@ -820,7 +820,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit depth_frame class with additional disparity related attributs/functions
+        * Extend depth_frame class with additional disparity related attributes/functions
         * \param[in] frame - existing frame instance
         */
         disparity_frame(const frame& f)
@@ -834,7 +834,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the distance between two IR sensors.
+        * Retrieve the distance between the two IR sensors.
         * \return float - baseline.
         */
         float get_baseline(void) const
