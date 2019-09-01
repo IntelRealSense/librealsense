@@ -9,6 +9,7 @@
 #include <chrono>
 
 #include "ux-window.h"
+#include "../src/concurrency.h"
 
 namespace rs2
 {
@@ -83,9 +84,14 @@ namespace rs2
         bool animating = false;
         std::chrono::system_clock::time_point last_moved;
         std::chrono::system_clock::time_point last_interacted;
+
+        single_consumer_queue<std::function<void()>> dispatch_queue;
+        void invoke(std::function<void()> action);
     };
 
     class device_model;
+
+    using invoker = std::function<void(std::function<void()>)>;
 
     class process_manager : public std::enable_shared_from_this<process_manager>
     {
@@ -107,7 +113,9 @@ namespace rs2
         void fail(std::string error);
 
     protected:
-        virtual void process_flow(std::function<void()> cleanup) = 0;
+        virtual void process_flow(
+            std::function<void()> cleanup,
+            invoker invoke) = 0;
 
         std::string _log;
         bool _started = false;
