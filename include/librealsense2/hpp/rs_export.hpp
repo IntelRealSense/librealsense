@@ -22,10 +22,18 @@ namespace rs2
             _pc(std::move(pc)), fname(filename)
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
+            register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 0, 1 });
+            register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 0, 1 });
         }
 
+        void set_ply_option(rs2_option option, float value)
+        {
+            set_option(option, value);
+        }
 
         static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
+        static const auto OPTION_PLY_MESH = rs2_option(RS2_OPTION_COUNT + 2);
+        static const auto OPTION_PLY_BINARY = rs2_option(RS2_OPTION_COUNT + 3);
     private:
         void func(frame data, frame_source& source)
         {
@@ -50,8 +58,10 @@ namespace rs2
             source.frame_ready(data); // passthrough filter because processing_block::process doesn't support sinks
         }
 
-        void export_to_ply(points p, video_frame color, bool mesh = true, bool binary = true) {
+        void export_to_ply(points p, video_frame color) {
             const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
+            bool mesh = get_option(OPTION_PLY_MESH);
+            bool binary = get_option(OPTION_PLY_BINARY);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             std::vector<rs2::vertex> new_verts;
@@ -167,11 +177,9 @@ namespace rs2
 
                     if (use_texcoords)
                     {
-                        uint8_t x, y, z;
-                        std::tie(x, y, z) = new_tex[i];
-                        out << unsigned(x) << " ";
-                        out << unsigned(y) << " ";
-                        out << unsigned(z) << " ";
+                        out << unsigned(new_tex[i][0]) << " ";
+                        out << unsigned(new_tex[i][1]) << " ";
+                        out << unsigned(new_tex[i][2]) << " ";
                         out << "\n";
                     }
                 }
