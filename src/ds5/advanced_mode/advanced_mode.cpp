@@ -13,9 +13,7 @@ namespace librealsense
                                                    uvc_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
-          _color_sensor(nullptr),
-        _rgb_exposure_gain_bind(false),
-        _amplitude_factor_support(false)
+          _color_sensor(nullptr)
     {
         _enabled = [this]() {
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
