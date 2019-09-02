@@ -22,7 +22,8 @@ namespace rs2
               _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
 
     private:
-        void process_flow(std::function<void()> cleanup) override;
+        void process_flow(std::function<void()> cleanup, 
+            invoker invoke) override;
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);

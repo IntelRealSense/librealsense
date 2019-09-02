@@ -71,13 +71,16 @@ namespace rs2
     } DscResultBuffer;
 #pragma pack(pop)
 
-    void on_chip_calib_manager::stop_viewer()
+    void on_chip_calib_manager::stop_viewer(invoker invoke)
     {
         try
         {
-            // Stop viewer UI
             auto profiles = _sub->get_selected_profiles();
-            _sub->stop(_viewer);
+
+            invoke([&](){
+                // Stop viewer UI
+                _sub->stop(_viewer);
+            });
 
             // Wait until frames from all active profiles stop arriving
             bool frame_arrived = false;
@@ -101,7 +104,7 @@ namespace rs2
     }
 
     // Wait for next depth frame and return it
-    rs2::depth_frame on_chip_calib_manager::fetch_depth_frame()
+    rs2::depth_frame on_chip_calib_manager::fetch_depth_frame(invoker invoke)
     {
         auto profiles = _sub->get_selected_profiles();
         bool frame_arrived = false;
@@ -129,7 +132,7 @@ namespace rs2
         return res;
     }
 
-    void on_chip_calib_manager::start_viewer(int w, int h, int fps)
+    void on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
     {
         try
         {
@@ -177,15 +180,17 @@ namespace rs2
 
             auto profiles = _sub->get_selected_profiles();
 
-            if (!_model.dev_syncer)
-                _model.dev_syncer = _viewer.syncer->create_syncer();
+            invoke([&](){
+                if (!_model.dev_syncer)
+                    _model.dev_syncer = _viewer.syncer->create_syncer();
 
-            // Start streaming
-            _sub->play(profiles, _viewer, _model.dev_syncer);
-            for (auto&& profile : profiles)
-            {
-                _viewer.begin_stream(_sub, profile);
-            }
+                // Start streaming
+                _sub->play(profiles, _viewer, _model.dev_syncer);
+                for (auto&& profile : profiles)
+                {
+                    _viewer.begin_stream(_sub, profile);
+                }
+            });
 
             // Wait for frames to arrive
             bool frame_arrived = false;
@@ -213,11 +218,11 @@ namespace rs2
         return _metrics[use_new ? 1 : 0];
     }
 
-    std::pair<float, float> on_chip_calib_manager::get_depth_metrics()
+    std::pair<float, float> on_chip_calib_manager::get_depth_metrics(invoker invoke)
     {
         using namespace depth_quality;
 
-        auto f = fetch_depth_frame();
+        auto f = fetch_depth_frame(invoke);
         auto sensor = _sub->s->as<rs2::depth_stereo_sensor>();
         auto intr = f.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
         rs2::region_of_interest roi { (int)(f.get_width() * 0.45f), (int)(f.get_height()  * 0.45f), 
@@ -301,7 +306,7 @@ namespace rs2
 
             for (int i = 0; i < 31; i++)
             {
-                f = fetch_depth_frame();
+                f = fetch_depth_frame(invoke);
                 auto res = depth_quality::analyze_depth_image(f, sensor.get_depth_scale(), sensor.get_stereo_baseline(),
                     &intr, roi, 0, true, v, false, on_frame);
 
@@ -533,7 +538,8 @@ namespace rs2
         }
     }
 
-    void on_chip_calib_manager::process_flow(std::function<void()> cleanup)
+    void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
+        invoker invoke)
     {
         update_last_used();
 
@@ -568,19 +574,19 @@ namespace rs2
 
         if (!_was_streaming) 
         {
-            start_viewer(0,0,0);
+            start_viewer(0,0,0, invoke);
         }
 
         // Capture metrics before
-        auto metrics_before = get_depth_metrics();
+        auto metrics_before = get_depth_metrics(invoke);
         _metrics.push_back(metrics_before);
        
-        stop_viewer();
+        stop_viewer(invoke);
 
         _ui = std::make_shared<subdevice_ui_selection>(_sub->ui);
         
         // Switch into special Auto-Calibration mode
-        start_viewer(256, 144, 90);
+        start_viewer(256, 144, 90, invoke);
 
         calibrate();
 
@@ -614,15 +620,15 @@ namespace rs2
 
         log(to_string() << "Calibration completed, health factor = " << _health);
 
-        stop_viewer();
+        stop_viewer(invoke);
 
-        start_viewer(0, 0, 0); // Start with default settings
+        start_viewer(0, 0, 0, invoke); // Start with default settings
 
         // Make new calibration active
         apply_calib(true);
 
         // Capture metrics after
-        auto metrics_after = get_depth_metrics();
+        auto metrics_after = get_depth_metrics(invoke);
         _metrics.push_back(metrics_after);
 
         _progress = 100;
@@ -630,7 +636,7 @@ namespace rs2
         _done = true;
     }
 
-    void on_chip_calib_manager::restore_workspace()
+    void on_chip_calib_manager::restore_workspace(invoker invoke)
     {
         try
         {
@@ -640,7 +646,7 @@ namespace rs2
 
             _viewer.synchronization_enable = _synchronized;
 
-            stop_viewer();
+            stop_viewer(invoke);
 
             if (_ui.get())
             {
@@ -652,7 +658,7 @@ namespace rs2
 
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            if (_was_streaming) start_viewer(0, 0, 0);
+            if (_was_streaming) start_viewer(0, 0, 0, invoke);
 
             _restored = true;
         }
@@ -818,7 +824,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace();
+                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
                     get_manager().reset();
                     get_manager().tare = true;
                     get_manager().start(shared_from_this());
@@ -847,7 +853,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
-                    get_manager().restore_workspace();
+                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
                     get_manager().reset();
                     get_manager().start(shared_from_this());
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
@@ -997,7 +1003,7 @@ namespace rs2
                     }
                     else dismiss(false);
 
-                    get_manager().restore_workspace();
+                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
                 }
 
                 if (recommend_keep) ImGui::PopStyleColor(2);
@@ -1096,7 +1102,7 @@ namespace rs2
         if (!use_new_calib && get_manager().done()) 
             get_manager().apply_calib(false);
 
-        get_manager().restore_workspace();
+        get_manager().restore_workspace([this](std::function<void()> a){ a(); });
 
         if (update_state != RS2_CALIB_STATE_TARE_INPUT)
             update_state = RS2_CALIB_STATE_INITIAL_PROMPT;

@@ -255,6 +255,9 @@ namespace rs2
     std::function<void()> notification_model::draw(ux_window& win, int w, int y, 
         std::shared_ptr<notification_model>& selected, std::string& error_message)
     {
+        std::function<void()> action;
+        while(dispatch_queue.try_dequeue(&action)) action();
+        
         std::function<void()> follow_up = []{};
 
         if (visible)
@@ -787,10 +790,33 @@ namespace rs2
         _failed = true;
     }
 
+    void notification_model::invoke(std::function<void()> action)
+    {
+        single_consumer_queue<bool> q;
+        dispatch_queue.enqueue([&q, &action](){
+            try
+            {
+                action();
+                q.enqueue(true);
+            }
+            catch(...)
+            {
+                q.enqueue(false);
+            }
+        });
+        bool res;
+        if (!q.dequeue(&res, 100000) || !res)
+            throw std::runtime_error("Invoke operation failed!");
+    }
+
     void process_manager::start(std::shared_ptr<notification_model> n)
     {
         auto cleanup = [n]() {
             //n->dismiss(false);
+        };
+
+        auto invoke = [n](std::function<void()> action) {
+            n->invoke(action);
         };
 
         log(to_string() << "Started " << _process_name << " process");
@@ -798,13 +824,13 @@ namespace rs2
         auto me = shared_from_this();
         std::weak_ptr<process_manager> ptr(me);
 
-        std::thread t([ptr, cleanup]() {
+        std::thread t([ptr, cleanup, invoke]() {
             auto self = ptr.lock();
             if (!self) return;
 
             try
             {
-                self->process_flow(cleanup);
+                self->process_flow(cleanup, invoke);
             }
             catch (const error& e)
             {

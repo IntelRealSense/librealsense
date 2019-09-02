@@ -168,7 +168,9 @@ namespace rs2
         return false;
     }
 
-    void firmware_update_manager::process_flow(std::function<void()> cleanup)
+    void firmware_update_manager::process_flow(
+        std::function<void()> cleanup,
+        invoker invoke)
     {
         std::string serial = "";
         if (_dev.supports(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER))
