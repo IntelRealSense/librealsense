@@ -17,3 +17,4 @@ dependencies:
   - pip:
     - laspy
     - appmode
+    - pyrealsense2
