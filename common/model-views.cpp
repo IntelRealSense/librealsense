@@ -967,9 +967,15 @@ namespace rs2
                     model->enabled = false;
             }
 
-
             if (shared_filter->is<hole_filling_filter>())
                 model->enabled = false;
+
+            if (shared_filter->is<decimation_filter>())
+            {
+                std::string sn_name(s->get_info(RS2_CAMERA_INFO_NAME));
+                if (sn_name == "RGB Camera")
+                    model->enabled = false;
+            }
 
             post_processing.push_back(model);
         }
