@@ -48,7 +48,7 @@ public:
 
     void blocking_enqueue(T&& item)
     {
-        auto pred = [this]()->bool { return _queue.size() <= _cap; };
+        auto pred = [this]()->bool { return _queue.size() < _cap || _need_to_flush; };
 
         std::unique_lock<std::mutex> lock(_mutex);
         if (_accepting)
@@ -116,6 +116,7 @@ public:
         _accepting = false;
         _need_to_flush = true;
 
+        _enq_cv.notify_all();
         while (_queue.size() > 0)
         {
             auto item = std::move(_queue.front());
@@ -177,11 +178,6 @@ public:
     void start()
     {
         _queue.start();
-    }
-
-    void flush()
-    {
-        _queue.flush();
     }
 
     size_t size()
