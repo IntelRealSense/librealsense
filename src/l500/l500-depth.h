@@ -14,6 +14,7 @@
 #include "stream.h"
 #include "l500-private.h"
 #include "error-handling.h"
+#include "frame-validator.h"
 
 namespace librealsense
 {
@@ -84,7 +85,8 @@ namespace librealsense
     public:
         explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner),
+              _depth_invalidation_enabled(true)
         {
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
@@ -93,6 +95,33 @@ namespace librealsense
             register_option(RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>("Offset from sensor to depth origin in millimetrers",
                 lazy<float>([&]() {
                 return get_depth_offset(); })));
+
+            _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
+                0,
+                1,
+                1,
+                1,
+                &_depth_invalidation_enabled,
+                "depth invalidation enabled");
+            _depth_invalidation_option->on_set([this](float val)
+            {
+                if (!_depth_invalidation_option->is_valid(val))
+                    throw invalid_value_exception(to_string()
+                        << "Unsupported depth invalidation enabled " << val << " is out of range.");
+            });
+
+            register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
+
+        }
+
+        virtual const char* get_option_name(rs2_option option) const override
+        {
+            if(option == RS2_OPTION_DEPTH_INVALIDATION_ENABLE)
+            {
+                static const std::string str = make_less_screamy("DEPTH_INVALIDATION_ENABLE");
+                return str.c_str();
+            }
+            return options_container::get_option_name(option);
         }
 
         static ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height, ivcam2::intrinsic_depth intrinsic)
@@ -211,11 +240,15 @@ namespace librealsense
 
         void start(frame_callback_ptr callback) override;
         void open(const stream_profiles& requests) override;
-        
+        void stop() override;
         float get_depth_offset() const;
     private:
         const l500_device* _owner;
         float _depth_units;
-        stream_profiles _current_requests;
+        stream_profiles _user_requests;
+        stream_profiles _validator_requests;
+        bool _depth_invalidation_enabled;
+        std::shared_ptr<depth_invalidation_option> _depth_invalidation_option;
+
     };
 }

@@ -15,7 +15,6 @@
 #include "proc/zero-order.h"
 #include <cstddef>
 #include "metadata-parser.h"
-#include "frame-validator.h"
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -70,6 +69,7 @@ namespace librealsense
 
         get_depth_sensor().register_option(RS2_OPTION_APD_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
+
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -250,13 +250,58 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
-        uvc_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _current_requests));
+        if(_depth_invalidation_enabled)
+            uvc_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _user_requests, _validator_requests));
+        else
+            uvc_sensor::start(callback);
+    }
+
+    void l500_depth_sensor::stop()
+    {
+        uvc_sensor::stop();
+        _depth_invalidation_option->set_streaming(false);
     }
 
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
-        _current_requests = requests;
-        uvc_sensor::open(requests);
+        _depth_invalidation_option->set_streaming(true);
+
+        if(_depth_invalidation_enabled)
+        {
+            auto is_ir_requested = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
+            {return sp->get_stream_type() == RS2_STREAM_INFRARED;}) != requests.end();
+
+            _validator_requests = requests;
+
+            //enable ir if user didn't asked ir in order to validate the ir frame
+            if (!is_ir_requested)
+            {
+               auto user_request = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
+               {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
+
+               if(user_request == requests.end())
+                   throw std::runtime_error(to_string() << "input stream_profiles is invalid");
+
+                auto user_request_profile = dynamic_cast<video_stream_profile*>(user_request->get());
+
+                auto sp = uvc_sensor::get_stream_profiles();
+
+                auto coresponding_ir = std::find_if(sp.begin(), sp.end(), [&](std::shared_ptr<stream_profile_interface> sp)
+                {
+                    auto vs = dynamic_cast<video_stream_profile*>(sp.get());
+                    return sp->get_stream_type() == RS2_STREAM_INFRARED && frame_validator::is_stream_profiles_equals(sp.get(), user_request_profile);
+                });
+
+                _validator_requests.push_back(*coresponding_ir);
+            }
+            _user_requests = requests;
+         }
+         else
+         {
+             _validator_requests = requests;
+         }
+
+        uvc_sensor::open(_validator_requests);
     }
 
 }

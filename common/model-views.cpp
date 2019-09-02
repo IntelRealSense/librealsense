@@ -821,7 +821,8 @@ namespace rs2
         bool* options_invalidated,
         std::string& error_message)
     {
-        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+
+        for (auto&& i:options->get_supported_options())
         {
             auto opt = static_cast<rs2_option>(i);
 
@@ -1579,43 +1580,46 @@ namespace rs2
 
             for (auto&& pbm : post_processing) pbm->save_to_config_file();
         }
-        if (next_option < RS2_OPTION_COUNT)
+        if (next_option < s->get_supported_options().size())
         {
-            auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update_all_fields(error_message, notifications);
-
-            if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+            if (options_metadata.find(static_cast<rs2_option>(next_option)) != options_metadata.end())
             {
-                auto old_ae_enabled = auto_exposure_enabled;
-                auto_exposure_enabled = opt_md.value > 0;
+                auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
+                opt_md.update_all_fields(error_message, notifications);
 
-                if (!old_ae_enabled && auto_exposure_enabled)
+                if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
-                    try
+                    auto old_ae_enabled = auto_exposure_enabled;
+                    auto_exposure_enabled = opt_md.value > 0;
+
+                    if (!old_ae_enabled && auto_exposure_enabled)
                     {
-                        if (s->is<roi_sensor>())
+                        try
                         {
-                            auto r = s->as<roi_sensor>().get_region_of_interest();
-                            roi_rect.x = static_cast<float>(r.min_x);
-                            roi_rect.y = static_cast<float>(r.min_y);
-                            roi_rect.w = static_cast<float>(r.max_x - r.min_x);
-                            roi_rect.h = static_cast<float>(r.max_y - r.min_y);
+                            if (s->is<roi_sensor>())
+                            {
+                                auto r = s->as<roi_sensor>().get_region_of_interest();
+                                roi_rect.x = static_cast<float>(r.min_x);
+                                roi_rect.y = static_cast<float>(r.min_y);
+                                roi_rect.w = static_cast<float>(r.max_x - r.min_x);
+                                roi_rect.h = static_cast<float>(r.max_y - r.min_y);
+                            }
+                        }
+                        catch (...)
+                        {
+                            auto_exposure_enabled = false;
                         }
                     }
-                    catch (...)
-                    {
-                        auto_exposure_enabled = false;
-                    }
                 }
-            }
 
-            if (next_option == RS2_OPTION_DEPTH_UNITS)
-            {
-                opt_md.dev->depth_units = opt_md.value;
-            }
+                if (next_option == RS2_OPTION_DEPTH_UNITS)
+                {
+                    opt_md.dev->depth_units = opt_md.value;
+                }
 
-            if (next_option == RS2_OPTION_STEREO_BASELINE)
-                opt_md.dev->stereo_baseline = opt_md.value;
+                if (next_option == RS2_OPTION_STEREO_BASELINE)
+                    opt_md.dev->stereo_baseline = opt_md.value;
+            }
 
             next_option++;
         }
@@ -3311,7 +3315,6 @@ namespace rs2
         std::vector<frame> results;
 
         auto res = handle_frame(f, source);
-
         auto frame = source.allocate_composite_frame(res);
 
         if(frame)
@@ -5309,8 +5312,9 @@ namespace rs2
                                         dev_syncer = viewer.syncer->create_syncer();
 
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                                    if ((friendly_name.find("Tracking") != std::string::npos) ||
-                                        (friendly_name.find("Motion") != std::string::npos))
+                                    if (!viewer.zo_sensors.load() &&
+                                            ((friendly_name.find("Tracking") != std::string::npos) ||
+                                            (friendly_name.find("Motion") != std::string::npos)))
                                     {
                                         viewer.synchronization_enable = false;
                                     }
@@ -5442,7 +5446,7 @@ namespace rs2
                     label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
-                        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                        for (auto&& i:sub->s->get_supported_options())
                         {
                             auto opt = static_cast<rs2_option>(i);
                             if (skip_option(opt)) continue;
