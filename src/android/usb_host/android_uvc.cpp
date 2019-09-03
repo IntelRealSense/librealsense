@@ -19,12 +19,12 @@
 #include <atomic>
 #include <zconf.h>
 
-#define USE_URB true
-#define DEQUEUE_TIMEOUT 50
-#define FIRST_FRAME_TIMEOUT 2000
-#define STREAMING_WATCHER_TIMEOUT 1000
-#define STREAMING_BULK_TRANSFER_TIMEOUT 1000
-#define UVC_PAYLOAD_MAX_HEADER_LENGTH 256
+const bool USE_URB = true;
+const int DEQUEUE_MILLISECONDS_TIMEOUT = 50;
+const int FIRST_FRAME_MILLISECONDS_TIMEOUT = 2000;
+const int STREAMING_WATCHER_MILLISECONDS_TIMEOUT = 1000;
+const int STREAMING_BULK_TRANSFER_MILLISECONDS_TIMEOUT = 1000;
+const int UVC_PAYLOAD_MAX_HEADER_LENGTH = 256;
 
 using namespace librealsense;
 
@@ -869,7 +869,7 @@ void stream_thread_bulk(usbhost_uvc_stream_context *strctx) {
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
-            if (queue.dequeue(&fp, DEQUEUE_TIMEOUT)) {
+            if (queue.dequeue(&fp, DEQUEUE_MILLISECONDS_TIMEOUT)) {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -882,7 +882,7 @@ void stream_thread_bulk(usbhost_uvc_stream_context *strctx) {
             continue;
         auto i = strctx->stream->stream_if->interface;
         uint32_t transferred = 0;
-        auto sts = messenger->bulk_transfer(read_ep, fp->pixels.data(), read_buff_length, transferred, STREAMING_BULK_TRANSFER_TIMEOUT);
+        auto sts = messenger->bulk_transfer(read_ep, fp->pixels.data(), read_buff_length, transferred, STREAMING_BULK_TRANSFER_MILLISECONDS_TIMEOUT);
 //        LOG_INFO("endpoint: " << (int)read_ep->get_address() << ", sts: " << (int)sts << ", expected: " << (int)read_buff_length << ", actual: " << (int)transferred);
         switch(sts)
         {
@@ -974,7 +974,7 @@ void stream_thread_urb(usbhost_uvc_stream_context *strctx) {
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
-            if (queue.dequeue(&fp, DEQUEUE_TIMEOUT)) {
+            if (queue.dequeue(&fp, DEQUEUE_MILLISECONDS_TIMEOUT)) {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -1043,13 +1043,13 @@ void stream_thread_urb(usbhost_uvc_stream_context *strctx) {
         return;
     callback->callback(nullptr);
 
-    int timeout = FIRST_FRAME_TIMEOUT;
+    int timeout = FIRST_FRAME_MILLISECONDS_TIMEOUT;
     while(!fatal_error && strctx->stream->running)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
 
         if(frame_count > prev_frame_count) {
-            timeout = STREAMING_WATCHER_TIMEOUT;
+            timeout = STREAMING_WATCHER_MILLISECONDS_TIMEOUT;
         }
         else{
             messenger->reset_endpoint(read_ep, reset_ep_timeout);
