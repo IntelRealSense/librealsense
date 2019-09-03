@@ -40,7 +40,7 @@ namespace librealsense
         void on_frame(rs2_frame * f) override;
         void release() override;
 
-        static bool is_stream_profiles_equals(stream_profile_interface* l, stream_profile_interface* r)
+        static bool stream_profiles_correspond(stream_profile_interface* l, stream_profile_interface* r)
         {
             auto vl = dynamic_cast<video_stream_profile_interface*>(l);
             auto vr = dynamic_cast<video_stream_profile_interface*>(r);
@@ -55,12 +55,12 @@ namespace librealsense
 
     private:
         bool propagate(frame_interface* frame);
-        bool is_user_requseted_frame(frame_interface* frame);
+        bool is_user_requested_frame(frame_interface* frame);
 
         std::thread _reset_thread;
         std::atomic<bool> _stopped;
         std::atomic<bool> _validated;
-        int frame_num = 0;
+        int _ir_frame_num = 0;
         frame_callback_ptr _user_callback;
         stream_profiles _user_requests;
         stream_profiles _validator_requests;

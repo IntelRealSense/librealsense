@@ -11,7 +11,7 @@ namespace librealsense
     {
         if (!_stopped && propagate((frame_interface*)f))
         {
-            if(is_user_requseted_frame((frame_interface*)f))
+            if(is_user_requested_frame((frame_interface*)f))
                 _user_callback->on_frame(f);
         }
     }
@@ -48,7 +48,7 @@ namespace librealsense
             return false;
 
         //start to validate only from the second frame
-        if(frame_num++ < 2)
+        if(_ir_frame_num++ < 2)
             return false;
 
         auto w = vf->get_width();
@@ -74,7 +74,7 @@ namespace librealsense
         else
         {
 
-            LOG_ERROR("frame_source received corrupted depth frame ("<<(float)invalid_pixels/(w*h)<<"% invalid pixels), restarting the sensor...");
+            LOG_ERROR("frame_source received corrupted frame ("<<(float)invalid_pixels/(w*h)<<"% invalid pixels), restarting the sensor...");
             auto s = _sensor;
             auto vr = _validator_requests;
             auto uc = _user_callback;
@@ -82,6 +82,7 @@ namespace librealsense
             _reset_thread = std::thread([s, vr, uc]()
             {
                 try {
+                    //added delay as WA for stabilities issues
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                     s->stop();
                     s->close();
@@ -90,7 +91,9 @@ namespace librealsense
                     s->start(uc);
                 }
                 catch (...)
-                {}
+                {
+                    LOG_ERROR("restarting of sensor failed");
+                }
             });
             _reset_thread.detach();
         }
@@ -98,11 +101,11 @@ namespace librealsense
 
     }
 
-    bool frame_validator::is_user_requseted_frame(frame_interface* frame)
+    bool frame_validator::is_user_requested_frame(frame_interface* frame)
     {
         return std::find_if(_user_requests.begin(), _user_requests.end(), [&](std::shared_ptr<stream_profile_interface> sp)
         {
-            return is_stream_profiles_equals(frame->get_stream().get(), sp.get());
+            return stream_profiles_correspond(frame->get_stream().get(), sp.get());
         }) != _user_requests.end();
     }
 }
