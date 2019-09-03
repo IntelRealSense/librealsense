@@ -19,7 +19,7 @@
 #define INTERRUPT_BUFFER_SIZE 1024
 #define CLEAR_FEATURE 0x01
 #define UVC_FEATURE 0x02
-#define INTERRUPT_PACKET_SIZE 5
+#define INTERRUPT_PACKET_SIZE 6
 #define INTERRUPT_NOTIFICATION_INDEX 5
 #define DEPTH_SENSOR_OVERFLOW_NOTIFICATION 11
 #define COLOR_SENSOR_OVERFLOW_NOTIFICATION 13
@@ -79,7 +79,7 @@ namespace librealsense
         {
             _dispatcher->invoke([&](dispatcher::cancellable_timer c)
             {
-                auto response = usb_request_wait(_device->get_handle(), 10);
+                auto response = usb_request_wait(_device->get_handle(), 100);
                 if(response != nullptr)
                 {
                     auto cb = reinterpret_cast<usb_request_callback*>(response->client_data);

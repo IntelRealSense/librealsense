@@ -19,11 +19,12 @@
 #include <atomic>
 #include <zconf.h>
 
-#define USE_URB true
-#define DEQUEUE_TIMEOUT 50
-#define STREAMING_WATCHER_TIMEOUT 1000
-#define STREAMING_BULK_TRANSFER_TIMEOUT 1000
-#define UVC_PAYLOAD_MAX_HEADER_LENGTH 256
+const bool USE_URB = true;
+const int DEQUEUE_MILLISECONDS_TIMEOUT = 50;
+const int FIRST_FRAME_MILLISECONDS_TIMEOUT = 2000;
+const int STREAMING_WATCHER_MILLISECONDS_TIMEOUT = 1000;
+const int STREAMING_BULK_TRANSFER_MILLISECONDS_TIMEOUT = 1000;
+const int UVC_PAYLOAD_MAX_HEADER_LENGTH = 256;
 
 using namespace librealsense;
 
@@ -868,7 +869,7 @@ void stream_thread_bulk(usbhost_uvc_stream_context *strctx) {
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
-            if (queue.dequeue(&fp, DEQUEUE_TIMEOUT)) {
+            if (queue.dequeue(&fp, DEQUEUE_MILLISECONDS_TIMEOUT)) {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -881,7 +882,7 @@ void stream_thread_bulk(usbhost_uvc_stream_context *strctx) {
             continue;
         auto i = strctx->stream->stream_if->interface;
         uint32_t transferred = 0;
-        auto sts = messenger->bulk_transfer(read_ep, fp->pixels.data(), read_buff_length, transferred, STREAMING_BULK_TRANSFER_TIMEOUT);
+        auto sts = messenger->bulk_transfer(read_ep, fp->pixels.data(), read_buff_length, transferred, STREAMING_BULK_TRANSFER_MILLISECONDS_TIMEOUT);
 //        LOG_INFO("endpoint: " << (int)read_ep->get_address() << ", sts: " << (int)sts << ", expected: " << (int)read_buff_length << ", actual: " << (int)transferred);
         switch(sts)
         {
@@ -923,6 +924,22 @@ void stream_thread_bulk(usbhost_uvc_stream_context *strctx) {
     LOG_DEBUG("Transfer thread stopped for endpoint address: " << ep);
 };
 
+std::shared_ptr<usb_request> create_request(
+        std::shared_ptr<librealsense::platform::usb_device_usbhost> dev,
+        usb_endpoint_descriptor desc,
+        std::shared_ptr<platform::usb_request_callback> callback)
+{
+    auto rv = std::shared_ptr<usb_request>(usb_request_new(dev->get_handle(), &desc),
+                                                [](usb_request* req){usb_request_free(req);});
+    if(!rv){
+        LOG_ERROR("invalid USB request");
+        return nullptr;
+    }
+    rv->client_data = callback.get();
+
+    return rv;
+}
+
 void stream_thread_urb(usbhost_uvc_stream_context *strctx) {
     auto inf = strctx->stream->stream_if->interface;
     auto dev = strctx->stream->devh->device;
@@ -957,7 +974,7 @@ void stream_thread_urb(usbhost_uvc_stream_context *strctx) {
     std::thread t([&]() {
         while (keep_sending_callbacks) {
             frame_ptr fp(nullptr, [](frame *) {});
-            if (queue.dequeue(&fp, DEQUEUE_TIMEOUT)) {
+            if (queue.dequeue(&fp, DEQUEUE_MILLISECONDS_TIMEOUT)) {
                 strctx->stream->user_cb(&fp->fo, strctx->stream->user_ptr);
             }
         }
@@ -966,90 +983,92 @@ void stream_thread_urb(usbhost_uvc_stream_context *strctx) {
     frame_ptr fp = frame_ptr(archive.allocate(), &cleanup_frame);
 
     auto desc = read_ep->get_descriptor();
-    std::shared_ptr<usb_request> request = std::shared_ptr<usb_request>(usb_request_new(dev->get_handle(),
-                                                                                        &desc), [](usb_request* req) {usb_request_free(req);});
-    if(!request)
-    {
-        LOG_ERROR("invalid USB request");
-        return;
-    }
+    std::shared_ptr<usb_request> request;
 
     bool fatal_error = false;
     uint32_t frame_count = 0;
+    uint32_t prev_frame_count = 0;
     int active_request_count = 0;
-    uint32_t zero_response = 0;
+    dispatcher request_dispatcher(1);
+
+    std::function<void()> queue_request = [&]()
+    {
+        if(fatal_error || !strctx->stream->running){
+            return;
+        }
+        request_dispatcher.invoke([&](dispatcher::cancellable_timer c)
+        {
+            fp = frame_ptr(archive.allocate(), &cleanup_frame);
+            if(!fp)
+                return;
+            request->buffer = fp->pixels.data();
+            request->buffer_length = fp->pixels.size();
+
+            auto sts =  messenger->submit_request(request);
+            switch(sts)
+            {
+                case platform::RS2_USB_STATUS_SUCCESS:
+                    active_request_count++;
+                    return;
+                case platform::RS2_USB_STATUS_OVERFLOW:
+                case platform::RS2_USB_STATUS_NO_DEVICE:
+                case platform::RS2_USB_STATUS_NO_MEM:
+                    fatal_error = true;
+                    return;
+                default:
+                    messenger->reset_endpoint(read_ep, reset_ep_timeout);
+                    queue_request();
+                    break;
+            }
+        });
+    };
+
+    request_dispatcher.start();
+
     auto callback = std::make_shared<platform::usb_request_callback>([&](usb_request* r)
     {
-     if(r)
-     {
-         active_request_count--;
-         if(r->actual_length == 0){
-             LOG_WARNING("read_ep: " << r->endpoint << ", zero response");
-             zero_response++;
-             if(zero_response > 10)
-             {
-                 messenger->reset_endpoint(read_ep, reset_ep_timeout);
-                 zero_response = 0;
-             }
-         }
-         if(r->actual_length >= strctx->stream->cur_ctrl.dwMaxVideoFrameSize){
-             zero_response = 0;
-             frame_count++;
-             usbhost_uvc_process_bulk_payload(std::move(fp), r->actual_length, queue);
-         }
-     }
+        if(r)
+            active_request_count--;
+        if(r && r->actual_length >= strctx->stream->cur_ctrl.dwMaxVideoFrameSize)
+        {
+            frame_count++;
+            usbhost_uvc_process_bulk_payload(std::move(fp), r->actual_length, queue);
+        }
 
-     if(!strctx->stream->running){
-         return;
-     }
-
-     fp = frame_ptr(archive.allocate(), &cleanup_frame);
-     if(!fp)
-         return;
-     request->buffer = fp->pixels.data();
-     request->buffer_length = fp->pixels.size();
-
-     auto sts =  messenger->submit_request(request);
-     switch(sts)
-     {
-         case platform::RS2_USB_STATUS_SUCCESS:
-             active_request_count++;
-             return;
-         case platform::RS2_USB_STATUS_OVERFLOW:
-         case platform::RS2_USB_STATUS_NO_DEVICE:
-         case platform::RS2_USB_STATUS_NO_MEM:
-             fatal_error = true;
-             return;
-         default:
-             messenger->reset_endpoint(read_ep, reset_ep_timeout);
-             break;
-     }
+        queue_request();
     });
 
-    request->client_data = callback.get();
+    request = create_request(dev, desc, callback);
+    if(!request)
+        return;
+    callback->callback(nullptr);
 
+    int timeout = FIRST_FRAME_MILLISECONDS_TIMEOUT;
     while(!fatal_error && strctx->stream->running)
     {
-        if(frame_count == 0){
-            if(active_request_count > 0)
-            {
-                messenger->cancel_request(request);
-                active_request_count--;
-            }
-            callback->callback(nullptr);
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout));
+
+        if(frame_count > prev_frame_count) {
+            timeout = STREAMING_WATCHER_MILLISECONDS_TIMEOUT;
         }
-        frame_count = 0;
-        std::this_thread::sleep_for(std::chrono::milliseconds(STREAMING_WATCHER_TIMEOUT));
+        else{
+            messenger->reset_endpoint(read_ep, reset_ep_timeout);
+        }
+
+        prev_frame_count = frame_count;
     }
 
-    if(active_request_count > 0)
-    {
-        messenger->cancel_request(request);
-        active_request_count--;
+    int itr = 10;
+    while(!fatal_error && active_request_count && itr--){
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    LOG_INFO("read endpoint: " << (int)read_ep->get_address() <<", active requests count: " << active_request_count);
 
     callback->cancel();
+
+    if(active_request_count)
+        messenger->cancel_request(request);
+    LOG_INFO("streaming done on read endpoint: " << (int)read_ep->get_address() << ", active requests count: " << active_request_count);
+
     messenger->reset_endpoint(read_ep, reset_ep_timeout);
     free(strctx);
     queue.clear();

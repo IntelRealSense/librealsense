@@ -29,6 +29,11 @@ namespace librealsense
                 _callback = callback;
             }
 
+            ~usb_request_callback()
+            {
+                cancel();
+            }
+
             void cancel(){
                 std::lock_guard<std::mutex> lk(_mutex);
                 _callback = nullptr;
