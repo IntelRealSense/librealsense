@@ -604,7 +604,9 @@ namespace rs2
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {
-            return options_metadata[opt].draw_option(update_read_only_options, streaming, error_message, model);
+            if(options_metadata.find(opt)!=options_metadata.end())
+                return options_metadata[opt].draw_option(update_read_only_options, streaming, error_message, model);
+            return false;
         }
 
         bool is_paused() const;

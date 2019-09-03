@@ -429,7 +429,7 @@ namespace librealsense
             confidence_output = (uint8_t*)confidence_out.get_data();
         }
 
-        auto zo = get_zo_point(f);
+        auto zo = get_zo_point(depth_frame);
 
         if (zero_order_invalidation((const uint16_t*)depth_frame.get_data(),
             (const uint8_t*)ir_frame.get_data(),
@@ -471,11 +471,13 @@ namespace librealsense
             }
             auto depth_frame = set.get_depth_frame();
 
-            auto zo = get_zo_point(frame);
+            auto zo = get_zo_point(depth_frame);
 
             if (zo.first - _options.patch_size < 0 || zo.first + _options.patch_size >= depth_frame.get_width() ||
                (zo.second - _options.patch_size < 0 || zo.second + _options.patch_size >= depth_frame.get_height()))
+            {
                 return false;
+            }
             return true;
 
         }
@@ -493,6 +495,7 @@ namespace librealsense
                     results.push_back(f);
             });
         }
+
         return source.allocate_composite_frame(results);
     }
 }
