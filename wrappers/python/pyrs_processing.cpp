@@ -9,7 +9,7 @@ void init_processing(py::module &m) {
     py::class_<rs2::frame_source> frame_source(m, "frame_source", "The source used to generate frames, which is usually done by the low level driver for each sensor. "
                                                "frame_source is one of the parameters of processing_block's callback function, which can be used to re-generate the "
                                                "frame and via frame_ready invoke another callback function to notify application frame is ready.");
-    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, "Allocate a new video frame with given params"
+    frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, "Allocate a new video frame with given params",
                      "profile"_a, "original"_a, "new_bpp"_a = 0, "new_width"_a = 0,
                      "new_height"_a = 0, "new_stride"_a = 0, "frame_type"_a = RS2_EXTENSION_VIDEO_FRAME)
         .def("allocate_points", &rs2::frame_source::allocate_points, "profile"_a,
