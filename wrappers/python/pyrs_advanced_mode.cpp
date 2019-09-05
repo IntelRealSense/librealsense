@@ -213,10 +213,10 @@ void init_advanced_mode(py::module &m) {
 
     py::class_<STAFactor> _STAFactor(m, "STAFactor");
     _STAFactor.def(py::init<>())
-        .def_readwrite("amplitude", &STAFactor::amplitude)
+        .def_readwrite("a_factor", &STAFactor::amplitude)
         .def("__repr__", [](const STAFactor &e) {
             std::stringstream ss;
-            ss << "amplitude: " << e.amplitude;
+            ss << "a_factor: " << e.amplitude;
             return ss.str();
     });
 
