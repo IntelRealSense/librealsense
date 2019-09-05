@@ -184,6 +184,10 @@ namespace rs2
                         auto vp = profile.as<video_stream_profile>();
                         rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), uid++, vp.width(), vp.height(), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
                         software_profile = s.add_video_stream(stream);
+                        if (f.is<rs2::depth_frame>()) {
+                            auto ds = sensor_from_frame(f)->as<rs2::depth_sensor>();
+                            s.add_read_only_option(RS2_OPTION_DEPTH_UNITS, ds.get_option(RS2_OPTION_DEPTH_UNITS));
+                        }
                     } else if (f.is<motion_frame>()) {
                         auto mp = profile.as<motion_stream_profile>();
                         rs2_motion_stream stream{ mp.stream_type(), mp.stream_index(), uid++, mp.fps(), mp.format(), mp.get_motion_intrinsics() };
