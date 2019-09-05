@@ -170,6 +170,8 @@ namespace rs2
             software_device dev;
 
             std::vector<std::tuple<software_sensor, stream_profile, int>> sensors;
+            std::vector<std::tuple<stream_profile, stream_profile>> extrinsics;
+
             if (auto fs = data.as<frameset>()) {
                 int uid = 0;
                 for (int i = 0; i < fs.size(); ++i) {
@@ -200,7 +202,23 @@ namespace rs2
                         assert(false);
                     }
                     sensors.emplace_back(s, software_profile, i);
+                    
+                    bool found_extrin = false;
+                    for (auto& root : extrinsics) {
+                        try {
+                            std::get<0>(root).register_extrinsics_to(software_profile,
+                                std::get<1>(root).get_extrinsics_to(profile)
+                            );
+                            found_extrin = true;
+                            break;
+                        } catch (...) {}
+                    }
+                    if (!found_extrin) {
+                        extrinsics.emplace_back(software_profile, profile);
+                    }
                 }
+
+                
 
                 // Recorder needs sensors to already exist when its created
                 std::stringstream name;
