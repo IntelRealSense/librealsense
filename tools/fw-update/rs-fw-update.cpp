@@ -49,7 +49,7 @@ void print_device_info(rs2::device d)
 
     std::cout << "Name: " << camera_info[RS2_CAMERA_INFO_NAME] <<
         ", serial number: " << camera_info[RS2_CAMERA_INFO_SERIAL_NUMBER] <<
-        ", ASIC serial number: " << camera_info[RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER] <<
+        ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER] <<
         ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
         ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
 }
@@ -156,7 +156,7 @@ int main(int argc, char** argv) try
         std::cout << std::endl << "search for device with serial number: " << selected_serial_number << std::endl;
     }
 
-    std::string asic_serial_number;
+    std::string update_serial_number;
 
     // Recovery
     bool recovery_executed = false;
@@ -201,7 +201,7 @@ int main(int argc, char** argv) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER) == asic_serial_number))
+            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -222,7 +222,7 @@ int main(int argc, char** argv) try
 
     for (auto&& d : devs)
     {
-        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER)))
+        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER)))
             continue;
 
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
@@ -233,7 +233,7 @@ int main(int argc, char** argv) try
             }
         }
 
-        asic_serial_number = d.get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
+        update_serial_number = d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER);
 
         auto sn = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         if (sn != selected_serial_number && devs.size() != 1)

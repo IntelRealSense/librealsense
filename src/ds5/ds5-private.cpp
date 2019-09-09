@@ -356,11 +356,11 @@ namespace librealsense
         {
             flash_info rv = {};
 
-            uint32_t header_offset = FLASH_SIZE - 0x100;
+            uint32_t header_offset = FLASH_INFO_HEADER_OFFSET;
             memcpy(&rv.header, flash_buffer.data() + header_offset, sizeof(rv.header));
 
-            uint32_t ro_toc_offset = header_offset - 0x80;
-            uint32_t rw_toc_offset = rv.header.read_write_start_address + rv.header.read_write_size - 0x80;
+            uint32_t ro_toc_offset = FLASH_RO_TABLE_OF_CONTENT_OFFSET;
+            uint32_t rw_toc_offset = FLASH_RW_TABLE_OF_CONTENT_OFFSET;
 
             auto ro_toc = parse_table_of_contents(flash_buffer, ro_toc_offset);
             auto rw_toc = parse_table_of_contents(flash_buffer, rw_toc_offset);

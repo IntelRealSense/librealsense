@@ -130,7 +130,6 @@ namespace librealsense
             { RS465_PID,            "Intel RealSense D465" },
             { RS_USB2_PID,          "Intel RealSense USB2" },
             { RS400_IMU_PID,        "Intel RealSense IMU" }
-
         };
 
         // DS5 fisheye XU identifiers
@@ -147,6 +146,9 @@ namespace librealsense
 
         const uint32_t FLASH_SIZE = 0x00200000;
         const uint32_t FLASH_SECTOR_SIZE = 0x1000;
+        const uint32_t FLASH_RW_TABLE_OF_CONTENT_OFFSET = 0x0017FF80;
+        const uint32_t FLASH_RO_TABLE_OF_CONTENT_OFFSET = 0x001FFE80;
+        const uint32_t FLASH_INFO_HEADER_OFFSET = 0x001FFF00;
 
         flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer);
 
@@ -600,7 +602,8 @@ namespace librealsense
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
-            motion_module_fw_version_offset = 212
+            motion_module_fw_version_offset = 212,
+            module_serial_size              = 6
         };
 
         enum calibration_table_id

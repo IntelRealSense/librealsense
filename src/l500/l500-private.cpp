@@ -2,6 +2,7 @@
 //// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include "l500-private.h"
+#include "fw-update/fw-update-unsigned.h"
 
 using namespace std;
 
@@ -99,6 +100,50 @@ namespace librealsense
         l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
             :_hw_monitor(hw_monitor), _option(opt)
         {
+        }
+
+        flash_structure get_rw_flash_structure(const uint32_t flash_version)
+        {
+            switch (flash_version)
+            {
+            case 103: return { 1, { 40, 320, 321, 326, 327, 54} };
+            default:
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
+            }
+        }
+
+        flash_structure get_ro_flash_structure(const uint32_t flash_version)
+        {
+            switch (flash_version)
+            {
+            case 103: return { 4, { 256, 257, 258, 263, 264, 512, 25, 2 } };
+            default:
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
+            }
+        }
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer)
+        {
+            flash_info rv = {};
+
+            uint32_t header_offset = FLASH_INFO_HEADER_OFFSET;
+            memcpy(&rv.header, flash_buffer.data() + header_offset, sizeof(rv.header));
+
+            uint32_t ro_toc_offset = FLASH_RO_TABLE_OF_CONTENT_OFFSET;
+            uint32_t rw_toc_offset = FLASH_RW_TABLE_OF_CONTENT_OFFSET;
+
+            auto ro_toc = parse_table_of_contents(flash_buffer, ro_toc_offset);
+            auto rw_toc = parse_table_of_contents(flash_buffer, rw_toc_offset);
+
+            auto ro_structure = get_ro_flash_structure(ro_toc.header.version);
+            auto rw_structure = get_rw_flash_structure(rw_toc.header.version);
+
+            rv.read_only_section = parse_flash_section(flash_buffer, ro_toc, ro_structure);
+            rv.read_only_section.offset = rv.header.read_only_start_address;
+            rv.read_write_section = parse_flash_section(flash_buffer, rw_toc, rw_structure);
+            rv.read_write_section.offset = rv.header.read_write_start_address;
+
+            return rv;
         }
     } // librealsense::ivcam2
 } // namespace librealsense
