@@ -260,7 +260,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER: return get_serial_number();
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID: return get_serial_number();
         case RS2_CAMERA_INFO_NAME: return get_name();
         case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
         default:
@@ -272,7 +272,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER:
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:
         case RS2_CAMERA_INFO_NAME:
         case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
         default: return false;

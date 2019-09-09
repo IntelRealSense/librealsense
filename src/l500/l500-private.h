@@ -60,10 +60,15 @@ namespace librealsense
         enum gvd_fields
         {
             fw_version_offset = 12,
+            is_camera_locked_offset = 33,
             module_serial_offset = 56,
-            module_asic_serial_offset = 72,
-            module_serial_size = 8,
-            is_camera_locked_offset = 33
+            module_asic_serial_offset = 72
+        };
+
+        enum gvd_fields_size
+        {
+            // Keep sorted
+            module_serial_size = 8
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {

@@ -330,6 +330,9 @@ namespace librealsense
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
         {
             T rv = 0;
+            if (index + sizeof(T) >= data.size())
+                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                    std::to_string(data.size()) + ", index: " + std::to_string(index));
             for (int i = 0; i < sizeof(T); i++)
                 rv += data[index + i] << (i * 8);
             return rv;

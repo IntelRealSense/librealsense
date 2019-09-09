@@ -602,8 +602,13 @@ namespace librealsense
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
-            motion_module_fw_version_offset = 212,
-            module_serial_size              = 6
+            motion_module_fw_version_offset = 212
+        };
+
+        enum gvd_fields_size
+        {
+            // Keep sorted
+            module_serial_size = 6
         };
 
         enum calibration_table_id

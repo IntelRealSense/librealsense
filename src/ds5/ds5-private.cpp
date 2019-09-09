@@ -333,6 +333,7 @@ namespace librealsense
         {
             switch (flash_version)
             {
+                // { number of payloads in section { ro table types }} see Flash.xml
             case 100: return { 2, { 17, 10, 40, 29, 30, 54} };
             case 101: return { 3, { 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
@@ -346,6 +347,7 @@ namespace librealsense
         {
             switch (flash_version)
             {
+                // { number of payloads in section { ro table types }} see Flash.xml
             case 100: return { 2, { 134, 25 } };
             default:
                 throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));

@@ -49,7 +49,7 @@ void print_device_info(rs2::device d)
 
     std::cout << "Name: " << camera_info[RS2_CAMERA_INFO_NAME] <<
         ", serial number: " << camera_info[RS2_CAMERA_INFO_SERIAL_NUMBER] <<
-        ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER] <<
+        ", update serial number: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID] <<
         ", firmware version: " << camera_info[RS2_CAMERA_INFO_FIRMWARE_VERSION] <<
         ", USB type: " << camera_info[RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR] << std::endl;
 }
@@ -201,7 +201,7 @@ int main(int argc, char** argv) try
         for (auto&& d : info.get_new_devices())
         {
             std::lock_guard<std::mutex> lk(mutex);
-            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER) == update_serial_number))
+            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
                 new_fw_update_device = d;
             else
                 new_device = d;
@@ -222,7 +222,7 @@ int main(int argc, char** argv) try
 
     for (auto&& d : devs)
     {
-        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER)))
+        if (!d.is<rs2::updatable>() || !(d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID)))
             continue;
 
         if (d.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
@@ -233,7 +233,7 @@ int main(int argc, char** argv) try
             }
         }
 
-        update_serial_number = d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_SERIAL_NUMBER);
+        update_serial_number = d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
         auto sn = d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         if (sn != selected_serial_number && devs.size() != 1)
