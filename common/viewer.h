@@ -33,8 +33,12 @@ namespace rs2
         const float default_log_h = 110.f;
 
         float get_output_height() const { return (is_output_collapsed ? default_log_h : 15); }
-          
+
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
+
+        rs2::processing_block proc;
+
+        rs2::frame to_ply;
 
         viewer_model();
 
@@ -74,7 +78,7 @@ namespace rs2
 
         void render_pose(rs2::rect stream_rect, float buttons_heights);
 
-        void show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
+        void show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message);
 
         void update_3d_camera(ux_window& win, const rect& viewer_rect, bool force = false);
 
@@ -103,6 +107,8 @@ namespace rs2
         bool paused = false;
         bool metric_system = true;
 
+        rs2::save_to_ply ply_exporter;
+        bool save_to_ply = false; 
 
         void draw_viewport(const rect& viewer_rect, 
             ux_window& window, int devices, std::string& error_message, 

@@ -1232,8 +1232,9 @@ namespace rs2
 
                 if (ply_texture)
                 {
-                    auto mesh = config_file::instance().get_or_default(configurations::ply::mesh, 1);
-                    export_to_ply(filename_base + "_" + fn.str() + "_3d_mesh.ply", _viewer_model.not_model, frames, ply_texture, mesh, false);
+                    auto fname = filename_base + "_" + fn.str() + "_3d_mesh.ply";
+                    ply_exporter.set_filename(fname); 
+                    export_to_ply(ply_exporter, _viewer_model.not_model, frames, false);
                 }
             }
         }

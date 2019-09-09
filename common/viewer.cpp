@@ -83,7 +83,7 @@ namespace rs2
         //ImGui::End();
     }
 
-    void viewer_model::show_3dviewer_header(ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
+    void viewer_model::show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
         const float combo_box_width = 200;
@@ -264,6 +264,145 @@ namespace rs2
                 }
         }
 
+        ImGui::PopStyleColor(3);
+
+        float w = stream_rect.w  * 0.4f;
+        float h = stream_rect.h * 0.4f;
+        float x0 = stream_rect.x * 2;
+        float y0 = stream_rect.y * 6;
+        ImGui::SetNextWindowPos({ x0, y0 });
+        ImGui::SetNextWindowSize({ w, h });
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
+        ImGui_ScopePushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+        static config_file temp_cfg;
+        static int tab = 0;
+        if (ImGui::BeginPopupModal("Export", nullptr, flags))
+        {
+            ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
+            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+            ImGui::PushFont(large_font);
+
+            ImGui::PushStyleColor(ImGuiCol_Text, tab != 0 ? light_grey : light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 0 ? light_grey : light_blue);
+            if (ImGui::Button("PLY", { w, 30 }))
+            {
+                tab = 0;
+                config_file::instance().set(configurations::viewer::settings_tab, tab);
+                temp_cfg.set(configurations::viewer::settings_tab, tab);
+            }
+            ImGui::PopFont();
+            ImGui::PopStyleColor(2);
+
+            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 65) });
+            ImGui::Separator();
+
+            bool mesh = temp_cfg.get(configurations::ply::mesh);
+            int encoding = temp_cfg.get(configurations::ply::encoding);
+
+            if (tab == 0)
+            {
+                if (ImGui::Checkbox("Meshing", &mesh))
+                {
+                    temp_cfg.set(configurations::ply::mesh, mesh);
+                }
+                ImGui::Separator();
+
+                ImGui::Text("Encoding:");
+                if (ImGui::RadioButton("Textual", encoding == 0))
+                {
+                    encoding = 0;
+                    temp_cfg.set(configurations::ply::encoding, encoding);
+                }
+                if (ImGui::RadioButton("Binary", encoding == 1))
+                {
+                    encoding = 1;
+                    temp_cfg.set(configurations::ply::encoding, encoding);
+                }
+            }
+
+            ImGui::PopStyleColor(2); // button color
+
+            ImGui::Separator();
+
+            ImGui::GetWindowDrawList()->AddRectFilled({ (float)x0, (float)(y0 + h - 60) },
+                { (float)(x0 + w), (float)(y0 + h) }, ImColor(sensor_bg));
+
+            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + h - 60) });
+
+            ImGui::GetWindowDrawList()->AddRectFilled({ (float)x0, (float)(y0 + h - 60) },
+            { (float)(x0 + w), (float)(y0 + h) }, ImColor(sensor_bg));
+
+            auto apply = [&]() {
+                config_file::instance() = temp_cfg;
+                update_configuration();
+            };
+
+            ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 190), (float)(y0 + h - 30) });
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+                apply();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Save settings and close");
+            }
+            ImGui::SameLine();
+
+            if (ImGui::Button("Export", ImVec2(120, 0)))
+            {
+                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_MESH, mesh);
+                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_BINARY, encoding);
+                if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
+                {
+                    auto model = ppf.get_points();
+                    frame tex;
+                    if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
+                    {
+                        tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
+                        if (tex) ppf.update_texture(tex);
+                    }
+
+                    std::string fname(ret);
+                    if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
+                    ply_exporter.set_filename(fname);
+
+                    proc.invoke(last_points);
+                    export_to_ply(ply_exporter, not_model, to_ply);
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Save settings and export PLY");
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+            }
+
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar(2);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
         if (paused)
@@ -305,23 +444,8 @@ namespace rs2
         ImGui::SameLine();
         if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
         {
-            auto mesh = config_file::instance().get_or_default(configurations::ply::mesh, 1);
-            auto binary = config_file::instance().get_or_default(configurations::ply::encoding, 1);
-            if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
-            {
-                auto model = ppf.get_points();
-                
-                frame tex;
-                if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
-                {
-                    tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
-                    if (tex) ppf.update_texture(tex);
-                }
-
-                std::string fname(ret);
-                if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
-                export_to_ply(fname.c_str(), not_model, last_points, last_texture->get_last_frame(), mesh, binary);
-            }
+            temp_cfg = config_file::instance();
+            ImGui::OpenPopup("Export");
         }
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Export 3D model to PLY format");
@@ -400,15 +524,10 @@ namespace rs2
         }
 
         auto total_top_bar_height = top_bar_height * (1 + pose_render); // may include single bar or additional bar for pose
-
         ImGui::PopStyleColor(5);
 
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-
-        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
         auto old_pos = ImGui::GetCursorScreenPos();
         ImVec2 pos { stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 };
@@ -568,7 +687,16 @@ namespace rs2
     viewer_model::viewer_model()
             : ppf(*this), 
               synchronization_enable(true),
-              zo_sensors(0)
+              zo_sensors(0),
+              proc([&](frame f, frame_source& s) 
+              {
+                  std::vector<rs2::frame> frame_vec;
+                  frame_vec.push_back(last_texture->get_last_frame(true));
+                  frame_vec.push_back(f);
+                  auto frame = s.allocate_composite_frame(frame_vec);
+                  if (frame)
+                      s.frame_ready(std::move(frame));
+              })
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -576,8 +704,13 @@ namespace rs2
         not_model.add_log(to_string() << "librealsense version: " << api_version_to_string(rs2_get_api_version(&e)) << "\n");
     
         update_configuration();
-
+        
         check_permissions();
+
+        proc.start([this](rs2::frame f)
+        {
+            to_ply = f;
+        });
     }
 
     void viewer_model::gc_streams()

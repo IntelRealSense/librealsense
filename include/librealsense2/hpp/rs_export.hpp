@@ -11,15 +11,15 @@
 #include <cassert>
 #include "rs_processing.hpp"
 #include "rs_internal.hpp"
+#include <iostream>
 
 namespace rs2
 {
     class save_to_ply : public filter
     {
     public:
-        save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud())
-            : filter([this](frame f, frame_source& s) { func(f, s); }),
-            _pc(std::move(pc)), fname(filename)
+        save_to_ply(pointcloud pc = pointcloud()) : filter([this](frame f, frame_source& s) { func(f, s); }),
+            _pc(std::move(pc))
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 0, 1 });
@@ -29,6 +29,16 @@ namespace rs2
         void set_ply_option(rs2_option option, float value)
         {
             set_option(option, value);
+        }
+
+        void set_filename(std::string filename)
+        {
+            fname = filename;
+        }
+
+        std::string get_filename()
+        {
+            return fname;
         }
 
         static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
@@ -64,6 +74,9 @@ namespace rs2
             bool binary = get_option(OPTION_PLY_BINARY);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
+            const uint8_t* texture_data;
+            if (use_texcoords) // texture might be on the gpu, get pointer to data before for-loop to avoid repeated access
+                texture_data = reinterpret_cast<const uint8_t*>(color.get_data());
             std::vector<rs2::vertex> new_verts;
             std::vector<std::array<uint8_t, 3>> new_tex;
             std::map<int, int> idx_map;
@@ -78,10 +91,10 @@ namespace rs2
                     fabs(verts[i].z) >= min_distance)
                 {
                     idx_map[i] = new_verts.size();
-                    new_verts.push_back(verts[i]);
+                    new_verts.push_back({ verts[i].x,  -1*verts[i].y, -1*verts[i].z });
                     if (use_texcoords)
                     {
-                        auto rgb = get_texcolor(color, texcoords[i].u, texcoords[i].v);
+                        auto rgb = get_texcolor(color, texture_data, texcoords[i].u, texcoords[i].v);
                         new_tex.push_back(rgb);
                     }
                 }
@@ -103,16 +116,14 @@ namespace rs2
                             if (idx_map.count(a) == 0 || idx_map.count(b) == 0 || idx_map.count(c) == 0 ||
                                 idx_map.count(d) == 0)
                                 continue;
-                            faces.push_back({ idx_map[a], idx_map[b], idx_map[d] });
-                            faces.push_back({ idx_map[d], idx_map[c], idx_map[a] });
+                            faces.push_back({ idx_map[a], idx_map[d], idx_map[b] });
+                            faces.push_back({ idx_map[d], idx_map[a], idx_map[c] });
                         }
                     }
                 }
             }
 
-            std::stringstream name;
-            name << fname << p.get_frame_number() << ".ply";
-            std::ofstream out(name.str());
+            std::ofstream out(fname);
             out << "ply\n";
             if (binary)
                 out << "format binary_little_endian 1.0\n";
@@ -139,7 +150,7 @@ namespace rs2
             if (binary)
             {
                 out.close();
-                out.open(name.str(), std::ios_base::app | std::ios_base::binary);
+                out.open(fname, std::ios_base::app | std::ios_base::binary);
                 for (int i = 0; i < new_verts.size(); ++i)
                 {
                     // we assume little endian architecture on your device
@@ -198,14 +209,12 @@ namespace rs2
             }
         }
 
-        // TODO: get_texcolor, options API
-        std::array<uint8_t, 3> get_texcolor(const video_frame& texture, float u, float v)
+        std::array<uint8_t, 3> get_texcolor(const video_frame& texture, const uint8_t* texture_data, float u, float v)
         {
             const int w = texture.get_width(), h = texture.get_height();
             int x = std::min(std::max(int(u*w + .5f), 0), w - 1);
             int y = std::min(std::max(int(v*h + .5f), 0), h - 1);
             int idx = x * texture.get_bytes_per_pixel() + y * texture.get_stride_in_bytes();
-            const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data());
             return { texture_data[idx], texture_data[idx + 1], texture_data[idx + 2] };
         }
 
