@@ -159,6 +159,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_pose_jumping", RS2_OPTION_ENABLE_POSE_JUMPING)
         .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
         .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
+        .value("enable_led_power", RS2_OPTION_LED_POWER)
+        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("count", RS2_OPTION_COUNT);
 

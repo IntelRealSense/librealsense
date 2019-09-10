@@ -4631,6 +4631,8 @@ const option = {
   option_enable_pose_jumping: 'enable-pose-jumping',
   option_enable_dynamic_calibration: 'enable-dynamic-calibration',
   option_depth_offset: 'depth-offset',
+  option_led_power: 'led-power',
+  option_zero_order_enabled: 'zero-order-enabled',
   option_enable_map_preservation: 'enable-map-preservation',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
@@ -4895,6 +4897,8 @@ const option = {
   OPTION_ENABLE_POSE_JUMPING: RS2.RS2_OPTION_ENABLE_POSE_JUMPING,
   OPTION_ENABLE_DYNAMIC_CALIBRATION: RS2.RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION,
   OPTION_DEPTH_OFFSET: RS2.RS2_OPTION_DEPTH_OFFSET,
+  OPTION_LED_POWER: RS2.RS2_OPTION_LED_POWER,
+  OPTION_ZERO_ORDER_ENABLED: RS2.RS2_OPTION_ZERO_ORDER_ENABLED,
   OPTION_ENABLE_MAP_PRESERVATION: RS2.RS2_OPTION_ENABLE_MAP_PRESERVATION,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
@@ -5032,6 +5036,10 @@ const option = {
         return this.option_enable_dynamic_calibration;
       case this.OPTION_DEPTH_OFFSET:
         return this.option_depth_offset;
+      case this.OPTION_LED_POWER:
+        return this.option_led_power;
+      case this.OPTION_ZERO_ORDER_ENABLED:
+        return this.option_zero_order_enabled;
       case this.OPTION_ENABLE_MAP_PRESERVATION:
         return this.option_enable_map_preservation;
       default:

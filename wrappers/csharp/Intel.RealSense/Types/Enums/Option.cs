@@ -196,5 +196,8 @@ namespace Intel.RealSense
 
         /// <summary>Toggle Zero-Order mode</summary>
         ZeroOrderEnabled = 61,
+
+        /// <summary>Preserve previous map when starting</summary>
+        EnableMapPreservation = 62,
     }
 }
