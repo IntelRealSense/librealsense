@@ -21,6 +21,16 @@ namespace rs2
         }
     };
 
+    class viewer_model;
+
+    class frameset_allocator : public filter
+    {
+    public:
+        frameset_allocator(viewer_model* viewer);
+    private:
+        viewer_model* owner;
+    };
+
     class viewer_model
     {
     public:
@@ -36,10 +46,6 @@ namespace rs2
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
-        rs2::processing_block proc;
-
-        rs2::frame to_ply;
-
         viewer_model();
 
         ~viewer_model()
@@ -50,6 +56,8 @@ namespace rs2
         }
 
         void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+
+        std::shared_ptr<texture_buffer> get_last_texture();
 
         std::vector<frame> get_frames(frame set);
         frame get_3d_depth_source(frame f);
@@ -108,7 +116,7 @@ namespace rs2
         bool metric_system = true;
 
         rs2::save_to_ply ply_exporter;
-        bool save_to_ply = false; 
+        frameset_allocator alloc;
 
         void draw_viewport(const rect& viewer_rect, 
             ux_window& window, int devices, std::string& error_message, 

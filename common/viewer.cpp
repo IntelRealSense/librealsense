@@ -24,6 +24,17 @@
 
 namespace rs2
 {
+    frameset_allocator::frameset_allocator(viewer_model* viewer) : owner(viewer),
+        filter([this](frame f, frame_source& s)
+    {
+        std::vector<rs2::frame> frame_vec;
+        frame_vec.push_back(owner->get_last_texture()->get_last_frame(true));
+        frame_vec.push_back(f);
+        auto frame = s.allocate_composite_frame(frame_vec);
+        if (frame)
+            s.frame_ready(std::move(frame));
+    }) {}
+
     void viewer_model::render_pose(rs2::rect stream_rect, float buttons_heights)
     {
         int num_of_pose_buttons = 2; // trajectory, info
@@ -377,8 +388,8 @@ namespace rs2
                     if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
                     ply_exporter.set_filename(fname);
 
-                    proc.invoke(last_points);
-                    export_to_ply(ply_exporter, not_model, to_ply);
+                    auto data = alloc.process(last_points);
+                    export_to_ply(ply_exporter, not_model, data);
                 }
             }
             if (ImGui::IsItemHovered())
@@ -688,15 +699,7 @@ namespace rs2
             : ppf(*this), 
               synchronization_enable(true),
               zo_sensors(0),
-              proc([&](frame f, frame_source& s) 
-              {
-                  std::vector<rs2::frame> frame_vec;
-                  frame_vec.push_back(last_texture->get_last_frame(true));
-                  frame_vec.push_back(f);
-                  auto frame = s.allocate_composite_frame(frame_vec);
-                  if (frame)
-                      s.frame_ready(std::move(frame));
-              })
+              alloc(this)
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -706,11 +709,6 @@ namespace rs2
         update_configuration();
         
         check_permissions();
-
-        proc.start([this](rs2::frame f)
-        {
-            to_ply = f;
-        });
     }
 
     void viewer_model::gc_streams()
@@ -2625,6 +2623,11 @@ namespace rs2
         if (index == selected_tex_source_uid || mapped_index == selected_tex_source_uid || selected_tex_source_uid == -1)
             return true;
         return false;
+    }
+
+    std::shared_ptr<texture_buffer> viewer_model::get_last_texture()
+    {
+        return last_texture;
     }
 
     std::vector<frame> rs2::viewer_model::get_frames(frame frame)
