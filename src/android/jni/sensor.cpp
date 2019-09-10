@@ -40,3 +40,39 @@ Java_com_intel_realsense_librealsense_Sensor_nGetStreamProfiles(JNIEnv *env, jcl
     env->SetLongArrayRegion(rv, 0, profiles.size(), reinterpret_cast<const jlong *>(profiles.data()));
     return rv;
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_RoiSensor_nSetRegionOfInterest(JNIEnv *env, jclass clazz,
+                                                                     jlong handle, jint min_x,
+                                                                     jint min_y, jint max_x,
+                                                                     jint max_y) {
+    rs2_error* e = nullptr;
+    rs2_set_region_of_interest(reinterpret_cast<rs2_sensor *>(handle), min_x, min_y, max_x, max_y, &e);
+    handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_RoiSensor_nGetRegionOfInterest(JNIEnv *env, jclass type,
+                                                                     jlong handle, jobject roi) {
+    int min_x, min_y, max_x, max_y;
+    rs2_error *e = nullptr;
+    rs2_get_region_of_interest(reinterpret_cast<rs2_sensor *>(handle), &min_x, &min_y, &max_x, &max_y, &e);
+    handle_error(env, e);
+
+    if(e)
+        return;
+
+    jclass clazz = env->GetObjectClass(roi);
+
+    jfieldID min_x_field = env->GetFieldID(clazz, "minX", "I");
+    jfieldID min_y_field = env->GetFieldID(clazz, "minY", "I");
+    jfieldID max_x_field = env->GetFieldID(clazz, "maxX", "I");
+    jfieldID max_y_field = env->GetFieldID(clazz, "maxY", "I");
+
+    env->SetIntField(roi, min_x_field, min_x);
+    env->SetIntField(roi, min_y_field, min_y);
+    env->SetIntField(roi, max_x_field, max_x);
+    env->SetIntField(roi, max_y_field, max_y);
+}
