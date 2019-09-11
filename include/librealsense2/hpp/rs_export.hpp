@@ -15,6 +15,21 @@
 
 namespace rs2
 {
+    struct vec3d {
+        float x, y, z;
+        float length() const { return sqrt(x * x + y * y + z * z); }
+
+        vec3d normalize() const
+        {
+            auto len = length();
+            return { x / len, y / len, z / len };
+        }
+    };
+
+    inline vec3d operator + (const vec3d & a, const vec3d & b) { return{ a.x + b.x, a.y + b.y, a.z + b.z }; }
+    inline vec3d operator - (const vec3d & a, const vec3d & b) { return{ a.x - b.x, a.y - b.y, a.z - b.z }; }
+    inline vec3d cross(const vec3d & a, const vec3d & b) { return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x }; }
+    
     class save_to_ply : public filter
     {
     public:
@@ -23,6 +38,7 @@ namespace rs2
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 0, 1 });
+            register_simple_option(OPTION_PLY_NORMALS, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 0, 1 });
         }
 
@@ -44,6 +60,7 @@ namespace rs2
         static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
         static const auto OPTION_PLY_MESH = rs2_option(RS2_OPTION_COUNT + 2);
         static const auto OPTION_PLY_BINARY = rs2_option(RS2_OPTION_COUNT + 3);
+        static const auto OPTION_PLY_NORMALS = rs2_option(RS2_OPTION_COUNT + 4);
     private:
         void func(frame data, frame_source& source)
         {
@@ -72,14 +89,17 @@ namespace rs2
             const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
             bool mesh = get_option(OPTION_PLY_MESH);
             bool binary = get_option(OPTION_PLY_BINARY);
+            bool use_normals = get_option(OPTION_PLY_NORMALS);
             const auto verts = p.get_vertices();
             const auto texcoords = p.get_texture_coordinates();
             const uint8_t* texture_data;
             if (use_texcoords) // texture might be on the gpu, get pointer to data before for-loop to avoid repeated access
                 texture_data = reinterpret_cast<const uint8_t*>(color.get_data());
             std::vector<rs2::vertex> new_verts;
+            std::vector<vec3d> normals;
             std::vector<std::array<uint8_t, 3>> new_tex;
             std::map<int, int> idx_map;
+            std::map<int, std::vector<vec3d>> index_to_normals;
 
             new_verts.reserve(p.size());
             if (use_texcoords) new_tex.reserve(p.size());
@@ -91,7 +111,7 @@ namespace rs2
                     fabs(verts[i].z) >= min_distance)
                 {
                     idx_map[i] = new_verts.size();
-                    new_verts.push_back({ verts[i].x,  -1*verts[i].y, -1*verts[i].z });
+                    new_verts.push_back(verts[i]);
                     if (use_texcoords)
                     {
                         auto rgb = get_texcolor(color, texture_data, texcoords[i].u, texcoords[i].v);
@@ -104,7 +124,7 @@ namespace rs2
             auto width = profile.width(), height = profile.height();
             static const auto threshold = 0.05f;
             std::vector<std::array<int, 3>> faces;
-            if (mesh)
+            if (mesh || use_normals)
             {
                 for (int x = 0; x < width - 1; ++x) {
                     for (int y = 0; y < height - 1; ++y) {
@@ -118,8 +138,44 @@ namespace rs2
                                 continue;
                             faces.push_back({ idx_map[a], idx_map[d], idx_map[b] });
                             faces.push_back({ idx_map[d], idx_map[a], idx_map[c] });
+
+                            if (use_normals)
+                            {
+                                vec3d point_a = { verts[a].x , verts[a].y, verts[a].z };
+                                vec3d point_b = { verts[b].x , verts[b].y, verts[b].z };
+                                vec3d point_c = { verts[c].x , verts[c].y, verts[c].z };
+                                vec3d point_d = { verts[d].x , verts[d].y, verts[d].z };
+
+                                auto n1 = cross(point_d - point_a, point_b - point_a);
+                                auto n2 = cross(point_c - point_a, point_d - point_a);
+
+                                index_to_normals[idx_map[a]].push_back(n1);
+                                index_to_normals[idx_map[a]].push_back(n2);
+
+                                index_to_normals[idx_map[b]].push_back(n1);
+
+                                index_to_normals[idx_map[c]].push_back(n2);
+
+                                index_to_normals[idx_map[d]].push_back(n1);
+                                index_to_normals[idx_map[d]].push_back(n2);
+                            }
                         }
                     }
+                }
+            }
+
+            if (use_normals)
+            {
+                for (int i = 0; i < new_verts.size(); ++i)
+                {
+                    auto normals_vec = index_to_normals[i];
+                    vec3d sum = { 0, 0, 0 };
+                    for (auto& n : normals_vec)
+                        sum = sum + n;
+                    if (normals_vec.size() > 0)
+                        normals.push_back((sum.normalize()));
+                    else
+                        normals.push_back({ 0, 0, 0 });
                 }
             }
 
@@ -134,6 +190,12 @@ namespace rs2
             out << "property float" << sizeof(float) * 8 << " x\n";
             out << "property float" << sizeof(float) * 8 << " y\n";
             out << "property float" << sizeof(float) * 8 << " z\n";
+            if (use_normals)
+            {
+                out << "property float" << sizeof(float) * 8 << " nx\n";
+                out << "property float" << sizeof(float) * 8 << " ny\n";
+                out << "property float" << sizeof(float) * 8 << " nz\n";
+            }
             if (use_texcoords)
             {
                 out << "property uchar red\n";
@@ -158,6 +220,13 @@ namespace rs2
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].y)), sizeof(float));
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].z)), sizeof(float));
 
+                    if (use_normals)
+                    {
+                        out.write(reinterpret_cast<const char*>(&(normals[i].x)), sizeof(float));
+                        out.write(reinterpret_cast<const char*>(&(normals[i].y)), sizeof(float));
+                        out.write(reinterpret_cast<const char*>(&(normals[i].z)), sizeof(float));
+                    }
+
                     if (use_texcoords)
                     {
                         out.write(reinterpret_cast<const char*>(&(new_tex[i][0])), sizeof(uint8_t));
@@ -179,12 +248,20 @@ namespace rs2
             }
             else
             {
-                for (int i = 0; i < new_verts.size(); ++i)
+                for (int i = 0; i <new_verts.size(); ++i)
                 {
                     out << new_verts[i].x << " ";
                     out << new_verts[i].y << " ";
                     out << new_verts[i].z << " ";
                     out << "\n";
+
+                    if (use_normals)
+                    {
+                        out << normals[i].x << " ";
+                        out << normals[i].y << " ";
+                        out << normals[i].z << " ";
+                        out << "\n";
+                    }
 
                     if (use_texcoords)
                     {

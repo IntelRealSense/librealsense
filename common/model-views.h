@@ -194,6 +194,7 @@ namespace rs2
         namespace ply
         {
             static const char* mesh                { "ply.mesh" };
+            static const char* use_normals         { "ply.normals" };
             static const char* encoding            { "ply.encoding" };
         }
     }

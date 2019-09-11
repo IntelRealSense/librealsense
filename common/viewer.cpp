@@ -277,8 +277,8 @@ namespace rs2
 
         ImGui::PopStyleColor(3);
 
-        float w = stream_rect.w  * 0.4f;
-        float h = stream_rect.h * 0.4f;
+        float w = stream_rect.w  * 0.33f;
+        float h = stream_rect.h * 0.34f;
         float x0 = stream_rect.x * 2;
         float y0 = stream_rect.y * 6;
         ImGui::SetNextWindowPos({ x0, y0 });
@@ -310,14 +310,19 @@ namespace rs2
                 tab = 0;
                 config_file::instance().set(configurations::viewer::settings_tab, tab);
                 temp_cfg.set(configurations::viewer::settings_tab, tab);
-            }
+            }   
             ImGui::PopFont();
             ImGui::PopStyleColor(2);
-
-            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 65) });
+            ImGui::PushStyleColor(ImGuiCol_Text, grey);
+           // ImGui::SetCursorScreenPos({ (float)(x0+30), (float)(y0 + 50) });
+            ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
+            ImGui::PopStyleColor();
+            ImGui::NewLine();
+            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
             ImGui::Separator();
 
             bool mesh = temp_cfg.get(configurations::ply::mesh);
+            bool use_normals = temp_cfg.get(configurations::ply::use_normals);
             int encoding = temp_cfg.get(configurations::ply::encoding);
 
             if (tab == 0)
@@ -326,9 +331,43 @@ namespace rs2
                 {
                     temp_cfg.set(configurations::ply::mesh, mesh);
                 }
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("         Use faces for meshing by connecting each group of 3 adjacent points");
+                ImGui::PopStyleColor();
+                ImGui::Separator();
+
+                if (!mesh)
+                {
+                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
+                }
+                if (ImGui::Checkbox("Normals", &use_normals))
+                {
+                    if (!mesh)
+                        use_normals = false;
+                    else
+                        temp_cfg.set(configurations::ply::use_normals, use_normals);
+                }
+                if (!mesh)
+                {
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Enable meshing to allow vertex normals calculation");
+                    }
+                    ImGui::PopStyleColor(2);
+                    ImGui::PopStyleVar();
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("         Calculate vertex normals and add them to the PLY");
+                ImGui::PopStyleColor();
                 ImGui::Separator();
 
                 ImGui::Text("Encoding:");
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("Save PLY as binary, or as a larger textual human-readable file");
+                ImGui::PopStyleColor();
                 if (ImGui::RadioButton("Textual", encoding == 0))
                 {
                     encoding = 0;
@@ -342,16 +381,6 @@ namespace rs2
             }
 
             ImGui::PopStyleColor(2); // button color
-
-            ImGui::Separator();
-
-            ImGui::GetWindowDrawList()->AddRectFilled({ (float)x0, (float)(y0 + h - 60) },
-                { (float)(x0 + w), (float)(y0 + h) }, ImColor(sensor_bg));
-
-            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + h - 60) });
-
-            ImGui::GetWindowDrawList()->AddRectFilled({ (float)x0, (float)(y0 + h - 60) },
-            { (float)(x0 + w), (float)(y0 + h) }, ImColor(sensor_bg));
 
             auto apply = [&]() {
                 config_file::instance() = temp_cfg;
@@ -373,6 +402,7 @@ namespace rs2
             if (ImGui::Button("Export", ImVec2(120, 0)))
             {
                 ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_MESH, mesh);
+                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_NORMALS, use_normals);
                 ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_BINARY, encoding);
                 if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
                 {

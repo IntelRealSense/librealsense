@@ -47,6 +47,7 @@ namespace rs2
         config_file::instance().set_default(configurations::performance::vsync, true);
 
         config_file::instance().set_default(configurations::ply::mesh, true);
+        config_file::instance().set_default(configurations::ply::use_normals, false);
         config_file::instance().set_default(configurations::ply::encoding, 0);
 
 #ifdef __APPLE__
