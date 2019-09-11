@@ -31,7 +31,7 @@ namespace librealsense
             std::vector<tagged_profile> markers;
             return markers;
         };
-        void register_extrinsic(const stream_interface& stream, uint32_t groupd_index);
+        void register_extrinsic(const stream_interface& stream);
 
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
