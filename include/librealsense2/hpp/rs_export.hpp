@@ -173,18 +173,17 @@ namespace rs2
             std::vector<std::tuple<stream_profile, stream_profile>> extrinsics;
 
             if (auto fs = data.as<frameset>()) {
-                int uid = 0;
                 for (int i = 0; i < fs.size(); ++i) {
                     frame f = fs[i];
                     auto profile = f.get_profile();
                     std::stringstream sname;
-                    sname << "Sensor (" << uid << ")";
+                    sname << "Sensor (" << i << ")";
                     auto s = dev.add_sensor(sname.str());
                     stream_profile software_profile;
 
                     if (auto vf = f.as<video_frame>()) {
                         auto vp = profile.as<video_stream_profile>();
-                        rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), uid++, vp.width(), vp.height(), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
+                        rs2_video_stream stream{ vp.stream_type(), vp.stream_index(), i, vp.width(), vp.height(), vp.fps(), vf.get_bytes_per_pixel(), vp.format(), vp.get_intrinsics() };
                         software_profile = s.add_video_stream(stream);
                         if (f.is<rs2::depth_frame>()) {
                             auto ds = sensor_from_frame(f)->as<rs2::depth_sensor>();
@@ -192,10 +191,10 @@ namespace rs2
                         }
                     } else if (f.is<motion_frame>()) {
                         auto mp = profile.as<motion_stream_profile>();
-                        rs2_motion_stream stream{ mp.stream_type(), mp.stream_index(), uid++, mp.fps(), mp.format(), mp.get_motion_intrinsics() };
+                        rs2_motion_stream stream{ mp.stream_type(), mp.stream_index(), i, mp.fps(), mp.format(), mp.get_motion_intrinsics() };
                         software_profile = s.add_motion_stream(stream);
                     } else if (f.is<pose_frame>()) {
-                        rs2_pose_stream stream{ profile.stream_type(), profile.stream_index(), uid++, profile.fps(), profile.format() };
+                        rs2_pose_stream stream{ profile.stream_type(), profile.stream_index(), i, profile.fps(), profile.format() };
                         software_profile = s.add_pose_stream(stream);
                     } else {
                         // TODO: How to handle other frame types? (e.g. points)
@@ -241,6 +240,8 @@ namespace rs2
                         s.on_pose_frame({ const_cast<void*>(f.get_data()), [](void*) {}, f.get_timestamp(),
                                           f.get_frame_timestamp_domain(), static_cast<int>(f.get_frame_number()), profile });
                     }
+                    s.stop();
+                    s.close();
                 }
             } else {
                 // single frame
