@@ -505,39 +505,39 @@ namespace librealsense
         return (alt_emitter_name == res);
     }
 
-	sensor_temperature_option::sensor_temperature_option(hw_monitor& hwm, sensor_base* ep, int which)
-		: _hwm(hwm), _sensor(ep)
-	{
-		_range = [this]()
-		{
-			return option_range{ -1, 256, 1.0f/256, 0 };
-		};
+    sensor_temperature_option::sensor_temperature_option(hw_monitor& hwm, sensor_base* ep, int which)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ -1, 256, 1.0f/256, 0 };
+        };
 
-		_which = which;
+        _which = which;
 
-		if (_which !=1 && _which !=2)
-			throw invalid_value_exception("Only left and right sensor supported now!");
+        if (_which !=1 && _which !=2)
+            throw invalid_value_exception("Only left and right sensor supported now!");
 	}
 
-	float sensor_temperature_option::query() const
-	{
-		if (!_sensor->is_streaming())
-			throw std::runtime_error("Cannot query sensor tempturature while not streaming!");
+    float sensor_temperature_option::query() const
+    {
+        if (!_sensor->is_streaming())
+            throw std::runtime_error("Cannot query sensor tempturature while not streaming!");
 
-		command cmd(ds::IRW);
-		cmd.param1 = (_which == 1 ? 0x20 : 0xC0); // Only D465 supported now
-		cmd.param2 = 0x4417;
-		cmd.param3 = 2;
-		auto res = _hwm.send(cmd);
-		if (res.empty())
-			throw invalid_value_exception("sensor_temperature_option::query result is empty!");
+        command cmd(ds::IRW);
+        cmd.param1 = (_which == 1 ? 0x20 : 0xC0); // Only D465 supported now
+        cmd.param2 = 0x4417;
+        cmd.param3 = 2;
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("sensor_temperature_option::query result is empty!");
 
-		float result = static_cast<float>(res[0]);
-		result += static_cast<float>(res[1]) / 256;
+        float result = static_cast<float>(res[0]);
+        result += static_cast<float>(res[1]) / 256;
         return result;
     }
 
-	option_range sensor_temperature_option::get_range() const
+    option_range sensor_temperature_option::get_range() const
     {
         return *_range;
     }

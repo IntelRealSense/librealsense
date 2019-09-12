@@ -293,9 +293,9 @@ namespace librealsense
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
-		lazy<option_range> _range;
-		hw_monitor& _hwm;
-		sensor_base* _sensor;
-		int _which;
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+        int _which;
     };
 }

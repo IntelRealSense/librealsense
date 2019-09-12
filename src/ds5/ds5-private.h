@@ -153,7 +153,7 @@ namespace librealsense
         enum fw_cmd : uint8_t
         {
             MRD             = 0x01,     // Read Register
-			IRW             = 0x04,     // Read from I2C(16x8)
+            IRW             = 0x04,     // Read from I2C(16x8)
             FRB             = 0x09,     // Read from flash
             FWB             = 0x0a,     // Write to flash <Parameter1 Name="StartIndex"> <Parameter2 Name="Size">
             FES             = 0x0b,     // Erase flash sector <Parameter1 Name="Sector Index"> <Parameter2 Name="Number of Sectors">
