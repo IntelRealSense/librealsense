@@ -534,12 +534,11 @@ namespace librealsense
 
 		float result = static_cast<float>(res[0]);
 		result += static_cast<float>(res[1]) / 256;
-		return result;
-	}
+        return result;
+    }
 
 	option_range sensor_temperature_option::get_range() const
-	{
-		return *_range;
-	}
-
+    {
+        return *_range;
+    }
 }

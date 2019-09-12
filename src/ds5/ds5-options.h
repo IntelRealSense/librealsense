@@ -278,24 +278,24 @@ namespace librealsense
         sensor_base* _sensor;
     };
 
-	class sensor_temperature_option : public readonly_option
-	{
-	public:
-		sensor_temperature_option(hw_monitor& hwm, sensor_base* depth_ep, int which); // which: 0 for color, 1 for left, and 2 for right
-		virtual ~sensor_temperature_option() = default;
-		virtual float query() const override;
-		virtual option_range get_range() const override;
-		virtual bool is_enabled() const override { return _sensor && _sensor->is_streaming(); }
-		virtual const char* get_description() const override
-		{
-			return "read only option for sensor temperature. Can only be queried while streaming";
-		}
+    class sensor_temperature_option : public readonly_option
+    {
+    public:
+        sensor_temperature_option(hw_monitor& hwm, sensor_base* depth_ep, int which); // which: 0 for color, 1 for left, and 2 for right
+        virtual ~sensor_temperature_option() = default;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return _sensor && _sensor->is_streaming(); }
+        virtual const char* get_description() const override
+        {
+            return "read only option for sensor temperature. Can only be queried while streaming";
+        }
 
-	private:
-		std::function<void(const option &)> _record_action = [](const option&) {};
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
 		lazy<option_range> _range;
 		hw_monitor& _hwm;
 		sensor_base* _sensor;
 		int _which;
-	};
+    };
 }
