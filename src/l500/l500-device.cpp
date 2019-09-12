@@ -69,7 +69,11 @@ namespace librealsense
         _fw_version = firmware_version(fwv);
 
         _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
-        _is_locked = false; //TODO: remove
+
+        // TODO: flash lock is not suuported yet.
+        // reporting lock to the application blocks flash FW update.
+        // remove when flash update support is required.
+        _is_locked = true; 
 
         auto pid_hex_str = hexify(group.uvc_devices.front().pid);
 
