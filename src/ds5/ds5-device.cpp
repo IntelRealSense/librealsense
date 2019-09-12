@@ -641,6 +641,15 @@ namespace librealsense
                     "Hardware pipe configuration"));
         }
 
+		if (pid == RS465_PID)
+		{
+			depth_ep.register_option(RS2_OPTION_SENSOR_TEMPERATURE_LEFT,
+				std::make_shared<sensor_temperature_option>(*_hw_monitor, &depth_ep, 1));
+
+			depth_ep.register_option(RS2_OPTION_SENSOR_TEMPERATURE_RIGHT,
+				std::make_shared<sensor_temperature_option>(*_hw_monitor, &depth_ep, 2));
+		}
+
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
