@@ -17,6 +17,7 @@ using namespace librealsense;
 using namespace librealsense::platform;
 
 std::vector<device_profiles> uv_tests_configurations = {
+    //D465
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 1024, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 2000, 1500, 0 } }, 30, true },
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280,  720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 2000, 1500, 0 } }, 30, true },
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  960,  768, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 2000, 1500, 0 } }, 30, true },
@@ -26,6 +27,8 @@ std::vector<device_profiles> uv_tests_configurations = {
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 1024, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV,  960,  720, 0 } }, 30, true },
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280,  720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV,  960,  720, 0 } }, 30, true },
     { { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  960,  768, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV,  960,  720, 0 } }, 30, true },
+    //L500
+    //{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16,  1024,  768, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8,  1024,  768, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_YUYV,  1920,  1080, 0 } }, 30, true },
 };
 
 TEST_CASE("Generate UV-MAP", "[live]")
@@ -83,10 +86,10 @@ TEST_CASE("Generate UV-MAP", "[live]")
             // Start streaming with default recommended configuration
             pf = pipe.start(cfg);
 
-            auto i = 0UL;
-            auto startup = 30;
+            size_t i = 0;
+            size_t startup = 50;
 
-            while (i < startup)
+            while (i < startup + 200)
             {
                 // Wait for the next set of frames from the camera
                 auto frames = pipe.wait_for_frames();
@@ -147,7 +150,7 @@ TEST_CASE("Generate UV-MAP", "[live]")
                 h = pf.height();
                 ss.clear(); ss.str("");  ss << i - startup << "_depth_" << w << "_" << h << rgb_res << ".bin";
                 {
-                    assert(depth.get_data_size() == w * h * sizeof(uint16_t));
+                    REQUIRE(depth.get_data_size() == w * h * sizeof(uint16_t));
                     std::ofstream outfile(ss.str().c_str(), std::ios::binary);
                     outfile.write((const char*)depth.get_data(), depth.get_data_size());
                 }
@@ -186,8 +189,8 @@ TEST_CASE("Generate UV-MAP", "[live]")
             // Start streaming with default recommended configuration
             pf = pipe.start(cfg);
 
-            auto i = 0UL;
-            auto startup = 30;
+            size_t i = 0;
+            size_t startup = 30;
 
             while (i < startup)
             {
