@@ -56,7 +56,9 @@ namespace rs2
 
         if (product_line == RS2_PRODUCT_LINE_D400 && allow_rc_firmware) return FW_D4XX_RC_IMAGE_VERSION;
         else if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
+        // NOTE: For now removing recommended firmware version for SR30x series
+        // TODO: Re-enable in future release
+        //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
         else return "";
     }
 

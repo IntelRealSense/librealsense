@@ -3030,8 +3030,10 @@ namespace rs2
                         n->snoozed = true;
                     }
 
-                    viewer.not_model.add_notification(n);
-                    related_notifications.push_back(n);
+                    // NOTE: For now do not pre-emptively suggest auto-calibration
+                    // TODO: Revert in later release
+                    //viewer.not_model.add_notification(n);
+                    //related_notifications.push_back(n);
                 }
             }
         }

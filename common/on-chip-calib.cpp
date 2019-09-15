@@ -428,7 +428,7 @@ namespace rs2
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            uint8_t speed = 4 - _speed;
+            uint8_t speed = 4; // NOTE: Start the calibration in slow mode
 
             bool repeat = true;
             while (repeat) // Repeat until we got a result
@@ -875,9 +875,45 @@ namespace rs2
 
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
 
-                if (!recommend_keep) ImGui::Text("%s", "Camera original calibration is OK");
-                else if (health > 0.2f) ImGui::Text("%s", "We found much better calibration!"); 
-                else ImGui::Text("%s", "We found better calibration for the device!");
+                ImGui::Text("Calibration Status: ");
+
+                std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
+                auto health_str = ss.str();
+
+                std::string text_name = to_string() << "##notification_text_" << index;
+                
+                ImGui::SetCursorScreenPos({ float(x + 136), float(y + 30) });
+                ImGui::PushStyleColor(ImGuiCol_Text, white);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()),
+                    strlen(health_str.c_str()) + 1, { 50, 
+                                                      ImGui::GetTextLineHeight() + 6 },
+                    ImGuiInputTextFlags_ReadOnly);
+                ImGui::PopStyleColor(7);
+
+                ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
+
+                if (!recommend_keep)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, greenish);
+                    ImGui::Text("(Good)");
+                }
+                else if (health < 0.25f)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+                    ImGui::Text("(Can be Improved)");
+                }
+                else  
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                    ImGui::Text("(Requires Calibration)");
+                }
+                ImGui::PopStyleColor();
                 
                 auto old_fr = get_manager().get_metric(false).first;
                 auto new_fr = get_manager().get_metric(true).first;
@@ -901,7 +937,9 @@ namespace rs2
                     new_units = "cm";
                 }
 
-                if (fr_improvement > 1.f || rms_improvement > 1.f)
+                // NOTE: Disabling metrics temporarily
+                // TODO: Re-enable in future release
+                if (/* fr_improvement > 1.f || rms_improvement > 1.f */ false)
                 {
                     std::string txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << new_fr << "%%";
 
@@ -985,28 +1023,28 @@ namespace rs2
                 {
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
-                }
 
-                std::string button_name = to_string() << "Apply New" << "##apply" << index;
-                if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
+                    std::string button_name = to_string() << "Apply New" << "##apply" << index;
+                    if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
 
-                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
-                {
-                    if (use_new_calib)
+                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                    if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                     {
-                        get_manager().keep();
-                        update_state = RS2_CALIB_STATE_COMPLETE;
-                        pinned = false;
-                        enable_dismiss = false;
-                        last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                        if (use_new_calib)
+                        {
+                            get_manager().keep();
+                            update_state = RS2_CALIB_STATE_COMPLETE;
+                            pinned = false;
+                            enable_dismiss = false;
+                            last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
+                        }
+                        else dismiss(false);
+
+                        get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     }
-                    else dismiss(false);
 
-                    get_manager().restore_workspace([this](std::function<void()> a){ a(); });
+                    ImGui::PopStyleColor(2);
                 }
-
-                if (recommend_keep) ImGui::PopStyleColor(2);
 
                 if (ImGui::IsItemHovered())
                 {
