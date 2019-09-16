@@ -211,6 +211,15 @@ void init_advanced_mode(py::module &m) {
             return ss.str();
         });
 
+    py::class_<STAFactor> _STAFactor(m, "STAFactor");
+    _STAFactor.def(py::init<>())
+        .def_readwrite("a_factor", &STAFactor::amplitude)
+        .def("__repr__", [](const STAFactor &e) {
+            std::stringstream ss;
+            ss << "a_factor: " << e.amplitude;
+            return ss.str();
+    });
+
     py::class_<rs400::advanced_mode> rs400_advanced_mode(m, "rs400_advanced_mode");
     rs400_advanced_mode.def(py::init<rs2::device>(), "device"_a)
         .def("toggle_advanced_mode", &rs400::advanced_mode::toggle_advanced_mode, "enable"_a)
