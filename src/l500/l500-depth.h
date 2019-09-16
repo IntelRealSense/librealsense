@@ -86,7 +86,7 @@ namespace librealsense
         explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
             : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner),
-              _depth_invalidation_enabled(true)
+              _depth_invalidation_enabled(false)
         {
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
@@ -100,7 +100,7 @@ namespace librealsense
                 0,
                 1,
                 1,
-                1,
+                0,
                 &_depth_invalidation_enabled,
                 "depth invalidation enabled");
             _depth_invalidation_option->on_set([this](float val)
