@@ -9,6 +9,7 @@
 #include "h/rs_frame.h"
 #include "rs.h"
 #include "assert.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -212,5 +213,82 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         }
     }
 }
+
+static bool rs2_read_binary_file(size_t* data_size, const char* filename, uint8_t* buffer, size_t max_buffer_size)
+{
+    FILE* file = fopen(filename, "rb");
+    if (!file)
+    {
+        if (data_size) *data_size = 0;
+        return false;
+    }
+
+    size_t bytes_read = 0;
+    while (!feof(file) && !ferror(file) && bytes_read < max_buffer_size)
+    {
+        size_t n = fread(&buffer[bytes_read], 1, max_buffer_size - bytes_read, file);
+        bytes_read += n;
+    }
+    if (bytes_read == max_buffer_size)
+    {
+        fgetc(file);  // read an extra byte to tell from eof and error
+    }
+
+    if (data_size) *data_size = bytes_read;
+    bool success = feof(file);
+    fclose(file);
+    return success;
+}
+
+static bool rs2_write_binary_file(const char* filename, const uint8_t* data, size_t data_size)
+{
+    FILE* file = fopen(filename, "wb");
+    if (!file)
+    {
+        return false;
+    }
+
+    size_t n = fwrite(data, data_size, 1, file);
+
+    bool success = (n == 1);
+    fclose(file);
+    return success;
+}
+
+#if __cplusplus >= 201103L
+#include <string>
+#include <vector>
+#include <sys/stat.h>
+
+static bool rs2_read_binary_file(const char* filename, std::vector<uint8_t>& data)
+{
+    struct stat stats;
+    int ret = stat(filename, &stats);
+    if (ret)
+    {
+        return false;
+    }
+
+    size_t read_size = 0;
+    data.resize(stats.st_size);
+    return rs2_read_binary_file(&read_size, filename, data.data(), data.size());
+}
+
+static bool rs2_read_binary_file(const std::string& filename, std::vector<uint8_t>& data)
+{
+    return rs2_read_binary_file(filename.c_str(), data);
+}
+
+static bool rs2_write_binary_file(const char* filename, const std::vector<uint8_t>& data)
+{
+    return rs2_write_binary_file(filename, data.data(), data.size());
+}
+
+static bool rs2_write_binary_file(const std::string& filename, const std::vector<uint8_t>& data)
+{
+    return rs2_write_binary_file(filename.c_str(), data.data(), data.size());
+}
+
+#endif  // __cplusplus >= 201103L
 
 #endif
