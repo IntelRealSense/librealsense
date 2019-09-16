@@ -517,7 +517,7 @@ namespace librealsense
 
         if (_which !=1 && _which !=2)
             throw invalid_value_exception("Only left and right sensor supported now!");
-	}
+    }
 
     float sensor_temperature_option::query() const
     {
