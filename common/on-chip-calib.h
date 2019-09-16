@@ -31,10 +31,6 @@ namespace rs2
         // Get health number from the calibration summary
         float get_health() const { return _health; }
 
-        // Set calibration speed: 0 - slowest, 4 - fastest
-        // On-Chip Calib manager will reduce speed if needed
-        void set_speed(int speed) { _speed = speed; }
-
         // Write new calibration to the device
         void keep();
 
@@ -53,6 +49,7 @@ namespace rs2
         int average_step_count = 20;
         int step_count = 20;
         int accuracy = 2;
+        int speed = 3;
         bool tare = false;
 
         void calibrate();
@@ -68,7 +65,6 @@ namespace rs2
         void process_flow(std::function<void()> cleanup, invoker invoke) override;
 
         float _health = 0.f;
-        int _speed = 4;
         device _dev;
 
         bool _was_streaming = false;
@@ -101,6 +97,7 @@ namespace rs2
             RS2_CALIB_STATE_CALIB_IN_PROCESS,// Calibration in process... Shows progressbar
             RS2_CALIB_STATE_CALIB_COMPLETE,  // Calibration complete, show before/after toggle and metrics
             RS2_CALIB_STATE_TARE_INPUT,      // Collect input parameters for Tare calib
+            RS2_CALIB_STATE_SELF_INPUT,      // Collect input parameters for Self calib
         };
 
         autocalib_notification_model(std::string name,

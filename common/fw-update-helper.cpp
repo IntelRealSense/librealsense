@@ -38,9 +38,11 @@ namespace rs2
         RS2_FWU_STATE_FAILED = 3,
     };
 
-    bool is_recommended_fw_available()
+    bool is_recommended_fw_available(std::string id)
     {
-        return !(strcmp("", FW_D4XX_FW_IMAGE_VERSION) == 0);
+        auto pl = parse_product_line(id);
+        auto fv = get_available_firmware_version(pl);
+        return !(fv == "");
     }
 
     int parse_product_line(std::string id)
@@ -56,7 +58,7 @@ namespace rs2
 
         if (product_line == RS2_PRODUCT_LINE_D400 && allow_rc_firmware) return FW_D4XX_RC_IMAGE_VERSION;
         else if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
+        //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
         else return "";
     }
 
@@ -437,7 +439,7 @@ namespace rs2
 
     void fw_update_notification_model::draw_expanded(ux_window& win, std::string& error_message)
     {
-        if (update_manager->started() && update_state == RS2_FWU_STATE_INITIAL_PROMPT) 
+        if (update_manager->started() && update_state == RS2_FWU_STATE_INITIAL_PROMPT)
             update_state = RS2_FWU_STATE_IN_PROGRESS;
 
         auto flags = ImGuiWindowFlags_NoResize |

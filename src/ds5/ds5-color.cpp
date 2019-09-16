@@ -74,6 +74,11 @@ namespace librealsense
             color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
             color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
         }
+        // From 5.11.15 auto-exposure priority is supported on the D465
+        else if (_fw_version >= firmware_version("5.11.15.0")) 
+        {
+            color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+        }
 
         if (color_devices_info.front().pid == ds::RS465_PID)
             color_ep->register_pixel_format(pf_mjpg);
