@@ -5548,7 +5548,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
         REQUIRE(profile);
         REQUIRE_NOTHROW(dev = profile.get_device());
         REQUIRE(dev);
-        disable_sensitive_options_for(dev);
         dev_type PID = get_PID(dev);
         CAPTURE(PID.first);
 
@@ -5570,7 +5569,7 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
                 THEN("Load wheel odometry calibration")
                 {
                     std::ifstream calibrationFile("calibration_odometry.json");
-                    if (calibrationFile)
+                    REQUIRE(calibrationFile);
                     {
                         const std::string json_str((std::istreambuf_iterator<char>(calibrationFile)),
                             std::istreambuf_iterator<char>());
