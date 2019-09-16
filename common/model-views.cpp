@@ -4383,13 +4383,11 @@ namespace rs2
 
                             viewer.not_model.add_notification(n);
                             n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
 
                             for (auto&& n : related_notifications)
                                 if (dynamic_cast<autocalib_notification_model*>(n.get()))
                                     n->dismiss(false);
-
-                            manager->start(n);
                         }
                         catch (const error& e)
                         {
