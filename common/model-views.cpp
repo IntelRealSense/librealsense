@@ -4328,9 +4328,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install official signed firmware from file to the device");
 
-                    if (is_recommended_fw_available() &&
-                        ((dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)) ||
-                        (dev.query_sensors().size() && dev.query_sensors().front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))))
+                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))) 
                     {
                         if (ImGui::Selectable("Install Recommended Firmware "))
                         {
