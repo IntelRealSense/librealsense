@@ -67,6 +67,18 @@ namespace librealsense
                         intrinsics.fy = model.ipm.focal_length.y;
                         intrinsics.ppx = model.ipm.principal_point.x;
                         intrinsics.ppy = model.ipm.principal_point.y;
+
+                        if (model.distort.radial_k1 || model.distort.radial_k2 || model.distort.tangential_p1  || model.distort.tangential_p2 || model.distort.radial_k3)
+                        {
+                            intrinsics.coeffs[0] = model.distort.radial_k1;
+                            intrinsics.coeffs[1] = model.distort.radial_k2;
+                            intrinsics.coeffs[2] = model.distort.tangential_p1;
+                            intrinsics.coeffs[3] = model.distort.tangential_p2;
+                            intrinsics.coeffs[4] = model.distort.radial_k3;
+
+                            intrinsics.model = RS2_DISTORTION_INVERSE_BROWN_CONRADY;
+                        }
+                        
                         return intrinsics;
                     }
                 }
