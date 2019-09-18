@@ -2770,7 +2770,7 @@ namespace rs2
             if (paused)
                 show_paused_icon(window.get_large_font(), static_cast<int>(panel_width + 15), static_cast<int>(panel_y + 15 + 32), 0);
 
-            show_3dviewer_header(window.get_font(), viewer_rect, paused, error_message);
+            show_3dviewer_header(window.get_large_font(), window.get_font(), viewer_rect, paused, error_message);
 
             update_3d_camera(window, viewer_rect);
 
