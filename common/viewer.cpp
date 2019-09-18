@@ -301,14 +301,13 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         static config_file temp_cfg;
-        export_type tab = export_type::ply;
+        static export_type tab = export_type::ply;
         if (ImGui::BeginPopupModal("Export", nullptr, flags))
         {
             ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
             ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
             ImGui::PushFont(large_font);
-          //  export_model chosen ("", "", "");
             for (auto& exporter : exporters)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, tab != exporter.first ? light_grey : light_blue);
@@ -316,7 +315,6 @@ namespace rs2
                 ImGui::SameLine();
                 if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 30, 30 }))
                 {
-                  //  tab = i;
                     config_file::instance().set(configurations::viewer::settings_tab, tab);
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
                     tab = exporter.first;
@@ -325,7 +323,6 @@ namespace rs2
             }
 
             ImGui::PopFont();
-           // ImGui::PopStyleColor(2);
             if (tab == export_type::ply)
             {
                 bool mesh = temp_cfg.get(configurations::ply::mesh);
@@ -334,7 +331,6 @@ namespace rs2
                 int encoding = temp_cfg.get(configurations::ply::encoding);
 
                 ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                // ImGui::SetCursorScreenPos({ (float)(x0+30), (float)(y0 + 50) });
                 ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
                 ImGui::PopStyleColor();
                 ImGui::NewLine();
@@ -767,7 +763,6 @@ namespace rs2
         
         check_permissions();
         export_model exp_model("PLY", ".ply", "Polygon File Format(PLY)\0 * .ply");
-        //exporters[export_type::ply] = exp_model;
         exporters.insert(std::pair<export_type, export_model>(export_type::ply, exp_model));
     }
 

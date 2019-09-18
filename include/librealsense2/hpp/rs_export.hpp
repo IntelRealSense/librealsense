@@ -38,9 +38,9 @@ namespace rs2
             _pc(std::move(pc)), fname(filename)
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
-            register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 0, 1 });
+            register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 1, 1 });
             register_simple_option(OPTION_PLY_NORMALS, option_range{ 0, 1, 0, 1 });
-            register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 0, 1 });
+            register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 1, 1 });
         }
 
         static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
