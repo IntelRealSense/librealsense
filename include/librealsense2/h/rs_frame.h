@@ -200,11 +200,9 @@ rs2_vertex* rs2_get_frame_vertices(const rs2_frame* frame, rs2_error** error);
 * \param[in] frame       Points frame
 * \param[in] fname       The name for the ply file
 * \param[in] texture     Texture frame
-* \param[in] mesh        If true, save meshed pointcloud
-* \param[in] binary      If true, binary data
 * \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, int mesh, int binary, rs2_error** error);
+void rs2_export_to_ply(const rs2_frame* frame, const char* fname, rs2_frame* texture, rs2_error** error);
 
 /**
 * When called on Points frame type, this method returns a pointer to an array of texture coordinates per vertex

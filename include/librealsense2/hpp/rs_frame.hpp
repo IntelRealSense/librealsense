@@ -753,15 +753,13 @@ namespace rs2
         * Export the point cloud to a PLY file
         * \param[in] string fname - file name of the PLY to be saved
         * \param[in] video_frame texture - the texture for the PLY.
-        * \param[in] bool mesh - if true, use faces for meshing, otherwise write raw points to the PLY.
-        * \param[in] bool binary - if true, generate binary file, otherwise the output is textual.
         */
-        void export_to_ply(const std::string& fname, video_frame texture, bool mesh = true, bool binary = true)
+        void export_to_ply(const std::string& fname, video_frame texture)
         {
             rs2_frame* ptr = nullptr;
             std::swap(texture.frame_ref, ptr);
             rs2_error* e = nullptr;
-            rs2_export_to_ply(get(), fname.c_str(), ptr, mesh, binary, &e);
+            rs2_export_to_ply(get(), fname.c_str(), ptr, &e);
             error::handle(e);
         }
         /**
