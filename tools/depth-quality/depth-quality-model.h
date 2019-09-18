@@ -112,7 +112,6 @@ namespace rs2
             metrics_model* _metrics;
             colorizer _colorize;
             pointcloud _pc;
-            save_to_ply ply_exporter;
         };
 
         class metric_plot : public std::enable_shared_from_this<metric_plot>

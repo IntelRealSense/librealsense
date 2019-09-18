@@ -31,6 +31,16 @@ namespace rs2
         viewer_model* owner;
     };
 
+    struct export_model
+    {
+        export_model(std::string name, std::string extension, std::string filters) : name(name), 
+            extension(extension), filters(filters) {};
+        std::string name;
+        std::string extension;
+        std::string filters;
+        std::map<rs2_option, int> options;
+    };
+
     class viewer_model
     {
     public:
@@ -115,7 +125,11 @@ namespace rs2
         bool paused = false;
         bool metric_system = true;
 
-        rs2::save_to_ply ply_exporter;
+        enum export_type
+        {
+            ply
+        };
+        std::map<export_type, export_model> exporters;
         frameset_allocator alloc;
 
         void draw_viewport(const rect& viewer_rect, 

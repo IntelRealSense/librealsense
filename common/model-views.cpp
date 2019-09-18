@@ -289,11 +289,12 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(rs2::save_to_ply& ply_exporter, notifications_model& ns, frameset data, bool notify)
+    void export_frame(const std::string& fname, std::unique_ptr<rs2::filter> exporter, notifications_model& ns, frame data, bool notify)
     {
-        std::thread([&ply_exporter, &ns, data, notify]() mutable {
-            ply_exporter.process(data);
-            if (notify) ns.add_notification({ to_string() << "Finished saving 3D view to " <<  ply_exporter.get_filename(),
+        std::thread([exporter = std::move(exporter), &ns, data, fname, notify]() mutable {
+            exporter->process(data);
+            if (notify) ns.add_notification({ to_string() << "Finished saving 3D view " << (data.is<rs2::points>() ? "without texture to " : "to ") <<
+                fname,
                 RS2_LOG_SEVERITY_INFO,
                 RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
         }).detach();

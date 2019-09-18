@@ -12,7 +12,8 @@
 #include "rs_processing.hpp"
 #include "rs_internal.hpp"
 #include <iostream>
-
+#include <thread>
+#include <chrono>
 namespace rs2
 {
     struct vec3d {
@@ -33,28 +34,13 @@ namespace rs2
     class save_to_ply : public filter
     {
     public:
-        save_to_ply(pointcloud pc = pointcloud()) : filter([this](frame f, frame_source& s) { func(f, s); }),
-            _pc(std::move(pc))
+        save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud()) : filter([this](frame f, frame_source& s) { func(f, s); }),
+            _pc(std::move(pc)), fname(filename)
         {
             register_simple_option(OPTION_IGNORE_COLOR, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_NORMALS, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 0, 1 });
-        }
-
-        void set_ply_option(rs2_option option, float value)
-        {
-            set_option(option, value);
-        }
-
-        void set_filename(std::string filename)
-        {
-            fname = filename;
-        }
-
-        std::string get_filename()
-        {
-            return fname;
         }
 
         static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
@@ -86,7 +72,7 @@ namespace rs2
         }
 
         void export_to_ply(points p, video_frame color) {
-            const bool use_texcoords = color && !get_option(OPTION_IGNORE_COLOR);
+            const bool use_texcoords  = color && !get_option(OPTION_IGNORE_COLOR);
             bool mesh = get_option(OPTION_PLY_MESH);
             bool binary = get_option(OPTION_PLY_BINARY);
             bool use_normals = get_option(OPTION_PLY_NORMALS);
@@ -111,7 +97,7 @@ namespace rs2
                     fabs(verts[i].z) >= min_distance)
                 {
                     idx_map[i] = new_verts.size();
-                    new_verts.push_back(verts[i]);
+                    new_verts.push_back({ verts[i].x, -1 * verts[i].y, -1 * verts[i].z });
                     if (use_texcoords)
                     {
                         auto rgb = get_texcolor(color, texture_data, texcoords[i].u, texcoords[i].v);
@@ -124,7 +110,7 @@ namespace rs2
             auto width = profile.width(), height = profile.height();
             static const auto threshold = 0.05f;
             std::vector<std::array<int, 3>> faces;
-            if (mesh || use_normals)
+            if (mesh)
             {
                 for (int x = 0; x < width - 1; ++x) {
                     for (int y = 0; y < height - 1; ++y) {
@@ -141,10 +127,10 @@ namespace rs2
 
                             if (use_normals)
                             {
-                                vec3d point_a = { verts[a].x , verts[a].y, verts[a].z };
-                                vec3d point_b = { verts[b].x , verts[b].y, verts[b].z };
-                                vec3d point_c = { verts[c].x , verts[c].y, verts[c].z };
-                                vec3d point_d = { verts[d].x , verts[d].y, verts[d].z };
+                                vec3d point_a = { verts[a].x ,  -1 * verts[a].y,  -1 * verts[a].z };
+                                vec3d point_b = { verts[b].x ,  -1 * verts[b].y,  -1 * verts[b].z };
+                                vec3d point_c = { verts[c].x ,  -1 * verts[c].y,  -1 * verts[c].z };
+                                vec3d point_d = { verts[d].x ,  -1 * verts[d].y,  -1 * verts[d].z };
 
                                 auto n1 = cross(point_d - point_a, point_b - point_a);
                                 auto n2 = cross(point_c - point_a, point_d - point_a);
@@ -164,7 +150,7 @@ namespace rs2
                 }
             }
 
-            if (use_normals)
+            if (mesh && use_normals)
             {
                 for (int i = 0; i < new_verts.size(); ++i)
                 {
@@ -190,7 +176,7 @@ namespace rs2
             out << "property float" << sizeof(float) * 8 << " x\n";
             out << "property float" << sizeof(float) * 8 << " y\n";
             out << "property float" << sizeof(float) * 8 << " z\n";
-            if (use_normals)
+            if (mesh && use_normals)
             {
                 out << "property float" << sizeof(float) * 8 << " nx\n";
                 out << "property float" << sizeof(float) * 8 << " ny\n";
@@ -220,7 +206,7 @@ namespace rs2
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].y)), sizeof(float));
                     out.write(reinterpret_cast<const char*>(&(new_verts[i].z)), sizeof(float));
 
-                    if (use_normals)
+                    if (mesh && use_normals)
                     {
                         out.write(reinterpret_cast<const char*>(&(normals[i].x)), sizeof(float));
                         out.write(reinterpret_cast<const char*>(&(normals[i].y)), sizeof(float));
@@ -255,7 +241,7 @@ namespace rs2
                     out << new_verts[i].z << " ";
                     out << "\n";
 
-                    if (use_normals)
+                    if (mesh && use_normals)
                     {
                         out << normals[i].x << " ";
                         out << normals[i].y << " ";

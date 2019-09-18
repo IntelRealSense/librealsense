@@ -28,11 +28,17 @@ namespace rs2
         filter([this](frame f, frame_source& s)
     {
         std::vector<rs2::frame> frame_vec;
-        frame_vec.push_back(owner->get_last_texture()->get_last_frame(true));
-        frame_vec.push_back(f);
-        auto frame = s.allocate_composite_frame(frame_vec);
-        if (frame)
-            s.frame_ready(std::move(frame));
+        auto tex = owner->get_last_texture()->get_last_frame(true);
+        if (tex)
+        {
+            frame_vec.push_back(tex);
+            frame_vec.push_back(f);
+            auto frame = s.allocate_composite_frame(frame_vec);
+            if (frame)
+                s.frame_ready(std::move(frame));
+        }
+        else
+            s.frame_ready(std::move(f));
     }) {}
 
     void viewer_model::render_pose(rs2::rect stream_rect, float buttons_heights)
@@ -295,38 +301,45 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
 
         static config_file temp_cfg;
-        static int tab = 0;
+        export_type tab = export_type::ply;
         if (ImGui::BeginPopupModal("Export", nullptr, flags))
         {
             ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
             ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
             ImGui::PushFont(large_font);
-
-            ImGui::PushStyleColor(ImGuiCol_Text, tab != 0 ? light_grey : light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != 0 ? light_grey : light_blue);
-            if (ImGui::Button("PLY", { w, 30 }))
+          //  export_model chosen ("", "", "");
+            for (auto& exporter : exporters)
             {
-                tab = 0;
-                config_file::instance().set(configurations::viewer::settings_tab, tab);
-                temp_cfg.set(configurations::viewer::settings_tab, tab);
-            }   
+                ImGui::PushStyleColor(ImGuiCol_Text, tab != exporter.first ? light_grey : light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != exporter.first ? light_grey : light_blue);
+                ImGui::SameLine();
+                if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 30, 30 }))
+                {
+                  //  tab = i;
+                    config_file::instance().set(configurations::viewer::settings_tab, tab);
+                    temp_cfg.set(configurations::viewer::settings_tab, tab);
+                    tab = exporter.first;
+                }
+                ImGui::PopStyleColor(2);
+            }
+
             ImGui::PopFont();
-            ImGui::PopStyleColor(2);
-            ImGui::PushStyleColor(ImGuiCol_Text, grey);
-           // ImGui::SetCursorScreenPos({ (float)(x0+30), (float)(y0 + 50) });
-            ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
-            ImGui::PopStyleColor();
-            ImGui::NewLine();
-            ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
-            ImGui::Separator();
-
-            bool mesh = temp_cfg.get(configurations::ply::mesh);
-            bool use_normals = temp_cfg.get(configurations::ply::use_normals);
-            int encoding = temp_cfg.get(configurations::ply::encoding);
-
-            if (tab == 0)
+           // ImGui::PopStyleColor(2);
+            if (tab == export_type::ply)
             {
+                bool mesh = temp_cfg.get(configurations::ply::mesh);
+                bool use_normals = temp_cfg.get(configurations::ply::use_normals);
+                if (!mesh) use_normals = false;
+                int encoding = temp_cfg.get(configurations::ply::encoding);
+
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                // ImGui::SetCursorScreenPos({ (float)(x0+30), (float)(y0 + 50) });
+                ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
+                ImGui::PopStyleColor();
+                ImGui::NewLine();
+                ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
+                ImGui::Separator();
                 if (ImGui::Checkbox("Meshing", &mesh))
                 {
                     temp_cfg.set(configurations::ply::mesh, mesh);
@@ -378,6 +391,12 @@ namespace rs2
                     encoding = 1;
                     temp_cfg.set(configurations::ply::encoding, encoding);
                 }
+
+                auto curr_exporter = exporters.find(tab);
+                assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
+                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_MESH] = mesh;
+                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_NORMALS] = use_normals;
+                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_BINARY] = encoding;
             }
 
             ImGui::PopStyleColor(2); // button color
@@ -401,10 +420,9 @@ namespace rs2
 
             if (ImGui::Button("Export", ImVec2(120, 0)))
             {
-                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_MESH, mesh);
-                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_NORMALS, use_normals);
-                ply_exporter.set_ply_option(ply_exporter.OPTION_PLY_BINARY, encoding);
-                if (auto ret = file_dialog_open(save_file, "Polygon File Format (PLY)\0*.ply\0", NULL, NULL))
+                auto curr_exporter = exporters.find(tab);
+                assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
+                if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.c_str(), NULL, NULL))
                 {
                     auto model = ppf.get_points();
                     frame tex;
@@ -415,16 +433,25 @@ namespace rs2
                     }
 
                     std::string fname(ret);
-                    if (!ends_with(to_lower(fname), ".ply")) fname += ".ply";
-                    ply_exporter.set_filename(fname);
+                    if (!ends_with(to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
 
+                    std::unique_ptr<rs2::filter> exporter;
+                    if (tab == 0)
+                        exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
                     auto data = alloc.process(last_points);
-                    export_to_ply(ply_exporter, not_model, data);
+
+                    for (auto& option : curr_exporter->second.options)
+                    {
+                        exporter->set_option(option.first, option.second);
+                    }
+
+                    export_frame(fname, std::move(exporter), not_model, data);
+                    exporter.reset();
                 }
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", "Save settings and export PLY");
+                ImGui::SetTooltip("%s", "Save settings and export file");
             }
             ImGui::SameLine();
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
@@ -739,6 +766,9 @@ namespace rs2
         update_configuration();
         
         check_permissions();
+        export_model exp_model("PLY", ".ply", "Polygon File Format(PLY)\0 * .ply");
+        //exporters[export_type::ply] = exp_model;
+        exporters.insert(std::pair<export_type, export_model>(export_type::ply, exp_model));
     }
 
     void viewer_model::gc_streams()

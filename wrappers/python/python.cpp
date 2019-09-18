@@ -25,6 +25,12 @@ PYBIND11_MODULE(NAME, m) {
     init_export(m);
     init_advanced_mode(m);
     init_util(m);
+    py::class_<rs2::save_to_ply, rs2::filter> save_to_ply(m, "save_to_ply"); // No docstring in C++
+    save_to_ply.def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
+        .def_readonly_static("option_ignore_color", &rs2::save_to_ply::OPTION_IGNORE_COLOR)
+        .def_readonly_static("option_ply_mesh", &rs2::save_to_ply::OPTION_PLY_MESH)
+        .def_readonly_static("option_ply_binary", &rs2::save_to_ply::OPTION_PLY_BINARY)
+        .def_readonly_static("option_ply_normals", &rs2::save_to_ply::OPTION_PLY_NORMALS);
 
     /** rs.hpp **/
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);
