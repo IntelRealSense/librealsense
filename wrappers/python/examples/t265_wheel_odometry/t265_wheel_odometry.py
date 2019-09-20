@@ -8,6 +8,7 @@ from __future__ import print_function
 This example shows how to fuse wheel odometry measurements (in the form of 3D translational velocity measurements) on the T265 tracking camera to use them together with the (internal) visual and intertial measurements.
 This functionality makes use of two API calls:
 1. Configuring the wheel odometry by providing a json calibration file (in the format of the accompanying calibration file)
+Please refer to the description of the calibration file format here: https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md#wheel-odometry-calibration-file-format.
 2. Sending wheel odometry measurements (for every measurement) to the camera
 
 Expected output:
