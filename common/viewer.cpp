@@ -390,6 +390,7 @@ namespace rs2
 
                 auto curr_exporter = exporters.find(tab);
                 assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
+                rs2::save_to_ply ply;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_MESH] = mesh;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_NORMALS] = use_normals;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_BINARY] = encoding;
