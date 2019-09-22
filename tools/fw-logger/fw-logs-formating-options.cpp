@@ -79,6 +79,11 @@ namespace fw_logger
         }
     }
 
+    std::unordered_map<std::string, std::vector<std::string>> fw_logs_formating_options::get_enums() const
+    {
+        return _fw_logs_enum_names_list;
+    }
+
     bool fw_logs_formating_options::initialize_from_xml()
     {
         fw_logs_xml_helper fw_logs_xml(_xml_full_file_path);

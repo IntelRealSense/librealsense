@@ -108,8 +108,8 @@ namespace librealsense
             float radial_k1;
             float radial_k2;
             float tangential_p1;
-            float radial_k3;
             float tangential_p2;
+            float radial_k3;
         };
 
         struct pinhole_camera_model

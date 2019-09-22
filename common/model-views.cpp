@@ -3030,8 +3030,10 @@ namespace rs2
                         n->snoozed = true;
                     }
 
-                    viewer.not_model.add_notification(n);
-                    related_notifications.push_back(n);
+                    // NOTE: For now do not pre-emptively suggest auto-calibration
+                    // TODO: Revert in later release
+                    //viewer.not_model.add_notification(n);
+                    //related_notifications.push_back(n);
                 }
             }
         }
@@ -4326,9 +4328,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install official signed firmware from file to the device");
 
-                    if (is_recommended_fw_available() &&
-                        ((dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)) ||
-                        (dev.query_sensors().size() && dev.query_sensors().front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))))
+                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))) 
                     {
                         if (ImGui::Selectable("Install Recommended Firmware "))
                         {
@@ -4381,13 +4381,11 @@ namespace rs2
 
                             viewer.not_model.add_notification(n);
                             n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_CALIB_IN_PROCESS;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
 
                             for (auto&& n : related_notifications)
                                 if (dynamic_cast<autocalib_notification_model*>(n.get()))
                                     n->dismiss(false);
-
-                            manager->start(n);
                         }
                         catch (const error& e)
                         {

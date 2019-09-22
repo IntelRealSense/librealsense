@@ -1684,11 +1684,7 @@ namespace rs2
         ImGui::PushFont(window.get_large_font());
         ImGui::PushStyleColor(ImGuiCol_Border, black);
 
-        int buttons = window.is_fullscreen() ? 5 : 4;
-
-        ImGui::SetCursorPosX(window.width() - panel_width - panel_y * (buttons - 2));
-        not_model.draw_snoozed_button();
-        ImGui::SameLine();
+        int buttons = window.is_fullscreen() ? 4 : 3;
 
         ImGui::SetCursorPosX(window.width() - panel_width - panel_y * (buttons));
         ImGui::PushStyleColor(ImGuiCol_Text, is_3d_view ? light_grey : light_blue);
@@ -1716,7 +1712,7 @@ namespace rs2
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
 
-        ImGui::SetCursorPosX(window.width() - panel_width - panel_y * (buttons - 3));
+        ImGui::SetCursorPosX(window.width() - panel_width - panel_y * (buttons - 2));
 
         static bool settings_open = false;
         ImGui::PushStyleColor(ImGuiCol_Text, !settings_open ? light_grey : light_blue);

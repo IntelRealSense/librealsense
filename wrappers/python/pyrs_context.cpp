@@ -31,7 +31,7 @@ void init_context(py::module &m) {
             self.set_devices_changed_callback(callback);
         }, "Register devices changed callback.", "callback"_a)
         .def("load_device", &rs2::context::load_device, "Creates a devices from a RealSense file.\n"
-             "On successful load, the device will be appended to the context and a devices_changed event triggered."
+             "On successful load, the device will be appended to the context and a devices_changed event triggered.",
              "filename"_a)
         .def("unload_device", &rs2::context::unload_device, "filename"_a) // No docstring in C++
         .def("unload_tracking_module", &rs2::context::unload_tracking_module); // No docstring in C++

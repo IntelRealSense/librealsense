@@ -16,12 +16,12 @@ void init_record_playback(py::module &m) {
         .def("file_name", &rs2::playback::file_name, "The name of the playback file.")
         .def("get_position", &rs2::playback::get_position, "Retrieves the current position of the playback in the file in terms of time. Units are expressed in nanoseconds.")
         .def("get_duration", &rs2::playback::get_duration, "Retrieves the total duration of the file.")
-        .def("seek", &rs2::playback::seek, "Sets the playback to a specified time point of the played data." "time"_a)
+        .def("seek", &rs2::playback::seek, "Sets the playback to a specified time point of the played data.", "time"_a)
         .def("is_real_time", &rs2::playback::is_real_time, "Indicates if playback is in real time mode or non real time.")
         .def("set_real_time", &rs2::playback::set_real_time, "Set the playback to work in real time or non real time. In real time mode, playback will "
              "play the same way the file was recorded. If the application takes too long to handle the callback, frames may be dropped. In non real time "
              "mode, playback will wait for each callback to finish handling the data before reading the next frame. In this mode no frames will be dropped, "
-             "and the application controls the framerate of playback via callback duration." "real_time"_a)
+             "and the application controls the framerate of playback via callback duration.", "real_time"_a)
         // set_playback_speed?
         .def("set_status_changed_callback", [](rs2::playback& self, std::function<void(rs2_playback_status)> callback) {
             self.set_status_changed_callback(callback);
