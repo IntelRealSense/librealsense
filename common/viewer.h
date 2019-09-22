@@ -6,6 +6,7 @@
 #include "model-views.h"
 #include "notifications.h"
 #include "viewer.h"
+#include <librealsense2/hpp/rs_export.hpp>
 
 namespace rs2
 {

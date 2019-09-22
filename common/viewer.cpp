@@ -100,6 +100,12 @@ namespace rs2
         //ImGui::End();
     }
 
+    // need out of class declaration to take reference
+    const rs2_option save_to_ply::OPTION_IGNORE_COLOR;
+    const rs2_option save_to_ply::OPTION_PLY_MESH;
+    const rs2_option save_to_ply::OPTION_PLY_BINARY;
+    const rs2_option save_to_ply::OPTION_PLY_NORMALS;
+
     void viewer_model::show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
@@ -390,7 +396,6 @@ namespace rs2
 
                 auto curr_exporter = exporters.find(tab);
                 assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
-                rs2::save_to_ply ply;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_MESH] = mesh;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_NORMALS] = use_normals;
                 curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_BINARY] = encoding;
