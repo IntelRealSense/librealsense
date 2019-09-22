@@ -34,6 +34,11 @@ namespace rs2
     class save_to_ply : public filter
     {
     public:
+        static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
+        static const auto OPTION_PLY_MESH = rs2_option(RS2_OPTION_COUNT + 2);
+        static const auto OPTION_PLY_BINARY = rs2_option(RS2_OPTION_COUNT + 3);
+        static const auto OPTION_PLY_NORMALS = rs2_option(RS2_OPTION_COUNT + 4);
+
         save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud()) : filter([this](frame f, frame_source& s) { func(f, s); }),
             _pc(std::move(pc)), fname(filename)
         {
@@ -43,10 +48,6 @@ namespace rs2
             register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 1, 1 });
         }
 
-        static const auto OPTION_IGNORE_COLOR = rs2_option(RS2_OPTION_COUNT + 1);
-        static const auto OPTION_PLY_MESH = rs2_option(RS2_OPTION_COUNT + 2);
-        static const auto OPTION_PLY_BINARY = rs2_option(RS2_OPTION_COUNT + 3);
-        static const auto OPTION_PLY_NORMALS = rs2_option(RS2_OPTION_COUNT + 4);
     private:
         void func(frame data, frame_source& source)
         {
