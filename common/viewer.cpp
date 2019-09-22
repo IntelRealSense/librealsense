@@ -313,7 +313,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, tab != exporter.first ? light_grey : light_blue);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != exporter.first ? light_grey : light_blue);
                 ImGui::SameLine();
-                if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 30, 30 }))
+                if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 50, 30 }))
                 {
                     config_file::instance().set(configurations::viewer::settings_tab, tab);
                     temp_cfg.set(configurations::viewer::settings_tab, tab);
