@@ -521,7 +521,7 @@ namespace rs2
 
         /**
         * retrieve data size from frame handle
-        * \return               the pointer to the start of the frame data
+        * \return               the number of bytes in frame
         */
         const int get_data_size() const
         {
