@@ -100,7 +100,7 @@ namespace rs2
         //ImGui::End();
     }
 
-    // need out of class declaration to take reference
+    // Need out of class declaration to take reference
     const rs2_option save_to_ply::OPTION_IGNORE_COLOR;
     const rs2_option save_to_ply::OPTION_PLY_MESH;
     const rs2_option save_to_ply::OPTION_PLY_BINARY;
@@ -448,7 +448,6 @@ namespace rs2
                     }
 
                     export_frame(fname, std::move(exporter), not_model, data);
-                    exporter.reset();
                 }
             }
             if (ImGui::IsItemHovered())

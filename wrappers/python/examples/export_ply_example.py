@@ -16,25 +16,33 @@ points = rs.points()
 
 # Declare RealSense pipeline, encapsulating the actual device and sensors
 pipe = rs.pipeline()
-#Start streaming with default recommended configuration
-pipe.start();
+config = rs.config()
+# Enable depth stream
+config.enable_stream(rs.stream.depth)
+
+# Start streaming with chosen configuration
+pipe.start(config)
+
+# We'll use the colorizer to generate texture for our PLY
+# (alternatively, texture can be obtained from color or infrared stream)
+colorizer = rs.colorizer()
 
 try:
     # Wait for the next set of frames from the camera
     frames = pipe.wait_for_frames()
+    colorized = colorizer.process(frames)
 
-    # Fetch color and depth frames
-    depth = frames.get_depth_frame()
-    color = frames.get_color_frame()
+    # Create save_to_ply object
+    ply = rs.save_to_ply("1.ply")
 
-    # Tell pointcloud object to map to this color frame
-    pc.map_to(color)
-
-    # Generate the pointcloud and texture mappings
-    points = pc.calculate(depth)
+    # Set options to the desired values
+    # In this example we'll generate a textual PLY with normals (mesh is already created by default)
+    ply.set_option(rs.save_to_ply.option_ply_binary, False)
+    ply.set_option(rs.save_to_ply.option_ply_normals, True)
 
     print("Saving to 1.ply...")
-    points.export_to_ply("1.ply", color)
+    # Apply the processing block to the frameset which contains the depth frame and the texture
+    ply.process(colorized)
     print("Done")
 finally:
     pipe.stop()
