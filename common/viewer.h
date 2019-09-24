@@ -188,6 +188,8 @@ namespace rs2
                               const std::string& ruler_units);
         float calculate_ruler_max_distance(const std::vector<float>& distances) const;
 
+        void set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg);
+
         streams_layout _layout;
         streams_layout _old_layout;
         std::chrono::high_resolution_clock::time_point _transition_start_time;

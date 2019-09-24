@@ -106,6 +106,204 @@ namespace rs2
     const rs2_option save_to_ply::OPTION_PLY_BINARY;
     const rs2_option save_to_ply::OPTION_PLY_NORMALS;
 
+    void viewer_model::set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg)
+    {
+        float w = 520; // hardcoded size to keep popup layout
+        float h = 330;
+        float x0 = stream_rect.x + stream_rect.w / 3;
+        float y0 = stream_rect.y + stream_rect.h / 3;
+        ImGui::SetNextWindowPos({ x0, y0 });
+        ImGui::SetNextWindowSize({ w, h });
+
+        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
+        ImGui_ScopePushFont(font);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+        static export_type tab = export_type::ply;
+        if (ImGui::BeginPopupModal("Export", nullptr, flags))
+        {
+            ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
+            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
+            ImGui::PushFont(large_font);
+            for (auto& exporter : exporters)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, tab != exporter.first ? light_grey : light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != exporter.first ? light_grey : light_blue);
+                ImGui::SameLine();
+                if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 50, 30 }))
+                {
+                    config_file::instance().set(configurations::viewer::settings_tab, tab);
+                    temp_cfg.set(configurations::viewer::settings_tab, tab);
+                    tab = exporter.first;
+                }
+                ImGui::PopStyleColor(2);
+            }
+
+            ImGui::PopFont();
+            if (tab == export_type::ply)
+            {
+                bool mesh = temp_cfg.get(configurations::ply::mesh);
+                bool use_normals = temp_cfg.get(configurations::ply::use_normals);
+                if (!mesh) use_normals = false;
+                int encoding = temp_cfg.get(configurations::ply::encoding);
+
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
+                ImGui::PopStyleColor();
+                ImGui::NewLine();
+                ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
+                ImGui::Separator();
+                if (ImGui::Checkbox("Meshing", &mesh))
+                {
+                    temp_cfg.set(configurations::ply::mesh, mesh);
+                }
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("         Use faces for meshing by connecting each group of 3 adjacent points");
+                ImGui::PopStyleColor();
+                ImGui::Separator();
+
+                if (!mesh)
+                {
+                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
+                }
+                if (ImGui::Checkbox("Normals", &use_normals))
+                {
+                    if (!mesh)
+                        use_normals = false;
+                    else
+                        temp_cfg.set(configurations::ply::use_normals, use_normals);
+                }
+                if (!mesh)
+                {
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Enable meshing to allow vertex normals calculation");
+                    }
+                    ImGui::PopStyleColor(2);
+                    ImGui::PopStyleVar();
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("         Calculate vertex normals and add them to the PLY");
+                ImGui::PopStyleColor();
+                ImGui::Separator();
+
+                ImGui::Text("Encoding:");
+                ImGui::PushStyleColor(ImGuiCol_Text, grey);
+                ImGui::Text("Save PLY as binary, or as a larger textual human-readable file");
+                ImGui::PopStyleColor();
+                if (ImGui::RadioButton("Textual", encoding == 0))
+                {
+                    encoding = 0;
+                    temp_cfg.set(configurations::ply::encoding, encoding);
+                }
+                if (ImGui::RadioButton("Binary", encoding == 1))
+                {
+                    encoding = 1;
+                    temp_cfg.set(configurations::ply::encoding, encoding);
+                }
+
+                auto curr_exporter = exporters.find(tab);
+                if (curr_exporter == exporters.end()) // every tab should have a corresponding exporter
+                    error_message = "Exporter not implemented";
+                else
+                {
+                    curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_MESH] = mesh;
+                    curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_NORMALS] = use_normals;
+                    curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_BINARY] = encoding;
+                }
+            }
+
+            ImGui::PopStyleColor(2); // button color
+
+            auto apply = [&]() {
+                config_file::instance() = temp_cfg;
+                update_configuration();
+            };
+
+            ImGui::PushStyleColor(ImGuiCol_Button, button_color);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+
+            ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 190), (float)(y0 + h - 30) });
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+                apply();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Save settings and close");
+            }
+            ImGui::SameLine();
+
+            if (ImGui::Button("Export", ImVec2(120, 0)))
+            {
+                if (!last_points)
+                    error_message = "No depth data available";
+                else
+                {
+                    auto curr_exporter = exporters.find(tab);
+                    if (curr_exporter == exporters.end()) // every tab should have a corresponding exporter
+                        error_message = "Exporter not implemented";
+                    else if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.c_str(), NULL, NULL))
+                    {
+                        auto model = ppf.get_points();
+                        frame tex;
+                        if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
+                        {
+                            tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
+                            if (tex) ppf.update_texture(tex);
+                        }
+
+                        std::string fname(ret);
+                        if (!ends_with(to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
+
+                        std::unique_ptr<rs2::filter> exporter;
+                        if (tab == export_type::ply)
+                            exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
+                        auto data = alloc.process(last_points);
+
+                        for (auto& option : curr_exporter->second.options)
+                        {
+                            exporter->set_option(option.first, option.second);
+                        }
+
+                        export_frame(fname, std::move(exporter), not_model, data);
+                    }
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Save settings and export file");
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
+            }
+
+            ImGui::PopStyleColor(3);
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(3);
+    }
+
+    // Get both font and large_font for the export pop-up
     void viewer_model::show_3dviewer_header(ImFont* large_font, ImFont* font, rs2::rect stream_rect, bool& paused, std::string& error_message)
     {
         int combo_boxes = 0;
@@ -287,191 +485,6 @@ namespace rs2
                 }
         }
 
-        ImGui::PopStyleColor(3);
-
-        float w = stream_rect.w  * 0.33f;
-        float h = stream_rect.h * 0.34f;
-        float x0 = stream_rect.x * 2;
-        float y0 = stream_rect.y * 6;
-        ImGui::SetNextWindowPos({ x0, y0 });
-        ImGui::SetNextWindowSize({ w, h });
-
-        auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
-
-        ImGui_ScopePushFont(font);
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
-        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
-
-        static config_file temp_cfg;
-        static export_type tab = export_type::ply;
-        if (ImGui::BeginPopupModal("Export", nullptr, flags))
-        {
-            ImGui::SetCursorScreenPos({ (float)(x0), (float)(y0 + 30) });
-            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
-            ImGui::PushFont(large_font);
-            for (auto& exporter : exporters)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, tab != exporter.first ? light_grey : light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, tab != exporter.first ? light_grey : light_blue);
-                ImGui::SameLine();
-                if (ImGui::Button(exporter.second.name.c_str(), { w / exporters.size() - 50, 30 }))
-                {
-                    config_file::instance().set(configurations::viewer::settings_tab, tab);
-                    temp_cfg.set(configurations::viewer::settings_tab, tab);
-                    tab = exporter.first;
-                }
-                ImGui::PopStyleColor(2);
-            }
-
-            ImGui::PopFont();
-            if (tab == export_type::ply)
-            {
-                bool mesh = temp_cfg.get(configurations::ply::mesh);
-                bool use_normals = temp_cfg.get(configurations::ply::use_normals);
-                if (!mesh) use_normals = false;
-                int encoding = temp_cfg.get(configurations::ply::encoding);
-
-                ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                ImGui::Text("Polygon File Format defines a flexible systematic scheme for storing 3D data");
-                ImGui::PopStyleColor();
-                ImGui::NewLine();
-                ImGui::SetCursorScreenPos({ (float)(x0 + 15), (float)(y0 + 90) });
-                ImGui::Separator();
-                if (ImGui::Checkbox("Meshing", &mesh))
-                {
-                    temp_cfg.set(configurations::ply::mesh, mesh);
-                }
-                ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                ImGui::Text("         Use faces for meshing by connecting each group of 3 adjacent points");
-                ImGui::PopStyleColor();
-                ImGui::Separator();
-
-                if (!mesh)
-                {
-                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, black);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, black);
-                }
-                if (ImGui::Checkbox("Normals", &use_normals))
-                {
-                    if (!mesh)
-                        use_normals = false;
-                    else
-                        temp_cfg.set(configurations::ply::use_normals, use_normals);
-                }
-                if (!mesh)
-                {
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Enable meshing to allow vertex normals calculation");
-                    }
-                    ImGui::PopStyleColor(2);
-                    ImGui::PopStyleVar();
-                }
-
-                ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                ImGui::Text("         Calculate vertex normals and add them to the PLY");
-                ImGui::PopStyleColor();
-                ImGui::Separator();
-
-                ImGui::Text("Encoding:");
-                ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                ImGui::Text("Save PLY as binary, or as a larger textual human-readable file");
-                ImGui::PopStyleColor();
-                if (ImGui::RadioButton("Textual", encoding == 0))
-                {
-                    encoding = 0;
-                    temp_cfg.set(configurations::ply::encoding, encoding);
-                }
-                if (ImGui::RadioButton("Binary", encoding == 1))
-                {
-                    encoding = 1;
-                    temp_cfg.set(configurations::ply::encoding, encoding);
-                }
-
-                auto curr_exporter = exporters.find(tab);
-                assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
-                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_MESH] = mesh;
-                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_NORMALS] = use_normals;
-                curr_exporter->second.options[rs2::save_to_ply::OPTION_PLY_BINARY] = encoding;
-            }
-
-            ImGui::PopStyleColor(2); // button color
-
-            auto apply = [&]() {
-                config_file::instance() = temp_cfg;
-                update_configuration();
-            };
-
-            ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 190), (float)(y0 + h - 30) });
-            if (ImGui::Button("OK", ImVec2(120, 0)))
-            {
-                ImGui::CloseCurrentPopup();
-                apply();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", "Save settings and close");
-            }
-            ImGui::SameLine();
-
-            if (ImGui::Button("Export", ImVec2(120, 0)))
-            {
-                auto curr_exporter = exporters.find(tab);
-                assert(curr_exporter != exporters.end()); // every tab should have a corresponding exporter
-                if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.c_str(), NULL, NULL))
-                {
-                    auto model = ppf.get_points();
-                    frame tex;
-                    if (selected_tex_source_uid >= 0 && streams.find(selected_tex_source_uid) != streams.end())
-                    {
-                        tex = streams[selected_tex_source_uid].texture->get_last_frame(true);
-                        if (tex) ppf.update_texture(tex);
-                    }
-
-                    std::string fname(ret);
-                    if (!ends_with(to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
-
-                    std::unique_ptr<rs2::filter> exporter;
-                    if (tab == 0)
-                        exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
-                    auto data = alloc.process(last_points);
-
-                    for (auto& option : curr_exporter->second.options)
-                    {
-                        exporter->set_option(option.first, option.second);
-                    }
-
-                    export_frame(fname, std::move(exporter), not_model, data);
-                }
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", "Save settings and export file");
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0)))
-            {
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", "Close window without saving any changes to the settings");
-            }
-
-            ImGui::EndPopup();
-        }
-        ImGui::PopStyleVar(2);
-
-        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
-
         ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_buttons - 5, 0 });
 
         if (paused)
@@ -509,6 +522,9 @@ namespace rs2
                 ImGui::SetTooltip("Pause All");
             }
         }
+
+        static config_file temp_cfg;
+        set_export_popup(large_font, font, stream_rect, error_message, temp_cfg);
 
         ImGui::SameLine();
         if (ImGui::Button(textual_icons::floppy, { 24, buttons_heights }))
@@ -597,6 +613,10 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
         auto old_pos = ImGui::GetCursorScreenPos();
         ImVec2 pos { stream_rect.x + stream_rect.w - 215, stream_rect.y + total_top_bar_height + 5 };
