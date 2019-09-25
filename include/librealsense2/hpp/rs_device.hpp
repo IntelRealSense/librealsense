@@ -425,6 +425,15 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
+    /**
+     * The tm2 class is an interface for T2XX devices, such as T265.
+     *
+     * For T265, it provides RS2_STREAM_FISHEYE (2), RS2_STREAM_GYRO, RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams,
+     * and contains the following sensors:
+     *
+     * - pose_sensor: map and relocalization functions.
+     * - wheel_odometer: input for odometry data.
+     */
     class tm2 : public device //TODO: add to wrappers
     {
     public:
