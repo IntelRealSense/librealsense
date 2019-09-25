@@ -27,8 +27,8 @@
 /** Converts an unaligned two-byte little-endian integer into an int16 */
 #define SW_TO_SHORT(p) ((p)[0] | ((p)[1] << 8))
 /** Converts an unaligned eight-byte little-endian integer into an int64 */
-#define QW_TO_QUAD(p) ((p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24) |  \
-                       ((p)[4] << 32) |((p)[5] << 40) |((p)[6] << 48) |((p)[7] << 56))
+#define QW_TO_QUAD(p) ((uint64_t)(p)[0] | ((uint64_t)(p)[1] << 8) | ((uint64_t)(p)[2] << 16) | ((uint64_t)(p)[3] << 24) |  \
+    ((uint64_t)(p)[4] << 32) | ((uint64_t)(p)[5] << 40) | ((uint64_t)(p)[6] << 48) | ((uint64_t)(p)[7] << 56))
 
 /** Converts an int16 into an unaligned two-byte little-endian integer */
 #define SHORT_TO_SW(s, p) \
