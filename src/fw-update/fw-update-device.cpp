@@ -65,11 +65,8 @@ namespace librealsense
         if (sts != platform::RS2_USB_STATUS_SUCCESS)
             throw std::runtime_error("Failed to read info from DFU device!");
 
-        std::stringstream serial_number;
-        for (auto i = 0; i < sizeof(payload.serial_number.serial); i++)
-            serial_number << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(payload.serial_number.serial[i]);
-
-        _asic_serial_number = serial_number.str();
+        _serial_number_buffer = std::vector<uint8_t>(sizeof(payload.serial_number));
+        _serial_number_buffer.assign((uint8_t*)&payload.serial_number, (uint8_t*)&payload.serial_number + sizeof(payload.serial_number));
         _is_dfu_locked = payload.dfu_is_locked;
         _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
         _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
@@ -157,10 +154,11 @@ namespace librealsense
                 if (state == RS2_DFU_STATE_DFU_IDLE && retries--)
                     continue;
 
+                auto sn = get_serial_number();
                 if(_is_dfu_locked)
-                    throw std::runtime_error("Device: " + _asic_serial_number  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
+                    throw std::runtime_error("Device: " + sn  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
                 else
-                    throw std::runtime_error("Device: " + _asic_serial_number + " failed to download firmware\nPlease verify that no other librealsense application is running");
+                    throw std::runtime_error("Device: " + sn + " failed to download firmware\nPlease verify that no other librealsense application is running");
             }
 
             block_number++;
@@ -262,7 +260,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER: return get_asic_serial_number();
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID: return get_serial_number();
         case RS2_CAMERA_INFO_NAME: return get_name();
         case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
         default:
@@ -274,7 +272,7 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER:
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:
         case RS2_CAMERA_INFO_NAME:
         case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
         default: return false;

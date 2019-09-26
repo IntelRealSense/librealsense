@@ -32,6 +32,7 @@ typedef enum rs2_camera_info {
     RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR            , /**< Designated USB specification: USB2/USB3 */
     RS2_CAMERA_INFO_PRODUCT_LINE                   , /**< Device product line D400/SR300/L500/T200 */
     RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER             , /**< ASIC serial number */
+    RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID             , /**< Firmware update ID */
     RS2_CAMERA_INFO_COUNT                            /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_camera_info;
 const char* rs2_camera_info_to_string(rs2_camera_info info);
