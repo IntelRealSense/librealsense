@@ -24,5 +24,6 @@ You can also [build RealSense AAR from source](../wrappers/android/readme.md) an
 Graphical Java examples such as 'capture', 'recording' and 'playback' are available in the examples folder as part of the Android wrapper project.
 
 Below is an [example](https://play.google.com/store/apps/details?id=com.intel.realsense.camera) of an application with librealsense on the android platform. 
+
 #![](img/realsense-android.png)
 
