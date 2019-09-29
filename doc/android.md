@@ -25,5 +25,5 @@ Graphical Java examples such as 'capture', 'recording' and 'playback' are availa
 
 Below is an [example](https://play.google.com/store/apps/details?id=com.intel.realsense.camera) of an application with librealsense on the android platform. 
 
-#![](img/realsense-android.png)
+![](img/realsense-android.png)
 
