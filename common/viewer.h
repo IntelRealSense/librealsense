@@ -34,11 +34,11 @@ namespace rs2
 
     struct export_model
     {
-        export_model(std::string name, std::string extension, std::string filters) : name(name), 
-            extension(extension), filters(filters) {};
+        export_model(std::string name, std::string extension, const char* filters_str, size_t filters_size) : name(name),
+            extension(extension), filters(filters_str, filters_str + filters_size) {};
         std::string name;
         std::string extension;
-        std::string filters;
+        std::vector<char> filters;
         std::map<rs2_option, int> options;
     };
 

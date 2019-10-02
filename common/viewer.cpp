@@ -109,7 +109,7 @@ namespace rs2
     void viewer_model::set_export_popup(ImFont* large_font, ImFont* font, rect stream_rect, std::string& error_message, config_file& temp_cfg)
     {
         float w = 520; // hardcoded size to keep popup layout
-        float h = 330;
+        float h = 325;
         float x0 = stream_rect.x + stream_rect.w / 3;
         float y0 = stream_rect.y + stream_rect.h / 3;
         ImGui::SetNextWindowPos({ x0, y0 });
@@ -234,20 +234,11 @@ namespace rs2
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
 
-            ImGui::SetCursorScreenPos({ (float)(x0 + w / 2 - 190), (float)(y0 + h - 30) });
-            if (ImGui::Button("OK", ImVec2(120, 0)))
-            {
-                ImGui::CloseCurrentPopup();
-                apply();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", "Save settings and close");
-            }
-            ImGui::SameLine();
+            ImGui::SetCursorScreenPos({ (float)(x0 + w / 2), (float)(y0 + h - 30) });
 
             if (ImGui::Button("Export", ImVec2(120, 0)))
             {
+                apply();
                 if (!last_points)
                     error_message = "No depth data available";
                 else
@@ -255,7 +246,7 @@ namespace rs2
                     auto curr_exporter = exporters.find(tab);
                     if (curr_exporter == exporters.end()) // every tab should have a corresponding exporter
                         error_message = "Exporter not implemented";
-                    else if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.c_str(), NULL, NULL))
+                    else if (auto ret = file_dialog_open(save_file, curr_exporter->second.filters.data(), NULL, NULL))
                     {
                         auto model = ppf.get_points();
                         frame tex;
@@ -281,6 +272,7 @@ namespace rs2
                         export_frame(fname, std::move(exporter), not_model, data);
                     }
                 }
+                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsItemHovered())
             {
@@ -787,7 +779,8 @@ namespace rs2
         update_configuration();
         
         check_permissions();
-        export_model exp_model("PLY", ".ply", "Polygon File Format(PLY)\0 * .ply");
+        const char filters[] = "Polygon File Format (PLY)\0*.ply\0";
+        export_model exp_model("PLY", ".ply", filters, sizeof(filters));
         exporters.insert(std::pair<export_type, export_model>(export_type::ply, exp_model));
     }
 
