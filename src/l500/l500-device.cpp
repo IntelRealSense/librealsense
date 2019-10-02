@@ -113,6 +113,7 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)));
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         depth_ep->register_xu(depth_xu);
         depth_ep->register_pixel_format(pf_z16_l500);
         depth_ep->register_pixel_format(pf_confidence_l500);

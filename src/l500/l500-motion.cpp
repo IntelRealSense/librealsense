@@ -116,6 +116,7 @@ namespace librealsense
             l500_sensor_name_and_hid_profiles);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        hid_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         hid_ep->register_pixel_format(pf_accel_axes);
         hid_ep->register_pixel_format(pf_gyro_axes);
 
