@@ -1281,7 +1281,7 @@ namespace librealsense
     void tm2_sensor::onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt)
     {
         std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << evt.sessionId <<  ", timestamp: " << double(evt.timestamp*0.000000001) << " sec";
-        raise_hardware_event(msg, {}, evt.timestamp);
+        raise_relocalization_event(msg, evt.timestamp);
     }
 
     void tm2_sensor::enable_loopback(std::shared_ptr<playback_device> input)
@@ -1354,6 +1354,13 @@ namespace librealsense
             return;
         }
         _source.invoke_callback(std::move(frame));
+    }
+
+    void tm2_sensor::raise_relocalization_event(const std::string& msg, double timestamp)
+    {
+        notification event{ RS2_NOTIFICATION_CATEGORY_POSE_RELOCALIZATION, 0, RS2_LOG_SEVERITY_INFO, msg };
+        event.timestamp = timestamp;
+        get_notifications_processor()->raise_notification(event);
     }
 
     void tm2_sensor::raise_hardware_event(const std::string& msg, const std::string& json_data, double timestamp)

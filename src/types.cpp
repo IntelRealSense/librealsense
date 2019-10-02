@@ -426,6 +426,7 @@ namespace librealsense
             CASE(HARDWARE_EVENT)
             CASE(UNKNOWN_ERROR)
             CASE(FIRMWARE_UPDATE_RECOMMENDED)
+            CASE(POSE_RELOCALIZATION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
