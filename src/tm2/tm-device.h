@@ -134,6 +134,7 @@ namespace librealsense
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
+        void raise_relocalization_event(const std::string& msg, double timestamp);
         void raise_hardware_event(const std::string& msg, const std::string& serialized_data, double timestamp);
         void raise_error_notification(const std::string& msg);
 
