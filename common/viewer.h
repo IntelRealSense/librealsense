@@ -34,12 +34,20 @@ namespace rs2
 
     struct export_model
     {
-        export_model(std::string name, std::string extension, const char* filters_str, size_t filters_size) : name(name),
-            extension(extension), filters(filters_str, filters_str + filters_size) {};
+        template<typename T, size_t sz>
+        static export_model make_exporter(std::string name, std::string extension, T (&filters_str)[sz])
+        {
+            return export_model(name, extension, filters_str, sz);
+            
+        }
         std::string name;
         std::string extension;
         std::vector<char> filters;
         std::map<rs2_option, int> options;
+
+    private:
+        export_model(std::string name, std::string extension, const char* filters_str, size_t filters_size) : name(name),
+            extension(extension), filters(filters_str, filters_str + filters_size) {};
     };
 
     class viewer_model
@@ -131,7 +139,7 @@ namespace rs2
             ply
         };
         std::map<export_type, export_model> exporters;
-        frameset_allocator alloc;
+        frameset_allocator frameset_allocator;
 
         void draw_viewport(const rect& viewer_rect, 
             ux_window& window, int devices, std::string& error_message, 

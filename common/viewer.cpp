@@ -24,6 +24,7 @@
 
 namespace rs2
 {
+    // Allocates a frameset from points and texture frames
     frameset_allocator::frameset_allocator(viewer_model* viewer) : owner(viewer),
         filter([this](frame f, frame_source& s)
     {
@@ -262,7 +263,7 @@ namespace rs2
                         std::unique_ptr<rs2::filter> exporter;
                         if (tab == export_type::ply)
                             exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
-                        auto data = alloc.process(last_points);
+                        auto data = frameset_allocator.process(last_points);
 
                         for (auto& option : curr_exporter->second.options)
                         {
@@ -769,7 +770,7 @@ namespace rs2
             : ppf(*this), 
               synchronization_enable(true),
               zo_sensors(0),
-              alloc(this)
+              frameset_allocator(this)
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -779,8 +780,7 @@ namespace rs2
         update_configuration();
         
         check_permissions();
-        const char filters[] = "Polygon File Format (PLY)\0*.ply\0";
-        export_model exp_model("PLY", ".ply", filters, sizeof(filters));
+        export_model exp_model = export_model::make_exporter("PLY", ".ply", "Polygon File Format (PLY)\0*.ply\0");
         exporters.insert(std::pair<export_type, export_model>(export_type::ply, exp_model));
     }
 
