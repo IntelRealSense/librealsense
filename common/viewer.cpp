@@ -263,7 +263,7 @@ namespace rs2
                         std::unique_ptr<rs2::filter> exporter;
                         if (tab == export_type::ply)
                             exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
-                        auto data = frameset_allocator.process(last_points);
+                        auto data = frameset_alloc.process(last_points);
 
                         for (auto& option : curr_exporter->second.options)
                         {
@@ -770,7 +770,7 @@ namespace rs2
             : ppf(*this), 
               synchronization_enable(true),
               zo_sensors(0),
-              frameset_allocator(this)
+              frameset_alloc(this)
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();

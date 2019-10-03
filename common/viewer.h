@@ -139,7 +139,7 @@ namespace rs2
             ply
         };
         std::map<export_type, export_model> exporters;
-        frameset_allocator frameset_allocator;
+        frameset_allocator frameset_alloc;
 
         void draw_viewport(const rect& viewer_rect, 
             ux_window& window, int devices, std::string& error_message, 
