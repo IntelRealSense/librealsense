@@ -311,7 +311,9 @@ namespace librealsense
                 float min = _min;;
                 if (disparity)
                 {
-                    max = (_d2d_convert_factor / (_min + 0.1)) * depth_units + .5f;
+					auto __min = _min;
+					if (__min < 1e-6f) { __min = 1e-6f; } // Min value set to prevent zero division. only when _min is zero. 
+					max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
                     min = (_d2d_convert_factor / (_max)) * depth_units + .5f;
                 }
                 shader.set_params(depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
