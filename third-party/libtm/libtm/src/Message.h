@@ -1222,6 +1222,20 @@ namespace perc
         bulk_message_video_stream_metadata metadata;
     } bulk_message_video_stream;
 
+    /**
+    * @brief Bulk mask stream message
+    *
+    * Specific metadata and data for mask
+    */
+    typedef struct
+    {
+        bulk_message_raw_stream_header rawStreamHeader;
+        uint16_t wWidth;  /**< Width of the mask image */
+        uint16_t wHeight; /**< Height of the mask image */
+        uint32_t dwMetadataLength; /**< Length of the packet metadata */
+        uint32_t dwFrameLength; /**< Length of the image frame */
+        uint8_t bMask[];
+    } bulk_message_mask_stream;
 
     /**
     * @brief Bulk raw accelerometer stream metadata

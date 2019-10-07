@@ -570,6 +570,48 @@ namespace rs2
             error::handle(e);
         }
 
+        /**
+         * Get the tracking mask. The mask controls regions on which features
+         * can be detected for tracking. Masks are 8x downsampled versions of
+         * the fisheye image normally used for tracking, so for T265/T261 they
+         * should normally be 106 wide by 100 high. The user is responsible
+         * for freeing the returned mask image. The mask pointer will be null
+         * when no mask has been set.
+         * \param[in] fisheye_sensor_id    ID of the fisheye camera (1 or 2)
+         * \param[out] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null. The user is responsible for freeing this memory.
+         * \param[out] width     The width of the mask image. This will be set, even when no mask has yet been set.
+         * \param[out] height    The height of the mask image. This will be set, even when no mask has yet been set.
+         * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+         */
+        void get_tracking_mask(int fisheye_sensor_id, uint8_t ** mask, int * width, int * height, double * global_ts_ms)
+        {
+            rs2_error* e = nullptr;
+            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
+            rs2_get_tracking_mask(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), mask, width, height, global_ts_ms, &e);
+            error::handle(e);
+        }
+
+        /**
+         * Set the tracking mask. The mask controls regions on which features
+         * can be detected for tracking. Masks are 8x downsampled versions of
+         * the fisheye image normally used for tracking, so for T265/T261 they
+         * should normally be 106 wide by 100 high. The user is responsible
+         * for freeing the returned mask image. The mask pointer will be null
+         * when no mask has been set.
+         * \param[in] fisheye_sensor_id    ID of the fisheye camera (1 or 2)
+         * \param[in] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null.
+         * \param[in] width     The width of the mask image. Should be the width of the target camera/8
+         * \param[in] height    The height of the mask image. Should be the height of the target camera/8
+         * \param[in] global_ts_ms The timestamp of the mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+         */
+        void set_tracking_mask(int fisheye_sensor_id, const uint8_t * mask, int width, int height, double global_ts_ms)
+        {
+            rs2_error* e = nullptr;
+            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
+            rs2_set_tracking_mask(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), mask, width, height, global_ts_ms, &e);
+            error::handle(e);
+        }
+
     private:
 
         std::pair<sensor, stream_profile> get_sensor_profile(rs2_stream stream_type, int stream_index) {

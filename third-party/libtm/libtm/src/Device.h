@@ -40,7 +40,7 @@ namespace perc
         virtual Status Start(Listener*, TrackingData::Profile* = NULL) override;
         virtual Status Stop() override;
         virtual Status GetDeviceInfo(TrackingData::DeviceInfo& info) override;
-        virtual Status GetSupportedRawStreams(TrackingData::VideoProfile* videoProfiles, TrackingData::GyroProfile* gyroProfiles, TrackingData::AccelerometerProfile* accelerometerProfiles, TrackingData::VelocimeterProfile* velocimeterProfiles = nullptr) override;
+        virtual Status GetSupportedRawStreams(TrackingData::VideoProfile* videoProfiles, TrackingData::GyroProfile* gyroProfiles, TrackingData::AccelerometerProfile* accelerometerProfiles, TrackingData::VelocimeterProfile* velocimeterProfiles, TrackingData::MaskProfile* maskProfiles) override;
         virtual Status SetFWLogControl(const TrackingData::LogControl& logControl) override;
         virtual Status GetFWLog(TrackingData::Log& log) override;
         virtual Status GetCameraIntrinsics(SensorId id, TrackingData::CameraIntrinsics& intrinsics) override;
@@ -74,6 +74,7 @@ namespace perc
         virtual Status SendFrame(const TrackingData::VideoFrame& frame) override;
         virtual Status SendFrame(const TrackingData::GyroFrame& frame) override;
         virtual Status SendFrame(const TrackingData::AccelerometerFrame& frame) override;
+        virtual Status SendFrame(const TrackingData::MaskFrame& frame) override;
         virtual Status ControllerConnect(const TrackingData::ControllerDeviceConnect& device, uint8_t& controllerId) override;
         virtual Status ControllerDisconnect(uint8_t controllerId) override;
         virtual Status ControllerStartCalibration(uint8_t controllerId) override;
@@ -415,5 +416,6 @@ namespace perc
         std::vector<TrackingData::VelocimeterProfile> mVelocimeterProfiles;
         std::vector<TrackingData::AccelerometerProfile> mAccelerometerProfiles;
         std::vector<TrackingData::VideoProfile> mVideoProfiles;
+        std::vector<TrackingData::MaskProfile> mMaskProfiles;
     };
 }

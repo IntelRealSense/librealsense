@@ -305,6 +305,8 @@ EXPORTS
     rs2_set_motion_device_intrinsics
     rs2_reset_to_factory_calibration
     rs2_write_calibration
+    rs2_set_tracking_mask
+    rs2_get_tracking_mask
     rs2_import_localization_map
     rs2_export_localization_map
     rs2_set_static_node

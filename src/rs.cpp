@@ -2283,6 +2283,28 @@ void rs2_write_calibration(const rs2_device* device, rs2_error** error) BEGIN_AP
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
+void rs2_set_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile * profile, const uint8_t * mask, int width, int height, double global_ts_ms, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(profile);
+    VALIDATE_NOT_NULL(mask);
+    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    tm2->set_tracking_mask(profile->profile->get_stream_index(), mask, width, height, global_ts_ms);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile)
+
+void rs2_get_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile * profile, uint8_t ** mask, int * width, int * height, double * global_ts_ms, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(mask);
+    VALIDATE_NOT_NULL(width);
+    VALIDATE_NOT_NULL(height);
+    VALIDATE_NOT_NULL(global_ts_ms);
+    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    tm2->get_tracking_mask(profile->profile->get_stream_index(), mask, width, height, global_ts_ms);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile)
+
 rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);                            

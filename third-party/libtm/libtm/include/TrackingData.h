@@ -66,6 +66,13 @@ namespace perc
         VelocimeterProfileMax = 2,
     };
 
+    enum MaskProfileType
+    {
+        MaskProfile0 = 0,   /* External Sensor index 0 - HMD Mask */
+        MaskProfile1 = 1,   /* External Sensor index 1 - HMD Mask */
+        MaskProfileMax = 2,
+    };
+
     enum SixDofProfileType
     {
         SixDofProfile0 = 0,   /* Source index 0 - HMD 6dof          */
@@ -356,6 +363,16 @@ namespace perc
             const uint8_t* data;   /**< Frame data pointer                                                       */
         };
 
+        class MaskFrame : public TimestampedData {
+        public:
+            MaskFrame() : sensorIndex(0), frameId(0) {};
+            uint8_t sensorIndex;   /**< Zero based index of sensor with the same type within device         */
+            uint32_t frameId;      /**< A running index of frames from every unique sensor, starting from 0 */
+            RawProfile profile;    /**< Frame format profile - includes width, height, stride, pixelFormat       */
+            uint32_t frameLength;  /**< Length of frame below, in bytes, shall be equal to Stride X Height X BPP */
+            const uint8_t* data;   /**< Frame data pointer                                                       */
+        };
+
         class EnableConfig
         {
         public:
@@ -416,6 +433,12 @@ namespace perc
             RawProfile profile; /**< Raw video profile */
         };
 
+        class MaskProfile : public EnableConfig
+        {
+        public:
+            RawProfile profile; /**< Raw video profile */
+        };
+
         class Profile 
         {
         public:
@@ -444,6 +467,15 @@ namespace perc
                     velocimeter[i].outputEnabled = false;
                     velocimeter[i].fps = 0;
                     velocimeter[i].sensorIndex = VelocimeterProfileMax;
+                }
+
+                for (uint8_t i = 0; i < MaskProfileMax; i++)
+                {
+                    mask[i].enabled = false;
+                    mask[i].outputEnabled = false;
+                    mask[i].fps = 0;
+                    mask[i].sensorIndex = MaskProfileMax;
+                    mask[i].profile.set(0, 0, 0, ANY);
                 }
 
                 for (uint8_t i = 0; i < AccelerometerProfileMax; i++)
@@ -492,6 +524,15 @@ namespace perc
                     velocimeter[i].sensorIndex = VelocimeterProfileMax;
                 }
 
+                for (uint8_t i = 0; i < MaskProfileMax; i++)
+                {
+                    mask[i].enabled = false;
+                    mask[i].outputEnabled = false;
+                    mask[i].fps = 0;
+                    mask[i].sensorIndex = MaskProfileMax;
+                    mask[i].profile.set(0, 0, 0, ANY);
+                }
+
                 for (uint8_t i = 0; i < AccelerometerProfileMax; i++)
                 {
                     accelerometer[i].enabled = false;
@@ -536,6 +577,15 @@ namespace perc
                 }
             }
 
+            void set(MaskProfile _mask, bool _enabled, bool _outputEnabled) {
+                if (_mask.sensorIndex < MaskProfileMax)
+                {
+                    mask[_mask.sensorIndex] = _mask;
+                    mask[_mask.sensorIndex].enabled = _enabled;
+                    mask[_mask.sensorIndex].outputEnabled = _outputEnabled;
+                }
+            }
+
             void set(AccelerometerProfile _accelerometer, bool _enabled, bool _outputEnabled) {
                 if (_accelerometer.sensorIndex < AccelerometerProfileMax)
                 {
@@ -558,6 +608,7 @@ namespace perc
             AccelerometerProfile accelerometer[AccelerometerProfileMax]; /**< All supported Accelerometer profiles according to sensor index                            */
             SixDofProfile sixDof[SixDofProfileMax];                      /**< All supported SixDof profiles according to sensor profile (HMD, Controller1, Controlelr2) */
             VelocimeterProfile velocimeter[VelocimeterProfileMax];       /**< All supported Velocimeter profiles                                                        */
+            MaskProfile mask[MaskProfileMax];       /**< All supported Mask profiles                                                        */
             bool playbackEnabled;                                        /**< Enable video playback mode                                                                */
         };
 
@@ -598,7 +649,7 @@ namespace perc
                 Version rom;               /**< Myriad ROM version - only major part is active                                                                 */
             };
 
-            DeviceInfo() : deviceType(0), serialNumber(0), skuInfo(0), numGyroProfile(0), numVelocimeterProfile(0), numAccelerometerProfiles(0), numVideoProfiles(0), eepromLockState(LockStateMax) {};
+            DeviceInfo() : deviceType(0), serialNumber(0), skuInfo(0), numGyroProfile(0), numVelocimeterProfile(0), numAccelerometerProfiles(0), numVideoProfiles(0), numMaskProfiles(0), eepromLockState(LockStateMax) {};
             UsbConnectionDescriptor usbDescriptor; /**< USB Connection Descriptor includes USB info and physical location            */
             DeviceStatus status;                   /**< HW and Host status                                                           */
             DeviceVersion version;                 /**< HW, FW, Host, Central, EEPROM, ROM, interface versions                       */
@@ -608,6 +659,7 @@ namespace perc
             uint8_t  skuInfo;                      /**< 1 for T260 - with ble, 0 for T265 - w/o ble                                  */
             uint8_t  numGyroProfile;               /**< Number of Gyro Supported Profiles returned by Supported RAW Streams          */
             uint8_t  numVelocimeterProfile;        /**< Number of Velocimeter Supported Profiles returned by Supported RAW Streams   */
+            uint8_t  numMaskProfiles;               /**< Number of Mask Supported Profiles returned by Supported RAW Streams   */
             uint8_t  numAccelerometerProfiles;     /**< Number of Accelerometer Supported Profiles returned by Supported RAW Streams */
             uint8_t  numVideoProfiles;             /**< Number of Video Supported Profiles returned by Supported RAW Streams         */
         };

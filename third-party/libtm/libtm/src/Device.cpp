@@ -197,12 +197,16 @@ namespace perc {
                     break;
                 }
 
-                case SensorType::Rssi:
+                case SensorType::Mask:
                 {
+                    TrackingData::MaskProfile p;
+                    p.set(true, false, streams[i].wFramesPerSecond, GET_SENSOR_INDEX(streams[i].bSensorID));
+                    p.profile.set(streams[i].wWidth, streams[i].wHeight, streams[i].wStride, static_cast<PixelFormat>(streams[i].bPixelFormat));
+                    mMaskProfiles.push_back(p);
                     break;
                 }
 
-                case SensorType::Mask:
+                case SensorType::Rssi:
                 {
                     break;
                 }
@@ -642,14 +646,16 @@ namespace perc {
         std::vector<TrackingData::GyroProfile> gyroProfiles;
         std::vector<TrackingData::VelocimeterProfile> velocimeterProfiles;
         std::vector<TrackingData::AccelerometerProfile> accelerometerProfiles;
+        std::vector<TrackingData::MaskProfile> maskProfiles;
         TrackingData::SixDofProfile sixDofProfile;
 
         videoProfiles.resize(deviceInfo.numVideoProfiles);
         gyroProfiles.resize(deviceInfo.numGyroProfile);
         velocimeterProfiles.resize(deviceInfo.numVelocimeterProfile);
         accelerometerProfiles.resize(deviceInfo.numAccelerometerProfiles);
+        maskProfiles.resize(deviceInfo.numMaskProfiles);
 
-        st = this->GetSupportedRawStreams(videoProfiles.data(), gyroProfiles.data(), accelerometerProfiles.data(), velocimeterProfiles.data());
+        st = this->GetSupportedRawStreams(videoProfiles.data(), gyroProfiles.data(), accelerometerProfiles.data(), velocimeterProfiles.data(), maskProfiles.data());
         if (st != Status::SUCCESS)
         {
             DEVICELOGE("Error: Failed getting supported stream (0x%X)", st);
@@ -728,6 +734,20 @@ namespace perc {
                         videoProfiles.erase(it);
                         break;
                     }
+                }
+            }
+        }
+
+        for (uint8_t i = 0; i < MaskProfileMax; i++)
+        {
+            for (auto it = maskProfiles.begin(); it != maskProfiles.end(); ++it)
+            {
+                if ((*it).sensorIndex == i)
+                {
+                    /* Adding the default (first) Mask profile from this Mask index */
+                    profile.set((*it), false, false);
+                    maskProfiles.erase(it);
+                    break;
                 }
             }
         }
@@ -815,6 +835,22 @@ namespace perc {
                 }
             }
 
+            /* Mask Profiles */
+            for (uint8_t i = 0; i < MaskProfileMax; i++)
+            {
+                if (profile->mask[i].enabled)
+                {
+                    profiles[activeProfiles].wFramesPerSecond = profile->mask[i].fps;
+                    profiles[activeProfiles].bOutputMode = profile->mask[i].outputEnabled;
+                    profiles[activeProfiles].wWidth = profile->mask[i].profile.width;
+                    profiles[activeProfiles].wHeight = profile->mask[i].profile.height;
+                    profiles[activeProfiles].wStride = profile->mask[i].profile.stride;
+                    profiles[activeProfiles].bPixelFormat = profile->mask[i].profile.pixelFormat;
+                    profiles[activeProfiles].bSensorID = SET_SENSOR_ID(SensorType::Mask, i);
+                    activeProfiles++;
+                }
+            }
+
             if (activeProfiles > 0)
             {
                 status = SetEnabledRawStreams(profiles, activeProfiles);
@@ -882,7 +918,7 @@ namespace perc {
         return msg.Result == 0 ? Status::SUCCESS : Status::COMMON_ERROR;
     }
 
-    Status Device::GetSupportedRawStreams(TrackingData::VideoProfile* videoProfilesBuffer, TrackingData::GyroProfile* gyroProfilesBuffer, TrackingData::AccelerometerProfile* accelerometerProfilesBuffer, TrackingData::VelocimeterProfile* velocimeterProfilesBuffer)
+    Status Device::GetSupportedRawStreams(TrackingData::VideoProfile* videoProfilesBuffer, TrackingData::GyroProfile* gyroProfilesBuffer, TrackingData::AccelerometerProfile* accelerometerProfilesBuffer, TrackingData::VelocimeterProfile* velocimeterProfilesBuffer, TrackingData::MaskProfile * maskProfilesBuffer)
     {
         unsigned int count = 0;
         for (auto p : mVideoProfiles)
@@ -909,6 +945,12 @@ namespace perc {
             {
                 velocimeterProfilesBuffer[count++] = p;
             }
+        }
+
+        count = 0;
+        for (auto p : mMaskProfiles)
+        {
+            maskProfilesBuffer[count++] = p;
         }
 
         return Status::SUCCESS;
@@ -2353,6 +2395,39 @@ namespace perc {
         return Status::SUCCESS;
     }
 
+    Status Device::SendFrame(const TrackingData::MaskFrame& frame)
+    {
+        std::vector<uint8_t> buf;
+        buf.resize(frame.profile.stride * frame.profile.height + sizeof(bulk_message_mask_stream));
+
+        bulk_message_mask_stream* msg = (bulk_message_mask_stream*)buf.data();
+
+        msg->rawStreamHeader.header.dwLength = (uint32_t)buf.size();
+        msg->rawStreamHeader.header.wMessageID = DEV_SAMPLE;
+        msg->rawStreamHeader.bSensorID = SET_SENSOR_ID(SensorType::Mask, frame.sensorIndex);
+        msg->rawStreamHeader.bReserved = 0;
+        msg->rawStreamHeader.llNanoseconds = frame.timestamp;
+        msg->rawStreamHeader.llArrivalNanoseconds = frame.arrivalTimeStamp;
+        msg->rawStreamHeader.dwFrameId = frame.frameId;
+
+        msg->dwMetadataLength = offsetof(bulk_message_mask_stream, dwFrameLength) - sizeof(msg->dwMetadataLength);
+        msg->dwFrameLength = frame.profile.stride*frame.profile.height;
+        msg->wWidth = frame.profile.width;
+        msg->wHeight = frame.profile.height;
+
+        perc::copy(msg->bMask, frame.data, frame.profile.stride*frame.profile.height);
+
+        int actual;
+        auto rc = libusb_bulk_transfer(mDevice, mStreamEndpoint | TO_DEVICE, buf.data(), (int)buf.size(), &actual, 100);
+        if (rc != 0 || actual == 0)
+        {
+            DEVICELOGE("Error while sending frame to device: %d", rc);
+            return Status::ERROR_USB_TRANSFER;
+        }
+
+        return Status::SUCCESS;
+    }
+
     Status Device::ControllerConnect(const TrackingData::ControllerDeviceConnect& device, uint8_t& controllerId)
     {
         bulk_message_request_controller_device_connect request = {0};
@@ -2813,6 +2888,41 @@ namespace perc {
                             }
                             break;
                         } // end of switch
+
+                        case SensorType::Mask:
+                        {
+                            /* After calling addTask, MaskFrameCompleteTask ptr can be destructed from whoever come last:                               */
+                            /* 1. streamEndpointThread (This function)                                                                                   */
+                            /* 2. Manager::handleEvents                                                                                                  */
+                            /* in case of 1 - The MaskFrameCompleteTask destructor is called inside the brackets (before releasing mFramesBuffersMutex) */
+                            /*                To prevent deadlock we are using recursive_mutex which allows calling lock inside lock in the same thread  */
+                            std::lock_guard<std::recursive_mutex> lg(mFramesBuffersMutex);
+                            if (mFramesBuffersLists.size() > 1)
+                            {
+                                bulk_message_mask_stream* packet = (bulk_message_mask_stream*)mFramesBuffersLists.front().get();
+                                int width = packet->wWidth;
+                                int height = packet->wHeight;
+                                std::shared_ptr<MaskFrameCompleteTask> maskFrameCompleteTask = std::make_shared<MaskFrameCompleteTask>(mListener,
+                                                                                                             mFramesBuffersLists.front(),
+                                                                                                             this,
+                                                                                                             this,
+                                                                                                             header->llNanoseconds + mTM2CorrelatedTimeStampShift,
+                                                                                                             width,
+                                                                                                             height);
+                                std::shared_ptr<CompleteTask> completeTask = maskFrameCompleteTask;
+
+                                TrackingData::MaskFrame* frame = &maskFrameCompleteTask->mMaskFrame;
+
+                                mFramesBuffersLists.pop_front();
+                                mTaskHandler->addTask(completeTask);
+                            }
+                            else
+                            {
+                                /* Todo: Consider allocating more buffers */
+                                DEVICELOGE("No more frame buffers (%d), dropping mask", mFramesBuffersLists.size());
+                            }
+                            break;
+                        }
 
                         case SensorType::Controller:
                         {
@@ -3590,6 +3700,7 @@ namespace perc {
         info.numGyroProfile = (uint8_t)mGyroProfiles.size();
         info.numVelocimeterProfile = (uint8_t)mVelocimeterProfiles.size();
         info.numVideoProfiles = (uint8_t)mVideoProfiles.size();
+        info.numMaskProfiles = (uint8_t)mMaskProfiles.size();
 
         return Status::SUCCESS;
     }

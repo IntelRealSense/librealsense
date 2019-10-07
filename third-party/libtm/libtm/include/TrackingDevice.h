@@ -58,6 +58,14 @@ namespace perc
             virtual void onVelocimeterFrame(OUT TrackingData::VelocimeterFrame& frame) {}
 
             /**
+            * @brief onMaskFrame
+            *        The function will be called once TrackingDevice has a new mask frame
+            *
+            * @param frame - MaskFrame object containing frame
+            */
+            virtual void onMaskFrame(OUT TrackingData::MaskFrame& frame) {}
+
+            /**
             * @brief onControllerDiscoveryEventFrame
             *        The function will be called once TrackingDevice has a new controller discovery event
             *
@@ -198,7 +206,7 @@ namespace perc
          * @param velocimeterProfiles - Velocimeter profile buffer containing all supported velocimeter streams (Buffer size should be according to DeviceInfo.numVelocimeterProfile)
          * @return Status
          */
-        virtual Status GetSupportedRawStreams(OUT TrackingData::VideoProfile* videoProfiles, OUT TrackingData::GyroProfile* gyroProfiles, OUT TrackingData::AccelerometerProfile* accelerometerProfiles, OUT TrackingData::VelocimeterProfile* velocimeterProfiles = nullptr) = 0;
+        virtual Status GetSupportedRawStreams(OUT TrackingData::VideoProfile* videoProfiles, OUT TrackingData::GyroProfile* gyroProfiles, OUT TrackingData::AccelerometerProfile* accelerometerProfiles, OUT TrackingData::VelocimeterProfile* velocimeterProfiles, OUT TrackingData::MaskProfile* maskProfiles) = 0;
 
         /**
         * @brief SetFWLogControl
@@ -532,6 +540,15 @@ namespace perc
         * @return Status
         */
         virtual Status SendFrame(IN const TrackingData::AccelerometerFrame& frame) = 0;
+
+        /**
+        * @brief SendFrame
+        *        Sends mask frame to the device
+        * @param frame - Mask frame
+        *
+        * @return Status
+        */
+        virtual Status SendFrame(IN const TrackingData::MaskFrame& frame) = 0;
 
         /**
         * @brief ControllerConnect

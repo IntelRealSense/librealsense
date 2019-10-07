@@ -372,6 +372,7 @@ std::string sensorToString(perc::SensorType sensorType)
         case  Controller:       return "Controller";
         case  Rssi:             return "Rssi";
         case  Velocimeter:      return "Velocimeter";
+        case  Mask:             return "Mask";
         default:                return "Unknown";
     }
 }

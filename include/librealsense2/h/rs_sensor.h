@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 #include "rs_types.h"
+#include <stdint.h> // uint8_t
 
 /** \brief Read-only strings that can be queried from the device.
    Not all information attributes are available on all camera types.
@@ -575,6 +576,40 @@ void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile*
 */
 void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error);
 
+
+/**
+ * Get the tracking mask. The mask controls regions on which features
+ * can be detected for tracking. Masks are 8x downsampled versions of
+ * the fisheye image normally used for tracking, so for T265/T261 they
+ * should normally be 106 wide by 100 high. The user is responsible
+ * for freeing the returned mask image. The mask pointer will be null
+ * when no mask has been set.
+ * \param[in] sensor    T265 sensor
+ * \param[in] profile   Stream profile identifying the target camera
+ * \param[out] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null. The user is responsible for freeing this memory.
+ * \param[out] width     The width of the mask image. This will be set, even when no mask has yet been set.
+ * \param[out] height    The height of the mask image. This will be set, even when no mask has yet been set.
+ * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_get_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile* profile, uint8_t ** mask, int * width, int * height, double * global_ts_ms, rs2_error ** error);
+
+/**
+ * Set the tracking mask. The mask controls regions on which features
+ * can be detected for tracking. Masks are 8x downsampled versions of
+ * the fisheye image normally used for tracking, so for T265/T261 they
+ * should normally be 106 wide by 100 high. The user is responsible
+ * for freeing the returned mask image. The mask pointer will be null
+ * when no mask has been set.
+ * \param[in] sensor    T265 sensor
+ * \param[in] profile   Stream profile identifying the target camera
+ * \param[in] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null.
+ * \param[in] width     The width of the mask image. Should be the width of the target camera/8
+ * \param[in] height    The height of the mask image. Should be the height of the target camera/8
+ * \param[in] global_ts_ms The timestamp of the mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_set_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile* profile, const uint8_t * mask, int width, int height, double global_ts_ms, rs2_error ** error);
 
 #ifdef __cplusplus
 }

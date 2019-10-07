@@ -35,6 +35,7 @@ namespace perc {
         ERROR_COMPLETE_TASK = 15,
         CONTROLLER_LED_COMPLETE_TASK = 16,
         RELOCALIZATION_EVENT_COMPLETE_TASK = 17,
+        MASK_FRAME_COMPLETE_TASK = 18,
     };
 
     class CompleteTask
@@ -193,6 +194,69 @@ namespace perc {
 
     public:
         TrackingData::VideoFrame mVideoFrame;
+
+    private:
+        TrackingDevice::Listener* mListener;
+        std::shared_ptr<uint8_t> mFrame;
+        FrameBuffersOwner* mFrameBufferOwner;
+        SensorId mId;
+        TrackingDevice* mOwner;
+    };
+
+    class MaskFrameCompleteTask : public CompleteTask
+    {
+    public:
+        MaskFrameCompleteTask(TrackingDevice::Listener* l, std::shared_ptr<uint8_t>& frame, FrameBuffersOwner* frameBufferOwner, TrackingDevice* owner, nsecs_t systemTimeStamp, uint16_t width, uint16_t height) :
+            mFrame(frame), mFrameBufferOwner(frameBufferOwner), mListener(l), mOwner(owner), CompleteTask(MASK_FRAME_COMPLETE_TASK, owner)
+        {
+            bulk_message_mask_stream* frameBuffer = (bulk_message_mask_stream*)mFrame.get();
+            mMaskFrame.data = (uint8_t*)mFrame.get() + sizeof(bulk_message_mask_stream);
+            mMaskFrame.profile.set(width, height, width, PixelFormat::Y8);
+            mMaskFrame.systemTimestamp = systemTimeStamp;
+            mMaskFrame.timestamp = frameBuffer->rawStreamHeader.llNanoseconds;
+            mMaskFrame.arrivalTimeStamp = frameBuffer->rawStreamHeader.llArrivalNanoseconds;
+            mMaskFrame.sensorIndex = GET_SENSOR_INDEX(frameBuffer->rawStreamHeader.bSensorID);
+            mMaskFrame.frameId = frameBuffer->rawStreamHeader.dwFrameId;
+            mMaskFrame.frameLength = frameBuffer->dwFrameLength;
+
+            mId = frameBuffer->rawStreamHeader.bSensorID;
+        }
+        virtual ~MaskFrameCompleteTask()
+        {
+            mFrameBufferOwner->putBufferBack(mId, mFrame);
+        }
+        virtual void complete() override
+        {
+            if (mListener)
+            {
+                static uint32_t latencyEventPerSec = 0;
+                auto start = systemTime();
+                static nsecs_t prevStart = start;
+                mListener->onMaskFrame(mMaskFrame);
+                auto finish = systemTime();
+
+                auto diff = ns2ms(finish - start);
+                if (diff > 0)
+                {
+                    /* Latency event occur */
+                    latencyEventPerSec++;
+                }
+
+                if (ns2ms(start - prevStart) > LATENCY_MAX_TIMEDIFF_MSEC)
+                {
+                    /* 1 sec passed between previous latency check */
+                    if (latencyEventPerSec > LATENCY_MAX_EVENTS_PER_SEC)
+                    {
+                        LOG(mOwner, LOG_WARN, LOG_TAG, __LINE__, "High latency warning (%d msec): %d Mask latency events occurred in the last second, consider onMaskFrame callback optimization to avoid frame drops", diff, latencyEventPerSec);
+                    }
+                    latencyEventPerSec = 0;
+                    prevStart = start;
+                }
+            }
+        }
+
+    public:
+        TrackingData::MaskFrame mMaskFrame;
 
     private:
         TrackingDevice::Listener* mListener;

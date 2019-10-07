@@ -14,6 +14,7 @@
 #include "media/playback/playback_device.h"
 #include "media/ros/ros_reader.h"
 #include "controller_event_serializer.h"
+#include "../../include/librealsense2/hpp/rs_frame.hpp"
 
 using namespace perc;
 using namespace std::chrono;
@@ -625,6 +626,11 @@ namespace librealsense
             }
         }
 
+        // Always enable mask profiles
+        for(auto profile : _tm_supported_profiles.mask) {
+            _tm_active_profiles.set(profile, true, true);
+        }
+
         if (_tm_active_profiles.video[0].enabled == _tm_active_profiles.video[1].enabled &&
             _tm_active_profiles.video[0].outputEnabled != _tm_active_profiles.video[1].outputEnabled)
         {
@@ -1061,6 +1067,49 @@ namespace librealsense
         }
     }
 
+    //mask interface
+    void tm2_sensor::set_tracking_mask(int fisheye_sensor_id, const uint8_t * mask, int width, int height, double global_ts_ms)
+    {
+        if(fisheye_sensor_id != 1 && fisheye_sensor_id != 2)
+            throw io_exception(to_string() << "Unexpected mask sensor id " << fisheye_sensor_id);
+        fisheye_sensor_id -= 1;
+        if(width != _tm_supported_profiles.mask[fisheye_sensor_id].profile.width ||
+           height != _tm_supported_profiles.mask[fisheye_sensor_id].profile.height)
+            throw io_exception(to_string() << "Unexpected tracking mask size " << width << " " << height);
+
+        perc::TrackingData::MaskFrame f;
+        f.profile.width = width;
+        f.profile.height = height;
+        f.profile.stride = width;
+        f.timestamp = global_ts_ms * 1e6; // Nanoseconds
+        f.arrivalTimeStamp = f.timestamp;
+        f.frameId = 0;
+        f.data = mask;
+        auto status = _tm_dev->SendFrame(f);
+        if (status != Status::SUCCESS)
+        {
+            LOG_WARNING("Set mask failed, status =" << (uint32_t)status);
+        }
+    }
+
+    void tm2_sensor::get_tracking_mask(int fisheye_sensor_id, uint8_t ** image, int * width, int * height, double * global_ts_ms)
+    {
+        // 1 based, as usual
+        if(fisheye_sensor_id != 1 && fisheye_sensor_id != 2)
+            throw io_exception(to_string() << "Unexpected mask sensor id " << fisheye_sensor_id);
+        int id = fisheye_sensor_id - 1;
+
+        std::lock_guard<std::mutex> lock(mask_mutex);
+        *width = mask_frames[id].profile.width;
+        *height = mask_frames[id].profile.height;
+
+        if(!mask_buffers[id]) return; // leaves image as null
+
+        int bytes = (*width) * (*height);
+        *image = (uint8_t *)malloc((*width)*(*height));
+        memcpy(*image, mask_buffers[id].get(), bytes);
+        *global_ts_ms = mask_frames[id].timestamp/1.e6; // nanoseconds to ms
+    }
 
     // Tracking listener
     ////////////////////
@@ -1134,6 +1183,18 @@ namespace librealsense
             return;
         }
         _source.invoke_callback(std::move(frame));
+    }
+
+    void tm2_sensor::onMaskFrame(perc::TrackingData::MaskFrame& tm_frame)
+    {
+        std::lock_guard<std::mutex> lock(mask_mutex);
+        int id = tm_frame.sensorIndex;
+        if(!mask_buffers[id])
+            mask_buffers[id] = std::unique_ptr<uint8_t[]>(new uint8_t[tm_frame.profile.stride * tm_frame.profile.height]);
+
+        mask_frames[id] = tm_frame;
+        memcpy(mask_buffers[id].get(), mask_frames[id].data, tm_frame.profile.stride*tm_frame.profile.height);
+        mask_frames[id].data = mask_buffers[id].get();
     }
 
     void tm2_sensor::onAccelerometerFrame(perc::TrackingData::AccelerometerFrame& tm_frame)

@@ -80,6 +80,7 @@ namespace librealsense
         void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
         void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
         void onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt) override;
+        void onMaskFrame(perc::TrackingData::MaskFrame& tm_frame) override;
 
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
@@ -131,6 +132,10 @@ namespace librealsense
         void write_calibration() override;
         void set_extrinsics_to_ref(rs2_stream stream_type, int stream_index, const rs2_extrinsics& extr);
 
+        //mask interface
+        void set_tracking_mask(int fisheye_sensor_id, const uint8_t * mask, int width, int height, double global_ts_ms);
+        void get_tracking_mask(int fisheye_sensor_id, uint8_t ** image, int * width, int * height, double * global_ts_ms);
+
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
@@ -152,6 +157,10 @@ namespace librealsense
         float last_exposure = 200.f;
         float last_gain = 1.f;
         bool manual_exposure = false;
+
+        std::unique_ptr<uint8_t[]> mask_buffers[perc::MaskProfileMax];
+        perc::TrackingData::MaskFrame mask_frames[perc::MaskProfileMax];
+        std::mutex mask_mutex;
 
         template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on, bool invert> friend class tracking_mode_option;
     };
