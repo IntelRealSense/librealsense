@@ -17,8 +17,8 @@ namespace librealsense
                 if(info.cls != RS2_USB_CLASS_HID)
                     continue;
                 platform::hid_device_info device_info;
-                device_info.vid = info.vid;
-                device_info.pid = info.pid;
+                device_info.vid = hexify(info.vid);
+                device_info.pid = hexify(info.pid);
                 device_info.unique_id = info.unique_id;
                 device_info.device_path = info.unique_id;//the device unique_id is the USB port
 
