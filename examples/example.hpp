@@ -391,31 +391,35 @@ public:
     {
         if (!frame) return;
 
-        if (!_gl_handle)
-            glGenTextures(1, &_gl_handle);
-        GLenum err = glGetError();
-
         auto format = frame.get_profile().format();
         auto width = frame.get_width();
         auto height = frame.get_height();
         _stream_type = frame.get_profile().stream_type();
         _stream_index = frame.get_profile().stream_index();
 
+        upload(frame.get_data(), format, width, height);
+    }
+
+    void upload(const void * data, int format, int width, int height)
+    {
+        if (!_gl_handle)
+            glGenTextures(1, &_gl_handle);
+        GLenum err = glGetError();
         glBindTexture(GL_TEXTURE_2D, _gl_handle);
 
         switch (format)
         {
         case RS2_FORMAT_RGB8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, frame.get_data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
         case RS2_FORMAT_RGBA8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.get_data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         case RS2_FORMAT_Y8:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, frame.get_data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
             break;
         case RS2_FORMAT_Y10BPACK:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, frame.get_data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
             break;
         default:
             throw std::runtime_error("The requested format is not supported by this demo!");
@@ -425,7 +429,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -451,6 +455,12 @@ public:
     }
 
     GLuint get_gl_handle() { return _gl_handle; }
+
+    void render(const void * data, int format, int width, int height, const rect & rect, float alpha = 1.f)
+    {
+        upload(data, format, width, height);
+        show(rect.adjust_ratio({ (float)width, (float)height }), alpha);
+    }
 
     void render(const rs2::frame& frame, const rect& rect, float alpha = 1.f)
     {
