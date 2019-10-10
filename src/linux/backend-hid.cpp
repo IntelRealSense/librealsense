@@ -252,7 +252,7 @@ namespace librealsense
                     size_t read_size = 0;
 
                     struct timeval tv = {5,0};
-                    auto val = select(max_fd + 1, &fds, NULL, NULL, &tv);
+                    auto val = select(max_fd + 1, &fds, nullptr, nullptr, &tv);
                     if (val < 0)
                     {
                         // TODO: write to log?
@@ -352,9 +352,9 @@ namespace librealsense
             static const char* suffix_name_field = "name";
             DIR* dir = nullptr;
             struct dirent* ent = nullptr;
-            if ((dir = opendir(_custom_device_path.c_str())) != NULL)
+            if ((dir = opendir(_custom_device_path.c_str())) != nullptr)
             {
-              while ((ent = readdir(dir)) != NULL)
+              while ((ent = readdir(dir)) != nullptr)
               {
                   auto str = std::string(ent->d_name);
                   if (str.find(prefix_feature_name) != std::string::npos ||
@@ -363,9 +363,9 @@ namespace librealsense
                       DIR* report_dir = nullptr;
                       struct dirent* report_ent = nullptr;
                       auto report_path = _custom_device_path + "/" + ent->d_name;
-                      if ((report_dir = opendir(report_path.c_str())) != NULL)
+                      if ((report_dir = opendir(report_path.c_str())) != nullptr)
                       {
-                          while ((report_ent = readdir(report_dir)) != NULL)
+                          while ((report_ent = readdir(report_dir)) != nullptr)
                           {
                               auto report_str = std::string(report_ent->d_name);
                               if (report_str.find(suffix_name_field) != std::string::npos)
@@ -834,13 +834,13 @@ namespace librealsense
 
             // start enumerate the scan elemnts dir.
             dir = opendir(_iio_device_path.c_str());
-            if (dir == NULL)
+            if (dir == nullptr)
             {
                  throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
             }
 
             // verify file format. should include in_ (input) and _en (enable).
-            while ((dir_ent = readdir(dir)) != NULL)
+            while ((dir_ent = readdir(dir)) != nullptr)
             {
                 if (dir_ent->d_type != DT_DIR)
                 {
@@ -865,13 +865,13 @@ namespace librealsense
             auto scan_elements_path = _iio_device_path + "/scan_elements";
             // start enumerate the scan elemnts dir.
             dir = opendir(scan_elements_path.c_str());
-            if (dir == NULL)
+            if (dir == nullptr)
             {
                 throw linux_backend_exception(to_string() << "Failed to open scan_element " << _iio_device_path);
             }
 
             // verify file format. should include in_ (input) and _en (enable).
-            while ((dir_ent = readdir(dir)) != NULL)
+            while ((dir_ent = readdir(dir)) != nullptr)
             {
                 if (dir_ent->d_type != DT_DIR)
                 {
@@ -1107,9 +1107,9 @@ namespace librealsense
             DIR* dir = nullptr;
             struct dirent* ent = nullptr;
             std::vector<std::string> common_sensors;
-            if ((dir = opendir(IIO_ROOT_PATH.c_str())) != NULL)
+            if ((dir = opendir(IIO_ROOT_PATH.c_str())) != nullptr)
             {
-              while ((ent = readdir(dir)) != NULL)
+              while ((ent = readdir(dir)) != nullptr)
               {
                   auto str = std::string(ent->d_name);
                   if (str.find(IIO_DEVICE_PREFIX) != std::string::npos)
@@ -1149,9 +1149,9 @@ namespace librealsense
             std::vector<std::string> custom_sensors;
             dir = nullptr;
             ent = nullptr;
-            if ((dir = opendir(HID_CUSTOM_PATH.c_str())) != NULL)
+            if ((dir = opendir(HID_CUSTOM_PATH.c_str())) != nullptr)
             {
-              while ((ent = readdir(dir)) != NULL)
+              while ((ent = readdir(dir)) != nullptr)
               {
                   auto str = std::string(ent->d_name);
                   if (str.find(prefix_custom_sensor_name) != std::string::npos)
@@ -1189,7 +1189,7 @@ namespace librealsense
             std::string busnum, devnum, devpath, vid, pid, dev_id, dev_name;
             std::ifstream(device_path_str + "name") >> dev_name;
             auto valid = false;
-            for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+            for(auto i=0UL; i < MAX_DEV_PARENT_DIR; ++i)
             {
                 if(std::ifstream(device_path_str + "busnum") >> busnum)
                 {

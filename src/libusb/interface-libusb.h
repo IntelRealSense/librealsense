@@ -18,7 +18,7 @@ namespace librealsense
         public:
             usb_interface_libusb(libusb_interface inf);
 
-            virtual ~usb_interface_libusb();
+            virtual ~usb_interface_libusb() override;
 
             virtual uint8_t get_number() const override { return _desc.bInterfaceNumber; }
             virtual uint8_t get_class() const override { return _desc.bInterfaceClass; }

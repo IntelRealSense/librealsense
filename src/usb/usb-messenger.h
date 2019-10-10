@@ -5,10 +5,6 @@
 
 #include "usb-endpoint.h"
 
-#include <vector>
-#include <memory>
-#include <stdint.h>
-
 namespace librealsense
 {
     namespace platform
