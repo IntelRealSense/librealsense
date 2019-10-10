@@ -117,7 +117,7 @@ namespace librealsense
 
         void rs_hid_device::poll_for_interrupt()
         {
-            unsigned char buffer[SIZE_OF_FRAME];
+            unsigned char buffer[SIZE_OF_HID_IMU_FRAME];
             uint32_t bytesRead;
 
             auto ep = get_hid_endpoint();
@@ -125,7 +125,7 @@ namespace librealsense
 
             if (res == RS2_USB_STATUS_SUCCESS)
             {
-                REALSENSE_HID_REPORT report = *(REALSENSE_HID_REPORT*)buffer;
+                REALSENSE_HID_REPORT report = *(reinterpret_cast<REALSENSE_HID_REPORT*>(buffer));
                 _queue.enqueue(std::move(report));
             }
         }
