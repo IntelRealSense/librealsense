@@ -142,10 +142,10 @@ namespace librealsense
 
                 })!= _configured_profiles.end())
                 {
-                    sensor_data data;
+                    sensor_data data{};
                     data.sensor = {_id_to_sensor[report.reportId]};
 
-                    hid_data hid;
+                    hid_data hid{};
                     hid.x = report.x;
                     hid.y = report.y;
                     hid.z = report.z;
