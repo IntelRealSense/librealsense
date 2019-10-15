@@ -15,7 +15,6 @@ Expected output:
 For a static camera, the pose output is expected to move in the direction of the (artificial) wheel odometry measurements (taking into account the extrinsics in the calibration file).
 The measurements are given a high weight/confidence, i.e. low measurement noise covariance, in the calibration file to make the effect visible.
 If the camera is partially occluded the effect will be even more visible (also for a smaller wheel odometry confidence / higher measurement noise covariance) because of the lack of visual feedback. Please note that if the camera is *fully* occluded the pose estimation will switch to 3DOF, estimate only orientation, and prevent any changes in the position.
-
 """
 
 import pyrealsense2 as rs
