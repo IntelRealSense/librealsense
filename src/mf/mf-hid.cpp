@@ -207,6 +207,7 @@ namespace librealsense
 
                 pSensor->GetFriendlyName(&fName);
                 d.sensor.name = CW2A(fName);
+                SysFreeString(fName); // free string after it was copied to sensor data
 
                 d.fo.pixels = &data;
                 d.fo.metadata = &meta_data;
