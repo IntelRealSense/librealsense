@@ -256,7 +256,7 @@ void init_frame(py::module &m) {
         .def("size", &rs2::frameset::size, "Return the size of the frameset")
         .def("__len__", &rs2::frameset::size, "Return the size of the frameset")
         .def("foreach", [](const rs2::frameset& self, std::function<void(rs2::frame)> callable) {
-            self.foreach(callable);
+            self.foreach_rs(callable);
         }, "Extract internal frame handles from the frameset and invoke the action function", "callable"_a)
         .def("__getitem__", &rs2::frameset::operator[])
         .def("get_depth_frame", &rs2::frameset::get_depth_frame, "Retrieve the first depth frame, if no frame is found, return an empty frame instance.")

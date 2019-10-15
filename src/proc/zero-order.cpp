@@ -488,7 +488,7 @@ namespace librealsense
     {
         if (auto composite = input.as<rs2::frameset>())
         {
-            composite.foreach([&](rs2::frame f) 
+            composite.foreach_rs([&](rs2::frame f)
             {
                 if (f.get_profile().stream_type() != RS2_STREAM_DEPTH && f.get_profile().stream_type() != RS2_STREAM_INFRARED && f.get_profile().stream_type() != RS2_STREAM_CONFIDENCE && 
                     results.size() > 0)
