@@ -18,7 +18,7 @@ namespace rs2
     {
     public:
         firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed) 
-            : process_manager("Firmware Update", model),
+            : process_manager("Firmware Update"), _model(model),
               _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
 
     private:
@@ -32,6 +32,7 @@ namespace rs2
         context _ctx;
         std::vector<uint8_t> _fw;
         bool _is_signed;
+        device_model& _model;
     };
 
     struct fw_update_notification_model : public process_notification_model
