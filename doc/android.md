@@ -22,3 +22,8 @@ These two examples focus on the grudle configuration and contains minimal code.
 Follow the [Java example](../wrappers/android/examples/java_example/readme.md) or [Native example](../wrappers/android/examples/native_example/readme.md) for more details.
 You can also [build RealSense AAR from source](../wrappers/android/readme.md) and add the generated AAR as a dependency as described [here](https://developer.android.com/studio/projects/android-library#AddDependency).
 Graphical Java examples such as 'capture', 'recording' and 'playback' are available in the examples folder as part of the Android wrapper project.
+
+Below is an [example](https://play.google.com/store/apps/details?id=com.intel.realsense.camera) of an application with librealsense on the android platform. 
+
+![](img/realsense-android.png)
+
