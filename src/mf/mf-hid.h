@@ -27,6 +27,7 @@ namespace librealsense
                 }
 
                 _name = CW2A(fName);
+                SysFreeString(fName);
             };
 
             const std::string& get_sensor_name() const { return _name; }
