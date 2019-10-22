@@ -167,13 +167,12 @@ namespace librealsense
 
     float l500_depth_sensor::read_znorm()
     {
-        const int baseline_znorm = 0xa00e0b08;
-        auto res = _owner->_hw_monitor->send(command(ivcam2::fw_cmd::MRD, baseline_znorm, baseline_znorm + 4));
-        if (res.size() < 1)
+        auto intrin = get_intrinsic();
+        if (intrin.resolution.num_of_resolutions < 1)
         {
-            throw std::runtime_error("Invalid result size!");
+            throw std::runtime_error("Invalid intrinsics!");
         }
-        auto znorm = *(float*)res.data();
+        auto znorm = intrin.resolution.intrinsic_resolution[0].world.znorm;
         return 1/znorm* MM_TO_METER;
     }
 
