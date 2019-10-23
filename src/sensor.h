@@ -33,9 +33,9 @@ namespace librealsense
     {
         virtual ~frame_timestamp_reader() {}
 
-        virtual double get_frame_timestamp(std::shared_ptr<frame_interface> frame) = 0;
-        virtual unsigned long long get_frame_counter(std::shared_ptr<frame_interface> frame) const = 0;
-        virtual rs2_timestamp_domain get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const = 0;
+        virtual double get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) = 0;
+        virtual unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const = 0;
+        virtual rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const = 0;
         virtual void reset() = 0;
     };
 
@@ -186,13 +186,13 @@ namespace librealsense
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(std::shared_ptr<frame_interface> frame) override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-        bool has_metadata(std::shared_ptr<frame_interface> frame) const;
+        bool has_metadata(const std::shared_ptr<frame_interface>& frame) const;
 
-        unsigned long long get_frame_counter(std::shared_ptr<frame_interface> frame) const override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
     class hid_sensor : public sensor_base
@@ -201,8 +201,8 @@ namespace librealsense
         explicit hid_sensor(std::shared_ptr<platform::hid_device> hid_device,
                             std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
                             std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
-                            std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
-                            std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+                            const std::map<rs2_stream, std::map<unsigned, unsigned>>& fps_and_sampling_frequency_per_rs2_stream,
+                            const std::vector<std::pair<std::string, stream_profile>>& sensor_name_and_hid_profiles,
                             device* dev);
 
         ~hid_sensor() override;

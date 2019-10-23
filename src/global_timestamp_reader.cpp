@@ -211,7 +211,7 @@ namespace librealsense
     {
     }
 
-    double global_timestamp_reader::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    double global_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         double frame_time = _device_timestamp_reader->get_frame_timestamp(frame);
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(frame);
@@ -227,12 +227,12 @@ namespace librealsense
     }
 
 
-    unsigned long long global_timestamp_reader::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long global_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         return _device_timestamp_reader->get_frame_counter(frame);
     }
 
-    rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(frame);
         return (_option_is_enabled->is_true() && _ts_is_ready && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;

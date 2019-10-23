@@ -86,9 +86,9 @@ namespace librealsense
                                 std::shared_ptr<time_diff_keeper> timediff,
                                 std::shared_ptr<global_time_option>);
 
-        rs2_time_t get_frame_timestamp(std::shared_ptr<frame_interface> frame) override;
-        unsigned long long get_frame_counter(std::shared_ptr<frame_interface> frame) const override;
-        rs2_timestamp_domain get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         void reset() override;
 
     private:

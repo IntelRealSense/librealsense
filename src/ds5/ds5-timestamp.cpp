@@ -21,7 +21,7 @@ namespace librealsense
         reset();
     }
 
-    bool ds5_timestamp_reader_from_metadata::has_metadata(std::shared_ptr<frame_interface> frame)
+    bool ds5_timestamp_reader_from_metadata::has_metadata(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -49,7 +49,7 @@ namespace librealsense
         return false;
     }
 
-    rs2_time_t ds5_timestamp_reader_from_metadata::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    rs2_time_t ds5_timestamp_reader_from_metadata::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -85,7 +85,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long ds5_timestamp_reader_from_metadata::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long ds5_timestamp_reader_from_metadata::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -120,7 +120,7 @@ namespace librealsense
         }
     }
 
-    rs2_timestamp_domain ds5_timestamp_reader_from_metadata::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain ds5_timestamp_reader_from_metadata::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
@@ -146,13 +146,13 @@ namespace librealsense
         }
     }
 
-    rs2_time_t ds5_timestamp_reader::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    rs2_time_t ds5_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         return _ts->get_time();
     }
 
-    unsigned long long ds5_timestamp_reader::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long ds5_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
@@ -162,7 +162,7 @@ namespace librealsense
         return ++counter[pin_index];
     }
 
-    rs2_timestamp_domain ds5_timestamp_reader::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain ds5_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
@@ -182,7 +182,7 @@ namespace librealsense
         }
     }
 
-    rs2_time_t ds5_custom_hid_timestamp_reader::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    rs2_time_t ds5_custom_hid_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         static const uint8_t timestamp_offset = 17;
@@ -200,18 +200,18 @@ namespace librealsense
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
 
-    bool ds5_custom_hid_timestamp_reader::has_metadata(std::shared_ptr<frame_interface> frame) const
+    bool ds5_custom_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         return true;
     }
 
-    unsigned long long ds5_custom_hid_timestamp_reader::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long ds5_custom_hid_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         return ++counter.front();
     }
 
-    rs2_timestamp_domain ds5_custom_hid_timestamp_reader::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain ds5_custom_hid_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
     }

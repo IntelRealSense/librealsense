@@ -494,7 +494,7 @@ namespace librealsense
     }
 
 
-    rs2_time_t sr300_timestamp_reader_from_metadata::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    rs2_time_t sr300_timestamp_reader_from_metadata::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -528,7 +528,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long sr300_timestamp_reader_from_metadata::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long sr300_timestamp_reader_from_metadata::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -555,7 +555,7 @@ namespace librealsense
         ts_wrap.reset();
     }
 
-    rs2_timestamp_domain sr300_timestamp_reader_from_metadata::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain sr300_timestamp_reader_from_metadata::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 

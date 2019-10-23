@@ -611,8 +611,8 @@ namespace librealsense
 
     hid_sensor::hid_sensor(std::shared_ptr<platform::hid_device> hid_device, std::unique_ptr<frame_timestamp_reader> hid_iio_timestamp_reader,
         std::unique_ptr<frame_timestamp_reader> custom_hid_timestamp_reader,
-        std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream,
-        std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles,
+        const std::map<rs2_stream, std::map<unsigned, unsigned>>& fps_and_sampling_frequency_per_rs2_stream,
+        const std::vector<std::pair<std::string, stream_profile>>& sensor_name_and_hid_profiles,
         device* dev)
     : sensor_base("Raw Motion Module", dev, (recommended_proccesing_blocks_interface*)this), _sensor_name_and_hid_profiles(sensor_name_and_hid_profiles),
       _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
@@ -912,7 +912,7 @@ namespace librealsense
         }
     }
 
-    rs2_time_t iio_hid_timestamp_reader::get_frame_timestamp(std::shared_ptr<frame_interface> frame)
+    rs2_time_t iio_hid_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -944,7 +944,7 @@ namespace librealsense
         return std::chrono::duration<rs2_time_t, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    bool iio_hid_timestamp_reader::has_metadata(std::shared_ptr<frame_interface> frame) const
+    bool iio_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
 
@@ -955,7 +955,7 @@ namespace librealsense
         return false;
     }
 
-    unsigned long long iio_hid_timestamp_reader::get_frame_counter(std::shared_ptr<frame_interface> frame) const
+    unsigned long long iio_hid_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -966,7 +966,7 @@ namespace librealsense
         return ++counter[index];
     }
 
-    rs2_timestamp_domain iio_hid_timestamp_reader::get_frame_timestamp_domain(std::shared_ptr<frame_interface> frame) const
+    rs2_timestamp_domain iio_hid_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         if (has_metadata(frame))
         {
