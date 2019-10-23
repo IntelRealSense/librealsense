@@ -321,8 +321,15 @@ namespace rs2
         std::sort(fill_rates.begin(), fill_rates.end());
         std::sort(rmses.begin(), rmses.end());
 
-        auto median_fill_rate = fill_rates[fill_rates.size() / 2];
-        auto median_rms = rmses[rmses.size() / 2];
+        float median_fill_rate, median_rms;
+        if (fill_rates.empty())
+            median_fill_rate = 0;
+        else
+            median_fill_rate = fill_rates[fill_rates.size() / 2];
+        if (rmses.empty())
+            median_rms = 0;
+        else
+            median_rms = rmses[rmses.size() / 2];
 
         _viewer.draw_plane = show_plane;
 
