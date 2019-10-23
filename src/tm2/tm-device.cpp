@@ -1643,7 +1643,11 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, productIdStr);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "T200");
 
-        std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.port);
+        std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + std::to_string(info.usbDescriptor.bus) + std::string(" port_") + std::to_string(info.usbDescriptor.portChain[0]);
+        for(int i=1; i<info.usbDescriptor.portChainDepth;i++)
+        {
+            device_path += "-" + std::to_string(info.usbDescriptor.portChain[i]);
+        }
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
 
         _sensor = std::make_shared<tm2_sensor>(this, dev);
