@@ -28,16 +28,16 @@ namespace librealsense
         struct usb_device_list
         {
             usb_device_list(bool unref_devices = false) :
-                _list(NULL), _unref_devices(unref_devices), _count(0)
+                _list(nullptr), _count(0), _unref_devices(unref_devices)
             {
                 auto ctx = usb_context::instance().get();
-                _count = libusb_get_device_list(ctx, &_list);
+                _count = size_t(libusb_get_device_list(ctx, &_list));
             }
             ~usb_device_list()
             {
                 libusb_free_device_list(_list, _unref_devices);
             }
-            libusb_device* get(uint8_t index) { return index < _count ? _list[index] : NULL; }
+            libusb_device* get(uint8_t index) { return index < _count ? _list[index] : nullptr; }
             size_t count() { return _count; }
 
         private:
@@ -56,11 +56,11 @@ namespace librealsense
             std::stringstream port_path;
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
-            auto speed = libusb_get_device_speed(usb_device);
+            //auto speed = libusb_get_device_speed(usb_device);
             libusb_device_descriptor dev_desc;
-            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
+            libusb_get_device_descriptor(usb_device,&dev_desc);
 
-            for (size_t i = 0; i < port_count; ++i)
+            for (auto i = 0; i < port_count; ++i)
             {
                 port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
             }
@@ -71,37 +71,41 @@ namespace librealsense
         std::vector<usb_device_info> get_subdevices(libusb_device* device, libusb_device_descriptor desc)
         {
             std::vector<usb_device_info> rv;
-            for (ssize_t c = 0; c < desc.bNumConfigurations; ++c)
+            for (uint8_t c = 0; c < desc.bNumConfigurations; ++c)
             {
-                libusb_config_descriptor *config;
+                libusb_config_descriptor *config=nullptr;
                 auto rc = libusb_get_config_descriptor(device, c, &config);
-
-                for (ssize_t i = 0; i < config->bNumInterfaces; ++i)
+                if (LIBUSB_SUCCESS==rc)
                 {
-                    auto inf = config->interface[i];
-                    
-                    //avoid publish streaming interfaces TODO:MK
-                    if(inf.altsetting->bInterfaceSubClass == 2)
-                        continue;
-                    // when device is in DFU state, two USB devices are detected, one of RS2_USB_CLASS_VENDOR_SPECIFIC (255) class
-                    // and the other of RS2_USB_CLASS_APPLICATION_SPECIFIC (254) class.
-                    // in order to avoid listing two usb devices for a single physical device we ignore the application specific class
-                    // https://www.usb.org/defined-class-codes#anchor_BaseClassFEh
-                    if(inf.altsetting->bInterfaceClass == RS2_USB_CLASS_APPLICATION_SPECIFIC)
-                        continue;
-                    
-                    usb_device_info info{};
-                    info.id = get_usb_descriptors(device);
-                    info.unique_id = get_usb_descriptors(device);
-                    info.conn_spec = usb_spec(desc.bcdUSB);
-                    info.vid = desc.idVendor;
-                    info.pid = desc.idProduct;
-                    info.mi = i;
-                    info.cls = usb_class(inf.altsetting->bInterfaceClass);
-                    rv.push_back(info);
-                }
+                    for (uint8_t i = 0; i < config->bNumInterfaces; ++i)
+                    {
+                        auto inf = config->interface[i];
 
-                libusb_free_config_descriptor(config);
+                        //avoid publish streaming interfaces TODO:MK
+                        if(inf.altsetting->bInterfaceSubClass == 2)
+                            continue;
+                        // when device is in DFU state, two USB devices are detected, one of RS2_USB_CLASS_VENDOR_SPECIFIC (255) class
+                        // and the other of RS2_USB_CLASS_APPLICATION_SPECIFIC (254) class.
+                        // in order to avoid listing two usb devices for a single physical device we ignore the application specific class
+                        // https://www.usb.org/defined-class-codes#anchor_BaseClassFEh
+                        if(inf.altsetting->bInterfaceClass == RS2_USB_CLASS_APPLICATION_SPECIFIC)
+                            continue;
+
+                        usb_device_info info{};
+                        info.id = get_usb_descriptors(device);
+                        info.unique_id = get_usb_descriptors(device);
+                        info.conn_spec = usb_spec(desc.bcdUSB);
+                        info.vid = desc.idVendor;
+                        info.pid = desc.idProduct;
+                        info.mi = i;
+                        info.cls = usb_class(inf.altsetting->bInterfaceClass);
+                        rv.push_back(info);
+                    }
+
+                    libusb_free_config_descriptor(config);
+                }
+                else
+                    LOG_WARNING("failed to read USB config descriptor: error = " << std::dec << rc);
             }
             return rv;
         }
@@ -111,17 +115,22 @@ namespace librealsense
             std::vector<usb_device_info> rv;
             usb_device_list list;
 
-            for (ssize_t idx = 0; idx < list.count(); ++idx)
+            for (uint8_t idx = 0; idx < list.count(); ++idx)
             {
                 auto device = list.get(idx);
-                if(device == NULL)
+                if(device == nullptr)
                     continue;
-                libusb_device_descriptor desc = { 0 };
+                libusb_device_descriptor desc{};
 
 
                 auto rc = libusb_get_device_descriptor(device, &desc);
-                auto sd = get_subdevices(device, desc);
-                rv.insert(rv.end(), sd.begin(), sd.end());
+                if (LIBUSB_SUCCESS==rc)
+                {
+                    auto sd = get_subdevices(device, desc);
+                    rv.insert(rv.end(), sd.begin(), sd.end());
+                }
+                else
+                     LOG_WARNING("failed to read USB device descriptor: error = " << std::dec << rc);
             }
             return rv;
         }
@@ -130,26 +139,30 @@ namespace librealsense
         {
             usb_device_list list;
 
-            for (ssize_t idx = 0; idx < list.count(); ++idx)
+            for (uint8_t idx = 0; idx < list.count(); ++idx)
             {
                 auto device = list.get(idx);
-                if(device == NULL || get_usb_descriptors(device) != info.id)
+                if((device == nullptr) || (get_usb_descriptors(device) != info.id))
                     continue;
 
-                libusb_device_descriptor desc = { 0 };
+                libusb_device_descriptor desc{};
                 auto rc = libusb_get_device_descriptor(device, &desc);
 
-                try
+                if (LIBUSB_SUCCESS==rc)
                 {
-                    return std::make_shared<usb_device_libusb>(device, desc, info);
+                    try
+                    {
+                        return std::make_shared<usb_device_libusb>(device, desc, info);
+                    }
+                    catch(std::exception e)
+                    {
+                        LOG_WARNING("failed to create usb device at index: %d" << idx);
+                    }
                 }
-                catch(std::exception e)
-                {
-                    LOG_WARNING("failed to create usb device at index: %d" << idx);
-                }
+                else
+                     LOG_WARNING("failed to read USB device descriptor: error = " << std::dec << rc);
             }
             return nullptr;
         }
-
     }
 }

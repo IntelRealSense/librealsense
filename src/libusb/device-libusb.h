@@ -3,16 +3,7 @@
 
 #pragma once
 
-#include "usb/usb-types.h"
 #include "messenger-libusb.h"
-#include "usb/usb-device.h"
-
-#include <string>
-#include <regex>
-#include <sstream>
-#include <mutex>
-
-#include <libusb.h>
 
 namespace librealsense
 {

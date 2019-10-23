@@ -37,7 +37,7 @@ namespace librealsense
         class handle_libusb
         {
         public:
-            handle_libusb() : _interface(-1), _handle(NULL) {}
+            handle_libusb() : _interface(-1), _handle(nullptr) {}
             usb_status open(libusb_device* device, uint8_t interface)
             {
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -71,14 +71,14 @@ namespace librealsense
         private:
             void release()
             {
-                if(_handle != NULL)
+                if(_handle != nullptr)
                 {
                     if(_interface != -1)
                         libusb_release_interface(_handle, _interface);
                     libusb_close(_handle);
                 }
                 _interface = -1;
-                _handle = NULL;
+                _handle = nullptr;
             }
 
             int _interface;

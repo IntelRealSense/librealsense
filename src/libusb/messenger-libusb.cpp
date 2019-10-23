@@ -1,23 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "messenger-libusb.h"
-#include "device-libusb.h"
-#include "usb/usb-enumerator.h"
-#include "hw-monitor.h"
-#include "endpoint-libusb.h"
-#include "interface-libusb.h"
-#include "libuvc/uvc_types.h"
 #include "handle-libusb.h"
+#include "device-libusb.h"
 
-#include <string>
-#include <regex>
-#include <sstream>
-#include <mutex>
 
-#define INTERRUPT_BUFFER_SIZE 1024
-#define CLEAR_FEATURE 0x01
-#define UVC_FEATURE 0x02
+const int CLEAR_FEATURE = 0x01;
+const int UVC_FEATURE  = 0x02;
 
 namespace librealsense
 {
@@ -41,8 +30,8 @@ namespace librealsense
             int request = CLEAR_FEATURE;
             int value = 0;
             int ep = endpoint->get_address();
-            uint8_t* buffer = NULL;
-            int length = 0;
+            uint8_t* buffer = nullptr;
+            uint32_t length = 0;
             usb_status rv = control_transfer(requestType, request, value, ep, buffer, length, transferred, timeout_ms);
             if(rv == RS2_USB_STATUS_SUCCESS)
                 LOG_DEBUG("USB pipe " << ep << " reset successfully");
@@ -72,10 +61,10 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << (int)errno);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << int(errno));
                 return libusb_status_to_rs(sts);
             }
-            transferred = sts;
+            transferred = uint32_t(sts);
             return RS2_USB_STATUS_SUCCESS;
         }
 
@@ -87,14 +76,15 @@ namespace librealsense
                 return h_sts;
             auto h = dh.get_handle();
             int actual_length = 0;
-            auto sts = libusb_bulk_transfer(h, endpoint->get_address(), buffer, length, &actual_length, timeout_ms);
+            auto sts = libusb_bulk_transfer(h, endpoint->get_address(), buffer, int(length), &actual_length, timeout_ms);
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("bulk_transfer returned error, endpoint: " << (int)endpoint->get_address() << ", error: " << strerr << ", number: " << (int)errno);
+                LOG_WARNING("bulk_transfer returned error, endpoint: 0x" << std::hex << int(endpoint->get_address()) << std::dec
+                            << ", error: " << strerr << ", err. num: " << int(errno));
                 return libusb_status_to_rs(sts);
             }
-            transferred = actual_length;
+            transferred = uint32_t(actual_length);
             return RS2_USB_STATUS_SUCCESS;
         }
     }
