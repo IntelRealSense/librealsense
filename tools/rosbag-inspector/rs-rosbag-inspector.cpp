@@ -82,6 +82,7 @@ private:
     void init_window()
     {
         glfwMakeContextCurrent(_window);
+        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         glfwSetWindowUserPointer(_window, &files);
 
         glfwSetDropCallback(_window, [](GLFWwindow* w, int count, const char** paths)
