@@ -26,7 +26,7 @@ namespace librealsense
         using namespace ds;
 
         auto pid = group.uvc_devices.front().pid;
-        if ((_fw_version >= firmware_version("5.5.8.0")) && (pid != RS_USB2_PID))
+        if ((_fw_version >= firmware_version("5.5.8.0")) && (!val_in_range(pid, { RS_USB2_PID, RS465_PID })))
         {
             get_depth_sensor().register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                 std::make_shared<uvc_xu_option<uint8_t>>(get_depth_sensor(),
@@ -34,7 +34,7 @@ namespace librealsense
                                                          DS5_ENABLE_AUTO_WHITE_BALANCE,
                                                          "Enable Auto White Balance"));
 
-            // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
+            // RS400 rolling-shutter SKUs allow to get low-quality color image from the same viewport as the depth
             get_depth_sensor().register_pixel_format(pf_uyvyl);
             get_depth_sensor().register_pixel_format(pf_rgb888);
             get_depth_sensor().register_pixel_format(pf_w10);
