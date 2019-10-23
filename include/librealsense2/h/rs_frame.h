@@ -256,6 +256,21 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
     int new_bpp, int new_width, int new_height, int new_stride, rs2_extension frame_type, rs2_error** error);
 
 /**
+* Allocate new motion frame using a frame-source provided form a processing block
+* \param[in] source      Frame pool to allocate the frame from
+* \param[in] new_stream  New stream profile to assign to newly created frame
+* \param[in] original    A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable)
+* \param[in] new_width   New value for width for the allocated frame
+* \param[in] new_height  New value for height for the allocated frame
+* \param[in] frame_type  New value for frame type for the allocated frame
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return                reference to a newly allocated frame, must be released with release_frame
+*                        memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store
+*/
+rs2_frame* rs2_allocate_synthetic_motion_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
+    int new_width, int new_height, rs2_extension frame_type, rs2_error** error);
+
+/**
 * Allocate new points frame using a frame-source provided from a processing block
 * \param[in] source      Frame pool to allocate the frame from
 * \param[in] new_stream  New stream profile to assign to newly created frame

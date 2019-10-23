@@ -204,7 +204,7 @@ namespace librealsense
 
             void enable_stream(rs2_stream stream, int index, uint32_t width, uint32_t height, rs2_format format, uint32_t fps)
             {
-                _requests[{stream, index}] = stream_profile{ stream, index, width, height, fps, format };
+                _requests[{stream, index}] = stream_profile{ format, stream, index, width, height, fps };
                 require_all = true;
             }
 

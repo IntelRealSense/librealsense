@@ -175,32 +175,10 @@ namespace librealsense
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsic& accel,
-                                                       const ds::imu_intrinsic& gyro,
                                                        std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
-                                                       on_before_frame_callback frame_callback,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro), _depth_to_imu(**depth_to_imu)
-    {
-        mm_ep->register_on_before_frame_callback(
-            [this, frame_callback](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-            {
-                if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                {
-                    auto xyz = (float3*)(fr->get_frame_data());
-
-                    if (stream == RS2_STREAM_ACCEL)
-                        *xyz = (_accel.sensitivity * (*xyz)) - _accel.bias;
-
-                    if (stream == RS2_STREAM_GYRO)
-                        *xyz = _gyro.sensitivity * (*xyz) - _gyro.bias;
-                }
-
-                // Align IMU axes to the established Coordinates System
-                if (frame_callback)
-                    frame_callback(stream, fr, std::move(callback));
-            });
-    }
+        : option_base(opt_range), _is_enabled(true), _depth_to_imu(**depth_to_imu)
+    {}
 
     void enable_auto_exposure_option::set(float value)
     {
@@ -232,7 +210,7 @@ namespace librealsense
         return _auto_exposure_state->get_enable_auto_exposure();
     }
 
-    enable_auto_exposure_option::enable_auto_exposure_option(uvc_sensor* fisheye_ep,
+    enable_auto_exposure_option::enable_auto_exposure_option(synthetic_sensor* fisheye_ep,
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
@@ -240,19 +218,7 @@ namespace librealsense
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
-    {
-        fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
-        {
-            if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
-                return;
-
-            ((frame*)f)->additional_data.fisheye_ae_mode = true;
-
-            f->acquire();
-            _auto_exposure->add_frame(f, std::move(callback));
-        });
-    }
+    {}
 
     auto_exposure_mode_option::auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,

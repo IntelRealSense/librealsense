@@ -3,26 +3,42 @@
 
 #include "l500-color.h"
 #include "l500-private.h"
+#include "proc/identity-processing-block.h"
+#include "proc/color-formats-converter.h"
 #include <cstddef>
 
 namespace librealsense
 {
     using namespace ivcam2;
 
-    std::shared_ptr<uvc_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)
+    std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format = {
+        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV}
+    };
+
+    std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream = {
+        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+    };
+
+    std::shared_ptr<synthetic_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)
     {
         auto&& backend = ctx->get_backend();
 
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ivcam2::l500_timestamp_reader_from_metadata(backend.create_time_service()));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto color_ep = std::make_shared<l500_color_sensor>(this, ctx->get_backend().create_uvc_device(color_devices_info.front()),
+        auto raw_color_ep = std::make_shared<uvc_sensor>("RGB Sensor", ctx->get_backend().create_uvc_device(color_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
-            ctx);
+            this);
+        auto color_ep = std::make_shared<l500_color_sensor>(this, raw_color_ep, ctx, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream);
 
-        color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-        color_ep->register_pixel_format(pf_yuy2);
-        color_ep->register_pixel_format(pf_yuyv);
-
+        // processing blocks
+        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_RGB8); });
+        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_RGBA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_RGBA8); });
+        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_BGR8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_BGR8); });
+        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_BGRA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_BGRA8); });
+        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_Y16, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_Y16); });
+        color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_COLOR));
+        
+        // options
         color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
         color_ep->register_pu(RS2_OPTION_CONTRAST);
@@ -33,8 +49,10 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
         color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
-        auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
-        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
+        auto white_balance_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_WHITE_BALANCE);
+        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
         color_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
         color_ep->register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
         color_ep->register_option(RS2_OPTION_WHITE_BALANCE,
@@ -42,8 +60,8 @@ namespace librealsense
                 white_balance_option,
                 auto_white_balance_option));
 
-        auto exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_EXPOSURE);
-        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        auto exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_EXPOSURE);
+        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
         color_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
         color_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
         color_ep->register_option(RS2_OPTION_EXPOSURE,
@@ -52,14 +70,13 @@ namespace librealsense
                 auto_exposure_option));
 
         color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+            std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
                 std::map<float, std::string>{ { 0.f, "Disabled"},
                 { 1.f, "50Hz" },
                 { 2.f, "60Hz" },
                 { 3.f, "Auto" }, }));
 
-        color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
-
+        // metadata
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_rgb_normal_mode, intel_capture_timing);
@@ -82,7 +99,6 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
             [](rs2_metadata_type param) { return (param != 1); }));
-
         color_ep->register_metadata(RS2_FRAME_METADATA_BRIGHTNESS, make_attribute_parser(&md_rgb_control::brightness, md_rgb_control_attributes::brightness_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_CONTRAST, make_attribute_parser(&md_rgb_control::contrast, md_rgb_control_attributes::contrast_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_SATURATION, make_attribute_parser(&md_rgb_control::saturation, md_rgb_control_attributes::saturation_attribute, md_prop_offset));
@@ -94,6 +110,7 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE, make_attribute_parser(&md_rgb_control::manual_wb, md_rgb_control_attributes::manual_wb_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         return color_ep;
     }

@@ -2,13 +2,14 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "core/streaming.h"
 
 #include <algorithm>
 #include <iomanip>
 #include <numeric>
 #include <fstream>
 #include <cmath>
+
+#include "core/streaming.h"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
 #define STRCASE(T, X) case RS2_##T##_##X: {\
@@ -318,6 +319,11 @@ namespace librealsense
             CASE(Y10BPACK)
             CASE(DISTANCE)
             CASE(MJPEG)
+            CASE(Y8I)
+            CASE(Y12I)
+            CASE(INZI)
+            CASE(INVI)
+            CASE(W10)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

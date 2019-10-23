@@ -31,12 +31,18 @@ namespace librealsense
     class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:
-        std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
+        std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
                                                         const std::vector<platform::uvc_device_info>& all_device_infos);
 
-        uvc_sensor& get_depth_sensor()
+        synthetic_sensor& get_depth_sensor()
         {
-            return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx));
+            return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx));
+        }
+
+        uvc_sensor& get_raw_depth_sensor()
+        {
+            synthetic_sensor& depth_sensor = get_depth_sensor();
+            return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
         ds5_device(std::shared_ptr<context> ctx,
@@ -94,7 +100,7 @@ namespace librealsense
         ds5u_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
-        std::shared_ptr<uvc_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
+        std::shared_ptr<synthetic_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
 
     protected:

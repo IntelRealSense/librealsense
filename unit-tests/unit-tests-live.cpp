@@ -10,6 +10,9 @@
 #include "../include/librealsense2/rs_advanced_mode.hpp"
 #include <librealsense2/hpp/rs_types.hpp>
 #include <librealsense2/hpp/rs_frame.hpp>
+#include "core/streaming.h"
+#include "stream.h"
+#include "context.h"
 #include <iostream>
 #include <chrono>
 #include <ctime>
@@ -17,6 +20,83 @@
 #include <librealsense2/rsutil.h>
 
 using namespace rs2;
+
+TEST_CASE("Sensor refactoring", "[live]") {
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        for (auto dev : list)
+        {
+            disable_sensitive_options_for(dev);
+
+            int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+
+            auto sensors = dev.query_sensors();
+            
+            for (int i = 1; i < sensors.size(); i++)
+            {
+                auto s = sensors[i];
+                auto profiles = s.get_stream_profiles();
+
+                // validate no duplicate profiles
+                std::vector<librealsense::stream_profile_interface*> sp_list;
+                for (auto&& p : profiles)
+                {
+                    auto sp = p.get()->profile;
+                    sp_list.push_back(sp);
+                }
+
+                for (auto sp : sp_list)
+                {
+                    REQUIRE(std::find_if(sp_list.begin(), sp_list.end(), [&sp](auto other_sp) {
+                        auto be_sp = dynamic_cast<librealsense::stream_profile_base*>(sp)->get_backend_profile();
+                        auto be_other_sp = dynamic_cast<librealsense::stream_profile_base*>(other_sp)->get_backend_profile();
+
+                        return ((sp != other_sp) &&
+                            (be_sp.width == be_other_sp.width) &&
+                            (be_sp.height == be_other_sp.height) &&
+                            (be_sp.format == be_other_sp.format) &&
+                            (be_sp.fps == be_other_sp.fps) &&
+                            (sp->get_stream_index() == other_sp->get_stream_index()) &&
+                            (sp->get_stream_type() == other_sp->get_stream_type()));
+                    }) == sp_list.end());
+                }
+
+                // validate both profiles configured and retrieved match
+                for (auto p : profiles)
+                {
+                    s.open(p);
+
+                    rs2::frame frm;
+                    s.start([&frm](rs2::frame f) {
+                        frm = f;
+                    });
+
+                    for (int i = 1; i > 0; i--)
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                        if (frm)
+                        {
+                            auto frame_sp = frm.get_profile();
+                            std::cout << "      configured stream profile " << rs2_format_to_string(p.format()) << " " << rs2_stream_to_string(p.stream_type()) << " idx" << p.stream_index() << std::endl;
+                            std::cout << " retrieved frame stream profile " << rs2_format_to_string(frame_sp.format()) << " " << rs2_stream_to_string(frame_sp.stream_type()) << " idx" << frame_sp.stream_index() << std::endl;
+
+                            REQUIRE(p == frm.get_profile());
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    }
+
+                    s.stop();
+                    s.close();
+                }
+            }
+        }
+    }
+}
 
 TEST_CASE("Sync sanity", "[live]") {
 

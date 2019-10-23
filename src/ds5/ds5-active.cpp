@@ -28,7 +28,7 @@ namespace librealsense
         auto pid = group.uvc_devices.front().pid;
         if (pid != RS_USB2_PID)
         {
-            auto& depth_ep = get_depth_sensor();
+            auto& depth_ep = get_raw_depth_sensor();
             auto emitter_enabled = std::make_shared<emitter_option>(depth_ep);
             depth_ep.register_option(RS2_OPTION_EMITTER_ENABLED, emitter_enabled);
 

@@ -179,9 +179,9 @@ int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t
     }
 }
 
-uvc_sensor& device::get_uvc_sensor(int sub)
+synthetic_sensor& device::get_uvc_sensor(int sub)
 {
-    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
+    return dynamic_cast<synthetic_sensor&>(*_sensors[sub]);
 }
 
 size_t device::get_sensors_count() const
