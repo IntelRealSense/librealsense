@@ -28,7 +28,7 @@ namespace librealsense
         using namespace ds;
 
         auto pid = group.uvc_devices.front().pid;
-        if ((_fw_version >= firmware_version("5.5.8.0")) && (pid != RS_USB2_PID))
+        if ((_fw_version >= firmware_version("5.5.8.0")) && (!val_in_range(pid, { RS_USB2_PID, RS465_PID })))
         {
             auto& depth_ep = get_depth_sensor();
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
@@ -49,7 +49,6 @@ namespace librealsense
             depth_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
-
         }
 
         get_depth_sensor().unregister_option(RS2_OPTION_EMITTER_ON_OFF);
