@@ -1766,6 +1766,17 @@ namespace std {
                 ^ (hash<uint32_t>()(k.format));
         }
     };
+
+	template <>
+	struct hash<rs2_format>
+	{
+		size_t operator()(const rs2_format& f) const
+		{
+			using std::hash;
+
+			return hash<uint32_t>()(f);
+		}
+	};
 }
 
 template<class T>

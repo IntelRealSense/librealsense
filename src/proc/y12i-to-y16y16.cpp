@@ -21,7 +21,7 @@ namespace librealsense
     }
 
     y12i_to_y16y16::y12i_to_y16y16(int left_idx, int right_idx)
-        : y12i_to_y16y16("Y12I to Y16L Y16R Transform", left_idx, right_idx) {};
+        : y12i_to_y16y16("Y12I to Y16L Y16R Transform", left_idx, right_idx) {}
 
     y12i_to_y16y16::y12i_to_y16y16(const char * name, int left_idx, int right_idx)
         : interleaved_functional_processing_block(name, RS2_FORMAT_Y12I, RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 1,

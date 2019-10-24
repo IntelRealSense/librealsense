@@ -1203,7 +1203,8 @@ namespace librealsense
         auto&& target_profiles = _source_to_target_profiles_map[source_profile];
 
         // find the closest target profile to the source profile, if there is none, just take the first.
-        auto best_match = std::find_if(target_profiles.begin(), target_profiles.end(), [source_profile](auto sp)
+        auto best_match = std::find_if(target_profiles.begin(), target_profiles.end(),
+			[source_profile](const std::shared_ptr<stream_profile_interface>& sp)
         {
             return source_profile->get_format() == sp->get_format();
         });
@@ -1266,7 +1267,7 @@ namespace librealsense
             // mark as handled resolved requests
             for (auto&& req : best_reqs)
             {
-                const auto&& matching_req_predicate = [&req](auto sp) {
+                const auto&& matching_req_predicate = [&req](const std::shared_ptr<stream_profile_interface>& sp) {
                     return to_profile(req.get()) == to_profile(sp.get());
                 };
                 unhandled_reqs.erase(std::remove_if(begin(unhandled_reqs), end(unhandled_reqs), matching_req_predicate));

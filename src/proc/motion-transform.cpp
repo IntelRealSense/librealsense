@@ -53,7 +53,7 @@ namespace librealsense
 
     rs2::frame motion_transform::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        auto& ret = functional_processing_block::process_frame(source, f);
+        auto&& ret = functional_processing_block::process_frame(source, f);
         correct_motion(&ret);
 
         return ret;

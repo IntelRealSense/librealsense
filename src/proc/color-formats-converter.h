@@ -7,7 +7,7 @@
 
 namespace librealsense
 {
-    class color_converter : public functional_processing_block
+    class LRS_EXTENSION_API color_converter : public functional_processing_block
     {
     protected:
         color_converter(const char* name, rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
