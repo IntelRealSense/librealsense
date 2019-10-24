@@ -141,7 +141,7 @@ namespace librealsense
     };
 
     // process frames with a given function
-    class functional_processing_block : public stream_filter_processing_block
+    class LRS_EXTENSION_API functional_processing_block : public stream_filter_processing_block
     {
     public:
         functional_processing_block(const char* name, rs2_format target_format, rs2_stream target_stream = RS2_STREAM_ANY, rs2_extension extension_type = RS2_EXTENSION_VIDEO_FRAME);
