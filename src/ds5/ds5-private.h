@@ -8,9 +8,9 @@
 #include "fw-update/fw-update-unsigned.h"
 
 #include <map>
+#include <unordered_map>
 #include <iomanip>
 #include <string>
-
 
 namespace librealsense
 {

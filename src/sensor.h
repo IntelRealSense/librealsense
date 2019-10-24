@@ -151,13 +151,15 @@ namespace librealsense
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
 
+	protected:
+		void add_source_profiles_missing_data();
+
     private:
         stream_profiles resolve_requests(const stream_profiles& requests);
         std::shared_ptr<stream_profile_interface> filter_frame_by_requests(const frame_interface* f);
         void sort_profiles(stream_profiles * profiles);
         std::pair<std::shared_ptr<processing_block_factory>, stream_profiles> find_requests_best_pb_match(const stream_profiles& sp);
         void add_source_profile_missing_data(std::shared_ptr<stream_profile_interface>& source_profile);
-        void add_source_profiles_missing_data();
         bool is_duplicated_profile(const std::shared_ptr<stream_profile_interface>& duplicate, const stream_profiles& profiles);
         std::shared_ptr<stream_profile_interface> clone_profile(const std::shared_ptr<stream_profile_interface>& profile);
         void register_processing_block_options(const processing_block& pb);

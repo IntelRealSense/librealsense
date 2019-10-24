@@ -161,8 +161,8 @@ namespace librealsense
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-            auto results = synthetic_sensor::init_stream_profiles();
-            for (auto p : results)
+            auto&& results = synthetic_sensor::init_stream_profiles();
+            for (auto&& p : results)
             {
                 // Register stream types
                 if (p->get_stream_type() == RS2_STREAM_DEPTH)
@@ -179,9 +179,9 @@ namespace librealsense
                 }
 
                 // Register intrinsics
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                auto profile = to_profile(p.get());
+                const auto&& profile = to_profile(p.get());
                 std::weak_ptr<l500_depth_sensor> wp =
                     std::dynamic_pointer_cast<l500_depth_sensor>(this->shared_from_this());
 
@@ -194,10 +194,10 @@ namespace librealsense
                         return rs2_intrinsics{};
                 });
             }
+			add_source_profiles_missing_data();
 
             return results;
         }
-
         
 
         float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }

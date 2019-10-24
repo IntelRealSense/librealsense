@@ -1305,7 +1305,6 @@ namespace librealsense
     void synthetic_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
-        add_source_profiles_missing_data();
 
         const auto&& resolved_req = resolve_requests(requests);
 

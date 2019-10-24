@@ -94,9 +94,9 @@ namespace librealsense
             {
                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-                auto results = synthetic_sensor::init_stream_profiles();
+                auto&& results = synthetic_sensor::init_stream_profiles();
 
-                for (auto p : results)
+                for (auto&& p : results)
                 {
                     // Register stream types
                     if (p->get_stream_type() == RS2_STREAM_COLOR)
@@ -105,9 +105,8 @@ namespace librealsense
                     }
 
                     // Register intrinsics
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-
-                    auto profile = to_profile(p.get());
+                    auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<l500_color_sensor> wp =
                         std::dynamic_pointer_cast<l500_color_sensor>(this->shared_from_this());
                     video->set_intrinsics([profile, wp]()
@@ -119,6 +118,7 @@ namespace librealsense
                             return rs2_intrinsics{};
                     });
                 }
+				add_source_profiles_missing_data();
 
                 return results;
             }

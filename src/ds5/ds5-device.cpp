@@ -328,23 +328,9 @@ namespace librealsense
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-            auto results = synthetic_sensor::init_stream_profiles();
+            auto&& results = synthetic_sensor::init_stream_profiles();
 
-            auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
-            auto rolling_shutter_dev = dynamic_cast<const ds5_nonmonochrome*>(&get_device());
-
-            std::vector< video_stream_profile_interface*> depth_candidates;
-            std::vector< video_stream_profile_interface*> infrared_candidates;
-
-            auto candidate = [](video_stream_profile_interface* prof, platform::stream_profile tgt, rs2_stream stream, int streamindex) -> bool
-            {
-                return ((tgt.width == prof->get_width()) && (tgt.height == prof->get_height()) &&
-                    (tgt.format == RS2_FORMAT_ANY || tgt.format == prof->get_format()) &&
-                    (stream == RS2_STREAM_ANY || stream == prof->get_stream_type()) &&
-                    (tgt.fps == prof->get_framerate()) && (streamindex == prof->get_stream_index()));
-            };
-
-            for (auto p : results)
+            for (auto&& p : results)
             {
                 // Register stream types
                 if (p->get_stream_type() == RS2_STREAM_DEPTH)
@@ -359,12 +345,12 @@ namespace librealsense
                 {
                     assign_stream(_owner->_right_ir_stream, p);
                 }
-                auto vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto&& vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
-                    auto profile = to_profile(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
                         std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
                     vid_profile->set_intrinsics([profile, wp]()
@@ -377,13 +363,7 @@ namespace librealsense
                     });
                 }
             }
-            auto dev = dynamic_cast<const ds5_device*>(&get_device());
-            auto dev_name = (dev) ? dev->get_info(RS2_CAMERA_INFO_NAME) : "";
-
-            auto cmp = [](const video_stream_profile_interface* l, const video_stream_profile_interface* r) -> bool
-            {
-                return ((l->get_width() < r->get_width()) || (l->get_height() < r->get_height()));
-            };
+			add_source_profiles_missing_data();
 
             return results;
         }
@@ -436,9 +416,9 @@ namespace librealsense
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-            auto results = synthetic_sensor::init_stream_profiles();
+            auto&& results = synthetic_sensor::init_stream_profiles();
 
-            for (auto p : results)
+            for (auto&& p : results)
             {
                 // Register stream types
                 if (p->get_stream_type() == RS2_STREAM_DEPTH)
@@ -453,12 +433,12 @@ namespace librealsense
                 {
                     assign_stream(_owner->_right_ir_stream, p);
                 }
-                auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                 // Register intrinsics
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
-                    auto profile = to_profile(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp = std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
                     video->set_intrinsics([profile, wp]()
                     {
@@ -470,6 +450,7 @@ namespace librealsense
                     });
                 }
             }
+			add_source_profiles_missing_data();
 
             return results;
         }
