@@ -14,7 +14,7 @@ namespace librealsense
             functional_processing_block(name, target_format, target_stream, RS2_EXTENSION_VIDEO_FRAME) {};
     };
 
-    class yuy2_converter : public color_converter
+    class LRS_EXTENSION_API yuy2_converter : public color_converter
     {
     public:
         yuy2_converter(rs2_format target_format) :
@@ -26,7 +26,7 @@ namespace librealsense
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 
-    class uyvy_converter : public color_converter
+    class LRS_EXTENSION_API uyvy_converter : public color_converter
     {
     public:
         uyvy_converter(rs2_format target_format, rs2_stream target_stream = RS2_STREAM_COLOR) :
@@ -38,7 +38,7 @@ namespace librealsense
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 
-    class mjpeg_converter : public color_converter
+    class LRS_EXTENSION_API mjpeg_converter : public color_converter
     {
     public:
         mjpeg_converter(rs2_format target_format) :
@@ -50,7 +50,7 @@ namespace librealsense
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 
-    class bgr_to_rgb : public color_converter
+    class LRS_EXTENSION_API bgr_to_rgb : public color_converter
     {
     public:
         bgr_to_rgb() :
