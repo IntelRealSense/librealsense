@@ -1,0 +1,157 @@
+From 841562ff76d57f0506d13434427353a0e3c39441 Mon Sep 17 00:00:00 2001
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Date: Sun, 27 Oct 2019 16:31:54 +0200
+Subject: [PATCH] On master: Debugging ucvvideo -select_alternative_interface
+
+(cherry picked from commit 2dbde25d30a724c80bf6bd3c5e1b26271dcc3659)
+---
+ drivers/media/usb/uvc/uvc_video.c        | 37 ++++++++++++++++++++++++
+ drivers/media/v4l2-core/videobuf2-core.c | 11 +++++++
+ 2 files changed, 48 insertions(+)
+
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index 20fd204a8b2f..23f4df73e3e1 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -638,6 +638,14 @@ void uvc_video_clock_update(struct uvc_streaming *stream,
+ 	if (!uvc_hw_timestamps_param)
+ 		return;
+ 
++	/*
++	 * We will get called from __vb2_queue_cancel() if there are buffers
++	 * done but not dequeued by the user, but the sample array has already
++	 * been released at that time. Just bail out in that case.
++	 */
++	if (!clock->samples)
++		return;
++
+ 	spin_lock_irqsave(&clock->lock, flags);
+ 
+ 	if (clock->count < clock->size)
+@@ -983,6 +991,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
+ {
+ 	__u8 fid;
+ 
++	uvc_trace(UVC_TRACE_FRAME, "uvc_video_decode_start " "\n");
+ 	/* Sanity checks:
+ 	 * - packet must be at least 2 bytes long
+ 	 * - bHeaderLength value must be at least 2 bytes (see above)
+@@ -1253,6 +1262,10 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 				}
+ 				buf = uvc_queue_next_buffer(&stream->queue,buf);
+ 			}
++			else
++			{
++				uvc_trace(UVC_TRACE_FRAME, "uvc_video_decode_start returned with EAGAIN uvc_queue_next_buffer was skipped\n");
++			}
+ 		} while (ret == -EAGAIN);
+ 
+ 		/* If an error occurred skip the rest of the payload. */
+@@ -1291,12 +1304,26 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+ 				}
+ 				buf = uvc_queue_next_buffer(&stream->queue, buf);
+ 			}
++			else
++			{
++				uvc_trace(UVC_TRACE_FRAME, "uvc_queue_next_buffer skipped: buf->state!=UVC_BUF_STATE_READY : %d\n", buf->state);
++			}
++		}
++		else
++		{
++			uvc_trace(UVC_TRACE_FRAME, "!! !! Skipping uvc_video_decode_end when stream->bulk.skip_payload=%d, buf==null? %d\n", stream->bulk.skip_payload,NULL==buf);
+ 		}
+ 
+ 		stream->bulk.header_size = 0;
+ 		stream->bulk.skip_payload = 0;
+ 		stream->bulk.payload_size = 0;
+ 	}
++	else
++	{
++		uvc_trace(UVC_TRACE_FRAME, "uvc_video_decode_end skipped: urb->actual_length= %u, stream->bulk.payload_size=%u \n",
++			urb->actual_length, stream->bulk.payload_size);
++	}
++	
+ }
+ 
+ static void uvc_video_encode_bulk(struct urb *urb, struct uvc_streaming *stream,
+@@ -1374,6 +1401,7 @@ static void uvc_video_complete(struct urb *urb)
+ 				       queue);
+ 	spin_unlock_irqrestore(&queue->irqlock, flags);
+ 
++	uvc_trace(UVC_TRACE_STATUS, "uvc_video_complete: stream->decode\n");
+ 	stream->decode(urb, stream, buf);
+ 
+ 	if ((ret = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+@@ -1583,7 +1611,10 @@ static int uvc_init_video_bulk(struct uvc_streaming *stream,
+ 
+ 	npackets = uvc_alloc_urb_buffers(stream, size, psize, gfp_flags);
+ 	if (npackets == 0)
++	{
++		uvc_printk(KERN_ERR, "Failed in uvc_alloc_urb_buffers, allocated buffers  = 0 ");
+ 		return -ENOMEM;
++	}
+ 
+ 	size = npackets * psize;
+ 
+@@ -1685,9 +1716,14 @@ static int uvc_init_video(struct uvc_streaming *stream, gfp_t gfp_flags)
+ 
+ 		ret = usb_set_interface(stream->dev->udev, intfnum, altsetting);
+ 		if (ret < 0)
++		{
++			uvc_printk(KERN_ERR, "uvc_init_video: usb_set_interface failed ret = %d", ret);
+ 			return ret;
++		}
+ 
+ 		ret = uvc_init_video_isoc(stream, best_ep, gfp_flags);
++		uvc_printk(KERN_INFO, "uvc_init_video: called uvc_init_video_isoc ret = %d", ret);
++
+ 	} else {
+ 		/* Bulk endpoint, proceed to URB initialization. */
+ 		ep = uvc_find_endpoint(&intf->altsetting[0],
+@@ -1696,6 +1732,7 @@ static int uvc_init_video(struct uvc_streaming *stream, gfp_t gfp_flags)
+ 			return -EIO;
+ 
+ 		ret = uvc_init_video_bulk(stream, ep, gfp_flags);
++		uvc_printk(KERN_INFO, "uvc_init_video: called uvc_init_video_bulk ret = %d", ret);
+ 	}
+ 
+ 	if (ret < 0)
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 8ce9c63dfc59..b7fe2ff0670d 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -1727,6 +1727,9 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
+ {
+ 	int ret;
+ 
++	pr_info("Ev: vb2_core_streamon!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
++	//printk(KERN_ERR "Ev: vb2_core_streamon!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
++
+ 	if (type != q->type) {
+ 		dprintk(1, "invalid stream type\n");
+ 		return -EINVAL;
+@@ -1759,6 +1762,12 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
+ 			return ret;
+ 		}
+ 	}
++	else
++	{
++		dprintk(1, "Ev: vb2_core_streamon failed, requested=%d allocateed q->queued_count=%d \n",
++			q->min_buffers_needed, q->queued_count);
++	}
++	
+ 
+ 	q->streaming = 1;
+ 
+@@ -1790,6 +1799,8 @@ EXPORT_SYMBOL_GPL(vb2_queue_error);
+ 
+ int vb2_core_streamoff(struct vb2_queue *q, unsigned int type)
+ {
++	pr_info("Ev: vb2_core_streamoff!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
++	//printk(KERN_ERR "Ev: vb2_core_streamoff!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+ 	if (type != q->type) {
+ 		dprintk(1, "invalid stream type\n");
+ 		return -EINVAL;
+-- 
+2.23.0
+

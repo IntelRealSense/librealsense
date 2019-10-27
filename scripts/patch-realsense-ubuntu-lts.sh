@@ -53,10 +53,11 @@ fi
 
 
 # Get the linux kernel and change into source tree
-[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git --depth 1 ./${kernel_name}
+#[ ! -d ${kernel_name} ] && git clone -b $kernel_branch git://kernel.ubuntu.com/ubuntu/ubuntu-${ubuntu_codename}.git --depth 1 ./${kernel_name}
 cd ${kernel_name}
 
 # Verify that there are no trailing changes., warn the user to make corrective action if needed
+#if [ $(git status | grep 'modified:' | wc -l) -le -1 ];
 if [ $(git status | grep 'modified:' | wc -l) -ne 0 ];
 then
 	echo -e "\e[36mThe kernel has modified files:\e[0m"
@@ -72,8 +73,8 @@ then
 		exit 1
 	else
 		echo -e "\e[0m"
-		echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
-		git fetch origin $kernel_branch --depth 1
+		##echo -e "\e[32mUpdate the folder content with the latest from mainline branch\e[0m"
+		##git fetch origin $kernel_branch --depth 1
 		printf "Resetting local changes in %s folder\n " ${kernel_name}
 		git reset --hard $kernel_branch
 	fi
@@ -85,6 +86,7 @@ k_maj_min=$((${kernel_version[0]}*100 + ${kernel_version[1]}))
 
 #Check if we need to apply patches or get reload stock drivers (Developers' option)
 [ "$#" -ne 0 -a "$1" == "reset" ] && reset_driver=1 || reset_driver=0
+#reset_driver=0
 
 if [ $reset_driver -eq 1 ];
 then 
@@ -107,6 +109,8 @@ else
 		echo -e "\e[32mRetrofit uvc bug fix enabled with 4.18+\e[0m"
 		patch -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
 	fi
+	echo -e "\e[32mApplying streamoff hotfix patch in videobuf2-core\e[0m"
+	patch -p1 < ../scripts/01-Backport-streamoff-vb2-core-hotfix.patch
 fi
 
 # Copy configuration
@@ -149,13 +153,26 @@ sudo cp $KBASE/drivers/media/usb/uvc/uvcvideo.ko ~/$LINUX_BRANCH-uvcvideo.ko
 sudo cp $KBASE/drivers/iio/accel/hid-sensor-accel-3d.ko ~/$LINUX_BRANCH-hid-sensor-accel-3d.ko
 sudo cp $KBASE/drivers/iio/gyro/hid-sensor-gyro-3d.ko ~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko
 sudo cp $KBASE/drivers/media/v4l2-core/videodev.ko ~/$LINUX_BRANCH-videodev.ko
+#sudo cp $KBASE/drivers/media/v4l2-core/v4l2-common.ko ~/$LINUX_BRANCH-v4l2-common.ko
+sudo cp $KBASE/drivers/media/v4l2-core/videobuf2-v4l2.ko ~/$LINUX_BRANCH-videobuf2-v4l2.ko
+sudo cp $KBASE/drivers/media/v4l2-core/videobuf2-core.ko ~/$LINUX_BRANCH-videobuf2-core.ko
+#sudo cp $KBASE/drivers/media/v4l2-core/videobuf-core.ko ~/$LINUX_BRANCH-videobuf-core.ko
+#sudo cp $KBASE/drivers/media/v4l2-core/videobuf-vmalloc.ko ~/$LINUX_BRANCH-videobuf-vmalloc.ko
 
 echo -e "\e[32mPatched kernels modules were created successfully\n\e[0m"
 
 # Load the newly-built modules
 # As a precausion start with unloading the core uvcvideo:
 try_unload_module uvcvideo
+try_unload_module videobuf2_core
+try_unload_module videodev
+
 try_module_insert videodev				~/$LINUX_BRANCH-videodev.ko 			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videodev.ko
+try_module_insert videobuf2_core		~/$LINUX_BRANCH-videobuf2-core.ko		/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-core.ko
+try_module_insert videobuf2_v4l2		~/$LINUX_BRANCH-videobuf2-v4l2.ko		/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf2-v4l2.ko
+#try_module_insert v4l2-common			~/$LINUX_BRANCH-v4l2-common.ko			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/v4l2-common.ko
+#try_module_insert videobuf-core		~/$LINUX_BRANCH-videobuf-core			/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf-core.ko
+#try_module_insert videobuf-vmalloc		~/$LINUX_BRANCH-videobuf-vmalloc		/lib/modules/`uname -r`/kernel/drivers/media/v4l2-core/videobuf-vmalloc.ko
 try_module_insert uvcvideo				~/$LINUX_BRANCH-uvcvideo.ko 			/lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
 try_module_insert hid_sensor_accel_3d 	~/$LINUX_BRANCH-hid-sensor-accel-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
 try_module_insert hid_sensor_gyro_3d	~/$LINUX_BRANCH-hid-sensor-gyro-3d.ko 	/lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
