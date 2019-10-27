@@ -1375,20 +1375,20 @@ namespace librealsense
 
         // After processing callback
         const auto&& output_cb = make_callback([&](frame_holder f) {
-            std::vector<frame_interface*> frames_to_process;
-            frames_to_process.push_back(f.frame);
+            std::vector<frame_interface*> processed_frames;
+            processed_frames.push_back(f.frame);
 
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
                 for (int i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
-                    frames_to_process.push_back(composite->get_frame(i));
+                    processed_frames.push_back(composite->get_frame(i));
                 }
             }
 
             // process only frames which aren't composite.
-            for (auto&& fr : frames_to_process)
+            for (auto&& fr : processed_frames)
             {
                 if (!dynamic_cast<composite_frame*>(fr))
                 {

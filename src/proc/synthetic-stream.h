@@ -206,6 +206,8 @@ namespace librealsense
         bool should_process(const rs2::frame& frame) override;
     };
 
+    // Sequential chained processing blocks
+    // The order of the processing blocks defines the execution flow.
     class LRS_EXTENSION_API composite_processing_block : public processing_block
     {
     public:
