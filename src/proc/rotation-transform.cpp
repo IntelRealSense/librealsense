@@ -13,7 +13,7 @@ namespace librealsense
 {
     //// Unpacking routines ////
     template<size_t SIZE>
-    void unpack_l500_image_optimized(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_image_optimized(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         auto width_out = height;
         auto height_out = width;
@@ -43,7 +43,7 @@ namespace librealsense
     }
 
     template<size_t SIZE>
-    void unpack_l500_image(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_image(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         auto width_out = height;
         auto height_out = width;
@@ -60,7 +60,7 @@ namespace librealsense
         }
     }
 
-    void unpack_confidence(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotate_confidence(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
 #pragma pack (push, 1)
         struct lsb_msb
@@ -70,7 +70,7 @@ namespace librealsense
         };
 #pragma pack(pop)
 
-        unpack_l500_image<1>(dest, source, width, height, actual_size);
+        rotate_image<1>(dest, source, width, height, actual_size);
         auto out = dest[0];
         for (int i = (width - 1), out_i = ((width - 1) * 2); i >= 0; --i, out_i -= 2)
         {
@@ -113,34 +113,21 @@ namespace librealsense
         }
     }
 
-    depth_rotation_transform::depth_rotation_transform() :
-        depth_rotation_transform("Depth Rotation Transform")
-    {}
-
-    depth_rotation_transform::depth_rotation_transform(const char * name)
-        : rotation_transform(name, RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME)
-    {}
-
-    void depth_rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         int rotated_width = height;
         int rotated_height = width;
-        unpack_l500_image_optimized<2>(dest, source, rotated_width, rotated_height, actual_size);
-    }
-
-    ir_rotation_transform::ir_rotation_transform() :
-        ir_rotation_transform("IR Rotation Transform")
-    {}
-
-    ir_rotation_transform::ir_rotation_transform(const char * name)
-        : rotation_transform(name, RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME)
-    {}
-
-    void ir_rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
-    {
-        int rotated_width = height;
-        int rotated_height = width;
-        unpack_l500_image_optimized<1>(dest, source, rotated_width, rotated_height, actual_size);
+        switch (_target_bpp)
+        {
+        case 1:
+            rotate_image_optimized<1>(dest, source, rotated_width, rotated_height, actual_size);
+            break;
+        case 2:
+            rotate_image_optimized<2>(dest, source, rotated_width, rotated_height, actual_size);
+            break;
+        default:
+            LOG_ERROR("Rotation transform does not support format: " + std::string(rs2_format_to_string(_target_format)));
+        }
     }
 
     confidence_rotation_transform::confidence_rotation_transform() :
@@ -157,6 +144,6 @@ namespace librealsense
         int rotated_height = width;
 
         // Workaround: the height is given by bytes and not by pixels.
-        unpack_confidence(dest, source, rotated_width / 2, rotated_height, actual_size);
+        rotate_confidence(dest, source, rotated_width / 2, rotated_height, actual_size);
     }
 }

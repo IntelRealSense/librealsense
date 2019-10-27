@@ -16,25 +16,6 @@ namespace librealsense
 
     protected:
         void init_profiles_info(const rs2::frame* f) override;
-    };
-
-    class depth_rotation_transform : public rotation_transform
-    {
-    public:
-        depth_rotation_transform();
-
-    protected:
-        depth_rotation_transform(const char* name);
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
-    };
-
-    class ir_rotation_transform : public rotation_transform
-    {
-    public:
-        ir_rotation_transform();
-
-    protected:
-        ir_rotation_transform(const char* name);
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 
