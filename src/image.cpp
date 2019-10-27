@@ -2,14 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "image.h"
-#include "image-avx.h"
-
-#ifdef RS2_USE_CUDA
-#include "cuda/cuda-conversion.cuh"
-#endif
-#ifdef __SSSE3__
-#include <tmmintrin.h> // For SSSE3 intrinsics
-#endif
 
 #pragma pack(push, 1) // All structs in this file are assumed to be byte-packed
 namespace librealsense
