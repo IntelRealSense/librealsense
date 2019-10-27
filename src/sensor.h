@@ -80,6 +80,9 @@ namespace librealsense
         std::shared_ptr<std::map<uint32_t, rs2_format>>& get_fourcc_to_rs2_format_map();
         std::shared_ptr<std::map<uint32_t, rs2_stream>>& get_fourcc_to_rs2_stream_map();
 
+        rs2_format fourcc_to_rs2_format(uint32_t format) const;
+        rs2_stream fourcc_to_rs2_stream(uint32_t fourcc_format) const;
+
     protected:
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
@@ -167,15 +170,15 @@ namespace librealsense
 
         std::mutex _synthetic_configure_lock;
 
-        frame_callback_ptr post_process_callback;
+        frame_callback_ptr _post_process_callback;
         std::shared_ptr<sensor_base> _raw_sensor;
         std::vector<std::shared_ptr<processing_block_factory>> _pb_factories;
-        std::unordered_map<processing_block_factory*, stream_profiles> pbf_supported_profiles;
+        std::unordered_map<processing_block_factory*, stream_profiles> _pbf_supported_profiles;
         std::unordered_map<std::shared_ptr<stream_profile_interface>, std::shared_ptr<processing_block>> _profiles_to_processing_block;
         std::unordered_map<std::shared_ptr<stream_profile_interface>, stream_profiles> _source_to_target_profiles_map;
         std::unordered_map<stream_profile, stream_profiles> _target_to_source_profiles_map;
-        std::unordered_map<rs2_format, stream_profiles> cached_requests;
-        std::vector<rs2_option> cached_processing_blocks_options;
+        std::unordered_map<rs2_format, stream_profiles> _cached_requests;
+        std::vector<rs2_option> _cached_processing_blocks_options;
     };
 
     class iio_hid_timestamp_reader : public frame_timestamp_reader
@@ -282,9 +285,6 @@ namespace librealsense
         void acquire_power();
         void release_power();
         void reset_streaming();
-
-        rs2_format fourcc_to_rs2_format(uint32_t format) const;
-        rs2_stream fourcc_to_rs2_stream(uint32_t fourcc_format) const;
 
         struct power
         {

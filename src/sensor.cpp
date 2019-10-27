@@ -130,6 +130,32 @@ namespace librealsense
         return _fourcc_to_rs2_stream;
     }
 
+    rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
+    {
+        rs2_format f = RS2_FORMAT_ANY;
+        try {
+            f = _fourcc_to_rs2_format->at(fourcc_format);
+        }
+        catch (std::out_of_range)
+        {
+        }
+
+        return f;
+    }
+
+    rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
+    {
+        rs2_stream s = RS2_STREAM_ANY;
+        try {
+            s = _fourcc_to_rs2_stream->at(fourcc_format);
+        }
+        catch (std::out_of_range)
+        {
+        }
+
+        return s;
+    }
+
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
     {
         on_before_streaming_changes(streaming);
@@ -359,17 +385,23 @@ namespace librealsense
         }
         catch (...)
         {
+            std::stringstream error_msg;
+            error_msg << "\tFormats: \n";
             for (auto&& profile : _internal_config)
             {
+                rs2_format fmt = fourcc_to_rs2_format(profile.format);
+                error_msg << "\t " << std::string(rs2_format_to_string(fmt)) << std::endl;
                 try {
                     _device->close(profile);
                 }
                 catch (...) {}
             }
+            error_msg << std::endl;
             reset_streaming();
             _power.reset();
             _is_opened = false;
-            throw;
+
+            throw std::runtime_error(error_msg.str());
         }
         if (Is<librealsense::global_time_interface>(_owner))
         {
@@ -439,32 +471,6 @@ namespace librealsense
         _source.flush();
         _source.reset();
         _timestamp_reader->reset();
-    }
-
-    rs2_format uvc_sensor::fourcc_to_rs2_format(uint32_t fourcc_format) const
-    {
-        rs2_format f = RS2_FORMAT_ANY;
-        try {
-            f = _fourcc_to_rs2_format->at(fourcc_format);
-        }
-        catch (std::out_of_range)
-        {
-        }
-
-        return f;
-    }
-
-    rs2_stream uvc_sensor::fourcc_to_rs2_stream(uint32_t fourcc_format) const
-    {
-        rs2_stream s = RS2_STREAM_ANY;
-        try {
-            s = _fourcc_to_rs2_stream->at(fourcc_format);
-        }
-        catch (std::out_of_range)
-        {
-        }
-
-        return s;
     }
 
     void uvc_sensor::acquire_power()
@@ -1064,7 +1070,7 @@ namespace librealsense
             if (std::none_of(begin(options), end(options), already_registered_predicate))
             {
                 this->register_option(opt, std::shared_ptr<option>(const_cast<option*>(&pb.get_option(opt))));
-                cached_processing_blocks_options.push_back(opt);
+                _cached_processing_blocks_options.push_back(opt);
             }
         }
     }
@@ -1077,12 +1083,12 @@ namespace librealsense
         for (auto&& opt : options)
         {
             const auto&& cached_option_predicate = [&opt](const rs2_option& o) {return o == opt; };
-            auto&& cached_opt = std::find_if(begin(cached_processing_blocks_options), end(cached_processing_blocks_options), cached_option_predicate);
+            auto&& cached_opt = std::find_if(begin(_cached_processing_blocks_options), end(_cached_processing_blocks_options), cached_option_predicate);
 
-            if (cached_opt != end(cached_processing_blocks_options))
+            if (cached_opt != end(_cached_processing_blocks_options))
             {
                 this->unregister_option(*cached_opt);
-                cached_processing_blocks_options.erase(cached_opt);
+                _cached_processing_blocks_options.erase(cached_opt);
             }
         }
     }
@@ -1135,12 +1141,12 @@ namespace librealsense
 
                             // Add the cloned profile to the supported profiles by this processing block factory,
                             // for later processing validation in resolving the request.
-                            pbf_supported_profiles[pbf.get()].push_back(cloned_profile);
+                            _pbf_supported_profiles[pbf.get()].push_back(cloned_profile);
 
                             // In case of many to many, a source profile might resolve a specific request that is not mentioned in the targets of the specific processing block.
                             // e.g. Processing block factory: Z16 + Y8Left -> Z16 ,
                             //      Request: Z16, Y8Left.
-                            pbf_supported_profiles[pbf.get()].push_back(profile);
+                            _pbf_supported_profiles[pbf.get()].push_back(profile);
 
                             // cache the source to target mapping
                             _source_to_target_profiles_map[profile].push_back(cloned_profile);
@@ -1179,7 +1185,7 @@ namespace librealsense
 
         for (auto&& pbf : _pb_factories)
         {
-            auto satisfied_req = pbf->find_satisfied_requests(requests, pbf_supported_profiles[pbf.get()]);
+            auto satisfied_req = pbf->find_satisfied_requests(requests, _pbf_supported_profiles[pbf.get()]);
             satisfied_count = satisfied_req.size();
             if (satisfied_count > max_satisfied_req
                 || (satisfied_count == max_satisfied_req
@@ -1253,7 +1259,7 @@ namespace librealsense
         // cache the requests
         for (auto&& req : requests)
         {
-            cached_requests[req->get_format()].push_back(req);
+            _cached_requests[req->get_format()].push_back(req);
         }
         
         // while not finished handling all of the requests do
@@ -1321,10 +1327,10 @@ namespace librealsense
             for (auto&& r : requests)
             {
                 auto p = to_profile(r.get());
-                requests_info << "\tFormat: " + std::string(rs2_format_to_string(p.format)) << ", width: " << p.width << ", height: " << p.height << "\n";
+                requests_info << "\tFormat: " + std::string(rs2_format_to_string(p.format)) << ", width: " << p.width << ", height: " << p.height << std::endl;
             }
-            throw recoverable_exception("Failed to resolve the request: \n" + requests_info.str()
-                , RS2_EXCEPTION_TYPE_INVALID_VALUE);
+            throw recoverable_exception("\nFailed to resolve the request: \n" + requests_info.str() + "\nInto:\n" + e.what(),
+                RS2_EXCEPTION_TYPE_INVALID_VALUE);
         }
         set_active_streams(requests);
     }
@@ -1338,7 +1344,7 @@ namespace librealsense
             unregister_processing_block_options(*entry.second);
         }
         _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
-        cached_requests.erase(cached_requests.begin(), cached_requests.end());
+        _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
     }
 
     template<class T>
@@ -1352,8 +1358,8 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> synthetic_sensor::filter_frame_by_requests(const frame_interface* f)
     {
-        const auto&& cached_req = cached_requests.find(f->get_stream()->get_format());
-        if (cached_req == cached_requests.end())
+        const auto&& cached_req = _cached_requests.find(f->get_stream()->get_format());
+        if (cached_req == _cached_requests.end())
             return nullptr;
 
         auto&& reqs = cached_req->second;
@@ -1402,7 +1408,7 @@ namespace librealsense
                         continue;
 
                     fr->acquire();
-                    post_process_callback->on_frame((rs2_frame*)fr);
+                    _post_process_callback->on_frame((rs2_frame*)fr);
                 }
             }
         });
@@ -1450,14 +1456,14 @@ namespace librealsense
 
     frame_callback_ptr synthetic_sensor::get_frames_callback() const
     {
-        return post_process_callback;
+        return _post_process_callback;
     }
 
     void synthetic_sensor::set_frames_callback(frame_callback_ptr callback)
     {
         // This callback is mutable, might be modified.
         // For instance, record_sensor modifies this callback in order to hook it to record frames.
-        post_process_callback = callback;
+        _post_process_callback = callback;
     }
 
     void synthetic_sensor::register_notifications_callback(notifications_callback_ptr callback)
