@@ -151,8 +151,8 @@ namespace librealsense
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
 
-	protected:
-		void add_source_profiles_missing_data();
+    protected:
+        void add_source_profiles_missing_data();
 
     private:
         stream_profiles resolve_requests(const stream_profiles& requests);

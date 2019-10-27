@@ -280,7 +280,7 @@ namespace librealsense
                             return rs2_intrinsics{};
                     });
                 }
-				add_source_profiles_missing_data();
+                add_source_profiles_missing_data();
 
                 return results;
             }
@@ -343,7 +343,7 @@ namespace librealsense
                             return rs2_intrinsics{};
                     });
                 }
-				add_source_profiles_missing_data();
+                add_source_profiles_missing_data();
 
                 return results;
             }

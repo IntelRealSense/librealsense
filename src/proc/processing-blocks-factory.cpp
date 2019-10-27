@@ -52,20 +52,20 @@ namespace librealsense
     bool processing_block_factory::operator==(const processing_block_factory & rhs) const
     {
         const auto&& rhs_src = rhs.get_source_info();
-		for (auto&& src : _source_info)
-		{
-			auto equals = [&src](const stream_profile& prof) { return prof == src; };
-			if (std::none_of(begin(rhs_src), end(rhs_src), equals))
-				return false;
-		}
+        for (auto&& src : _source_info)
+        {
+            auto equals = [&src](const stream_profile& prof) { return prof == src; };
+            if (std::none_of(begin(rhs_src), end(rhs_src), equals))
+                return false;
+        }
 
         const auto&& rhs_tgt = rhs.get_target_info();
-		for (auto&& tgt : _target_info)
-		{
-			auto equals = [&tgt](const stream_profile& prof) { return prof == tgt; };
-			if (std::none_of(begin(rhs_tgt), end(rhs_tgt), equals))
-				return false;
-		}
+        for (auto&& tgt : _target_info)
+        {
+            auto equals = [&tgt](const stream_profile& prof) { return prof == tgt; };
+            if (std::none_of(begin(rhs_tgt), end(rhs_tgt), equals))
+                return false;
+        }
 
         return true;
     }

@@ -930,7 +930,7 @@ namespace librealsense
             auto timestamp = *(reinterpret_cast<uint32_t*>(f->additional_data.metadata_blob.data()));
             if (f->additional_data.metadata_size >= platform::hid_header_size)
                 timestamp = static_cast<uint32_t>(reinterpret_cast<const platform::hid_header*>(f->additional_data.metadata_blob.data())->timestamp);
-			
+            
             // HID timestamps are aligned to FW Default - usec units
             return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);
         }
@@ -1204,7 +1204,7 @@ namespace librealsense
 
         // find the closest target profile to the source profile, if there is none, just take the first.
         auto best_match = std::find_if(target_profiles.begin(), target_profiles.end(),
-			[source_profile](const std::shared_ptr<stream_profile_interface>& sp)
+            [source_profile](const std::shared_ptr<stream_profile_interface>& sp)
         {
             return source_profile->get_format() == sp->get_format();
         });

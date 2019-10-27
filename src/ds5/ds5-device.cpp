@@ -363,7 +363,7 @@ namespace librealsense
                     });
                 }
             }
-			add_source_profiles_missing_data();
+            add_source_profiles_missing_data();
 
             return results;
         }
@@ -450,7 +450,7 @@ namespace librealsense
                     });
                 }
             }
-			add_source_profiles_missing_data();
+            add_source_profiles_missing_data();
 
             return results;
         }
