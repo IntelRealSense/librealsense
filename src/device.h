@@ -79,8 +79,8 @@ namespace librealsense
         virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override;
 
     protected:
-        int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
-        int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);
+        int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
+        int assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx);
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
         synthetic_sensor& get_uvc_sensor(int subdevice);
 

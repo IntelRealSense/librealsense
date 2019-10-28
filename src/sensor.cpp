@@ -106,6 +106,11 @@ namespace librealsense
         return _is_streaming;
     }
 
+    bool sensor_base::is_opened() const
+    {
+        return _is_opened;
+    }
+
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor() const
     {
         return _notifications_processor;
@@ -170,6 +175,11 @@ namespace librealsense
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*stream, *target);
         auto uid = stream->get_unique_id();
         target->set_unique_id(uid);
+    }
+
+    void sensor_base::set_source_owner(sensor_base* owner)
+    {
+        _source_owner = owner;
     }
 
     stream_profiles sensor_base::get_stream_profiles(int tag) const
@@ -283,7 +293,7 @@ namespace librealsense
         auto on = std::unique_ptr<power>(new power(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this())));
 
         _source.init(_metadata_parsers);
-        _source.set_sensor(_source_owner);
+        _source.set_sensor(_source_owner->shared_from_this());
 
         std::vector<platform::stream_profile> commited;
 
@@ -747,7 +757,7 @@ namespace librealsense
 
         _source.set_callback(callback);
         _source.init(_metadata_parsers);
-        _source.set_sensor(_source_owner);
+        _source.set_sensor(_source_owner->shared_from_this());
 
         unsigned long long last_frame_number = 0;
         rs2_time_t last_timestamp = 0;
@@ -813,6 +823,7 @@ namespace librealsense
                 return;
             }
             frame->set_stream(request);
+            frame->set_timestamp_domain(timestamp_domain);
             _source.invoke_callback(std::move(frame));
         });
         _is_streaming = true;
@@ -1003,7 +1014,20 @@ namespace librealsense
     }
 
     synthetic_sensor::~synthetic_sensor()
-    {}
+    {
+        try
+        {
+            if (is_streaming())
+                stop();
+
+            if (is_opened())
+                close();
+        }
+        catch (...)
+        {
+            LOG_ERROR("An error has occurred while stop_streaming()!");
+        }
+    }
 
     void synthetic_sensor::register_option(rs2_option id, std::shared_ptr<option> option)
     {
@@ -1315,7 +1339,7 @@ namespace librealsense
 
         const auto&& resolved_req = resolve_requests(requests);
 
-        _raw_sensor->set_source_owner(this->shared_from_this());
+        _raw_sensor->set_source_owner(this);
         try
         {
             _raw_sensor->open(resolved_req);
@@ -1481,5 +1505,10 @@ namespace librealsense
     bool synthetic_sensor::is_streaming() const
     {
         return _raw_sensor->is_streaming();
+    }
+
+    bool synthetic_sensor::is_opened() const
+    {
+        return _raw_sensor->is_opened();
     }
 }

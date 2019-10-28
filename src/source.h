@@ -39,7 +39,7 @@ namespace librealsense
 
         double get_time() const { return _ts ? _ts->get_time() : 0; }
 
-        void set_sensor(std::shared_ptr<sensor_interface> s);
+        void set_sensor(const std::shared_ptr<sensor_interface>& s);
 
         template<class T>
         void add_extension(rs2_extension ex)

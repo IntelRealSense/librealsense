@@ -49,7 +49,7 @@ namespace librealsense
                              recommended_proccesing_blocks_interface* owner);
         virtual ~sensor_base() override { _source.flush(); }
 
-        void set_source_owner(std::shared_ptr<sensor_base> owner) { _source_owner = owner; } // will direct the source to the top in the source hierarchy.
+        void set_source_owner(sensor_base* owner); // will direct the source to the top in the source hierarchy.
         virtual stream_profiles init_stream_profiles() = 0;
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
         stream_profiles get_active_streams() const override;
@@ -61,6 +61,7 @@ namespace librealsense
         virtual frame_callback_ptr get_frames_callback() const override;
         virtual void set_frames_callback(frame_callback_ptr callback) override;
         bool is_streaming() const override;
+        virtual bool is_opened() const;
         virtual void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const;
         void register_on_open(on_open callback)
         {
@@ -104,7 +105,7 @@ namespace librealsense
         on_open _on_open;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
-        std::shared_ptr<sensor_base> _source_owner;
+        sensor_base* _source_owner;
         frame_source _source;
         device* _owner;
         std::vector<platform::stream_profile> _uvc_profiles;
@@ -153,6 +154,7 @@ namespace librealsense
         void register_notifications_callback(notifications_callback_ptr callback) override;
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
+        bool is_opened() const override;
 
     protected:
         void add_source_profiles_missing_data();
