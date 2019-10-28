@@ -1,18 +1,59 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
+#include "types.h"
+
+#include <vector>
 #include <unordered_map>
 
-/* UVC_COLOR_FORMAT_* have been replaced with UVC_FRAME_FORMAT_*. Please use
- * UVC_FRAME_FORMAT_* instead of using these. */
-#define UVC_COLOR_FORMAT_UNKNOWN UVC_FRAME_FORMAT_UNKNOWN
-#define UVC_COLOR_FORMAT_UNCOMPRESSED UVC_FRAME_FORMAT_UNCOMPRESSED
-#define UVC_COLOR_FORMAT_COMPRESSED UVC_FRAME_FORMAT_COMPRESSED
-#define UVC_COLOR_FORMAT_YUYV UVC_FRAME_FORMAT_YUYV
-#define UVC_COLOR_FORMAT_UYVY UVC_FRAME_FORMAT_UYVY
-#define UVC_COLOR_FORMAT_RGB UVC_FRAME_FORMAT_RGB
-#define UVC_COLOR_FORMAT_BGR UVC_FRAME_FORMAT_BGR
-#define UVC_COLOR_FORMAT_MJPEG UVC_FRAME_FORMAT_MJPEG
-#define UVC_COLOR_FORMAT_GRAY8 UVC_FRAME_FORMAT_GRAY8
+/** Converts an unaligned one-byte integer into an int8 */
+#define B_TO_BYTE(p) ((int8_t)(p)[0])
+
+/** Converts an unaligned two-byte little-endian integer into an int16 */
+#define SW_TO_SHORT(p) ((uint8_t)(p)[0] | \
+                       ((int8_t)(p)[1] << 8))
+
+/** Converts an unaligned four-byte little-endian integer into an int32 */
+#define DW_TO_INT(p) ((uint8_t)(p)[0] | \
+                     ((uint8_t)(p)[1] << 8) | \
+                     ((uint8_t)(p)[2] << 16) | \
+                     ((int8_t)(p)[3] << 24))
+
+/** Converts an unaligned eight-byte little-endian integer into an int64 */
+#define QW_TO_QUAD(p) (((uint64_t)(p)[0]) | \
+                      (((uint64_t)(p)[1]) << 8) | \
+                      (((uint64_t)(p)[2]) << 16) | \
+                      (((uint64_t)(p)[3]) << 24) | \
+                      (((uint64_t)(p)[4]) << 32) | \
+                      (((uint64_t)(p)[5]) << 40) | \
+                      (((uint64_t)(p)[6]) << 48) | \
+                      (((int64_t)(p)[7]) << 56))
+
+
+/** Converts an int16 into an unaligned two-byte little-endian integer */
+#define SHORT_TO_SW(s, p) \
+  (p)[0] = (uint8_t)(s); \
+  (p)[1] = (uint8_t)((s) >> 8);
+
+/** Converts an int32 into an unaligned four-byte little-endian integer */
+#define INT_TO_DW(i, p) \
+  (p)[0] = (uint8_t)(i); \
+  (p)[1] = (uint8_t)((i) >> 8); \
+  (p)[2] = (uint8_t)((i) >> 16); \
+  (p)[3] = (uint8_t)((i) >> 24);
+
+/** Converts an int64 into an unaligned eight-byte little-endian integer */
+#define QUAD_TO_QW(i, p) \
+  (p)[0] = (uint8_t)(i); \
+  (p)[1] = (uint8_t)((i) >> 8); \
+  (p)[2] = (uint8_t)((i) >> 16); \
+  (p)[3] = (uint8_t)((i) >> 24); \
+  (p)[4] = (uint8_t)((i) >> 32); \
+  (p)[5] = (uint8_t)((i) >> 40); \
+  (p)[6] = (uint8_t)((i) >> 48); \
+  (p)[7] = (uint8_t)((i) >> 56); \
 
 // convert to standard fourcc codes
 const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
@@ -23,51 +64,6 @@ const std::unordered_map<uint32_t, uint32_t> fourcc_map = {
         { 0x52415738, 0x47524559 },    /* 'GREY' from 'RAW8' */
         { 0x52573136, 0x42595232 }     /* 'RW16' from 'BYR2' */
 };
-
-enum uvc_device_power_mode {
-    UVC_VC_VIDEO_POWER_MODE_FULL = 0x000b,
-    UVC_VC_VIDEO_POWER_MODE_DEVICE_DEPENDENT = 0x001b,
-};
-
-/** UVC error types, based on libusb errors
- * @ingroup diag
- */
-typedef enum uvc_error {
-    /** Success (no error) */
-            UVC_SUCCESS = 0,
-    /** Input/output error */
-            UVC_ERROR_IO = -1,
-    /** Invalid parameter */
-            UVC_ERROR_INVALID_PARAM = -2,
-    /** Access denied */
-            UVC_ERROR_ACCESS = -3,
-    /** No such device */
-            UVC_ERROR_NO_DEVICE = -4,
-    /** Entity not found */
-            UVC_ERROR_NOT_FOUND = -5,
-    /** Resource busy */
-            UVC_ERROR_BUSY = -6,
-    /** Operation timed out */
-            UVC_ERROR_TIMEOUT = -7,
-    /** Overflow */
-            UVC_ERROR_OVERFLOW = -8,
-    /** Pipe error */
-            UVC_ERROR_PIPE = -9,
-    /** System call interrupted */
-            UVC_ERROR_INTERRUPTED = -10,
-    /** Insufficient memory */
-            UVC_ERROR_NO_MEM = -11,
-    /** Operation not supported */
-            UVC_ERROR_NOT_SUPPORTED = -12,
-    /** Device is not UVC-compliant */
-            UVC_ERROR_INVALID_DEVICE = -50,
-    /** Mode not supported */
-            UVC_ERROR_INVALID_MODE = -51,
-    /** Resource has a callback (can't use polling and async) */
-            UVC_ERROR_CALLBACK_EXISTS = -52,
-    /** Undefined error */
-            UVC_ERROR_OTHER = -99
-} uvc_error_t;
 
 /** Color coding of stream, transport-independent
 * @ingroup streaming
@@ -264,7 +260,6 @@ typedef struct uvc_device_descriptor {
 } uvc_device_descriptor_t;
 
 typedef struct uvc_input_terminal {
-    struct uvc_input_terminal *prev, *next;
     /** Index of the terminal within the device */
     uint8_t bTerminalID;
     /** Type of terminal (e.g., camera) */
@@ -276,14 +271,9 @@ typedef struct uvc_input_terminal {
     uint64_t bmControls;
 } uvc_input_terminal_t;
 
-typedef struct uvc_output_terminal {
-    struct uvc_output_terminal *prev, *next;
-    /** @todo */
-} uvc_output_terminal_t;
 
 /** Represents post-capture processing functions */
 typedef struct uvc_processing_unit {
-    struct uvc_processing_unit *prev, *next;
     /** Index of the processing unit within the device */
     uint8_t bUnitID;
     /** Index of the terminal from which the device accepts images */
@@ -294,14 +284,12 @@ typedef struct uvc_processing_unit {
 
 /** Represents selector unit to connect other units */
 typedef struct uvc_selector_unit {
-    struct uvc_selector_unit *prev, *next;
     /** Index of the selector unit within the device */
     uint8_t bUnitID;
 } uvc_selector_unit_t;
 
 /** Custom processing or camera-control functions */
 typedef struct uvc_extension_unit {
-    struct uvc_extension_unit *prev, *next;
     /** Index of the extension unit within the device */
     uint8_t bUnitID;
     /** GUID identifying the extension unit */
@@ -347,6 +335,107 @@ typedef struct uvc_format {
     uint32_t fps;
     /** Interface number */
     uint8_t interfaceNumber;
-    /** next format */
-    struct uvc_format *next;
 } uvc_format_t;
+
+typedef struct uvc_frame_desc {
+    /** Type of frame, such as JPEG frame or uncompressed frme */
+    uvc_vs_desc_subtype bDescriptorSubtype;
+    /** Index of the frame within the list of specs available for this format */
+    uint8_t bFrameIndex;
+    uint8_t bmCapabilities;
+    /** Image width */
+    uint16_t wWidth;
+    /** Image height */
+    uint16_t wHeight;
+    /** Bitrate of corresponding stream at minimal frame rate */
+    uint32_t dwMinBitRate;
+    /** Bitrate of corresponding stream at maximal frame rate */
+    uint32_t dwMaxBitRate;
+    /** Maximum number of bytes for a video frame */
+    uint32_t dwMaxVideoFrameBufferSize;
+    /** Default frame interval (in 100ns units) */
+    uint32_t dwDefaultFrameInterval;
+    /** Minimum frame interval for continuous mode (100ns units) */
+    uint32_t dwMinFrameInterval;
+    /** Maximum frame interval for continuous mode (100ns units) */
+    uint32_t dwMaxFrameInterval;
+    /** Granularity of frame interval range for continuous mode (100ns) */
+    uint32_t dwFrameIntervalStep;
+    /** Frame intervals */
+    uint8_t bFrameIntervalType;
+    /** number of bytes per line */
+    uint32_t dwBytesPerLine;
+    /** Available frame rates, zero-terminated (in 100ns units) */
+    std::vector<uint32_t> intervals;
+} uvc_frame_desc_t;
+
+/** Format descriptor
+*
+* A "format" determines a stream's image type (e.g., raw YUYV or JPEG)
+* and includes many "frame" configurations.
+*/
+typedef struct uvc_format_desc {
+    /** Type of image stream, such as JPEG or uncompressed. */
+    enum uvc_vs_desc_subtype bDescriptorSubtype;
+    /** Identifier of this format within the VS interface's format list */
+    uint8_t bFormatIndex;
+    uint8_t bNumFrameDescriptors;
+    /** Format specifier */
+    union {
+        uint8_t guidFormat[16];
+        uint8_t fourccFormat[4];
+    };
+    /** Format-specific data */
+    union {
+        /** BPP for uncompressed stream */
+        uint8_t bBitsPerPixel;
+        /** Flags for JPEG stream */
+        uint8_t bmFlags;
+    };
+    /** Default {uvc_frame_desc} to choose given this format */
+    uint8_t bDefaultFrameIndex;
+    uint8_t bAspectRatioX;
+    uint8_t bAspectRatioY;
+    uint8_t bmInterlaceFlags;
+    uint8_t bCopyProtect;
+    uint8_t bVariableSize;
+    /** Available frame specifications for this format */
+    std::vector<uvc_frame_desc_t> frame_descs;
+} uvc_format_desc_t;
+
+template <typename T>
+T as(const std::vector<uint8_t>& data, size_t index)
+{
+    T rv = 0;
+    for(int i = 0; i < sizeof(T); i++)
+    {
+        rv += data[index + i] << (i*8);
+    }
+    return rv;
+}
+
+struct backend_frame;
+
+typedef librealsense::small_heap<backend_frame, 10> backend_frames_archive;
+
+struct backend_frame {
+    backend_frame() {}
+
+    // We don't want the frames to be overwritten at any point
+    // (deallocate resets item to "default" that we want to avoid)
+    backend_frame(const backend_frame &other) {}
+
+    backend_frame(backend_frame &&other) {}
+
+    backend_frame &operator=(const backend_frame &other) { return *this; }
+
+    std::vector<uint8_t> pixels;
+    librealsense::platform::frame_object fo;
+    backend_frames_archive *owner; // Keep pointer to owner for light-deleter
+};
+
+typedef void(*cleanup_ptr)(backend_frame *);
+
+// Unique_ptr is used as the simplest RAII, with static deleter
+typedef std::unique_ptr<backend_frame, cleanup_ptr> backend_frame_ptr;
+typedef single_consumer_queue<backend_frame_ptr> backend_frames_queue;

@@ -26,7 +26,7 @@ The library will be compiled without the metadata support!\n")
 
 #include "mf-uvc.h"
 #include "../types.h"
-#include "libuvc/uvc_types.h"
+#include "uvc/uvc-types.h"
 
 #include "Shlwapi.h"
 #include <Windows.h>

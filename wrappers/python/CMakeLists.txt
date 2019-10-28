@@ -59,6 +59,7 @@ if(UNIX)
         ../../src/libusb/device-libusb.cpp
         ../../src/libusb/messenger-libusb.cpp
         ../../src/libusb/enumerator-libusb.cpp
+        ../../src/libusb/request-libusb.cpp
     )
 endif()
 
@@ -69,6 +70,7 @@ if(WIN32)
         ../../src/winusb/device-winusb.cpp
         ../../src/winusb/messenger-winusb.cpp
         ../../src/winusb/enumerator-winusb.cpp
+        ../../src/winusb/request-winusb.cpp
     )
 endif()
 
@@ -90,20 +92,19 @@ endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/win7/win7-uvc.cpp
-        ../../src/win7/win7-usb.cpp
-        ../../src/win7/win7-hid.cpp
-        ../../src/win7/win7-backend.cpp
-        ../../src/win7/winusb_uvc/winusb_uvc.cpp
+        ../../src/rsusb-backend/rsusb-backend.h
+        ../../src/rsusb-backend/rsusb-backend.cpp
+        ../../src/libuvc/rsusb-backend-linux.h
+        ../../src/libuvc/rsusb-backend-linux.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/libusb/interface-libusb.cpp
-        ../../src/libusb/device-libusb.cpp
-        ../../src/libusb/messenger-libusb.cpp
-        ../../src/libusb/enumerator-libusb.cpp
+        ../../src/rsusb-backend/rsusb-backend.h
+        ../../src/rsusb-backend/rsusb-backend.cpp
+        ../../src/win7/rsusb-backend-windows.h
+        ../../src/win7/rsusb-backend-windows.cpp
     )
 endif()
 
