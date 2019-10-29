@@ -41,11 +41,11 @@ namespace librealsense
         copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor);
     }
 
-    motion_transform::motion_transform(rs2_format target_format, rs2_stream target_stream, mm_calib_handler* mm_calib, bool is_motion_correction_enabled)
+    motion_transform::motion_transform(rs2_format target_format, rs2_stream target_stream, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : motion_transform("Motion Transform", target_format, target_stream, mm_calib, is_motion_correction_enabled)
     {}
 
-    motion_transform::motion_transform(const char* name, rs2_format target_format, rs2_stream target_stream, mm_calib_handler* mm_calib, bool is_motion_correction_enabled)
+    motion_transform::motion_transform(const char* name, rs2_format target_format, rs2_stream target_stream, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : functional_processing_block(name, target_format, target_stream, RS2_EXTENSION_MOTION_FRAME),
         _mm_calib(mm_calib),
         _is_motion_correction_enabled(is_motion_correction_enabled)
@@ -90,11 +90,11 @@ namespace librealsense
         *xyz = _mm_calib->imu_to_depth_alignment() * (*xyz);
     }
 
-    acceleration_transform::acceleration_transform(mm_calib_handler * mm_calib, bool is_motion_correction_enabled)
+    acceleration_transform::acceleration_transform(std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : acceleration_transform("Acceleration Transform", mm_calib, is_motion_correction_enabled)
     {}
 
-    acceleration_transform::acceleration_transform(const char * name, mm_calib_handler * mm_calib, bool is_motion_correction_enabled)
+    acceleration_transform::acceleration_transform(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, mm_calib, is_motion_correction_enabled)
     {}
 
@@ -103,11 +103,11 @@ namespace librealsense
         unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
     }
 
-    gyroscope_transform::gyroscope_transform(mm_calib_handler * mm_calib, bool is_motion_correction_enabled)
+    gyroscope_transform::gyroscope_transform(std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : gyroscope_transform("Gyroscope Transform", mm_calib, is_motion_correction_enabled)
     {}
 
-    gyroscope_transform::gyroscope_transform(const char * name, mm_calib_handler * mm_calib, bool is_motion_correction_enabled)
+    gyroscope_transform::gyroscope_transform(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled)
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, mm_calib, is_motion_correction_enabled)
     {}
 

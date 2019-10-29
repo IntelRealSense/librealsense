@@ -12,36 +12,36 @@ namespace librealsense
     class motion_transform : public functional_processing_block
     {
     public:
-        motion_transform(rs2_format target_format, rs2_stream target_stream, mm_calib_handler* mm_calib = nullptr, bool is_motion_correction_enabled = false);
+        motion_transform(rs2_format target_format, rs2_stream target_stream, std::shared_ptr<mm_calib_handler> mm_calib = nullptr, bool is_motion_correction_enabled = false);
 
     protected:
-        motion_transform(const char* name, rs2_format target_format, rs2_stream target_stream, mm_calib_handler* mm_calib, bool is_motion_correction_enabled);
+        motion_transform(const char* name, rs2_format target_format, rs2_stream target_stream, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled);
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     private:
         void correct_motion(rs2::frame* f);
 
-        mm_calib_handler* _mm_calib = nullptr;
+        std::shared_ptr<mm_calib_handler> _mm_calib = nullptr;
         bool _is_motion_correction_enabled = false;
     };
 
     class acceleration_transform : public motion_transform
     {
     public:
-        acceleration_transform(mm_calib_handler* mm_calib = nullptr, bool is_motion_correction_enabled = false);
+        acceleration_transform(std::shared_ptr<mm_calib_handler> mm_calib = nullptr, bool is_motion_correction_enabled = false);
 
     protected:
-        acceleration_transform(const char* name, mm_calib_handler* mm_calib, bool is_motion_correction_enabled);
+        acceleration_transform(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled);
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 
     class gyroscope_transform : public motion_transform
     {
     public:
-        gyroscope_transform(mm_calib_handler* mm_calib = nullptr, bool is_motion_correction_enabled = false);
+        gyroscope_transform(std::shared_ptr<mm_calib_handler> mm_calib = nullptr, bool is_motion_correction_enabled = false);
 
     protected:
-        gyroscope_transform(const char* name, mm_calib_handler* mm_calib, bool is_motion_correction_enabled);
+        gyroscope_transform(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, bool is_motion_correction_enabled);
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
     };
 }

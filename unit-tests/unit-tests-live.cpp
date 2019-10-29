@@ -31,11 +31,16 @@ TEST_CASE("Sync sanity", "[live]") {
 
         int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
         rs2::syncer sync;
-        auto profiles = configure_all_supported_streams(dev,640,480, fps);
+        auto profiles = configure_all_supported_streams(dev,640,480, fps, RS2_EXTENSION_VIDEO_PROFILE);
 
-        for (auto s : dev.query_sensors())
+        for (auto&& s : dev.query_sensors())
         {
             s.start(sync);
+        }
+
+        for (auto i = 0; i < 30; i++)
+        {
+            auto frames = sync.wait_for_frames(500);
         }
 
         std::vector<std::vector<double>> all_timestamps;
@@ -73,10 +78,6 @@ TEST_CASE("Sync sanity", "[live]") {
             }
             all_timestamps.push_back(timestamps);
 
-        }
-        for (auto i = 0; i < 30; i++)
-        {
-            auto frames = sync.wait_for_frames(500);
         }
 
         CAPTURE(hw_timestamp_domain);
@@ -170,7 +171,6 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
                 {
                     streams_groups[i].push_back(&sensors[j]);
                 }
-
             }
         }
 
@@ -331,12 +331,11 @@ TEST_CASE("Sync start stop", "[live]") {
 
         REQUIRE(frames.size() > 0);
         auto f = frames[0];
-        auto image = f.as<rs2::video_frame>();
-        REQUIRE(image);
-
-        REQUIRE(image.get_width() == other_video.width());
-
-        REQUIRE(image.get_height() == other_video.height());
+        if (auto image = f.as<rs2::video_frame>())
+        {
+            REQUIRE(image.get_width() == other_video.width());
+            REQUIRE(image.get_height() == other_video.height());
+        }
     }
 }
 TEST_CASE("Device metadata enumerates correctly", "[live]")

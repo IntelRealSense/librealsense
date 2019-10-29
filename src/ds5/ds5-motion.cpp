@@ -224,13 +224,13 @@ namespace librealsense
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, enable_motion_correction]() { return std::make_shared<acceleration_transform>(_mm_calib.get(), enable_motion_correction);
+            [&, enable_motion_correction]() { return std::make_shared<acceleration_transform>(_mm_calib, enable_motion_correction);
         });
 
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, enable_motion_correction]() { return std::make_shared<gyroscope_transform>(_mm_calib.get(), enable_motion_correction);
+            [&, enable_motion_correction]() { return std::make_shared<gyroscope_transform>(_mm_calib, enable_motion_correction);
         });
 
         uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));

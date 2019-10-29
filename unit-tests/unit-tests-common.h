@@ -97,7 +97,7 @@ struct device_profiles
     bool sync;
 };
 
-inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
+inline std::vector<profile> configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60, rs2_extension profile_type = RS2_EXTENSION_UNKNOWN)
 {
     std::vector<profile> all_profiles =
     {
@@ -114,11 +114,13 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
     std::vector<rs2::stream_profile> modes;
     auto all_modes = sensor.get_stream_profiles();
 
-    for (auto profile : all_profiles)
+    for (auto&& profile : all_profiles)
     {
         if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
         {
-            if (auto  video = p.as<rs2::video_stream_profile>())
+            auto&& video = p.as<rs2::video_stream_profile>();
+            auto&& motion = p.as<rs2::motion_stream_profile>();
+            if (video)
             {
                 if (p.fps() == profile.fps &&
                     p.stream_index() == profile.index &&
@@ -128,31 +130,26 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
                     video.height() == profile.height)
                 {
                     modes.push_back(p);
-                    return true;
-                }
-            }
-            else
-            {
-                if (auto  motion = p.as<rs2::motion_stream_profile>())
-                {
-                    if (p.fps() == profile.fps &&
-                        p.stream_index() == profile.index &&
-                        p.stream_type() == profile.stream &&
-                        p.format() == profile.format)
-                    {
-                        modes.push_back(p);
+                    if (profile_type == RS2_EXTENSION_VIDEO_PROFILE || profile_type == RS2_EXTENSION_UNKNOWN)
                         return true;
-                    }
                 }
-                else
-                    return false;
             }
-
+            else if (motion)
+            {
+                if (p.fps() == profile.fps &&
+                    p.stream_index() == profile.index &&
+                    p.stream_type() == profile.stream &&
+                    p.format() == profile.format)
+                {
+                    modes.push_back(p);
+                    if (profile_type == RS2_EXTENSION_MOTION_PROFILE || profile_type == RS2_EXTENSION_UNKNOWN)
+                        return true;
+                }
+            }
             return false;
         }) != all_modes.end())
         {
             profiles.push_back(profile);
-
         }
     }
     if (modes.size() > 0)
@@ -160,14 +157,14 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
     return profiles;
 }
 
-inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
+inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30, rs2_extension profile_type = RS2_EXTENSION_UNKNOWN)
 {
     std::vector<profile> profiles;
     std::vector<rs2::sensor> sensors;
     auto sens = dev.query_sensors();
     for (auto s : sens)
     {
-        auto res = configure_all_supported_streams(s, width, height, fps);
+        auto res = configure_all_supported_streams(s, width, height, fps, profile_type);
         profiles.insert(profiles.end(), res.begin(), res.end());
         if (res.size() > 0)
         {
