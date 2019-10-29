@@ -747,8 +747,6 @@ namespace perc {
         {
             supported_raw_stream_libtm_message profiles[MAX_SUPPORTED_STREAMS] = { 0 };
             Status status = Status::SUCCESS;
-            uint8_t sixdofControllerNum = 0;
-            bool sixdofControllerEnabled = false;
             int activeProfiles = 0;
 
             status = SetPlayback(profile->playbackEnabled);
@@ -827,32 +825,6 @@ namespace perc {
                 DEVICELOGE("Error: Failed setting 6dof Control (0x%X)", status);
                 return status;
             }
-
-            /* 6dof Controllers profile */
-            for (uint8_t i = (SixDofProfile0+1); i < SixDofProfileMax; i++)
-            {
-                if (profile->sixDof[i].enabled == true)
-                {
-                    sixdofControllerNum++;
-                    sixdofControllerEnabled = true;
-                }
-            }
-
-            status = SetController6DoFControl(sixdofControllerEnabled, sixdofControllerNum);
-            if (status != Status::SUCCESS)
-            {
-                DEVICELOGE("Error: Failed setting Controller 6dof Control (0x%X)", status);
-                return status;
-            }
-            
-
-            /* Currently FW doesn't support setting interrupt rate */
-            //sixdof_interrupt_rate_libtm_message msgIntRate;
-            //msgIntRate.bInterruptRate = toUnderlying(profile->sixDof[SixDofHMD].interruptRate);
-            //status = Set6DofInterruptRate(msgIntRate);
-            //if (status != Status::SUCCESS)
-            //    return status;
-
         }
 
         MessageON_START msg(listener);
