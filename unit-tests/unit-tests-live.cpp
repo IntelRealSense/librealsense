@@ -31,12 +31,10 @@ TEST_CASE("Sync sanity", "[live]") {
 
         int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
         rs2::syncer sync;
-        auto profiles = configure_all_supported_streams(dev,640,480, fps, RS2_EXTENSION_VIDEO_PROFILE);
 
-        for (auto&& s : dev.query_sensors())
-        {
-            s.start(sync);
-        }
+        auto&& sensors_and_profiles = start_all_sensors(dev, sync, 640, 480, fps);
+        auto&& sensors = sensors_and_profiles.first;
+        auto&& profiles = sensors_and_profiles.second; // all of the device's supported profiles
 
         for (auto i = 0; i < 30; i++)
         {
@@ -88,7 +86,7 @@ TEST_CASE("Sync sanity", "[live]") {
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
         {
-            if (set_timestamps.size() < profiles.second.size())
+            if (set_timestamps.size() < profiles.size())
                 num_of_partial_sync_sets++;
 
             if (set_timestamps.size() <= 1)
@@ -102,7 +100,7 @@ TEST_CASE("Sync sanity", "[live]") {
         CAPTURE(all_timestamps.size());
         REQUIRE((float(num_of_partial_sync_sets) / all_timestamps.size()) < 0.9f);
 
-        for (auto s : dev.query_sensors())
+        for (auto s : sensors)
         {
             s.stop();
         }
@@ -126,7 +124,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
         syncer syncer;
         disable_sensitive_options_for(dev);
 
-        auto sensors = dev.query_sensors();
+        auto&& sensors = retrieve_supported_sensors(dev, 640, 480, 30);
 
         for (auto s : sensors)
         {
@@ -135,7 +133,6 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
                 auto range = s.get_option_range(RS2_OPTION_EXPOSURE);
                 REQUIRE_NOTHROW(s.set_option(RS2_OPTION_EXPOSURE, range.min));
             }
-
         }
 
         std::map<rs2_stream, rs2::sensor*> profiles_sensors;
@@ -153,14 +150,19 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
         std::vector<std::vector<rs2::sensor*>> streams_groups(fps.size());
         for (auto i = 0; i < sensors.size(); i++)
         {
-            auto profs = configure_all_supported_streams(sensors[i], 640, 480, fps[i]);
-            for (auto p : profs)
+            auto&& streams = retrieve_all_supported_streams(sensors[i], 640, 480, fps[i]);
+            auto&& profiles = streams.first;
+            auto&& raw_profiles = streams.second;
+            for (auto profile : profiles)
             {
-                profiles_sensors[p.stream] = &sensors[i];
-                sensors_profiles[&sensors[i]] = p.stream;
+                profiles_sensors[profile.stream] = &sensors[i];
+                sensors_profiles[&sensors[i]] = profile.stream;
             }
-            if (profs.size() > 0)
+            if (profiles.size() > 0)
+            {
+                sensors[i].open(raw_profiles);
                 sensors[i].start(syncer);
+            }
         }
 
         for (auto i = 0; i < sensors.size(); i++)
@@ -223,11 +225,9 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
                 CAPTURE(num2);
                 REQUIRE((float)num1 / (float)num2 <= 5 * (float)fps[i] / (float)fps[j]);
             }
-
         }
     }
 }
-
 
 bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
 {
@@ -263,23 +263,23 @@ TEST_CASE("Sync start stop", "[live]") {
         rs2::stream_profile mode;
         auto mode_index = 0;
         bool usb3_device = is_usb3(dev);
-        int fps = usb3_device ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
         int req_fps = usb3_device ? 60 : 30; // USB2 Mode has only a single resolution for 60 fps which is not sufficient to run the test
 
-        do
-        {
-            REQUIRE(get_mode(dev, &mode, mode_index));
-            mode_index++;
-        } while (mode.fps() != req_fps);
+        std::pair<std::vector<rs2::sensor>, std::vector<profile>> res;
+        std::vector<sensor> sensors;
+        rs2::video_stream_profile* video;
 
-        auto video = mode.as<rs2::video_stream_profile>();
-        auto res = configure_all_supported_streams(dev, video.width(), video.height(), mode.fps());
+        do {
+            do
+            {
+                REQUIRE(get_mode(dev, &mode, mode_index)); // will break the loop upon failure on obtaining a matching profile
+                mode_index++;
+            } while (mode.fps() != req_fps);
 
-        for (auto s : res.first)
-        {
-            REQUIRE_NOTHROW(s.start(sync));
-        }
-
+            video = &mode.as<rs2::video_stream_profile>();
+            res = start_all_sensors(dev, sync, video->width(), video->height(), mode.fps());
+            sensors = res.first;
+        } while (sensors.empty());
 
         rs2::frameset frames;
         for (auto i = 0; i < 30; i++)
@@ -297,13 +297,13 @@ TEST_CASE("Sync start stop", "[live]") {
 
         REQUIRE(get_mode(dev, &other_mode, mode_index));
         auto other_video = other_mode.as<rs2::video_stream_profile>();
-        while ((other_video.height() == video.height() && other_video.width() == video.width()) || other_video.fps() != req_fps)
+        while ((other_video.height() == video->height() && other_video.width() == video->width()) || other_video.fps() != req_fps)
         {
             CAPTURE(mode_index);
-            CAPTURE(video.format());
-            CAPTURE(video.width());
-            CAPTURE(video.height());
-            CAPTURE(video.fps());
+            CAPTURE(video->format());
+            CAPTURE(video->width());
+            CAPTURE(video->height());
+            CAPTURE(video->fps());
             CAPTURE(other_video.format());
             CAPTURE(other_video.width());
             CAPTURE(other_video.height());
@@ -314,17 +314,13 @@ TEST_CASE("Sync start stop", "[live]") {
             REQUIRE(other_video);
         }
 
-        for (auto s : res.first)
+        for (auto s : sensors)
         {
             REQUIRE_NOTHROW(s.stop());
             REQUIRE_NOTHROW(s.close());
         }
-        res = configure_all_supported_streams(dev, other_video.width(), other_video.height(), other_mode.fps());
 
-        for (auto s : res.first)
-        {
-            REQUIRE_NOTHROW(s.start(sync));
-        }
+        res = start_all_sensors(dev, sync, other_video.width(), other_video.height(), other_mode.fps());
 
         for (auto i = 0; i < 10; i++)
             frames = sync.wait_for_frames(10000);
@@ -338,6 +334,7 @@ TEST_CASE("Sync start stop", "[live]") {
         }
     }
 }
+
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
     rs2::context ctx;
@@ -418,20 +415,19 @@ TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbac
             int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
             std::map<std::string,size_t> frames_per_stream{};
 
-            auto profiles = configure_all_supported_streams(dev,640,480, fps);
-
-            for (auto s : profiles.first)
+            auto&& cb = [&m, &frames_per_stream](rs2::frame f)
             {
-                REQUIRE_NOTHROW(s.start([&m,&frames_per_stream](rs2::frame f)
-                {
-                    std::lock_guard<std::mutex> lock(m);
-                    ++frames_per_stream[f.get_profile().stream_name()];
-                }));
-            }
+                std::lock_guard<std::mutex> lock(m);
+                ++frames_per_stream[f.get_profile().stream_name()];
+            };
+
+            auto&& sensors_profiles = start_all_sensors(dev, cb, 640, 480, fps);
+            auto&& sensors = sensors_profiles.first;
+            auto&& profiles = sensors_profiles.second;
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
             // Stop & flush all active sensors
-            for (auto s : profiles.first)
+            for (auto s : sensors)
             {
                 REQUIRE_NOTHROW(s.stop());
                 REQUIRE_NOTHROW(s.close());
@@ -439,8 +435,8 @@ TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbac
 
             // Verify frames arrived for all the profiles specified
             std::stringstream active_profiles, streams_arrived;
-            active_profiles << "Profiles requested : " << profiles.second.size() << std::endl;
-            for (auto& pf : profiles.second)
+            active_profiles << "Profiles requested : " << profiles.size() << std::endl;
+            for (auto& pf : profiles)
                 active_profiles << pf << std::endl;
             streams_arrived << "Streams recorded : " << frames_per_stream.size() << std::endl;
             for (auto& frec : frames_per_stream)
@@ -448,7 +444,7 @@ TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbac
 
             CAPTURE(active_profiles.str().c_str());
             CAPTURE(streams_arrived.str().c_str());
-            REQUIRE(profiles.second.size() == frames_per_stream.size());
+            REQUIRE(profiles.size() == frames_per_stream.size());
         }
     }
 }
@@ -665,20 +661,21 @@ TEST_CASE("Extrinsic transformations are transitive", "[live]")
                         }
 
                         // a_to_c.rotation == a_to_b.rotation * b_to_c.rotation
-                        REQUIRE(a_to_c.rotation[0] == Approx(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]));
-                        REQUIRE(a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]));
-                        REQUIRE(a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]));
-                        REQUIRE(a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]));
-                        REQUIRE(a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]));
+                        auto&& epsilon = 0.0001;
+                        REQUIRE(a_to_c.rotation[0] == Approx((float)(a_to_b.rotation[0] * b_to_c.rotation[0] + a_to_b.rotation[3] * b_to_c.rotation[1] + a_to_b.rotation[6] * b_to_c.rotation[2])).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[2] == Approx(a_to_b.rotation[2] * b_to_c.rotation[0] + a_to_b.rotation[5] * b_to_c.rotation[1] + a_to_b.rotation[8] * b_to_c.rotation[2]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[1] == Approx(a_to_b.rotation[1] * b_to_c.rotation[0] + a_to_b.rotation[4] * b_to_c.rotation[1] + a_to_b.rotation[7] * b_to_c.rotation[2]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[3] == Approx(a_to_b.rotation[0] * b_to_c.rotation[3] + a_to_b.rotation[3] * b_to_c.rotation[4] + a_to_b.rotation[6] * b_to_c.rotation[5]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[4] == Approx(a_to_b.rotation[1] * b_to_c.rotation[3] + a_to_b.rotation[4] * b_to_c.rotation[4] + a_to_b.rotation[7] * b_to_c.rotation[5]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[5] == Approx(a_to_b.rotation[2] * b_to_c.rotation[3] + a_to_b.rotation[5] * b_to_c.rotation[4] + a_to_b.rotation[8] * b_to_c.rotation[5]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[6] == Approx(a_to_b.rotation[0] * b_to_c.rotation[6] + a_to_b.rotation[3] * b_to_c.rotation[7] + a_to_b.rotation[6] * b_to_c.rotation[8]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[7] == Approx(a_to_b.rotation[1] * b_to_c.rotation[6] + a_to_b.rotation[4] * b_to_c.rotation[7] + a_to_b.rotation[7] * b_to_c.rotation[8]).epsilon(epsilon));
+                        REQUIRE(a_to_c.rotation[8] == Approx(a_to_b.rotation[2] * b_to_c.rotation[6] + a_to_b.rotation[5] * b_to_c.rotation[7] + a_to_b.rotation[8] * b_to_c.rotation[8]).epsilon(epsilon));
 
                         // a_to_c.translation = a_to_b.transform(b_to_c.translation)
-                        REQUIRE(a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]));
-                        REQUIRE(a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]));
-                        REQUIRE(a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]));
+                        REQUIRE(a_to_c.translation[0] == Approx(a_to_b.rotation[0] * b_to_c.translation[0] + a_to_b.rotation[3] * b_to_c.translation[1] + a_to_b.rotation[6] * b_to_c.translation[2] + a_to_b.translation[0]).epsilon(epsilon));
+                        REQUIRE(a_to_c.translation[1] == Approx(a_to_b.rotation[1] * b_to_c.translation[0] + a_to_b.rotation[4] * b_to_c.translation[1] + a_to_b.rotation[7] * b_to_c.translation[2] + a_to_b.translation[1]).epsilon(epsilon));
+                        REQUIRE(a_to_c.translation[2] == Approx(a_to_b.rotation[2] * b_to_c.translation[0] + a_to_b.rotation[5] * b_to_c.translation[1] + a_to_b.rotation[8] * b_to_c.translation[2] + a_to_b.translation[2]).epsilon(epsilon));
                     }
                 }
             }
@@ -826,24 +823,34 @@ TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
                 }
             }
 
-
             for (auto& res : resolutions)
             {
                 std::vector<rs2::stream_profile> sp = {get_profile_by_resolution_type(presets_sensor, res)};
-                presets_sensor.open(sp);
-                presets_sensor.start([](rs2::frame) {});
-                for (auto i = 0; i < RS2_RS400_VISUAL_PRESET_COUNT; ++i)
+                if (presets_sensor.supports(RS2_OPTION_VISUAL_PRESET))
                 {
-                    auto preset = (rs2_rs400_visual_preset)i;
-                    CAPTURE(res);
-                    CAPTURE(preset);
-                    REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset));
-                    float ret_preset;
-                    REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
-                    REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
+                    presets_sensor.open(sp);
+                    presets_sensor.start([](rs2::frame) {});
+                    for (auto i = 0; i < RS2_RS400_VISUAL_PRESET_COUNT; ++i)
+                    {
+                        auto preset = (rs2_rs400_visual_preset)i;
+                        CAPTURE(res);
+                        CAPTURE(preset);
+                        try
+                        {
+                            presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset);
+                        }
+                        catch (...)
+                        {
+                            // preset is not supported
+                            continue;
+                        }
+                        float ret_preset;
+                        REQUIRE_NOTHROW(ret_preset = presets_sensor.get_option(RS2_OPTION_VISUAL_PRESET));
+                        REQUIRE(preset == (rs2_rs400_visual_preset)((int)ret_preset));
+                    }
+                    presets_sensor.stop();
+                    presets_sensor.close();
                 }
-                presets_sensor.stop();
-                presets_sensor.close();
             }
 
             dev = do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
@@ -1141,14 +1148,6 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
                     REQUIRE(profile.format() < RS2_FORMAT_COUNT);
                     REQUIRE(profile.fps() >= 2);
                     REQUIRE(profile.fps() <= 300);
-
-                    if (auto video = profile.as<video_stream_profile>())
-                    {
-                        REQUIRE(video.width() >= 320);
-                        REQUIRE(video.width() <= 1920);
-                        REQUIRE(video.height() >= 100);     //firmware 5.11.6.200
-                        REQUIRE(video.height() <= 1080);
-                    }
 
                     // require that we can start streaming this mode
                     REQUIRE_NOTHROW(dev.open({ profile }));
@@ -1579,7 +1578,15 @@ TEST_CASE("Auto-Disabling Controls", "[live][options]")
                                 }
 
                                 // Modify the originating control and verify that the target control has been modified as well
-                                REQUIRE_NOTHROW(snr.set_option(orig_opt, master_range.def));
+                                // Modifying gain while in auto exposure throws an exception.
+                                try
+                                {
+                                    (snr.set_option(orig_opt, master_range.def));
+                                }
+                                catch (...)
+                                {
+                                    continue;
+                                }
                                 REQUIRE(snr.get_option(tgt_opt) == test_patterns[i].slave_val_after);
                             }
                         }
@@ -2898,7 +2905,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 // TODO - IMU data profiles are pending FW timestamp fix
-/* D435I/USB3*/         { { "0B3A", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
+/* D435I/USB3*/         { { "0B3A", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
@@ -2948,6 +2955,10 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
 
                 for (auto f : frame)
                 {
+                    // ignore motion frames
+                    if (f.is<motion_frame>())
+                        continue;
+
                     if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                     {
                         auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
@@ -3015,6 +3026,10 @@ TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
                     std::vector<double> ts;
                     for (auto f : frame)
                     {
+                        // ignore motion frames
+                        if (f.is<motion_frame>())
+                            continue;
+
                         if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                         {
                             auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
@@ -3694,6 +3709,11 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
+                    if (frames_additional_data.size() >= frames_for_fps_measure)
+                    {
+                        cv.notify_one();
+                    }
+
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
@@ -3733,22 +3753,19 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                         frames_additional_data.push_back(data);
                     }
                     frames++;
-                    if (frames_additional_data.size() >= frames_for_fps_measure)
-                    {
-                        cv.notify_one();
-                    }
                 }));
 
 
                 CAPTURE(frames_additional_data.size());
                 CAPTURE(frames_for_fps_measure);
+
                 std::unique_lock<std::mutex> lock(m);
                 cv.wait_for(lock, std::chrono::seconds(15), [&] {return ((frames_additional_data.size() >= frames_for_fps_measure)); });
 
+                auto end = internal::get_time();
                 REQUIRE_NOTHROW(subdevice.stop());
                 REQUIRE_NOTHROW(subdevice.close());
 
-                auto end = internal::get_time();
                 lock.unlock();
 
                 auto seconds = (end - start)*msec_to_sec;
