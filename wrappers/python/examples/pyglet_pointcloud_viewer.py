@@ -392,8 +392,8 @@ def run(dt):
     if not success:
         return
 
-    depth_frame = frames.get_depth_frame()
-    other_frame = frames.first(other_stream)
+    depth_frame = frames.get_depth_frame().as_video_frame()
+    other_frame = frames.first(other_stream).as_video_frame()
 
     depth_frame = decimate.process(depth_frame)
 
