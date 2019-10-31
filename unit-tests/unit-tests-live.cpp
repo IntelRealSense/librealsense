@@ -4002,7 +4002,7 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                         std::copy(emitter_state.begin(), emitter_state.end(), std::ostream_iterator<int>(emitter_results));
                         CAPTURE(emitter_results.str().c_str());
 
-                        // Verify that the laser state is constantly alternating
+                        // Verify that the laser state is constantly alternating 
                         REQUIRE(std::adjacent_find(emitter_state.begin(), emitter_state.end()) == emitter_state.end());
                     }
                 }
