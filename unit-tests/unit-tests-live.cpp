@@ -4006,7 +4006,6 @@ TEST_CASE("Alternating Emitter", "[live][options]")
                         REQUIRE(std::adjacent_find(emitter_state.begin(), emitter_state.end()) == emitter_state.end());
                     }
                 }
-
             }
 
             GIVEN("Negative scenario"){
