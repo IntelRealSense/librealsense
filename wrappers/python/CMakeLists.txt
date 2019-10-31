@@ -90,21 +90,28 @@ if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     )
 endif()
 
-if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
+if(${FORCE_RSUSB_BACKEND})
     list(APPEND RAW_RS
         ../../src/rsusb-backend/rsusb-backend.h
         ../../src/rsusb-backend/rsusb-backend.cpp
-        ../../src/libuvc/rsusb-backend-linux.h
-        ../../src/libuvc/rsusb-backend-linux.cpp
+        ../../src/uvc/uvc-device.cpp
+        ../../src/uvc/uvc-parser.cpp
+        ../../src/uvc/uvc-streamer.cpp
+        ../../src/hid/hid-device.cpp
+    )
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
+    list(APPEND RAW_RS
+        ../../src/win7/rsusb-backend-windows.h
+        ../../src/win7/rsusb-backend-windows.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/rsusb-backend/rsusb-backend.h
-        ../../src/rsusb-backend/rsusb-backend.cpp
-        ../../src/win7/rsusb-backend-windows.h
-        ../../src/win7/rsusb-backend-windows.cpp
+        ../../src/libuvc/rsusb-backend-linux.h
+        ../../src/libuvc/rsusb-backend-linux.cpp
     )
 endif()
 

@@ -24,8 +24,7 @@ namespace librealsense
             auto usb_devices = platform::usb_enumerator::query_devices_info();
             for (auto&& info : usb_devices) 
             {
-                //TODO:MK all devices on win7 driver has the same GUID, need to use standard GUIDs
-                if (info.cls != RS2_USB_CLASS_VIDEO || info.mi >= 5)
+                if (info.cls != RS2_USB_CLASS_VIDEO)
                     continue;
                 platform::uvc_device_info device_info;
                 device_info.id = info.id;
@@ -779,7 +778,7 @@ namespace librealsense
                     len = 26;
                     break;
             }
-            len = 34;
+
             /* prepare for a SET transfer */
             if (req == UVC_SET_CUR) {
                 SHORT_TO_SW(ctrl->bmHint, buf);

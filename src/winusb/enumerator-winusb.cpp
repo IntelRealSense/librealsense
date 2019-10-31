@@ -30,11 +30,13 @@ namespace librealsense
     {
         //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
         const std::map<std::string, usb_class> guids = {
-            {"{175695CD-30D9-4F87-8BE3-5A8270F49A31}", RS2_USB_CLASS_VENDOR_SPECIFIC}, //Ivcam
-            {"{08090549-CE78-41DC-A0FB-1BD66694BB0C}", RS2_USB_CLASS_VENDOR_SPECIFIC},  //D4xx
+            {"{175695cd-30d9-4f87-8be3-5a8270f49a31}", RS2_USB_CLASS_VENDOR_SPECIFIC}, //Ivcam HWM
             {"{a5dcbf10-6530-11d2-901f-00c04fb951ed}", RS2_USB_CLASS_UNSPECIFIED},  // for DFU
-            {"{ca3e7ab9-b4c3-4ae6-8251-579ef933890f}", RS2_USB_CLASS_VIDEO}, // win 10
-            {"{50537bc3-2919-452d-88a9-b13bbf7d2459}", RS2_USB_CLASS_VIDEO}, // win 7
+            {"{ca3e7ab9-b4c3-4ae6-8251-579ef933890f}", RS2_USB_CLASS_VIDEO}, // UVC win 10
+            {"{08090549-ce78-41dc-a0fb-1bd66694bb0c}", RS2_USB_CLASS_VENDOR_SPECIFIC},  //HWM win 10
+            {"{68f2c451-0c22-415e-8293-7a903437e725}", RS2_USB_CLASS_VIDEO}, // UVC win 7
+            {"{ee390e5d-4f81-4543-a405-3686e712dc7b}", RS2_USB_CLASS_HID},  //HID win 7
+            {"{2f8549de-7dc3-4e5c-9821-d71ba00bec8c}", RS2_USB_CLASS_VENDOR_SPECIFIC},  //HWM win 7
         };
 
         std::vector<std::wstring> query_by_interface(GUID guid)
