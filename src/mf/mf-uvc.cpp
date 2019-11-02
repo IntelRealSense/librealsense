@@ -775,13 +775,13 @@ namespace librealsense
                 if (!get_usb_descriptors(info.vid, info.pid, info.unique_id, _location, _device_usb_spec, _device_serial))
                 {
                     LOG_WARNING("Could not retrieve USB descriptor for device " << std::hex << info.vid << ":"
-                        << info.pid << " , id:" << info.unique_id);
+                        << info.pid << " , id:" << info.unique_id << std::dec);
                 }
             }
             catch (...)
             {
                 LOG_WARNING("Accessing USB info failed for " << std::hex << info.vid << ":"
-                    << info.pid << " , id:" << info.unique_id);
+                    << info.pid << " , id:" << info.unique_id << std::dec);
             }
             foreach_uvc_device([this](const uvc_device_info& i, IMFActivate* device)
             {
