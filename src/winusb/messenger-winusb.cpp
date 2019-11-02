@@ -128,7 +128,7 @@ namespace librealsense
 
         usb_status usb_messenger_winusb::submit_request(const rs_usb_request& request)
         {
-            ULONG lengthTransferred = 0;
+            ULONG read_pipe_transfer_size = 0;
             auto ep = request->get_endpoint();
             auto in = ep->get_interface_number();
             auto epa = request->get_endpoint()->get_address();
@@ -136,7 +136,7 @@ namespace librealsense
             auto h = _handle->get_interface_handle(in);
 
             auto buffer = const_cast<uint8_t*>(request->get_buffer().data());
-            int res = WinUsb_ReadPipe(h, epa, buffer, request->get_buffer().size(), &lengthTransferred, ovl);
+            int res = WinUsb_ReadPipe(h, epa, buffer, request->get_buffer().size(), &read_pipe_transfer_size, ovl);
             if (0 != res)
                 return winusb_status_to_rs(res);
 
@@ -146,10 +146,9 @@ namespace librealsense
 
             get_dispatcher(epa)->invoke([&, request, h, ovl](dispatcher::cancellable_timer c)
             {
-                int timeout = 100;
-                ULONG lengthTransferred = 0;
+                ULONG overlapped_transfer_size = 0;
 
-                auto sts = GetOverlappedResult(h, ovl, &lengthTransferred, TRUE);
+                auto sts = WinUsb_GetOverlappedResult(h, ovl, &overlapped_transfer_size, TRUE);
                 if (sts)
                 {
                     auto cb = request->get_callback();

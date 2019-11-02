@@ -4,7 +4,7 @@
 #include "uvc-streamer.h"
 #include "../backend.h"
 
-const int UVC_PAYLOAD_MAX_HEADER_LENGTH         = 256;
+const int UVC_PAYLOAD_MAX_HEADER_LENGTH         = 1024;
 const int DEQUEUE_MILLISECONDS_TIMEOUT          = 50;
 const int ENDPOINT_RESET_MILLISECONDS_TIMEOUT   = 100;
 
