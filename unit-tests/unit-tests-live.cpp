@@ -3847,9 +3847,10 @@ TEST_CASE("Alternating Emitter", "[live][options]")
         const size_t record_frames = 60;
 
         // D400 Global Shutter only models
-        if (!librealsense::val_in_range(PID.first, { std::string("0B3A"),std::string("0B07") }))
+        if (librealsense::val_in_range(PID.first, { std::string("0B3A"),std::string("0B07") }))
         {
             WARN("Skipping test - the Alternating Emitter feature is not supported for device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+            return;
         }
         else
         {
