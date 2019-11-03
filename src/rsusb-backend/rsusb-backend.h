@@ -10,11 +10,11 @@ namespace librealsense
 {
     namespace platform
     {
-        class android_backend : public std::enable_shared_from_this<android_backend>, public backend
+        class rs_backend : public backend
         {
         public:
-            android_backend();
-            ~android_backend();
+            rs_backend();
+            ~rs_backend();
 
             std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const override;
             std::vector<uvc_device_info> query_uvc_devices() const override;
@@ -30,9 +30,6 @@ namespace librealsense
 
             // don't change
             virtual std::shared_ptr<time_service> create_time_service() const override;
-            std::shared_ptr<device_watcher> create_device_watcher() const override;
-        private:
-            std::chrono::high_resolution_clock::time_point _start_time;
         };
     }
 }

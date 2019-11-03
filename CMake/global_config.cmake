@@ -18,6 +18,11 @@ if(ENABLE_CCACHE)
 endif()
 
 macro(global_set_flags)
+    if(${FORCE_LIBUVC} OR ${FORCE_WINUSB_UVC} OR ${ANDROID_USB_HOST_UVC})
+        MESSAGE(DEPRECATION "FORCE_LIBUVC, FORCE_WINUSB_UVC and ANDROID_USB_HOST_UVC are deprecated, use FORCE_RSUSB_BACKEND instead")
+        set(FORCE_RSUSB_BACKEND ON)
+    endif()
+    
     set(LRS_TARGET realsense2)
     set(LRS_LIB_NAME ${LRS_TARGET})
 
@@ -55,11 +60,6 @@ macro(global_set_flags)
 
     if (BUILD_INTERNAL_UNIT_TESTS)
         add_definitions(-DBUILD_INTERNAL_UNIT_TESTS)
-    endif()
-
-    if(FORCE_LIBUVC)
-        set(BACKEND RS2_USE_LIBUVC_BACKEND)
-        message(STATUS "Using libuvc (by force)")
     endif()
 
     if (BUILD_WITH_CUDA)

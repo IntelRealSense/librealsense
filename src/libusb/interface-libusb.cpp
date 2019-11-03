@@ -36,5 +36,11 @@ namespace librealsense
             }
             return nullptr;
         }
+
+        void usb_interface_libusb::add_associated_interface(const rs_usb_interface& interface)
+        {
+            if(interface)
+                _associated_interfaces.push_back(interface);
+        }
     }
 }

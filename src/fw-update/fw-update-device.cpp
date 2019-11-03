@@ -12,7 +12,7 @@
 #include <thread>
 
 #define DEFAULT_TIMEOUT 100
-
+#define FW_UPDATE_INTERFACE_NUMBER 0
 namespace librealsense
 {
     std::string get_formatted_fw_version(uint32_t fw_last_version)
@@ -111,7 +111,7 @@ namespace librealsense
     update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
         : _context(ctx), _usb_device(usb_device)
     {
-        auto messenger = _usb_device->open();
+        auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 
         auto state = get_dfu_state(messenger);
         if (state != RS2_DFU_STATE_DFU_IDLE)
@@ -127,7 +127,7 @@ namespace librealsense
 
     void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
     {
-        auto messenger = _usb_device->open();
+        auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 
         const size_t transfer_size = 1024;
 

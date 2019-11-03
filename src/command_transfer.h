@@ -35,7 +35,6 @@ namespace librealsense
                 int timeout_ms,
                 bool require_response = true) override
             { 
-                const auto& m = _device->open();
                 auto intfs = _device->get_interfaces();
                 auto it = std::find_if(intfs.begin(), intfs.end(),
                     [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_VENDOR_SPECIFIC; });
@@ -43,6 +42,8 @@ namespace librealsense
                     throw std::runtime_error("can't find VENDOR_SPECIFIC interface of device: " + _device->get_info().id);
 
                 auto hwm = *it;
+                const auto& m = _device->open(hwm->get_number());
+
                 uint32_t transfered_count = 0;
                 auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), static_cast<uint32_t>(data.size()), transfered_count, timeout_ms);
 
