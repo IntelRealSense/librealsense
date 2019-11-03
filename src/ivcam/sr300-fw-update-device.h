@@ -17,9 +17,12 @@ namespace librealsense
     protected:
         virtual const std::string& get_name() const override { return _name; }
         virtual const std::string& get_product_line() const override { return _product_line; }
+        virtual const std::string& get_serial_number() const override { return _serial_number; }
+        std::string parse_serial_number(const std::vector<uint8_t>& buffer) const;
 
     private:
         std::string _name;
         std::string _product_line;
+        std::string _serial_number;
     };
 }

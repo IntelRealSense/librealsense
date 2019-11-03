@@ -1,7 +1,9 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 target_sources(${LRS_TARGET}
-    PRIVATE
+    PRIVATE    
+        "${CMAKE_CURRENT_LIST_DIR}/handle-usbhost.h"
+        
         "${CMAKE_CURRENT_LIST_DIR}/usbhost.h"
         "${CMAKE_CURRENT_LIST_DIR}/usbhost.c"
         
@@ -15,8 +17,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/messenger-usbhost.h"
         "${CMAKE_CURRENT_LIST_DIR}/messenger-usbhost.cpp"
         
-        "${CMAKE_CURRENT_LIST_DIR}/pipe-usbhost.h"
-        "${CMAKE_CURRENT_LIST_DIR}/pipe-usbhost.cpp"
-        
         "${CMAKE_CURRENT_LIST_DIR}/enumerator-usbhost.cpp"
+        
+        "${CMAKE_CURRENT_LIST_DIR}/request-usbhost.h"
+        "${CMAKE_CURRENT_LIST_DIR}/request-usbhost.cpp"
 )

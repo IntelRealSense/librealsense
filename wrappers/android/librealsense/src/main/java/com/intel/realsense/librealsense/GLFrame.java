@@ -23,4 +23,18 @@ public abstract class GLFrame implements AutoCloseable {
         GLES10.glMatrixMode(GLES10.GL_PROJECTION);
         GLES10.glOrthof(0, r.width(), r.height(), 0, -1, +1);
     }
+
+    public String getLabel() {
+        if(mFrame == null)
+            return "";
+        try(StreamProfile sp = mFrame.getProfile()){
+            return sp.getType() + " - " + sp.getFormat();
+        }
+    }
+
+    @Override
+    public void close() {
+        if(mFrame != null)
+            mFrame.close();
+    }
 }

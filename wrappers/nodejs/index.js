@@ -4545,6 +4545,22 @@ const option = {
    * <br>Equivalent to its uppercase counterpart.
    */
   option_inter_cam_sync_mode: 'inter-cam-sync-mode',
+  option_stream_filter: 'stream-filter',
+  option_stream_format_filter: 'stream-format-filter',
+  option_stream_index_filter: 'stream-index-filter',
+  option_emitter_on_off: 'emitter-on-off',
+  option_zero_order_point_x: 'zero-order-point-x',
+  option_zero_order_point_y: 'zero-order-point-y',
+  option_lld_temperature: 'lld-temperature',
+  option_mc_temperature: 'mc-temperature',
+  option_ma_temperature: 'ma-temperature',
+  option_apd_temperature: 'apd-temperature',
+  option_hardware_preset: 'hardware-preset',
+  option_global_time_enabled: 'global-time-enabled',
+  option_enable_mapping: 'enable-mapping',
+  option_enable_relocalization: 'enable-relocalization',
+  option_enable_pose_jumping: 'enable-pose-jumping',
+  option_enable_dynamic_calibration: 'enable-dynamic-calibration',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -4791,6 +4807,22 @@ const option = {
    * @type {Integer}
    */
   OPTION_INTER_CAM_SYNC_MODE: RS2.RS2_OPTION_INTER_CAM_SYNC_MODE,
+  OPTION_STREAM_FILTER: RS2.RS2_OPTION_STREAM_FILTER,
+  OPTION_STREAM_FORMAT_FILTER: RS2.RS2_OPTION_STREAM_FORMAT_FILTER,
+  OPTION_STREAM_INDEX_FILTER: RS2.RS2_OPTION_STREAM_INDEX_FILTER,
+  OPTION_EMITTER_ON_OFF: RS2.RS2_OPTION_EMITTER_ON_OFF,
+  OPTION_ZERO_ORDER_POINT_X: RS2.RS2_OPTION_ZERO_ORDER_POINT_X,
+  OPTION_ZERO_ORDER_POINT_Y: RS2.RS2_OPTION_ZERO_ORDER_POINT_Y,
+  OPTION_LLD_TEMPERATURE: RS2.RS2_OPTION_LLD_TEMPERATURE,
+  OPTION_MC_TEMPERATURE: RS2.RS2_OPTION_MC_TEMPERATURE,
+  OPTION_MA_TEMPERATURE: RS2.RS2_OPTION_MA_TEMPERATURE,
+  OPTION_HARDWARE_PRESET: RS2.RS2_OPTION_HARDWARE_PRESET,
+  OPTION_GLOBAL_TIME_ENABLED: RS2.RS2_OPTION_GLOBAL_TIME_ENABLED,
+  OPTION_APD_TEMPERATURE: RS2.RS2_OPTION_APD_TEMPERATURE,
+  OPTION_ENABLE_MAPPING: RS2.RS2_OPTION_ENABLE_MAPPING,
+  OPTION_ENABLE_RELOCALIZATION: RS2.RS2_OPTION_ENABLE_RELOCALIZATION,
+  OPTION_ENABLE_POSE_JUMPING: RS2.RS2_OPTION_ENABLE_POSE_JUMPING,
+  OPTION_ENABLE_DYNAMIC_CALIBRATION: RS2.RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -4893,6 +4925,38 @@ const option = {
         return this.option_auto_exposure_converge_step;
       case this.OPTION_INTER_CAM_SYNC_MODE:
         return this.option_inter_cam_sync_mode;
+      case this.OPTION_STREAM_FILTER:
+        return this.option_stream_filter;
+      case this.OPTION_STREAM_FORMAT_FILTER:
+        return this.option_stream_format_filter;
+      case this.OPTION_STREAM_INDEX_FILTER:
+        return this.option_stream_index_filter;
+      case this.OPTION_EMITTER_ON_OFF:
+        return this.option_emitter_on_off;
+      case this.OPTION_ZERO_ORDER_POINT_X:
+        return this.option_zero_order_point_x;
+      case this.OPTION_ZERO_ORDER_POINT_Y:
+        return this.option_zero_order_point_y;
+      case this.OPTION_LLD_TEMPERATURE:
+        return this.option_lld_temperature;
+      case this.OPTION_MC_TEMPERATURE:
+        return this.option_mc_temperature;
+      case this.OPTION_MA_TEMPERATURE:
+        return this.option_ma_temperature;
+      case this.OPTION_HARDWARE_PRESET:
+        return this.option_hardware_preset;
+      case this.OPTION_GLOBAL_TIME_ENABLED:
+        return this.option_global_time_enabled;
+      case this.OPTION_APD_TEMPERATURE:
+        return this.option_apd_temperature;
+      case this.OPTION_ENABLE_MAPPING:
+        return this.option_enable_mapping;
+      case this.OPTION_ENABLE_RELOCALIZATION:
+        return this.option_enable_relocalization;
+      case this.OPTION_ENABLE_POSE_JUMPING:
+        return this.option_enable_pose_jumping;
+      case this.OPTION_ENABLE_DYNAMIC_CALIBRATION:
+        return this.option_enable_dynamic_calibration;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');

@@ -8,11 +8,18 @@ file(READ "firmware-version.h" ver)
 
 message(STATUS "Fetching recommended firmwares:")
 
+string(REGEX MATCH "D4XX_RC_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
+set(D4XX_RC_VERSION ${CMAKE_MATCH_1})
+message(STATUS "D4XX_RC_VERSION: ${D4XX_RC_VERSION}")
+set(D4XX_RC_SHA1 b81d8b8dcdbbf89d0b1451a3da002b255851eddc)
+set(D4XX_RC_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW")
+
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 0f91ab8cce99e845c1dc9c270bbbefb12a6b1521)
+set(D4XX_FW_SHA1 b81d8b8dcdbbf89d0b1451a3da002b255851eddc)
 set(D4XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW")
+
 
 string(REGEX MATCH "SR3XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(SR3XX_FW_VERSION ${CMAKE_MATCH_1})
@@ -61,6 +68,7 @@ function(target_binary url version sha1 symbol ext)
 endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
+target_binary( "${D4XX_RC_URL}"  "${D4XX_RC_VERSION}"  "${D4XX_RC_SHA1}" D4XX_RC_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets

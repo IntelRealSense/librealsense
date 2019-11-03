@@ -14,6 +14,7 @@
 #include "stream.h"
 #include "l500-private.h"
 #include "error-handling.h"
+#include "frame-validator.h"
 
 namespace librealsense
 {
@@ -29,30 +30,122 @@ namespace librealsense
         std::vector<tagged_profile> get_profiles_tags() const override;
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     };
 
-    class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
+    class l500_depth_sensor_interface: public recordable<l500_depth_sensor_interface>
+    {
+    public:
+        virtual ivcam2::intrinsic_depth get_intrinsic() const = 0;
+        virtual float read_baseline() const = 0;
+        virtual ~l500_depth_sensor_interface() = default;
+    };
+    MAP_EXTENSION(RS2_EXTENSION_L500_DEPTH_SENSOR, librealsense::l500_depth_sensor_interface);
+
+    class l500_depth_sensor_snapshot : public l500_depth_sensor_interface, public extension_snapshot
+    {
+    public:
+        l500_depth_sensor_snapshot(ivcam2::intrinsic_depth intrinsic, float baseline):
+            _intrinsic(intrinsic), _baseline(baseline)
+        {}
+
+        ivcam2::intrinsic_depth get_intrinsic() const override
+        {
+            return _intrinsic;
+        }
+        float read_baseline() const override
+        {
+            return _baseline;
+
+        }
+        void update(std::shared_ptr<extension_snapshot> ext) override
+        {
+            if (auto api = As<l500_depth_sensor_interface>(ext))
+            {
+                _intrinsic = api->get_intrinsic();
+            }  
+        }
+
+        void create_snapshot(std::shared_ptr<l500_depth_sensor_interface>& snapshot) const override
+        {
+            snapshot = std::make_shared<l500_depth_sensor_snapshot>(get_intrinsic(), read_baseline());
+        }
+
+        void enable_recording(std::function<void(const l500_depth_sensor_interface&)> recording_function) override
+        {}
+
+        ~l500_depth_sensor_snapshot() {}
+
+    protected:
+        ivcam2::intrinsic_depth _intrinsic;
+        float _baseline;
+    };
+
+    class l500_depth_sensor : public uvc_sensor, public video_sensor_interface, public virtual depth_sensor, public virtual l500_depth_sensor_interface
     {
     public:
         explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<platform::uvc_device> uvc_device,
             std::unique_ptr<frame_timestamp_reader> timestamp_reader)
-            : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            : uvc_sensor("L500 Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner),
+              _depth_invalidation_enabled(false)
         {
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
                 return read_znorm(); })));
+
+            register_option(RS2_OPTION_DEPTH_OFFSET, std::make_shared<const_value_option>("Offset from sensor to depth origin in millimetrers",
+                lazy<float>([&]() {
+                return get_depth_offset(); })));
+
+            _depth_invalidation_option = std::make_shared<depth_invalidation_option>(
+                0,
+                1,
+                1,
+                0,
+                &_depth_invalidation_enabled,
+                "depth invalidation enabled");
+            _depth_invalidation_option->on_set([this](float val)
+            {
+                if (!_depth_invalidation_option->is_valid(val))
+                    throw invalid_value_exception(to_string()
+                        << "Unsupported depth invalidation enabled " << val << " is out of range.");
+            });
+
+            register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
+
+        }
+
+        virtual const char* get_option_name(rs2_option option) const override
+        {
+            if(option == RS2_OPTION_DEPTH_INVALIDATION_ENABLE)
+            {
+                static const std::string str = make_less_screamy("DEPTH_INVALIDATION_ENABLE");
+                return str.c_str();
+            }
+            return options_container::get_option_name(option);
+        }
+
+        static ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height, ivcam2::intrinsic_depth intrinsic)
+        {
+            auto num_of_res = intrinsic.resolution.num_of_resolutions;
+
+            for (auto i = 0; i < num_of_res; i++)
+            {
+                auto model_world = intrinsic.resolution.intrinsic_resolution[i].world;
+                auto model_raw = intrinsic.resolution.intrinsic_resolution[i].raw;
+
+                if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
+                    return model_world;
+                else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
+                    return  model_raw;
+            }
+            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
         }
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
         {
             using namespace ivcam2;
-            auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
 
-            auto num_of_res = intrinsic->resolution.num_of_resolutions;
-            pinhole_camera_model cam_model;
-
-            auto intrinsic_params = get_intrinsic_params(profile.width, profile.height);
+            auto intrinsic_params = get_intrinsic_params(profile.width, profile.height, get_intrinsic());
 
             rs2_intrinsics intrinsics;
             intrinsics.width = intrinsic_params.pinhole_cam_model.width;
@@ -105,30 +198,17 @@ namespace librealsense
             return results;
         }
 
-        ivcam2::intrinsic_params get_intrinsic_params(const uint32_t width, const uint32_t height) const
-        {
-            using namespace ivcam2;
-            auto intrinsic = check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
-
-            auto num_of_res = intrinsic->resolution.num_of_resolutions;
-            intrinsic_params cam_model;
-
-            for (auto i = 0; i < num_of_res; i++)
-            {
-                auto model_world = intrinsic->resolution.intrinsic_resolution[i].world;
-                auto model_raw = intrinsic->resolution.intrinsic_resolution[i].raw;
-
-                if (model_world.pinhole_cam_model.height == height && model_world.pinhole_cam_model.width == width)
-                    return model_world;
-                else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
-                    return  model_raw;
-            }
-            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
-        }
+        
 
         float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
 
-        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
+        ivcam2::intrinsic_depth get_intrinsic() const override
+        {
+            using namespace ivcam2;
+            return *check_calib<intrinsic_depth>(*_owner->_calib_table_raw);
+        }
+
+        void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
         {
             snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
         }
@@ -139,6 +219,14 @@ namespace librealsense
             });
         }
 
+        void create_snapshot(std::shared_ptr<l500_depth_sensor_interface>& snapshot) const  override
+        {
+            snapshot = std::make_shared<l500_depth_sensor_snapshot>(get_intrinsic(), read_baseline());
+        }
+
+        void enable_recording(std::function<void(const l500_depth_sensor_interface&)> recording_function) override
+        {}
+
         static processing_blocks get_l500_recommended_proccesing_blocks();
 
         processing_blocks get_recommended_processing_blocks() const override
@@ -147,11 +235,20 @@ namespace librealsense
         };
 
         int read_algo_version();
-        float read_baseline();
+        float read_baseline() const override;
         float read_znorm();
 
+        void start(frame_callback_ptr callback) override;
+        void open(const stream_profiles& requests) override;
+        void stop() override;
+        float get_depth_offset() const;
     private:
         const l500_device* _owner;
         float _depth_units;
+        stream_profiles _user_requests;
+        stream_profiles _validator_requests;
+        bool _depth_invalidation_enabled;
+        std::shared_ptr<depth_invalidation_option> _depth_invalidation_option;
+
     };
 }

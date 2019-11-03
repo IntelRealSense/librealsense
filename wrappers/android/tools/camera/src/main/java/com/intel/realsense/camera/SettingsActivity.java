@@ -22,7 +22,6 @@ import com.intel.realsense.librealsense.Sensor;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.Updatable;
-import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -55,20 +54,29 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        RsContext ctx = new RsContext();
-        try(DeviceList devices = ctx.queryDevices()) {
-            if (devices.getDeviceCount() == 0) {
-                throw new Exception("Failed to detect a connected device");
+        int tries = 3;
+        for(int i = 0; i < tries; i++){
+            RsContext ctx = new RsContext();
+            try(DeviceList devices = ctx.queryDevices()) {
+                if (devices.getDeviceCount() == 0) {
+                    Thread.sleep(500);
+                    continue;
+                }
+                _device = devices.createDevice(0);
+                loadInfosList();
+                loadSettingsList(_device);
+                StreamProfileSelector[] profilesList = createSettingList(_device);
+                loadStreamList(_device, profilesList);
+                return;
+            } catch(Exception e){
+                Log.e(TAG, "failed to load settings, error: " + e.getMessage());
             }
-            _device = devices.createDevice(0);
-            loadInfosList();
-            loadSettingsList(_device);
-            StreamProfileSelector[] profilesList = createSettingList(_device);
-            loadStreamList(_device, profilesList);
-        } catch(Exception e){
-            Log.e(TAG, "failed to load settings, error: " + e.getMessage());
-            Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
         }
+        Log.e(TAG, "failed to load settings");
+        Toast.makeText(this, "Failed to load settings", Toast.LENGTH_LONG).show();
+        Intent intent = new Intent(this, DetachedActivity.class);
+        startActivity(intent);
+        finish();
     }
     @Override
     protected void onPause() {
@@ -97,7 +105,7 @@ public class SettingsActivity extends AppCompatActivity {
         if(device.is(Extension.UPDATABLE)){
             settingsMap.put(INDEX_UPDATE,"Firmware update");
             Updatable fwud = device.as(Extension.UPDATABLE);
-            if(fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
+            if(fwud != null && fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
                 settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
         }
 
@@ -162,24 +170,23 @@ public class SettingsActivity extends AppCompatActivity {
         return getDeviceConfig(pid, streamType, streamIndex) + "_index";
     }
 
-    public static Map<Integer, List<VideoStreamProfile>> createProfilesMap(Device device){
-        Map<Integer, List<VideoStreamProfile>> rv = new HashMap<>();
+    public static Map<Integer, List<StreamProfile>> createProfilesMap(Device device){
+        Map<Integer, List<StreamProfile>> rv = new HashMap<>();
         List<Sensor> sensors = device.querySensors();
         for (Sensor s : sensors){
             List<StreamProfile> profiles = s.getStreamProfiles();
             for (StreamProfile p : profiles){
                 Pair<StreamType, Integer> pair = new Pair<>(p.getType(), p.getIndex());
                 if(!rv.containsKey(pair.hashCode()))
-                    rv.put(pair.hashCode(), new ArrayList<VideoStreamProfile>());
-                VideoStreamProfile vsp = p.as(VideoStreamProfile.class);
-                rv.get(pair.hashCode()).add(vsp);
+                    rv.put(pair.hashCode(), new ArrayList<StreamProfile>());
+                rv.get(pair.hashCode()).add(p);
             }
         }
         return rv;
     }
 
     private void loadStreamList(Device device, StreamProfileSelector[] lines){
-        if(lines == null)
+        if(device == null || lines == null)
             return;
         if(!device.supportsInfo(CameraInfo.PRODUCT_ID))
             throw new RuntimeException("try to config unknown device");
@@ -189,7 +196,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onCheckedChanged(StreamProfileSelector holder) {
                 SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
-                VideoStreamProfile p = holder.getProfile();
+                StreamProfile p = holder.getProfile();
                 editor.putBoolean(getEnabledDeviceConfigString(pid, p.getType(), p.getIndex()), holder.isEnabled());
                 editor.putInt(getIndexdDeviceConfigString(pid, p.getType(), p.getIndex()), holder.getIndex());
                 editor.commit();
@@ -202,7 +209,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private StreamProfileSelector[] createSettingList(final Device device){
-        Map<Integer, List<VideoStreamProfile>> profilesMap = createProfilesMap(device);
+        Map<Integer, List<StreamProfile>> profilesMap = createProfilesMap(device);
 
         SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
         if(!device.supportsInfo(CameraInfo.PRODUCT_ID))
@@ -210,8 +217,8 @@ public class SettingsActivity extends AppCompatActivity {
         String pid = device.getInfo(CameraInfo.PRODUCT_ID);
         List<StreamProfileSelector> lines = new ArrayList<>();
         for(Map.Entry e : profilesMap.entrySet()){
-            List<VideoStreamProfile> list = (List<VideoStreamProfile>) e.getValue();
-            VideoStreamProfile p = list.get(0);
+            List<StreamProfile> list = (List<StreamProfile>) e.getValue();
+            StreamProfile p = list.get(0);
             boolean enabled = sharedPref.getBoolean(getEnabledDeviceConfigString(pid, p.getType(), p.getIndex()), false);
             int index = sharedPref.getInt(getIndexdDeviceConfigString(pid, p.getType(), p.getIndex()), 0);
             lines.add(new StreamProfileSelector(enabled, index, list));

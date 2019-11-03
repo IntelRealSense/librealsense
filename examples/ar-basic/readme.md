@@ -56,12 +56,10 @@ rs2::stream_profile fisheye_stream = pipe_profile.get_stream(RS2_STREAM_FISHEYE,
 rs2_intrinsics intrinsics = fisheye_stream.as<rs2::video_stream_profile>().get_intrinsics();
 ```
 
-The extrinsics parameters of the sensor contain its pose relative to the device coordinate system.
+The extrinsics give the relative poses of different sensors.
 We will use them to compute the pose of a virtual object as seen from the sensor.
 ```cpp
-// Get fisheye sensor extrinsics parameters.
-// This is the pose of the fisheye sensor relative to the T265 coordinate system.
-rs2_extrinsics extrinsics = fisheye_stream.get_extrinsics_to(pipe_profile.get_stream(RS2_STREAM_POSE));
+rs2_extrinsics pose_to_fisheye_extrinsics = pipe_profile.get_stream(RS2_STREAM_POSE).get_extrinsics_to(fisheye_stream);
 ```
 
 We create an OpenGL window where we will show the fisheye image and the rendered virtual object.
@@ -166,14 +164,14 @@ We convert the object vertices from object reference system into device referenc
     object object_in_device = convert_object_coordinates(virtual_object, object_pose_in_device);
 ```
 
-Now we can use the extrinsics information of the fisheye sensor to transform vertices from
-device reference system into sensor reference system. For that, the API provides `rs2_transform_point_to_point`:
+Now we can use the extrinsics information to transform vertices from
+device reference system into fisheye reference system. For that, the API provides `rs2_transform_point_to_point`:
 ```cpp
     // Convert object vertices from device coordinates into fisheye sensor coordinates using extrinsics
     object object_in_sensor;
     for (size_t i = 0; i < object_in_device.size(); ++i)
     {
-        rs2_transform_point_to_point(object_in_sensor[i].f, &extrinsics, object_in_device[i].f);
+        rs2_transform_point_to_point(object_in_sensor[i].f, &pose_to_fisheye_extrinsics, object_in_device[i].f);
     }
 ```
 

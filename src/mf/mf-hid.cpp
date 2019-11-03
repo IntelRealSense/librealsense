@@ -207,6 +207,7 @@ namespace librealsense
 
                 pSensor->GetFriendlyName(&fName);
                 d.sensor.name = CW2A(fName);
+                SysFreeString(fName); // free string after it was copied to sensor data
 
                 d.fo.pixels = &data;
                 d.fo.metadata = &meta_data;
@@ -350,15 +351,8 @@ namespace librealsense
         {
             std::vector<hid_sensor> sensors;
 
-            HRESULT res = S_OK;
-            BSTR fName{};
-
-            for (auto& sensor : _opened_sensors)
-            {
-                sensors.push_back({ sensor->get_sensor_name() });
-            }
-
-            SysFreeString(fName);
+            for (auto& sensor : _hid_profiles)
+                sensors.push_back({ sensor.sensor_name });
 
             return sensors;
         }

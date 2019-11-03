@@ -30,6 +30,9 @@ int main(int argc, char * argv[]) try
         colorizers[dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)] = rs2::colorizer();
     }
 
+    // We'll keep track of the last frame of each stream available to make the presentation persistent
+    std::map<int, rs2::frame> render_frames;
+
     // Main app loop
     while (app)
     {
@@ -44,9 +47,6 @@ int main(int argc, char * argv[]) try
                     new_frames.emplace_back(f);
             }
         }
-
-        // We'll keep track for the last frame of each stream available to make the presentation persistent
-        std::map<int, rs2::frame> render_frames;
 
         // Convert the newly-arrived frames to render-friendly format
         for (const auto& frame : new_frames)

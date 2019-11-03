@@ -60,15 +60,12 @@ namespace rs2
 
         void show_no_stream_overlay(ImFont* font, int min_x, int min_y, int max_x, int max_y);
         void show_no_device_overlay(ImFont* font, int min_x, int min_y);
+        void show_rendering_not_supported(ImFont* font_18, int min_x, int min_y, int max_x, int max_y, rs2_format format);
 
         void show_paused_icon(ImFont* font, int x, int y, int id);
         void show_recording_icon(ImFont* font_18, int x, int y, int id, float alpha_delta);
 
         void popup_if_error(const ux_window& window, std::string& error_message);
-
-        void popup_if_fw_update_required(const ux_window& window, const fw_update_device_info& ud, bool& update);
-
-        void popup_fw_file_select(const ux_window& window, const fw_update_device_info& ud, std::vector<uint8_t>& fw, bool& cancel);
 
         void show_popup(const ux_window& window, const popup& p);
 

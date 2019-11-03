@@ -20,7 +20,7 @@
 #include "stream.h"
 #include "environment.h"
 #include "ds5-color.h"
-#include "ds5-rolling-shutter.h"
+#include "ds5-nonmonochrome.h"
 
 #include "proc/decimation-filter.h"
 #include "proc/threshold.h"
@@ -300,7 +300,7 @@ namespace librealsense
             auto results = uvc_sensor::init_stream_profiles();
 
             auto color_dev = dynamic_cast<const ds5_color*>(&get_device());
-            auto rolling_shutter_dev = dynamic_cast<const ds5_rolling_shutter*>(&get_device());
+            auto rolling_shutter_dev = dynamic_cast<const ds5_nonmonochrome*>(&get_device());
 
             std::vector< video_stream_profile_interface*> depth_candidates;
             std::vector< video_stream_profile_interface*> infrared_candidates;
@@ -346,7 +346,6 @@ namespace librealsense
                     });
                 }
             }
-
             auto dev = dynamic_cast<const ds5_device*>(&get_device());
             auto dev_name = (dev) ? dev->get_info(RS2_CAMERA_INFO_NAME) : "";
 
@@ -790,6 +789,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
@@ -798,7 +798,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
-
+        
         if (usb_modality)
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 

@@ -6,14 +6,16 @@
 #include "backend.h"
 #include "types.h"
 #include "option.h"
+#include "fw-update/fw-update-unsigned.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
-static const int NUM_OF_DEPTH_RESOLUTIONS = 1;
+static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
 namespace librealsense
 {
-    const uint16_t L500_PID = 0x0b0d;
-    const uint16_t L515_PID = 0x0b3d;
+    const uint16_t L500_RECOVERY_PID    = 0x0b55;
+    const uint16_t L500_PID             = 0x0b0d;
+    const uint16_t L515_PID             = 0x0b3d;
 
     namespace ivcam2
     {
@@ -22,6 +24,15 @@ namespace librealsense
         const uint8_t L500_DEPTH_VISUAL_PRESET = 2;
         const uint8_t L500_ERROR_REPORTING = 3;
 
+        const uint32_t FLASH_SIZE = 0x00200000;
+        const uint32_t FLASH_SECTOR_SIZE = 0x1000;
+
+        const uint32_t FLASH_RW_TABLE_OF_CONTENT_OFFSET = 0x0017FE00;
+        const uint32_t FLASH_RO_TABLE_OF_CONTENT_OFFSET = 0x001FFD00;
+        const uint32_t FLASH_INFO_HEADER_OFFSET = 0x001FFF00;
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer);
+
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
@@ -29,28 +40,41 @@ namespace librealsense
 
         enum fw_cmd : uint8_t
         {
-            MRD     = 0x01,
-            GLD     = 0x0f,
-            GVD     = 0x10,
-            HW_RESET = 0x20,
-            DPT_INTRINSICS_GET = 0x5A,
-            TEMPERATURES_GET = 0x6A,
-            DPT_INTRINSICS_FULL_GET = 0x7F,
-            RGB_INTRINSIC_GET = 0x81,
-            RGB_EXTRINSIC_GET = 0x82
+            MRD                         = 0x01, //"Read Tensilica memory ( 32bit ). Output : 32bit dump"
+            FRB                         = 0x09, //"Read from flash"
+            FWB                         = 0x0A, //"Write to flash"
+            FES                         = 0x0B, //"Erase flash sector"
+            FEF                         = 0x0C, //"Erase flash full"
+            GLD                         = 0x0F, //"LoggerCoreGetDataParams"
+            GVD                         = 0x10, //"Get Version and Date"
+            DFU                         = 0x1E, //"Go to DFU"
+            HW_RESET                    = 0x20, //"HW Reset"
+            PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            DPT_INTRINSICS_GET          = 0x5A,
+            TEMPERATURES_GET            = 0x6A,
+            DPT_INTRINSICS_FULL_GET     = 0x7F,
+            RGB_INTRINSIC_GET           = 0x81,
+            RGB_EXTRINSIC_GET           = 0x82
         };
 
         enum gvd_fields
         {
             fw_version_offset = 12,
-            module_serial_offset = 56, 
-            module_asic_serial_offset = 72,
+            is_camera_locked_offset = 33,
+            module_serial_offset = 56,
+            module_asic_serial_offset = 72
+        };
+
+        enum gvd_fields_size
+        {
+            // Keep sorted
             module_serial_size = 8
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
-            { L500_PID,        "Intel RealSense L500"},
-            { L515_PID,        "Intel RealSense L515"},
+            { L500_RECOVERY_PID,    "Intel RealSense L5xx Recovery"},
+            { L500_PID,             "Intel RealSense L500"},
+            { L515_PID,             "Intel RealSense L515"},
         };
 
         enum l500_notifications_types
@@ -108,8 +132,8 @@ namespace librealsense
             float radial_k1;
             float radial_k2;
             float tangential_p1;
-            float radial_k3;
             float tangential_p2;
+            float radial_k3;
         };
 
         struct pinhole_camera_model
@@ -291,5 +315,6 @@ namespace librealsense
 
             rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
         };
+
     } // librealsense::ivcam2
 } // namespace librealsense

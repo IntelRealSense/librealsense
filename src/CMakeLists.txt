@@ -15,7 +15,7 @@ include(${_rel_path}/fw-update/CMakeLists.txt)
 
 message(STATUS "using ${BACKEND}")
 
-if(UNIX OR FORCE_LIBUVC)
+if(UNIX OR (ANDROID_NDK_TOOLCHAIN_INCLUDED AND (${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)))
     include(${_rel_path}/libusb/CMakeLists.txt)
 endif()
     
@@ -39,6 +39,12 @@ endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
     include(${_rel_path}/win7/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND OR ${BACKEND} STREQUAL RS2_USE_ANDROID_BACKEND OR ${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
+    include(${_rel_path}/hid/CMakeLists.txt)
+    include(${_rel_path}/uvc/CMakeLists.txt)
+    include(${_rel_path}/rsusb-backend/CMakeLists.txt)
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
@@ -85,6 +91,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sync.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/verify.c"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-validator.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
         "${CMAKE_CURRENT_LIST_DIR}/api.h"
@@ -112,4 +119,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/sync.h"
         "${CMAKE_CURRENT_LIST_DIR}/types.h"
         "${CMAKE_CURRENT_LIST_DIR}/command_transfer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/frame-validator.h"
 )

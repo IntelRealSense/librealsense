@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import com.intel.realsense.librealsense.DepthFrame;
 import com.intel.realsense.librealsense.DeviceListener;
+import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.RsContext;
@@ -93,8 +95,9 @@ public class MainActivity extends AppCompatActivity {
         while (!mStreamingThread.isInterrupted())
         {
             try (FrameSet frames = pipe.waitForFrames()) {
-                try (final DepthFrame depth = frames.first(StreamType.DEPTH).as(DepthFrame.class))
+                try (Frame f = frames.first(StreamType.DEPTH))
                 {
+                    DepthFrame depth = f.as(Extension.DEPTH_FRAME);
                     final float deptValue = depth.getDistance(depth.getWidth()/2, depth.getHeight()/2);
                     runOnUiThread(new Runnable() {
                         @Override

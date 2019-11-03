@@ -17,6 +17,7 @@ namespace rs2
     class frame;
     class pipeline_profile;
     class points;
+    class video_stream_profile;
 
     class stream_profile
     {
@@ -183,7 +184,7 @@ namespace rs2
         friend class rs2::sensor;
         friend class rs2::frame;
         friend class rs2::pipeline_profile;
-        friend class software_sensor;
+        friend class rs2::video_stream_profile;
 
         const rs2_stream_profile* _profile;
         std::shared_ptr<rs2_stream_profile> _clone;
@@ -243,6 +244,28 @@ namespace rs2
             return intr;
         }
 
+        using stream_profile::clone;
+
+        /**
+        * Clone current profile and change the type, index and format to input parameters
+        * \param[in] type - will change the stream type from the cloned profile.
+        * \param[in] index - will change the stream index from the cloned profile.
+        * \param[in] format - will change the stream format from the cloned profile.
+        * \param[in] width - will change the width of the profile
+        * \param[in] height - will change the height of the profile
+        * \param[in] intr - will change the intrinsics of the profile
+        * \return stream_profile - return the cloned stream profile.
+        */
+        stream_profile clone(rs2_stream type, int index, rs2_format format, int width, int height, const rs2_intrinsics& intr) const
+        {
+            rs2_error* e = nullptr;
+            auto ref = rs2_clone_video_stream_profile(_profile, type, index, format, width, height, &intr, &e);
+            error::handle(e);
+            stream_profile res(ref);
+            res._clone = std::shared_ptr<rs2_stream_profile>(ref, [](rs2_stream_profile* r) { rs2_delete_stream_profile(r); });
+
+            return res;
+        }
     private:
         int _width = 0;
         int _height = 0;
@@ -422,7 +445,24 @@ namespace rs2
 
         /**
         * retrieve the time at which the frame was captured
-        * \return            the timestamp of the frame, in milliseconds since the device was started
+        * During the frame's lifetime it receives timestamps both at the device and host levels.
+        * The different timestamps are gathered and managed under the frame's Metadata attributes.
+        * Chronologically the list of timestamps comprises of:
+        * SENSOR_TIMESTAMP  - Device clock. For video sensors designates the middle of exposure. Requires metadata support.
+        * FRAME_TIMESTAMP   - Device clock. Stamped at the beginning of frame readout and transfer. Requires metadata support.
+        * BACKEND_TIMESTAMP - Host (EPOCH) clock in Kernel space. Frame transfer from USB Controller to the USB Driver.
+        * TIME_OF_ARRIVAL   - Host (EPOCH) clock in User space. Frame transfer from the USB Driver to Librealsense.
+        *
+        * During runtime the SDK dynamically selects the most correct representaion, based on both device and host capabilities:
+        * In case the frame metadata is not configured:
+        *   -   The function call provides the TIME_OF_ARRIVAL stamp.
+        * In case the metadata is available the function returns:
+        *   -   `HW Timestamp` (SENSOR_TIMESTAMP), or
+        *   -   `Global Timestamp`  Host-corrected derivative of `HW Timestamp` required for multi-sensor/device synchronization
+        *   -   The user can select between the unmodified and the host-calculated Hardware Timestamp by toggling
+        *       the `RS2_OPTION_GLOBAL_TIME_ENABLED` option.
+        * To query which of the three alternatives is active use `get_frame_timestamp_domain()` function call
+        * \return            the timestamp of the frame, in milliseconds according to the elaborated flow
         */
         double get_timestamp() const
         {
@@ -475,6 +515,18 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             auto r = rs2_get_frame_number(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
+        /**
+        * retrieve data size from frame handle
+        * \return               the number of bytes in frame
+        */
+        const int get_data_size() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_frame_data_size(frame_ref, &e);
             error::handle(e);
             return r;
         }
@@ -768,7 +820,7 @@ namespace rs2
     {
     public:
         /**
-        * Inherit depth_frame class with additional disparity related attributs/functions
+        * Extend depth_frame class with additional disparity related attributes/functions
         * \param[in] frame - existing frame instance
         */
         disparity_frame(const frame& f)
@@ -782,7 +834,7 @@ namespace rs2
             error::handle(e);
         }
         /**
-        * Retrieve back the distance between two IR sensors.
+        * Retrieve the distance between the two IR sensors.
         * \return float - baseline.
         */
         float get_baseline(void) const
@@ -891,7 +943,7 @@ namespace rs2
         frame first_or_default(rs2_stream s, rs2_format f = RS2_FORMAT_ANY) const
         {
             frame result;
-            foreach([&result, s, f](frame frm) {
+            foreach_rs([&result, s, f](frame frm) {
                 if (!result && frm.get_profile().stream_type() == s && (f == RS2_FORMAT_ANY || f == frm.get_profile().format()))
                 {
                     result = std::move(frm);
@@ -951,7 +1003,7 @@ namespace rs2
             }
             else
             {
-                foreach([&f, index](const frame& frm) {
+                foreach_rs([&f, index](const frame& frm) {
                     if (frm.get_profile().stream_type() == RS2_STREAM_INFRARED &&
                         frm.get_profile().stream_index() == index) f = frm;
                 });
@@ -973,7 +1025,7 @@ namespace rs2
             }
             else
             {
-                foreach([&f, index](const frame& frm) {
+                foreach_rs([&f, index](const frame& frm) {
                     if (frm.get_profile().stream_type() == RS2_STREAM_FISHEYE &&
                         frm.get_profile().stream_index() == index) f = frm;
                 });
@@ -995,7 +1047,7 @@ namespace rs2
             }
             else
             {
-                foreach([&f, index](const frame& frm) {
+                foreach_rs([&f, index](const frame& frm) {
                     if (frm.get_profile().stream_type() == RS2_STREAM_POSE &&
                         frm.get_profile().stream_index() == index) f = frm;
                 });
@@ -1017,7 +1069,7 @@ namespace rs2
         * \param[in] action - instance with () operator implemented will be invoke after frame extraction.
         */
         template<class T>
-        void foreach(T action) const
+        void foreach_rs(T action) const
         {
             rs2_error* e = nullptr;
             auto count = size();

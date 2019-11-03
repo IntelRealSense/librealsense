@@ -21,6 +21,7 @@ typedef enum rs2_notification_category{
     RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT,               /**< General Hardeware notification that is not an error */
     RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR,                /**< Received unknown error from the device */
     RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED,  /**< Current firmware version installed is not the latest available */
+    RS2_NOTIFICATION_CATEGORY_POSE_RELOCALIZATION,          /**< A relocalization event has updated the pose provided by a pose sensor */
     RS2_NOTIFICATION_CATEGORY_COUNT                         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_notification_category;
 const char* rs2_notification_category_to_string(rs2_notification_category category);
@@ -170,6 +171,8 @@ typedef enum rs2_extension
     RS2_EXTENSION_GLOBAL_TIMER,
     RS2_EXTENSION_UPDATABLE,
     RS2_EXTENSION_UPDATE_DEVICE,
+    RS2_EXTENSION_L500_DEPTH_SENSOR,
+    RS2_EXTENSION_TM2_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

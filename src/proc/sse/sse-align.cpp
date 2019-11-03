@@ -288,6 +288,7 @@ void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte*
     switch (to.model)
     {
     case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
+    case RS2_DISTORTION_INVERSE_BROWN_CONRADY:
         align_other_to_depth_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, source, dest, bpp, to, from_to_other);
         break;
     default:

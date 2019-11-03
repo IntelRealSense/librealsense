@@ -3,6 +3,7 @@
 
 #pragma once
 #include <set>
+#include <string>
 #include <vector>
 #include <functional>
 #include <stdint.h>

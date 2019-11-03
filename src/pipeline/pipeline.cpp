@@ -131,6 +131,7 @@ namespace librealsense
             {
                 try
                 {
+                    _aggregator->stop();
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))
                     {

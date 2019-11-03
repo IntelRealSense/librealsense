@@ -3,7 +3,7 @@
 
 #include "core/advanced_mode.h"
 #include "ds5/ds5-active.h"
-#include "ds5/ds5-rolling-shutter.h"
+#include "ds5/ds5-nonmonochrome.h"
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
 
@@ -13,9 +13,7 @@ namespace librealsense
                                                    uvc_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
-          _color_sensor(nullptr),
-        _rgb_exposure_gain_bind(false),
-        _amplitude_factor_support(false)
+          _color_sensor(nullptr)
     {
         _enabled = [this]() {
             auto results = send_receive(encode_command(ds::fw_cmd::UAMG));
@@ -40,8 +38,14 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
-       auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
-       _amplitude_factor_support = _rgb_exposure_gain_bind = (fw_ver >= firmware_version("5.11.9.0"));
+        _amplitude_factor_support = [this]() {
+            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+            return (fw_ver >= firmware_version("5.11.9.0"));
+        };
+        _rgb_exposure_gain_bind = [this]() {
+            auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
+            return (fw_ver >= firmware_version("5.11.9.0"));
+        };
     }
 
     bool ds5_advanced_mode_base::is_enabled() const
@@ -231,7 +235,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
     {
-        *ptr = _amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
+        *ptr = *_amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
             []() { STAFactor af; af.amplitude = 0.f; return af; }();
     }
 
@@ -493,7 +497,7 @@ namespace librealsense
 
     void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
     {
-        if (_amplitude_factor_support)
+        if (*_amplitude_factor_support)
         {
             set(val, advanced_mode_traits<STAFactor>::group);
             _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
@@ -739,7 +743,7 @@ namespace librealsense
         set(p.depth_table   , advanced_mode_traits<STDepthTableControl>::group);
         set(p.ae            , advanced_mode_traits<STAEControl>::group);
         set(p.census        , advanced_mode_traits<STCensusRadius>::group);
-        if (_amplitude_factor_support)
+        if (*_amplitude_factor_support)
             set(p.amplitude_factor, advanced_mode_traits<STAFactor>::group);
 
         set_laser_state(p.laser_state);

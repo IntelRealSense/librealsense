@@ -11,7 +11,25 @@ set(DEPENDENCIES realsense2)
 
 add_subdirectory(third_party/pybind11)
 
-pybind11_add_module(pyrealsense2 SHARED python.cpp)
+set(PYRS_CPP
+    python.cpp
+    c_files.cpp
+    pyrs_advanced_mode.cpp
+    pyrs_context.cpp
+    pyrs_device.cpp
+    pyrs_export.cpp
+    pyrs_frame.cpp
+    pyrs_internal.cpp
+    pyrs_options.cpp
+    pyrs_pipeline.cpp
+    pyrs_processing.cpp
+    pyrs_record_playback.cpp
+    pyrs_sensor.cpp
+    pyrs_types.cpp
+    pyrsutil.cpp
+)
+
+pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
@@ -41,6 +59,7 @@ if(UNIX)
         ../../src/libusb/device-libusb.cpp
         ../../src/libusb/messenger-libusb.cpp
         ../../src/libusb/enumerator-libusb.cpp
+        ../../src/libusb/request-libusb.cpp
     )
 endif()
 
@@ -51,6 +70,7 @@ if(WIN32)
         ../../src/winusb/device-winusb.cpp
         ../../src/winusb/messenger-winusb.cpp
         ../../src/winusb/enumerator-winusb.cpp
+        ../../src/winusb/request-winusb.cpp
     )
 endif()
 
@@ -70,22 +90,28 @@ if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     )
 endif()
 
+if(${FORCE_RSUSB_BACKEND})
+    list(APPEND RAW_RS
+        ../../src/rsusb-backend/rsusb-backend.h
+        ../../src/rsusb-backend/rsusb-backend.cpp
+        ../../src/uvc/uvc-device.cpp
+        ../../src/uvc/uvc-parser.cpp
+        ../../src/uvc/uvc-streamer.cpp
+        ../../src/hid/hid-device.cpp
+    )
+endif()
+
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/win7/win7-uvc.cpp
-        ../../src/win7/win7-usb.cpp
-        ../../src/win7/win7-hid.cpp
-        ../../src/win7/win7-backend.cpp
-        ../../src/win7/winusb_uvc/winusb_uvc.cpp
+        ../../src/win7/rsusb-backend-windows.h
+        ../../src/win7/rsusb-backend-windows.cpp
     )
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     list(APPEND RAW_RS
-        ../../src/libusb/interface-libusb.cpp
-        ../../src/libusb/device-libusb.cpp
-        ../../src/libusb/messenger-libusb.cpp
-        ../../src/libusb/enumerator-libusb.cpp
+        ../../src/libuvc/rsusb-backend-linux.h
+        ../../src/libuvc/rsusb-backend-linux.cpp
     )
 endif()
 

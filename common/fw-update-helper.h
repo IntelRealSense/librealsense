@@ -3,61 +3,45 @@
 
 #pragma once
 
-#include <librealsense2/rs.hpp>
-
-#include <map>
-#include <vector>
-#include <string>
-#include <mutex>
-#include <condition_variable>
+#include "notifications.h"
 
 namespace rs2
 {
-    class device_model;
-
     int parse_product_line(std::string id);
     std::string get_available_firmware_version(int product_line);
     std::map<int, std::vector<uint8_t>> create_default_fw_table();
     std::vector<int> parse_fw_version(const std::string& fw);
     bool is_upgradeable(const std::string& curr, const std::string& available);
-    bool is_recommended_fw_available();
+    bool is_recommended_fw_available(std::string version);
 
-    class firmware_update_manager : public std::enable_shared_from_this<firmware_update_manager>
+    class firmware_update_manager : public process_manager
     {
     public:
         firmware_update_manager(device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed) 
-            : _dev(dev), _fw(fw), _model(model), _ctx(ctx), _is_signed(is_signed) {}
-
-        void start();
-        int get_progress() const { return _progress; }
-        bool done() const { return _done; }
-        bool started() const { return _started; }
-        bool failed() const { return _failed; }
-        const std::string& get_log() const { return _log; }
-
-        void check_error(std::string& error) { if (_failed) error = _last_error; }
-
-        void log(std::string line);
-        void fail(std::string error);
+            : process_manager("Firmware Update", model),
+              _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
 
     private:
-        void do_update(std::function<void()> cleanup);
+        void process_flow(std::function<void()> cleanup, 
+            invoker invoke) override;
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
-        std::string _log;
-        bool _started = false;
-        bool _done = false;
-        bool _failed = false;
-        bool _is_signed = false;
-
-        int _progress = 0;
         device _dev;
-        std::vector<uint8_t> _fw;
-        device_model& _model;
-        std::mutex _log_lock;
-        std::string _last_error;
         context _ctx;
+        std::vector<uint8_t> _fw;
+        bool _is_signed;
+    };
+
+    struct fw_update_notification_model : public process_notification_model
+    {
+        fw_update_notification_model(std::string name,
+            std::shared_ptr<firmware_update_manager> manager, bool expaned);
+
+        void set_color_scheme(float t) const override;
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        void draw_expanded(ux_window& win, std::string& error_message) override;
+        int calc_height() override;
     };
 }

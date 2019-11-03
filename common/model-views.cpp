@@ -20,8 +20,10 @@
 #include "model-views.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
+#include "on-chip-calib.h"
 #include "viewer.h"
 #include <imgui_internal.h>
+#include <time.h>
 
 #include "os.h"
 
@@ -51,6 +53,13 @@ ImVec4 operator+(const ImVec4& c, float v)
         std::max(0.f, std::min(1.f, c.w))
     );
 }
+
+struct attribute
+{
+    std::string name;
+    std::string value;
+    std::string description;
+};
 
 namespace rs2
 {
@@ -812,7 +821,8 @@ namespace rs2
         bool* options_invalidated,
         std::string& error_message)
     {
-        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+
+        for (auto&& i:options->get_supported_options())
         {
             auto opt = static_cast<rs2_option>(i);
 
@@ -958,9 +968,15 @@ namespace rs2
                     model->enabled = false;
             }
 
-
             if (shared_filter->is<hole_filling_filter>())
                 model->enabled = false;
+
+            if (shared_filter->is<decimation_filter>())
+            {
+                std::string sn_name(s->get_info(RS2_CAMERA_INFO_NAME));
+                if (sn_name == "RGB Camera")
+                    model->enabled = false;
+            }
 
             post_processing.push_back(model);
         }
@@ -1570,43 +1586,46 @@ namespace rs2
 
             for (auto&& pbm : post_processing) pbm->save_to_config_file();
         }
-        if (next_option < RS2_OPTION_COUNT)
+        if (next_option < s->get_supported_options().size())
         {
-            auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
-            opt_md.update_all_fields(error_message, notifications);
-
-            if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+            if (options_metadata.find(static_cast<rs2_option>(next_option)) != options_metadata.end())
             {
-                auto old_ae_enabled = auto_exposure_enabled;
-                auto_exposure_enabled = opt_md.value > 0;
+                auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
+                opt_md.update_all_fields(error_message, notifications);
 
-                if (!old_ae_enabled && auto_exposure_enabled)
+                if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
                 {
-                    try
+                    auto old_ae_enabled = auto_exposure_enabled;
+                    auto_exposure_enabled = opt_md.value > 0;
+
+                    if (!old_ae_enabled && auto_exposure_enabled)
                     {
-                        if (s->is<roi_sensor>())
+                        try
                         {
-                            auto r = s->as<roi_sensor>().get_region_of_interest();
-                            roi_rect.x = static_cast<float>(r.min_x);
-                            roi_rect.y = static_cast<float>(r.min_y);
-                            roi_rect.w = static_cast<float>(r.max_x - r.min_x);
-                            roi_rect.h = static_cast<float>(r.max_y - r.min_y);
+                            if (s->is<roi_sensor>())
+                            {
+                                auto r = s->as<roi_sensor>().get_region_of_interest();
+                                roi_rect.x = static_cast<float>(r.min_x);
+                                roi_rect.y = static_cast<float>(r.min_y);
+                                roi_rect.w = static_cast<float>(r.max_x - r.min_x);
+                                roi_rect.h = static_cast<float>(r.max_y - r.min_y);
+                            }
+                        }
+                        catch (...)
+                        {
+                            auto_exposure_enabled = false;
                         }
                     }
-                    catch (...)
-                    {
-                        auto_exposure_enabled = false;
-                    }
                 }
-            }
 
-            if (next_option == RS2_OPTION_DEPTH_UNITS)
-            {
-                opt_md.dev->depth_units = opt_md.value;
-            }
+                if (next_option == RS2_OPTION_DEPTH_UNITS)
+                {
+                    opt_md.dev->depth_units = opt_md.value;
+                }
 
-            if (next_option == RS2_OPTION_STEREO_BASELINE)
-                opt_md.dev->stereo_baseline = opt_md.value;
+                if (next_option == RS2_OPTION_STEREO_BASELINE)
+                    opt_md.dev->stereo_baseline = opt_md.value;
+            }
 
             next_option++;
         }
@@ -1689,6 +1708,7 @@ namespace rs2
         timestamp = f.get_timestamp();
         fps.add_timestamp(f.get_timestamp(), f.get_frame_number());
 
+        view_fps.add_timestamp(glfwGetTime() * 1000, count++);
 
         // populate frame metadata attributes
         for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
@@ -1911,7 +1931,7 @@ namespace rs2
     void stream_model::show_stream_header(ImFont* font, const rect &stream_rect, viewer_model& viewer)
     {
         const auto top_bar_height = 32.f;
-        auto num_of_buttons = 4;
+        auto num_of_buttons = 5;
 
         if (!viewer.allow_stream_close) --num_of_buttons;
         if (viewer.streams.size() > 1) ++num_of_buttons;
@@ -1983,6 +2003,35 @@ namespace rs2
         ImGui::PopTextWrapPos();
 
         ImGui::SetCursorScreenPos({ stream_rect.x + stream_rect.w - 32 * num_of_buttons, stream_rect.y - top_bar_height });
+
+
+        label = to_string() << textual_icons::metadata << "##Metadata" << profile.unique_id();
+        if (show_metadata)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                show_metadata = false;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Hide frame metadata");
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {
+            if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
+            {
+                show_metadata = true;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Show frame metadata");
+            }
+        }
+        ImGui::SameLine();
 
         if (RS2_STREAM_DEPTH == profile.stream_type())
         {
@@ -2166,89 +2215,267 @@ namespace rs2
 
         ImGui::PopStyleColor(5);
 
-        if (show_stream_details)
+        _info_height = (show_stream_details || show_metadata) ? (show_metadata ? stream_rect.h : 32.f) : 0.f;
+
+        static const auto y_offset_info_rect = 0.f;
+        static const auto x_offset_info_rect = 0.f;
+        auto width_info_rect = stream_rect.w - 2.f * x_offset_info_rect;
+
+        curr_info_rect = rect{ stream_rect.x + x_offset_info_rect,
+            stream_rect.y + y_offset_info_rect,
+            width_info_rect,
+            _info_height };
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x, curr_info_rect.y },
+        { curr_info_rect.x + curr_info_rect.w, curr_info_rect.y + curr_info_rect.h },
+            ImColor(dark_sensor_bg));
+
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+
+        float line_y = curr_info_rect.y + 8;
+
+        if (show_stream_details && !show_metadata)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+            if (_info_height.get() > line_y + ImGui::GetTextLineHeight() - curr_info_rect.y)
+            {
+                ImGui::SetCursorScreenPos({ curr_info_rect.x + 10, line_y });
 
-            ImGui::PushStyleColor(ImGuiCol_Button, header_window_bg);
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, header_window_bg);
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
+                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
 
-            static const auto height_info_rect = 32.f;
-            static const auto y_offset_info_rect = 0.f;
-            static const auto x_offset_info_rect = 0.f;
-            auto width_info_rect = stream_rect.w - 2.f * x_offset_info_rect;
+                label = to_string() << "Time: " << std::left << std::fixed << std::setprecision(1) << timestamp << " ";
 
-            curr_info_rect = rect{ stream_rect.x + x_offset_info_rect,
-                                   stream_rect.y + y_offset_info_rect,
-                                   width_info_rect,
-                                   height_info_rect };
+                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) label = to_string() << textual_icons::exclamation_triangle << label;
 
-            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x, curr_info_rect.y },
-                    { curr_info_rect.x + curr_info_rect.w, curr_info_rect.y + curr_info_rect.h }, 
-                    ImColor(dark_sensor_bg));
-            ImGui::SetCursorScreenPos({curr_info_rect.x + 10, curr_info_rect.y + 8});
+                ImGui::Text("%s", label.c_str());
+
+                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) ImGui::PopStyleColor();
+
+                if (ImGui::IsItemHovered())
+                {
+                    if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::PushTextWrapPos(450.0f);
+                        ImGui::TextUnformatted("Timestamp Domain: System Time. Hardware Timestamps unavailable!\nPlease refer to frame_metadata.md for more information");
+                        ImGui::PopTextWrapPos();
+                        ImGui::EndTooltip();
+                    }
+                    else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                    {
+                        ImGui::SetTooltip("Timestamp: Global Time");
+                    }
+                    else
+                    {
+                        ImGui::SetTooltip("Timestamp: Hardware Clock");
+                    }
+                }
+
+                ImGui::SameLine();
+
+                label = to_string() << " Frame: " << std::left << frame_number;
+                ImGui::Text("%s", label.c_str());
+
+                ImGui::SameLine();
+
+                std::string res;
+                if (profile.as<rs2::video_stream_profile>())
+                    res = to_string() << size.x << "x" << size.y << ",  ";
+                label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()), 9) << ", ";
+                ImGui::Text("%s", label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                }
+
+                ImGui::SameLine();
+
+                label = to_string() << "FPS: " << std::setprecision(2) << std::setw(7) << std::fixed << fps.get_fps();
+                ImGui::Text("%s", label.c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                }
+
+                line_y += ImGui::GetTextLineHeight() + 5;
+            }
+        }
+
+        
+
+        if (show_metadata)
+        {
+            std::vector<attribute> stream_details;
+
+            if (true) // Always show stream details options
+            {
+                stream_details.push_back({ "Frame Timestamp",
+                    to_string() << std::fixed << std::setprecision(1) << timestamp, 
+                    "Frame Timestamp is normalized represetation of when the frame was taken.\n"
+                    "It's a property of every frame, so when exact creation time is not provided by the hardware, an approximation will be used.\n"
+                    "Clock Domain feilds helps to interpret the meaning of timestamp\n"
+                    "Timestamp is measured in milliseconds, and is allowed to roll-over (reset to zero) in some situations" });
+                stream_details.push_back({ "Clock Domain",
+                    to_string() << rs2_timestamp_domain_to_string(timestamp_domain), 
+                    "Clock Domain describes the format of Timestamp field. It can be one of the following:\n"
+                    "1. System Time - When no hardware timestamp is available, system time of arrival will be used.\n"
+                    "                 System time benefits from being comparable between device, but suffers from not being able to approximate latency.\n"
+                    "2. Hardware Clock - Hardware timestamp is attached to the frame by the device, and is consistent accross device sensors.\n"
+                    "                    Hardware timestamp encodes precisely when frame was captured, but cannot be compared across devices\n"
+                    "3. Global Time - Global time is provided when the device can both offer hardware timestamp and implements Global Timestamp Protocol.\n"
+                    "                 Global timestamps encode exact time of capture and at the same time are comparable accross devices." });
+                stream_details.push_back({ "Frame Number",
+                    to_string() << frame_number, "Frame Number is a rolling ID assigned to frames.\n"
+                    "Most devices do not guarantee consequitive frames to have conseuquitive frame numbers\n"
+                    "But it is true most of the time" });
+
+                if (profile.as<rs2::video_stream_profile>())
+                {
+                    stream_details.push_back({ "Hardware Size",
+                        to_string() << original_size.x << " x " << original_size.y, "" });
+
+                    stream_details.push_back({ "Display Size",
+                        to_string() << size.x << " x " << size.y, 
+                        "When Post-Processing is enabled, the actual display size of the frame may differ from original capture size" });
+                }
+                stream_details.push_back({ "Pixel Format",
+                    to_string() << rs2_format_to_string(profile.format()), "" });
+
+                stream_details.push_back({ "Hardware FPS",
+                    to_string() << std::setprecision(2) << std::fixed << fps.get_fps(), 
+                    "Hardware FPS captures the number of frames per second produced by the device.\n"
+                    "It is possible and likely that not all of these frames will make it to the application." });
+                
+                stream_details.push_back({ "Viewer FPS",
+                    to_string() << std::setprecision(2) << std::fixed << view_fps.get_fps(),
+                    "Viewer FPS captures how many frames the application manages to render.\n"
+                    "Frame drops can occur for variety of reasons." });
+
+                stream_details.push_back({ "", "", "" });
+            }
+
+            const std::string no_md = "no md";
 
             if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-                ImGui::PushStyleColor(ImGuiCol_Text, redish);
-
-            label = to_string() << " Time: " << std::left << std::fixed << std::setprecision(1) << timestamp << " ";
-
-            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) label = to_string() << textual_icons::exclamation_triangle << label;
-
-            ImGui::Text("%s", label.c_str());
-
-            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) ImGui::PopStyleColor();
-
-            if (ImGui::IsItemHovered())
             {
-                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                stream_details.push_back({ no_md, "", "" });
+            }
+
+            std::map<rs2_frame_metadata_value, std::string> descriptions = {
+                { RS2_FRAME_METADATA_FRAME_COUNTER                        , "A sequential index managed per-stream. Integer value" },
+                { RS2_FRAME_METADATA_FRAME_TIMESTAMP                      , "Timestamp set by device clock when data readout and transmit commence. Units are device dependent" },
+                { RS2_FRAME_METADATA_SENSOR_TIMESTAMP                     , "Timestamp of the middle of sensor's exposure calculated by device. usec" },
+                { RS2_FRAME_METADATA_ACTUAL_EXPOSURE                      , "Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec" },
+                { RS2_FRAME_METADATA_GAIN_LEVEL                           , "A relative value increasing which will increase the Sensor's gain factor.\n"
+                                                                            "When AE is set On, the value is controlled by firmware. Integer value" },
+                { RS2_FRAME_METADATA_AUTO_EXPOSURE                        , "Auto Exposure Mode indicator. Zero corresponds to AE switched off. " },
+                { RS2_FRAME_METADATA_WHITE_BALANCE                        , "White Balance setting as a color temperature. Kelvin degrees" },
+                { RS2_FRAME_METADATA_TIME_OF_ARRIVAL                      , "Time of arrival in system clock " },
+                { RS2_FRAME_METADATA_TEMPERATURE                          , "Temperature of the device, measured at the time of the frame capture. Celsius degrees " },
+                { RS2_FRAME_METADATA_BACKEND_TIMESTAMP                    , "Timestamp get from uvc driver. usec" },
+                { RS2_FRAME_METADATA_ACTUAL_FPS                           , "Actual hardware FPS. May differ from requested due to Auto-Exposure" },
+                { RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE               , "Laser power mode. Zero corresponds to Laser power switched off and one for switched on." },
+                { RS2_FRAME_METADATA_EXPOSURE_PRIORITY                    , "Exposure priority. When enabled Auto-exposure algorithm is allowed to reduce requested FPS to sufficiently increase exposure time (an get enough light)" },
+                { RS2_FRAME_METADATA_POWER_LINE_FREQUENCY                 , "Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto. " },
+            };
+
+            for (auto i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
+            {
+                auto&& kvp = frame_md.md_attributes[i];
+                if (kvp.first)
                 {
-                    ImGui::BeginTooltip();
-                    ImGui::PushTextWrapPos(450.0f);
-                    ImGui::TextUnformatted("Timestamp Domain: System Time. Hardware Timestamps unavailable!\nPlease refer to frame_metadata.md for more information");
-                    ImGui::PopTextWrapPos();
-                    ImGui::EndTooltip();
-                }
-                else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
-                {
-                     ImGui::SetTooltip("Timestamp: Global Time");
-                }
-                else
-                {
-                    ImGui::SetTooltip("Timestamp: Hardware Clock");
+                    auto val = (rs2_frame_metadata_value)i;
+                    std::string name = to_string() << rs2_frame_metadata_to_string(val);
+                    std::string desc = "";
+                    if (descriptions.find(val) != descriptions.end()) desc = descriptions[val];
+                    stream_details.push_back({ name, to_string() << kvp.second, desc });
                 }
             }
 
-            ImGui::SameLine();
+            float max_text_width = 0.;
+            for (auto&& kvp : stream_details)
+                max_text_width = std::max(max_text_width, ImGui::CalcTextSize(kvp.name.c_str()).x);
 
-            label = to_string() << " Frame: " << std::left <<  frame_number;
-            ImGui::Text("%s", label.c_str());
-
-            ImGui::SameLine();
-
-            std::string res;
-            if (profile.as<rs2::video_stream_profile>())
-                res = to_string() << size.x << "x" << size.y << ",  ";
-            label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()),9) << ", ";
-            ImGui::Text("%s", label.c_str());
-            if (ImGui::IsItemHovered())
+            for (auto&& at : stream_details)
             {
-                ImGui::SetTooltip("%s","Stream Resolution, Format");
+                if (_info_height.get() > line_y + ImGui::GetTextLineHeight() - curr_info_rect.y)
+                {
+                    ImGui::SetCursorScreenPos({ curr_info_rect.x + 10, line_y });
+
+                    if (at.name == no_md)
+                    {
+                        auto text = "Per-frame metadata is not anabled at the OS level!\nPlease refer to installation.md for more info";
+                        auto size = ImGui::CalcTextSize(text);
+
+                        for (int i = 3; i > 0; i-=1)
+                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 10 - i, line_y - i },
+                            { curr_info_rect.x + 10 + i + size.x, line_y + size.y + i },
+                            ImColor(alpha(sensor_bg, 0.1f)));
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::Text("%s", text);
+                        ImGui::PopStyleColor();
+
+                        line_y += ImGui::GetTextLineHeight() + 3;
+                    }
+                    else
+                    {
+                        std::string text = "";
+                        if (at.name != "") text = to_string() << at.name << ":";
+                        auto size = ImGui::CalcTextSize(text.c_str());
+
+                        for (int i = 3; i > 0; i-=1)
+                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 10 - i, line_y - i },
+                            { curr_info_rect.x + 10 + i + size.x, line_y + size.y + i },
+                            ImColor(alpha(sensor_bg, 0.1f)));
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, white);
+                        ImGui::Text("%s", text.c_str()); ImGui::SameLine();
+
+                        if (at.description != "")
+                        {
+                            if (ImGui::IsItemHovered())
+                            {
+                                ImGui::SetTooltip("%s", at.description.c_str());
+                            }
+                        }
+
+                        text = at.value;
+                        size = ImGui::CalcTextSize(text.c_str());
+
+                        for (int i = 3; i > 0; i-=1)
+                            ImGui::GetWindowDrawList()->AddRectFilled({ curr_info_rect.x + 20 + max_text_width - i, line_y - i },
+                            { curr_info_rect.x + 30 + max_text_width + i + size.x, line_y + size.y + i },
+                            ImColor(alpha(sensor_bg, 0.1f)));
+
+                        ImGui::PopStyleColor();
+
+                        ImGui::SetCursorScreenPos({ curr_info_rect.x + 20 + max_text_width, line_y });
+
+                        std::string id = to_string() << "##" << at.name << "-" << profile.unique_id();
+
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
+                        ImGui::InputText(id.c_str(),
+                            (char*)text.c_str(),
+                            text.size() + 1,
+                            ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+
+                        ImGui::PopStyleColor(2);
+                    }
+
+                    line_y += ImGui::GetTextLineHeight() + 3;
+                }
             }
-
-            ImGui::SameLine();
-
-            label = to_string() << "FPS: " << std::setprecision(2) << std::setw(7) <<  std::fixed << fps.get_fps();
-            ImGui::Text("%s", label.c_str());
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
-            }
-
-            ImGui::PopStyleColor(5);
         }
+
+        ImGui::PopStyleColor(5);
     }
 
     void stream_model::show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, viewer_model& viewer)
@@ -2258,7 +2485,7 @@ namespace rs2
             || (profile.stream_type() == RS2_STREAM_GPIO) 
             || (profile.stream_type() == RS2_STREAM_POSE);
 
-        if (stream_rect.contains(mouse.cursor) && !non_visual_stream)
+        if (stream_rect.contains(mouse.cursor) && !non_visual_stream && !show_metadata)
         {
             std::stringstream ss;
             rect cursor_rect{ mouse.cursor.x, mouse.cursor.y };
@@ -2593,7 +2820,8 @@ namespace rs2
         }
 
         if (ss.str().size())
-            viewer.not_model.add_notification({ ss.str().c_str(), RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+            viewer.not_model.add_notification(notification_data{ 
+                ss.str().c_str(), RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
 
     }
 
@@ -2683,36 +2911,6 @@ namespace rs2
             _middle_pos = g.cursor;
     }
 
-    void stream_model::show_metadata(const mouse_info& g)
-    {
-        auto flags = ImGuiWindowFlags_ShowBorders;
-
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, { 0.3f, 0.3f, 0.3f, 0.5 });
-        ImGui::PushStyleColor(ImGuiCol_TitleBg, { 0.f, 0.25f, 0.3f, 1 });
-        ImGui::PushStyleColor(ImGuiCol_TitleBgActive, { 0.f, 0.3f, 0.8f, 1 });
-        ImGui::PushStyleColor(ImGuiCol_Text, { 1, 1, 1, 1 });
-
-        std::string label = to_string() << profile.stream_name() << " Stream Metadata";
-        //ImGui::Begin(label.c_str(), nullptr, flags);
-
-        // Print all available frame metadata attributes
-        for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++)
-        {
-            if (frame_md.md_attributes[i].first)
-            {
-                label = to_string() << rs2_frame_metadata_to_string((rs2_frame_metadata_value)i) << " = " << frame_md.md_attributes[i].second;
-                ImGui::Text("%s", label.c_str());
-            }
-        }
-
-        //ImGui::End();
-
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-    }
-
     void device_model::reset()
     {
         syncer->remove_syncer(dev_syncer);
@@ -2744,7 +2942,101 @@ namespace rs2
 
     device_model::~device_model()
     {
-        cleanup();
+        for (auto&& n : related_notifications) n->dismiss(false);
+    }
+
+    void device_model::refresh_notifications(viewer_model& viewer)
+    {
+        for (auto&& n : related_notifications) n->dismiss(false);
+
+        auto name = get_device_name(dev);
+
+        if ((bool)config_file::instance().get(configurations::update::recommend_updates))
+        {
+            bool fw_update_required = false;
+            for (auto&& sub : dev.query_sensors())
+            {
+                if (sub.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
+                    sub.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
+                    sub.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+                {
+                    std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+                    std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+
+                    int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
+
+                    bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+                    bool is_rc = (product_line == RS2_PRODUCT_LINE_D400) && allow_rc_firmware;
+                    std::string available = get_available_firmware_version(product_line);
+
+                    std::shared_ptr<firmware_update_manager> manager = nullptr;
+
+                    if (is_upgradeable(fw, available))
+                    {
+                        recommended = available;
+
+                        static auto table = create_default_fw_table();
+
+                        manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+                    }
+
+                    if (is_upgradeable(fw, recommended))
+                    {
+                        std::stringstream msg;
+                        msg << name.first << " (S/N " << name.second << ")\n"
+                            << "Current Version: " << fw << "\n";
+
+                        if (is_rc)
+                            msg << "Release Candidate: " << recommended << " Pre-Release";
+                        else
+                            msg << "Recommended Version: " << recommended;
+
+                        if (!fw_update_required)
+                        {
+                            auto n = std::make_shared<fw_update_notification_model>(
+                                msg.str(), manager, false);
+                            viewer.not_model.add_notification(n);
+
+                            fw_update_required = true;
+
+                            related_notifications.push_back(n);
+                        }
+                    }
+                }
+            }
+        }
+
+        if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
+        {
+            for (auto&& model : subdevices)
+            {
+                if (model->supports_on_chip_calib())
+                {
+                    // Make sure we don't spam calibration remainders too often:
+                    time_t rawtime;
+                    time(&rawtime);
+                    std::string id = to_string() << configurations::viewer::last_calib_notice << "." << name.second;
+                    long long last_time = config_file::instance().get_or_default(id.c_str(), (long long)0);
+
+                    std::string msg = to_string()
+                        << name.first << " (S/N " << name.second << ")";
+                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, model, *this, dev);
+                    auto n = std::make_shared<autocalib_notification_model>(
+                        msg, manager, false);
+
+                    // Recommend calibration once a week per device
+                    if (rawtime - last_time < 60)
+                    {
+                        n->snoozed = true;
+                    }
+
+                    // NOTE: For now do not pre-emptively suggest auto-calibration
+                    // TODO: Revert in later release
+                    //viewer.not_model.add_notification(n);
+                    //related_notifications.push_back(n);
+                }
+            }
+        }
     }
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer)
@@ -2755,53 +3047,8 @@ namespace rs2
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
-        bool fw_update_required = false;   
         for (auto&& sub : dev.query_sensors())
         {
-            if (sub.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) && 
-                sub.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
-                sub.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-            {
-                std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-                std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
-
-                int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)); 
-
-                std::string available = get_available_firmware_version(product_line);
-
-                std::shared_ptr<firmware_update_manager> manager = nullptr;
-
-                if (is_upgradeable(fw, available))
-                {
-                    recommended = available;
-
-                    static auto table = create_default_fw_table();
-
-                    manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
-                }
-
-                if (is_upgradeable(fw, recommended))
-                {
-                    std::string msg = to_string()
-                        << name.first << " (S/N " << name.second << ")\n"
-                        << "Current Version: " + fw + "\nRecommended Version: " + recommended;
-                    if (!fw_update_required)
-                    {
-                        auto id = viewer.not_model.add_notification({ msg,
-                            RS2_LOG_SEVERITY_INFO,
-                            RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED });
-
-                        fw_update_required = true;
-
-                        if (manager) viewer.not_model.attach_update_manager(id, manager);
-
-                        cleanup = [id, &viewer] {
-                            viewer.not_model.dismiss(id);
-                        };
-                    }
-                }                
-            }
-
             auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message, viewer);
             subdevices.push_back(model);
         }
@@ -2838,6 +3085,8 @@ namespace rs2
             }
             play_defaults(viewer);
         }
+
+        refresh_notifications(viewer);
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
@@ -2871,7 +3120,6 @@ namespace rs2
                 for (auto&& profile : profiles)
                 {
                     viewer.begin_stream(sub, profile);
-
                 }
             }
         }
@@ -3075,7 +3323,6 @@ namespace rs2
         std::vector<frame> results;
 
         auto res = handle_frame(f, source);
-
         auto frame = source.allocate_composite_frame(res);
 
         if(frame)
@@ -3084,10 +3331,11 @@ namespace rs2
 
     void post_processing_filters::start()
     {
+        stop();
         if (render_thread_active.exchange(true) == false)
         {
             viewer.syncer->start();
-            render_thread = std::thread([&](){post_processing_filters::render_loop();});
+            render_thread = std::make_shared<std::thread>([&](){post_processing_filters::render_loop();});
         }
     }
 
@@ -3096,7 +3344,8 @@ namespace rs2
         if (render_thread_active.exchange(false) == true)
         {
             viewer.syncer->stop();
-            render_thread.join();
+            render_thread->join();
+            render_thread.reset();
         }
     }
     void post_processing_filters::render_loop()
@@ -3105,7 +3354,7 @@ namespace rs2
         {
             try
             {
-                if(viewer.synchronization_enable || viewer.zo_sensors.load() >0)
+                if(viewer.synchronization_enable)
                 {
                     auto frames = viewer.syncer->try_wait_for_frames();
                     for(auto f:frames)
@@ -3213,25 +3462,19 @@ namespace rs2
 
         //////////////////// Step Backwards Button ////////////////////
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + space_width);
-
-        std::string label = to_string() << textual_icons::step_backward << "##Step Backwards " << id;
-
-        if (pause_required) 
+        std::string label = to_string() << textual_icons::step_backward << "##Step Backward " << id;
+        if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
-            p.pause();
-            for (auto&& s : subdevices)
+            int fps = 0;
+            for (auto&& s : viewer.streams)
             {
-                if (s->streaming)
-                    s->pause();
-                s->on_frame = []{};
+                if (s.second.profile.fps() > fps)
+                    fps = s.second.profile.fps();
             }
-            syncer->on_frame = []{};
-            pause_required = false;
+            auto curr_frame = p.get_position();
+            uint64_t step = 1000.0 / (float)fps * 1e6;
+            p.seek(std::chrono::nanoseconds(curr_frame - step));
         }
-
-        // TODO: Figure out how to properly step-back
-        ImGui::ButtonEx(label.c_str(), button_dim, ImGuiButtonFlags_Disabled);
-
         if (ImGui::IsItemHovered())
         {
             std::string tooltip = to_string() << "Step Backwards" << (supports_playback_step ? "" : "(Not available)");
@@ -3322,23 +3565,15 @@ namespace rs2
         label = to_string() << textual_icons::step_forward << "##Step Forward " << id;
         if (ImGui::ButtonEx(label.c_str(), button_dim, supports_playback_step ? 0 : ImGuiButtonFlags_Disabled))
         {
-            pause_required = false;
-            auto action = [this]() {
-                    pause_required = true;
-                };
-            for (auto& s : subdevices)
+            int fps = 0;
+            for (auto&& s : viewer.streams)
             {
-                s->on_frame = action;
+                if (s.second.profile.fps() > fps)
+                    fps = s.second.profile.fps();
             }
-            syncer->on_frame = action;
-
-            p.resume();
-            for (auto&& s : subdevices)
-            {
-                if (s->streaming)
-                    s->resume();
-            }
-            viewer.paused = false;
+            auto curr_frame = p.get_position();
+            uint64_t step = 1000.0 / (float)fps * 1e6;
+            p.seek(std::chrono::nanoseconds(curr_frame + step));
         }
         if (ImGui::IsItemHovered())
         {
@@ -3758,15 +3993,16 @@ namespace rs2
 
             auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, false);
 
-            auto id = viewer.not_model.add_notification({ "Manual Update requested",
-                RS2_LOG_SEVERITY_INFO,
-                RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED });
+            auto n = std::make_shared<fw_update_notification_model>(
+                "Manual Update requested", manager, true);
+            n->forced = true;
+            viewer.not_model.add_notification(n);
 
-            viewer.not_model.attach_update_manager(id, manager, true);
+            for (auto&& n : related_notifications)
+                if (dynamic_cast<fw_update_notification_model*>(n.get()))
+                    n->dismiss(false);
 
-            cleanup();
-
-            manager->start();
+            manager->start(n);
         }
         catch (const error& e)
         {
@@ -3804,15 +4040,15 @@ namespace rs2
             
             auto manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, data, true);
 
-            auto id = viewer.not_model.add_notification({ "Manual Update requested",
-                RS2_LOG_SEVERITY_INFO,
-                RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED });
+            auto n = std::make_shared<fw_update_notification_model>(
+                "Manual Update requested", manager, true);
+            viewer.not_model.add_notification(n);
+            n->forced = true;
 
-            viewer.not_model.attach_update_manager(id, manager, true);
+            for (auto&& n : related_notifications)
+                n->dismiss(false);
 
-            cleanup();
-
-            manager->start();
+            manager->start(n);
         }
         catch (const error& e)
         {
@@ -3822,6 +4058,22 @@ namespace rs2
         {
             error_message = e.what();
         }
+    }
+
+
+    bool subdevice_model::supports_on_chip_calib()
+    {
+        bool is_d400 = s->supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
+            std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
+
+        std::string fw_version = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
+            s->get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION) : "";
+
+        bool supported_fw = s->supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) ?
+            is_upgradeable("05.11.12.0", fw_version) : false;
+
+        return s->is<rs2::depth_sensor>() && is_d400 && supported_fw;
+        // TODO: Once auto-calib makes it into the API, switch to querying camera info
     }
 
     float device_model::draw_device_panel(float panel_width,
@@ -4076,9 +4328,7 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install official signed firmware from file to the device");
 
-                    if (is_recommended_fw_available() &&
-                        ((dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)) ||
-                        (dev.query_sensors().size() && dev.query_sensors().front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))))
+                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))) 
                     {
                         if (ImGui::Selectable("Install Recommended Firmware "))
                         {
@@ -4090,7 +4340,7 @@ namespace rs2
                                 product_line_str = sensors.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
                             int product_line = parse_product_line(product_line_str);
 
-                            static auto table = create_default_fw_table();
+                            auto table = create_default_fw_table();
 
                             begin_update(table[product_line], viewer, error_message);
                         }
@@ -4113,6 +4363,79 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Install non official unsigned firmware from file to the device");
                 }
+            }
+
+            bool has_autocalib = false;
+            for (auto&& sub : subdevices)
+            {
+                if (sub->supports_on_chip_calib() && !has_autocalib)
+                {
+                    something_to_show = true;
+                    if (ImGui::Selectable("On-Chip Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>(
+                                "", manager, false);
+
+                            viewer.not_model.add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Start on-chip calibration process");
+
+                    if (ImGui::Selectable("Tare Calibration"))
+                    {
+                        try
+                        {
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
+                            auto n = std::make_shared<autocalib_notification_model>(
+                                "", manager, false);
+
+                            viewer.not_model.add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Start on-chip tare calibration process");
+
+                    has_autocalib = true;
+                }
+            }
+            if (!has_autocalib)
+            {
+                bool selected = false;
+                something_to_show = true;
+                ImGui::Selectable("On-Chip Calibration", &selected, ImGuiSelectableFlags_Disabled);
+                ImGui::Selectable("Tare Calibration", &selected, ImGuiSelectableFlags_Disabled);
             }
 
             if (!something_to_show)
@@ -4763,7 +5086,8 @@ namespace rs2
         const ImVec2 name_pos = { pos.x + 9, pos.y + 17 };
         ImGui::SetCursorPos(name_pos);
         std::stringstream ss;
-        ss << dev.get_info(RS2_CAMERA_INFO_NAME);
+        if(dev.supports(RS2_CAMERA_INFO_NAME))
+            ss << dev.get_info(RS2_CAMERA_INFO_NAME);
         ImGui::Text(" %s", ss.str().c_str());
         if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
@@ -4993,8 +5317,9 @@ namespace rs2
                                         dev_syncer = viewer.syncer->create_syncer();
 
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
-                                    if ((friendly_name.find("Tracking") != std::string::npos) ||
-                                        (friendly_name.find("Motion") != std::string::npos))
+                                    if (!viewer.zo_sensors.load() &&
+                                            ((friendly_name.find("Tracking") != std::string::npos) ||
+                                            (friendly_name.find("Motion") != std::string::npos)))
                                     {
                                         viewer.synchronization_enable = false;
                                     }
@@ -5126,7 +5451,7 @@ namespace rs2
                     label = to_string() << "Controls ##" << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << id;
                     if (ImGui::TreeNode(label.c_str()))
                     {
-                        for (auto i = 0; i < RS2_OPTION_COUNT; i++)
+                        for (auto&& i:sub->s->get_supported_options())
                         {
                             auto opt = static_cast<rs2_option>(i);
                             if (skip_option(opt)) continue;

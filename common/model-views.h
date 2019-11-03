@@ -58,22 +58,48 @@ static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
 static const ImVec4 greenish = from_rgba(33, 104, 0, 255, 0xff);
 
+// Helper class that lets smoothly animate between its values
+template<class T>
+class animated
+{
+private:
+    T _old, _new;
+    std::chrono::system_clock::time_point _last_update;
+    std::chrono::system_clock::duration _duration;
+public:
+    animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
+        : _duration(duration)
+    {
+        _last_update = std::chrono::system_clock::now();
+    }
+    animated& operator=(const T& other)
+    {
+        if (other != _new)
+        {
+            _old = get();
+            _new = other;
+            _last_update = std::chrono::system_clock::now();
+        }
+        return *this;
+    }
+    T get() const
+    {
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _last_update).count();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
+        auto t = (float)ms / duration_ms;
+        t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
+        return _old * (1.f - t) + _new * t;
+    }
+    operator T() const { return get(); }
+    T value() const { return _new; }
+};
+
+
 inline ImVec4 blend(const ImVec4& c, float a)
 {
     return{ c.x, c.y, c.z, a * c.w };
 }
-
-struct fw_update_device_info
-{
-    rs2::device dev;
-    int product_line;
-    bool upgrade_recommended;
-    std::string serial_number;
-    std::string curr_fw_version;
-    std::string recommended_fw_version;
-    std::string minimal_fw_version;
-    std::vector<uint8_t> fw_image;
-};
 
 namespace rs2
 {
@@ -120,12 +146,20 @@ namespace rs2
             static const char* default_path        { "record.default_path" };
             static const char* compression_mode    { "record.compression" };
         }
+        namespace update
+        {
+            static const char* allow_rc_firmware   { "update.allow_rc_firmware" };
+            static const char* recommend_updates   { "update.recommend_updates" };
+            static const char* recommend_calibration { "update.recommend_calibration" };
+        }
         namespace viewer
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
+            static const char* sdk_version         { "viewer_model.sdk_version" };
+            static const char* last_calib_notice   { "viewer_model.last_calib_notice" };
 
             static const char* log_to_console      { "viewer_model.log_to_console" };
             static const char* log_to_file         { "viewer_model.log_to_file" };
@@ -207,6 +241,9 @@ namespace rs2
         static const textual_icon dotdotdot                { u8"\uf141" };
         static const textual_icon link                     { u8"\uf08e" };
         static const textual_icon throphy                  { u8"\uF091" };
+        static const textual_icon metadata                 { u8"\uF0AE" };
+        static const textual_icon check                    { u8"\uF00C" };
+        static const textual_icon mail                     { u8"\uF01C" };
     }
 
     class subdevice_model;
@@ -552,6 +589,7 @@ namespace rs2
         ~subdevice_model();
 
         bool is_there_common_fps() ;
+        bool supports_on_chip_calib();
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
@@ -566,7 +604,9 @@ namespace rs2
         bool draw_option(rs2_option opt, bool update_read_only_options,
             std::string& error_message, notifications_model& model)
         {
-            return options_metadata[opt].draw_option(update_read_only_options, streaming, error_message, model);
+            if(options_metadata.find(opt)!=options_metadata.end())
+                return options_metadata[opt].draw_option(update_read_only_options, streaming, error_message, model);
+            return false;
         }
 
         bool is_paused() const;
@@ -670,7 +710,6 @@ namespace rs2
         bool is_stream_visible();
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
-        void show_metadata(const mouse_info& g);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
         bool is_stream_alive();
@@ -696,10 +735,10 @@ namespace rs2
         double              timestamp = 0.0;
         unsigned long long  frame_number = 0;
         rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-        fps_calc            fps;
+        fps_calc            fps, view_fps;
+        int                 count = 0;
         rect                roi_display_rect{};
         frame_metadata      frame_md;
-        bool                metadata_displayed  = false;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
         float _frame_timeout = RS2_DEFAULT_TIMEOUT;
@@ -713,6 +752,9 @@ namespace rs2
         rect curr_info_rect{};
         temporal_event _stream_not_alive;
         bool show_map_ruler = true;
+        bool show_metadata = false;
+
+        animated<float> _info_height{ 0.f };
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -731,6 +773,9 @@ namespace rs2
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
+
+        void refresh_notifications(viewer_model& viewer);
+
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
         void draw_controls(float panel_width, float panel_height,
@@ -771,7 +816,7 @@ namespace rs2
         std::set<std::string> advanced_mode_settings_file_names;
         std::string selected_file_preset;
 
-        std::function<void()> cleanup = []{};
+        std::vector<std::shared_ptr<notification_model>> related_notifications;
 
     private:
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
@@ -894,7 +939,7 @@ namespace rs2
 
         /* Post processing filter rendering */
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
-        std::thread render_thread;              // Post processing filter rendering Thread running render_loop()
+        std::shared_ptr<std::thread> render_thread;              // Post processing filter rendering Thread running render_loop()
         void render_loop();                     // Post processing filter rendering function
 
         int last_frame_number = 0;

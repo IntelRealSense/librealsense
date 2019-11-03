@@ -7,6 +7,7 @@
 #include <string>
 #include "device.h"
 #include "stream.h"
+#include "l500/l500-device.h"
 
 namespace librealsense
 {

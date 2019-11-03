@@ -12,7 +12,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 
-import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
@@ -27,7 +26,6 @@ public class RecordingActivity extends AppCompatActivity {
 
     private Streamer mStreamer;
     private GLRsSurfaceView mGLSurfaceView;
-    private Colorizer mColorizer = new Colorizer();
 
     private boolean mPermissionsGrunted = false;
 
@@ -82,9 +80,7 @@ public class RecordingActivity extends AppCompatActivity {
 
                 @Override
                 public void onFrameset(FrameSet frameSet) {
-                    try (FrameSet processed = frameSet.applyFilter(mColorizer)) {
-                        mGLSurfaceView.upload(processed);
-                    }
+                    mGLSurfaceView.upload(frameSet);
                 }
             });
             try {
@@ -102,9 +98,14 @@ public class RecordingActivity extends AppCompatActivity {
 
         if(mStreamer != null)
             mStreamer.stop();
+        if(mGLSurfaceView != null)
+            mGLSurfaceView.clear();
     }
 
     private String getFilePath(){
+        File rsFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() +
+                File.separator + getString(R.string.realsense_folder));
+        rsFolder.mkdir();
         File folder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() +
                 File.separator + getString(R.string.realsense_folder) + File.separator + "video");
         folder.mkdir();

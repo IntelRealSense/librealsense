@@ -119,8 +119,9 @@ namespace rs2
         * create frame queue. frame queues are the simplest x-platform synchronization primitive provided by librealsense
         * to help developers who are not using async APIs
         * param[in] capacity size of the frame queue
+        * param[in] keep_frames  if set to true, the queue automatically calls keep() on every frame enqueued into it.
         */
-        explicit frame_queue(unsigned int capacity) : _capacity(capacity)
+        explicit frame_queue(unsigned int capacity, bool keep_frames = false) : _capacity(capacity), _keep(keep_frames)
         {
             rs2_error* e = nullptr;
             _queue = std::shared_ptr<rs2_frame_queue>(
@@ -137,6 +138,7 @@ namespace rs2
         */
         void enqueue(frame f) const
         {
+            if (_keep) f.keep();
             rs2_enqueue_frame(f.frame_ref, _queue.get()); // noexcept
             f.frame_ref = nullptr; // frame has been essentially moved from
         }
@@ -194,9 +196,16 @@ namespace rs2
         */
         size_t capacity() const { return _capacity; }
 
+        /**
+        * Return whether or not the queue calls keep on enqueued frames
+        * \return keeping frames
+        */
+        bool keep_frames() const { return _keep; }
+
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
         size_t _capacity;
+        bool _keep;
     };
 
     /**

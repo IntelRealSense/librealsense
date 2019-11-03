@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_ANDROID_BACKEND
-
 #include "messenger-usbhost.h"
 #include "device-usbhost.h"
 #include "../usb/usb-enumerator.h"
@@ -10,104 +8,31 @@
 #include "usbhost.h"
 #include "endpoint-usbhost.h"
 #include "interface-usbhost.h"
-#include "../libuvc/uvc_types.h"
+#include "../uvc/uvc-types.h"
+#include "request-usbhost.h"
+
 #include <string>
 #include <regex>
 #include <sstream>
 #include <mutex>
 
-#define INTERRUPT_BUFFER_SIZE 1024
 #define CLEAR_FEATURE 0x01
 #define UVC_FEATURE 0x02
-#define INTERRUPT_PACKET_SIZE 5
-#define INTERRUPT_NOTIFICATION_INDEX 5
-#define DEPTH_SENSOR_OVERFLOW_NOTIFICATION 11
-#define COLOR_SENSOR_OVERFLOW_NOTIFICATION 13
 
 namespace librealsense
 {
     namespace platform
     {
-        usb_status usbhost_status_to_rs(int sts)
+        usb_messenger_usbhost::usb_messenger_usbhost(const std::shared_ptr<usb_device_usbhost>& device,
+                std::shared_ptr<handle_usbhost> handle)
+                : _device(device), _handle(handle)
         {
-            switch (sts)
-            {
-                case EBADF:
-                case ENODEV: return RS2_USB_STATUS_NO_DEVICE;
-                case EOVERFLOW: return RS2_USB_STATUS_OVERFLOW;
-                case EPROTO: return RS2_USB_STATUS_PIPE;
-                case EINVAL: return RS2_USB_STATUS_INVALID_PARAM;
-                case ENOMEM: return RS2_USB_STATUS_NO_MEM;
-                case ETIMEDOUT: return RS2_USB_STATUS_TIMEOUT;
-                    //TODO:MK
-                default: return RS2_USB_STATUS_OTHER;
-            }
-        }
 
-        usb_messenger_usbhost::usb_messenger_usbhost(const std::shared_ptr<usb_device_usbhost>& device)
-            : _device(device)
-        {
-            auto interfaces = _device->get_interfaces();
-            for(auto&& i : interfaces)
-            {
-                claim_interface(i->get_number());
-                auto iep = i->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ, RS2_USB_ENDPOINT_INTERRUPT);
-                if(iep)
-                    _interrupt_endpoint = std::dynamic_pointer_cast<usb_endpoint_usbhost>(iep);
-            }
-            listen_to_interrupts();
         }
 
         usb_messenger_usbhost::~usb_messenger_usbhost()
         {
-            if(_pipe)
-                _pipe->cancel_request(_interrupt_request);
-            _pipe.reset();
-        }
 
-        void usb_messenger_usbhost::queue_interrupt_request()
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            _pipe->submit_request(_interrupt_request);
-        }
-
-        void usb_messenger_usbhost::listen_to_interrupts()
-        {
-            _pipe = std::make_shared<pipe>(_device->get_handle());
-
-            if(!_interrupt_endpoint)//recovery device
-                return;
-
-            auto desc = _interrupt_endpoint->get_descriptor();
-            _interrupt_request = std::shared_ptr<usb_request>(usb_request_new(_device->get_handle(),
-                    &desc), [](usb_request* req) {usb_request_free(req);});
-            _interrupt_callback = std::make_shared<pipe_callback>
-                    ([&](usb_request* response)
-                    {
-                        if (response->actual_length > 0) {//TODO:MK status check is currently for d4xx fw
-                            std::string buff = "";
-                            for (int i = 0; i < response->actual_length; i++)
-                                buff += std::to_string(((uint8_t*)response->buffer)[i]) + ", ";
-                            LOG_DEBUG("interrupt_request: " << buff.c_str());
-                            if (response->actual_length == INTERRUPT_PACKET_SIZE) {
-                                auto sts = ((uint8_t*)response->buffer)[INTERRUPT_NOTIFICATION_INDEX];
-                                if (sts == DEPTH_SENSOR_OVERFLOW_NOTIFICATION || sts == COLOR_SENSOR_OVERFLOW_NOTIFICATION)
-                                    LOG_ERROR("overflow status sent from the device");
-                            }
-                        }
-                        queue_interrupt_request();
-                    });
-            _interrupt_buffer = std::vector<uint8_t>(INTERRUPT_BUFFER_SIZE);
-            _interrupt_request->buffer = _interrupt_buffer.data();
-            _interrupt_request->buffer_length = _interrupt_buffer.size();
-            _interrupt_request->client_data = _interrupt_callback.get();
-            queue_interrupt_request();
-        }
-
-        void usb_messenger_usbhost::claim_interface(int interface)
-        {
-            usb_device_connect_kernel_driver(_device->get_handle(), interface, false);
-            usb_device_claim_interface(_device->get_handle(), interface);
         }
 
         usb_status usb_messenger_usbhost::reset_endpoint(const rs_usb_endpoint& endpoint, uint32_t timeout_ms)
@@ -133,7 +58,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr);
+                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << (int)errno);
                 return usbhost_status_to_rs(errno);
             }
             transferred = sts;
@@ -152,6 +77,22 @@ namespace librealsense
             transferred = sts;
             return RS2_USB_STATUS_SUCCESS;
         }
+
+        rs_usb_request usb_messenger_usbhost::create_request(rs_usb_endpoint endpoint)
+        {
+            auto rv = std::make_shared<usb_request_usbhost>(_device, endpoint);
+            rv->set_shared(rv);
+            return rv;
+        }
+
+        usb_status usb_messenger_usbhost::submit_request(const rs_usb_request& request)
+        {
+            return _device->submit_request(request);
+        }
+
+        usb_status usb_messenger_usbhost::cancel_request(const rs_usb_request& request)
+        {
+            return _device->cancel_request(request);
+        }
     }
 }
-#endif

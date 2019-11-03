@@ -9,7 +9,9 @@
 
 > **Note:**
 >
->[`pyrealsense`](https://github.com/toinsson/pyrealsense) AKA [`pyrealsense/2.0`](https://pypi.python.org/pypi/pyrealsense/2.0) is a community supported Python wrapper for **librealsense v1.12.1**, This wrapper does not support newer versions and **does not work with the RealSense SDK 2.0**.
+>[`pyrealsense`](https://github.com/toinsson/pyrealsense) AKA [`pyrealsense/2.0`](https://pypi.python.org/pypi/pyrealsense/2.0) is a community supported Python wrapper for the legacy **librealsense v1.12.1**. This wrapper does not support newer versions and **does not work with the RealSense SDK 2.0**.
+>
+> HOWEVER: The [`pyrealsense2`](https://pypi.org/project/pyrealsense2/) package is our official wrapper which **does** support SDK 2.0
 
 We provide a PyPI distribution which is created from this folder by running `python setup.py bdist_wheel`.
 

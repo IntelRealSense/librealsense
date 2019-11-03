@@ -10,4 +10,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/usb-device.h"
         
         "${CMAKE_CURRENT_LIST_DIR}/usb-enumerator.h"
+        "${CMAKE_CURRENT_LIST_DIR}/usb-request.h"      
 )

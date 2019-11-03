@@ -208,8 +208,8 @@ namespace librealsense
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-        bool _rgb_exposure_gain_bind;
-        bool _amplitude_factor_support;
+        lazy<bool> _rgb_exposure_gain_bind;
+        lazy<bool> _amplitude_factor_support;
 
         preset get_all() const;
         void set_all(const preset& p);

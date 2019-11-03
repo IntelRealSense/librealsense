@@ -513,6 +513,15 @@ namespace perc
         sensor_extrinsics extrinsics;        /**< Extrinsics pose of an individual sensor in the device relative to another one      */
     } bulk_message_response_get_extrinsics;
 
+    typedef struct {
+        bulk_message_request_header header;
+        uint8_t bSensorID;
+        sensor_extrinsics extrinsics;
+    } bulk_message_request_set_extrinsics;
+
+    typedef struct {
+        bulk_message_response_header header;
+    } bulk_message_response_set_extrinsics;
 
     /**
     * @brief Bulk Set Camera Intrinsics Message

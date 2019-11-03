@@ -917,7 +917,7 @@ void make_factory(){
     // rs2::processing_block                                            [?]
     {
         ClassFactory frame_queue_factory("rs2::frame_queue");
-        frame_queue_factory.record("new", 1, 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        frame_queue_factory.record("new", 1, 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             if (inc == 0) {
                 outv[0] = MatlabParamParser::wrap(rs2::frame_queue());
@@ -925,6 +925,11 @@ void make_factory(){
             else if (inc == 1) {
                 auto capacity = MatlabParamParser::parse<unsigned int>(inv[0]);
                 outv[0] = MatlabParamParser::wrap(rs2::frame_queue(capacity));
+            }
+            else if (inc == 2) {
+                auto capacity = MatlabParamParser::parse<unsigned int>(inv[0]);
+                auto keep_frames = MatlabParamParser::parse<bool>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(rs2::frame_queue(capacity, keep_frames));
             }
         });
         // rs2::frame_queue::enqueue(frame)                             [?]
@@ -944,6 +949,11 @@ void make_factory(){
         {
             auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
             outv[0] = MatlabParamParser::wrap(thiz.capacity());
+        });
+        frame_queue_factory.record("keep_frames", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.keep_frames());
         });
         factory->record(frame_queue_factory);
     }

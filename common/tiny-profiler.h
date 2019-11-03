@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <chrono>
+#include <iostream>
+#include <cstring> // strlen
 
 class scoped_timer
 {
@@ -51,7 +53,7 @@ public:
         {
             if (!profiler::instance().scope)
             {
-                for (int i = 0; i < 60; i++) std::cout << "=";
+                for (int i = 0; i < 50; i++) std::cout << "=";
                 std::cout << "\n";
             }
             lasts[key] = _started;
@@ -60,12 +62,12 @@ public:
             auto l = strlen(key);
             std::cout << key;
             std::cout << " ";
-            for (int i = 0; i < 60 - l - profiler::instance().scope * 2; i++)
+            for (int i = 0; i < 50 - int(l) - profiler::instance().scope * 2; i++)
                 std::cout << ".";
             auto avg = (profiler::instance().duration[key]
                 / profiler::instance().counts[key]);
             std::cout << " ";
-            tocout(avg);
+            tocout(long(avg));
             std::cout << " usec,\t" << (profiler::instance().counts[key] / 2) << " Hz\n";
             profiler::instance().duration[key] = 0;
             profiler::instance().counts[key] = 1;

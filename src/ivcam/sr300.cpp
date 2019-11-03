@@ -281,18 +281,19 @@ namespace librealsense
         enable_timestamp(true, true);
 
         auto pid_hex_str = hexify(color.pid);
-        auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
+        //auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
 
         register_info(RS2_CAMERA_INFO_NAME,             device_name);
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,    depth.device_path);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE,     "SR300");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED,    _is_locked ? "YES" : "NO");
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
+        //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         register_autorange_options();
 

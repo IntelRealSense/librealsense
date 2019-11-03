@@ -9,4 +9,5 @@
     <string name="firmware_update_file_path">firmware_update_file_path</string>
     <string name="browse_folder">browse_folder</string>
     <string name="realsense_folder">realsense</string>
+    <string name="show_3d">show_3d</string>
 </resources>

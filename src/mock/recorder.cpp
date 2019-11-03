@@ -885,6 +885,16 @@ namespace librealsense
             }, _entity_id, call_type::uvc_unlock);
         }
 
+        void record_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->register_profiles(hid_profiles);
+                auto&& c = rec->add_call(k);
+                c.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
+            }, _entity_id, call_type::hid_open);
+        }
+
         void record_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
@@ -1395,6 +1405,13 @@ namespace librealsense
             : _rec(rec), _entity_id(id), _alive(true)
         {
             _callback_thread = std::thread([this]() { callback_thread(); });
+        }
+
+        void playback_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            auto stored = _rec->find_call(call_type::hid_register_profiles, _entity_id);
+            auto stored_iios = _rec->load_blob(stored.param1);
+            // TODO: Verify sensor_iio
         }
 
         void playback_hid_device::open(const std::vector<hid_profile>& hid_profiles)

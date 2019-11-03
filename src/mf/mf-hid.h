@@ -27,6 +27,7 @@ namespace librealsense
                 }
 
                 _name = CW2A(fName);
+                SysFreeString(fName);
             };
 
             const std::string& get_sensor_name() const { return _name; }
@@ -55,6 +56,7 @@ namespace librealsense
             static void foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action);
             wmf_hid_device(const hid_device_info& info);
 
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
             void open(const std::vector<hid_profile>&iio_profiles) override;
             void close() override;
             void stop_capture() override;
@@ -69,6 +71,7 @@ namespace librealsense
             std::vector<std::shared_ptr<wmf_hid_sensor>> _streaming_sensors; // Vector of all streaming sensors of this device (subclass of _connected_sensors)
 
             CComPtr<ISensorEvents> _cb = nullptr;
+            std::vector<hid_profile> _hid_profiles;
         };
     }
 }

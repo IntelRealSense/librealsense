@@ -21,9 +21,20 @@ namespace librealsense
         return *sensor;
     }
 
-    void software_device::register_extrinsic(const stream_interface& stream, uint32_t groupd_index)
+    void software_device::register_extrinsic(const stream_interface& stream)
     {
-        register_stream_to_extrinsic_group(stream, groupd_index);
+        uint32_t max_idx = 0;
+        std::set<uint32_t> bad_groups;
+        for (auto & pair : _extrinsics) {
+            if (pair.second.first > max_idx) max_idx = pair.second.first;
+            if (bad_groups.count(pair.second.first)) continue; // already tried the group
+            rs2_extrinsics ext;
+            if (environment::get_instance().get_extrinsics_graph().try_fetch_extrinsics(stream, *pair.second.second, &ext)) {
+                register_stream_to_extrinsic_group(stream, pair.second.first);
+                return;
+            }
+        }
+        register_stream_to_extrinsic_group(stream, max_idx+1);
     }
 
     software_sensor& software_device::get_software_sensor(int index)
@@ -265,7 +276,7 @@ namespace librealsense
         }, software_frame.pixels });
 
         auto sd = dynamic_cast<software_device*>(_owner);
-        sd->register_extrinsic(*vid_profile, _unique_id);
+        sd->register_extrinsic(*vid_profile);
         _source.invoke_callback(frame);
     }
 

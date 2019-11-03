@@ -419,6 +419,27 @@ rs2_stream_profile* rs2_clone_stream_profile(const rs2_stream_profile* mode, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, mode, stream, stream_idx, fmt)
 
+rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, int width, int height, const rs2_intrinsics* intr, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(mode);
+    VALIDATE_ENUM(stream);
+    VALIDATE_ENUM(format);
+    VALIDATE_NOT_NULL(intr);
+
+    auto sp = mode->profile->clone();
+    sp->set_stream_type(stream);
+    sp->set_stream_index(index);
+    sp->set_format(format);
+
+    auto vid = std::dynamic_pointer_cast<video_stream_profile_interface>(sp);
+    auto i = *intr;
+    vid->set_intrinsics([i]() { return i; });
+    vid->set_dims(width, height);
+
+    return new rs2_stream_profile{ sp.get(), sp };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, mode, stream, index, format, width, height, intr)
+
 const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
@@ -777,6 +798,13 @@ rs2_sensor* rs2_get_frame_sensor(const rs2_frame* frame, rs2_error** error) BEGI
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, frame)
 
+int rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    return ((frame_interface*)frame_ref)->get_frame_data_size();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
@@ -1104,6 +1132,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_SOFTWARE_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor)        != nullptr;
     case RS2_EXTENSION_POSE_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::pose_sensor_interface)  != nullptr;
     case RS2_EXTENSION_WHEEL_ODOMETER      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::wheel_odometry_interface)!= nullptr;
+    case RS2_EXTENSION_TM2_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::tm2_sensor_interface) != nullptr;
 
     default:
         return false;
@@ -1977,6 +2006,8 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 {
     VALIDATE_NOT_NULL(frame_ref);
     auto df = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::depth_frame);
+    VALIDATE_RANGE(x, 0, df->get_width() - 1);
+    VALIDATE_RANGE(y, 0, df->get_height() - 1);
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
@@ -2192,6 +2223,63 @@ void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error**
 
     auto tm2 = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
     tm2->disconnect_controller(id);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_intrinsics* intrinsics, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(profile);
+    VALIDATE_NOT_NULL(intrinsics);
+
+    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::tm2_sensor_interface);
+    tm2->set_intrinsics(*profile->profile, *intrinsics);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
+
+void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(from_sensor);
+    VALIDATE_NOT_NULL(from_profile);
+    VALIDATE_NOT_NULL(to_sensor);
+    VALIDATE_NOT_NULL(to_profile);
+    VALIDATE_NOT_NULL(extrinsics);
+    
+    if (from_sensor->parent.device != to_sensor->parent.device)
+    {
+        LOG_ERROR("Cannot set extrinsics of two different devices \n");
+        return;
+    }
+
+    auto tm2 = VALIDATE_INTERFACE(from_sensor->sensor, librealsense::tm2_sensor_interface);
+    tm2->set_extrinsics(*from_profile->profile, *to_profile->profile, *extrinsics);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, from_sensor, from_profile, to_sensor, to_profile, extrinsics)
+
+void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(profile);
+    VALIDATE_NOT_NULL(intrinsics);
+
+    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::tm2_sensor_interface);
+    tm2->set_motion_device_intrinsics(*profile->profile, *intrinsics);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
+
+void rs2_reset_to_factory_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    auto tm2 = VALIDATE_INTERFACE(&device->device->get_sensor(0), librealsense::tm2_sensor_interface);
+    tm2->reset_to_factory_calibration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+void rs2_write_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    auto tm2 = VALIDATE_INTERFACE(&device->device->get_sensor(0), librealsense::tm2_sensor_interface);
+    tm2->write_calibration();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 

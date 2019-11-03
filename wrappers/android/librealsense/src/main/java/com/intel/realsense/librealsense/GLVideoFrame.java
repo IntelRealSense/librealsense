@@ -10,13 +10,18 @@ import java.nio.IntBuffer;
 public class GLVideoFrame extends GLFrame {
     private IntBuffer mGlTexture;
 
+    public GLVideoFrame(){
+        mGlTexture = IntBuffer.allocate(1);
+        GLES10.glGenTextures(1, mGlTexture);
+    }
+
     public int getTexture() { return mGlTexture.array()[0]; }
 
     private Rect adjustRatio(Rect in){
-        if (mFrame == null || !(mFrame instanceof VideoFrame))
+        if (mFrame == null || !(mFrame.is(Extension.VIDEO_FRAME)))
             return null;
 
-        VideoFrame vf = mFrame.as(VideoFrame.class);
+        VideoFrame vf = mFrame.as(Extension.VIDEO_FRAME);
 
         float ratio = (float)vf.getWidth() / (float)vf.getHeight();
         float newHeight = in.height();
@@ -37,15 +42,10 @@ public class GLVideoFrame extends GLFrame {
     @Override
     public synchronized void draw(Rect rect)
     {
-        if (mFrame == null || !(mFrame instanceof VideoFrame))
+        if (mFrame == null || !(mFrame.is(Extension.VIDEO_FRAME)))
             return;
 
-        if(mGlTexture == null) {
-            mGlTexture = IntBuffer.allocate(1);
-            GLES10.glGenTextures(1, mGlTexture);
-        }
-
-        VideoFrame vf = mFrame.as(VideoFrame.class);
+        VideoFrame vf = mFrame.as(Extension.VIDEO_FRAME);
         int size = vf.getStride() * vf.getHeight();
         if(mBuffer == null || mBuffer.array().length != size){
             mBuffer = ByteBuffer.allocate(size);
@@ -64,9 +64,7 @@ public class GLVideoFrame extends GLFrame {
     public synchronized void close() {
         if(mFrame != null)
             mFrame.close();
-        if(mGlTexture != null)
-            GLES10.glDeleteTextures(1, mGlTexture);
-        mGlTexture = null;
+        GLES10.glDeleteTextures(1, mGlTexture);
     }
 
     public static void upload(VideoFrame vf, ByteBuffer buffer, int texture)
