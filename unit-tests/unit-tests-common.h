@@ -224,6 +224,9 @@ inline void disable_sensitive_options_for(rs2::sensor& sen)
     if (sen.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
 
+    if (sen.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 0));
+
     if (sen.supports(RS2_OPTION_EXPOSURE))
     {
         rs2::option_range range;
