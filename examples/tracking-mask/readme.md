@@ -4,10 +4,7 @@
 
 ## Overview
 
-This sample demonstrates how to "mask" out a portion of the fisheye
-image on T265 to prevent the tracking from using the full fisheye
-frame. This is only recommended if you know that some part of your
-fisheye frame will be occluded.
+This sample demonstrates how to "mask" out a portion of the fisheye image on T265 to prevent the tracking from using the full fisheye frame. This is only recommended if you know that some part of your fisheye frame will be occluded. The API requires the user to pass a timestamp in addition to the mask image. If this timestamp is 0 or in the past, the mask will be used immediately. If the timestamp is set to a future time, the mask will not take effect until this time. Querying `get_tracking_mask` will only return the mask once it is being used.
 
 ## Expected Output
 The application should open a window in which it shows one of the fisheye streams and displays only the center portion of the frame (where the mask has been set to 1).
@@ -51,7 +48,7 @@ rs2_intrinsics intrinsics = fisheye_stream.as<rs2::video_stream_profile>().get_i
 We create an OpenGL window where we will show the masked fisheye image.
 ```cpp
 // Create an OpenGL display window and a texture to draw the fisheye image
-window app(intrinsics.width, intrinsics.height, "Intel RealSense T265 Augmented Reality Example");
+window app(intrinsics.width, intrinsics.height, "Intel RealSense T265 Tracking Mask Example");
 window_key_listener key_watcher(app);
 texture fisheye_image;
 ```
@@ -74,6 +71,7 @@ We wait until new synchronized fisheye frames are available.
 ```
 
 If the mask has not yet been created, we create it and set it:
+
 ```cpp
             if(!mask_set) {
                 int width = intrinsics.width/8;
@@ -96,20 +94,34 @@ If the mask has not yet been created, we create it and set it:
             }
 ```
 
-Then we check to retrieve the currently active mask:
+Then we attempt to retrieve the currently active mask:
+
 ```cpp
-            uint8_t * mask = nullptr;
             int width, height;
             double global_ts_ms;
-            tm2.get_tracking_mask(fisheye_sensor_idx, &mask, &width, &height, &global_ts_ms);
+            rs2_raw_data_buffer * mask_buffer = tm2.get_tracking_mask(fisheye_sensor_idx, &mask, &width, &height, &global_ts_ms);
 ```
 
-If there is a valid mask, we use it to mask the current fisheye image
-and display it. Since `get_tracking_mask` has allocated memory on our
-behalf, we also need to free it:
+If a mask has not been set, `get_tracking_mask` will return `nullptr`, so we check for that before rendering a visualization of the masked region:
+
 ```cpp
-std::unique_ptr<uint8_t[]> mask_image(rs2::video_frame & frame, uint8_t * mask)
+            if(mask_buffer) {
+                // Render the fisheye image with a mask
+                auto image = render_mask_image(fisheye_frame, mask_buffer);
+                fisheye_image.render(image.get(), RS2_FORMAT_Y8, fisheye_frame.get_width(), fisheye_frame.get_height(), {0, 0, app.width(), app.height()}, 1);
+                rs2_delete_raw_data(mask_buffer);
+            }
+```
+
+If there is a valid mask, `mask_buffer` will point to a `rs2_raw_data_buffer` which contains the mask (an array of `uint8_t`). Once we are done with this data, it needs to be deallocated (using `rs2_delete_raw_data` above). We can retrieve a raw pointer to the mask data using `rs2_get_raw_data`, and then proceed to mask the fisheye frame:
+
+```cpp
+std::unique_ptr<uint8_t[]> render_mask_image(rs2::video_frame & frame, rs2_raw_data_buffer * mask_buffer)
 {
+    rs2_error * e = nullptr;
+    uint8_t * mask = (uint8_t *) rs2_get_raw_data(mask_buffer, &e);
+    rs2::error::handle(e);
+
     uint8_t * frame_data = (uint8_t *) frame.get_data();
     int width = frame.get_width();
     int height = frame.get_height();
@@ -131,16 +143,7 @@ std::unique_ptr<uint8_t[]> mask_image(rs2::video_frame & frame, uint8_t * mask)
 }
 ```
 
-```cpp
-            if(mask) {
-                // Render the fisheye image with a mask
-                auto image = mask_image(fisheye_frame, mask);
-                fisheye_image.render(image.get(), RS2_FORMAT_Y8, fisheye_frame.get_width(), fisheye_frame.get_height(), {0, 0, app.width(), app.height()}, 1);
-                free(mask); // alloced by get_tracking_mask
-            }
-```
-
-Otherwise, we display the full fisheye frame:
+If the mask is not yet valid, we display the full fisheye frame:
 
 ```cpp
             else {
