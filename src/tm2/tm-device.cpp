@@ -15,6 +15,7 @@
 #include "media/ros/ros_reader.h"
 #include "controller_event_serializer.h"
 #include "../../include/librealsense2/hpp/rs_frame.hpp"
+#include "../api.h"
 
 using namespace perc;
 using namespace std::chrono;
@@ -1092,7 +1093,7 @@ namespace librealsense
         }
     }
 
-    void tm2_sensor::get_tracking_mask(int fisheye_sensor_id, uint8_t ** image, int * width, int * height, double * global_ts_ms)
+    rs2_raw_data_buffer * tm2_sensor::get_tracking_mask(int fisheye_sensor_id, int * width, int * height, double * global_ts_ms)
     {
         // 1 based, as usual
         if(fisheye_sensor_id != 1 && fisheye_sensor_id != 2)
@@ -1100,15 +1101,17 @@ namespace librealsense
         int id = fisheye_sensor_id - 1;
 
         std::lock_guard<std::mutex> lock(mask_mutex);
-        *width = mask_frames[id].profile.width;
-        *height = mask_frames[id].profile.height;
+        if(width)  *width = mask_frames[id].profile.width;
+        if(height) *height = mask_frames[id].profile.height;
 
-        if(!mask_buffers[id]) return; // leaves image as null
+        if(!mask_buffers[id]) return nullptr; // leaves image as null
 
         int bytes = (*width) * (*height);
-        *image = (uint8_t *)malloc((*width)*(*height));
-        memcpy(*image, mask_buffers[id].get(), bytes);
         *global_ts_ms = mask_frames[id].timestamp/1.e6; // nanoseconds to ms
+
+        std::vector<uint8_t> mask(bytes);
+        std::copy(mask_buffers[id].get(), mask_buffers[id].get() + bytes, mask.data());
+        return new rs2_raw_data_buffer{mask};
     }
 
     // Tracking listener

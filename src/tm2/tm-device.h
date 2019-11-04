@@ -133,8 +133,8 @@ namespace librealsense
         void set_extrinsics_to_ref(rs2_stream stream_type, int stream_index, const rs2_extrinsics& extr);
 
         //mask interface
-        void set_tracking_mask(int fisheye_sensor_id, const uint8_t * mask, int width, int height, double global_ts_ms);
-        void get_tracking_mask(int fisheye_sensor_id, uint8_t ** image, int * width, int * height, double * global_ts_ms);
+        void set_tracking_mask(int fisheye_sensor_id, const uint8_t * mask, int width, int height, double global_ts_ms) override;
+        rs2_raw_data_buffer * get_tracking_mask(int fisheye_sensor_id, int * width, int * height, double * global_ts_ms) override;
 
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);

@@ -586,13 +586,13 @@ void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream
  * when no mask has been set.
  * \param[in] sensor    T265 sensor
  * \param[in] profile   Stream profile identifying the target camera
- * \param[out] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null. The user is responsible for freeing this memory.
- * \param[out] width     The width of the mask image. This will be set, even when no mask has yet been set.
- * \param[out] height    The height of the mask image. This will be set, even when no mask has yet been set.
- * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+ * \param[out] width     A pointer to a user allocated variable which will contain the width of the mask image. This will be set, even when no mask has yet been set.
+ * \param[out] height    A pointer to a user allocated variable which will contain the height of the mask image. This will be set, even when no mask has yet been set.
+ * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME. If you want the mask to take effect in the future, set this to a timestamp in the future. If you want the mask to take effect as soon as possible, you can pass the current time or 0.
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return             returns a pointer to an allocated rs2_raw_data_buffer containing the mask image if successful, or null if no mask image has been set. This buffer should be deleted with rs2_delete_raw_data when the user is done using it.
  */
-void rs2_get_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile* profile, uint8_t ** mask, int * width, int * height, double * global_ts_ms, rs2_error ** error);
+rs2_raw_data_buffer * rs2_get_tracking_mask(const rs2_sensor* sensor, const rs2_stream_profile* profile, int * width, int * height, double * global_ts_ms, rs2_error ** error);
 
 /**
  * Set the tracking mask. The mask controls regions on which features

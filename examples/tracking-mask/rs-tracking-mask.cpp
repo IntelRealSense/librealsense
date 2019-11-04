@@ -10,8 +10,13 @@
 #include <string.h> // memset
 #include <memory>
 
-std::unique_ptr<uint8_t[]> mask_image(rs2::video_frame & frame, uint8_t * mask)
+std::unique_ptr<uint8_t[]> render_mask_image(rs2::video_frame & frame, rs2_raw_data_buffer * mask_buffer)
 {
+
+    rs2_error * e = nullptr;
+    uint8_t * mask = (uint8_t *) rs2_get_raw_data(mask_buffer, &e);
+    rs2::error::handle(e);
+
     uint8_t * frame_data = (uint8_t *) frame.get_data();
     int width = frame.get_width();
     int height = frame.get_height();
@@ -89,16 +94,15 @@ int main(int argc, char * argv[]) try
                 mask_set = true;
             }
 
-            uint8_t * mask = nullptr;
             int width, height;
             double global_ts_ms;
-            tm2.get_tracking_mask(fisheye_sensor_idx, &mask, &width, &height, &global_ts_ms);
+            rs2_raw_data_buffer * mask_buffer = tm2.get_tracking_mask(fisheye_sensor_idx, &width, &height, &global_ts_ms);
 
-            if(mask) {
+            if(mask_buffer) {
                 // Render the fisheye image with a mask
-                auto image = mask_image(fisheye_frame, mask);
+                auto image = render_mask_image(fisheye_frame, mask_buffer);
                 fisheye_image.render(image.get(), RS2_FORMAT_Y8, fisheye_frame.get_width(), fisheye_frame.get_height(), {0, 0, app.width(), app.height()}, 1);
-                free(mask); // alloced by get_tracking_mask
+                rs2_delete_raw_data(mask_buffer);
             }
             else {
                 // No mask has been set, or the mask we have set has

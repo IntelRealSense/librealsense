@@ -579,16 +579,18 @@ namespace rs2
          * when no mask has been set.
          * \param[in] fisheye_sensor_id    ID of the fisheye camera (1 or 2)
          * \param[out] mask      A pointer where width*height bytes of memory will be allocated. On failure, this will remain null. The user is responsible for freeing this memory.
-         * \param[out] width     The width of the mask image. This will be set, even when no mask has yet been set.
-         * \param[out] height    The height of the mask image. This will be set, even when no mask has yet been set.
-         * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME
+         * \param[out] width     A pointer to a user allocated variable which will contain the width of the mask image. This will be set, even when no mask has yet been set.
+         * \param[out] height    A pointer to a user allocated variable which will contain the height of the mask image. This will be set, even when no mask has yet been set.
+         * \param[out] global_ts_ms The timestamp of the most recent mask frame, in RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME. If you want the mask to take effect in the future, set this to a timestamp in the future. If you want the mask to take effect as soon as possible, you can pass the current time or 0.
+         * \return             returns a pointer to an allocated rs2_raw_data_buffer containing the mask image if successful, or null if no mask image has been set. This buffer should be deleted with rs2_delete_raw_data when the user is done using it.
          */
-        void get_tracking_mask(int fisheye_sensor_id, uint8_t ** mask, int * width, int * height, double * global_ts_ms)
+        rs2_raw_data_buffer * get_tracking_mask(int fisheye_sensor_id, int * width, int * height, double * global_ts_ms)
         {
             rs2_error* e = nullptr;
             auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
-            rs2_get_tracking_mask(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), mask, width, height, global_ts_ms, &e);
+            rs2_raw_data_buffer * mask = rs2_get_tracking_mask(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), width, height, global_ts_ms, &e);
             error::handle(e);
+            return mask;
         }
 
         /**
