@@ -37,7 +37,7 @@ namespace Intel.RealSense
         /// <param name="other"><see cref="Sensor"/> to clone</param>
         /// <returns>an instance of <typeparamref name="T"/></returns>
         public static T Create<T>(Sensor other)
-            where T : Frame
+            where T : Sensor
         {
             object error;
             return ObjectPool.Get<T>(other.Handle);
@@ -198,7 +198,7 @@ namespace Intel.RealSense
         /// <typeparam name="T"><see cref="Sensor"/> type or subclass</typeparam>
         /// <returns>an instance of <typeparamref name="T"/></returns>
         public T As<T>()
-            where T : Frame
+            where T : Sensor
         {
             return Create<T>(this);
         }
