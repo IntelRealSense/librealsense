@@ -18,11 +18,6 @@ if(ENABLE_CCACHE)
 endif()
 
 macro(global_set_flags)
-    if(${FORCE_LIBUVC} OR ${FORCE_WINUSB_UVC} OR ${ANDROID_USB_HOST_UVC})
-        MESSAGE(DEPRECATION "FORCE_LIBUVC, FORCE_WINUSB_UVC and ANDROID_USB_HOST_UVC are deprecated, use FORCE_RSUSB_BACKEND instead")
-        set(FORCE_RSUSB_BACKEND ON)
-    endif()
-    
     set(LRS_TARGET realsense2)
     set(LRS_LIB_NAME ${LRS_TARGET})
 
