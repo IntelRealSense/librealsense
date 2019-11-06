@@ -4,22 +4,22 @@ From: Evgeni Raikhel <evgeni.raikhel@intel.com>
 Signed-off-by: Hans Verkuil <hverkuil-cisco@xs4all.nl>
 Reported-by: syzbot+736c3aae4af7b50d9683@syzkaller.appspotmail.com
 Date: Sun, 3 Nov 2019 12:41:09 +0200
-Subject: [PATCH] Backporting hotfix patch
- https://patchwork.kernel.org/patch/11095737/
+Subject: [PATCH] Backporting hotfix patch 
+https://patchwork.kernel.org/patch/11095737/
 
 The patch is a backporting of Hans Verkuil proposal to circumvent
 video buffer de/allocation sync issues by preventing buffers queue operation
-during v4l2_streamoff. Without the patch during streamoff operation the buffers
-queue continues to change that results
+during v4l2_streamoff. Without the patch during streamoff operation 
+the buffers queue continues to change that results
 https://patchwork.kernel.org/patch/11095737/
 
 ---
- drivers/media/v4l2-core/videobuf2-core.c | 34 ++++++++++++++++++++++++
+ drivers/media/v4l2-core/videobuf2-core.c | 30 ++++++++++++++++++++++++
  include/media/videobuf2-core.h           |  1 +
- 2 files changed, 35 insertions(+)
+ 2 files changed, 31 insertions(+)
 
 diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 8ce9c63dfc59..33f8917a27b7 100644
+index 8ce9c63dfc59..09a653dd83a6 100644
 --- a/drivers/media/v4l2-core/videobuf2-core.c
 +++ b/drivers/media/v4l2-core/videobuf2-core.c
 @@ -581,6 +581,11 @@ int vb2_core_reqbufs(struct vb2_queue *q, enum vb2_memory memory,
@@ -77,14 +77,7 @@ index 8ce9c63dfc59..33f8917a27b7 100644
  
  	/*
  	 * If you see this warning, then the driver isn't cleaning up properly
-@@ -1727,11 +1748,18 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
- {
- 	int ret;
- 
-+	pr_info("Ev: vb2_core_streamon\n");
-+	
- 	if (type != q->type) {
- 		dprintk(1, "invalid stream type\n");
+@@ -1732,6 +1753,11 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
  		return -EINVAL;
  	}
  
@@ -96,14 +89,7 @@ index 8ce9c63dfc59..33f8917a27b7 100644
  	if (q->streaming) {
  		dprintk(3, "already streaming\n");
  		return 0;
-@@ -1790,11 +1818,17 @@ EXPORT_SYMBOL_GPL(vb2_queue_error);
- 
- int vb2_core_streamoff(struct vb2_queue *q, unsigned int type)
- {
-+	pr_info("Ev: vb2_core_streamoff\n");
-+
- 	if (type != q->type) {
- 		dprintk(1, "invalid stream type\n");
+@@ -1795,6 +1821,10 @@ int vb2_core_streamoff(struct vb2_queue *q, unsigned int type)
  		return -EINVAL;
  	}
  
@@ -126,6 +112,4 @@ index d4227a8a2a23..2c2304882b41 100644
  	unsigned int			error:1;
  	unsigned int			waiting_for_buffers:1;
  	unsigned int			is_multiplanar:1;
--- 
-2.23.0
-
+2.24.0
