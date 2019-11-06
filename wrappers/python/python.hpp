@@ -111,6 +111,28 @@ std::string matrix_to_string(const T(&arr)[N][M])
 #define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
 #define BIND_RAW_2D_ARRAY_PROPERTY(T, member, valueT, NROWS, NCOLS) #member, BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS), BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS)
 
+// Support Python's buffer protocol
+class BufData {
+public:
+    void *_ptr = nullptr;         // Pointer to the underlying storage
+    size_t _itemsize = 0;         // Size of individual items in bytes
+    std::string _format;          // For homogeneous buffers, this should be set to format_descriptor<T>::format()
+    size_t _ndim = 0;             // Number of dimensions
+    std::vector<size_t> _shape;   // Shape of the tensor (1 entry per dimension)
+    std::vector<size_t> _strides; // Number of entries between adjacent entries (for each per dimension)
+public:
+    BufData(void *ptr, size_t itemsize, const std::string& format, size_t ndim, const std::vector<size_t> &shape, const std::vector<size_t> &strides)
+        : _ptr(ptr), _itemsize(itemsize), _format(format), _ndim(ndim), _shape(shape), _strides(strides) {}
+    BufData(void *ptr, size_t itemsize, const std::string& format, size_t size)
+        : BufData(ptr, itemsize, format, 1, std::vector<size_t> { size }, std::vector<size_t> { itemsize }) { }
+    BufData(void *ptr, // Raw data pointer
+        size_t itemsize, // Size of the type in bytes
+        const std::string& format, // Data type's format descriptor (e.g. "@f" for float xyz)
+        size_t dim, // number of data elements per group (e.g. 3 for float xyz)
+        size_t count) // Number of groups
+        : BufData(ptr, itemsize, format, 2, std::vector<size_t> { count, dim }, std::vector<size_t> { itemsize*dim, itemsize }) { }
+};
+
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
 
 namespace py = pybind11;
