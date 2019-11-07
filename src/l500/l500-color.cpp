@@ -20,6 +20,7 @@ namespace librealsense
             ctx);
 
         color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        color_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         color_ep->register_pixel_format(pf_yuy2);
         color_ep->register_pixel_format(pf_yuyv);
 
