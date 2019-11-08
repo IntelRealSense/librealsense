@@ -24,6 +24,7 @@
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
+#define MAX_VIDEO_STREAMS 8
 #define MAX_FW_LOG_BUFFER_ENTRIES (512)
 #define MAX_LOG_PAYLOAD_SIZE (44)
 #define MAX_MESSAGE_LEN 1024
@@ -34,8 +35,76 @@
 #define MAX_FW_UPDATE_FILE_COUNT 6
 #define MAX_SLAM_CALIBRATION_SIZE 10000
 
-namespace perc
+// Added from TrackingCommon.h
+namespace t265
 {
+    /**
+    * @brief Defines all sensors types (bSensorID/bCameraID/bMotionID)
+    */
+    enum SensorType
+    {
+        Color = 0,
+        Depth = 1,
+        IR = 2,
+        Fisheye = 3,
+        Gyro = 4,
+        Accelerometer = 5,
+        Controller = 6,
+        Rssi = 7,
+        Velocimeter = 8,
+        Stereo = 9,
+        Pose = 10,
+        ControllerProperty = 11,
+        Mask = 12,
+        Max
+    };
+
+    enum PixelFormat
+    {
+        ANY = 0,         /**< Any pixel format                                                                                      */
+        Z16 = 1,         /**< 16-bit per pixel - linear depth values. The depth is meters is equal to depth scale * pixel value     */
+        DISPARITY16 = 2, /**< 16-bit per pixel - linear disparity values. The depth in meters is equal to depth scale / pixel value */
+        XYZ32F = 3,      /**< 96-bit per pixel - 32 bit floating point 3D coordinates.                                              */
+        YUYV = 4,        /**< 16-bit per pixel - Standard YUV pixel format as described in https://en.wikipedia.org/wiki/YUV        */
+        RGB8 = 5,        /**< 24-bit per pixel - 8-bit Red, Green and Blue channels                                                 */
+        BGR8 = 6,        /**< 24-bit per pixel - 8-bit Blue, Green and Red channels, suitable for OpenCV                            */
+        RGBA8 = 7,       /**< 32-bit per pixel - 8-bit Red, Green, Blue channels + constant alpha channel equal to FF               */
+        BGRA8 = 8,       /**< 32-bit per pixel - 8-bit Blue, Green, Red channels + constant alpha channel equal to FF               */
+        Y8 = 9,          /**< 8-bit  per pixel - grayscale image                                                                    */
+        Y16 = 10,        /**< 16-bit per-pixel - grayscale image                                                                    */
+        RAW8 = 11,       /**< 8-bit  per pixel - raw image                                                                          */
+        RAW10 = 12,      /**< 10-bit per pixel - Four 10-bit luminance values encoded into a 5-byte macropixel                      */
+        RAW16 = 13       /**< 16-bit per pixel - raw image                                                                          */
+    };
+
+    /**
+    * @brief Defines all 6dof modes
+    */
+    typedef enum {
+        SIXDOF_MODE_NORMAL = 0X0000,
+        SIXDOF_MODE_FAST_PLAYBACK = 0x0001,
+        SIXDOF_MODE_ENABLE_MAPPING = 0x0002,
+        SIXDOF_MODE_ENABLE_RELOCALIZATION = 0x0004,
+        SIXDOF_MODE_DISABLE_JUMPING = 0x0008,
+        SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION = 0x0010,
+        SIXDOF_MODE_ENABLE_MAP_PRESERVATION = 0x0020,
+        SIXDOF_MODE_MAX = ((SIXDOF_MODE_FAST_PLAYBACK | SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION | SIXDOF_MODE_DISABLE_JUMPING | SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION | SIXDOF_MODE_ENABLE_MAP_PRESERVATION) + 1)
+    } SIXDOF_MODE;
+
+    inline SIXDOF_MODE &operator|=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) |
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE &operator&=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) &
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE operator~(SIXDOF_MODE x) {
+        return static_cast<SIXDOF_MODE>(~static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x));
+    }
+    inline SIXDOF_MODE operator|(SIXDOF_MODE x, SIXDOF_MODE y) { return x |= y; }
+    inline SIXDOF_MODE operator&(SIXDOF_MODE x, SIXDOF_MODE y) { return x &= y; }
+
     /**
     * @brief Defines all bulk messages ids
     */
@@ -67,8 +136,6 @@ namespace perc
         DEV_SET_EXPOSURE = 0x0017,
         DEV_GET_TEMPERATURE = 0x0018,
         DEV_SET_TEMPERATURE_THRESHOLD = 0x0019,
-        DEV_SET_GEO_LOCATION = 0x001A,
-        DEV_FLUSH = 0x001B,
         DEV_FIRMWARE_UPDATE = 0x001C,
         DEV_GPIO_CONTROL = 0x001D,
         DEV_TIMEOUT_CONFIGURATION = 0x001E,
@@ -95,26 +162,9 @@ namespace perc
         SLAM_CALIBRATION = 0x100D,
         SLAM_RELOCALIZATION_EVENT = 0x100E,
 
-        /* Controller messages */
-        CONTROLLER_POSE_CONTROL = 0x2002,
-        CONTROLLER_STATUS_CHANGE_EVENT = 0x2003,
-        CONTROLLER_DEVICE_CONNECT = 0x2004,
-        CONTROLLER_DEVICE_DISCOVERY_EVENT = 0x2005,
-        CONTROLLER_DEVICE_DISCONNECT = 0x2006,
-        CONTROLLER_READ_ASSOCIATED_DEVICES = 0x2007,
-        CONTROLLER_WRITE_ASSOCIATED_DEVICES = 0x2008,
-        CONTROLLER_DEVICE_DISCONNECTED_EVENT = 0x2009,
-        CONTROLLER_DEVICE_CONNECTED_EVENT = 0x200A,
-        CONTROLLER_RSSI_TEST_CONTROL = 0x200B,
-        CONTROLLER_SEND_DATA = 0x200C,
-        CONTROLLER_START_CALIBRATION = 0x200D,
-        CONTROLLER_CALIBRATION_STATUS_EVENT = 0x200E,
-        CONTROLLER_DEVICE_LED_INTENSITY_EVENT = 0xF000,
-
         /* Error messages */
         DEV_ERROR = 0x8000,
         SLAM_ERROR = 0x9000,
-        CONTROLLER_ERROR = 0xA000,
 
         /* Message IDs are 16-bits */
         MAX_MESSAGE_ID = 0xFFFF,
@@ -124,7 +174,7 @@ namespace perc
     /**
     * @brief Defines all bulk message return statuses
     */
-    enum class MESSAGE_STATUS {
+    typedef enum {
         SUCCESS = 0X0000,
         UNKNOWN_MESSAGE_ID = 0x0001,
         INVALID_REQUEST_LEN = 0x0002,
@@ -145,7 +195,7 @@ namespace perc
         AUTH_ERROR = 0x0014,          /* Authentication error in firmware update */
         DEVICE_RESET = 0x0015,        /* A device reset has occurred. The user may read the FW log for additional detail */
         SLAM_NO_DICTIONARY = 0x9001,  /* No relocalization dictionary was loaded */
-    };
+    } MESSAGE_STATUS;
 
     /**
     * @brief Defines EEPROM lock states
@@ -203,17 +253,6 @@ namespace perc
         SLAM_ERROR_CODE_SPEED = 2,  /**< The device moved more rapidly than expected for typical handheld motion. This may indicate that rc_Tracker has failed and is providing invalid data.                      */
         SLAM_ERROR_CODE_OTHER = 3,  /**< A fatal internal error has occurred.                                                                                                                                      */
     } SLAM_ERROR_CODE;
-
-    /**
-    * @brief Defines all controller calibration error codes
-    */
-    typedef enum {
-        CONTROLLER_CALIBRATION_STATUS_SUCCEEDED = 0,            /**< No error has occurred.               */
-        CONTROLLER_CALIBRATION_STATUS_VALIDATION_FAILURE = 1,   /**<  Validation failure has occurred.    */
-        CONTROLLER_CALIBRATION_STATUS_FLASH_ACCESS_FAILURE = 2, /**<  Flash access failure has occurred.  */
-        CONTROLLER_CALIBRATION_STATUS_IMU_FAILURE = 3,          /**< IMU failure has occurred.            */
-        CONTROLLER_CALIBRATION_STATUS_INTERNAL_FAILURE = 4,     /**< A fatal internal error has occurred. */
-    } CONTROLLER_CALIBRATION_STATUS_CODE;
 
     /**
     * @brief Bulk message request header struct
@@ -359,7 +398,7 @@ namespace perc
     * Single supported raw stream that can be streamed out of the device.
     */
     typedef struct {
-        uint8_t bSensorID;         /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5, Controller = 6        */
+        uint8_t bSensorID;         /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5 */
                                    /**< Bits 5-7: Sensor index - Zero based index of sensor with the same type within device. For example if the device supports two fisheye cameras, */
                                    /**<                          The first will use index 0 (bSensorID = 0x03) and the second will use index 1 (bSensorID = 0x23)                     */
         uint8_t bReserved;         /**< Reserved = 0                                                                                                                                  */
@@ -701,7 +740,7 @@ namespace perc
 
     typedef struct {
         bulk_message_request_header header; /**< Message request header: dwLength = 7 bytes, wMessageID = DEV_GET_POSE          */
-        uint8_t bIndex;                     /**< Index of HMD or controller - 0x0 = HMD, 0x1 - controller 1, 0x2 - controller 2 */
+        uint8_t bIndex;                     /**< Index of HMD - 0x0 = HMD */
     } bulk_message_request_get_pose;
 
     typedef struct {
@@ -802,43 +841,6 @@ namespace perc
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_SET_TEMPERATURE_THRESHOLD */
     } bulk_message_response_set_temperature_threshold;
-
-
-    /**
-    * @brief Bulk Set Geo Location Message
-    *
-    * Sets the geographical location (e.g. GPS data). This data can be later used by the algorithms to correct IMU readings.
-    */
-    typedef struct {
-        bulk_message_request_header header;   /**< Message request header: dwLength = 32 bytes, wMessageID = DEV_SET_GEO_LOCATION */
-        uint16_t wReserved;                   /**< Reserved = 0                                                                   */
-        double_t dfLatitude;                  /**< Latitude in degrees                                                            */
-        double_t dfLongitude;                 /**< Longitude in degrees                                                           */
-        double_t dfAltitude;                  /**< Altitude in meters above the WGS 84 reference ellipsoid                        */
-    } bulk_message_request_set_geo_location;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_SET_GEO_LOCATION */
-    } bulk_message_response_set_geo_location;
-
-
-    /**
-    * @brief Bulk Flush Message
-    *
-    * Sends in addition to the standard response over the commands endpoint, a response message over all the device-to-host endpoints - events & streams endpoints.
-    * This command shall be the first command requested by the host in order to "flush" any possible messages left from a previous session that wasn't terminated properly (e.g. host app crashed or timed-out)
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 16 bytes, wMessageID = DEV_FLUSH */
-        uint16_t wReserved;                 /**< Reserved = 0                                                        */
-        uint64_t ddwToken;                  /**< 64 bit token that will be received in the response                  */
-    } bulk_message_request_flush;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLendth = 16, wMessageID = DEV_FLUSH */
-        uint64_t ddwToken;                   /**< 64 bit token from the request                                  */
-    } bulk_message_response_flush;
-    
 
     /**
     * @brief Bulk GPIO control Message
@@ -982,38 +984,6 @@ namespace perc
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_SET_LOW_POWER_MODE  */
     } bulk_message_response_set_low_power_mode;
-
-
-    /**
-    * @brief Bulk Get Occupancy Map Tiles Message
-    *
-    * Returns new real world tiles detected by the SLAM middleware (tiles reported earlier in the session will not be returned).
-    * Tiles are represented in location relative to the device's initial position,
-    * If relocalization data was set, this pose is relative to the relocalization database.
-    */
-    typedef struct {
-        uint32_t dwX; /**< X value of first tile, in meters (relative to initial position)                       */
-        uint32_t dwY; /**< Y value of first tile, in meters (relative to initial position)                       */
-        uint32_t dwW; /**< W value of first tile, in meters (relative to initial position) or 0 if value unknown */
-    } map_tiles;
-
-    typedef struct {
-        uint8_t bAccuracy;      /**< Accuracy of occupancy map calculation: 0x0 - low accuracy, 0x1 - medium accuracy, 0x2 - high accuracy */
-        uint8_t bReserved;      /**< Reserved = 0                                                                                          */
-        uint16_t wTileCount;    /**< Number of tiles in the following array                                                                */
-        uint64_t llNanoseconds; /**< Timestamp of tile sample, measured in nanoseconds since device system initialization                  */
-        map_tiles tiles[];      /**< Occupancy map tiles variable sized array                                                              */
-    } occupancy_map_tiles;
-
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 6 bytes, wMessageID = SLAM_GET_OCCUPANCY_MAP_TILES */
-    } bulk_message_request_get_occupancy_map_tiles;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: wMessageID = SLAM_GET_OCCUPANCY_MAP_TILES */
-        occupancy_map_tiles map_tiles;       /**< Occupancy map tiles                                                */
-    } bulk_message_response_get_occupancy_map_tiles;
-
 
     /**
     * @brief Bulk Get Localization Data Message
@@ -1188,7 +1158,7 @@ namespace perc
     */
     typedef struct {
         bulk_message_request_header header; /**< Message request header: dwLength = 28 + dwMetadataLength + dwFrameLength bytes, wMessageID = DEV_SAMPLE                                       */
-        uint8_t bSensorID;                  /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5, Controller = 6        */
+        uint8_t bSensorID;                  /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5 */
                                             /**< Bits 5-7: Sensor index - Zero based index of sensor with the same type within device. For example if the device supports two fisheye cameras, */
                                             /**<                          The first will use index 0 (bSensorID = 0x03) and the second will use index 1 (bSensorID = 0x23)                     */
         uint8_t bReserved;                  /**< Reserved = 0                                                                                                                                  */
@@ -1272,54 +1242,6 @@ namespace perc
         bulk_message_gyro_stream_metadata metadata;
     } bulk_message_gyro_stream;
 
-
-    /**
-    * @brief Bulk raw controller stream metadata
-    */
-    typedef struct
-    {
-        uint32_t dwMetadataLength;                        /**< Metadata length in bytes (0 bytes)                                              */
-        uint32_t dwFrameLength;                           /**< Length of frame below (8 bytes)                                                 */
-        uint8_t bEventID;                                 /**< Event ID - button, trackpad or battery (vendor specific), supported values 0-63 */
-        uint8_t bInstanceId;                              /**< Instance of the sensor in case of multiple sensors                              */
-        uint8_t bSensorData[CONTROLLER_SENSOR_DATA_SIZE]; /**< Sensor data that is pass-through from the controller firmware                   */
-    } bulk_message_controller_stream_metadata;
-
-
-    /**
-    * @brief Bulk raw controller stream message
-    *
-    * Specific frame metadata and data for sensor IDs - controller
-    */
-    typedef struct
-    {
-        bulk_message_raw_stream_header rawStreamHeader;
-        bulk_message_controller_stream_metadata metadata;
-    } bulk_message_controller_stream;
-
-
-    /**
-    * @brief Bulk raw rssi stream metadata
-    */
-    typedef struct
-    {
-        uint32_t dwMetadataLength; /**< Metadata length in bytes (0 bytes)                                            */
-        uint32_t dwFrameLength;    /**< Length of frame below (8 bytes)                                               */
-        float_t flSignalStrength;  /**< Sampled signal strength (dB), a value closer to 0 indicates a stronger signal */
-    } bulk_message_rssi_stream_metadata;
-
-
-    /**
-    * @brief Bulk raw rssi stream message
-    *
-    * Specific frame metadata and data for sensor IDs - BLE Signal Strength (sent during a BLE RSSI test)
-    */
-    typedef struct
-    {
-        bulk_message_raw_stream_header rawStreamHeader;
-        bulk_message_rssi_stream_metadata metadata;
-    } bulk_message_rssi_stream;
-
     /**
     * @brief Bulk raw velocimeter stream metadata
     */
@@ -1343,179 +1265,6 @@ namespace perc
         bulk_message_raw_stream_header rawStreamHeader;
         bulk_message_velocimeter_stream_metadata metadata;
     } bulk_message_velocimeter_stream;
-
-    /**
-    * @brief Bulk Controller pose Control Message
-    *
-    * Enables / disables pose calculation for the controllers.
-    * If no CONTROLLER_POSE_CONTROL command was called before the host calls to DEV_START, the default value used shall be "Disable Controllers 6DoF".
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 9 bytes, wMessageID = CONTROLLER_POSE_CONTROL                */
-        uint8_t bEnable;                    /**< 0x00 - Disable 6DoF, 0x01 - Enable 6DoF                                                         */
-        uint8_t bMode;                      /**< 0x00 - Normal Mode, 0x01 - Fast Playback                                                        */
-        uint8_t bNumControllers;            /**< Number of controllers to be tracked. Only values of 1 or 2 supported. Ignored if bEnable == 0x0 */
-    } bulk_message_request_controller_pose_control;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_POSE_CONTROL */
-    } bulk_message_response_controller_pose_control;
-
-
-    /**
-    * @brief Bulk Controller Device Connect Message
-    *
-    * Connect the controller to the device.
-    */
-    typedef struct {
-        bulk_message_request_header header;    /**< Message request header: dwLength = 15 bytes, wMessageID = CONTROLLER_DEVICE_CONNECT */
-        uint16_t wTimeout;                     /**< Connect timeout, in milliseconds                                                    */
-        uint8_t bMacAddress[MAC_ADDRESS_SIZE]; /**< MAC address of controller to be connected                                           */
-        uint8_t bAddressType;                  /**< BLE address type (as received in advertisement)                                     */
-    } bulk_message_request_controller_device_connect;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_DEVICE_CONNECT */
-        uint8_t bControllerID;               /**< Assigned Controller identifier (1 or 2)                                             */
-    } bulk_message_response_controller_device_connect;
-
-
-    /**
-    * @brief Bulk Controller Device Disconnect Message
-    *
-    * Disconnect the controller from the device.
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 7 bytes, wMessageID = CONTROLLER_DEVICE_DISCONNECT */
-        uint8_t bControllerID;              /**< Controller identifier (1 or 2)                                                        */
-    } bulk_message_request_controller_device_disconnect;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_DEVICE_DISCONNECT */
-    } bulk_message_response_controller_device_disconnect;
-
-
-    /**
-    * @brief Bulk Controller Read Associated Devices Message
-    *
-    * Reads the associated devices from the EEPROM.
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 6 bytes, wMessageID = CONTROLLER_READ_ASSOCIATED_DEVICES */
-    } bulk_message_request_controller_read_associated_devices;
-
-    typedef struct {
-        bulk_message_response_header header;    /**< Message response header: dwLength = 22 bytes, wMessageID = CONTROLLER_READ_ASSOCIATED_DEVICES */
-        uint8_t bMacAddress1[MAC_ADDRESS_SIZE]; /**< MAC address of controller 1, set to all zeros if controller is not setup                      */
-        uint8_t bAddressType1;                  /**< Controller 1 MAC address type. (0 = public, 1 = random static)                                */
-        uint8_t bMacAddress2[MAC_ADDRESS_SIZE]; /**< MAC address of controller 2, set to all zeros if controller is not setup                      */
-        uint8_t bAddressType2;                  /**< Controller 2 MAC address type. (0 = public, 1 = random static)                                */
-    } bulk_message_response_controller_read_associated_devices;
-
-
-    /**
-    * @brief Bulk Controller Write Associated Devices Message
-    *
-    * Writes the associated devices to the EEPROM.
-    */
-    typedef struct {
-        bulk_message_request_header header;     /**< Message request header: dwLength = 20 bytes, wMessageID = CONTROLLER_WRITE_ASSOCIATED_DEVICES */
-        uint8_t bMacAddress1[MAC_ADDRESS_SIZE]; /**< MAC address of controller 1, set to all zeros if controller is not setup                      */
-        uint8_t bAddressType1;                  /**< Controller 1 MAC address type. (0 = public, 1 = random static)                                */
-        uint8_t bMacAddress2[MAC_ADDRESS_SIZE]; /**< MAC address of controller 2, set to all zeros if controller is not setup                      */
-        uint8_t bAddressType2;                  /**< Controller 2 MAC address type. (0 = public, 1 = random static)                                */
-    } bulk_message_request_controller_write_associated_devices;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_WRITE_ASSOCIATED_DEVICES */
-    } bulk_message_response_controller_write_associated_devices;
-
-
-    /**
-    * @brief Bulk Controller Send Data Message
-    *
-    * Sends opaque data to the controller. The vendor's controller code is responsible for interpreting the data. 
-    * Example data could be a command to set a LED on the controller or set a vibration pattern on a haptic device.
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 18 bytes, wMessageID = CONTROLLER_SEND_DATA */
-        uint8_t bControllerID;              /**< Controller identifier (1 or 2)                                                 */
-        uint8_t bCommandID;                 /**< Command to be sent to the controller (vendor specific) - values 0-63 supported */
-        uint8_t bControllerData[];          /**< Controller data to be sent. Data format is vendor specific                     */
-    } bulk_message_request_controller_send_data;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_SEND_DATA */
-    } bulk_message_response_controller_send_data;
-
-
-    /**
-    * @brief Bulk Controller Send Data Message
-    *
-    * Start the controller calibration process
-    * When the controller receives the indication to start calibration, it starts reading its gyroscope output for 30 seconds. 
-    * The controller averages the readings over the first 25 seconds and uses this value as the gyro bias.
-    * The controller then averages the readings over the next 5 seconds and compares the value to the gyro bias from the first 25 seconds.
-    * If the values are the same (up to TBD noise value), then the gyro bias is stored to flash and the controller sends the "controller calibration status" event with success. 
-    * Otherwise, the controller reports a failure.
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 8 bytes, wMessageID = CONTROLLER_START_CALIBRATION */
-        uint8_t bControllerID;              /**< Controller identifier (1 or 2)                                                        */
-        uint8_t reserved;                   /**< Reserved = 0                                                                          */
-    } bulk_message_request_controller_start_calibration;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 10 bytes, wMessageID = CONTROLLER_START_CALIBRATION */
-    } bulk_message_response_controller_start_calibration;
-
-
-    /**
-    * @brief Bulk Controller RSSI Test Control Message
-    *
-    * Start or Stop the RSSI test
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 8 bytes, wMessageID = CONTROLLER_RSSI_TEST_CONTROL */
-        uint8_t bControllerID;              /**< Controller identifier (1 or 2)                                                        */
-        uint8_t bTestControl;               /**< 1 to start the test, 0 to stop the test                                               */
-    } bulk_message_request_controller_rssi_test_control;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_RSSI_TEST_CONTROL */
-    } bulk_message_response_controller_rssi_test_control;
-
-
-    /**
-    * @brief Bulk Controller Central FW Update Message
-    *
-    * Updates the FW image on the BLE central device
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 6 + image length in bytes, wMessageID = CONTROLLER_CENTRAL_FW_UPDATE */
-        uint8_t bUpdateImage[];             /**< New Central FW image to be updated                                                                      */
-    } bulk_message_request_controller_central_fw_update;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_CENTRAL_FW_UPDATE */
-    } bulk_message_response_controller_central_fw_update;
-
-
-    /**
-    * @brief Bulk Controller Controller-FW Update Message
-    *
-    * Updates the FW image on a connected controller device
-    */
-    typedef struct {
-        bulk_message_request_header header;    /**< Message request header: dwLength = 12 + image length in bytes, wMessageID = CONTROLLER_CONTROLLER_FW_UPDATE */
-        uint8_t bMacAddress[MAC_ADDRESS_SIZE]; /**< MAC address of controller to be updated                                                                     */
-        uint8_t bUpdateImage[];                /**< New Controller FW image to be updated                                                                       */
-    } bulk_message_request_controller_controller_fw_update;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = CONTROLLER_CONTROLLER_FW_UPDATE */
-    } bulk_message_response_controller_controller_fw_update;
-
 
     /**
     * @brief Interrupt Endpoint Protocol
@@ -1565,7 +1314,7 @@ namespace perc
     */
     typedef struct {
         interrupt_message_header header; /**< Interrupt message header: dwLength = 92 bytes, wMessageID = DEV_GET_POSE       */
-        uint8_t bIndex;                  /**< Index of HMD or controller - 0x0 = HMD, 0x1 - controller 1, 0x2 - controller 2 */
+        uint8_t bIndex;                  /**< Index of HMD - 0x0 = HMD */
         uint8_t wReserved;               /**< Reserved = 0                                                                   */
         pose_data pose;                  /**< Short low-latency data (namely 6DoF pose data)                                 */
     } interrupt_message_get_pose;
@@ -1576,7 +1325,7 @@ namespace perc
     */
     typedef struct {
         interrupt_message_header header; /**< Message request header: dwLength = 28 + dwMetadataLength + dwFrameLength bytes, wMessageID = DEV_SAMPLE                                       */
-        uint8_t bSensorID;               /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5, Controller = 6        */
+        uint8_t bSensorID;               /**< Bits 0-4: Type of sensor, supported values are: Color = 0, Depth = 1, IR = 2, Fisheye = 3, Gyro = 4, Accelerometer = 5       */
                                          /**< Bits 5-7: Sensor index - Zero based index of sensor with the same type within device. For example if the device supports two fisheye cameras, */
                                          /**<                          The first will use index 0 (bSensorID = 0x03) and the second will use index 1 (bSensorID = 0x23)                     */
         uint8_t bReserved;               /**< Reserved = 0                                                                                                                                  */
@@ -1663,136 +1412,6 @@ namespace perc
         interrupt_message_velocimeter_stream_metadata metadata;
     } interrupt_message_velocimeter_stream;
 
-
-    /**
-    * @brief Interrupt raw controller stream metadata
-    */
-    typedef struct
-    {
-        uint32_t dwMetadataLength;                        /**< Metadata length in bytes (0 bytes)                                              */
-        uint32_t dwFrameLength;                           /**< Length of frame below (8 bytes)                                                 */
-        uint8_t bEventID;                                 /**< Event ID - button, trackpad or battery (vendor specific), supported values 0-63 */
-        uint8_t bInstanceId;                              /**< Instance of the sensor in case of multiple sensors                              */
-        uint8_t bSensorData[CONTROLLER_SENSOR_DATA_SIZE]; /**< Sensor data that is pass-through from the controller firmware                   */
-    } interrupt_message_controller_stream_metadata;
-
-
-    /**
-    * @brief Interrupt raw controller stream message
-    *
-    * Specific frame metadata and data for sensor IDs - controller
-    */
-    typedef struct
-    {
-        interrupt_message_raw_stream_header rawStreamHeader;
-        interrupt_message_controller_stream_metadata metadata;
-    } interrupt_message_controller_stream;
-
-
-    /**
-    * @brief Interrupt controller status changed message
-    *
-    * The Controller Pose algorithm shall provide estimated accuracy of the tracking state
-    */
-    typedef struct {
-        interrupt_message_header header; /**< Interrupt message header: dwLength = 8 bytes, wMessageID = CONTROLLER_STATUS_CHANGE_EVENT */
-        uint16_t wStatus;                /**< Status: 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High                                 */
-    } interrupt_message_controller_status_change;
-
-
-    /**
-    * @brief Interrupt controller device discovery event message
-    *
-    * The Controller Pose algorithm shall indicate on discovered controllers
-    */
-    typedef struct {
-        uint16_t wManufacturerId;        /**< Identifier of the controller manufacturer                                                       */
-        uint8_t bVendorData;             /**< vendor specific data copied from the controller advertisement.                                  */
-                                         /**< The least significant bit is reserved for pairing status (set if controller is in pairing mode) */
-        uint8_t bProtocolVersion;        /**< BLE protocol version supported by the controller                                                */
-        uint8_t bAppVersionMajor;        /**< Major number of the app version                                                                 */
-        uint8_t bAppVersionMinor;        /**< Minor number of the app version                                                                 */
-        uint8_t bAppVersionPatch;        /**< Patch number of the app version                                                                 */
-        uint8_t bSoftdeviceVersion;      /**< soft device version                                                                             */
-        uint8_t bBootloaderVersionMajor; /**< Major number of the boot loader version                                                         */
-        uint8_t bBootloaderVersionMinor; /**< Minor number of the boot loader version                                                         */
-        uint8_t bBootloaderVersionPatch; /**< Patch number of the boot loader version                                                         */
-    } controller_discovery_info;
-
-    typedef struct {
-        interrupt_message_header header;       /**< Interrupt message header: dwLength = 25 bytes, wMessageID = CONTROLLER_DEVICE_DISCOVERY_EVENT */
-        uint8_t bMacAddress[MAC_ADDRESS_SIZE]; /**< Discovered device byte array of MAC address                                                   */
-        uint8_t bAddressType;                  /**< Discovered device address type                                                                */
-        uint8_t bReserved;                     /**< Reserved = 0                                                                                  */
-        controller_discovery_info info;        /**< Discovered controller versions                                                                */
-    } interrupt_message_controller_device_discovery;
-
-
-    /**
-    * @brief Interrupt controller connected event message
-    *
-    * The Controller algorithm shall indicate on connect
-    */
-    typedef struct {
-        uint8_t bProtocolVersion;        /**< BLE protocol version supported by the controller                                                */
-        uint16_t wManufacturerId;        /**< Identifier of the controller manufacturer                                                       */
-        uint8_t bAppVersionMajor;        /**< Major number of the app version                                                                 */
-        uint8_t bAppVersionMinor;        /**< Minor number of the app version                                                                 */
-        uint8_t bAppVersionPatch;        /**< Patch number of the app version                                                                 */
-        uint8_t bSoftdeviceVersion;      /**< soft device version                                                                             */
-        uint8_t bBootloaderVersionMajor; /**< Major number of the boot loader version                                                         */
-        uint8_t bBootloaderVersionMinor; /**< Minor number of the boot loader version                                                         */
-        uint8_t bBootloaderVersionPatch; /**< Patch number of the boot loader version                                                         */
-    } controller_connected_info;
-
-    typedef struct {
-        interrupt_message_header header; /**< Interrupt message header: dwLength = 17 bytes, wMessageID = CONTROLLER_DEVICE_CONNECTED_EVENT                  */
-        uint16_t wStatus;                /**< Connection status: SUCCESS - connection succeeded                                                              */
-                                         /**< Connection status: TIMEOUT - connection timed out                                                              */
-                                         /**< Connection status: INCOMPATIBLE - connection succeeded but controller version is incompatible with TM2 version */
-        uint8_t bControllerID;           /**< Connected controller identifier (1 or 2)                                                                       */
-        controller_connected_info info;  /**< Connected controller versions                                                                                  */
-    } interrupt_message_controller_connected;
-
-
-    /**
-    * @brief Interrupt controller disconnected event message
-    *
-    * The Controller algorithm shall indicate on disconnect
-    */
-    typedef struct {
-        interrupt_message_header header; /**< Interrupt message header: dwLength = 7 bytes, wMessageID = CONTROLLER_DEVICE_DISCONNECTED_EVENT */
-        uint8_t bControllerID;           /**< Disconnected controller identifier (1 or 2)                                                     */
-    } interrupt_message_controller_disconnected;
-
-
-    /**
-    * @brief Interrupt Controller led intensity
-    */
-    typedef struct
-    {
-        interrupt_message_raw_stream_header rawStreamHeader; /**< Interrupt message header: wMessageID = CONTROLLER_DEVICE_LED_INTENSITY_EVENT */
-        uint32_t packetType;                                 /**< Packet type                                                                  */
-        uint8_t ledId;                                       /**< Controller Led identifier (1 or 2)                                           */
-        uint32_t intensity;                                  /**< Controller Led intensity [0-100]                                             */
-    } interrupt_message_controller_led_intensity;
-
-    /**
-    * @brief Interrupt controller calibration status event message
-    *
-    * This event is sent by the controller when the calibration process is finished or failed
-    */
-    typedef struct {
-        interrupt_message_header header; /**< Interrupt message header: dwLength = 9 bytes, wMessageID = CONTROLLER_CALIBRATION_STATUS_EVENT */
-        uint16_t wStatus;                /**< Calibration status: 0x0 - calibration succeeded                                                */
-                                         /**< Calibration status: 0x1 - validation failed                                                    */
-                                         /**< Calibration status: 0x2 - flash access failure                                                 */
-                                         /**< Calibration status: 0x3 - IMU failure                                                          */
-                                         /**< Calibration status: 0x4 - internal error                                                       */
-        uint8_t bControllerID;           /**< Calibrated controller identifier (1 or 2)                                                      */
-    } interrupt_message_controller_calibration_status;
-
-
     /**
     * @brief Interrupt SLAM error message
     *
@@ -1807,23 +1426,6 @@ namespace perc
                                          /**<                                 This may indicate that rc_Tracker has failed and is providing invalid data.                                    */
                                          /**<         SLAM_ERROR_CODE_OTHER = 3  - A fatal internal error has occurred.                                                                      */
     } interrupt_message_slam_error;
-
-
-    /**
-    * @brief Interrupt Controller error message
-    *
-    * Controller error code message
-    */
-    typedef struct {
-        interrupt_message_header header; /**< Interrupt message header: dwLength = 8 bytes, wMessageID = CONTROLLER_ERROR                                                                    */
-        uint16_t wStatus;                /**< Status: rc_E_ERROR_NONE = 0   - No error has occurred.                                                                                         */
-                                         /**<         rc_E_ERROR_VISION = 1 - No visual features were detected in the most recent image.                                                     */
-                                         /**<                                 This is normal in some circumstances, such as quick motion or if the device temporarily looks at a blank wall. */
-                                         /**<         rc_E_ERROR_SPEED = 2  - The device moved more rapidly than expected for typical handheld motion.                                       */
-                                         /**<                                 This may indicate that rc_Tracker has failed and is providing invalid data.                                    */
-                                         /**<         rc_E_ERROR_OTHER = 3  - A fatal internal error has occurred.                                                                           */
-    } interrupt_message_controller_error;
-
 
     /**
     * @brief Interrupt Get Localization Data Stream message
@@ -1864,26 +1466,6 @@ namespace perc
         uint64_t llNanoseconds;          /**< Timestamp of relocalization event, measured in nanoseconds since device system initialization */
         uint16_t wSessionId;             /**< Session id of the relocalized map. Current session if 0, previous session otherwise           */
     } interrupt_message_slam_relocalization_event;
-
-    /**
-    * @brief Interrupt firmware update stream message
-    *
-    * Response after sending firmware update command using bulk_message_large_stream
-    */
-    typedef struct {
-        interrupt_message_header header;       /**< Interrupt message header: dwLength = 8 bytes, wMessageID = DEV_FIRMWARE_UPDATE  */
-        uint16_t wStatus;                      /**< Status                                                                          */
-        uint8_t bMacAddress[MAC_ADDRESS_SIZE]; /**< MAC address of updated device. All zeros for central FW update                  */
-        uint8_t bProgress;                     /**< Progress counter (percentage of update complete)                                */
-    } interrupt_message_fw_update_stream;
-
-    typedef struct {
-        uint8_t bMacAddress[MAC_ADDRESS_SIZE];         /**< MAC address of updated device. Shall be all zeros for Central Firmware update                                                */
-        uint8_t bAddressType;                          /**< BLE address type (as received in advertisement)                                                                              */
-        uint8_t bNumFiles;                             /**< Number of firmware update files sent below (n)                                                                               */
-        uint32_t dwFileSize[MAX_FW_UPDATE_FILE_COUNT]; /**< Length (in bytes) of the files                                                                                               */
-        uint8_t bContcatenatedFiles[];                 /**< Length of Concatenation of all files to be used for firmware update (length of this field is dwFileSize1 +...+ dwFileSize n) */
-    } message_fw_update_request;
 
     /**
     * @brief Control message request header struct
@@ -1933,25 +1515,6 @@ namespace perc
 
 #pragma pack(pop)
 
-
-    /**
-    * @brief This function initialize the message request header with needed length and message ID
-    *
-    * @param[in] message_request - message request buffer.
-    * @param[in] dwLength - message request length.
-    * @param[in] wMessageID - message ID.
-    * @return None
-    */
-    void init_message_request_header(IN unsigned char * message_request, IN uint32_t dwLength, IN uint16_t wMessageID);
-
-
-    /**
-    * @brief This function prints all supported request/response messages
-    *
-    * @param[in] message - message buffer.
-    * @return None
-    */
-    void print_message(IN unsigned char * message);
 }
 #ifdef _WIN32
 #pragma warning (pop)

@@ -321,9 +321,6 @@ namespace librealsense
     {
 
         platform::backend_device_group devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
-#ifdef WITH_TRACKING
-        if (_tm2_context) _tm2_context->create_manager();
-#endif
         return create_devices(devices, _playback_devices, mask);
     }
 
@@ -355,7 +352,8 @@ namespace librealsense
 #ifdef WITH_TRACKING
         if (_tm2_context)
         {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
+            // each of these removes some descriptors
+            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context);
             std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
         }
 #endif

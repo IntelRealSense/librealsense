@@ -240,30 +240,6 @@ class Tm2 extends Device {
   get loopbackEnabled() {
     return this.cxxDev.isLoopbackEnabled();
   }
-
-  /**
-   * Connects to a given tm2 controller
-   * @param {ArrayBuffer} macAddress The MAC address of the desired controller
-   * @return {undefined}
-   */
-  connectController(macAddress) {
-    const funcName = 'Tm2.connectController()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, 'ArrayBuffer', 0, funcName);
-    this.cxxDev.connectController(macAddress);
-  }
-
-  /**
-   * Disconnects a given tm2 controller
-   * @param {Integer} id The ID of the desired controller
-   * @return {undefined}
-   */
-  disconnectController(id) {
-    const funcName = 'Tm2.disconnectController()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, 'integer', 0, funcName);
-    this.cxxDev.disconnectController(id);
-  }
 }
 
 /**

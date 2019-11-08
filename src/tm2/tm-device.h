@@ -8,9 +8,11 @@
 #include "../device.h"
 #include "../core/video.h"
 #include "../core/motion.h"
-#include "TrackingManager.h"
 #include "../media/playback/playback_device.h"
 
+#include "libusb.h"
+
+#include "t265-messages.h"
 
 namespace librealsense
 {
@@ -19,17 +21,16 @@ namespace librealsense
     class tm2_device : public virtual device, public tm2_extensions
     {
     public:
-        tm2_device(std::shared_ptr<perc::TrackingManager> manager,
-            perc::TrackingDevice* dev,
-            std::shared_ptr<context> ctx,
+        tm2_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
         virtual ~tm2_device();
 
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
         bool is_enabled() const override;
-        void connect_controller(const std::array<uint8_t, 6>& mac_address) override;
-        void disconnect_controller(int id) override;
+        void connect_controller(const std::array<uint8_t, 6>& mac_address) override {};
+        void disconnect_controller(int id) override {};
+
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             return std::vector<tagged_profile>();
@@ -44,17 +45,30 @@ namespace librealsense
         {
             return "Intel RealSense T265";
         }
-        std::shared_ptr<perc::TrackingManager> _manager;
-        perc::TrackingDevice* _dev;
         std::shared_ptr<tm2_sensor> _sensor;
 
+        libusb_device * device_ptr{nullptr};
+        libusb_device_handle * handle{nullptr};
+
+        std::mutex bulk_mutex;
+        template<typename Request, typename Response> int bulk_request_response(const Request &request, Response &response, size_t max_response_size = 0, bool assert_success = true);
+
+        std::mutex interrupt_mutex;
+        int interrupt_read(uint8_t * buffer, size_t max_read, int & received);
+
+        std::mutex stream_mutex;
+        int stream_read(uint8_t * buffer, size_t max_read, int & received);
+        int stream_write(const t265::bulk_message_request_header * request);
+
+
+        friend class tm2_sensor;
     };
 
     class tm2_sensor : public sensor_base, public video_sensor_interface, public wheel_odometry_interface,
-                       public pose_sensor_interface, public tm2_sensor_interface, public perc::TrackingDevice::Listener
+                       public pose_sensor_interface, public tm2_sensor_interface
     {
     public:
-        tm2_sensor(tm2_device* owner, perc::TrackingDevice* dev);
+        tm2_sensor(tm2_device* owner);
         virtual ~tm2_sensor();
 
         // sensor interface
@@ -66,28 +80,14 @@ namespace librealsense
         void stop() override;
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         rs2_motion_device_intrinsic get_motion_intrinsics(const motion_stream_profile_interface& profile) const;
-        rs2_extrinsics get_extrinsics(const stream_profile_interface & profile, perc::SensorId & reference_sensor_id) const;
-
-        // Tracking listener
-        ////////////////////
-        void onVideoFrame(perc::TrackingData::VideoFrame& tm_frame) override;
-        void onAccelerometerFrame(perc::TrackingData::AccelerometerFrame& tm_frame) override;
-        void onGyroFrame(perc::TrackingData::GyroFrame& tm_frame) override;
-        void onPoseFrame(perc::TrackingData::PoseFrame& tm_frame) override;
-        void onControllerDiscoveryEventFrame(perc::TrackingData::ControllerDiscoveryEventFrame& frame) override;
-        void onControllerDisconnectedEventFrame(perc::TrackingData::ControllerDisconnectedEventFrame& frame) override;
-        void onControllerFrame(perc::TrackingData::ControllerFrame& frame) override;
-        void onControllerConnectedEventFrame(perc::TrackingData::ControllerConnectedEventFrame& frame) override;
-        void onLocalizationDataEventFrame(perc::TrackingData::LocalizationDataFrame& frame) override;
-        void onRelocalizationEvent(perc::TrackingData::RelocalizationEvent& evt) override;
+        rs2_extrinsics get_extrinsics(const stream_profile_interface & profile, int sensor_id) const;
 
         void enable_loopback(std::shared_ptr<playback_device> input);
         void disable_loopback();
         bool is_loopback_enabled() const;
-        void attach_controller(const std::array<uint8_t, 6>& mac_addr);
-        void detach_controller(int id);
         void dispose();
-        perc::TrackingData::Temperature get_temperature();
+        t265::sensor_temperature get_temperature(int sensor_id);
+        void set_exposure_and_gain(float exposure_ms, float gain);
         void set_exposure(float value);
         float get_exposure() const;
         void set_gain(float value);
@@ -114,7 +114,7 @@ namespace librealsense
         };
 
         // Async operations handler
-        async_op_state perform_async_transfer(std::function<perc::Status()> transfer_activator,
+        async_op_state perform_async_transfer(std::function<bool()> transfer_activator,
             std::function<void()> on_success, const std::string& op_description) const;
         // Recording interfaces
         virtual void create_snapshot(std::shared_ptr<pose_sensor_interface>& snapshot) const override {}
@@ -131,28 +131,65 @@ namespace librealsense
         void write_calibration() override;
         void set_extrinsics_to_ref(rs2_stream stream_type, int stream_index, const rs2_extrinsics& extr);
 
+        t265::SIXDOF_MODE               _tm_mode = t265::SIXDOF_MODE_ENABLE_MAPPING | t265::SIXDOF_MODE_ENABLE_RELOCALIZATION;
+
     private:
-        void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
+        void handle_imu_frame(unsigned long long tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
         void raise_relocalization_event(const std::string& msg, double timestamp);
-        void raise_hardware_event(const std::string& msg, const std::string& serialized_data, double timestamp);
         void raise_error_notification(const std::string& msg);
 
-        dispatcher                      _dispatcher;
-        perc::TrackingDevice*           _tm_dev;
         mutable std::mutex              _tm_op_lock;
         std::shared_ptr<playback_device>_loopback;
-        perc::TrackingData::Profile     _tm_supported_profiles;
-        perc::TrackingData::Profile     _tm_active_profiles;
-        perc::SIXDOF_MODE               _tm_mode = perc::SIXDOF_MODE_ENABLE_MAPPING | perc::SIXDOF_MODE_ENABLE_RELOCALIZATION;
         mutable std::condition_variable _async_op;
         mutable async_op_state          _async_op_status;
         mutable std::vector<uint8_t>    _async_op_res_buffer;
+
+        std::vector<t265::supported_raw_stream_libtm_message> _supported_raw_streams;
+        std::vector<t265::supported_raw_stream_libtm_message> _active_raw_streams;
+        bool _pose_output_enabled{false};
+        tm2_device * _device;
+
+        void print_logs(const std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log);
+
+        void interrupt_endpoint();
+        void stream_endpoint();
+        void time_sync();
+        void log_poll();
+        void log_poll_once(std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log_buffer);
+        std::thread _interrupt_endpoint_thread;
+        std::thread _stream_endpoint_thread;
+        std::thread _time_sync_thread;
+        std::thread _log_poll_thread;
+        std::atomic<bool> _interrupt_endpoint_thread_stop;
+        std::atomic<bool> _stream_endpoint_thread_stop;
+        std::atomic<bool> _time_sync_thread_stop;
+        std::atomic<bool> _log_poll_thread_stop;
 
         float last_exposure = 200.f;
         float last_gain = 1.f;
         bool manual_exposure = false;
 
-        template <perc::SIXDOF_MODE flag, perc::SIXDOF_MODE depends_on, bool invert> friend class tracking_mode_option;
+        std::atomic<int64_t> device_to_host_ns;
+        class coordinated_ts {
+            public:
+            std::chrono::duration<double, std::milli> device_ts;
+            std::chrono::duration<double, std::milli> global_ts;
+            std::chrono::duration<double, std::milli> arrival_ts;
+        };
+
+        coordinated_ts get_coordinated_timestamp(uint64_t device_nanoseconds);
+
+        template <t265::SIXDOF_MODE flag, t265::SIXDOF_MODE depends_on, bool invert> friend class tracking_mode_option;
+
+        // interrupt endpoint receive
+        void receive_pose_message(const t265::interrupt_message_get_pose & message);
+        void receive_accel_message(const t265::interrupt_message_accelerometer_stream & message);
+        void receive_gyro_message(const t265::interrupt_message_gyro_stream & message);
+        void receive_set_localization_data_complete(const t265::interrupt_message_set_localization_data_stream & message);
+
+        // stream endpoint receive
+        void receive_video_message(const t265::bulk_message_video_stream * message);
+        void receive_localization_data_chunk(const t265::interrupt_message_get_localization_data_stream * chunk);
     };
 }

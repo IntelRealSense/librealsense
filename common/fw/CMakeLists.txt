@@ -27,6 +27,12 @@ message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
 set(SR3XX_FW_SHA1 55237dba5d7db20e7c218975375d05b4210e9460)
 set(SR3XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/SR300/FW")
 
+string(REGEX MATCH "T26X_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
+set(T26X_FW_VERSION ${CMAKE_MATCH_1})
+message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
+set(T26X_FW_SHA1 b7b722b785fcf5f8c31877173c8ba02fed120e03)
+set(T26X_FW_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/target/${T26X_FW_VERSION}")
+
 add_library(${PROJECT_NAME} STATIC empty.c)
 
 if (MSVC)
@@ -42,6 +48,7 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Resources)
 
 function(target_binary url version sha1 symbol ext)
   set(binary "${CMAKE_CURRENT_BINARY_DIR}/${symbol}-${version}${ext}")
+  message(STATUS "${url}/${symbol}-${version}${ext}")
   file(DOWNLOAD "${url}/${symbol}-${version}${ext}" "${binary}"
        EXPECTED_HASH SHA1=${sha1}
        STATUS status)
@@ -70,6 +77,7 @@ endfunction()
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
 target_binary( "${D4XX_RC_URL}"  "${D4XX_RC_VERSION}"  "${D4XX_RC_SHA1}" D4XX_RC_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
+target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

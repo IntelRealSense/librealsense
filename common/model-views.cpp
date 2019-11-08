@@ -3986,69 +3986,6 @@ namespace rs2
 
     }
 
-    void device_model::draw_controllers_panel(ImFont* font, bool is_device_streaming)
-    {
-        if (!is_device_streaming)
-        {
-            controllers.clear();
-            available_controllers.clear();
-            return;
-        }
-
-        if (controllers.size() > 0 || available_controllers.size() > 0)
-        {
-            int flags = dev.is<playback>() ? ImGuiButtonFlags_Disabled : 0;
-            ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
-            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-            ImGui::PushStyleColor(ImGuiCol_PopupBg, almost_white_bg);
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, from_rgba(0, 0xae, 0xff, 255));
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-            ImGui::PushFont(font);
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 10,0 });
-            const float button_dim = 30.f;
-            for (auto&& c : available_controllers)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                std::string action = "Attach controller";
-                std::string mac = to_string() << (int)c[0] << ":" << (int)c[1] << ":" << (int)c[2] << ":" << (int)c[3] << ":" << (int)c[4] << ":" << (int)c[5];
-                std::string label = to_string() << u8"\uf11b" << "##" << action << mac;
-                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
-                {
-                    dev.as<tm2>().connect_controller(c);
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", action.c_str());
-                }
-                ImGui::SameLine();
-                ImGui::Text("%s", mac.c_str());
-                ImGui::PopStyleColor(2);
-            }
-            for (auto&& c : controllers)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                std::string action = "Detach controller";
-                std::string label = to_string() << u8"\uf11b" << "##" << action << c.first;
-                if (ImGui::ButtonEx(label.c_str(), { button_dim , button_dim }, flags))
-                {
-                    dev.as<tm2>().disconnect_controller(c.first);
-                }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", action.c_str());
-                }
-                ImGui::SameLine();
-                ImGui::Text("Controller #%d (connected)", c.first);
-                ImGui::PopStyleColor(2);
-            }
-            ImGui::PopStyleVar();
-            ImGui::PopFont();
-            ImGui::PopStyleColor(5);
-        }
-    }
-
     std::vector<std::string> get_device_info(const device& dev, bool include_location)
     {
         std::vector<std::string> res;
@@ -5459,7 +5396,6 @@ namespace rs2
         {
             return sm->streaming;
         });
-        draw_controllers_panel(window.get_font(), is_streaming);
 
         pos = ImGui::GetCursorPos();
 
@@ -5983,28 +5919,6 @@ namespace rs2
     void device_model::handle_hardware_events(const std::string& serialized_data)
     {
         //TODO: Move under hour glass
-        std::string event_type = get_event_type(serialized_data);
-        if (event_type == "Controller Event")
-        {
-            std::string subtype = get_subtype(serialized_data);
-            if (subtype == "Connection")
-            {
-                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
-                int id = get_id(serialized_data);
-                controllers[id] = mac_addr;
-                available_controllers.erase(mac_addr);
-            }
-            else if (subtype == "Discovery")
-            {
-                std::array<uint8_t, 6> mac_addr = get_mac(serialized_data);
-                available_controllers.insert(mac_addr);
-            }
-            else if (subtype == "Disconnection")
-            {
-                int id = get_id(serialized_data);
-                controllers.erase(id);
-            }
-        }
     }
 
     device_changes::device_changes(rs2::context& ctx)
@@ -6031,15 +5945,6 @@ namespace rs2
         removed_and_connected = std::move(_changes.front());
         _changes.pop();
         return true;
-    }
-    void tm2_model::draw_controller_pose_object()
-    {
-        const float sphere_radius = 0.02f;
-        const float controller_height = 0.2f;
-        //TODO: Draw controller holder as cylinder
-        texture_buffer::draw_circle(1, 0, 0, 0, 1, 0, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
-        texture_buffer::draw_circle(0, 1, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
-        texture_buffer::draw_circle(1, 0, 0, 0, 0, 1, sphere_radius, { 0.0, controller_height + sphere_radius, 0.0 }, 1.0f);
     }
 
     // Aggregate the trajectory path

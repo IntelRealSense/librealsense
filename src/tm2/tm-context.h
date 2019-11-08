@@ -6,35 +6,34 @@
 #include <vector>
 #include <thread>
 #include <atomic>
-#include "TrackingManager.h"
+#include "context.h"
+#include "libusb.h"
 
 namespace librealsense
 {
     class tm2_info;
 
-    class tm2_context : public perc::TrackingManager::Listener
+    class tm2_context
     {
     public:
-        tm2_context(context* ctx);
-        ~tm2_context();
-        void create_manager();
-        std::shared_ptr<perc::TrackingManager> get_manager() const;
-        std::vector<perc::TrackingDevice*> query_devices() const;
+        tm2_context(context* ctx) : _ctx(ctx) { _is_disposed = false;}
+        ~tm2_context() { _is_disposed = true; };
+        static libusb_context *get() {
+            if (m_ctx == nullptr) {
+                LOG_DEBUG("tm2_context libusb_init");
+                libusb_init(&m_ctx);
+#if LIBUSB_API_VERSION >= 0x01000106
+                libusb_set_option(m_ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_NONE);
+#else
+                libusb_set_debug(m_ctx, LIBUSB_LOG_LEVEL_NONE);
+#endif
+            }
+            return m_ctx;
+        }
         signal<tm2_context, std::shared_ptr<tm2_info>, std::shared_ptr<tm2_info>> on_device_changed;
-        // TrackingManager::Listener
-        void onStateChanged(perc::TrackingManager::EventType state, perc::TrackingDevice* device, perc::TrackingData::DeviceInfo deviceInfo) override;
-        void onError(perc::Status error, perc::TrackingDevice*) override;
     private:
-        void thread_proc();
-        friend class connect_disconnect_listener;
-        std::shared_ptr<perc::TrackingManager::Listener> _listener;
-        std::shared_ptr<perc::TrackingManager> _manager;
-        mutable std::mutex _manager_mutex;
-        std::vector<perc::TrackingDevice*> _devices;
+        static libusb_context *m_ctx;
         context* _ctx;
-
-        //_is_disposed is used in _t, keep this order:
         std::atomic_bool _is_disposed;
-        std::thread _t;
     };
 }
