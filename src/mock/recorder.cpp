@@ -892,7 +892,7 @@ namespace librealsense
                 _source->register_profiles(hid_profiles);
                 auto&& c = rec->add_call(k);
                 c.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
-            }, _entity_id, call_type::hid_open);
+            }, _entity_id, call_type::hid_register_profiles);
         }
 
         void record_hid_device::open(const std::vector<hid_profile>& hid_profiles)

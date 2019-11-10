@@ -870,11 +870,11 @@ namespace librealsense
 
     double ds5_device::get_device_time_ms()
     {
-        // TODO: Refactor the following query with an extension.
-        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
-        {
-            throw not_implemented_exception("device time not supported for backend.");
-        }
+        //// TODO: Refactor the following query with an extension.
+        //if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
+        //{
+        //    throw not_implemented_exception("device time not supported for backend.");
+        //}
 
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
