@@ -1136,12 +1136,14 @@ namespace librealsense
         {
             //  The timestamps conversions path comprise of:
             // FW TS (32bit) ->    USB Phy Layer (no changes)  -> Host Driver TS (Extend to 64bit) ->  LRS read as 64 bit
-            // The flow introduces discrepancy with UVC stream which timestamps aer not extended to 64 bit by host driver both for Win and v4l backends.
+            // The flow introduces discrepancy with UVC stream which timestamps are not extended to 64 bit by host driver both for Win and v4l backends.
             // In order to allow for hw timestamp-based synchronization of Depth and IMU streams the latter will be trimmed to 32 bit.
             // To revert to the extended 64 bit TS uncomment the next line instead
             //auto timestamp = *((uint64_t*)((const uint8_t*)fo.metadata));
-            auto timestamp = (fo.metadata_size >= platform::hid_header_size) ?
-                static_cast<uint32_t>(((platform::hid_header*)(fo.metadata))->timestamp) : *((uint32_t*)((const uint8_t*)fo.metadata));
+            // The ternary operator is replaced by explicit assignment due to an issue with GCC for RaspberryPi that causes segfauls in optimized build.
+            auto timestamp = *(reinterpret_cast<uint32_t*>(const_cast<void*>(fo.metadata)));
+            if (fo.metadata_size >= platform::hid_header_size)
+                timestamp = static_cast<uint32_t>(reinterpret_cast<const platform::hid_header*>(fo.metadata)->timestamp);
 
             // HID timestamps are aligned to FW Default - usec units
             return static_cast<rs2_time_t>(timestamp * TIMESTAMP_USEC_TO_MSEC);

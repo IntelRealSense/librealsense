@@ -202,6 +202,11 @@ namespace perc {
                     break;
                 }
 
+                case SensorType::Mask:
+                {
+                    break;
+                }
+
                 default:
                     DEVICELOGE("Unknown SensorType support (0x%X)", GET_SENSOR_TYPE(streams[i].bSensorID));
                     break;

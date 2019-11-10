@@ -183,12 +183,15 @@ Some auxillary functionalities might be affected. Please report this message if 
 
         std::vector<std::string> filters_split;
 
-        auto curr = filters;
-        while (*curr != '\0')
+        if (num_filters)
         {
-            auto end = curr + strlen(curr);
-            filters_split.push_back({ curr, end });
-            curr = end + 1;
+            auto curr = filters;
+            while (*curr != '\0')
+            {
+                auto end = curr + strlen(curr);
+                filters_split.push_back({ curr, end });
+                curr = end + 1;
+            }
         }
 
         std::vector<const char*> filter;

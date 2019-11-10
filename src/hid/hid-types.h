@@ -18,7 +18,7 @@
 #define REPORT_ID_GYROMETER_3D      2
 #define REPORT_ID_CUSTOM            3
 
-#define SIZE_OF_FRAME               32
+const size_t SIZE_OF_HID_IMU_FRAME = 32;
 
 static std::string gyro = "gyro_3d";
 static std::string accel = "accel_3d";
@@ -56,10 +56,10 @@ namespace librealsense
     struct REALSENSE_HID_REPORT {
       unsigned char reportId;
       unsigned char unknown;
-      unsigned long timeStamp;
-      unsigned short x;
-      unsigned short y;
-      unsigned short z;
+      unsigned long long timeStamp;
+      short x;
+      short y;
+      short z;
       unsigned int customValue1;
       unsigned int customValue2;
       unsigned short customValue3;
@@ -68,50 +68,53 @@ namespace librealsense
       unsigned char customValue6;
       unsigned char customValue7;
     };
+
 #pragma pack(pop)
+    static_assert(sizeof(REALSENSE_HID_REPORT) == SIZE_OF_HID_IMU_FRAME, "HID IMU Frame struct expected size is 32 bytes");
 
-        struct hid_device_info
+    struct hid_device_info
+    {
+        std::string id;
+        std::string vid;
+        std::string pid;
+        std::string unique_id;
+        std::string device_path;
+        std::string serial_number;
+
+        operator std::string()
         {
-            std::string id;
-            std::string vid;
-            std::string pid;
-            std::string unique_id;
-            std::string device_path;
-            std::string serial_number;
+            std::stringstream s;
+            s << "id- " << id <<
+                "\nvid- " << std::hex << vid <<
+                "\npid- " << std::hex << pid <<
+                "\nunique_id- " << unique_id <<
+                "\npath- " << device_path;
 
-            operator std::string()
-            {
-                std::stringstream s;
-                s << "id- " << id <<
-                    "\nvid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nunique_id- " << unique_id <<
-                    "\npath- " << device_path;
-
-                return s.str();
-            }
-        };
-
-        inline bool operator==(const hid_device_info& a,
-            const hid_device_info& b)
-        {
-            return  (a.id == b.id) &&
-                (a.vid == b.vid) &&
-                (a.pid == b.pid) &&
-                (a.unique_id == b.unique_id) &&
-                (a.device_path == b.device_path);
+            return s.str();
         }
+    };
+
+    inline bool operator==(const hid_device_info& a,
+        const hid_device_info& b)
+    {
+        return  (a.id == b.id) &&
+            (a.vid == b.vid) &&
+            (a.pid == b.pid) &&
+            (a.unique_id == b.unique_id) &&
+            (a.device_path == b.device_path);
+    }
+
 #pragma pack(push, 1)
-        struct FEATURE_REPORT
-        {
-          unsigned char reportId;
-          unsigned char connectionType;
-          unsigned char sensorState;
-          unsigned char power;
-          unsigned char minReport;
-          unsigned short report;
-          unsigned short unknown;
-        };
+    struct FEATURE_REPORT
+    {
+      unsigned char reportId;
+      unsigned char connectionType;
+      unsigned char sensorState;
+      unsigned char power;
+      unsigned char minReport;
+      unsigned short report;
+      unsigned short unknown;
+    };
 #pragma pack(pop)
     }
 }
