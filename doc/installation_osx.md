@@ -10,7 +10,7 @@
 2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
 3. Install the following packages via brew:
   * `brew install cmake libusb pkg-config`
-  * `brew cask install vulkan-sdk`
+  * `brew cask install apenngrace/vulkan/vulkan-sdk`
 
 **Note** *librealsense* requires CMake version 3.8+ that can also be obtained via the [official CMake site](https://cmake.org/download/).  
 
