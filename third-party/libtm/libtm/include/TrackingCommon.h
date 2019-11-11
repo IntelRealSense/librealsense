@@ -65,6 +65,7 @@ namespace perc {
         Stereo = 9,
         Pose = 10,
         ControllerProperty = 11,
+        Mask = 12,
         Max
     };
 

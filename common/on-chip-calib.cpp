@@ -321,8 +321,15 @@ namespace rs2
         std::sort(fill_rates.begin(), fill_rates.end());
         std::sort(rmses.begin(), rmses.end());
 
-        auto median_fill_rate = fill_rates[fill_rates.size() / 2];
-        auto median_rms = rmses[rmses.size() / 2];
+        float median_fill_rate, median_rms;
+        if (fill_rates.empty())
+            median_fill_rate = 0;
+        else
+            median_fill_rate = fill_rates[fill_rates.size() / 2];
+        if (rmses.empty())
+            median_rms = 0;
+        else
+            median_rms = rmses[rmses.size() / 2];
 
         _viewer.draw_plane = show_plane;
 
@@ -904,56 +911,63 @@ namespace rs2
             {
                 auto health = get_manager().get_health();
 
-                auto recommend_keep = health > 0.15f;
+                auto recommend_keep = get_manager().allow_calib_keep();
 
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
 
-                ImGui::Text("Calibration Error: ");
-
-                std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
-                auto health_str = ss.str();
-
-                std::string text_name = to_string() << "##notification_text_" << index;
-                
-                ImGui::SetCursorScreenPos({ float(x + 136), float(y + 30) });
-                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-                ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-                ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
-                ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()),
-                    strlen(health_str.c_str()) + 1, { 50, 
-                                                      ImGui::GetTextLineHeight() + 6 },
-                    ImGuiInputTextFlags_ReadOnly);
-                ImGui::PopStyleColor(7);
-
-                ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
-
-                if (!recommend_keep)
+                if (get_manager().tare)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                    ImGui::Text("(Good)");
+                    ImGui::Text("%s", "Tare calibration complete:");
                 }
-                else if (health < 0.25f)
+                else
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
-                    ImGui::Text("(Can be Improved)");
-                }
-                else  
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, redish);
-                    ImGui::Text("(Requires Calibration)");
-                }
-                ImGui::PopStyleColor();
+                    ImGui::Text("%s", "Calibration Error: ");
 
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", "Calibration error captures how far camera calibration is from the optimal one\n"
-                        "[0, 0.15) - Good\n"
-                        "[0.15, 0.25) - Can be Improved\n"
-                        "[0.25, ) - Requires Calibration");
+                    std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
+                    auto health_str = ss.str();
+
+                    std::string text_name = to_string() << "##notification_text_" << index;
+                    
+                    ImGui::SetCursorScreenPos({ float(x + 136), float(y + 30) });
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                    ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()),
+                        strlen(health_str.c_str()) + 1, { 50, 
+                                                        ImGui::GetTextLineHeight() + 6 },
+                        ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(7);
+
+                    ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
+
+                    if (!recommend_keep)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                        ImGui::Text("%s", "(Good)");
+                    }
+                    else if (health < 0.25f)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
+                        ImGui::Text("%s", "(Can be Improved)");
+                    }
+                    else  
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, redish);
+                        ImGui::Text("%s", "(Requires Calibration)");
+                    }
+                    ImGui::PopStyleColor();
+
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Calibration error captures how far camera calibration is from the optimal one\n"
+                            "[0, 0.15) - Good\n"
+                            "[0.15, 0.25) - Can be Improved\n"
+                            "[0.25, ) - Requires Calibration");
+                    }
                 }
 
                 if (recommend_keep)
@@ -1271,7 +1285,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT) return 120;
         else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
         {
-            if (get_manager().get_health() > 0.15f) return 170;
+            if (get_manager().allow_calib_keep()) return 170;
             else return 80;
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 85;

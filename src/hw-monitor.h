@@ -325,5 +325,17 @@ namespace librealsense
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
+
+        template <typename T>
+        T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
+        {
+            T rv = 0;
+            if (index + sizeof(T) >= data.size())
+                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                    std::to_string(data.size()) + ", index: " + std::to_string(index));
+            for (int i = 0; i < sizeof(T); i++)
+                rv += data[index + i] << (i * 8);
+            return rv;
+        }
     };
 }

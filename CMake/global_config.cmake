@@ -57,11 +57,6 @@ macro(global_set_flags)
         add_definitions(-DBUILD_INTERNAL_UNIT_TESTS)
     endif()
 
-    if(FORCE_LIBUVC)
-        set(BACKEND RS2_USE_LIBUVC_BACKEND)
-        message(STATUS "Using libuvc (by force)")
-    endif()
-
     if (BUILD_WITH_CUDA)
         include(CMake/cuda_config.cmake)
     endif()

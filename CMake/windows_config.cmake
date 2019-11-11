@@ -18,10 +18,10 @@ macro(os_set_flags)
 
     ## Check for Windows Version ##
     if(${CMAKE_SYSTEM_VERSION} EQUAL 6.1) # Windows 7
-        set(FORCE_WINUSB_UVC ON)
+        set(FORCE_RSUSB_BACKEND ON)
     endif()
 
-    if(FORCE_WINUSB_UVC)
+    if(FORCE_RSUSB_BACKEND)
         set(BACKEND RS2_USE_WINUSB_UVC_BACKEND)
     else()
         set(BACKEND RS2_USE_WMF_BACKEND)
@@ -53,16 +53,7 @@ endmacro()
 macro(os_target_config)
     add_definitions(-D__SSSE3__ -D_CRT_SECURE_NO_WARNINGS)
 
-    if(FORCE_WINUSB_UVC)
-        target_sources(${LRS_TARGET}
-            PRIVATE
-            "${CMAKE_CURRENT_LIST_DIR}/src/win7/winusb_uvc/winusb_uvc.cpp"
-            "${CMAKE_CURRENT_LIST_DIR}/src/libuvc/utlist.h"
-            "${CMAKE_CURRENT_LIST_DIR}/src/win7/winusb_uvc/winusb_uvc.h"
-        )
-    endif()
-
-    if(FORCE_WINUSB_UVC)
+    if(FORCE_RSUSB_BACKEND)
         if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
             message("Preparing Windows 7 drivers" )
             make_directory(${CMAKE_CURRENT_BINARY_DIR}/drivers/)

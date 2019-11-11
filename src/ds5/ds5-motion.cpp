@@ -286,7 +286,7 @@ namespace librealsense
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
         if (hid_ep)
         {
-            _motion_module_device_idx = add_sensor(hid_ep);
+            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
 
             std::function<void(rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)> align_imu_axes  = nullptr;
 

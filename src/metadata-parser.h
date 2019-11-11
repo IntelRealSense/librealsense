@@ -232,6 +232,7 @@ namespace librealsense
                 throw invalid_value_exception("HID header is not available");
 
             auto attrib = static_cast<rs2_metadata_type>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+            attrib &= 0x00000000ffffffff;
             if (_modifyer) attrib = _modifyer(attrib);
             return attrib;
         }

@@ -1184,14 +1184,17 @@ namespace rs2
             {
 
                 // Snapshot the color-augmented version of the frame
-                if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
+                if (auto df = frame.as<depth_frame>())
                 {
+                    if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
+                    {
 
-                    auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
-                    auto filename_png = filename_base + "_" + stream_desc + "_" + fn.str() + ".png";
-                    save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
-                        colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+                        auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
+                        auto filename_png = filename_base + "_" + stream_desc + "_" + fn.str() + ".png";
+                        save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
+                            colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
 
+                    }
                 }
                 auto original_frame = frame.as<video_frame>();
 

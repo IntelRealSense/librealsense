@@ -96,49 +96,9 @@ namespace librealsense
         void set_manual_exposure(bool manual);
 
         // Pose interfaces
-
-        /**
-         * Get relocalization map that is currently on device, created and updated during most recent tracking session.
-         * Can be called before or after stop().
-         * \param[out] lmap_buf map data as a binary blob
-         * \return true if success
-         */
         bool export_relocalization_map(std::vector<uint8_t>& lmap_buf) const override;
-
-        /**
-         * Load relocalization map onto device. Only one relocalization map can be imported at a time;
-         * any previously existing map will be overwritten.
-         * The imported map exists simultaneously with the map created during the most tracking session after start(),
-         * and they are merged after the imported map is relocalized.
-         * This operation must be done before start().
-         * \param[in] lmap_buf map data as a binary blob
-         * \return true if success
-         */
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const override;
-
-        /**
-         * Creates a named virtual landmark in the current map, known as static node.
-         * The static node's pose is provided relative to the origin of current coordinate system of device poses.
-         * This function fails if the current tracker confidence is below 3 (high confidence).
-         * \param[in] guid unique name of the static node. If a static node with the same name already exists
-         * in the current map or the imported map, the static node is overwritten.
-         * \param[in] pos position of the static node in the 3D space.
-         * \param[in] orient_quat orientation of the static node in the 3D space, represented by a unit quaternion.
-         * \return true if success.
-         */
         bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const override;
-
-        /**
-         * Gets the current pose of a static node that was created in the current map or in an imported map.
-         * Static nodes of imported maps are available after relocalizing the imported map.
-         * The static node's pose is returned relative to the current origin of coordinates of device poses.
-         * Thus, poses of static nodes of an imported map are consistent with current device poses after relocalization.
-         * This function fails if the current tracker confidence is below 3 (high confidence).
-         * \param[in] guid unique name of the static node.
-         * \param[out] pos position of the static node in the 3D space.
-         * \param[out] orient_quat orientation of the static node in the 3D space, represented by a unit quaternion.
-         * \return true if success.
-         */
         bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const override;
 
         // Wheel odometer
@@ -174,6 +134,7 @@ namespace librealsense
     private:
         void handle_imu_frame(perc::TrackingData::TimestampedData& tm_frame_ts, unsigned long long frame_number, rs2_stream stream_type, int index, float3 imu_data, float temperature);
         void pass_frames_to_fw(frame_holder fref);
+        void raise_relocalization_event(const std::string& msg, double timestamp);
         void raise_hardware_event(const std::string& msg, const std::string& serialized_data, double timestamp);
         void raise_error_notification(const std::string& msg);
 

@@ -22,8 +22,8 @@ namespace librealsense
         virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const = 0;
     protected:
         virtual const std::string& get_name() const = 0;
-        virtual const std::string& get_asic_serial_number() const = 0;
         virtual const std::string& get_product_line() const = 0;
+        virtual const std::string& get_serial_number() const = 0;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_UPDATE_DEVICE, update_device_interface);

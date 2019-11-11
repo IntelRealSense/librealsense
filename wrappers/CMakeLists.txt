@@ -17,6 +17,10 @@ if (BUILD_CV_EXAMPLES)
   add_subdirectory(opencv)
 endif()
 
+if (BUILD_DLIB_EXAMPLES)
+  add_subdirectory(dlib)
+endif()
+
 if(BUILD_MATLAB_BINDINGS)
     add_subdirectory(matlab)
 endif()

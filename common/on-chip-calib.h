@@ -28,6 +28,8 @@ namespace rs2
         {
         }
 
+        bool allow_calib_keep() const { return get_health() > 0.15 || tare; }
+
         // Get health number from the calibration summary
         float get_health() const { return _health; }
 

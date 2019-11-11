@@ -333,6 +333,7 @@ namespace librealsense
         {
             switch (flash_version)
             {
+                // { number of payloads in section { ro table types }} see Flash.xml
             case 100: return { 2, { 17, 10, 40, 29, 30, 54} };
             case 101: return { 3, { 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
@@ -346,6 +347,7 @@ namespace librealsense
         {
             switch (flash_version)
             {
+                // { number of payloads in section { ro table types }} see Flash.xml
             case 100: return { 2, { 134, 25 } };
             default:
                 throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
@@ -356,11 +358,11 @@ namespace librealsense
         {
             flash_info rv = {};
 
-            uint32_t header_offset = FLASH_SIZE - 0x100;
+            uint32_t header_offset = FLASH_INFO_HEADER_OFFSET;
             memcpy(&rv.header, flash_buffer.data() + header_offset, sizeof(rv.header));
 
-            uint32_t ro_toc_offset = header_offset - 0x80;
-            uint32_t rw_toc_offset = rv.header.read_write_start_address + rv.header.read_write_size - 0x80;
+            uint32_t ro_toc_offset = FLASH_RO_TABLE_OF_CONTENT_OFFSET;
+            uint32_t rw_toc_offset = FLASH_RW_TABLE_OF_CONTENT_OFFSET;
 
             auto ro_toc = parse_table_of_contents(flash_buffer, ro_toc_offset);
             auto rw_toc = parse_table_of_contents(flash_buffer, rw_toc_offset);
