@@ -97,30 +97,28 @@ struct device_profiles
     bool sync;
 };
 
-inline std::pair<std::vector<profile>, std::vector<rs2::stream_profile>> retrieve_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60, bool to_include_hid = false)
+inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
 {
     std::vector<profile> all_profiles =
     {
-        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,             width, height, 0, fps},
-        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,            width, height, 0, fps},
-        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,              width, height, 1, fps},
-        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,              width, height, 2, fps},
-        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,            width, height, 0, fps},
-        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   width, height, 0, 200},
-        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   width, height, 0, 250}
+        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,           width, height,    0, fps},
+        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
+        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
+        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
+        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
     };
 
-    std::vector<rs2::stream_profile> modes;
     std::vector<profile> profiles;
-    auto&& all_modes = sensor.get_stream_profiles();
+    std::vector<rs2::stream_profile> modes;
+    auto all_modes = sensor.get_stream_profiles();
 
-    for (auto&& profile : all_profiles)
+    for (auto profile : all_profiles)
     {
         if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
             {
-                auto&& video = p.as<rs2::video_stream_profile>();
-                auto&& motion = p.as<rs2::motion_stream_profile>();
-                if (video)
+                if (auto  video = p.as<rs2::video_stream_profile>())
                 {
                     if (p.fps() == profile.fps &&
                         p.stream_index() == profile.index &&
@@ -133,66 +131,51 @@ inline std::pair<std::vector<profile>, std::vector<rs2::stream_profile>> retriev
                         return true;
                     }
                 }
-                else if (motion && to_include_hid)
+                else
                 {
-                    if (p.fps() == profile.fps &&
-                        p.stream_index() == profile.index &&
-                        p.stream_type() == profile.stream &&
-                        p.format() == profile.format)
+                    if (auto  motion = p.as<rs2::motion_stream_profile>())
                     {
-                        modes.push_back(p);
-                        return true;
+                        if (p.fps() == profile.fps &&
+                            p.stream_index() == profile.index &&
+                            p.stream_type() == profile.stream &&
+                            p.format() == profile.format)
+                        {
+                            modes.push_back(p);
+                            return true;
+                        }
                     }
+                    else
+                        return false;
                 }
+
                 return false;
-            }) != end(all_modes))
+            }) != all_modes.end())
         {
             profiles.push_back(profile);
+
         }
     }
-    return { profiles, modes };
+    if (modes.size() > 0)
+        REQUIRE_NOTHROW(sensor.open(modes));
+    return profiles;
 }
 
-inline std::vector<rs2::sensor> retrieve_supported_sensors(rs2::device& dev, int width = 640, int height = 480, int fps = 30, bool to_include_hid = false)
+inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
 {
+    std::vector<profile> profiles;
     std::vector<rs2::sensor> sensors;
     auto sens = dev.query_sensors();
     for (auto s : sens)
     {
-        const auto&& res = retrieve_all_supported_streams(s, width, height, fps, to_include_hid);
-        auto&& modes = res.second;
-        if (modes.size() > 0)
+        auto res = configure_all_supported_streams(s, width, height, fps);
+        profiles.insert(profiles.end(), res.begin(), res.end());
+        if (res.size() > 0)
         {
             sensors.push_back(s);
         }
     }
 
-    return sensors;
-}
-
-template <typename CB>
-inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> start_all_sensors(const rs2::device& dev, CB cb, int width = 640, int height = 480, int fps = 30, bool to_include_hid = false)
-{
-    // open and start all of the device's sensors with all of their (sensors') supported profiles.
-    // return the device's supported profiles list and the sensors which support these profiles.
-
-    std::vector<rs2::sensor> sensors;
-    std::vector<profile> profiles; // all of the device's supported profiles
-
-    for (auto&& s : dev.query_sensors())
-    {
-        const auto&& streams = retrieve_all_supported_streams(s, width, height, fps, to_include_hid);
-        auto&& raw_profiles = streams.second;
-        profiles.insert(profiles.end(), streams.first.begin(),streams.first.end());
-        if (raw_profiles.size() > 0)
-        {
-            s.open(raw_profiles);
-            s.start(cb);
-            sensors.push_back(s);
-        }
-    }
-
-    return {sensors, profiles};
+    return{ sensors, profiles };
 }
 
 inline std::string space_to_underscore(const std::string& text) {
