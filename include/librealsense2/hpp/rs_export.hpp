@@ -38,6 +38,7 @@ namespace rs2
         static const auto OPTION_PLY_MESH = rs2_option(RS2_OPTION_COUNT + 11);
         static const auto OPTION_PLY_BINARY = rs2_option(RS2_OPTION_COUNT + 12);
         static const auto OPTION_PLY_NORMALS = rs2_option(RS2_OPTION_COUNT + 13);
+        static const auto OPTION_PLY_THRESHOLD = rs2_option(RS2_OPTION_COUNT + 14);
 
         save_to_ply(std::string filename = "RealSense Pointcloud ", pointcloud pc = pointcloud()) : filter([this](frame f, frame_source& s) { func(f, s); }),
             _pc(std::move(pc)), fname(filename)
@@ -46,6 +47,7 @@ namespace rs2
             register_simple_option(OPTION_PLY_MESH, option_range{ 0, 1, 1, 1 });
             register_simple_option(OPTION_PLY_NORMALS, option_range{ 0, 1, 0, 1 });
             register_simple_option(OPTION_PLY_BINARY, option_range{ 0, 1, 1, 1 });
+            register_simple_option(OPTION_PLY_THRESHOLD, option_range{ 0, 1, 0.05f, 0 });
         }
 
     private:
@@ -109,7 +111,7 @@ namespace rs2
 
             auto profile = p.get_profile().as<video_stream_profile>();
             auto width = profile.width(), height = profile.height();
-            static const auto threshold = 0.05f;
+            static const auto threshold = get_option(OPTION_PLY_THRESHOLD);
             std::vector<std::array<int, 3>> faces;
             if (mesh)
             {

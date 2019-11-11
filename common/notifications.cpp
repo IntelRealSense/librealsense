@@ -883,8 +883,7 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
 
-            std::string s = to_string() << "Saving 3D view "
-                << (get_manager().get_data().is<rs2::points>() ? "without texture to " : "to ") <<
+            std::string s = to_string() << "Saving 3D view to " <<
                 get_file_name(get_manager().get_filename());
             ImGui::Text("%s", s.c_str());
 
@@ -901,8 +900,7 @@ namespace rs2
             ImGui::PopFont();
 
             ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
-            std::string s = to_string() << "Finished saving 3D view "
-                << (get_manager().get_data().is<rs2::points>() ? "without texture to " : "to ") <<
+            std::string s = to_string() << "Finished saving 3D view  to " <<
                 get_file_name(get_manager().get_filename());
 
             ImGui::Text("%s", s.c_str());

@@ -196,6 +196,12 @@ namespace rs2
             static const char* mesh                { "ply.mesh" };
             static const char* use_normals         { "ply.normals" };
             static const char* encoding            { "ply.encoding" };
+
+            enum encoding_types
+            {
+                textual = 0,
+                binary = 1
+            };
         }
     }
 

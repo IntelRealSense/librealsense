@@ -202,14 +202,14 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Text, grey);
                 ImGui::Text("Save PLY as binary, or as a larger textual human-readable file");
                 ImGui::PopStyleColor();
-                if (ImGui::RadioButton("Textual", encoding == 0))
+                if (ImGui::RadioButton("Textual", encoding == configurations::ply::textual))
                 {
-                    encoding = 0;
+                    encoding = configurations::ply::textual;
                     temp_cfg.set(configurations::ply::encoding, encoding);
                 }
-                if (ImGui::RadioButton("Binary", encoding == 1))
+                if (ImGui::RadioButton("Binary", encoding == configurations::ply::binary))
                 {
-                    encoding = 1;
+                    encoding = configurations::ply::binary;
                     temp_cfg.set(configurations::ply::encoding, encoding);
                 }
 

@@ -48,7 +48,7 @@ namespace rs2
 
         config_file::instance().set_default(configurations::ply::mesh, true);
         config_file::instance().set_default(configurations::ply::use_normals, false);
-        config_file::instance().set_default(configurations::ply::encoding, 1);
+        config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
 
 #ifdef __APPLE__
         config_file::instance().set_default(configurations::performance::font_oversample, 8);
