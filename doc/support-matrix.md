@@ -10,7 +10,7 @@ Once full validation report is internally reviewed and approved, release is prom
 
 We recommend certain combinations (see **RECOMMENDED CONFIGURATIONS** at the link above) of firmware and software we have tested, but there is significant effort to keep maximum backward and forward compatibility between firmware and software versions.
 
-Validation is done on i86 NUC machines running Windows 10 and Ubuntu 16.04 LTS.
+Validation is done on x86 NUC machines running Windows 10 and Ubuntu 16.04 LTS.
 
 Additional platforms are tested and supported on demand, driven by community requests and feedback.
 
@@ -32,8 +32,8 @@ Additional platforms are tested and supported on demand, driven by community req
 | **MPEG Decoding**              | Unoptimised            | Unoptimised                       | Unoptimised                                | No                          | No                      | No                      | No                | Yes (2.26.1?+) | Yes         | Yes         | Yes | Yes                | Yes                 | Yes            | Yes    | Yes     | Yes    | Yes  |
 | **Accelerometer & Gyro**       | No                     | Yes                               | Yes                                        | Yes (via LIBUVC, 2.26+)     | Yes (via LIBUVC, 2.26+) | Yes (via LIBUVC, 2.26+) | No (WIP)          | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | N/A            | N/A    | Yes     | No     | No   |
 | **IMU Hardware Timestamps**    | No                     | Yes                               | Yes (via DKMS or patch)                    | Yes (via LIBUVC, 2.26+)     | Yes (via LIBUVC, 2.26+) | Yes (via LIBUVC, 2.26+) | No (WIP)          | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | N/A            | N/A    | Yes     | No     | No   |
-| **Hardware Timestamps**        | Yes                    | Yes (requires script or DFMT INF) | Yes (via DKMS or patch or Kernel >= 4.18)  | Yes (via LIBUVC)            | Yes (via LibUVC)        | Yes                     | Yes               | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | Yes            | Yes    | Yes     | Yes    | Yes  |
-| **Global Timestamps**          | Yes                    | Yes (requires script or DFMT INF) | Yes (via DKMS or patch or Kernel >= 4.18)  | Yes (via LIBUVC)            | Yes (via LIBUVC)        | Yes                     | Yes               | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | Yes            | Yes    | Yes     | Yes    | Yes  |
+| **Hardware Timestamps**        | Yes                    | Yes (requires script or DMFT INF) | Yes (via DKMS or patch or Kernel >= 4.18)  | Yes (via LIBUVC)            | Yes (via LibUVC)        | Yes                     | Yes               | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | Yes            | Yes    | Yes     | Yes    | Yes  |
+| **Global Timestamps**          | Yes                    | Yes (requires script or DMFT INF) | Yes (via DKMS or patch or Kernel >= 4.18)  | Yes (via LIBUVC)            | Yes (via LIBUVC)        | Yes                     | Yes               | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | Yes            | Yes    | Yes     | Yes    | Yes  |
 | **On-Chip Calibration**           | Yes (2.26+)            | Yes (2.26+)                       | Yes (2.26+)                                | Yes (2.26+)                 | Yes (2.26+)             | No                      | Yes (2.26+)       | Yes (2.26+)    | No          | No          | No  | No                 | No                  | No             | No     | No      | No     | No   |
 | **Firmware Update**            | Yes (2.24+)            | Yes (2.24+)                       | Yes (2.24+)                                | Yes (2.24+)                 | Yes (2.24+)             | Yes (2.24+)             | Yes (2.24+)       | Yes (2.24+)    | Yes (2.24+) | Yes (2.24+) | No  | No                 | No                  | No             | No     | No      | No     | No   |
 | **Multicamera Support**        | Not tested             | Yes                               | Yes                                        | Not tested                  | Not tested              | Not tested              | Not tested        | Yes            | Yes         | Yes         | Yes | Yes                | Yes                 | No             | No     | Yes     | N/A    | N/A  |
@@ -42,7 +42,7 @@ Additional platforms are tested and supported on demand, driven by community req
 
 * Global Timestamp mechanism is not yet available for the SR300
 * D400 JSON presets are not applicable to SR300 devices, since they rely on completely different technology
-* Multicamera is technically supported similar to D400 but SR300 devices suffer from destructive interference, hence should not shared field of view
+* Multicamera is technically supported similar to D400 but SR300 devices suffer from destructive interference, hence should not share field of view
 * On-Chip Calibration is not applicable to the SR300 since the structured light module does not lose depth calibration over time
 
 ### T265 Tracking Module Notes:
