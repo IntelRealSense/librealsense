@@ -1356,6 +1356,7 @@ namespace librealsense
             throw recoverable_exception("\nFailed to resolve the request: \n" + requests_info.str() + "\nInto:\n" + e.what(),
                 RS2_EXCEPTION_TYPE_INVALID_VALUE);
         }
+
         set_active_streams(requests);
     }
 
