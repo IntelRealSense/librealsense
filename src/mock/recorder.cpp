@@ -1225,11 +1225,6 @@ namespace librealsense
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
-            vector<stream_profile> input{ profile };
-            if (input != stored)
-                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_probe_commit, _entity_id);
-
             lock_guard<mutex> lock(_callback_mutex);
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
