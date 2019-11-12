@@ -70,7 +70,9 @@ matrix:
       script:
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - cd ../wrappers/nodejs/test
+        - cd ../wrappers/nodejs/
+        - npm install
+        - cd test
         - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record_tests.rec
         - mocha test-functional.js --playback nodejs_record_tests.rec
 
