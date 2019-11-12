@@ -191,6 +191,18 @@ namespace rs2
             static const char* vsync               { "performance.vsync" };
             static const char* font_oversample     { "performance.font_oversample.v2" };
         }
+        namespace ply
+        {
+            static const char* mesh                { "ply.mesh" };
+            static const char* use_normals         { "ply.normals" };
+            static const char* encoding            { "ply.encoding" };
+
+            enum encoding_types
+            {
+                textual = 0,
+                binary = 1
+            };
+        }
     }
 
     namespace textual_icons
@@ -949,7 +961,7 @@ namespace rs2
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool notify = true);
+    void export_frame(const std::string& fname, std::unique_ptr<rs2::filter> exporter, notifications_model& ns, rs2::frame data, bool notify = true);
 
     // Auxillary function to save stream data in its internal (raw) format
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame);

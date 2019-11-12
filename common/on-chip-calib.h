@@ -23,7 +23,7 @@ namespace rs2
     public:
         on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
             device_model& model, device dev)
-            : process_manager("On-Chip Calibration", model), 
+            : process_manager("On-Chip Calibration"), _model(model),
              _dev(dev), _sub(sub), _viewer(viewer)
         {
         }
@@ -80,6 +80,7 @@ namespace rs2
 
         std::vector<uint8_t> _old_calib, _new_calib;
         std::vector<std::pair<float, float>> _metrics;
+        device_model& _model;
 
         bool _restored = true;
 

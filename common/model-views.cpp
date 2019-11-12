@@ -289,17 +289,16 @@ namespace rs2
             texture_data[idx], texture_data[idx + 1], texture_data[idx + 2]);
     }
 
-    void export_to_ply(const std::string& fname, notifications_model& ns, points p, video_frame texture, bool notify)
+    void export_frame(const std::string& fname, std::unique_ptr<rs2::filter> exporter, 
+        notifications_model& ns, frame data, bool notify)
     {
-        std::thread([&ns, p, texture, fname, notify]() mutable {
-            if (p)
-            {
-                p.export_to_ply(fname, texture);
-                if (notify) ns.add_notification({ to_string() << "Finished saving 3D view " << (texture ? "to " : "without texture to ") << fname,
-                    RS2_LOG_SEVERITY_INFO,
-                    RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-            }
-        }).detach();
+        auto manager = std::make_shared<export_manager>(fname, std::move(exporter), data);
+
+        auto n = std::make_shared<export_notification_model>(manager);
+        ns.add_notification(n);
+        n->forced = true;
+
+        manager->start(n);
     }
 
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame)

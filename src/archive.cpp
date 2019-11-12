@@ -95,7 +95,7 @@ namespace librealsense
 
         std::ofstream out(fname);
         out << "ply\n";
-        out << "format binary_little_endian 1.0\n" /*"format ascii 1.0\n"*/;
+        out << "format binary_little_endian 1.0\n";
         out << "comment pointcloud saved from Realsense Viewer\n";
         out << "element vertex " << new_vertices.size() << "\n";
         out << "property float" << sizeof(float) * 8 << " x\n";
