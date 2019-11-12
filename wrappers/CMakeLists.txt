@@ -21,6 +21,10 @@ if (BUILD_DLIB_EXAMPLES)
   add_subdirectory(dlib)
 endif()
 
+if (BUILD_OPENVINO_EXAMPLES)
+  add_subdirectory(openvino)
+endif()
+
 if(BUILD_MATLAB_BINDINGS)
     add_subdirectory(matlab)
 endif()

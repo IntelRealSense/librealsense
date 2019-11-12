@@ -5,6 +5,8 @@
 * [ROS](https://github.com/intel-ros/realsense/releases) - Integration with Robot Operating System
 * [LabVIEW](./labview) - Integration with National Instruments LabVIEW
 * [OpenCV](./opencv) - Integration with OpenCV computer-vision library
+* [DLIB](./dlib) - Integration with DLIB computer-vision library
+* [OpenVINO](./openvino) - Integration with OpenVINO™ toolkit
 * [PCL](./pcl) - Basic integration with the Point-Cloud Library
 * [.NET](./csharp) - Support for .NET languages with examples in C#
 * [Unity](./unity) - Unity assets for using RealSense SDK 2.0
@@ -12,7 +14,7 @@
 * [OpenNI2](./openni2) - OpenNI2 integration
 * [Unreal Engine 4](./unrealengine4) - Unreal Engine 4 integration
 
-If you are interested in official support for a language / framework, please let us know via [a new Issue](https://github.com/IntelRealSense/librealsense/issues/new) 
+If you are interested in official support for a language / framework, please let us know via [a new Issue](https://github.com/IntelRealSense/librealsense/issues/new)
 
 ## Community Projects:
 
