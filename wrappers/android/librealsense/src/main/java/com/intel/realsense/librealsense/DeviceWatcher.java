@@ -95,12 +95,14 @@ class DeviceWatcher extends LrsClass {
         Log.d(TAG, "Device: " + desc.name + " removed successfully");
     }
 
-    private  void addDevice(UsbDevice device) {
+    private void addDevice(UsbDevice device) {
         if (device == null)
             return;
 
         UsbManager usbManager = (UsbManager) mContext.getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection conn = usbManager.openDevice(device);
+        if(conn == null)
+            return;
         UsbDesc desc = new UsbDesc(device.getDeviceName(), conn.getFileDescriptor(), conn);
         Log.d(TAG, "Adding device: " + desc.name);
         mDescriptors.put(device.getDeviceName(), desc);

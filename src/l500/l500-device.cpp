@@ -137,7 +137,9 @@ namespace librealsense
         raw_depth_ep->register_xu(depth_xu);
 
         auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream);
+        
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         depth_ep->register_option(RS2_OPTION_VISUAL_PRESET,
             std::make_shared<uvc_xu_option<int>>(
                 *raw_depth_ep,

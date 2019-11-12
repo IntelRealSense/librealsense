@@ -1,7 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include <queue>
 #include "hid-device.h"
+
+const int USB_REQUEST_COUNT = 1;
 
 namespace librealsense
 {
@@ -25,7 +28,7 @@ namespace librealsense
                 for(auto&& hs : hid_sensors)
                 {
                     device_info.id = hs;
-                    LOG_INFO("Found HID device: " << std::string(device_info).c_str());
+                    // LOG_INFO("Found HID device: " << std::string(device_info).c_str());
                     rv.push_back(device_info);
                 }
             }
@@ -37,7 +40,7 @@ namespace librealsense
             auto devices = usb_enumerator::query_devices_info();
             for (auto&& usb_info : devices)
             {
-                if(usb_info.unique_id != info.unique_id)
+                if(usb_info.unique_id != info.unique_id || usb_info.cls != RS2_USB_CLASS_HID)
                     continue;
 
                 auto dev = usb_enumerator::create_usb_device(usb_info);
@@ -48,7 +51,8 @@ namespace librealsense
         }
 
         rs_hid_device::rs_hid_device(rs_usb_device usb_device)
-                : _usb_device(usb_device)
+            : _usb_device(usb_device),
+              _action_dispatcher(10)
         {
             _id_to_sensor[REPORT_ID_GYROMETER_3D] = gyro;
             _id_to_sensor[REPORT_ID_ACCELEROMETER_3D] = accel;
@@ -56,11 +60,12 @@ namespace librealsense
             _sensor_to_id[gyro] = REPORT_ID_GYROMETER_3D;
             _sensor_to_id[accel] = REPORT_ID_ACCELEROMETER_3D;
             _sensor_to_id[custom] = REPORT_ID_CUSTOM;
+            _action_dispatcher.start();
         }
 
         rs_hid_device::~rs_hid_device()
         {
-
+            _action_dispatcher.stop();
         }
 
         std::vector<hid_sensor> rs_hid_device::get_sensors()
@@ -90,44 +95,80 @@ namespace librealsense
 
         void rs_hid_device::stop_capture()
         {
-            _poll_interrupts_thread->stop();
-            _handle_interrupts_thread->stop();
+            _action_dispatcher.invoke_and_wait([this](dispatcher::cancellable_timer c)
+            {
+                if(!_running)
+                    return;
+
+                _request_callback->cancel();
+
+                _queue.clear();
+
+                for (auto&& r : _requests)
+                    _messenger->cancel_request(r);
+
+                _requests.clear();
+
+                _handle_interrupts_thread->stop();
+
+                _messenger.reset();
+
+               _running = false;
+            }, [this](){ return !_running; });
         }
 
         void rs_hid_device::start_capture(hid_callback callback)
         {
-            _callback = callback;
-
-            _messenger = _usb_device->open();
-
-            _handle_interrupts_thread = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
-                                                                          {
-                                                                              handle_interrupt();
-                                                                          });
-
-            _handle_interrupts_thread->start();
-
-            _poll_interrupts_thread = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
-                                                                        {
-                                                                            poll_for_interrupt();
-                                                                        });
-
-            _poll_interrupts_thread->start();
-        }
-
-        void rs_hid_device::poll_for_interrupt()
-        {
-            unsigned char buffer[SIZE_OF_HID_IMU_FRAME];
-            uint32_t bytesRead;
-
-            auto ep = get_hid_endpoint();
-            auto res = _messenger->bulk_transfer(ep, buffer, sizeof(buffer), bytesRead, 10);
-
-            if (res == RS2_USB_STATUS_SUCCESS)
+            _action_dispatcher.invoke_and_wait([this, callback](dispatcher::cancellable_timer c)
             {
-                REALSENSE_HID_REPORT report = *(reinterpret_cast<REALSENSE_HID_REPORT*>(buffer));
-                _queue.enqueue(std::move(report));
-            }
+                if(_running)
+                    return;
+
+                _callback = callback;
+
+                auto in = get_hid_interface()->get_number();
+                _messenger = _usb_device->open(in);
+
+                _handle_interrupts_thread = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
+                {
+                    handle_interrupt();
+                });
+
+                _handle_interrupts_thread->start();
+
+                _request_callback = std::make_shared<usb_request_callback>([&](platform::rs_usb_request r)
+                    {
+                        _action_dispatcher.invoke([this, r](dispatcher::cancellable_timer c)
+                        {
+                            if(!_running)
+                                return;
+                            if(r->get_actual_length() == sizeof(REALSENSE_HID_REPORT))
+                            {
+                                REALSENSE_HID_REPORT report;
+                                memcpy(&report, r->get_buffer().data(), r->get_actual_length());
+                                _queue.enqueue(std::move(report));
+                            }
+                            auto sts = _messenger->submit_request(r);
+                            if (sts != platform::RS2_USB_STATUS_SUCCESS)
+                                LOG_ERROR("failed to submit UVC request");
+                        });
+
+                    });
+
+                _requests = std::vector<rs_usb_request>(USB_REQUEST_COUNT);
+                for(auto&& r : _requests)
+                {
+                    r = _messenger->create_request(get_hid_endpoint());
+                    r->set_buffer(std::vector<uint8_t>(sizeof(REALSENSE_HID_REPORT)));
+                    r->set_callback(_request_callback);
+                }
+
+                _running = true;
+
+                for(auto&& r : _requests)
+                    _messenger->submit_request(r);
+
+            }, [this](){ return _running; });
         }
 
         void rs_hid_device::handle_interrupt()
@@ -140,10 +181,10 @@ namespace librealsense
                 {
                     return _id_to_sensor[report.reportId].compare(p.sensor_name) == 0;
 
-                })!= _configured_profiles.end())
+                }) != _configured_profiles.end())
                 {
                     sensor_data data{};
-                    data.sensor = {_id_to_sensor[report.reportId]};
+                    data.sensor = { _id_to_sensor[report.reportId] };
 
                     hid_data hid{};
                     hid.x = report.x;
@@ -164,21 +205,25 @@ namespace librealsense
         {
             uint32_t transferred;
 
-            auto dev = _usb_device->open();
 
             int value = (HID_REPORT_TYPE_FEATURE << 8) + report_id;
 
             FEATURE_REPORT featureReport;
             auto hid_interface = get_hid_interface()->get_number();
 
+            auto dev = _usb_device->open(hid_interface);
+
+            if (!dev)
+                return RS2_USB_STATUS_NO_DEVICE;
+
             auto res = dev->control_transfer(USB_REQUEST_CODE_GET,
-                                             HID_REQUEST_GET_REPORT,
-                                             value,
-                                             hid_interface,
-                                             (uint8_t*) &featureReport,
-                                             sizeof(featureReport),
-                                             transferred,
-                                             1000);
+                HID_REQUEST_GET_REPORT,
+                value,
+                hid_interface,
+                (uint8_t*) &featureReport,
+                sizeof(featureReport),
+                transferred,
+                1000);
 
             if(res != RS2_USB_STATUS_SUCCESS)
             {
@@ -189,16 +234,16 @@ namespace librealsense
             featureReport.power = power;
 
             if(fps > 0)
-                featureReport.report = (1000/fps);
+                featureReport.report = (1000 / fps);
 
             res = dev->control_transfer(USB_REQUEST_CODE_SET,
-                                        HID_REQUEST_SET_REPORT,
-                                        value,
-                                        hid_interface,
-                                        (uint8_t*) &featureReport,
-                                        sizeof(featureReport),
-                                        transferred,
-                                        1000);
+                HID_REQUEST_SET_REPORT,
+                value,
+                hid_interface,
+                (uint8_t*) &featureReport,
+                sizeof(featureReport),
+                transferred,
+                1000);
 
             if(res != RS2_USB_STATUS_SUCCESS)
             {
@@ -207,13 +252,13 @@ namespace librealsense
             }
 
             res = dev->control_transfer(USB_REQUEST_CODE_GET,
-                                        HID_REQUEST_GET_REPORT,
-                                        value,
-                                        hid_interface,
-                                        (uint8_t*) &featureReport,
-                                        sizeof(featureReport),
-                                        transferred,
-                                        1000);
+                HID_REQUEST_GET_REPORT,
+                value,
+                hid_interface,
+                (uint8_t*) &featureReport,
+                sizeof(featureReport),
+                transferred,
+                1000);
 
             if(res != RS2_USB_STATUS_SUCCESS)
             {
@@ -234,7 +279,7 @@ namespace librealsense
             auto intfs = _usb_device->get_interfaces();
 
             auto it = std::find_if(intfs.begin(), intfs.end(),
-                                   [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_HID; });
+                [](const rs_usb_interface& i) { return i->get_class() == RS2_USB_CLASS_HID; });
 
             if (it == intfs.end())
                 throw std::runtime_error("can't find HID interface of device: " + _usb_device->get_info().id);

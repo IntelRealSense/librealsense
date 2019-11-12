@@ -23,7 +23,7 @@ namespace librealsense
             virtual uint8_t get_number() const = 0;
             virtual uint8_t get_class() const = 0;
             virtual uint8_t get_subclass() const = 0;
-            virtual const std::vector<std::shared_ptr<usb_endpoint>> get_endpoints() const = 0;
+            virtual const std::vector<rs_usb_endpoint> get_endpoints() const = 0;
 
             virtual const rs_usb_endpoint first_endpoint(const endpoint_direction direction, const endpoint_type type = RS2_USB_ENDPOINT_BULK) const = 0;
         };

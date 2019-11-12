@@ -39,6 +39,8 @@ namespace librealsense
         color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_COLOR));
         
         // options
+        color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        color_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
         color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
         color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
         color_ep->register_pu(RS2_OPTION_CONTRAST);

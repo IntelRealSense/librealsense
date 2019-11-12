@@ -1,0 +1,115 @@
+From e97b4ddf1ef9881560bc60f196adc840cc9de3f4 Mon Sep 17 00:00:00 2001
+From: Hans Verkuil <hverkuil-cisco@xs4all.nl>
+From: Evgeni Raikhel <evgeni.raikhel@intel.com>
+Signed-off-by: Hans Verkuil <hverkuil-cisco@xs4all.nl>
+Reported-by: syzbot+736c3aae4af7b50d9683@syzkaller.appspotmail.com
+Date: Sun, 3 Nov 2019 12:41:09 +0200
+Subject: [PATCH] Backporting hotfix patch 
+https://patchwork.kernel.org/patch/11095737/
+
+The patch is a backporting of Hans Verkuil proposal to circumvent
+video buffer de/allocation sync issues by preventing buffers queue operation
+during v4l2_streamoff. Without the patch during streamoff operation 
+the buffers queue continues to change that results
+https://patchwork.kernel.org/patch/11095737/
+
+---
+ drivers/media/v4l2-core/videobuf2-core.c | 30 ++++++++++++++++++++++++
+ include/media/videobuf2-core.h           |  1 +
+ 2 files changed, 31 insertions(+)
+
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 8ce9c63dfc59..09a653dd83a6 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -581,6 +581,11 @@ int vb2_core_reqbufs(struct vb2_queue *q, enum vb2_memory memory,
+ 		return -EBUSY;
+ 	}
+ 
++	if (q->in_stop_streaming) {
++		dprintk(1, "reqbufs while the stream is being stopped\n");
++		return -EBUSY;
++	}
++
+ 	if (*count == 0 || q->num_buffers != 0 || q->memory != memory) {
+ 		/*
+ 		 * We already have buffers allocated, so first check if they
+@@ -1363,6 +1368,11 @@ int vb2_core_qbuf(struct vb2_queue *q, unsigned int index, void *pb)
+ 	struct vb2_buffer *vb;
+ 	int ret;
+ 
++	if (q->in_stop_streaming) {
++		dprintk(1, "qbuf while the stream is being stopped\n");
++		return -EBUSY;
++	}
++
+ 	if (q->error) {
+ 		dprintk(1, "fatal error occurred on queue\n");
+ 		return -EIO;
+@@ -1454,6 +1464,11 @@ static int __vb2_wait_for_done_vb(struct vb2_queue *q, int nonblocking)
+ 			return -EINVAL;
+ 		}
+ 
++		if (q->in_stop_streaming) {
++			dprintk(1, "the stream is being stopped, will not wait for buffers\n");
++			return -EINVAL;
++		}
++
+ 		if (q->error) {
+ 			dprintk(1, "Queue in error state, will not wait for buffers\n");
+ 			return -EIO;
+@@ -1665,12 +1680,18 @@ static void __vb2_queue_cancel(struct vb2_queue *q)
+ {
+ 	unsigned int i;
+ 
++	if (WARN_ON(q->in_stop_streaming))
++		return;
+ 	/*
+ 	 * Tell driver to stop all transactions and release all queued
+ 	 * buffers.
+ 	 */
+ 	if (q->start_streaming_called)
++	 {
++		q->in_stop_streaming = 1;
+ 		call_void_qop(q, stop_streaming, q);
++		q->in_stop_streaming = 0;
++	}
+ 
+ 	/*
+ 	 * If you see this warning, then the driver isn't cleaning up properly
+@@ -1732,6 +1753,11 @@ int vb2_core_streamon(struct vb2_queue *q, unsigned int type)
+ 		return -EINVAL;
+ 	}
+ 
++	if (q->in_stop_streaming) {
++		dprintk(1, "streamon while the stream is being stopped\n");
++		return -EBUSY;
++	}
++
+ 	if (q->streaming) {
+ 		dprintk(3, "already streaming\n");
+ 		return 0;
+@@ -1795,6 +1821,10 @@ int vb2_core_streamoff(struct vb2_queue *q, unsigned int type)
+ 		return -EINVAL;
+ 	}
+ 
++	if (q->in_stop_streaming) {
++		dprintk(1, "streamoff while the stream is being stopped\n");
++		return -EBUSY;
++	}
+ 	/*
+ 	 * Cancel will pause streaming and remove all buffers from the driver
+ 	 * and videobuf, effectively returning control over them to userspace.
+diff --git a/include/media/videobuf2-core.h b/include/media/videobuf2-core.h
+index d4227a8a2a23..2c2304882b41 100644
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -475,6 +475,7 @@ struct vb2_queue {
+ 
+ 	unsigned int			streaming:1;
+ 	unsigned int			start_streaming_called:1;
++	unsigned int			in_stop_streaming:1;
+ 	unsigned int			error:1;
+ 	unsigned int			waiting_for_buffers:1;
+ 	unsigned int			is_multiplanar:1;
+2.24.0

@@ -3,15 +3,10 @@
 
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/android-uvc.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/android-uvc.h"
-        "${CMAKE_CURRENT_LIST_DIR}/android-backend.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/android-backend.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rsusb-backend-android.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rsusb-backend-android.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_watcher.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_watcher.cpp"
-        
-        "${CMAKE_CURRENT_LIST_DIR}/usb_host/android_uvc.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/usb_host/android_uvc.h"
         
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.h"
         "${CMAKE_CURRENT_LIST_DIR}/jni/error.cpp"

@@ -27,13 +27,13 @@ macro(os_set_flags)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     endif()
-
+    
     if(APPLE)
-        set(FORCE_LIBUVC ON)
+        set(FORCE_RSUSB_BACKEND ON)
         set(BUILD_WITH_TM2 ON)
     endif()
     
-    if(FORCE_LIBUVC)
+    if(FORCE_RSUSB_BACKEND)
         set(BACKEND RS2_USE_LIBUVC_BACKEND)
     else()
         set(BACKEND RS2_USE_V4L2_BACKEND)

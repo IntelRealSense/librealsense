@@ -9,7 +9,7 @@ matrix:
       language: cpp
       env: VS15=false RS_CPP_TEST=true
       script:
-        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_WINUSB_UVC=true
+        - cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_GRAPHICAL_EXAMPLES=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
         - cmake --build . --config $LRS_RUN_CONFIG -- -m
         - cd $LRS_RUN_CONFIG
         - ls
@@ -115,7 +115,7 @@ before_install:
   - if [[ "$RS_CPP_TEST" == "true" ]]; then
       export LRS_LOG_LEVEL="DEBUG";
       url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
-      records_name="records.txt";
+      records_name="records_test.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;
       tests_list=`cat $records_name`;

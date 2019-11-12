@@ -108,27 +108,32 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
         std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new iio_hid_timestamp_reader());
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto hid_ep = std::make_shared<hid_sensor>(ctx->get_backend().create_hid_device(all_hid_infos.front()),
+        auto raw_hid_ep = std::make_shared<hid_sensor>(ctx->get_backend().create_hid_device(all_hid_infos.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(iio_hid_ts_reader), _tf_keeper, enable_global_time_option)),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(custom_hid_ts_reader), _tf_keeper, enable_global_time_option)),
             l500_fps_and_sampling_frequency_per_rs2_stream,
             l500_sensor_name_and_hid_profiles,
             this);
 
-        auto smart_hid_ep = std::make_shared<l500_hid_sensor>("Motion Module", hid_ep, this, this);
-        smart_hid_ep->register_processing_block(
+        auto hid_ep = std::make_shared<l500_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+
+        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        hid_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
+        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
+        hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             []() { return std::make_shared<acceleration_transform>(); }
         );
 
-        smart_hid_ep->register_processing_block(
+        hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             []() { return std::make_shared<gyroscope_transform>(); }
         );
-        smart_hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-        return smart_hid_ep;
+
+        return hid_ep;
     }
 
     l500_motion::l500_motion(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
