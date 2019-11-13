@@ -2,8 +2,8 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 3.1.3)
 
-set( FW_VERSION "0.2.0.857")
-set( FW_SHA1 7b2d8ad77d4f0c64b3d20f4dd45447124bd00637)
+set( FW_VERSION "0.2.0.879")
+set( FW_SHA1 b7b722b785fcf5f8c31877173c8ba02fed120e03)
 set(APP_VERSION "2.0.19.271")
 set(APP_SHA1 cab0011e9e18edc8bcca20afb2f944399ac8b81c)
 set( BL_VERSION "1.0.1.112")
