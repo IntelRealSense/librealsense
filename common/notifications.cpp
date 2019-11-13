@@ -118,7 +118,7 @@ namespace rs2
 
             if (ellapsed > 0.f) progress_speed = delta / ellapsed;
 
-            threshold_progress = std::min(100, progress + delta);
+            threshold_progress = float(std::min(100, progress + delta));
 
             last_progress = progress;
         }
