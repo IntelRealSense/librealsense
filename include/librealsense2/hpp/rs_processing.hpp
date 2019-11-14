@@ -50,20 +50,16 @@ namespace rs2
         *
         * \param[in] profile     Stream profile going to allocate.
         * \param[in] original    Original frame.
-        * \param[in] new_width   Frame width to create.
-        * \param[in] new_height  Frame height to create.
         * \param[in] frame_type  Which frame type are going to create.
         * \return   The allocated frame
         */
         frame allocate_motion_frame(const stream_profile& profile,
             const frame& original,
-            int new_width = 0,
-            int new_height = 0,
             rs2_extension frame_type = RS2_EXTENSION_MOTION_FRAME) const
         {
             rs2_error* e = nullptr;
             auto result = rs2_allocate_synthetic_motion_frame(_source, profile.get(),
-                original.get(), new_width, new_height, frame_type, &e);
+                original.get(), frame_type, &e);
             error::handle(e);
             return result;
         }

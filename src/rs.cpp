@@ -1421,7 +1421,7 @@ rs2_frame* rs2_allocate_synthetic_video_frame(rs2_source* source, const rs2_stre
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_bpp, new_width, new_height, new_stride, frame_type)
 
 rs2_frame* rs2_allocate_synthetic_motion_frame(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original,
-    int new_width, int new_height, rs2_extension frame_type, rs2_error** error) BEGIN_API_CALL
+    rs2_extension frame_type, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(source);
     VALIDATE_NOT_NULL(original);
@@ -1430,9 +1430,9 @@ rs2_frame* rs2_allocate_synthetic_motion_frame(rs2_source* source, const rs2_str
     auto recovered_profile = std::dynamic_pointer_cast<stream_profile_interface>(new_stream->profile->shared_from_this());
 
     return (rs2_frame*)source->source->allocate_motion_frame(recovered_profile,
-        (frame_interface*)original, new_width, new_height, frame_type);
+        (frame_interface*)original, frame_type);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, new_width, new_height, frame_type)
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, source, new_stream, original, frame_type)
 
 rs2_frame* rs2_allocate_points(rs2_source* source, const rs2_stream_profile* new_stream, rs2_frame* original, rs2_error** error) BEGIN_API_CALL
 {

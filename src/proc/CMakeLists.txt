@@ -8,10 +8,6 @@ endif()
 
 include(${_proc_rel_path}/sse/CMakeLists.txt)
 
-if(LRS_TRY_USE_AVX)
-    set_source_files_properties(color-formats-converter.cpp PROPERTIES COMPILE_FLAGS -mavx2)
-endif()
-
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.cpp"

@@ -59,6 +59,10 @@ if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()
 
+if(LRS_TRY_USE_AVX)
+    set_source_files_properties(image-avx.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+endif()
+
 if(BUILD_SHARED_LIBS)
     target_sources(${LRS_TARGET} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/realsense.def")
 endif()
@@ -76,6 +80,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/image.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/image-avx.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/log.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/option.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/rs.cpp"
@@ -103,6 +108,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/global_timestamp_reader.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw-monitor.h"
         "${CMAKE_CURRENT_LIST_DIR}/image.h"
+        "${CMAKE_CURRENT_LIST_DIR}/image-avx.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/option.h"

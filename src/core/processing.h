@@ -31,8 +31,6 @@ namespace librealsense
 
         virtual frame_interface* allocate_motion_frame(std::shared_ptr<stream_profile_interface> stream,
                                                        frame_interface* original,
-                                                       int width = 0,
-                                                       int height = 0,
                                                        rs2_extension frame_type = RS2_EXTENSION_MOTION_FRAME) = 0;
 
         virtual frame_interface* allocate_composite_frame(std::vector<frame_holder> frames) = 0;
