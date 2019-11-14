@@ -233,7 +233,7 @@ namespace librealsense
         {
             auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-            auto&& results = synthetic_sensor::init_stream_profiles();
+            auto results = synthetic_sensor::init_stream_profiles();
 
             for (auto&& p : results)
             {

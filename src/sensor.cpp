@@ -138,12 +138,15 @@ namespace librealsense
     rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
         rs2_format f = RS2_FORMAT_ANY;
-        try {
-            f = _fourcc_to_rs2_format->at(fourcc_format);
-        }
-        catch (std::out_of_range)
-        {
-        }
+
+        std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
+            if (p.first == fourcc_format)
+            {
+                f = p.second;
+                return true;
+            }
+            return false;
+        });
 
         return f;
     }
@@ -151,12 +154,15 @@ namespace librealsense
     rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
         rs2_stream s = RS2_STREAM_ANY;
-        try {
-            s = _fourcc_to_rs2_stream->at(fourcc_format);
-        }
-        catch (std::out_of_range)
-        {
-        }
+
+        std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
+            if (p.first == fourcc_format)
+            {
+                s = p.second;
+                return true;
+            }
+            return false;
+        });
 
         return s;
     }
@@ -541,7 +547,7 @@ namespace librealsense
 
     bool info_container::supports_info(rs2_camera_info info) const
     {
-        const auto&& it = _camera_info.find(info);
+        auto it = _camera_info.find(info);
         return it != _camera_info.end();
     }
 
@@ -566,7 +572,7 @@ namespace librealsense
     }
     const std::string& info_container::get_info(rs2_camera_info info) const
     {
-        const auto&& it = _camera_info.find(info);
+        auto it = _camera_info.find(info);
         if (it == _camera_info.end())
             throw invalid_value_exception("Selected camera info is not supported for this camera!");
 
