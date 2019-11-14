@@ -350,9 +350,8 @@ namespace librealsense
         }
 
 #ifdef WITH_TRACKING
-        if (_tm2_context)
+        if (_tm2_context && (mask & RS2_PRODUCT_LINE_T200) )
         {
-            // each of these removes some descriptors
             auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context);
             std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
         }
