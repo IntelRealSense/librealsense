@@ -1806,20 +1806,67 @@ namespace librealsense
     ///////////////
     // Device
 
-    tm2_device::tm2_device( std::shared_ptr<context> ctx, const platform::backend_device_group& group) :
-        device(ctx, group)
+    tm2_device::tm2_device( std::shared_ptr<context> ctx, libusb_context * tm_context, const platform::backend_device_group& group, bool register_device_notifications) :
+        device(ctx, group, register_device_notifications)
     {
+        // Find the libusb_device corresponding to the backend_device_group
+        libusb_device **dev_list;
+        ssize_t n_devices = libusb_get_device_list(tm_context, &dev_list);
+        if (n_devices < 0)
+            LOG_ERROR("Failed to get device list");
+
+        if(group.usb_devices.size() != 1 || group.uvc_devices.size() != 0 || group.hid_devices.size() !=0)
+            throw io_exception("Tried to create a T265 with a bad backend_device_group");
+
+        auto dev_info = group.usb_devices[0];
+        libusb_device * device = nullptr;
+        for (ssize_t i = 0; i < n_devices; i++) {
+            libusb_device_descriptor desc;
+            if (libusb_get_device_descriptor(dev_list[i], &desc) < 0) {
+                LOG_ERROR("Failed to get device descriptor for device " << i << "...ignoring");
+                continue;
+            }
+
+            int bus = libusb_get_bus_number(dev_list[i]);
+            int address = libusb_get_device_address(dev_list[i]);
+#if WIN32
+            //TODO: This current approach will break with multiple
+            //T265s.
+            //Make a way to get an equivalend bus/address from
+            //windows to figure out which libusb device matches
+            if(desc.idVendor == 0x8087 && desc.idProduct == 0x0B37) {
+                device = dev_list[i];
+                break;
+            }
+#else
+            std::stringstream ss;
+            ss << "/dev/bus/usb/"
+               << std::setw(3) << std::setfill('0') << bus << "/"
+               << std::setw(3) << std::setfill('0') << address;
+            if(ss.str() == group.usb_devices[0].id) {
+                LOG_INFO("Found the device " << ss.str());
+                device = dev_list[i];
+                break;
+            }
+#endif
+        }
+
+
+        if(!device) {
+            LOG_ERROR("Couldn't find the device");
+            throw io_exception("Couldn't find the device");
+        }
+        libusb_ref_device(device);
+
+        libusb_free_device_list(dev_list, 1);
+
         // The device opens the underlying usb device and claims the
         // interface. It then sends two messages (to set power state
         // and get device info) and hands off all other communication
         // to the tm2_sensor
         LOG_DEBUG("Creating a T265 device");
-        if(group.tm2_devices.size() != 1) {
-            LOG_ERROR("Tried to create a device without the right backend_device_group");
-            throw io_exception("Tried to create a device without the right backend_device_group");
-        }
 
-        device_ptr = (libusb_device *)group.tm2_devices[0].device_ptr;
+        device_ptr = device;
 
         if(libusb_open(device_ptr, &handle) != LIBUSB_SUCCESS) {
             LOG_ERROR("Unable to open libusb device");
@@ -1917,6 +1964,8 @@ namespace librealsense
             libusb_release_interface(handle, 0);
             libusb_close(handle);
         }
+
+        libusb_unref_device(device_ptr);
 
     }
 

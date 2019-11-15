@@ -22,7 +22,10 @@ namespace librealsense
     {
     public:
         tm2_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+            libusb_context * tm_context,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
+
         virtual ~tm2_device();
 
         void enable_loopback(const std::string& source_file) override;
