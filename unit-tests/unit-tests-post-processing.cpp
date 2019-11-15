@@ -566,7 +566,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
     pipe.stop();
 }
 
-TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters]") {
+TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!mayfail]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.20.0"))

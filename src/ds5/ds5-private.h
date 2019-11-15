@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <string>
 
-
 namespace librealsense
 {
     namespace ds

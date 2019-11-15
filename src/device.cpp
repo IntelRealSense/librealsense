@@ -160,13 +160,13 @@ device::~device()
     _sensors.clear();
 }
 
-int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
+int device::add_sensor(const std::shared_ptr<sensor_interface>& sensor_base)
 {
     _sensors.push_back(sensor_base);
     return (int)_sensors.size() - 1;
 }
 
-int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx)
+int device::assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx)
 {
     try
     {
@@ -179,9 +179,9 @@ int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t
     }
 }
 
-uvc_sensor& device::get_uvc_sensor(int sub)
+synthetic_sensor& device::get_uvc_sensor(int sub)
 {
-    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
+    return dynamic_cast<synthetic_sensor&>(*_sensors[sub]);
 }
 
 size_t device::get_sensors_count() const

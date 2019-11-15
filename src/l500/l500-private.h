@@ -247,25 +247,25 @@ namespace librealsense
                 }
             }
 
-            rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override
+            rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
                 return _ts->get_time();
             }
 
-            unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override
+            unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
                 auto pin_index = 0;
-                if (mode.pf->fourcc == 0x5a313620) // Z16
+                if (frame->get_stream()->get_format() == RS2_FORMAT_Z16)
                     pin_index = 1;
-                else if (mode.pf->fourcc == 0x43202020) // Confidence
+                else if (frame->get_stream()->get_stream_type() == RS2_STREAM_CONFIDENCE)
                     pin_index = 2;
 
                 return ++counter[pin_index];
             }
 
-            rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override
+            rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override
             {
                 return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
             }
@@ -280,21 +280,23 @@ namespace librealsense
 
         protected:
 
-            bool has_metadata_ts(const platform::frame_object& fo) const
+            bool has_metadata_ts(const std::shared_ptr<frame_interface>& frame) const
             {
                 // Metadata support for a specific stream is immutable
+                auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
                 const bool has_md_ts = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
-                return ((fo.metadata != nullptr) && (fo.metadata_size >= platform::uvc_header_size) && ((byte*)fo.metadata)[0] >= platform::uvc_header_size);
+                return ((f->additional_data.metadata_size >= platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] >= platform::uvc_header_size);
                 }();
 
                 return has_md_ts;
             }
 
-            bool has_metadata_fc(const platform::frame_object& fo) const
+            bool has_metadata_fc(const std::shared_ptr<frame_interface>& frame) const
             {
                 // Metadata support for a specific stream is immutable
+                auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
                 const bool has_md_frame_counter = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
-                return ((fo.metadata != nullptr) && (fo.metadata_size > platform::uvc_header_size) && ((byte*)fo.metadata)[0] > platform::uvc_header_size);
+                return ((f->additional_data.metadata_size > platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] > platform::uvc_header_size);
                 }();
 
                 return has_md_frame_counter;
@@ -307,13 +309,13 @@ namespace librealsense
                 reset();
             }
 
-            rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+            rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-            unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+            unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
             void reset() override;
 
-            rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
+            rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         };
 
     } // librealsense::ivcam2

@@ -85,7 +85,6 @@ namespace librealsense
         virtual bool supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const = 0;
         virtual int get_frame_data_size() const = 0;
         virtual const byte* get_frame_data() const = 0;
-        //TODO: add virtual uint64_t get_frame_data_size() const = 0;
         virtual rs2_time_t get_frame_timestamp() const = 0;
         virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
@@ -165,6 +164,14 @@ namespace librealsense
     using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
     using processing_blocks = std::vector<std::shared_ptr<processing_block_interface>>;
 
+    inline std::ostream& operator << (std::ostream& os, const stream_profiles& profiles)
+    {
+        for (auto&& p : profiles)
+        {
+            os << rs2_format_to_string(p->get_format()) << " " << rs2_stream_to_string(p->get_stream_type()) << ", ";
+        }
+        return os;
+    }
 
     class recommended_proccesing_blocks_interface
     {

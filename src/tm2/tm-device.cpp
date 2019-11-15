@@ -387,7 +387,7 @@ namespace librealsense
             {
                 profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT | profile_tag::PROFILE_TAG_SUPERSET);
             }
-            stream_profile sp = { stream, profile->get_stream_index(), p.width, p.height, p.fps, profile->get_format() };
+            stream_profile sp = { profile->get_format(), stream, profile->get_stream_index(), p.width, p.height, p.fps };
             auto intrinsics = get_intrinsics(sp);
             profile->set_intrinsics([intrinsics]() { return intrinsics; });
             profile_map[SET_SENSOR_ID(SensorType::Fisheye, profile->get_stream_index() - 1)] = profile;

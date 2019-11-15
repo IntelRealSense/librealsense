@@ -70,9 +70,11 @@ matrix:
       script:
         - cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - cd ../wrappers/nodejs/test
-        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record.rec
-        - mocha test-functional.js --playback nodejs_record.rec
+        - cd ../wrappers/nodejs/
+        - npm install
+        - cd test
+        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record_tests.rec
+        - mocha test-functional.js --playback nodejs_record_tests.rec
 
     - name: "Mac - cpp"
       os: osx
@@ -115,7 +117,7 @@ before_install:
   - if [[ "$RS_CPP_TEST" == "true" ]]; then
       export LRS_LOG_LEVEL="DEBUG";
       url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
-      records_name="records.txt";
+      records_name="records_test.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;
       tests_list=`cat $records_name`;

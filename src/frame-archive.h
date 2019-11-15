@@ -122,7 +122,8 @@ namespace librealsense
 
             if (new_frame)
             {
-                if (max_frames) new_frame->mark_fixed();
+                if (max_frames) 
+                    new_frame->mark_fixed();
             }
             else
             {
