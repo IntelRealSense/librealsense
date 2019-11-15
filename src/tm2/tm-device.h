@@ -159,7 +159,7 @@ namespace librealsense
         void stream_endpoint();
         void time_sync();
         void log_poll();
-        void log_poll_once(std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log_buffer);
+        bool log_poll_once(std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log_buffer);
         std::thread _interrupt_endpoint_thread;
         std::thread _stream_endpoint_thread;
         std::thread _time_sync_thread;

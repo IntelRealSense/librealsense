@@ -417,8 +417,8 @@ namespace librealsense
 
         // poll the firmware logs one last time
         auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
-        log_poll_once(log_buffer);
-        print_logs(log_buffer);
+        if(log_poll_once(log_buffer))
+            print_logs(log_buffer);
     }
 
     //sensor
@@ -1305,7 +1305,7 @@ namespace librealsense
                 //fprintf(stderr, "+");
                 continue;
             }
-            else if(e == LIBUSB_ERROR_NO_DEVICE) {
+            else if(e == LIBUSB_ERROR_NO_DEVICE || e == LIBUSB_ERROR_PIPE) {
                 LOG_ERROR("Stream NO DEVICE!"); // TODO: raise notification
                 break;
             }
@@ -1361,24 +1361,31 @@ namespace librealsense
         }
     }
 
-    void tm2_sensor::log_poll_once(std::unique_ptr<bulk_message_response_get_and_clear_event_log> & log_buffer)
+    bool tm2_sensor::log_poll_once(std::unique_ptr<bulk_message_response_get_and_clear_event_log> & log_buffer)
     {
         bulk_message_request_get_and_clear_event_log log_request = {{ sizeof(log_request), DEV_GET_AND_CLEAR_EVENT_LOG }};
         bulk_message_response_get_and_clear_event_log *log_response = log_buffer.get();
-        _device->bulk_request_response(log_request, *log_response, sizeof(bulk_message_response_get_and_clear_event_log), false);
+        int usb_response = _device->bulk_request_response(log_request, *log_response, sizeof(bulk_message_response_get_and_clear_event_log), false);
+        if(usb_response) return false;
+
         if(log_response->header.wStatus == INVALID_REQUEST_LEN || log_response->header.wStatus == INTERNAL_ERROR)
             LOG_ERROR("T265 log size mismatch " << status_name(log_response->header));
         else if(log_response->header.wStatus != SUCCESS)
             LOG_ERROR("Unexpected message on log endpoint " << message_name(log_response->header) << " with status " << status_name(log_response->header));
+
+        return true;
     }
 
     void tm2_sensor::log_poll()
     {
         auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
         while(!_log_poll_thread_stop) {
-            log_poll_once(log_buffer);
-            print_logs(log_buffer);
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if(log_poll_once(log_buffer)) {
+                print_logs(log_buffer);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            else
+                break;
         }
     }
 
@@ -1981,10 +1988,12 @@ namespace librealsense
         int transferred = 0;
         int e = 0;
         e = libusb_bulk_transfer(handle, ENDPOINT_HOST_MSGS_OUT, (uint8_t *)&request, length, &transferred, USB_TIMEOUT);
-        if (e != LIBUSB_SUCCESS) {
+        if (e == LIBUSB_ERROR_NO_DEVICE) {
+            //TODO: LIBUSB_ERROR_NO_DEVICE raise disconnection
+            return e;
+        }
+        else if (e != LIBUSB_SUCCESS) {
             LOG_ERROR("libusb_error " << libusb_error_name(e));
-            //TODO: LIBUSB_ERROR_NO_DEVICE raise disconnection,
-            //maybe try to enumerate and send HW reset?
             return e;
         }
         if (transferred != (int)length) {
