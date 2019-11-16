@@ -7,7 +7,7 @@
 #include "cuda/cuda-align.h"
 
 #include "stream.h"
-#include "proc/identity-processing-block.h"
+#include "proc/color-formats-converter.h"
 
 namespace librealsense
 {

@@ -22,6 +22,7 @@
 #include "source.h"
 #include "core/extension.h"
 #include "proc/processing-blocks-factory.h"
+#include "proc/identity-processing-block.h"
 
 namespace librealsense
 {
@@ -147,6 +148,7 @@ namespace librealsense
             const std::vector<stream_profile>& to,
             std::function<std::shared_ptr<processing_block>(void)> generate_func);
         void register_processing_block(const processing_block_factory& pbf);
+        void register_processing_block(const std::vector<processing_block_factory>& pbfs);
 
         std::shared_ptr<sensor_base> get_raw_sensor() const { return _raw_sensor; };
         frame_callback_ptr get_frames_callback() const override;

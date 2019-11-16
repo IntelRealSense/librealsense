@@ -14,7 +14,6 @@
 #include "metadata.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
-#include "proc/identity-processing-block.h"
 #include "global_timestamp_reader.h"
 
 namespace librealsense
@@ -1483,6 +1482,12 @@ namespace librealsense
     void synthetic_sensor::register_processing_block(const processing_block_factory& pbf)
     {
         _pb_factories.push_back(std::make_shared<processing_block_factory>(std::move(pbf)));
+    }
+
+    void synthetic_sensor::register_processing_block(const std::vector<processing_block_factory>& pbfs)
+    {
+        for (auto&& pbf : pbfs)
+            register_processing_block(pbf);
     }
 
     frame_callback_ptr synthetic_sensor::get_frames_callback() const
