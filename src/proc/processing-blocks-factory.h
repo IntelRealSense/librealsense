@@ -38,7 +38,10 @@ namespace librealsense
             {
                 // register identity processing block if requested
                 if (src == d)
+                {
                     rgb_factories.push_back({ { {src} }, { {src, stream} }, []() { return std::make_shared<identity_processing_block>(); } });
+                    continue;
+                }
 
                 rgb_factories.push_back({ { {src} }, { {d, stream} }, [d]() { return std::make_shared<T>(d); } });
             }
