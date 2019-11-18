@@ -2409,7 +2409,7 @@ namespace rs2
 
                     if (at.name == no_md)
                     {
-                        auto text = "Per-frame metadata is not anabled at the OS level!\nPlease refer to installation.md for more info";
+                        auto text = "Per-frame metadata is not enabled at the OS level!\nPlease follow the installation guide for the details";
                         auto size = ImGui::CalcTextSize(text);
 
                         for (int i = 3; i > 0; i-=1)
