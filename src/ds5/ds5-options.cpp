@@ -15,11 +15,15 @@ namespace librealsense
             }
             case 1:
             {
-                return "On";
+                return "Laser";
             }
             case 2:
             {
-                return "Auto";
+                return "Laser Auto";
+            }
+            case 3:
+            {
+                return "LED";
             }
             default:
                 throw invalid_value_exception("value not found");
@@ -28,7 +32,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power Control for D400 Projector, 0-off, 1-on, (2-deprecated)")
+                        "Emitter select, 0–disable all emitters, 1–enable laser, 2–enable laser auto (opt), 3–enable LED (opt)")
     {}
 
     float asic_and_projector_temperature_options::query() const
