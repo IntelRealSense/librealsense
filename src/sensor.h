@@ -176,7 +176,7 @@ namespace librealsense
         std::shared_ptr<sensor_base> _raw_sensor;
         std::vector<std::shared_ptr<processing_block_factory>> _pb_factories;
         std::unordered_map<processing_block_factory*, stream_profiles> _pbf_supported_profiles;
-        std::unordered_map<std::shared_ptr<stream_profile_interface>, std::shared_ptr<processing_block>> _profiles_to_processing_block;
+        std::unordered_map<std::shared_ptr<stream_profile_interface>, std::unordered_set<std::shared_ptr<processing_block>>> _profiles_to_processing_block;
         std::unordered_map<std::shared_ptr<stream_profile_interface>, stream_profiles> _source_to_target_profiles_map;
         std::unordered_map<stream_profile, stream_profiles> _target_to_source_profiles_map;
         std::unordered_map<rs2_format, stream_profiles> _cached_requests;
