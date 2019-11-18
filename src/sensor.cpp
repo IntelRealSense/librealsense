@@ -1205,6 +1205,8 @@ namespace librealsense
         // For video stream, the best fitting processing block is defined as the processing block which its sources
         // covers the maximum amount of requests.
 
+        // TODO - Ariel - refactor this heuristic function, to choose the best processing block for reflected formats.
+
         stream_profiles best_match_requests;
         std::shared_ptr<processing_block_factory> best_match_processing_block_factory;
 

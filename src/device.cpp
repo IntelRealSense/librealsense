@@ -260,6 +260,31 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
     }
 }
 
+std::vector<rs2_format> librealsense::device::map_supported_color_formats(rs2_format source_format)
+{
+    // Mapping from source color format to all of the compatible target color formats.
+
+    // NOTE: Due to the reflection of the processing blocks source formats made by the sensor,
+    //       all of these target formats are proper candidates to resolve the source format.
+    //       Because of that, the same target format as the source format must be at the start of the list, so this format will be chosen first.
+
+    // TODO - Ariel - refactor sensor's find best processing block heuristic function.
+
+    std::vector<rs2_format> target_formats = { RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8, RS2_FORMAT_Y16 };
+    switch (source_format)
+    {
+    case RS2_FORMAT_YUYV:
+        target_formats.insert(target_formats.begin(), RS2_FORMAT_YUYV);
+        break;
+    case RS2_FORMAT_UYVY:
+        target_formats.insert(target_formats.begin(), RS2_FORMAT_UYVY);
+        break;
+    default:
+        LOG_ERROR("Format is not supported for mapping");
+    }
+    return target_formats;
+}
+
 void librealsense::device::tag_profiles(stream_profiles profiles) const
 {
     for (auto profile : profiles)
