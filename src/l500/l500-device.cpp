@@ -150,16 +150,17 @@ namespace librealsense
 
         auto is_zo_enabled_opt = std::make_shared<bool_option>();
         is_zo_enabled_opt->set(false);
+        auto is_zo_enabled_opt_ptr = is_zo_enabled_opt.get();
         depth_ep->register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
 
         depth_ep->register_processing_block(
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
             { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
-            [is_zo_enabled_opt]() {
+            [is_zo_enabled_opt_ptr]() {
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt.get());
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt.get());
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt_ptr);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt_ptr);
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
@@ -177,12 +178,12 @@ namespace librealsense
                 {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution},
                 {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
             },
-            [is_zo_enabled_opt]() {
+            [is_zo_enabled_opt_ptr]() {
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt.get());
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt.get());
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt_ptr);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt_ptr);
 
                 auto cpb = std::make_shared<composite_processing_block>();
                 cpb->add(z16rot);
