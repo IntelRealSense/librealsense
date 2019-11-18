@@ -156,8 +156,8 @@ namespace librealsense
         return false;
     }
 
-    zero_order::zero_order()
-       : generic_processing_block("Zero Order Fix"), _first_frame(true)
+    zero_order::zero_order(bool_option* is_enabled_opt)
+       : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt)
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
             0,
@@ -378,6 +378,9 @@ namespace librealsense
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
+        if (_is_enabled_opt && !_is_enabled_opt->is_true())
+            return f;
+
         std::vector<rs2::frame> result;
 
         if (_first_frame)
@@ -397,7 +400,6 @@ namespace librealsense
         {
             _source_profile_depth = data.get_depth_frame().get_profile();
             _target_profile_depth = _source_profile_depth.clone(_source_profile_depth.stream_type(), _source_profile_depth.stream_index(), _source_profile_depth.format());
-
         }
 
         auto depth_frame = data.get_depth_frame();
@@ -463,6 +465,9 @@ namespace librealsense
 
     bool zero_order::should_process(const rs2::frame& frame)
     {
+        if (_is_enabled_opt && !_is_enabled_opt->is_true())
+            return true;
+
         if (auto set = frame.as<rs2::frameset>())
         {
             if (!set.get_depth_frame() || !set.get_infrared_frame())

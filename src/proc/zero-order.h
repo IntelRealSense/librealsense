@@ -48,7 +48,7 @@ namespace librealsense
     class zero_order : public generic_processing_block
     {
     public:
-        zero_order();
+        zero_order(bool_option* is_enabled_opt = nullptr);
 
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
@@ -72,6 +72,7 @@ namespace librealsense
         bool                    _first_frame;
 
         zero_order_options      _options;
+        bool_option*            _is_enabled_opt;
         ivcam2::intrinsic_params _resolutions_depth;
     };
     MAP_EXTENSION(RS2_EXTENSION_ZERO_ORDER_FILTER, librealsense::zero_order);
