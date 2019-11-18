@@ -107,6 +107,8 @@ namespace librealsense
         exposure_priority_attribute     = (1u << 4),
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
+        emitter_mode_attribute          = (1u << 7),
+        led_power_attribute             = (1u << 8)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -380,7 +382,9 @@ namespace librealsense
         uint32_t    exposure_roi_top;
         uint32_t    exposure_roi_bottom;
         uint32_t    preset;
-        uint32_t    laserPowerMode;
+        uint8_t     emitterMode;
+        uint8_t     reserved;
+        uint16_t    ledPower;
     };
 
     REGISTER_MD_TYPE(md_depth_control, md_type::META_DATA_INTEL_DEPTH_CONTROL_ID)
