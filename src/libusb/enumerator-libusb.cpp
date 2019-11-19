@@ -14,14 +14,24 @@ namespace librealsense
     {
         std::string get_device_path(libusb_device* usb_device)
         {
-            int bus = libusb_get_bus_number(usb_device);
-            int address = libusb_get_device_address(usb_device);
-            std::stringstream ss;
-            ss << "/dev/bus/usb/"
-               << std::setw(3) << std::setfill('0') << bus << "/"
-               << std::setw(3) << std::setfill('0') << address;
+            auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
-            return ss.str();
+            // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
+            const auto max_usb_depth = 8;
+            uint8_t usb_ports[max_usb_depth] = {};
+            std::stringstream port_path;
+            auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
+            auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
+            auto speed = libusb_get_device_speed(usb_device);
+            libusb_device_descriptor dev_desc;
+            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
+
+            for (size_t i = 0; i < port_count; ++i)
+            {
+                port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
+            }
+
+            return usb_bus + "-" + port_path.str() + "-" + usb_dev;
         }
 
         std::vector<usb_device_info> get_subdevices(libusb_device* device, libusb_device_descriptor desc)
