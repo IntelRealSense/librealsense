@@ -10,7 +10,7 @@
 
 #define SWAP_UINT32(x) (((x) >> 24) | (((x) & 0x00FF0000) >> 8) | (((x) & 0x0000FF00) << 8) | ((x) << 24))
 
-const int CONTROL_TRANSFER_TIMEOUT = 100;
+const int CONTROL_TRANSFER_TIMEOUT = 5;
 const int INTERRUPT_BUFFER_SIZE = 1024;
 const int FIRST_FRAME_MILLISECONDS_TIMEOUT = 2000;
 
