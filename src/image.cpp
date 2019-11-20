@@ -33,7 +33,7 @@ namespace librealsense
         case RS2_FORMAT_BGRA8: return 32;
         case RS2_FORMAT_Y8: return 8;
         case RS2_FORMAT_Y16: return 16;
-        case RS2_FORMAT_RAW10: return 10;
+        case RS2_FORMAT_RAW10: return 16; // return 16 bits instead of 10 bits in order to prevent allocated frame buffer size < actual data size.
         case RS2_FORMAT_Y10BPACK: return 16;
         case RS2_FORMAT_RAW16: return 16;
         case RS2_FORMAT_RAW8: return 8;
