@@ -22,7 +22,6 @@ namespace librealsense
             std::stringstream port_path;
             auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
-            auto speed = libusb_get_device_speed(usb_device);
             libusb_device_descriptor dev_desc;
             auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
 
