@@ -24,8 +24,7 @@ void init_processing(py::module &m) {
     py::class_<rs2::frame_queue> frame_queue(m, "frame_queue", "Frame queues are the simplest cross-platform "
                                              "synchronization primitive provided by librealsense to help "
                                              "developers who are not using async APIs.");
-    frame_queue.def(py::init<unsigned int>())
-        .def(py::init<>())
+    frame_queue.def(py::init<>())
         .def(py::init<unsigned int, bool>(), "capacity"_a, "keep_frames"_a = false)
         .def("enqueue", &rs2::frame_queue::enqueue, "Enqueue a new frame into the queue.", "f"_a)
         .def("wait_for_frame", &rs2::frame_queue::wait_for_frame, "Wait until a new frame "

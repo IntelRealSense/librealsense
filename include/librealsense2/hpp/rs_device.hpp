@@ -434,7 +434,7 @@ namespace rs2
      * - pose_sensor: map and relocalization functions.
      * - wheel_odometer: input for odometry data.
      */
-    class tm2 : public device //TODO: add to wrappers
+    class tm2 : public device // TODO: add to wrappers [Python done]
     {
     public:
         tm2(device d)

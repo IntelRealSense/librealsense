@@ -93,7 +93,11 @@ void init_device(py::module &m) {
         .def("front", &rs2::device_list::front) // No docstring in C++
         .def("back", &rs2::device_list::back); // No docstring in C++
 
-    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2"); // No docstring in C++
+    py::class_<rs2::tm2, rs2::device> tm2(m, "tm2", "The tm2 class is an interface for T2XX devices, such as T265.\n"
+                                                    "For T265, it provides RS2_STREAM_FISHEYE(2), RS2_STREAM_GYRO, "
+                                                    "RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams, and contains the following sensors:\n"
+                                                    "-pose_sensor: map and relocalization functions.\n"
+                                                    "-wheel_odometer: input for odometry data.");
     tm2.def(py::init<rs2::device>(), "device"_a)
         .def("enable_loopback", &rs2::tm2::enable_loopback, "Enter the given device into "
              "loopback operation mode that uses the given file as input for raw data", "filename"_a)
