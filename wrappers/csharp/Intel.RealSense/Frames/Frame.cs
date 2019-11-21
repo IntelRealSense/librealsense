@@ -194,12 +194,12 @@ namespace Intel.RealSense
 
         /// <summary>Gets the sensor owning the frame</summary>
         /// <value>the pointer to the sensor owning the frame</value>
-        public IntPtr Sensor
+        public Sensor Sensor
         {
             get
             {
                 object error;
-                return NativeMethods.rs2_get_frame_sensor(Handle, out error);
+                return Sensor.Create<Sensor>(NativeMethods.rs2_get_frame_sensor(Handle, out error));
             }
         }
 
