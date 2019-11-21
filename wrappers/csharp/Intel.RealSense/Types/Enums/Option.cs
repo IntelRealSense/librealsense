@@ -167,8 +167,32 @@ namespace Intel.RealSense
         /// <summary>MA temperature</summary>
         MATemperature = 51,
 
+        /// <summary>Hardware stream configuration</summary>
+        HardwarePreset = 52,
+
+        /// <summary>Disable global time</summary>
+        GlobalTimeEnabled = 53,
+
         /// <summary>APD temperature</summary>
         APDTemperature = 54,
+
+        /// <summary>Enable an internal map</summary>
+        EnableMapping = 55,
+
+        /// <summary>Enable appearance based relocalization</summary>
+        EnableRelocalization = 56,
+
+        /// <summary>Enable position jumping</summary>
+        EnablePoseJumping = 57,
+
+        /// <summary>Enable dynamic calibration</summary>
+        EnableDynamicCalibration = 58,
+
+        /// <summary>Offset from sensor to depth origin in millimetrers</summary>
+        DepthOffset = 59,
+
+        /// <summary>Power of the LED (light emitting diode), with 0 meaning LED off</summary>
+        LedPower = 60,
 
         /// <summary>Toggle Zero-Order mode</summary>
         ZeroOrderEnabled = 61,
