@@ -179,11 +179,6 @@ int device::assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, 
     }
 }
 
-synthetic_sensor& device::get_uvc_sensor(int sub)
-{
-    return dynamic_cast<synthetic_sensor&>(*_sensors[sub]);
-}
-
 size_t device::get_sensors_count() const
 {
     return static_cast<unsigned int>(_sensors.size());
@@ -263,6 +258,26 @@ void librealsense::device::register_stream_to_extrinsic_group(const stream_inter
         //iter->second holds the group_id and the key stream
         _extrinsics[stream.get_unique_id()] = iter->second;
     }
+}
+
+std::vector<rs2_format> librealsense::device::map_supported_color_formats(rs2_format source_format)
+{
+    // Mapping from source color format to all of the compatible target color formats.
+
+    std::vector<rs2_format> target_formats = { RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 };
+    switch (source_format)
+    {
+    case RS2_FORMAT_YUYV:
+        target_formats.push_back(RS2_FORMAT_YUYV);
+        target_formats.push_back(RS2_FORMAT_Y16);
+        break;
+    case RS2_FORMAT_UYVY:
+        target_formats.push_back(RS2_FORMAT_UYVY);
+        break;
+    default:
+        LOG_ERROR("Format is not supported for mapping");
+    }
+    return target_formats;
 }
 
 void librealsense::device::tag_profiles(stream_profiles profiles) const

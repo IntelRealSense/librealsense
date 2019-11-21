@@ -32,6 +32,7 @@ void init_record_playback(py::module &m) {
 
     py::class_<rs2::recorder, rs2::device> recorder(m, "recorder", "Records the given device and saves it to the given file as rosbag format.");
     recorder.def(py::init<const std::string&, rs2::device>())
+        .def(py::init<const std::string&, rs2::device, bool>())
         .def("pause", &rs2::recorder::pause, "Pause the recording device without stopping the actual device from streaming.")
         .def("resume", &rs2::recorder::resume, "Unpauses the recording device, making it resume recording.");
     // filename?

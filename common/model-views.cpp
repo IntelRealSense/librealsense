@@ -1257,8 +1257,12 @@ namespace rs2
                     }
                     else
                     {
+                        auto tmp = stream_enabled;
                         label = to_string() << stream_display_names[f.first] << "##" << f.first;
-                        ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]);
+                        if (ImGui::Checkbox(label.c_str(), &stream_enabled[f.first]))
+                        {
+                            prev_stream_enabled = tmp;
+                        }
                     }
                 }
 
@@ -1382,11 +1386,248 @@ namespace rs2
             }
         }
 
+        if (results.size() == 0)
+            return false;
         // Verify that the number of found matches corrseponds to the number of the requested streams
         // TODO - review whether the comparison can be made strict (==)
         return results.size() >= size_t(std::count_if(stream_enabled.begin(), stream_enabled.end(), [](const std::pair<int, bool>& kpv)-> bool { return kpv.second == true; }));
     }
 
+    void subdevice_model::update_ui(std::vector<stream_profile> profiles_vec)
+    {
+        if (profiles_vec.empty())
+            return;
+        for (auto& s : stream_enabled)
+            s.second = false;
+        for (auto& p : profiles_vec)
+        {
+            stream_enabled[p.unique_id()] = true;
+
+            auto format_vec = format_values[p.unique_id()];
+            for (int i = 0; i < format_vec.size(); i++)
+            {
+                if (format_vec[i] == p.format())
+                {
+                    ui.selected_format_id[p.unique_id()] = i;
+                    break;
+                }
+            }
+            for (int i = 0; i < res_values.size(); i++)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                    if (res_values[i].first == vid_prof.width() && res_values[i].second == vid_prof.height())
+                    {
+                        ui.selected_res_id = i;
+                        break;
+                    }
+            }
+            for (int i = 0; i < shared_fps_values.size(); i++)
+            {
+                if (shared_fps_values[i] == p.fps())
+                {
+                    ui.selected_shared_fps_id = i;
+                    break;
+                }
+            }
+        }
+        last_valid_ui = ui;
+        prev_stream_enabled = stream_enabled; // prev differs from curr only after user changes
+    }
+
+    template<typename T, typename V>
+    bool subdevice_model::check_profile (stream_profile p, T cond, std::map<V, std::map<int, stream_profile>>& profiles_map,
+        std::vector<stream_profile>& results, V key, int num_streams, stream_profile& def_p)
+    {
+        bool found = false;
+        if (auto vid_prof = p.as<video_stream_profile>())
+        {
+            for (auto& s : stream_enabled)
+            {
+                // find profiles that have an enabled stream and match the required condition
+                if (s.second == true && vid_prof.unique_id() == s.first && cond(vid_prof))
+                {
+                    profiles_map[key].insert(std::pair<int, stream_profile>(p.unique_id(), p));
+                    if (profiles_map[key].size() == num_streams)
+                    {
+                        results.clear(); // make sure only current profiles are saved
+                        for (auto& it : profiles_map[key])
+                            results.push_back(it.second);
+                        found = true;
+                    }
+                    else if (results.empty() && num_streams > 1 && profiles_map[key].size() == num_streams-1)
+                    {
+                        for (auto& it : profiles_map[key])
+                            results.push_back(it.second);
+                    }
+                }
+                else if (!def_p.get() && cond(vid_prof))
+                    def_p = p; // in case no matching profile for current stream will be found, we'll use some profile that matches the condition
+            }
+        }
+        return found;
+    }
+
+    
+    void subdevice_model::get_sorted_profiles(std::vector<stream_profile>& profiles)
+    {
+        auto fps = shared_fps_values[ui.selected_shared_fps_id];
+        auto width = res_values[ui.selected_res_id].first;
+        auto height = res_values[ui.selected_res_id].second;
+        std::sort(profiles.begin(), profiles.end(), [&](stream_profile a, stream_profile b) {
+            int score_a = 0, score_b = 0;
+            if (a.fps() != fps)
+                score_a++;
+            if (b.fps() != fps)
+                score_b++;
+
+            if (a.format() != format_values[a.unique_id()][ui.selected_format_id[a.unique_id()]])
+                score_a++;
+            if (b.format() != format_values[b.unique_id()][ui.selected_format_id[b.unique_id()]])
+                score_b++;
+
+            auto a_vp = a.as<video_stream_profile>();
+            auto b_vp = a.as<video_stream_profile>();
+            if (!a_vp || !b_vp)
+                return score_a < score_b;
+            if (a_vp.width() != width || a_vp.height() != height)
+                score_a++;
+            if (b_vp.width() != width || b_vp.height() != height)
+                score_b++;
+            return score_a < score_b;
+        });
+    }
+
+    std::vector<stream_profile> subdevice_model::get_supported_profiles()
+    {
+        std::vector<stream_profile> results;
+        if (!show_single_fps_list || res_values.size() == 0)
+            return results;
+
+        int num_streams = 0;
+        for (auto& s : stream_enabled)
+            if (s.second == true)
+                num_streams++;
+        stream_profile def_p;
+        auto fps = shared_fps_values[ui.selected_shared_fps_id];
+        auto width = res_values[ui.selected_res_id].first;
+        auto height = res_values[ui.selected_res_id].second;
+        std::vector<stream_profile> sorted_profiles = profiles;
+
+        if (ui.selected_res_id != last_valid_ui.selected_res_id)
+        {
+            get_sorted_profiles(sorted_profiles);
+            std::map<int, std::map<int, stream_profile>> profiles_by_fps;
+            for (auto&& p : sorted_profiles)
+            {
+                if (check_profile(p, [&](video_stream_profile vsp)
+                { return (vsp.width() == width && vsp.height() == height); },
+                    profiles_by_fps, results, p.fps(), num_streams, def_p))
+                    break;
+            }
+        }
+        else if (ui.selected_shared_fps_id != last_valid_ui.selected_shared_fps_id)
+        {
+            get_sorted_profiles(sorted_profiles);
+            std::map<std::tuple<int,int>, std::map<int, stream_profile>> profiles_by_res;
+
+            for (auto&& p : sorted_profiles)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                {
+                    if (check_profile(p, [&](video_stream_profile vsp) { return (vsp.fps() == fps); },
+                        profiles_by_res, results, std::make_tuple(vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                        break;
+                }
+            }
+        }
+        else if (ui.selected_format_id != last_valid_ui.selected_format_id)
+        {
+            if (num_streams == 0)
+            {
+                last_valid_ui = ui;
+                return results;
+            }
+            get_sorted_profiles(sorted_profiles);
+            std::vector<stream_profile> matching_profiles;
+            std::map<std::tuple<int,int,int>, std::map<int, stream_profile>> profiles_by_fps_res; //fps, width, height
+            rs2_format format;
+            int stream_id;
+            // find the stream to which the user made changes
+            for (auto& it : ui.selected_format_id)
+            {
+                if (stream_enabled[it.first])
+                {
+                    auto last_valid_it = last_valid_ui.selected_format_id.find(it.first);
+                    if ((last_valid_it == last_valid_ui.selected_format_id.end() || it.second != last_valid_it->second))
+                    {
+                        format = format_values[it.first][it.second];
+                        stream_id = it.first;
+                    }
+                }
+            }
+            for (auto&& p : sorted_profiles)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                    if (p.unique_id() == stream_id && p.format() == format) // && stream_enabled[stream_id]
+                    {
+                        profiles_by_fps_res[std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height())].insert(std::pair<int, stream_profile>(p.unique_id(), p));
+                        matching_profiles.push_back(p);
+                        if (!def_p.get())
+                            def_p = p;
+                    }
+            }
+            // take profiles not in matching_profiles with enabled stream and fps+resolution matching some profile in matching_profiles
+            for (auto&& p : sorted_profiles)
+            {
+                if (auto vid_prof = p.as<video_stream_profile>())
+                {
+                    auto key = std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height());
+                    if (check_profile(p, [&](stream_profile prof) { return (std::find_if(matching_profiles.begin(), matching_profiles.end(), [&](stream_profile sp)
+                                { return (stream_id != p.unique_id() && sp.fps() == p.fps() && sp.as<video_stream_profile>().width() == vid_prof.width() &&
+                                sp.as<video_stream_profile>().height() == vid_prof.height()); })  != matching_profiles.end()); },
+                        profiles_by_fps_res, results, std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                        break;
+                }
+            }
+        }
+        else if (stream_enabled != prev_stream_enabled)
+        {
+            if (num_streams == 0)
+                return results;
+            get_sorted_profiles(sorted_profiles);
+            std::vector<stream_profile> matching_profiles;
+            std::map<rs2_format, std::map<int, stream_profile>> profiles_by_format;
+
+            for (auto&& p : sorted_profiles)
+            {
+                // first try to find profile from the new stream to meatch the current configuration
+                if (check_profile(p, [&](video_stream_profile vid_prof)
+                { return (p.fps() == fps && vid_prof.width() == width && vid_prof.height() == height); },
+                    profiles_by_format, results, p.format(), num_streams, def_p))
+                    break;
+            }
+            if (results.size() < num_streams)
+            {
+                results.clear();
+                std::map<std::tuple<int, int, int>, std::map<int, stream_profile>> profiles_by_fps_res;
+                for (auto&& p : sorted_profiles)
+                {
+                    if (auto vid_prof = p.as<video_stream_profile>())
+                    {
+                        // if no stream with current configuration was found, try to find some configuration to match all enabled streams
+                        if (check_profile(p, [&](video_stream_profile vsp) { return true; }, profiles_by_fps_res, results,
+                            std::make_tuple(p.fps(), vid_prof.width(), vid_prof.height()), num_streams, def_p))
+                            break;
+                    }
+                }
+            }
+        }
+        if (results.empty())
+            results.push_back(def_p);
+        update_ui(results);
+        return results;
+    }
+    
     std::vector<stream_profile> subdevice_model::get_selected_profiles()
     {
         std::vector<stream_profile> results;
@@ -5305,14 +5546,46 @@ namespace rs2
                         ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
                         ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
 
-                        if (sub->is_selected_combination_supported())
+                        std::vector<stream_profile> profiles;
+                        auto is_comb_supported = sub->is_selected_combination_supported();
+                        bool can_stream = false;
+                        if (is_comb_supported)
+                            can_stream = true;
+                        else
+                        {
+                            profiles = sub->get_supported_profiles();
+                            if (!profiles.empty())
+                                can_stream = true;
+                            else
+                            {
+                                std::string text = to_string() << "  " << textual_icons::toggle_off << "\noff   ";
+                                ImGui::TextDisabled("%s", text.c_str());
+                                if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        // ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
+                                        ImGui::SetTooltip("Selected value is not supported");
+                                    }
+                                }
+                                else
+                                {
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip("No stream selected");
+                                    }
+                                }
+                            }
+                        }
+                        if (can_stream)
                         {
                             if (ImGui::Button(label.c_str(), { 30,30 }))
                             {
-                                auto profiles = sub->get_selected_profiles();
+                                if (profiles.empty()) // profiles might be already filled
+                                    profiles = sub->get_selected_profiles();
                                 try
                                 {
-                                    if(!dev_syncer)
+                                    if (!dev_syncer)
                                         dev_syncer = viewer.syncer->create_syncer();
 
                                     std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
@@ -5344,26 +5617,6 @@ namespace rs2
                                 window.link_hovered();
                                 ImGui::SetTooltip("Start streaming data from this sensor");
                             }
-                        }
-                        else
-                        {
-                            std::string text = to_string() << "  " << textual_icons::toggle_off << "\noff   ";
-                            ImGui::TextDisabled("%s", text.c_str());
-                            if (std::any_of(sub->stream_enabled.begin(), sub->stream_enabled.end(), [](std::pair<int, bool> const& s) { return s.second; }))
-                            {
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("Selected configuration (FPS, Resolution) is not supported");
-                                }
-                            }
-                            else
-                            {
-                                if (ImGui::IsItemHovered())
-                                {
-                                    ImGui::SetTooltip("No stream selected");
-                                }
-                            }
-
                         }
                     }
                     else

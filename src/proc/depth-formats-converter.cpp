@@ -101,6 +101,7 @@ namespace librealsense
         switch (dst_format)
         {
         case RS2_FORMAT_W10:
+        case RS2_FORMAT_RAW10:
             copy_raw10(d, s, width, height, actual_size);
             break;
         case RS2_FORMAT_Y10BPACK:

@@ -93,13 +93,32 @@ void init_sensor(py::module &m) {
     py::class_<rs2::pose_sensor, rs2::sensor> pose_sensor(m, "pose_sensor"); // No docstring in C++
     pose_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("import_localization_map", &rs2::pose_sensor::import_localization_map,
-             "Load SLAM localization map from host to device.", "lmap_buf"_a)
+             "Load relocalization map onto device. Only one relocalization map can be imported at a time; "
+             "any previously existing map will be overwritten.\n"
+             "The imported map exists simultaneously with the map created during the most recent tracking "
+             "session after \start(),"
+             "and they are merged after the imported map is relocalized.\n"
+             "This operation must be done before start().", "lmap_buf"_a)
         .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
-             "Extract SLAM localization map from device and store on host.")
+             "Get relocalization map that is currently on device, created and updated during most "
+             "recent tracking session.\n"
+             "Can be called before or after stop().")
         .def("set_static_node", &rs2::pose_sensor::set_static_node,
-             "Create a named reference frame anchored to a specific 3D pose.")
-        .def("get_static_node", &rs2::pose_sensor::get_static_node,
-             "Retrieve a named reference frame anchored to a specific 3D pose.")
+             "Creates a named virtual landmark in the current map, known as static node.\n"
+             "The static node's pose is provided relative to the origin of current coordinate system of device poses.\n"
+             "This function fails if the current tracker confidence is below 3 (high confidence).",
+             "guid"_a, "pos"_a, "orient"_a)
+        .def("get_static_node", [](const rs2::pose_sensor& self, const std::string& guid) {
+            rs2_vector pos;
+            rs2_quaternion orient;
+            bool res = self.get_static_node(guid, pos, orient);
+            return std::make_tuple(res, pos, orient);
+        }, "Gets the current pose of a static node that was created in the current map or in an imported map.\n"
+           "Static nodes of imported maps are available after relocalizing the imported map.\n"
+           "The static node's pose is returned relative to the current origin of coordinates of device poses.\n"
+           "Thus, poses of static nodes of an imported map are consistent with current device poses after relocalization.\n"
+           "This function fails if the current tracker confidence is below 3 (high confidence).",
+           "guid"_a)
         .def("__nonzero__", &rs2::pose_sensor::operator bool); // No docstring in C++
 
     py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer"); // No docstring in C++

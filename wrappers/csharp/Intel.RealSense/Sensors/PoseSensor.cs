@@ -42,16 +42,19 @@ namespace Intel.RealSense
 
         public bool ImportLocalizationMap(byte[] mapBytes)
         {
-            IntPtr nativeBytes = Marshal.AllocHGlobal(mapBytes.Length);
-            Marshal.Copy(mapBytes, 0, nativeBytes, mapBytes.Length);
-
-            object error;
-            var res = NativeMethods.rs2_import_localization_map(Handle, nativeBytes, (uint)mapBytes.Length, out error);
-
-            Marshal.FreeHGlobal(nativeBytes);
-            nativeBytes = IntPtr.Zero;
-
-            return !(res == 0);
+            IntPtr nativeBytes = IntPtr.Zero;
+            try
+            {
+                nativeBytes = Marshal.AllocHGlobal(mapBytes.Length);
+                Marshal.Copy(mapBytes, 0, nativeBytes, mapBytes.Length);
+                object error;
+                var res = NativeMethods.rs2_import_localization_map(Handle, nativeBytes, (uint)mapBytes.Length, out error);
+                return !(res == 0);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(nativeBytes);
+            }
         }
 
         public bool SetStaticNode(string guid, Math.Vector position, Math.Quaternion rotation)
