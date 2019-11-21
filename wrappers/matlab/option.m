@@ -59,6 +59,9 @@ classdef option < int64
         enable_relocalization           (56)
         enable_pose_jumping             (57)
         enable_dynamic_calibration      (58)
-        count                           (59)
+        depth_offset                    (59)
+        led_power                       (60)
+        zero_order_enabled              (61)
+        count                           (62)
     end
 end
