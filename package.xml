@@ -26,6 +26,13 @@
 
   <build_depend>pkg-config</build_depend>
 
+  <depend>libx11-dev</depend>
+  <depend>opengl</depend>
+  <depend>libglew-dev</depend>
+  <depend>libglm-dev</depend>
+  <depend>gtk3</depend>
+  <depend>libglfw3-dev</depend>
+
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
   <depend>libssl-dev</depend>
