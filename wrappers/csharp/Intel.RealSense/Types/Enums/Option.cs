@@ -169,5 +169,8 @@ namespace Intel.RealSense
 
         /// <summary>APD temperature</summary>
         APDTemperature = 54,
+
+        /// <summary>Toggle Zero-Order mode</summary>
+        ZeroOrderEnabled = 60,
     }
 }

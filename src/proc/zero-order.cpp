@@ -156,7 +156,7 @@ namespace librealsense
         return false;
     }
 
-    zero_order::zero_order(bool_option* is_enabled_opt)
+    zero_order::zero_order(std::shared_ptr<bool_option> is_enabled_opt)
        : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt)
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
@@ -378,8 +378,11 @@ namespace librealsense
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
-        if (_is_enabled_opt && !_is_enabled_opt->is_true())
-            return f;
+        // If is_enabled_opt is false, meaning this processing block is not active,
+        // return the frame as is.
+        if (auto is_enabled = _is_enabled_opt.lock())
+            if (!is_enabled->is_true())
+                return f;
 
         std::vector<rs2::frame> result;
 
@@ -395,7 +398,12 @@ namespace librealsense
         }
      
         auto data = f.as<rs2::frameset>();
-        
+        if (!data)
+        {
+            LOG_ERROR("Frame received is not a frameset.");
+            return f;
+        }
+
         if (_source_profile_depth.get() != data.get_depth_frame().get_profile().get())
         {
             _source_profile_depth = data.get_depth_frame().get_profile();
@@ -465,8 +473,11 @@ namespace librealsense
 
     bool zero_order::should_process(const rs2::frame& frame)
     {
-        if (_is_enabled_opt && !_is_enabled_opt->is_true())
-            return true;
+        // If is_enabled_opt is false, meaning this processing block is not active,
+        // return true in order to passthrough the frame.
+        if (auto is_enabled = _is_enabled_opt.lock())
+            if (!is_enabled->is_true())
+                return true;
 
         if (auto set = frame.as<rs2::frameset>())
         {

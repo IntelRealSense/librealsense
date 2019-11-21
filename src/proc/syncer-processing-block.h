@@ -19,7 +19,7 @@ namespace librealsense
     class syncer_process_unit : public processing_block
     {
     public:
-        syncer_process_unit(bool_option* is_enabled_opt = nullptr);
+        syncer_process_unit(std::shared_ptr<bool_option> is_enabled_opt = nullptr);
 
         ~syncer_process_unit()
         {
@@ -27,6 +27,6 @@ namespace librealsense
         }
     private:
         std::unique_ptr<timestamp_composite_matcher> _matcher;
-        bool_option* _is_enabled_opt;
+        std::weak_ptr<bool_option> _is_enabled_opt;
     };
 }
