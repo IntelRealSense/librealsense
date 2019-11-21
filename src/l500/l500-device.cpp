@@ -19,7 +19,6 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
 #include "proc/syncer-processing-block.h"
-#include "proc/identity-processing-block.h"
 #include "proc/rotation-transform.h"
 #include "fw-update/fw-update-unsigned.h"
 

@@ -22,7 +22,6 @@
 #include "stream.h"
 #include "environment.h"
 #include "proc/motion-transform.h"
-#include "proc/identity-processing-block.h"
 #include "proc/auto-exposure-processor.h"
 
 namespace librealsense
@@ -105,7 +104,7 @@ namespace librealsense
         const ds5_motion* _owner;
     };
 
-    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base // TODO - Ariel change to synthetic sensor
+    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base
     {
     public:
         explicit ds5_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
@@ -295,14 +294,7 @@ namespace librealsense
             { {RS2_FORMAT_RAW8}},
             { {RS2_FORMAT_RAW8, RS2_STREAM_FISHEYE} },
             [auto_exposure_option]() {
-                auto id = std::make_shared<identity_processing_block>();
-                auto ae = std::make_shared<auto_exposure_processor>(RS2_STREAM_FISHEYE, *auto_exposure_option);
-
-                auto cpb = std::make_shared<composite_processing_block>();
-                cpb->add(id);
-                cpb->add(ae);
-
-                return cpb;
+                return std::make_shared<auto_exposure_processor>(RS2_STREAM_FISHEYE, *auto_exposure_option);
             }
         );
         return auto_exposure;

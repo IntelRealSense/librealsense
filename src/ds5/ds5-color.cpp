@@ -21,7 +21,6 @@
 #include "ds5-timestamp.h"
 
 #include "proc/color-formats-converter.h"
-#include "proc/identity-processing-block.h"
 
 namespace librealsense
 {
@@ -96,7 +95,7 @@ namespace librealsense
         // From 5.11.15 auto-exposure priority is supported on the D465
         else if (_fw_version >= firmware_version("5.11.15.0")) 
         {
-            raw_color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+            color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
         }
 
         auto white_balance_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_WHITE_BALANCE);
@@ -170,23 +169,12 @@ namespace librealsense
         if (_fw_version >= firmware_version("5.10.9.0"))
         {
             roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(color_ep.get()))) // TODO - Ariel - check if broken
+            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(color_ep.get())))
                 roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
         }
 
-        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_RGB8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_RGBA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_RGBA8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_BGR8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_BGR8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_BGRA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_BGRA8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_YUYV} }, { {RS2_FORMAT_Y16, RS2_STREAM_COLOR} }, []() { return std::make_shared<yuy2_converter>(RS2_FORMAT_Y16); });
-        color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_COLOR));
-
-        color_ep->register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_RGB8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_RGBA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_RGBA8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_BGR8, RS2_STREAM_COLOR} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_BGR8); });
-        color_ep->register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_BGRA8, RS2_STREAM_COLOR} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_BGRA8); });
-        color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_UYVY, RS2_STREAM_COLOR));
-
+        color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+        color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
         
         if (color_devices_info.front().pid == ds::RS465_PID)
