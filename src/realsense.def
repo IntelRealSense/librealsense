@@ -29,6 +29,7 @@ EXPORTS
     rs2_get_motion_intrinsics
 
     rs2_get_stream_profiles
+    rs2_get_active_streams
     rs2_get_stream_profile
     rs2_get_stream_profiles_count
     rs2_delete_stream_profiles_list

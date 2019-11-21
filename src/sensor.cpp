@@ -1382,6 +1382,7 @@ namespace librealsense
         }
         _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
         _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
+        // no `set_active_streams({});` ?
     }
 
     template<class T>
