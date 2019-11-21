@@ -156,8 +156,8 @@ namespace librealsense
         return false;
     }
 
-    zero_order::zero_order()
-       : generic_processing_block("Zero Order Fix"), _first_frame(true)
+    zero_order::zero_order(std::shared_ptr<bool_option> is_enabled_opt)
+       : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt)
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
             0,
@@ -378,6 +378,12 @@ namespace librealsense
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
     {
+        // If is_enabled_opt is false, meaning this processing block is not active,
+        // return the frame as is.
+        if (auto is_enabled = _is_enabled_opt.lock())
+            if (!is_enabled->is_true())
+                return f;
+
         std::vector<rs2::frame> result;
 
         if (_first_frame)
@@ -392,12 +398,16 @@ namespace librealsense
         }
      
         auto data = f.as<rs2::frameset>();
-        
+        if (!data)
+        {
+            LOG_ERROR("Frame received is not a frameset.");
+            return f;
+        }
+
         if (_source_profile_depth.get() != data.get_depth_frame().get_profile().get())
         {
             _source_profile_depth = data.get_depth_frame().get_profile();
             _target_profile_depth = _source_profile_depth.clone(_source_profile_depth.stream_type(), _source_profile_depth.stream_index(), _source_profile_depth.format());
-
         }
 
         auto depth_frame = data.get_depth_frame();
@@ -463,6 +473,12 @@ namespace librealsense
 
     bool zero_order::should_process(const rs2::frame& frame)
     {
+        // If is_enabled_opt is false, meaning this processing block is not active,
+        // return true in order to passthrough the frame.
+        if (auto is_enabled = _is_enabled_opt.lock())
+            if (!is_enabled->is_true())
+                return true;
+
         if (auto set = frame.as<rs2::frameset>())
         {
             if (!set.get_depth_frame() || !set.get_infrared_frame())

@@ -287,6 +287,7 @@ namespace librealsense
             CASE(ENABLE_DYNAMIC_CALIBRATION)
             CASE(DEPTH_OFFSET)
             CASE(LED_POWER)
+            CASE(ZERO_ORDER_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
