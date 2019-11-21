@@ -1172,11 +1172,6 @@ namespace librealsense
                             // for later processing validation in resolving the request.
                             _pbf_supported_profiles[pbf.get()].push_back(cloned_profile);
 
-                            // In case of many to many, a source profile might resolve a specific request that is not mentioned in the targets of the specific processing block.
-                            // e.g. Processing block factory: Z16 + Y8Left -> Z16 ,
-                            //      Request: Z16, Y8Left.
-                            _pbf_supported_profiles[pbf.get()].push_back(profile);
-
                             // cache the source to target mapping
                             _source_to_target_profiles_map[profile].push_back(cloned_profile);
                             // cache each target profile to its source profiles which were generated from.
@@ -1324,15 +1319,12 @@ namespace librealsense
                         resolved_req_set.insert(source_profile);
                         current_resolved_reqs.insert(source_profile);
 
-                        // Do not override already defined processing blocks
-                        const auto&& pb = _profiles_to_processing_block.find(source_profile);
-                        if (pb == end(_profiles_to_processing_block))
-                            _profiles_to_processing_block[source_profile] = best_pb;
+                        _profiles_to_processing_block[source_profile].insert(best_pb);
                     }
                 }
             }
             const stream_profiles&& print_current_resolved_reqs = { current_resolved_reqs.begin(), current_resolved_reqs.end() };
-            LOG_DEBUG("Request: " << best_reqs << "\nResolved to: " << print_current_resolved_reqs);
+            LOG_INFO("Request: " << best_reqs << "\nResolved to: " << print_current_resolved_reqs);
         }
         resolved_req = { resolved_req_set.begin(), resolved_req_set.end() };
         return resolved_req;
@@ -1371,7 +1363,8 @@ namespace librealsense
         _raw_sensor->close();
         for (auto&& entry : _profiles_to_processing_block)
         {
-            unregister_processing_block_options(*entry.second);
+            for (auto&& pb : entry.second)
+            unregister_processing_block_options(*pb);
         }
         _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
         _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
@@ -1446,10 +1439,11 @@ namespace librealsense
         // Set callbacks for all of the relevant processing blocks
         for (auto&& pb_entry : _profiles_to_processing_block)
         {
-            auto&& pb = pb_entry.second;
+            auto&& pbs = pb_entry.second;
+            for (auto&& pb : pbs)
             if (pb)
             {
-                pb_entry.second->set_output_callback(output_cb);
+                pb->set_output_callback(output_cb);
             }
         }
 
@@ -1458,8 +1452,12 @@ namespace librealsense
             if (!f)
                 return;
 
-            auto&& pb = _profiles_to_processing_block[f->get_stream()];
-            pb->invoke(std::move(f));
+            auto&& pbs = _profiles_to_processing_block[f->get_stream()];
+            for (auto&& pb : pbs)
+            {
+                f->acquire();
+                pb->invoke(f.frame);
+            }
         });
 
         // Call the processing block on the frame
