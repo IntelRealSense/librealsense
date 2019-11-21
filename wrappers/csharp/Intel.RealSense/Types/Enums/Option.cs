@@ -171,6 +171,6 @@ namespace Intel.RealSense
         APDTemperature = 54,
 
         /// <summary>Toggle Zero-Order mode</summary>
-        ZeroOrderEnabled = 60,
+        ZeroOrderEnabled = 61,
     }
 }
