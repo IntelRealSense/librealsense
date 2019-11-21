@@ -191,6 +191,19 @@ namespace rs2
             rs2_software_sensor_update_read_only_option(_sensor.get(), option, val, &e);
             error::handle(e);
         }
+        /**
+        * Register option that will be supported by the sensor
+        *
+        * \param[in] option  the option
+        * \param[in] range  range data for the option. range.def will be used as the initial value
+        */
+        void add_option(rs2_option option, option_range range, bool is_writable=true)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_add_option(_sensor.get(), option, range.min,
+                range.max, range.step, range.def, is_writable, &e);
+            error::handle(e);
+        }
     private:
         friend class software_device;
 

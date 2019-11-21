@@ -106,6 +106,7 @@ namespace librealsense
         void on_pose_frame(rs2_software_pose_frame frame);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
+        void add_option(rs2_option option, option_range range, bool is_writable);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
     private:
         friend class software_device;

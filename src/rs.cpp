@@ -2177,6 +2177,13 @@ void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, val)
 
+void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float min, float max, float step, float def, int is_writable, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
+
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_ENUM(severity);

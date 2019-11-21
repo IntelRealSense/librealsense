@@ -174,6 +174,22 @@ namespace librealsense
         float _value;
     };
 
+    class readonly_float_option : public float_option
+    {
+    public:
+        readonly_float_option(const option_range& range)
+            : float_option(range) {}
+
+        bool is_read_only() const override { return true; }
+
+        void set(float) override
+        {
+            throw not_implemented_exception("This option is read-only!");
+        }
+
+        void update(float val) { float_option::set(val); }
+    };
+
     class LRS_EXTENSION_API bool_option : public float_option
     {
     public:

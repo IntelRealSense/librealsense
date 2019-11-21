@@ -243,6 +243,19 @@ void rs2_software_sensor_add_read_only_option(rs2_sensor* sensor, rs2_option opt
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error);
+
+/**
+ * Add an option to sensor
+ * \param[in] sensor        the software sensor
+ * \param[in] option        the wanted option
+ * \param[in] min           the minimum value which will be accepted for this option
+ * \param[in] max           the maximum value which will be accepted for this option
+ * \param[in] step          the granularity of options which accept discrete values, or zero if the option accepts continuous values
+ * \param[in] def           the initial value of the option
+ * \param[in] is_writable   should the option be read-only or not
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float min, float max, float step, float def, int is_writable, rs2_error** error);
 #ifdef __cplusplus
 }
 #endif

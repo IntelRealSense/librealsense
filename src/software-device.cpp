@@ -354,7 +354,16 @@ namespace librealsense
 
     void software_sensor::update_read_only_option(rs2_option option, float val)
     {
-        get_option(option).set(val);
+        if (auto opt = dynamic_cast<readonly_float_option*>(&get_option(option)))
+            opt->update(val);
+        else
+            throw invalid_value_exception("This option is not read-only or is deprecated type");
+    }
+
+    void software_sensor::add_option(rs2_option option, option_range range, bool is_writable)
+    {
+        register_option(option, (is_writable? std::make_shared<float_option>(range) :
+                                              std::make_shared<readonly_float_option>(range)));
     }
 }
 

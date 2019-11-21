@@ -294,6 +294,7 @@ EXPORTS
     rs2_software_sensor_add_pose_stream
     rs2_software_sensor_add_read_only_option
     rs2_software_sensor_update_read_only_option
+    rs2_software_sensor_add_option
     rs2_software_sensor_set_metadata
 
     rs2_loopback_enable
