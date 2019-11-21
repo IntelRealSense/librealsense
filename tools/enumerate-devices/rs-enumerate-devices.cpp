@@ -194,7 +194,7 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
-    log_to_console(RS2_LOG_SEVERITY_ERROR);
+    log_to_console(RS2_LOG_SEVERITY_DEBUG);
 
     bool compact_view           = compact_view_arg.getValue();
     bool show_options           = show_options_arg.getValue();

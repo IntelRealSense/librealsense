@@ -426,7 +426,9 @@ namespace librealsense
                 std::string name = entry->d_name;
                 if(name == "." || name == "..") continue;
 
-                // Resolve a pathname to ignore virtual video devices
+                // Resolve a pathname to ignore virtual video devices and  sub-devices
+                static const std::regex uvc_pattern("(\\/usb\\d+\\/)\\w+"); // Locate UVC device path pattern ../usbX/...
+                static const std::regex video_dev_pattern("(\\/video\\d+)$");
                 std::string path = "/sys/class/video4linux/" + name;
                 std::string real_path{};
                 char buff[PATH_MAX] = {0};
@@ -435,12 +437,18 @@ namespace librealsense
                     real_path = std::string(buff);
                     if (real_path.find("virtual") != std::string::npos)
                         continue;
+                    if (!std::regex_search(real_path, video_dev_pattern))
+                    {
+                        LOG_INFO("Skipping Video4Linux entry " << real_path << " - not a device");
+                        continue;
+                    }
                 }
 
                 try
                 {
-                    uint16_t vid, pid, mi;
+                    uint16_t vid{}, pid{}, mi{};
                     std::string busnum, devnum, devpath;
+                    usb_spec usb_specification(usb_undefined);
 
                     auto dev_name = "/dev/" + name;
 
@@ -452,55 +460,87 @@ namespace librealsense
                     if(!S_ISCHR(st.st_mode))
                         throw linux_backend_exception(dev_name + " is no device");
 
-                    // Search directory and up to three parent directories to find busnum/devnum
-                    std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
-                    auto path = ss.str();
-                    auto valid_path = false;
-                    for(auto i=0U; i < MAX_DEV_PARENT_DIR; ++i)
+
+                    if (std::regex_search(real_path, uvc_pattern))
                     {
-                        if(std::ifstream(path + "busnum") >> busnum)
+                        LOG_INFO("Enumerating UVC device " << path << " realpath=" << real_path);
+                        // Search directory and up to three parent directories to find busnum/devnum
+                        auto valid_path = false;
+                        std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
+                        auto char_dev_path = ss.str();
+
+                        for(auto i=0U; i < MAX_DEV_PARENT_DIR; ++i)
                         {
-                            if(std::ifstream(path + "devnum") >> devnum)
+                            if(std::ifstream(char_dev_path + "busnum") >> busnum)
                             {
-                                if(std::ifstream(path + "devpath") >> devpath)
+                                if(std::ifstream(char_dev_path + "devnum") >> devnum)
                                 {
-                                    valid_path = true;
-                                    break;
+                                    if(std::ifstream(char_dev_path + "devpath") >> devpath)
+                                    {
+                                        valid_path = true;
+                                        break;
+                                    }
                                 }
                             }
+                            char_dev_path += "../";
                         }
-                        path += "../";
+                        if(!valid_path)
+                        {
+    #ifndef RS2_USE_CUDA
+                           /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                           Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                            LOG_INFO("Failed to read busnum/devnum. Device Path: " << path);
+    #endif
+                            continue;
+                        }
+
+                        std::string modalias;
+                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                            throw linux_backend_exception("Failed to read modalias");
+                        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+                            throw linux_backend_exception("Not a usb format modalias");
+                        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+                            throw linux_backend_exception("Failed to read vendor ID");
+                        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+                            throw linux_backend_exception("Failed to read product ID");
+                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+                            throw linux_backend_exception("Failed to read interface number");
+
+                        // Find the USB specification (USB2/3) type from the underlying device
+                        // Use device mapping obtained in previous step to traverse node tree
+                        // and extract the required descriptors
+                        // Traverse from
+                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
+                        // to
+                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
+                        usb_specification = get_usb_connection_type(real_path + "/../../../");
                     }
-                    if(!valid_path)
+                    else // Video4Linux Devices that are not UVC
                     {
-#ifndef RS2_USE_CUDA
-                       /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-                       Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-                        LOG_INFO("Failed to read busnum/devnum. Device Path: " << path);
-#endif
+                        LOG_INFO("Enumerating Video4Linux device " << path << " realpath=" << real_path);
+
+//                        std::string modalias;
+//                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+//                            throw linux_backend_exception("Failed to read modalias");
+//                        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+//                            throw linux_backend_exception("Not a usb format modalias");
+//                        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+//                            throw linux_backend_exception("Failed to read vendor ID");
+//                        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+//                            throw linux_backend_exception("Failed to read product ID");
+//                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+//                            throw linux_backend_exception("Failed to read interface number");
+
+                        // Find the USB specification (USB2/3) type from the underlying device
+                        // Use device mapping obtained in previous step to traverse node tree
+                        // and extract the required descriptors
+                        // Traverse from
+                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
+                        // to
+                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
+//                        usb_spec usb_specification = get_usb_connection_type(real_path + "/../../../");
                         continue;
                     }
-
-                    std::string modalias;
-                    if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
-                        throw linux_backend_exception("Failed to read modalias");
-                    if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
-                        throw linux_backend_exception("Not a usb format modalias");
-                    if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
-                        throw linux_backend_exception("Failed to read vendor ID");
-                    if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
-                        throw linux_backend_exception("Failed to read product ID");
-                    if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
-                        throw linux_backend_exception("Failed to read interface number");
-
-                    // Find the USB specification (USB2/3) type from the underlying device
-                    // Use device mapping obtained in previous step to traverse node tree
-                    // and extract the required descriptors
-                    // Traverse from
-                    // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
-                    // to
-                    // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
-                    usb_spec usb_specification = get_usb_connection_type(real_path + "/../../../");
 
                     uvc_device_info info{};
                     info.pid = pid;
