@@ -213,6 +213,11 @@ void URuntimeMeshSlicer::SliceRuntimeMeshConvexCollision(URuntimeMesh* InRuntime
 
 	UBodySetup* BodySetup = InRuntimeMesh->GetBodySetup();
 
+	if (!BodySetup)
+	{
+		return;
+	}
+
 	for (int32 ConvexIndex = 0; ConvexIndex < BodySetup->AggGeom.ConvexElems.Num(); ConvexIndex++)
 	{
 		FKConvexElem& BaseConvex = BodySetup->AggGeom.ConvexElems[ConvexIndex];

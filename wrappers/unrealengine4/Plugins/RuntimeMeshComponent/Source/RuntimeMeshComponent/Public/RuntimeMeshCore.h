@@ -14,7 +14,7 @@ DECLARE_STATS_GROUP(TEXT("RuntimeMesh"), STATGROUP_RuntimeMesh, STATCAT_Advanced
 
 #define RUNTIMEMESH_MAXTEXCOORDS MAX_TEXCOORDS
 
-
+#define RUNTIMEMESH_ENABLE_DEBUG_RENDERING (!(UE_BUILD_SHIPPING || UE_BUILD_TEST) || WITH_EDITOR)
 
 // Custom version for runtime mesh serialization
 namespace FRuntimeMeshVersion
@@ -177,7 +177,7 @@ enum class ERuntimeMeshCollisionCookingMode : uint8
 USTRUCT(BlueprintType)
 struct FRuntimeMeshTangent
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 
 	/** Direction of X tangent for this vertex */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Tangent)
