@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include "example.hpp"
 
@@ -47,8 +48,27 @@ static std::vector<point3d> raster_line(const point3d& a, const point3d& b, floa
 static void render_line(const std::vector<pixel>& line, int color_code);
 static void render_text(int win_height, const std::string& text);
 
+void raw_file_from_bytes(const std::string& filename, const std::vector<uint8_t> bytes);
+std::vector<uint8_t> bytes_from_raw_file(const std::string& filename);
+
 int main(int argc, char * argv[]) try
 {
+    std::string out_map_filepath, in_map_filepath, default_filepath = "map.raw";
+    for (int c = 1; c < argc; ++c) {
+        if (!std::strcmp(argv[c], "-m") || !std::strcmp(argv[c], "--load_map")) {
+            in_map_filepath = std::string(argv[++c]);
+        }
+        else if (!std::strcmp(argv[c], "-s") || !std::strcmp(argv[c], "--save_map")) {
+            out_map_filepath = std::string(argv[++c]);
+        }
+        else {
+            std::cout <<
+                " usages : [-m|--load_map IN_FILEPATH][-s|--save_map OUT_FILEPATH] \n" <<
+                " -m load raw map from IN_FILEPATH at start.                       \n" <<
+                " -s save raw map to   OUT_FILEPATH at the end.                    \n";
+        }
+    }
+
     std::cout << "Waiting for device..." << std::endl;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
@@ -59,6 +79,49 @@ int main(int argc, char * argv[]) try
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     cfg.enable_stream(RS2_STREAM_FISHEYE, 1);
     cfg.enable_stream(RS2_STREAM_FISHEYE, 2);
+
+    // Create the vertices of a simple virtual object.
+    // This virtual object is 4 points in 3D space that describe 3 XYZ 20cm long axes. 
+    // These vertices are relative to the object's own coordinate system.
+    const float length = 0.20f;
+    const object virtual_object = { {
+        { 0, 0, 0 },      // origin
+        { length, 0, 0 }, // X
+        { 0, length, 0 }, // Y
+        { 0, 0, length }  // Z
+    } };
+    // Set Guid of virtual object
+    const std::string virtual_object_guid = "node0";
+
+    // This variable will hold the pose of the virtual object in world coordinates.
+    // We we initialize it once we get the first pose frame.
+    rs2_pose object_pose_in_world;
+    bool object_pose_in_world_initialized = false;
+
+    // Get pose sensor
+    auto tm_sensor = cfg.resolve(pipe).get_device().first<rs2::pose_sensor>();
+
+    // Add relocalization callback
+    tm_sensor.set_notifications_callback([&](const rs2::notification& n) {
+        if (n.get_category() == RS2_NOTIFICATION_CATEGORY_POSE_RELOCALIZATION) {
+            std::cout << "Relocalization Event Detected." << std::endl;
+            // Get static node if available
+            if (tm_sensor.get_static_node(virtual_object_guid, object_pose_in_world.translation, object_pose_in_world.rotation)) {
+                std::cout << "Virtual object loaded:  " << object_pose_in_world.translation << std::endl;
+                object_pose_in_world_initialized = true;
+            }
+        }
+    });
+
+    // Load raw map on request
+    if (!in_map_filepath.empty()) {
+        try {
+            tm_sensor.import_localization_map(bytes_from_raw_file(in_map_filepath));
+            std::cout << "Map loaded from " << in_map_filepath << std::endl;
+        }
+        catch (std::runtime_error e) { std::cout << e.what() << std::endl; }
+
+    }
     // Start pipeline with chosen configuration
     rs2::pipeline_profile pipe_profile = pipe.start(cfg);
 
@@ -77,22 +140,6 @@ int main(int argc, char * argv[]) try
     window app(intrinsics.width, intrinsics.height, "Intel RealSense T265 Augmented Reality Example");
     window_key_listener key_watcher(app);
     texture fisheye_image;
-
-    // Create the vertices of a simple virtual object.
-    // This virtual object is 4 points in 3D space that describe 3 XYZ 20cm long axes.
-    // These vertices are relative to the object's own coordinate system.
-    const float length = 0.20;
-    const object virtual_object = {{
-        { 0, 0, 0 },      // origin
-        { length, 0, 0 }, // X
-        { 0, length, 0 }, // Y
-        { 0, 0, length }  // Z
-    }};
-
-    // This variable will hold the pose of the virtual object in world coordinates.
-    // We we initialize it once we get the first pose frame.
-    rs2_pose object_pose_in_world;
-    bool object_pose_in_world_initialized = false;
 
     // Main loop
     while (app)
@@ -116,7 +163,7 @@ int main(int argc, char * argv[]) try
         }
 
         // If we have not set the virtual object in the world yet, set it in front of the camera now.
-        if (!object_pose_in_world_initialized)
+        if (!object_pose_in_world_initialized && in_map_filepath.empty())
         {
             object_pose_in_world = reset_object_pose(device_pose_in_world);
             object_pose_in_world_initialized = true;
@@ -139,7 +186,7 @@ int main(int argc, char * argv[]) try
         for (size_t i = 1; i < object_in_sensor.size(); ++i)
         {
             // Discretize the virtual object line into smaller 1cm long segments
-            std::vector<point3d> points_in_sensor = raster_line(object_in_sensor[0], object_in_sensor[i], 0.01);
+            std::vector<point3d> points_in_sensor = raster_line(object_in_sensor[0], object_in_sensor[i], 0.01f);
             std::vector<pixel> projected_line;
             projected_line.reserve(points_in_sensor.size());
             for (auto& point : points_in_sensor)
@@ -157,7 +204,9 @@ int main(int argc, char * argv[]) try
         }
 
         // Display text in the image
-        render_text(app.height(), "Press spacebar to reset the pose of the virtual object. Press ESC to exit");
+        render_text((int)app.height(), device_pose_in_world.tracker_confidence > 2 ?
+            "Press spacebar to reset the pose of the virtual object. Press ESC to exit" :
+            "Move the camera around for saving the virtual object. Press ESC to exit" );
 
         // Check if some key is pressed
         switch (key_watcher.get_key())
@@ -169,10 +218,23 @@ int main(int argc, char * argv[]) try
             break;
         case GLFW_KEY_ESCAPE:
             // Exit if user presses escape
+            if (tm_sensor.set_static_node(virtual_object_guid, object_pose_in_world.translation, object_pose_in_world.rotation)) {
+                std::cout << "Save virtual object as static node. " << std::endl;
+            }
+
+            // Export map to a raw file
+            if (!out_map_filepath.empty()) {
+                pipe.stop();
+                raw_file_from_bytes(out_map_filepath, tm_sensor.export_localization_map());
+                std::cout << "Saved map to " << out_map_filepath << std::endl;
+            }
+        case GLFW_KEY_Q:
             app.close();
             break;
         }
     }
+
+
 
     return EXIT_SUCCESS;
 }
@@ -289,7 +351,7 @@ std::vector<point3d> raster_line(const point3d& a, const point3d& b, float step)
 {
     rs2_vector direction = { b.x() - a.x(), b.y() - a.y(), b.z() - a.z() };
     float distance = std::sqrt(direction.x*direction.x + direction.y*direction.y + direction.z*direction.z);
-    int npoints = distance / step + 1;
+    int npoints = (int)(distance / step + 1);
 
     std::vector<point3d> points;
     if (npoints > 0)
@@ -342,4 +404,34 @@ void render_text(int win_height, const std::string& text)
     draw_text(15, (win_height - 10) / 2, text.c_str());
     glScalef(1, 1, 1);
     glColor4fv(current_color);
+}
+
+void raw_file_from_bytes(const std::string& filename, const std::vector<uint8_t> bytes)
+{
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file.good())
+        throw std::runtime_error("Invalid binary file specified. Verify the target path and location permissions");
+    file.write((char*)bytes.data(), bytes.size());
+}
+
+std::vector<uint8_t> bytes_from_raw_file(const std::string& filename)
+{
+    std::ifstream file(filename.c_str(), std::ios::binary);
+    if (!file.good())
+        throw std::runtime_error("Invalid binary file specified. Verify the source path and location permissions");
+
+    // Determine the file length
+    file.seekg(0, std::ios_base::end);
+    std::size_t size = file.tellg();
+    if (!size)
+        throw std::runtime_error("Invalid binary file -zero-size");
+    file.seekg(0, std::ios_base::beg);
+
+    // Create a vector to store the data
+    std::vector<uint8_t> v(size);
+
+    // Load the data
+    file.read((char*)&v[0], size);
+
+    return v;
 }
