@@ -19,7 +19,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private final Map<Integer,GLFrame> mFrames = new HashMap<>();
     private int mWindowHeight = 0;
     private int mWindowWidth = 0;
-    private boolean mIsDirty = true;
     private float mDeltaX = 0;
     private float mDeltaY = 0;
     private Frame mPointsTexture;
@@ -75,11 +74,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 @Override
                 public void onFrame(Frame f) {
                     addFrame(f);
-                }
-            });
-            processed.foreach(new FrameCallback() {
-                @Override
-                public void onFrame(Frame f) {
                     upload(f);
                 }
             });
@@ -125,7 +119,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                     if(f.is(Extension.POINTS))
                         mFrames.put(uid, new GLPointsFrame());
                 }
-                mIsDirty = true;
             }
         }
     }
@@ -159,7 +152,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             for(Map.Entry<Integer,GLFrame> f : mFrames.entrySet())
                 f.getValue().close();
             mFrames.clear();
-            mIsDirty = true;
             mDeltaX = 0;
             mDeltaY = 0;
             mPointcloud = null;
@@ -193,17 +185,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mWindowWidth = width;
         mWindowHeight = height;
-        mIsDirty = true;
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         synchronized (mFrames) {
-            if (mIsDirty) {
-                GLES10.glViewport(0, 0, mWindowWidth, mWindowHeight);
-                GLES10.glClearColor(0, 0, 0, 1);
-                mIsDirty = false;
-            }
+            GLES10.glViewport(0, 0, mWindowWidth, mWindowHeight);
+            GLES10.glClearColor(0, 0, 0, 1);
+            GLES10.glClear(GLES10.GL_COLOR_BUFFER_BIT | GLES10.GL_DEPTH_BUFFER_BIT);
 
             if (mFrames.size() == 0)
                 return;

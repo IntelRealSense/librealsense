@@ -7,7 +7,10 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.util.Log;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class UsbUtilities {
@@ -20,25 +23,27 @@ public class UsbUtilities {
         return false;
     }
 
-    public static UsbDevice getUsbDevice(Context context, Integer vId) {
-        return getUsbDevice(context, vId, 0);
+    private static List<UsbDevice> getUsbDevices(Context context, Integer vId) {
+        return getUsbDevices(context, vId, 0);
     }
 
-    public static UsbDevice getUsbDevice(Context context, Integer vId, Integer pId) {
+    private static List<UsbDevice> getUsbDevices(Context context, Integer vId, Integer pId) {
+        ArrayList<UsbDevice> res = new ArrayList<>();
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 
         HashMap<String, UsbDevice> devicesMap = usbManager.getDeviceList();
         for (Map.Entry<String, UsbDevice> entry : devicesMap.entrySet()) {
             UsbDevice usbDevice = entry.getValue();
             if (usbDevice.getVendorId() == vId && (usbDevice.getProductId() == pId || pId == 0)) {
-                return usbDevice;
+                res.add(usbDevice);
             }
         }
-        Log.w(TAG, "getUsbDevice: failed to locate USB device, " + "VID: " + String.format("0x%04x", vId) + ", PID: " + String.format("0x%04x", pId));
-        return null;
+        if (res.isEmpty())
+            Log.w(TAG, "getUsbDevice: failed to locate USB device, " + "VID: " + String.format("0x%04x", vId) + ", PID: " + String.format("0x%04x", pId));
+        return res;
     }
 
-    public static boolean hasUsbPermission(Context context, UsbDevice usbDevice){
+    private static boolean hasUsbPermission(Context context, UsbDevice usbDevice){
         Log.d(TAG, "hasUsbPermission");
 
         if(usbDevice == null){
@@ -50,7 +55,7 @@ public class UsbUtilities {
         return usbManager.hasPermission(usbDevice);
     }
 
-    public static void grantUsbPermissions(Context context, UsbDevice usbDevice){
+    private static void grantUsbPermissions(Context context, UsbDevice usbDevice){
         Log.d(TAG, "grantUsbPermissions");
 
         if(usbDevice == null){
@@ -68,17 +73,16 @@ public class UsbUtilities {
         }
     }
 
-    public static UsbDevice getDevice(Context context) {
-        return getUsbDevice(context, 0x8086);
+    private static List<UsbDevice> getDevices(Context context) {
+        return getUsbDevices(context, 0x8086);
     }
 
-    public static boolean hasUsbPermission(Context context){
-        UsbDevice usbDevice = getDevice(context);
-        return hasUsbPermission(context, usbDevice);
-    }
-
-    public static void grantUsbPermission(Context context){
-        UsbDevice usbDevice = getDevice(context);
-        grantUsbPermissions(context, usbDevice);
+    public static void grantUsbPermissionIfNeeded(Context context) {
+        List<UsbDevice> usbDevices = getDevices(context);
+        for (UsbDevice usbDevice : usbDevices) {
+            if (!hasUsbPermission(context, usbDevice)) {
+                grantUsbPermissions(context, usbDevice);
+            }
+        }
     }
 }

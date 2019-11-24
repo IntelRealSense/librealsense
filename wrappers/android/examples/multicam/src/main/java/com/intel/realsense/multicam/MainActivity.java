@@ -32,9 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean mPermissionsGrunted = false;
 
     private Context mAppContext;
-    private TextView mBackGroundText;
     private GLRsSurfaceView mGLSurfaceView;
-    private boolean mIsStreaming = false;
     private final Handler mHandler = new Handler();
 
     private DeviceList deviceList;
@@ -48,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mAppContext = getApplicationContext();
-        mBackGroundText = findViewById(R.id.connectCameraText);
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
         mGLSurfaceView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
             | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -107,35 +104,15 @@ public class MainActivity extends AppCompatActivity {
         start();
     }
 
-    private void showConnectLabel(final boolean state){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mBackGroundText.setVisibility(state ? View.VISIBLE : View.GONE);
-            }
-        });
-    }
-
     private DeviceListener mListener = new DeviceListener() {
         @Override
         public void onDeviceAttach() {
-            showConnectLabel(false);
-            start();
+            restart();
         }
 
         @Override
         public void onDeviceDetach() {
-            showConnectLabel(true);
-            // stop all of the streams upon device detach.
-            stop();
-
-            // start all of the remaining connected devices.
-//            try {
-//                start();
-//            } catch (Exception e)
-//            {
-//                Log.e(TAG, "failed start , error: " + e.getMessage());
-//            }
+            restart();
         }
     };
 
@@ -143,10 +120,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                ArrayList<FrameSet> frameSets = new ArrayList<>();
                 for(int i = 0; i < mPipelines.size(); i++) {
                     try (FrameSet frames = mPipelines.get(i).waitForFrames(1000)) {
-                        frameSets.add(frames);
                         try (FrameSet processed = frames.applyFilter(mColorizers.get(i))) {
                             mGLSurfaceView.upload(processed);
                         }
@@ -166,22 +141,20 @@ public class MainActivity extends AppCompatActivity {
             try (Config config = new Config()) {
                 config.enableDevice(deviceList.createDevice(i).getInfo(CameraInfo.SERIAL_NUMBER));
                 config.enableStream(StreamType.DEPTH, 640, 480);
-                config.enableStream(StreamType.COLOR, 640, 480);
                 mPipelines.get(i).start(config);
             }
         }
     }
 
-    private synchronized void start() {
-        // When a device is detached, stop() is called.
-        // We need to
-        if(mIsStreaming)
-            return;
+    private synchronized void restart() {
+        stop();
+        start();
+    }
 
+    private synchronized void start() {
         deviceList = mRsContext.queryDevices();
         int devCount = deviceList.getDeviceCount();
         if( devCount > 0) {
-            showConnectLabel(false);
             for (int i = 0; i < devCount; i++)
             {
                 mPipelines.add(new Pipeline());
@@ -191,10 +164,9 @@ public class MainActivity extends AppCompatActivity {
 
         try{
             Log.d(TAG, "try start streaming");
-            mGLSurfaceView.clear();
             configAndStart();
-            mIsStreaming = true;
             mHandler.post(mStreaming);
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to start streaming");
@@ -202,15 +174,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private synchronized void stop() {
-        if(!mIsStreaming)
-            return;
         try {
             Log.d(TAG, "try stop streaming");
-            mIsStreaming = false;
+
             mHandler.removeCallbacks(mStreaming);
 
             for(Pipeline pipe : mPipelines)
                 pipe.stop();
+
+            mPipelines.clear();
+            mColorizers.clear();
             Log.d(TAG, "streaming stopped successfully");
 
             deviceList.close();
