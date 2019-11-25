@@ -429,6 +429,8 @@ namespace librealsense
                 // Resolve a pathname to ignore virtual video devices and  sub-devices
                 static const std::regex uvc_pattern("(\\/usb\\d+\\/)\\w+"); // Locate UVC device path pattern ../usbX/...
                 static const std::regex video_dev_pattern("(\\/video\\d+)$");
+                static std::regex video_dev_index("\\d+$");
+
                 std::string path = "/sys/class/video4linux/" + name;
                 std::string real_path{};
                 char buff[PATH_MAX] = {0};
@@ -449,6 +451,7 @@ namespace librealsense
                     uint16_t vid{}, pid{}, mi{};
                     std::string busnum, devnum, devpath;
                     usb_spec usb_specification(usb_undefined);
+                    bool v4l_node=false;
 
                     auto dev_name = "/dev/" + name;
 
@@ -463,7 +466,7 @@ namespace librealsense
 
                     if (std::regex_search(real_path, uvc_pattern))
                     {
-                        LOG_INFO("Enumerating UVC device " << path << " realpath=" << real_path);
+                        LOG_INFO("Enumerating UVC " << name << " realpath=" << real_path);
                         // Search directory and up to three parent directories to find busnum/devnum
                         auto valid_path = false;
                         std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
@@ -515,30 +518,47 @@ namespace librealsense
                         // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
                         usb_specification = get_usb_connection_type(real_path + "/../../../");
                     }
-                    else // Video4Linux Devices that are not UVC
+                    else // Video4Linux Devices that are not listed as UVC
                     {
-                        LOG_INFO("Enumerating Video4Linux device " << path << " realpath=" << real_path);
+                        LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
+                        v4l_node = true;
 
-//                        std::string modalias;
-//                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
-//                            throw linux_backend_exception("Failed to read modalias");
-//                        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
-//                            throw linux_backend_exception("Not a usb format modalias");
-//                        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
-//                            throw linux_backend_exception("Failed to read vendor ID");
-//                        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
-//                            throw linux_backend_exception("Failed to read product ID");
-//                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
-//                            throw linux_backend_exception("Failed to read interface number");
+                        // D431-specific
+                        vid = 0x8086;
+                        pid = 0xABCD; // TBD Evgeni
 
-                        // Find the USB specification (USB2/3) type from the underlying device
-                        // Use device mapping obtained in previous step to traverse node tree
-                        // and extract the required descriptors
-                        // Traverse from
-                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
-                        // to
-                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
-//                        usb_spec usb_specification = get_usb_connection_type(real_path + "/../../../");
+                        std::smatch match;
+                        uint8_t ind{};
+                        if (std::regex_search(name, match, video_dev_index))
+                        {
+                            ind = static_cast<uint8_t>(std::stoi(match[0]));
+                        }
+                        else
+                        {
+                            LOG_WARNING("Unresolved Video4Linux device pattern: " << name << ", device is skipped");
+                            continue;
+                        }
+
+                        switch(ind)
+                        {
+                            case 0:
+                            case 1:
+                                mi = 0;
+                                break;
+                            case 3:
+                                mi = 3;
+                                break;
+                            default:
+                                mi = 0xffff;
+                                break;
+                        }
+                    }
+
+                    // D431 Dev - skip unsupported devices. Do no upstream!
+                    // manually rectify descriptor inconsistencies
+                    if (0xffff == mi)
+                    {
+                        LOG_DEBUG("D431 - Uninitialized device " << name << ", skipped during enumeration");
                         continue;
                     }
 
@@ -551,6 +571,8 @@ namespace librealsense
                     info.unique_id = busnum + "-" + devpath + "-" + devnum;
                     info.conn_spec = usb_specification;
                     info.uvc_capabilities = get_dev_capabilities(dev_name);
+
+                    std::cout << "Device " << name << ":\n" << std::string(info);
 
                     uvc_nodes.emplace_back(info, dev_name);
                 }
@@ -577,7 +599,7 @@ namespace librealsense
                     {
                         if (uvc_devices.empty())
                         {
-                            LOG_ERROR("uvc meta-node with no video streaming node encountered: " << std::string(cur_node.first));
+                            LOG_ERROR("UVC meta-node with no video streaming node encountered: " << std::string(cur_node.first));
                             continue;
                         }
 
@@ -586,13 +608,13 @@ namespace librealsense
 
                         if (uvc_node.first.uvc_capabilities & V4L2_CAP_META_CAPTURE)
                         {
-                            LOG_ERROR("Consequtive uvc meta-nodes encountered: " << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
+                            LOG_ERROR("Consequtive UVC meta-nodes encountered: " << std::string(uvc_node.first) << " and " << std::string(cur_node.first) );
                             continue;
                         }
 
                         if (uvc_node.first.has_metadata_node)
                         {
-                            LOG_ERROR( "Metadata node for uvc device: " << std::string(uvc_node.first) << " was already been assigned ");
+                            LOG_ERROR( "Metadata node for UVC device: " << std::string(uvc_node.first) << " was already been assigned ");
                             continue;
                         }
 

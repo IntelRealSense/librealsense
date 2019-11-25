@@ -240,8 +240,6 @@ int main(int argc, char** argv) try
         show_options = show_calibration_data = false;
     }
 
-    log_to_console(RS2_LOG_SEVERITY_FATAL);
-
     for (auto i = 0u; i < device_count; ++i)
     {
         auto dev = devices[i];

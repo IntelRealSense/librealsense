@@ -506,12 +506,12 @@ namespace librealsense
     };
 
     // AWGC
-    class ds431_device : public ds5_active,
+    class rs431_device : public ds5_active,
                          public ds5_color,
                          public ds5_advanced_mode_base
     {
     public:
-        ds431_device(std::shared_ptr<context> ctx,
+        rs431_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -906,6 +906,8 @@ namespace librealsense
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS400_IMU_PID:
             return std::make_shared<rs400_imu_device>(ctx, group, register_device_notifications);
+        case RS431_PID:
+            return std::make_shared<rs431_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
@@ -935,7 +937,10 @@ namespace librealsense
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_multisensor_device(uvc.pid))
+                {
                     is_device_multisensor = true;
+                    break;
+                }
             }
 
             if(is_device_multisensor)
@@ -950,7 +955,10 @@ namespace librealsense
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_hid_sensor_device(uvc.pid))
+                {
                     is_device_hid_sensor = true;
+                    break;
+                }
             }
 
             // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
@@ -1114,6 +1122,17 @@ namespace librealsense
         // TODO - A proper matcher for High-FPS sensor is required
         std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get()};
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
+    }
+
+
+    std::shared_ptr<matcher> rs431_device::create_matcher(const frame_holder& frame) const
+    {
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
+        {
+            return matcher_factory::create(RS2_MATCHER_DLR_C, streams);
+        }
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
