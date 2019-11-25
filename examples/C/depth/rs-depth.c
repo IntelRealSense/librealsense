@@ -114,7 +114,7 @@ int main()
     check_error(e);
 
     // Start the pipeline streaming
-    // The retunred object should be released with rs2_delete_pipeline_profile(...)
+    // The returned object should be released with rs2_delete_pipeline_profile(...)
     rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
     if (e)
     {

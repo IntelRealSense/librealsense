@@ -26,7 +26,7 @@ namespace librealsense
         using namespace ds;
 
         auto pid = group.uvc_devices.front().pid;
-        if (pid != RS_USB2_PID)
+        if ((pid != RS_USB2_PID) && (pid != RS431_PID))
         {
             auto&& depth_ep = get_depth_sensor();
             auto&& raw_depth_ep = get_raw_depth_sensor();

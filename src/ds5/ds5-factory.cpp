@@ -505,7 +505,7 @@ namespace librealsense
         };
     };
 
-    // AWGC
+    // D431 Development
     class rs431_device : public ds5_active,
                          public ds5_color,
                          public ds5_advanced_mode_base

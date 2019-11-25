@@ -358,6 +358,23 @@ namespace librealsense
             stream_profile _md_profile;
         };
 
+        // D431 Development. To be merged into underlying class
+        class v4l_mipi_device : public v4l_uvc_device
+        {
+        public:
+            v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = t);
+
+            ~v4l_mipi_device();
+
+            void init_xu(const extension_unit&) override;
+            bool get_pu(rs2_option opt, int32_t& value) const override;
+            bool set_pu(rs2_option opt, int32_t value) override;
+            bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
+            bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
+            control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
+            control_range get_pu_range(rs2_option option) const override;
+        };
+
         class v4l_backend : public backend
         {
         public:

@@ -5163,7 +5163,7 @@ namespace rs2
         bool is_advanced_mode_enabled = false;
         if (advanced_dev)
         {
-            is_advanced_mode_enabled = advanced_dev.is_enabled();
+            is_advanced_mode_enabled = true;// D431 Development..  advanced_dev.is_enabled();
         }
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);
 

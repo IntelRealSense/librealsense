@@ -572,7 +572,7 @@ namespace librealsense
                     info.conn_spec = usb_specification;
                     info.uvc_capabilities = get_dev_capabilities(dev_name);
 
-                    std::cout << "Device " << name << ":\n" << std::string(info);
+                    //std::cout << "Device " << name << ":\n" << std::string(info);
 
                     uvc_nodes.emplace_back(info, dev_name);
                 }
@@ -1416,7 +1416,7 @@ namespace librealsense
             fmt.fmt.pix.field       = V4L2_FIELD_NONE;
             if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
             {
-                throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_S_FMT) failed, errno=" << errno);
             }
 
             LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
@@ -1628,8 +1628,9 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            auto v4l_uvc_dev = (!info.has_metadata_node) ? std::make_shared<v4l_uvc_device>(info) :
-                                                           std::make_shared<v4l_uvc_meta_device>(info);
+            bool use_memory_map = 0xABCD == info.pid; // D431 development. Not for upstream
+            auto v4l_uvc_dev = (!info.has_metadata_node) ? std::make_shared<v4l_uvc_device>(info,use_memory_map) :
+                                                           std::make_shared<v4l_uvc_meta_device>(info,use_memory_map);
 
             return std::make_shared<platform::retry_controls_work_around>(v4l_uvc_dev);
         }
