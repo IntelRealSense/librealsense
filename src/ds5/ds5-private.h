@@ -22,6 +22,7 @@ namespace librealsense
 {
     namespace ds
     {
+        const uint16_t RS431_PID            = 0xabcd; // TODO 431 - Dev . Do not upstream!
         const uint16_t RS400_PID            = 0x0ad1; // PSR
         const uint16_t RS410_PID            = 0x0ad2; // ASR
         const uint16_t RS415_PID            = 0x0ad3; // ASRC
@@ -85,6 +86,7 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
+			ds::RS431_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -98,6 +100,7 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS465_PID,
             ds::RS455_PID,
+			ds::RS431_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
@@ -139,6 +142,8 @@ namespace librealsense
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
+			{ RS430_PID,            "Intel RealSense D430"},
+            { RS430I_PID,           "Intel RealSense D430I"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS460_PID,            "Intel RealSense D460" },
             { RS435_RGB_PID,        "Intel RealSense D435"},
