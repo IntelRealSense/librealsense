@@ -17,13 +17,16 @@ int main(int argc, char * argv[]) try
     // Declare rates printer for showing streaming rates of the enabled streams.
     rs2::rates_printer printer;
 
+    rs2::config cfg;
+    //cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 30);
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
 
     // Start streaming with default recommended configuration
     // The default video configuration contains Depth and Color streams
     // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-    pipe.start();
+    pipe.start(cfg);
 
     while (app) // Application still alive?
     {
