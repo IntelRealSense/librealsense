@@ -4,8 +4,10 @@
 #include "y8i-to-y8y8.h"
 
 #include "stream.h"
-#include "context.h"
-#include "image.h"
+
+#ifdef RS2_USE_CUDA
+#include "cuda/cuda-conversion.cuh"
+#endif
 
 namespace librealsense
 {
