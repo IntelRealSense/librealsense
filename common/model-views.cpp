@@ -6328,6 +6328,7 @@ namespace rs2
             is_advanced_device = true;
             try
             {
+				//is_advanced_mode_enabled = true;// D431 Development..  advanced_dev.is_enabled();
                 // Prevent intermittent errors in polling mode to keep imgui in sync
                 is_advanced_mode_enabled = advanced_dev.is_enabled();
             }
