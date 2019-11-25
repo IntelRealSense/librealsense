@@ -236,7 +236,7 @@ namespace librealsense
 
 #else // BUILD_EASYLOGGINGPP
 
-    #define LOG_DEBUG(...)   do { ; } while(false)
+#define LOG_DEBUG(...)   do { ; } while(false)
 #define LOG_INFO(...)    do { ; } while(false)
 #define LOG_WARNING(...) do { ; } while(false)
 #define LOG_ERROR(...)   do { ; } while(false)
