@@ -809,17 +809,14 @@ namespace librealsense
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
-        auto& depth_sensor = get_depth_sensor();
-        auto& raw_depth_sensor = get_raw_depth_sensor();
-
         std::string optic_serial;
         std::string asic_serial;
         std::string fwv;
         if (!mipi_sensor)
         {
-        std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
-        bool advanced_mode, usb_modality;
-        group_multiple_fw_calls(depth_sensor, [&]() {
+            std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
+            bool advanced_mode, usb_modality;
+            group_multiple_fw_calls(depth_sensor, [&]() {
                 _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
                 // fooling tests recordings - don't remove
                 _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -842,6 +839,9 @@ namespace librealsense
             if (_fw_version >= firmware_version("5.10.4.0"))
                 _device_capabilities = parse_device_capabilities();
 
+        auto& depth_sensor = get_depth_sensor();
+        auto& raw_depth_sensor = get_raw_depth_sensor();
+		
         auto advanced_mode = is_camera_in_advanced_mode();
 
             auto _usb_mode = usb3_type;
@@ -884,12 +884,17 @@ namespace librealsense
                         "Set the power level of the LED, with 0 meaning LED off"));
             }
 
-            if (_fw_version >= firmware_version("5.6.3.0"))
+        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
+            {
+            if (!mipi_sensor)
             {
                 _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+			}
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))
+            //if hw_monitor was created by usb replace it with xu
+            // D400_IMU will remain using USB interface due to HW limitations
             {
                 depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                     std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
