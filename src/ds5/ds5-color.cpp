@@ -104,7 +104,7 @@ namespace librealsense
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
         
-		if (ds::RS431_PID != color_devices_info.front().pid)
+		if (ds::RS431_PID != _pid)
         {
             color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
             color_ep.register_pu(RS2_OPTION_CONTRAST);
@@ -158,33 +158,37 @@ namespace librealsense
                     std::make_shared<auto_disabling_control>(
                         exposure_option,
                         auto_exposure_option));
-                color_ep.register_option(RS2_OPTION_GAIN,
-                    std::make_shared<auto_disabling_control>(
-                        gain_option,
-                        auto_exposure_option));
 
-                // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-                if (_fw_version >= firmware_version("5.10.9.0"))
+                if (ds::RS431_PID != _pid)
                 {
-                    roi_sensor_interface* roi_sensor;
-                    if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
-                        roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+                    color_ep.register_option(RS2_OPTION_GAIN,
+                        std::make_shared<auto_disabling_control>(
+                            gain_option,
+                            auto_exposure_option));
+
+                    // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
+                    if (_fw_version >= firmware_version("5.10.9.0"))
+                    {
+                        roi_sensor_interface* roi_sensor;
+                        if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
+                            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+                    }
+
+                    // Register for tracking of thermal compensation changes
+                    if (val_in_range(_pid, { ds::RS455_PID }))
+                    {
+                        if (_thermal_monitor)
+                            _thermal_monitor->add_observer([&](float) {
+                            _color_calib_table_raw.reset(); });
+                    }
+
+                    auto md_prop_offset = offsetof(metadata_raw, mode) +
+                        offsetof(md_rgb_mode, rgb_mode) +
+                        offsetof(md_rgb_normal_mode, intel_rgb_control);
+
+                    color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
+                        [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
                 }
-
-                // Register for tracking of thermal compensation changes
-                if (val_in_range(_pid, { ds::RS455_PID }))
-                {
-                    if (_thermal_monitor)
-                        _thermal_monitor->add_observer([&](float){
-                            _color_calib_table_raw.reset(); } );
-                }
-
-                auto md_prop_offset = offsetof(metadata_raw, mode) +
-                    offsetof(md_rgb_mode, rgb_mode) +
-                    offsetof(md_rgb_normal_mode, intel_rgb_control);
-
-                color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
-                    [](rs2_metadata_type param) { return (param != 1); })); // OFF value via UVC is 1 (ON is 8)
             }
             else
             {
@@ -251,17 +255,23 @@ namespace librealsense
             color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
 
             // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-                }
+            
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+
         } //D431
+        else
+        {
+            // Work-around for improper enumeration given to RGB output as UYUV instead of YUYV
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+        }
 
-            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
-            color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
+        color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
 
-            if (_pid == ds::RS465_PID)
-            {
-                color_ep.register_processing_block({ {RS2_FORMAT_MJPEG} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8); });
-                color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_MJPEG, RS2_STREAM_COLOR));
-            }
+        if (_pid == ds::RS465_PID)
+        {
+            color_ep.register_processing_block({ {RS2_FORMAT_MJPEG} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8); });
+            color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_MJPEG, RS2_STREAM_COLOR));
+        }
         
     }
 
