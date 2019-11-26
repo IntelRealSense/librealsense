@@ -372,6 +372,8 @@ namespace librealsense
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
             control_range get_pu_range(rs2_option option) const override;
+        protected:
+            uint32_t xu_to_cid(const extension_unit& xu, uint8_t control) const; // Find the mapping of XU to the underlying control
         };
 
         class v4l_backend : public backend

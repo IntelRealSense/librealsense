@@ -711,22 +711,25 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        if (_fw_version >= firmware_version("5.6.3.0"))
+        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
         {
-            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            if (!mipi_sensor)
+            {
+                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
 
 #ifdef HWM_OVER_XU
-            //if hw_monitor was created by usb replace it with xu
-            // D400_IMU will remain using USB interface due to HW limitations
-            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
-            {
-                _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(
-                        std::make_shared<command_transfer_over_xu>(
-                            raw_depth_sensor, depth_xu, DS5_HWMONITOR),
-                        raw_depth_sensor));
-            }
+                //if hw_monitor was created by usb replace it with xu
+                // D400_IMU will remain using USB interface due to HW limitations
+                if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
+                {
+                    _hw_monitor = std::make_shared<hw_monitor>(
+                        std::make_shared<locked_transfer>(
+                            std::make_shared<command_transfer_over_xu>(
+                                raw_depth_sensor, depth_xu, DS5_HWMONITOR),
+                            raw_depth_sensor));
+                }
 #endif
+            }
 
             depth_sensor.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,

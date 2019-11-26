@@ -1664,16 +1664,15 @@ namespace librealsense
                 throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
             }
 
-            //if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
             value = control.value;
 
             return true;
         }
+
         bool v4l_mipi_device::set_pu(rs2_option opt, int32_t value)
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, value};
             v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &control};
-            //if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1684,9 +1683,19 @@ namespace librealsense
 
             return true;
         }
+
         bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
-            LOG_INFO("Function not implemented - " << __FUNCTION__);
+            v4l2_ext_control xctrl{xu_to_cid(xu,control), 0, 0, value};
+            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &xctrl};
+            if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
+            {
+                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                    return false;
+
+                throw linux_backend_exception("xioctl(VIDIOC_S_EXT_CTRLS) failed");
+            }
+
             return true;
         }
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
@@ -1694,41 +1703,78 @@ namespace librealsense
             LOG_INFO("Function not implemented - " << __FUNCTION__);
             return true;
         }
+
         control_range v4l_mipi_device::get_xu_range(const extension_unit& xu, uint8_t control, int len) const
         {
-            LOG_INFO("Function not implemented - " << __FUNCTION__);
-            return v4l_uvc_device::get_xu_range(xu, control, len);
+            v4l2_query_ext_ctrl xctrl_query{};
+            xctrl_query.id = xu_to_cid(xu,control);
+
+            if(0 > ioctl(_fd,VIDIOC_QUERY_EXT_CTRL,&xctrl_query)){
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_QUERY_EXT_CTRL) failed, errno=" << errno);
+            }
+
+            if ((xctrl_query.elems !=1 ) ||
+                (xctrl_query.minimum < std::numeric_limits<int32_t>::min()) ||
+                (xctrl_query.maximum > std::numeric_limits<int32_t>::max()))
+                throw linux_backend_exception(to_string() << "Mipi Control range for " << xctrl_query.name
+                    << " is not compliant with backend interface: [min,max,default,step]:\n"
+                    << xctrl_query.minimum << ", " << xctrl_query.maximum << ", "
+                    << xctrl_query.default_value << ", " << xctrl_query.step
+                    << "\n Elements = " << xctrl_query.elems);
+
+            return { static_cast<int32_t>(xctrl_query.minimum), static_cast<int32_t>(xctrl_query.maximum),
+                     static_cast<int32_t>(xctrl_query.default_value), static_cast<int32_t>(xctrl_query.step)};
         }
+
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
         {
             return v4l_uvc_device::get_pu_range(option);
         }
 
-        // D431 controls map
-        /*
+        // D431 controls map- temporal solution to bypass backend interface with acual codes
+        // DS5 depth XU identifiers
+        const uint8_t RS_HWMONITOR                       = 1;
+        const uint8_t RS_DEPTH_EMITTER_ENABLED           = 2;
+        const uint8_t RS_EXPOSURE                        = 3;
+        const uint8_t RS_LASER_POWER                     = 4;
+        const uint8_t RS_HARDWARE_PRESET                 = 6;
+        const uint8_t RS_ERROR_REPORTING                 = 7;
+        const uint8_t RS_EXT_TRIGGER                     = 8;
+        const uint8_t RS_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
+        const uint8_t RS_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
+        const uint8_t RS_ENABLE_AUTO_EXPOSURE            = 0xB;
+        const uint8_t RS_LED_PWR                         = 0xE;
 
-        */
-//        uint32_t v4l_mipi_device::get_cid(rs2_option option) const
-//        {
-//            switch(option)
-//            {
-//                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-//                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-//                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
-//                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-//                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
-//                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
-//                case RS2_OPTION_HUE: return V4L2_CID_HUE;
-//                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
-//                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
-//                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-//                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-//                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-//                case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
-//                case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
-//                default: throw linux_backend_exception(to_string() << "no v4l2 cid for mipi option " << option);
-//            }
-//        }
+        uint32_t v4l_mipi_device::xu_to_cid(const extension_unit& xu, uint8_t control) const
+        {
+            if (0==xu.subdevice)
+            {
+                switch(control)
+                {
+                    case RS_DEPTH_EMITTER_ENABLED: return RS_CAMERA_CID_LASER_POWER;
+                    case RS_LASER_POWER: return RS_CAMERA_CID_MANUAL_LASER_POWER;
+    //                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+    //                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+    //                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+    //                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+    //                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
+    //                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+    //                case RS2_OPTION_HUE: return V4L2_CID_HUE;
+    //                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
+    //                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+    //                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+    //                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+    //                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+    //                case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
+    //                case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+
+                    default: throw linux_backend_exception(to_string() << "no v4l2 mipi cid for XU depth control " << control);
+                }
+            }
+            else
+                throw linux_backend_exception(to_string() << "MIPI Controls mapping is for Depth XU only, requested for subdevice " << xu.subdevice);
+
+        }
 
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
