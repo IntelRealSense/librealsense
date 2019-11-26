@@ -109,14 +109,19 @@ namespace librealsense
                     white_balance_option,
                     auto_white_balance_option));
 
-            auto exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_EXPOSURE);
-            auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-            color_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
-            color_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
-            color_ep->register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<auto_disabling_control>(
-                    exposure_option,
-                    auto_exposure_option));
+        }
+
+        auto exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_EXPOSURE);
+        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        color_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
+        color_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
+        color_ep->register_option(RS2_OPTION_EXPOSURE,
+            std::make_shared<auto_disabling_control>(
+                exposure_option,
+                auto_exposure_option));
+
+        if (ds::RS431_PID != color_devices_info.front().pid)
+        {
 
             color_ep->register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
                 std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
@@ -175,9 +180,15 @@ namespace librealsense
                     roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
             }
 
-        } // RS431
+            color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
 
-        color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+        } // RS431
+        else
+        {
+            // Work-around for improper enumeration given to RGB output as UYUV instead of YUYV
+            color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+        }
+
         color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         color_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
         

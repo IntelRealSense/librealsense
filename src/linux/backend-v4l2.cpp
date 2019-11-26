@@ -48,6 +48,24 @@
 
 const size_t MAX_DEV_PARENT_DIR = 10;
 
+//D431 Dev. TODO -shall be refactored into the kernel headers.
+const uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
+const uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
+const uint32_t RS_CAMERA_CID_LASER_POWER                = (RS_CAMERA_CID_BASE+1);
+const uint32_t RS_CAMERA_CID_MANUAL_LASER_POWER         = (RS_CAMERA_CID_BASE+2);
+const uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+3);
+const uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+4);
+const uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+5);
+const uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+6);
+const uint32_t RS_CAMERA_CID_FW_VERSION                 = (RS_CAMERA_CID_BASE+7);
+const uint32_t RS_CAMERA_CID_GVD                        = (RS_CAMERA_CID_BASE+8);
+const uint32_t RS_CAMERA_CID_AE_ROI_GET                 = (RS_CAMERA_CID_BASE+9);
+const uint32_t RS_CAMERA_CID_AE_ROI_SET                 = (RS_CAMERA_CID_BASE+10);
+const uint32_t RS_CAMERA_CID_AE_SETPOINT_GET            = (RS_CAMERA_CID_BASE+11);
+const uint32_t RS_CAMERA_CID_AE_SETPOINT_SET            = (RS_CAMERA_CID_BASE+12);
+const uint32_t RS_CAMERA_CID_ERB                        = (RS_CAMERA_CID_BASE+13);
+const uint32_t RS_CAMERA_CID_EWB                        = (RS_CAMERA_CID_BASE+14);
+const uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+15);
 
 #ifdef ANDROID
 
@@ -1626,11 +1644,99 @@ namespace librealsense
             }
         }
 
+        v4l_mipi_device::v4l_mipi_device(const uvc_device_info& info, bool use_memory_map):
+            v4l_uvc_device(info,use_memory_map)
+        {}
+
+        v4l_mipi_device::~v4l_mipi_device()
+        {}
+
+        bool v4l_mipi_device::get_pu(rs2_option opt, int32_t& value) const
+        {
+            v4l2_ext_control control{get_cid(opt), 0, 0, 0};
+            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &control};
+
+            if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
+            {
+                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                    return false;
+
+                throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
+            }
+
+            //if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+            value = control.value;
+
+            return true;
+        }
+        bool v4l_mipi_device::set_pu(rs2_option opt, int32_t value)
+        {
+            v4l2_ext_control control{get_cid(opt), 0, 0, value};
+            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &control};
+            //if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+            if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
+            {
+                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                    return false;
+
+                throw linux_backend_exception("xioctl(VIDIOC_S_EXT_CTRLS) failed");
+            }
+
+            return true;
+        }
+        bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
+        {
+            LOG_INFO("Function not implemented - " << __FUNCTION__);
+            return true;
+        }
+        bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
+        {
+            LOG_INFO("Function not implemented - " << __FUNCTION__);
+            return true;
+        }
+        control_range v4l_mipi_device::get_xu_range(const extension_unit& xu, uint8_t control, int len) const
+        {
+            LOG_INFO("Function not implemented - " << __FUNCTION__);
+            return v4l_uvc_device::get_xu_range(xu, control, len);
+        }
+        control_range v4l_mipi_device::get_pu_range(rs2_option option) const
+        {
+            return v4l_uvc_device::get_pu_range(option);
+        }
+
+        // D431 controls map
+        /*
+
+        */
+//        uint32_t v4l_mipi_device::get_cid(rs2_option option) const
+//        {
+//            switch(option)
+//            {
+//                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+//                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+//                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+//                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+//                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
+//                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+//                case RS2_OPTION_HUE: return V4L2_CID_HUE;
+//                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
+//                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+//                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+//                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+//                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+//                case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
+//                case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+//                default: throw linux_backend_exception(to_string() << "no v4l2 cid for mipi option " << option);
+//            }
+//        }
+
+
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool use_memory_map = 0xABCD == info.pid; // D431 development. Not for upstream
-            auto v4l_uvc_dev = (!info.has_metadata_node) ? std::make_shared<v4l_uvc_device>(info,use_memory_map) :
-                                                           std::make_shared<v4l_uvc_meta_device>(info,use_memory_map);
+            bool mipi_device = 0xABCD == info.pid; // D431 development. Not for upstream
+            auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
+                              ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
+                                                            std::make_shared<v4l_uvc_meta_device>(info));
 
             return std::make_shared<platform::retry_controls_work_around>(v4l_uvc_dev);
         }

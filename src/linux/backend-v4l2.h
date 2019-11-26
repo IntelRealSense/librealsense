@@ -324,9 +324,9 @@ namespace librealsense
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
+            int _fd = 0;          // prevent unintentional abuse in derived class
 
         private:
-            int _fd = 0;          // prevent unintentional abuse in derived class
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
 
         };
@@ -362,11 +362,10 @@ namespace librealsense
         class v4l_mipi_device : public v4l_uvc_device
         {
         public:
-            v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = t);
+            v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = true);
 
             ~v4l_mipi_device();
 
-            void init_xu(const extension_unit&) override;
             bool get_pu(rs2_option opt, int32_t& value) const override;
             bool set_pu(rs2_option opt, int32_t value) override;
             bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
