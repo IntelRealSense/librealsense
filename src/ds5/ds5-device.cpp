@@ -877,13 +877,18 @@ namespace librealsense
         }
 
 
-        if (_fw_version >= firmware_version("5.6.3.0"))
+        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
         {
-            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            if (!mipi_sensor)
+            {
+                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+			}
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
-        {
+            //if hw_monitor was created by usb replace it with xu
+            // D400_IMU will remain using USB interface due to HW limitations
+            {
             depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                     "Generate trigger from the camera to external device once per frame"));
@@ -900,10 +905,9 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
                     RS2_OPTION_ASIC_TEMPERATURE));
-        }
+            }
 
         if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
-        {
             auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
                 ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
