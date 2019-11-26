@@ -37,9 +37,9 @@ try:
             # and https://github.com/IntelRealSense/librealsense/issues/5178#issuecomment-550217609
 
             w = data.rotation.w
-            x = data.rotation.z
+            x = -data.rotation.z
             y = data.rotation.x
-            z = data.rotation.y
+            z = -data.rotation.y
 
             pitch =  -m.asin(2.0 * (x*z - w*y)) * 180.0 / m.pi;
             roll  =  m.atan2(2.0 * (w*x + y*z), w*w - x*x - y*y + z*z) * 180.0 / m.pi;
