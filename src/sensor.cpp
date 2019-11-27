@@ -58,6 +58,7 @@ namespace librealsense
 
     stream_profiles sensor_base::get_active_streams() const
     {
+        std::lock_guard<std::mutex> lock(_active_profile_mutex);
         return _active_profiles;
     }
 
@@ -173,6 +174,7 @@ namespace librealsense
     }
     void sensor_base::set_active_streams(const stream_profiles& requests)
     {
+        std::lock_guard<std::mutex> lock(_active_profile_mutex);
         _active_profiles = requests;
     }
 
@@ -1382,7 +1384,7 @@ namespace librealsense
         }
         _profiles_to_processing_block.erase(begin(_profiles_to_processing_block), end(_profiles_to_processing_block));
         _cached_requests.erase(_cached_requests.begin(), _cached_requests.end());
-        // no `set_active_streams({});` ?
+        set_active_streams({});
     }
 
     template<class T>
