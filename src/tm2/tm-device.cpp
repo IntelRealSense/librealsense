@@ -1846,12 +1846,18 @@ namespace librealsense
                 break;
             }
 #else
-            std::stringstream ss;
-            ss << "/dev/bus/usb/"
-               << std::setw(3) << std::setfill('0') << bus << "/"
-               << std::setw(3) << std::setfill('0') << address;
-            if(ss.str() == group.usb_devices[0].id) {
-                LOG_INFO("Found the device " << ss.str());
+            uint8_t port_chain[8];
+            int chain_depth = libusb_get_port_numbers(dev_list[i], &port_chain[0], 7);
+            std::string port_str;
+            for(int i = 0; i < chain_depth; i++) {
+                port_str += std::to_string(port_chain[i]);
+                if(i != chain_depth-1) port_str += ".";
+            }
+            std::string usb_id = std::to_string(bus) + "-" + port_str + "-" + std::to_string(address); 
+
+            LOG_INFO("Comparing " << usb_id << " and " << group.usb_devices[0].id);
+            if(usb_id == group.usb_devices[0].id) {
+                LOG_INFO("Found the device " << usb_id);
                 device = dev_list[i];
                 break;
             }
