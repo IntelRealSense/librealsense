@@ -142,6 +142,41 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
         });
 }
 
+std::vector<uint8_t> librealsense::command_transfer_over_v4l_ctl::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
+{
+    return _uvc.invoke_powered([this, &data, require_response]
+        (platform::uvc_device& dev)
+        {
+            std::vector<uint8_t> result;
+            std::lock_guard<platform::uvc_device> lock(dev);
+
+            if (data.size() > HW_MONITOR_BUFFER_SIZE)
+            {
+                LOG_ERROR("XU command size is invalid");
+                throw invalid_value_exception(to_string() << "Requested XU command size " <<
+                    std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
+            }
+
+            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
+            std::copy(data.begin(), data.end(), transmit_buf.begin());
+
+            if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
+                throw invalid_value_exception(to_string() << "set_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
+
+            if (require_response)
+            {
+                result.resize(HW_MONITOR_BUFFER_SIZE);
+                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
+                    throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
+
+                // Returned data size located in the last 4 bytes
+                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
+                result.resize(data_size);
+            }
+            return result;
+        });
+}
+
 void librealsense::polling_errors_disable::set(float value)
 {
     if (value < 0)

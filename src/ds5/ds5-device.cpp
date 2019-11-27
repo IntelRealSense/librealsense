@@ -611,12 +611,20 @@ namespace librealsense
         }
         else
         {
+            //#define V4L2_CTRL_CLASS_CAMERA		0x009a0000	/* Camera class controls */
+            //#define DS5_CAMERA_CID_BASE           (V4L2_CTRL_CLASS_CAMERA | DS5_STREAM_CONFIG_0)
+            //#define DS5_CAMERA_CID_HWMC           (DS5_CAMERA_CID_BASE+15)
+
             if (!mipi_sensor)
                 _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(
+                    std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
-                        raw_sensor, depth_xu, DS5_HWMONITOR),
-                    raw_sensor));
+                        raw_sensor, depth_xu, DS5_HWMONITOR),raw_sensor));
+            else
+                _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(
+                    std::make_shared<command_transfer_over_v4l_ctl>(
+                        raw_sensor, /*DS5_CAMERA_CID_HWMC*/123),raw_sensor));
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)

@@ -49,24 +49,42 @@
 const size_t MAX_DEV_PARENT_DIR = 10;
 
 //D431 Dev. TODO -shall be refactored into the kernel headers.
-const uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
-const uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
-const uint32_t RS_CAMERA_CID_LASER_POWER                = (RS_CAMERA_CID_BASE+1);
-const uint32_t RS_CAMERA_CID_MANUAL_LASER_POWER         = (RS_CAMERA_CID_BASE+2);
-const uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+3);
-const uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+4);
-const uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+5);
-const uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+6);
-const uint32_t RS_CAMERA_CID_FW_VERSION                 = (RS_CAMERA_CID_BASE+7);
-const uint32_t RS_CAMERA_CID_GVD                        = (RS_CAMERA_CID_BASE+8);
-const uint32_t RS_CAMERA_CID_AE_ROI_GET                 = (RS_CAMERA_CID_BASE+9);
-const uint32_t RS_CAMERA_CID_AE_ROI_SET                 = (RS_CAMERA_CID_BASE+10);
-const uint32_t RS_CAMERA_CID_AE_SETPOINT_GET            = (RS_CAMERA_CID_BASE+11);
-const uint32_t RS_CAMERA_CID_AE_SETPOINT_SET            = (RS_CAMERA_CID_BASE+12);
-const uint32_t RS_CAMERA_CID_ERB                        = (RS_CAMERA_CID_BASE+13);
-const uint32_t RS_CAMERA_CID_EWB                        = (RS_CAMERA_CID_BASE+14);
-const uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+15);
+constexpr uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
+constexpr uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
+constexpr uint32_t RS_CAMERA_CID_LASER_POWER                = (RS_CAMERA_CID_BASE+1);
+constexpr uint32_t RS_CAMERA_CID_MANUAL_LASER_POWER         = (RS_CAMERA_CID_BASE+2);
+constexpr uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+3);
+constexpr uint32_t RS_CAMERA_DEPTH_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+4);
+constexpr uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_GET    = (RS_CAMERA_CID_BASE+5);
+constexpr uint32_t RS_CAMERA_COEFF_CALIBRATION_TABLE_SET    = (RS_CAMERA_CID_BASE+6);
+constexpr uint32_t RS_CAMERA_CID_FW_VERSION                 = (RS_CAMERA_CID_BASE+7);
+constexpr uint32_t RS_CAMERA_CID_GVD                        = (RS_CAMERA_CID_BASE+8);
+constexpr uint32_t RS_CAMERA_CID_AE_ROI_GET                 = (RS_CAMERA_CID_BASE+9);
+constexpr uint32_t RS_CAMERA_CID_AE_ROI_SET                 = (RS_CAMERA_CID_BASE+10);
+constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_GET            = (RS_CAMERA_CID_BASE+11);
+constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_SET            = (RS_CAMERA_CID_BASE+12);
+constexpr uint32_t RS_CAMERA_CID_ERB                        = (RS_CAMERA_CID_BASE+13);
+constexpr uint32_t RS_CAMERA_CID_EWB                        = (RS_CAMERA_CID_BASE+14);
+constexpr uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+15);
 
+//const uint32_t RS_CAMERA_GENERIC_XU                     = (RS_CAMERA_CID_BASE+15); // RS_CAMERA_CID_HWMC duplicate??
+constexpr uint32_t RS_CAMERA_CID_LASER_POWER_MODE           = (RS_CAMERA_CID_BASE+16); // RS_CAMERA_CID_LASER_POWER duplicate ???
+constexpr uint32_t RS_CAMERA_CID_MANUAL_EXPOSURE            = (RS_CAMERA_CID_BASE+17);
+constexpr uint32_t RS_CAMERA_CID_LASER_POWER_LEVEL          = (RS_CAMERA_CID_BASE+18); // RS_CAMERA_CID_MANUAL_LASER_POWER ??
+constexpr uint32_t RS_CAMERA_CID_EXPOSURE_MODE              = (RS_CAMERA_CID_BASE+19);
+constexpr uint32_t RS_CAMERA_CID_WHITE_BALANCE_MODE         = (RS_CAMERA_CID_BASE+20); // Similar to RS_CAMERA_CID_EWB ??
+constexpr uint32_t RS_CAMERA_CID_PRESET                     = (RS_CAMERA_CID_BASE+21);
+
+/* refe4rence for kernel 4.9 to be removed
+#define UVC_CID_GENERIC_XU          (V4L2_CID_PRIVATE_BASE+15)
+#define UVC_CID_LASER_POWER_MODE    (V4L2_CID_PRIVATE_BASE+16)
+#define UVC_CID_MANUAL_EXPOSURE     (V4L2_CID_PRIVATE_BASE+17)
+#define UVC_CID_LASER_POWER_LEVEL   (V4L2_CID_PRIVATE_BASE+18)
+#define UVC_CID_EXPOSURE_MODE       (V4L2_CID_PRIVATE_BASE+19)
+#define UVC_CID_WHITE_BALANCE_MODE  (V4L2_CID_PRIVATE_BASE+20)
+#define UVC_CID_PRESET              (V4L2_CID_PRIVATE_BASE+21)
+UVC_CID_MANUAL_EXPOSURE
+*/
 #ifdef ANDROID
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
@@ -559,11 +577,11 @@ namespace librealsense
 
                         switch(ind)
                         {
+                            //  D431 exposes video0 for Depth and video1 for RGB. IR is currently not available
                             case 0:
-                            case 1:
                                 mi = 0;
                                 break;
-                            case 3:
+                            case 1:
                                 mi = 3;
                                 break;
                             default:
@@ -1695,9 +1713,9 @@ namespace librealsense
 
                 throw linux_backend_exception("xioctl(VIDIOC_S_EXT_CTRLS) failed");
             }
-
             return true;
         }
+
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
             LOG_INFO("Function not implemented - " << __FUNCTION__);
@@ -1731,7 +1749,7 @@ namespace librealsense
             return v4l_uvc_device::get_pu_range(option);
         }
 
-        // D431 controls map- temporal solution to bypass backend interface with acual codes
+        // D431 controls map- temporal solution to bypass backend interface with actual codes
         // DS5 depth XU identifiers
         const uint8_t RS_HWMONITOR                       = 1;
         const uint8_t RS_DEPTH_EMITTER_ENABLED           = 2;
@@ -1745,37 +1763,32 @@ namespace librealsense
         const uint8_t RS_ENABLE_AUTO_EXPOSURE            = 0xB;
         const uint8_t RS_LED_PWR                         = 0xE;
 
+        // D431 controls map- temporal solution to bypass backend interface with actual codes
         uint32_t v4l_mipi_device::xu_to_cid(const extension_unit& xu, uint8_t control) const
         {
             if (0==xu.subdevice)
             {
                 switch(control)
                 {
+                    case RS_HWMONITOR: return RS_CAMERA_CID_HWMC;
                     case RS_DEPTH_EMITTER_ENABLED: return RS_CAMERA_CID_LASER_POWER;
+                    case RS_EXPOSURE: return RS_CAMERA_CID_MANUAL_EXPOSURE;
                     case RS_LASER_POWER: return RS_CAMERA_CID_MANUAL_LASER_POWER;
-    //                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-    //                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-    //                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
-    //                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
-    //                case RS2_OPTION_GAIN: return V4L2_CID_GAIN;
-    //                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
-    //                case RS2_OPTION_HUE: return V4L2_CID_HUE;
-    //                case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
-    //                case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
-    //                case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
-    //                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
-    //                case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-    //                case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
-    //                case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+                    case RS_ENABLE_AUTO_WHITE_BALANCE : return RS_CAMERA_CID_WHITE_BALANCE_MODE;
+                    case RS_ENABLE_AUTO_EXPOSURE: return RS_CAMERA_CID_EXPOSURE_MODE;
+                    case RS_HARDWARE_PRESET : return RS_CAMERA_CID_PRESET;
+                    // D431 Missing functionality
+                    //case RS_ERROR_REPORTING: TBD;
+                    //case RS_EXT_TRIGGER: TBD;
+                    //case RS_ASIC_AND_PROJECTOR_TEMPERATURES: TBD;
+                    //case RS_LED_PWR: TBD;
 
-                    default: throw linux_backend_exception(to_string() << "no v4l2 mipi cid for XU depth control " << control);
+                    default: throw linux_backend_exception(to_string() << "no v4l2 mipi cid for XU depth control " << std::dec << int(control));
                 }
             }
             else
                 throw linux_backend_exception(to_string() << "MIPI Controls mapping is for Depth XU only, requested for subdevice " << xu.subdevice);
-
         }
-
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
