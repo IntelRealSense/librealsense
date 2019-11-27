@@ -11,6 +11,7 @@ PYBIND11_MODULE(NAME, m) {
         ==============================
         Library for accessing Intel RealSenseTM cameras
     )pbdoc";
+    m.attr("__version__") = RS2_API_VERSION_STR;
 
     init_c_files(m);
     init_types(m);
