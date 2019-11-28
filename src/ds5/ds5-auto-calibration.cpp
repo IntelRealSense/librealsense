@@ -249,7 +249,7 @@ namespace librealsense
             throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
                 "Please retry in different lighting conditions");
         }
-        else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << status << ")");
+        else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << int(status) << ")");
     }
 
     std::vector<uint8_t> auto_calibrated::get_calibration_results(float* health) const
