@@ -255,15 +255,22 @@ namespace librealsense
             color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
 
             // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
-            
+            if (_fw_version >= firmware_version("5.10.9.0"))
+            {
+                roi_sensor_interface* roi_sensor;
+                if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(color_ep.get())))
+                    roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
+            }
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
 
         } //D431
         else
         {
-            // Work-around for improper enumeration given to RGB output as UYUV instead of YUYV
-            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+            // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
+            color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
         }
+
 
         color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
 
