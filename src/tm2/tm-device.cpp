@@ -1282,11 +1282,10 @@ namespace librealsense
                 receive_set_localization_data_complete(*((interrupt_message_set_localization_data_stream *)header));
             }
             else if(header->wMessageID == SLAM_RELOCALIZATION_EVENT) {
-                //TODO check this
-                LOG_ERROR("SLAM_RELOCALIZATION_EVENT");
                 auto event = (const interrupt_message_slam_relocalization_event *)header;
                 auto ts = get_coordinated_timestamp(event->llNanoseconds);
                 std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << event->wSessionId <<  ", timestamp: " << ts.global_ts.count() << " ms";
+                LOG_INFO(msg);
                 raise_relocalization_event(msg, ts.global_ts.count());
             }
             else
@@ -1328,7 +1327,7 @@ namespace librealsense
                     LOG_WARNING("Unhandled DEV_STATUS " << status_name(*res));
             }
             else if(header->header.wMessageID == SLAM_GET_LOCALIZATION_DATA_STREAM) {
-                LOG_ERROR("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)response)));
+                LOG_INFO("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)response)));
                 receive_localization_data_chunk((interrupt_message_get_localization_data_stream *)header);
             }
             else if(header->header.wMessageID == DEV_SAMPLE) {
@@ -1507,7 +1506,7 @@ namespace librealsense
             _async_op.notify_one();
         }
         else {
-            LOG_ERROR("SET_LOCALIZATION_DATA_COMPLETE error status " << status_name(*((bulk_message_response_header *)&message)));
+            LOG_INFO("SET_LOCALIZATION_DATA_COMPLETE error status " << status_name(*((bulk_message_response_header *)&message)));
             _async_op_status = _async_fail; // do not notify here because we may get multiple of these messages
         }
     }
@@ -1638,7 +1637,7 @@ namespace librealsense
                     chunk_number++;
                     left_length -= chunk_size;
 
-                    //LOG_DEBUG("Sending chunk length " << chunk_size << " of map size " << map_size);
+                    LOG_DEBUG("Sending chunk length " << chunk_size << " of map size " << map_size);
                     _device->stream_write((t265::bulk_message_request_header *)message);
                 }
                 return true;
@@ -1701,7 +1700,7 @@ namespace librealsense
         std::vector<uint8_t> buf;
         buf.resize(odometry_config_buf.size() + sizeof(bulk_message_request_header));
 
-        LOG_ERROR("Sending wheel odometry with " << buf.size());
+        LOG_INFO("Sending wheel odometry with " << buf.size());
 
         bulk_message_request_slam_append_calibration request = {{ sizeof(request), SLAM_APPEND_CALIBRATION }};
         size_t bytes = std::min(odometry_config_buf.size(), size_t(MAX_SLAM_CALIBRATION_SIZE-1));
