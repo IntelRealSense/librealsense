@@ -620,11 +620,11 @@ namespace librealsense
                     std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         raw_sensor, depth_xu, DS5_HWMONITOR),raw_sensor));
-            else
-                _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(
-                    std::make_shared<command_transfer_over_v4l_ctl>(
-                        raw_sensor, /*DS5_CAMERA_CID_HWMC*/123),raw_sensor));
+//            else
+//                _hw_monitor = std::make_shared<hw_monitor>(
+//                    std::make_shared<locked_transfer>(
+//                    std::make_shared<command_transfer_over_v4l_ctl>(
+//                        raw_sensor, /*DS5_CAMERA_CID_HWMC*/123),raw_sensor));
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)

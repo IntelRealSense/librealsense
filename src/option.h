@@ -379,9 +379,8 @@ namespace librealsense
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
-        command_transfer_over_v4l_ctl(uvc_sensor& uvc,
-                                 platform::extension_unit xu, uint8_t ctrl)
-            : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
+        command_transfer_over_v4l_ctl(uvc_sensor& uvc, uint8_t ctrl)
+            : _uvc(uvc), _ctrl(ctrl)
         {}
 
     private:
