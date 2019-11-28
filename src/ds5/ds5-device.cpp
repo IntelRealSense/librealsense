@@ -36,6 +36,7 @@
 #include "proc/depth-formats-converter.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "../third-party/json.hpp"
 
 namespace librealsense
 {
@@ -562,6 +563,7 @@ namespace librealsense
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
+        auto_calibrated(_hw_monitor),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
         _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),

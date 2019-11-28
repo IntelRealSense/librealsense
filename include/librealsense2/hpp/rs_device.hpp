@@ -226,7 +226,7 @@ namespace rs2
 
             results.insert(results.begin(), start, start + size);
 
-            return results;
+return results;
         }
 
         // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
@@ -278,6 +278,199 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+    };
+
+    class auto_calibrated_device : public device
+    {
+    public:
+        auto_calibrated_device(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_AUTO_CALIBRARED_DEVICE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        /**
+        * This will improve the depth noise.
+        * \param[in] timeout_ms         timeout in ms
+        * \param[in] json_content       json file to configure speed parameter
+        * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                        [0, 0.15) - Good
+                                        [0.15, 0.25) - Can be Improved
+                                        [0.25, ) - Requires Calibration
+        * \param[in] callback           callback to get progress notifications
+        * \return                       new calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health, T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_calibration_cpp(_dev.get(), timeout_ms, json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * This will improve the depth noise (plane fit RMS).
+        * \param[in] timeout_ms      timeout in ms
+        * \param[in] json_content    json file to configure speed parameter
+        * \param[out] health         Calibration Health-Check captures how far camera calibration is from the optimal one
+                                     [0, 0.15) - Good
+                                     [0.15, 0.25) - Can be Improved
+                                     [0.25, ) - Requires Calibration
+        * \return                    new calibration table
+        */
+        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_calibration_cpp(_dev.get(), timeout_ms, json_content.data(), json_content.size(), health, nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+        * \param[in] ground_truth_mm     ground truth in mm
+        * \param[in] timeout_ms          timeout in ms
+        * \param[in] json_content        json file to configure: average step count - number of frames to average,
+                                                                 step Count - max iteration steps
+                                                                 Accuracy - Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)
+        * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
+        * \param[in] callback            callback to get progress notifications
+        * \return                        new calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health, T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm,  timeout_ms, json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+        * \param[in] ground_truth_mm     ground truth in mm
+        * \param[in] timeout_ms          timeout in ms
+        * \param[in] json_content        json file to configure: average step count - number of frames to average,
+                                                                step Count - max iteration steps
+                                                                Accuracy - Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)
+        * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
+        * \return                        new calibration table
+        */
+        std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, timeout_ms, json_content.data(), json_content.size(), health, nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Read current calibration table from flash.
+        * \return    calibration table
+        */
+        std::vector<uint8_t> get_calibration_table()
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_get_calibration_table(_dev.get(), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Set current table to dynamic area.
+        * \param[in]     calibration table
+        */
+        void set_calibration_table(const std::vector<uint8_t>& calibration)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_calibration_table(_dev.get(), calibration.data(), calibration.size(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Write calibration that was set by set_calibration_table to device's EEPROM.
+        */
+        void write_calibration() const
+        {
+            rs2_error* e = nullptr;
+            rs2_write_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Reset device to factory calibration
+        */
+        void reset_to_factory_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_reset_to_factory_calibration(_dev.get(), &e);
             error::handle(e);
         }
     };

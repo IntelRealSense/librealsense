@@ -241,6 +241,44 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image
 */
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
 
+/**
+* This will improve the depth noise.
+* \param[in] timeout_ms         timeout in ms
+* \param[in] json_content       json file to configure speed parameter
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.15) - Good
+                                [0.15, 0.25) - Can be Improved
+                                [0.25, ) - Requires Calibration
+* \param[in] callback           callback to get progress notifications
+* \return                       new calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error);
+
+/**
+* This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+* \param[in] ground_truth_mm     ground truth in mm
+* \param[in] timeout_ms          timeout in ms
+* \param[in] json_content        json file to configure: average step count - number of frames to average,
+                                                         step Count - max iteration steps
+                                                         Accuracy - Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)
+* \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
+* \param[in] callback            callback to get progress notifications
+* \return                        new calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error);
+
+/**
+*  Read current calibration table from flash.
+* \return    calibration table
+*/
+const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* dev, rs2_error** error);
+
+/**
+*  Set current table to dynamic area.
+* \param[in]     calibration table
+*/
+void rs2_set_calibration_table(const rs2_device* device, const void* calibration, int calibration_size, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

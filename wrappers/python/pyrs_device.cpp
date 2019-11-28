@@ -27,6 +27,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, tm2))
         .def(BIND_DOWNCAST(device, updatable))
         .def(BIND_DOWNCAST(device, update_device))
+        .def(BIND_DOWNCAST(device, auto_calibrated_device))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -60,6 +61,34 @@ void init_device(py::module &m) {
         .def("update", [](rs2::update_device& self, const std::vector<uint8_t>& fw_image, std::function<void(float)> f) { return self.update(fw_image, f); },
              "Update an updatable device to the provided firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.",
              "fw_image"_a, "callback"_a);
+
+    py::class_<rs2::auto_calibrated_device, rs2::device> auto_calibrated_device(m, "auto_calibrated_device");
+    auto_calibrated_device.def(py::init<rs2::device>(), "device"_a)
+        .def("write_calibration", &rs2::auto_calibrated_device::write_calibration, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.")
+        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, int timeout_ms, std::string json_content)
+        { 
+            float health;
+            return py::make_tuple(self.run_on_chip_calibration(timeout_ms, json_content, &health), health);
+        },"Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.", "timeout_ms"_a, "json_content"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, int timeout_ms, std::string json_content, std::function<void(float)> f)
+        {
+            float health;
+            return py::make_tuple(self.run_on_chip_calibration(timeout_ms, json_content, &health, f), health);
+        },"Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.", "timeout_ms"_a, "json_content"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, int timeout_ms, std::string json_content)
+        {
+            float health;
+            return py::make_tuple(self.run_tare_calibration(ground_truth_mm, timeout_ms, json_content, &health), health);
+        }, "Run tare calibration", "ground_truth_mm"_a, "timeout_ms"_a, "json_content"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, int timeout_ms, std::string json_content, std::function<void(float)> callback) 
+        {
+            float health;
+            return py::make_tuple(self.run_tare_calibration(ground_truth_mm, timeout_ms, json_content, &health, callback), health);
+        }, "Run tare calibration", "ground_truth_mm"_a, "timeout_ms"_a, "json_content"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+        .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.")
+        .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.")
+        .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.");
+
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())

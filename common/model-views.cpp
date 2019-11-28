@@ -996,11 +996,14 @@ namespace rs2
             auto sensor_profiles = s->get_stream_profiles();
             reverse(begin(sensor_profiles), end(sensor_profiles));
             rs2_format def_format{ RS2_FORMAT_ANY };
+            std::pair<int, int> default_resolution;
             for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
                 if (auto vid_prof = profile.as<video_stream_profile>())
                 {
+                    if (profile.is_default())
+                        default_resolution = std::pair<int, int>(vid_prof.width(), vid_prof.height());
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
@@ -1053,7 +1056,7 @@ namespace rs2
             }
 
             int fps_constrain = usb2 ? 15 : 30;
-            auto resolution_constrain = usb2 ? std::make_pair(640, 480) : std::make_pair(1280, 720);
+            auto resolution_constrain = usb2 ? std::make_pair(640, 480) : default_resolution;
 
             // TODO: Once GLSL parts are properly optimised
             // and tested on all types of hardware
@@ -4637,7 +4640,12 @@ namespace rs2
                         }
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Start on-chip calibration process");
+                        ImGui::SetTooltip(  "This will improve the depth noise.\n"
+                                            "Point at a scene that normally would have > 50 %% valid depth pixels,\n"
+                                            "then press calibrate."
+                                            "The health-check will be calculated.\n"
+                                            "If >0.25 we recommend applying the new calibration.\n"
+                                            "“White wall” mode should only be used when pointing at a flat white wall with projector on");
 
                     if (ImGui::Selectable("Tare Calibration"))
                     {
@@ -4665,7 +4673,8 @@ namespace rs2
                         }
                     }
                     if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Start on-chip tare calibration process");
+                        ImGui::SetTooltip(  "Tare calibration is used to adjust camera absolute distance to flat target.\n" 
+                                            "User needs to enter the known ground truth");
 
                     has_autocalib = true;
                 }

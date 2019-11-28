@@ -252,6 +252,17 @@ namespace rs2
         draw_text(get_title().c_str(), x, y, height - 35);
     }
 
+    void rs2::notification_model::draw_dismiss(ux_window & win, int x, int y)
+    {
+        ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
+
+        string id = to_string() << "Dismiss" << "##" << index;
+        if (ImGui::Button(id.c_str(), { 100, 20 }))
+        {
+            dismiss(true);
+        }
+    }
+
     std::function<void()> notification_model::draw(ux_window& win, int w, int y, 
         std::shared_ptr<notification_model>& selected, std::string& error_message)
     {
@@ -382,13 +393,7 @@ namespace rs2
 
             if (enable_dismiss)
             {
-                ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
-
-                string id = to_string() << "Dismiss" << "##" << index;
-                if (ImGui::Button(id.c_str(), { 100, 20 }))
-                {
-                    dismiss(true);
-                }
+                draw_dismiss(win, x, y);
             }
             
             unset_color_scheme();

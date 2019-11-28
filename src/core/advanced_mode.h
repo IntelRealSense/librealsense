@@ -156,6 +156,7 @@ namespace librealsense
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
     private:
+        friend class auto_calibrated;
         void set_exposure(synthetic_sensor& sensor, const exposure_control& val);
         void set_auto_exposure(synthetic_sensor& sensor, const auto_exposure_control& val);
         void get_exposure(synthetic_sensor& sensor, exposure_control* ptr) const;

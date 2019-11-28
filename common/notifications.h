@@ -47,6 +47,7 @@ namespace rs2
         virtual int calc_height();
         virtual void draw_pre_effect(int x, int y) {}
         virtual void draw_content(ux_window& win, int x, int y, float t, std::string& error_message);
+        virtual void draw_dismiss(ux_window& win, int x, int y);
         virtual void draw_expanded(ux_window& win, std::string& error_message) {}
 
         virtual void dismiss(bool snooze) { dismissed = true; snoozed = snooze; }
@@ -139,6 +140,7 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
+        bool tare = false;
         float progress_speed = 5.f;
         std::chrono::system_clock::time_point last_progress_time;
         int last_progress = 0;
