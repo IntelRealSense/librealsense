@@ -660,9 +660,9 @@ namespace librealsense
     inline bool operator<(const stream_profile & lhs,
         const stream_profile & rhs)
     {
-        return (lhs.format < rhs.format ||
-            lhs.index < rhs.index && lhs.format != rhs.format ||
-            lhs.stream < rhs.stream);
+        if (lhs.format != rhs.format) return lhs.format < rhs.format;
+        if (lhs.index != rhs.index)   return lhs.index  < rhs.index;
+        return lhs.stream < rhs.stream;
     }
 
     struct stream_descriptor
