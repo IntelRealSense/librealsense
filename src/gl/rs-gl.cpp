@@ -114,7 +114,7 @@ int rs2_gl_is_frame_extendable_to(const rs2_frame* f, rs2_gl_extension extension
         if (!gpu->get_gpu_section().on_gpu()) return false;
         return true;
     }
-    default: return 0;
+    default: return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
