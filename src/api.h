@@ -482,8 +482,9 @@ inline void verify_version_compatibility(int api_version)
     else
     {
         // starting with 1.10.0, versions with same patch are compatible
+        // Incompatible versions differ on major, or with the executable's minor bigger than the library's one.
         if ((lrs_major(api_version) != lrs_major(runtime_api_version))
-            || (lrs_minor(api_version) != lrs_minor(runtime_api_version)))
+            || (lrs_minor(api_version) > lrs_minor(runtime_api_version)))
             report_version_mismatch(runtime_api_version, api_version);
     }
 }
