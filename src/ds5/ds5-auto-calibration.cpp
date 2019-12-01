@@ -4,6 +4,7 @@
 #include "ds5-auto-calibration.h"
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
+#include "ds5-private.h"
 
 namespace librealsense
 {
@@ -32,6 +33,7 @@ namespace librealsense
         {
             values[it.key()] = it.value();
         }
+
         return values;
     }
 
@@ -46,8 +48,10 @@ namespace librealsense
             }
         }
 
+        check_params();
+
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-        if (_speed == 4)
+        if (_speed == speed_white_wall)
             preset_recover = change_preset();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -55,8 +59,7 @@ namespace librealsense
         // Begin auto-calibration
         _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, _speed });
 
-        DirectSearchCalibrationResult result;
-        memset(&result, 0, sizeof(DirectSearchCalibrationResult));
+        DirectSearchCalibrationResult result{};
 
         int count = 0;
         bool done = false;
@@ -136,12 +139,15 @@ namespace librealsense
             }
         }
 
+        check_params();
+
         auto preset_recover = change_preset();
 
         auto param2 = (int)ground_truth_mm * 100;
-        auto param3 = (_average_step_count ) + (_step_count << 8) + (_accuracy << 16);
+       
+        tare_calibration_params param3{ (byte)_average_step_count, (byte)_step_count, (byte)_accuracy, 0};
 
-        _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3 });
+        _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3});
 
         DirectSearchCalibrationResult result;
 
@@ -227,6 +233,18 @@ namespace librealsense
         return recover_preset;
     }
 
+    void auto_calibrated::check_params()
+    {
+        if (_speed < speed_very_fast || _speed >  speed_white_wall)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << _speed << " is out of range (0 - 4).");
+        if(_average_step_count < 1 || _average_step_count > 30)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'number of frames to average' " << _average_step_count << " is out of range (1 - 30).");
+        if (_step_count < 5 || _step_count > 30)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'max iteration steps' " << _step_count << " is out of range (5 - 30).");
+        if(_accuracy < very_high || _accuracy > low)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << _accuracy << " is out of range (0 - 3).");
+    }
+
     void auto_calibrated::handle_calibration_error(rs2_dsc_status status) const
     {
         if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
@@ -254,6 +272,8 @@ namespace librealsense
 
     std::vector<uint8_t> auto_calibrated::get_calibration_results(float* health) const
     {
+        using namespace ds;
+
         // Get new calibration from the firmware
         auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_calibration_result});
         if (res.size() < sizeof(DscResultBuffer))
@@ -278,6 +298,8 @@ namespace librealsense
 
     std::vector<uint8_t> auto_calibrated::get_calibration_table() const
     {
+        using namespace ds;
+
         std::vector<uint8_t> res;
 
         // Fetch current calibration using GETINITCAL command
@@ -307,6 +329,8 @@ namespace librealsense
 
     void auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
     {
+        using namespace ds;
+
         table_header* hd = (table_header*)(calibration.data());
         uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
         command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);

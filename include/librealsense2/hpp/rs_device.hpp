@@ -289,7 +289,7 @@ return results;
             : device(d.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_AUTO_CALIBRARED_DEVICE, &e) == 0 && !e)
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, &e) == 0 && !e)
             {
                 _dev.reset();
             }
@@ -298,14 +298,19 @@ return results;
 
         /**
         * This will improve the depth noise.
-        * \param[in] timeout_ms         timeout in ms
-        * \param[in] json_content       json file to configure speed parameter
+        * \param[in] timeout_ms         Timeout in ms
+        * \param[in] json_content       Json file to configure speed on chip calibration parameters:
+                                            {
+                                              "speed": 3
+                                            }
+                                        speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow
+                                        if json is nullptr it will be ignored and calibration will use the defualt parameters
         * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
                                         [0, 0.15) - Good
                                         [0.15, 0.25) - Can be Improved
                                         [0.25, ) - Requires Calibration
-        * \param[in] callback           callback to get progress notifications
-        * \return                       new calibration table
+        * \param[in] callback           Callback to get progress notifications
+        * \return                       Nnew calibration table
         */
         template<class T>
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health, T callback) const
@@ -329,14 +334,19 @@ return results;
         }
 
         /**
-        * This will improve the depth noise (plane fit RMS).
-        * \param[in] timeout_ms      timeout in ms
-        * \param[in] json_content    json file to configure speed parameter
-        * \param[out] health         Calibration Health-Check captures how far camera calibration is from the optimal one
-                                     [0, 0.15) - Good
-                                     [0.15, 0.25) - Can be Improved
-                                     [0.25, ) - Requires Calibration
-        * \return                    new calibration table
+        * This will improve the depth noise.
+        * \param[in] timeout_ms         Timeout in ms
+        * \param[in] json_content       Json file to configure speed on chip calibration parameters:
+                                            {
+                                              "speed": 3
+                                            }
+                                        speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                        if json is nullptr it will be ignored and calibration will use the defualt parameters
+        * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                        [0, 0.15) - Good
+                                        [0.15, 0.25) - Can be Improved
+                                        [0.25, ) - Requires Calibration
+        * \return                       Nnew calibration table
         */
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health) const
         {
@@ -359,14 +369,22 @@ return results;
 
         /**
         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-        * \param[in] ground_truth_mm     ground truth in mm
-        * \param[in] timeout_ms          timeout in ms
-        * \param[in] json_content        json file to configure: average step count - number of frames to average,
-                                                                 step Count - max iteration steps
-                                                                 Accuracy - Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)
+        * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+        * \param[in] timeout_ms          Timeout in ms
+        * \param[in] json_content        Json file to configure tare calibration parametars:
+                                            {
+                                              "average_step_count": 20,
+                                              "step_count": 20,
+                                              "accuracy": 2
+                                            }
+                                            average step count - number of frames to average, must be between 1 - 30, default = 20
+                                            step count - max iteration steps, must be between 5 - 30, default = 10
+                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                         if json is nullptr it will be ignored and calibration will use the defualt parameters
+        * \param[in] content_size        Json file size if its 0 the json will be ignored and calibration will use the defualt parameters
         * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
-        * \param[in] callback            callback to get progress notifications
-        * \return                        new calibration table
+        * \param[in] callback            Callback to get progress notifications
+        * \return                        New calibration table
         */
         template<class T>
         std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health, T callback) const
@@ -391,13 +409,21 @@ return results;
 
         /**
         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-        * \param[in] ground_truth_mm     ground truth in mm
-        * \param[in] timeout_ms          timeout in ms
-        * \param[in] json_content        json file to configure: average step count - number of frames to average,
-                                                                step Count - max iteration steps
-                                                                Accuracy - Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)
+        * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+        * \param[in] timeout_ms          Timeout in ms
+        * \param[in] json_content        Json file to configure tare calibration parametars:
+                                            {
+                                              "average_step_count": 20,
+                                              "step_count": 20,
+                                              "accuracy": 2
+                                            }
+                                            average step count - number of frames to average, must be between 1 - 30, default = 20
+                                            step count - max iteration steps, must be between 5 - 30, default = 10
+                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                         if json is nullptr it will be ignored and calibration will use the defualt parameters
+        * \param[in] content_size        Json file size if its 0 the json will be ignored and calibration will use the defualt parameters
         * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
-        * \return                        new calibration table
+        * \return                        New calibration table
         */
         std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health) const
         {
@@ -421,7 +447,7 @@ return results;
 
         /**
         *  Read current calibration table from flash.
-        * \return    calibration table
+        * \return    Calibration table
         */
         std::vector<uint8_t> get_calibration_table()
         {
@@ -445,7 +471,7 @@ return results;
 
         /**
         *  Set current table to dynamic area.
-        * \param[in]     calibration table
+        * \param[in]     Calibration table
         */
         void set_calibration_table(const std::vector<uint8_t>& calibration)
         {

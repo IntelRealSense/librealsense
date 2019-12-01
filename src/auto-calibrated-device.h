@@ -18,5 +18,5 @@ namespace librealsense
         virtual void set_calibration_table(const std::vector<uint8_t>& calibration) = 0;
         virtual void reset_to_factory_calibration() const = 0;
     };
-    MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRARED_DEVICE, auto_calibrated_interface);
+    MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, auto_calibrated_interface);
 }

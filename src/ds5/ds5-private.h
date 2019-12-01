@@ -309,6 +309,7 @@ namespace librealsense
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
+#pragma pack(push, 1)
         struct table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian
@@ -317,6 +318,7 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
+#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {

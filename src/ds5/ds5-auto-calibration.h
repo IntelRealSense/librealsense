@@ -6,21 +6,18 @@
 #include "auto-calibrated-device.h"
 #include "../core/advanced_mode.h"
 
+const int DEFUALT_AVERAGE_STEP_COUNT = 20;
+const int DEFUALT_STEP_COUNT = 10;
+const int DEFUALT_ACCURACY = 2;
+const int DEFUALT_SPEED = 3;
+
+
 namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
     {
 #pragma pack(push, 1)
 #pragma pack(1)
-        struct table_header
-        {
-            uint16_t version;        // major.minor. Big-endian
-            uint16_t table_type;     // ctCalibration
-            uint32_t table_size;     // full size including: TOC header + TOC + actual tables
-            uint32_t param;          // This field content is defined ny table type
-            uint32_t crc32;          // crc of all the actual table data excluding header/CRC
-        };
-
         struct DirectSearchCalibrationResult
         {
             uint16_t status;      // DscStatus
@@ -33,7 +30,6 @@ namespace librealsense
             uint32_t rightPy;   // 1/1000000 of normalized unit
             float healthCheck;
             float rightRotation[9]; // Right rotation
-            //uint16_t results[0]; // 1/100 of a percent
         };
 
         struct DscResultParams
@@ -58,8 +54,40 @@ namespace librealsense
             RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
             RS2_DSC_STATUS_BURN_SUCCESS = 5,
             RS2_DSC_STATUS_BURN_ERROR = 6,
-            RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7,
+            RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
         };
+
+        enum speed
+        {
+            speed_very_fast = 0,
+            speed_fast = 1,
+            speed_medium = 2,
+            speed_slow = 3,
+            speed_white_wall = 4
+        };
+
+        enum subpixel_accuracy
+        {
+            very_high = 0, //(0.025%)
+            high = 1, //(0.05%)
+            medium = 2, //(0.1%)
+            low = 3 //(0.2%)
+        };
+
+        struct tare_params3
+        {
+            byte average_step_count;
+            byte step_count;
+            byte accuracy;
+            byte reserved;
+        };
+
+        union tare_calibration_params
+        {
+            tare_params3 param3_struct;
+            int param3;
+        };
+
 #pragma pack(pop)
 
     public:
@@ -76,13 +104,15 @@ namespace librealsense
         void handle_calibration_error(rs2_dsc_status status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
+        void check_params();
+
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
 
-        int _average_step_count = 20;
-        int _step_count = 20;
-        int _accuracy = 2;
-        int _speed = 3;
+        int _average_step_count = DEFUALT_AVERAGE_STEP_COUNT;
+        int _step_count = DEFUALT_STEP_COUNT;
+        int _accuracy = DEFUALT_ACCURACY;
+        int _speed = DEFUALT_SPEED;
     };
 
 }

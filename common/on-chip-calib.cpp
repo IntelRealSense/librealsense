@@ -16,61 +16,6 @@
 
 namespace rs2
 {
-#pragma pack(push, 1)
-#pragma pack(1)
-    struct table_header
-    {
-        uint16_t version;        // major.minor. Big-endian
-        uint16_t table_type;     // ctCalibration
-        uint32_t table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t param;          // This field content is defined ny table type
-        uint32_t crc32;          // crc of all the actual table data excluding header/CRC
-    };
-
-    enum rs2_dsc_status : uint16_t
-    {
-        RS2_DSC_STATUS_SUCCESS = 0, /**< Self calibration succeeded*/
-        RS2_DSC_STATUS_RESULT_NOT_READY = 1, /**< Self calibration result is not ready yet*/
-        RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW = 2, /**< There are too little textures in the scene*/
-        RS2_DSC_STATUS_EDGE_TOO_CLOSE = 3, /**< Self calibration range is too small*/
-        RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
-        RS2_DSC_STATUS_BURN_SUCCESS = 5,
-        RS2_DSC_STATUS_BURN_ERROR = 6,
-        RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7,
-    };
-
-#define MAX_STEP_COUNT 256
-
-    struct DirectSearchCalibrationResult
-    {
-        uint32_t opcode;
-        uint16_t status;      // DscStatus
-        uint16_t stepCount;
-        uint16_t stepSize; // 1/1000 of a pixel
-        uint32_t pixelCountThreshold; // minimum number of pixels in
-                                      // selected bin
-        uint16_t minDepth;  // Depth range for FWHM
-        uint16_t maxDepth;
-        uint32_t rightPy;   // 1/1000000 of normalized unit
-        float healthCheck;
-        float rightRotation[9]; // Right rotation
-        //uint16_t results[0]; // 1/100 of a percent
-    };
-
-    typedef struct
-    {
-        uint16_t m_status;
-        float    m_healthCheck;
-    } DscResultParams;
-
-    typedef struct
-    {
-        uint16_t m_paramSize;
-        DscResultParams m_dscResultParams;
-        uint16_t m_tableSize;
-    } DscResultBuffer;
-#pragma pack(pop)
-
     void on_chip_calib_manager::stop_viewer(invoker invoke)
     {
         try
@@ -362,10 +307,6 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        rs2_dsc_status status = RS2_DSC_STATUS_BURN_SUCCESS;
-
-        DirectSearchCalibrationResult result;
-
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
                ",\n \"average_step_count\":" << average_step_count <<
