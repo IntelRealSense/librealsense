@@ -143,11 +143,12 @@ TEST_CASE("query_controls", "[live][usb]")
         auto dev = usb_enumerator::create_usb_device(info);
         if (!dev)
             continue;
-        std::vector<rs_usb_interface> interfaces = dev->get_interfaces();
-        REQUIRE(interfaces.size() > 0);
-        if (0 !=info.mi)        // Lookup for controls interface only
+        if (0 != info.mi)        // Lookup for controls interface only
             continue;
         auto m = dev->open(info.mi);
+
+        std::vector<rs_usb_interface> interfaces = dev->get_interfaces();
+        REQUIRE(interfaces.size() > 0);
 
         //uvc units, rs uvc api is not implemented yet so we use hard coded mapping for reading the PUs
         std::map<int,int> processing_units =
