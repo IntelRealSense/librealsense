@@ -126,13 +126,7 @@ public class Streamer {
                 configStream(config);
             if(mListener != null)
                 mListener.config(config);
-            try (PipelineProfile pp = mPipeline.start(config)) {
-                List<Sensor> sensors = pp.getDevice().querySensors();
-                for (Sensor sen : sensors) {
-                    if (sen.supports(Option.GLOBAL_TIME_ENABLED))
-                        sen.setValue(Option.GLOBAL_TIME_ENABLED, 0);
-                }
-            }
+            mPipeline.start(config);
         }
     }
 
