@@ -23,6 +23,7 @@ namespace openvino_helpers
 {
     detected_face::detected_face(
         size_t id,
+        std::string const & label,
         cv::Rect const & location,
         cv::Rect const & depth_location,
         float intensity,
@@ -35,6 +36,7 @@ namespace openvino_helpers
         , _intensity( intensity )
         , _depth( depth )
         , _id( id )
+        , _label( label )
         , _age( age )
         , _maleScore( male_score > 0.5f ? male_score - 0.5f : 0.f )
         , _femaleScore( male_score > 0.5f ? 0.f : 0.5f - male_score )

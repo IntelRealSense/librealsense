@@ -28,9 +28,6 @@ should be pointed to using a CMake `OpenCV_DIR` entry. Please refer to
 
 See the Windows-specific OpenVINO guide [here](https://docs.openvinotoolkit.org/latest/_docs_install_guides_installing_openvino_windows.html).
 
-> NOTE: the code here will change for you and is given only as an example.
-> Your experience may vary!
-
 After downloading and installing OpenVINO in `C:\work\openvino\openvino_2019.3.379`:
 
 1. Open a shell window
@@ -84,6 +81,27 @@ same directory as the .exe. If the .exe is at `c:/work/lrs/build/Release` then
 place any missing DLLs or models in the same directory, or change the code to
 look in a different place.
 
+For example, the following OpenCV DLLs were needed for the non-Debug executable,
+and were copied from `${OpenCV_DIR}/bin` to the `RelWithDebInfo` directory where
+the .exe is written:
+
+    opencv_core411.dll
+    opencv_highgui411.dll
+    opencv_imgcodecs411.dll
+    opencv_imgproc411.dll
+    opencv_videoio411.dll
+
+The pre-trained model files used by the examples are provided automatically when
+CMake is run, and are placed in each sample's build directory. For example, the
+following three are placed in `build/wrappers/openvino/face`:
+
+    README.txt
+    face-detection-adas-0001.xml
+    face-detection-adas-0001.bin
+
+Pre-trained models were taken from the [OpenVINO model zoo](https://software.intel.com/en-us/openvino-toolkit/documentation/pretrained-models),
+and [public models](https://software.intel.com/en-us/articles/model-downloader-essentials)
+were converted using the Model Converter.
 
 ### Linux
 

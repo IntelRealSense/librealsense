@@ -18,6 +18,7 @@ namespace openvino_helpers
     class detected_face
     {
         size_t _id;           // Some unique identifier that assigned to us
+        std::string _label;   // Any string assigned to us in the ctor
         float _age;
         float _maleScore;     // Cumulative (see updateGender)
         float _femaleScore;   // Cumulative
@@ -30,7 +31,8 @@ namespace openvino_helpers
     public:
         using ptr = std::shared_ptr< detected_face >;
 
-        explicit detected_face( size_t id, cv::Rect const & location, cv::Rect const & depth_location = cv::Rect {}, float intensity = 1, float depth = 0, float male_score = 0.5, float age = 0 );
+        explicit detected_face( size_t id, std::string const & label, cv::Rect const & location,
+            cv::Rect const & depth_location = cv::Rect {}, float intensity = 1, float depth = 0, float male_score = 0.5, float age = 0 );
 
         // Update the location and intensity of the face
         void move( cv::Rect const & location, cv::Rect const & depth_location = cv::Rect {}, float intensity = 1, float depth = 0 )
@@ -54,6 +56,7 @@ namespace openvino_helpers
         bool is_male() const { return _maleScore > _femaleScore; }
         bool is_female() const { return !is_male(); }
         size_t get_id() const { return _id; }
+        std::string const & get_label () const { return _label; }
     };
 
     typedef std::list< detected_face::ptr > detected_faces;

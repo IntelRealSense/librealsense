@@ -130,6 +130,19 @@ namespace openvino_helpers
 
 
     /*
+    */
+    inline std::vector< std::string > read_labels( std::string const & filename )
+    {
+        std::vector< std::string > labels;
+        std::ifstream inputFile( filename );
+        std::copy( std::istream_iterator< std::string >( inputFile ),
+            std::istream_iterator< std::string >(),
+            std::back_inserter( labels ) );
+        return labels;
+    }
+
+
+    /*
         Allow manipulation of a face bounding box so as to make additional face analytic networks more
         effective.
 

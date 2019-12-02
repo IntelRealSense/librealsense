@@ -47,5 +47,8 @@ namespace openvino_helpers
 
         void enqueue( const cv::Mat &frame );
         std::vector< Result > fetch_results();
+
+        float get_width() const { return _width; }
+        float get_height() const { return _height; }
     };
 }

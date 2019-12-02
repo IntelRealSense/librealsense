@@ -2,7 +2,7 @@
 
 ## Overview
 This example demonstrates OpenVINO™ toolkit integration with facial detection, using
-basic depth information to approximate distance.
+depth information to approximate distance.
 
 <p align="center"><img src="rs-face-vino.jpg" alt="screenshot"/></p>
 
@@ -63,11 +63,14 @@ threshold, an existing face is moved rather than a new face created.
         face_ptr->move( rect );
 ```
 
-### Depth estimation
+### Depth calculation
 
-Depth is arrived at very simplistically: the center coordinates of each face on
-the color frame is converted to a fraction in terms of the frame width and height,
-and then re-calculated in terms of the depth frame's width and height.
+We make sure to align the depth and color frames, such that the center of each
+face's bounding box in the color frame corresponds to the same pixel in the
+depth. Then it is easy to simply get the depth:
 
-This naïve way is OK for basic estimation, but the frames should ideally be
-aligned if proper correspondence is required. See the [rs-face-dlib](../../dlib/face) example.
+```cpp
+    auto center_x = r.x + r.width / 2;
+    auto center_y = r.y + r.height / 2;
+    auto d = depth_frame.get_distance( center_x, center_y );
+```

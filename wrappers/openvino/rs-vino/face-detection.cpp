@@ -22,7 +22,7 @@ namespace openvino_helpers
         int maxBatch, bool isBatchDynamic,
         bool doRawOutputMessages
     )
-        : base_detection( "Face Detection", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages )
+        : base_detection( "face detection", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages )
         , _detection_threshold( detectionThreshold )
         , _max_results( 0 )
         , _n_enqued_frames( 0 ), _width( 0 ), _height( 0 )
@@ -59,13 +59,13 @@ namespace openvino_helpers
 
     CNNNetwork face_detection::read_network()
     {
-        LOG(INFO) << "Loading Face Detection network from: " << pathToModel;
+        LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
 
         CNNNetReader netReader;
         /** Read network model **/
         netReader.ReadNetwork( pathToModel );
         /** Set batch size **/
-        LOG(DEBUG) << "Batch size is set to " << maxBatch;
+        //LOG(DEBUG) << "Batch size is set to " << maxBatch;
         netReader.getNetwork().setBatchSize( maxBatch );
 
         /** Extract model name and load its weights **/
@@ -74,7 +74,6 @@ namespace openvino_helpers
 
         /** SSD-based network should have one input and one output **/
 
-        LOG(DEBUG) << "Checking Face Detection network inputs";
         InputsDataMap inputInfo( netReader.getNetwork().getInputsInfo() );
         if( inputInfo.size() != 1 )
             throw std::logic_error( "Face Detection network should have only one input" );
@@ -82,7 +81,6 @@ namespace openvino_helpers
         InputInfo::Ptr inputInfoFirst = inputInfo.begin()->second;
         inputInfoFirst->setPrecision( Precision::U8 );
 
-        LOG(DEBUG) << "Checking Face Detection network outputs";
         OutputsDataMap outputInfo( netReader.getNetwork().getOutputsInfo() );
         if( outputInfo.size() != 1 )
             throw std::logic_error(

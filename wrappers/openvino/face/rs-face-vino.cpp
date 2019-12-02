@@ -25,8 +25,8 @@ int main(int argc, char * argv[]) try
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
-    // Start streaming with default recommended configuration
-    rs2::pipeline_profile profile = pipe.start();
+    pipe.start();
+    rs2::align align_to( RS2_STREAM_COLOR );
 
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
@@ -71,7 +71,7 @@ int main(int argc, char * argv[]) try
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
         // Make sure the frames are spatially aligned
-        //data = align_to.process( data );
+        data = align_to.process( data );
 
         auto color_frame = data.get_color_frame();
         auto depth_frame = data.get_depth_frame();
@@ -112,7 +112,7 @@ int main(int argc, char * argv[]) try
             auto face_ptr = openvino_helpers::find_face( rect, prev_faces );
             if( !face_ptr )
                 // New face
-                face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, rect );
+                face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, std::string(), rect );
             else
                 // Existing face; just update its parameters
                 face_ptr->move( rect );
@@ -130,8 +130,8 @@ int main(int argc, char * argv[]) try
             cv::rectangle( image, r, color );
 
             // Get a very crude approximation (not aligned) of the center in the depth frame, and output the distance to it
-            auto center_x = (r.x + r.width / 2) * depth_frame.get_width() / color_frame.get_width();
-            auto center_y = (r.y + r.height / 2) * depth_frame.get_height() / color_frame.get_height();
+            auto center_x = r.x + r.width / 2;
+            auto center_y = r.y + r.height / 2;
             auto d = depth_frame.get_distance( center_x, center_y );
             if( d )
             {

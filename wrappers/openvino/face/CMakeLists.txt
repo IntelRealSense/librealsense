@@ -15,25 +15,6 @@ set(DEPENDENCIES ${deps} ${OpenCV_LIBS})
 include_directories( ../../opencv )
 
 
-set(OPENVINO_FILES
-	../rs-vino/base-detection.cpp
-	../rs-vino/base-detection.h
-	../rs-vino/face-detection.cpp
-	../rs-vino/face-detection.h
-	../rs-vino/detected-face.cpp
-	../rs-vino/detected-face.h
-	../rs-vino/openvino-helpers.h
-	${IE_ROOT_DIR}/src/extension/ext_list.hpp
-)
-
-
-include_directories( ../../../third-party/easyloggingpp/src )
-set( ELPP_FILES
-    ../../../third-party/easyloggingpp/src/easylogging++.cc
-    ../../../third-party/easyloggingpp/src/easylogging++.h
-)
-
-
 add_executable(rs-face-vino
 	rs-face-vino.cpp
 	${OPENVINO_FILES}
@@ -41,7 +22,6 @@ add_executable(rs-face-vino
 )
 
 source_group("OpenVINO" FILES ${OPENVINO_FILES})
-
 source_group("EasyLogging++" FILES ${ELPP_FILES})
 
 set_property(TARGET rs-face-vino PROPERTY CXX_STANDARD 11)
@@ -62,20 +42,6 @@ install(
 
 # Download model files -- these will go into build/wrappers/openvino/face, which is also where the sample
 # is run from in Visual Studio
-function(dl_file url filename sha1)
-    set(path "${CMAKE_CURRENT_BINARY_DIR}/${filename}")
-    if(NOT EXISTS "${path}")
-	    message(STATUS "Downloading ${filename} into ${CMAKE_CURRENT_BINARY_DIR}")
-        file(DOWNLOAD "${url}/${filename}" "${path}"
-            EXPECTED_HASH SHA1=${sha1}
-            STATUS status)
-        list(GET status 0 error_code)
-        if (NOT ${error_code} EQUAL 0)
-            message(FATAL_ERROR "Download TM2 firmwnare (${status}) - ${url}")
-        endif()
-    endif()
-endfunction()
-set(MODEL_SRC_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/rs-tests/OpenVINO_data")
-dl_file( "${MODEL_SRC_URL}"  "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
-dl_file( "${MODEL_SRC_URL}"  "face-detection-adas-0001.bin"  "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
-dl_file( "${MODEL_SRC_URL}"  "face-detection-adas-0001.xml"  "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
+dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+dl_vino_model( "face-detection-adas-0001.bin"  "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
+dl_vino_model( "face-detection-adas-0001.xml"  "11c36f6e4488b2f5437ccff9f330d02545087ab3" )

@@ -20,8 +20,6 @@ namespace openvino_helpers
         , maxBatch( maxBatch ), isBatchDynamic( isBatchDynamic ), isAsync( isAsync )
         , enablingChecked( false ), _enabled( false ), doRawOutputMessages( doRawOutputMessages )
     {
-        if( isAsync )
-            LOG(DEBUG) << "Use async mode for " + topoName;
     }
 
 
@@ -72,7 +70,7 @@ namespace openvino_helpers
                 config[PluginConfigParams::KEY_DYN_BATCH_ENABLED] = PluginConfigParams::YES;
         }
 
-        LOG(INFO) << "Loading " << topoName << " model to the " << deviceName << " device";
+        //LOG(INFO) << "Loading " << topoName << " model to the " << deviceName << " device";
         net = ie.LoadNetwork( read_network(), deviceName, config );
     }
 }
