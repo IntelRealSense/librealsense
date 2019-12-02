@@ -12,6 +12,7 @@
 #include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
+#include "ds5-auto-calibration.h"
 
 namespace librealsense
 {
@@ -28,7 +29,7 @@ namespace librealsense
         const hw_monitor& _hw_monitor;
     };
 
-    class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable
+    class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -51,6 +52,10 @@ namespace librealsense
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
         void hardware_reset() override;
+
+
+       
+
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         platform::usb_spec get_usb_spec() const;

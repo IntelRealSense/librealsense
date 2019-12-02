@@ -241,6 +241,57 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image
 */
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
 
+/**
+* This will improve the depth noise.
+* \param[in] timeout_ms         Timeout in ms
+* \param[in] json_content       Json file to configure speed on chip calibration parameters:
+                                    {
+                                      "speed": 3
+                                    }
+                                speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                if json is nullptr it will be ignored and calibration will use the defualt parameters
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.15) - Good
+                                [0.15, 0.25) - Can be Improved
+                                [0.25, ) - Requires Calibration
+* \param[in] callback           Callback to get progress notifications
+* \return                       New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error);
+
+/**
+* This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+* \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+* \param[in] timeout_ms          Timeout in ms
+* \param[in] json_content        Json file to configure tare calibration parametars:
+                                    {
+                                      "average_step_count": 20,
+                                      "step_count": 20,
+                                      "accuracy": 2
+                                    }
+                                    average step count - number of frames to average, must be between 1 - 30, default = 20
+                                    step count - max iteration steps, must be between 5 - 30, default = 10
+                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                 if json is nullptr it will be ignored and calibration will use the defualt parameters
+* \param[in] content_size        Json file size if its 0 the json will be ignored and calibration will use the defualt parameters
+* \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
+* \param[in] callback            Callback to get progress notifications
+* \return                        New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error);
+
+/**
+*  Read current calibration table from flash.
+* \return    Calibration table
+*/
+const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* dev, rs2_error** error);
+
+/**
+*  Set current table to dynamic area.
+* \param[in]     Calibration table
+*/
+void rs2_set_calibration_table(const rs2_device* device, const void* calibration, int calibration_size, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

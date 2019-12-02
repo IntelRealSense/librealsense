@@ -167,6 +167,7 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            SETINTCAL       = 0x16,     // Set Internal sub calibration table
             LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
@@ -179,6 +180,7 @@ namespace librealsense
             SETAEROI        = 0x44,     // set auto-exposure region of interest
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
+            CALIBRECALC     = 0x51,     // Calibration recalc and update on the fly
             GET_EXTRINSICS  = 0x53,     // get extrinsics
             CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
             SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
@@ -192,6 +194,7 @@ namespace librealsense
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
+            AUTO_CALIB      = 0x80      // auto calibration commands
         };
 
         #define TOSTRING(arg) #arg
@@ -306,6 +309,7 @@ namespace librealsense
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
+#pragma pack(push, 1)
         struct table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian
@@ -314,6 +318,7 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
+#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {

@@ -186,6 +186,7 @@ namespace librealsense
             CASE(GLOBAL_TIMER)
             CASE(L500_DEPTH_SENSOR)
             CASE(TM2_SENSOR)
+            CASE(AUTO_CALIBRATED_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

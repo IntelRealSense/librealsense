@@ -47,6 +47,7 @@ namespace rs2
         virtual int calc_height();
         virtual void draw_pre_effect(int x, int y) {}
         virtual void draw_content(ux_window& win, int x, int y, float t, std::string& error_message);
+        virtual void draw_dismiss(ux_window& win, int x, int y);
         virtual void draw_expanded(ux_window& win, std::string& error_message) {}
 
         virtual void dismiss(bool snooze) { dismissed = true; snoozed = snooze; }

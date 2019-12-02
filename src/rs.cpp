@@ -39,7 +39,7 @@
 #include "software-device.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "global_timestamp_reader.h"
-
+#include "auto-calibrated-device.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1159,6 +1159,8 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                   != nullptr;
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
+        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface) != nullptr;
+
         default:
             return false;
     }
@@ -2283,16 +2285,32 @@ HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 void rs2_reset_to_factory_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    auto tm2 = VALIDATE_INTERFACE(&device->device->get_sensor(0), librealsense::tm2_sensor_interface);
-    tm2->reset_to_factory_calibration();
+    auto tm2 = dynamic_cast<tm2_sensor_interface*>(&device->device->get_sensor(0));
+    if (tm2)
+        tm2->reset_to_factory_calibration();
+    else
+    {
+        auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
+        if (!auto_calib)
+            throw std::runtime_error("this device does not supports reset to factory calibration");
+        auto_calib->reset_to_factory_calibration();
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs2_write_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    auto tm2 = VALIDATE_INTERFACE(&device->device->get_sensor(0), librealsense::tm2_sensor_interface);
-    tm2->write_calibration();
+    auto tm2 = dynamic_cast<tm2_sensor_interface*>(&device->device->get_sensor(0));
+    if (tm2)
+        tm2->write_calibration();
+    else
+    {
+        auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
+        if (!auto_calib)
+            throw std::runtime_error("this device does not supports auto calibration");
+        auto_calib->write_calibration();
+    }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
@@ -2575,3 +2593,68 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_A
     fwud->enter_update_state();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
+
+const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(health);
+
+    if (content_size > 0)
+        VALIDATE_NOT_NULL(json_content);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    std::vector<uint8_t> buffer;
+
+    std::string json((char*)json_content, (char*)json_content + content_size);
+    if (progress_callback == nullptr)
+        buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, nullptr);
+    else
+        buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+
+    return new rs2_raw_data_buffer { buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(health);
+
+    if(content_size > 0)
+        VALIDATE_NOT_NULL(json_content);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    std::vector<uint8_t> buffer;
+    std::string json((char*)json_content, (char*)json_content + content_size);
+    if (progress_callback == nullptr)
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, nullptr);
+    else
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+   
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    auto buffer = auto_calib->get_calibration_table();
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+void rs2_set_calibration_table(const rs2_device* device, const void* calibration, int calibration_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(calibration);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    std::vector<uint8_t> buffer((uint8_t*)calibration, (uint8_t*)calibration + calibration_size);
+    auto_calib->set_calibration_table(buffer);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(,calibration, device)
