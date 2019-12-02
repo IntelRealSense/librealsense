@@ -642,8 +642,6 @@ namespace librealsense
     float ds5_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
-        if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS431 Development. to be removed. TODO
-            return 55;
 
         auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
@@ -890,10 +888,10 @@ namespace librealsense
 
         if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
             {
-            if (!mipi_sensor)
-            {
-                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-			}
+                if (!mipi_sensor)
+                {
+                    _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+			    }
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))
