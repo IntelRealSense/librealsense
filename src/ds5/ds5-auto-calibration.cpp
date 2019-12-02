@@ -322,6 +322,11 @@ namespace librealsense
 
     void auto_calibrated::write_calibration() const
     {
+        using namespace ds;
+
+        if(_curr_calibration.size() < sizeof(table_header))
+            throw std::runtime_error("Write calibration can be called only after set calibration table was called");
+
         command write_calib( ds::SETINTCAL, set_coefficients );
         write_calib.data = _curr_calibration;
         _hw_monitor->send(write_calib);

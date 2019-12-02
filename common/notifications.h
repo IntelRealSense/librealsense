@@ -140,7 +140,6 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
-        bool tare = false;
         float progress_speed = 5.f;
         std::chrono::system_clock::time_point last_progress_time;
         int last_progress = 0;

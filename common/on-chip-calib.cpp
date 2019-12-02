@@ -430,7 +430,7 @@ namespace rs2
 
         auto health = get_manager().get_health();
         auto recommend_keep = health > 0.15;
-        if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !tare)
+        if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !get_manager().tare)
         {
             auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
@@ -455,8 +455,6 @@ namespace rs2
         ImVec4 shadow{ 1.f, 1.f, 1.f, 0.1f };
         ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
         { float(x + width), float(y + 25) }, ImColor(shadow));
-
-        tare = update_state == RS2_CALIB_STATE_TARE_INPUT;
 
         if (update_state != RS2_CALIB_STATE_COMPLETE)
         {
@@ -666,6 +664,7 @@ namespace rs2
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
+                    get_manager().tare = false;
                     get_manager().start(shared_from_this());
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
@@ -873,7 +872,7 @@ namespace rs2
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
-                if (recommend_keep || tare)
+                if (recommend_keep || get_manager().tare)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
@@ -897,7 +896,7 @@ namespace rs2
 
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                 }
-                if (recommend_keep || tare)
+                if (recommend_keep || get_manager().tare)
                 {
                     ImGui::PopStyleColor(2);
                 }

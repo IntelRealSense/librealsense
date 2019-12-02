@@ -85,7 +85,7 @@ namespace librealsense
 #pragma pack(pop)
 
         const int DEFAULT_AVERAGE_STEP_COUNT = 20;
-        const int DEFAULT_STEP_COUNT = 10;
+        const int DEFAULT_STEP_COUNT = 20;
         const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
         const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
 

@@ -49,7 +49,7 @@ namespace rs2
 
         uint32_t ground_truth = 2500;
         int average_step_count = 20;
-        int step_count = 10;
+        int step_count = 20;
         int accuracy = 2;
         int speed = 3;
         bool tare = false;
