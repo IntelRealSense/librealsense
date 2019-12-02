@@ -12,9 +12,12 @@ import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.MotionStreamProfile;
+import com.intel.realsense.librealsense.Option;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.RsContext;
+import com.intel.realsense.librealsense.Sensor;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
