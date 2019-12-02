@@ -40,6 +40,9 @@
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> ds5_depth_fourcc_to_rs2_format = {
+        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
         {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
         {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
@@ -51,6 +54,10 @@ namespace librealsense
         
     };
     std::map<uint32_t, rs2_stream> ds5_depth_fourcc_to_rs2_stream = {
+        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_INFRARED},
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_INFRARED},
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
@@ -553,6 +560,9 @@ namespace librealsense
 
         depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
         depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
+
+        depth_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
+        depth_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_INFRARED));
 
         return depth_ep;
     }

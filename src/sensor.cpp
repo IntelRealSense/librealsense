@@ -1234,19 +1234,10 @@ namespace librealsense
     {
         // Add the missing data to the desired source profile.
         // This is needed because we duplicate the source profile into multiple target profiles in the init_stream_profiles() method.
-        
-        //auto&& target_profiles = _source_to_target_profiles_map[source_profile];
 
-        //// find the closest target profile to the source profile, if there is none, just take the first.
-        //auto best_match = std::find_if(target_profiles.begin(), target_profiles.end(),
-        //    [source_profile](const std::shared_ptr<stream_profile_interface>& sp)
-        //{
-        //    return source_profile->get_format() == sp->get_format();
-        //});
+        // Update the source profile's fields with the correlated target profile.
+        // This profile will be propagated to the generated frame received from the backend sensor.
 
-        //// Update the source profile's fields with the correlated target profile.
-        //// This profile will be propagated to the generated frame received from the backend sensor.
-        //auto&& correlated_target_profile = best_match != target_profiles.end() ? *best_match : target_profiles.front();
         auto source_profile_ = _target_to_source_profiles_map[to_profile(target.get())];
         auto source_profile = source_profile_[0];
         source_profile->set_stream_index(target->get_stream_index());
