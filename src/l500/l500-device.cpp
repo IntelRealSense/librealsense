@@ -173,6 +173,26 @@ namespace librealsense
         );
 
         depth_ep->register_processing_block(
+            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
+            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH} },
+            [weak_is_zo_enabled_opt]() {
+                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
+                auto z16rot = std::make_shared<identity_processing_block>();
+                auto y8rot = std::make_shared<identity_processing_block>();
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+
+                auto cpb = std::make_shared<composite_processing_block>();
+                cpb->add(z16rot);
+                cpb->add(y8rot);
+                cpb->add(sync);
+                cpb->add(zo);
+
+                return cpb;
+            }
+        );
+
+        depth_ep->register_processing_block(
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8}, {RS2_FORMAT_RAW8} },
             {
                 {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution},
@@ -199,15 +219,19 @@ namespace librealsense
 
         depth_ep->register_processing_block(
             { {RS2_FORMAT_Y8} },
-            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1, 0, 0, 0, &rotate_resolution} },
+            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0, 0, 0, 0, &rotate_resolution} },
             []() { return std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME); }
         );
+
+        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED));
 
         depth_ep->register_processing_block(
             { {RS2_FORMAT_RAW8} },
             { {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution} },
             []() { return std::make_shared<confidence_rotation_transform>(); }
         );
+
+        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE));
 
         return depth_ep;
     }

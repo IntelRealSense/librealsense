@@ -94,7 +94,7 @@ namespace librealsense
     std::shared_ptr<synthetic_sensor> sr300_camera::create_color_device(std::shared_ptr<context> ctx,
         const platform::uvc_device_info& color)
     {
-        auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Sensor", ctx->get_backend().create_uvc_device(color),
+        auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera", ctx->get_backend().create_uvc_device(color),
             std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata()),
             this);
         auto color_ep = std::make_shared<sr300_color_sensor>(this,

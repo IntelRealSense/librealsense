@@ -43,7 +43,7 @@ namespace librealsense
             std::shared_ptr<uvc_sensor> uvc_sensor,
             std::map<uint32_t, rs2_format> ds5_color_fourcc_to_rs2_format,
             std::map<uint32_t, rs2_stream> ds5_color_fourcc_to_rs2_stream)
-            : synthetic_sensor("RGB Sensor", uvc_sensor, owner, ds5_color_fourcc_to_rs2_format, ds5_color_fourcc_to_rs2_stream),
+            : synthetic_sensor("RGB Camera", uvc_sensor, owner, ds5_color_fourcc_to_rs2_format, ds5_color_fourcc_to_rs2_stream),
             _owner(owner)
         {}
 

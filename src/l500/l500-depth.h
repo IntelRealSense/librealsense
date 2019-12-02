@@ -86,7 +86,7 @@ namespace librealsense
     {
     public:
         explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<uvc_sensor> uvc_sensor, std::map<uint32_t,rs2_format> l500_depth_fourcc_to_rs2_format_map, std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream_map)
-            : synthetic_sensor("Depth Sensor", uvc_sensor, owner, l500_depth_fourcc_to_rs2_format_map, l500_depth_fourcc_to_rs2_stream_map), _owner(owner), _depth_invalidation_enabled(false)
+            : synthetic_sensor("L500 Depth Sensor", uvc_sensor, owner, l500_depth_fourcc_to_rs2_format_map, l500_depth_fourcc_to_rs2_stream_map), _owner(owner), _depth_invalidation_enabled(false)
         {
             register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                 lazy<float>([&]() {
@@ -194,7 +194,6 @@ namespace librealsense
                         return rs2_intrinsics{};
                 });
             }
-            add_source_profiles_missing_data();
 
             return results;
         }

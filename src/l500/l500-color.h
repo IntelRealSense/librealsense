@@ -48,7 +48,7 @@ namespace librealsense
                 std::shared_ptr<context> ctx,
                 std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format,
                 std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream)
-                : synthetic_sensor("RGB Sensor", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
+                : synthetic_sensor("RGB Camera", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
                 _owner(owner)
             {}
 
@@ -118,7 +118,6 @@ namespace librealsense
                             return rs2_intrinsics{};
                     });
                 }
-                add_source_profiles_missing_data();
 
                 return results;
             }
