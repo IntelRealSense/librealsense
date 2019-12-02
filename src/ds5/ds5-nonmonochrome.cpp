@@ -28,9 +28,9 @@ namespace librealsense
         using namespace ds;
 
         auto pid = group.uvc_devices.front().pid;
+        auto& depth_ep = get_depth_sensor();
         if ((_fw_version >= firmware_version("5.5.8.0")) && (!val_in_range(pid, { RS_USB2_PID, RS465_PID })))
         {
-            auto& depth_ep = get_depth_sensor();
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE,
                 std::make_shared<uvc_xu_option<uint8_t>>(get_raw_depth_sensor(),
                                                          depth_xu,
@@ -38,18 +38,15 @@ namespace librealsense
                                                          "Enable Auto White Balance"));
 
             // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
-            depth_ep.register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_RGB8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_RGB8, RS2_STREAM_INFRARED); });
-            depth_ep.register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_RGBA8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_RGBA8, RS2_STREAM_INFRARED); });
-            depth_ep.register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_BGR8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_BGR8, RS2_STREAM_INFRARED); });
-            depth_ep.register_processing_block({ {RS2_FORMAT_UYVY} }, { {RS2_FORMAT_BGRA8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<uyvy_converter>(RS2_FORMAT_BGRA8, RS2_STREAM_INFRARED); });
-            depth_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_UYVY, RS2_STREAM_INFRARED));
-
             depth_ep.register_processing_block({ {RS2_FORMAT_BGR8} }, { {RS2_FORMAT_RGB8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<bgr_to_rgb>(); });
 
             depth_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
         }
+
+        depth_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
+        depth_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_INFRARED));
 
         get_depth_sensor().unregister_option(RS2_OPTION_EMITTER_ON_OFF);
 
