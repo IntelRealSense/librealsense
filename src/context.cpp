@@ -23,7 +23,6 @@
 #include "fw-update/fw-update-factory.h"
 
 #ifdef WITH_TRACKING
-#include "tm2/tm-context.h"
 #include "tm2/tm-info.h"
 #endif
 
@@ -81,13 +80,6 @@ bool contains(const std::shared_ptr<librealsense::device_info>& first,
             second_data.playback_devices.end())
             return false;
     }
-    for (auto&& tm : first_data.tm2_devices)
-    {
-        if (std::find(second_data.tm2_devices.begin(),
-            second_data.tm2_devices.end(), tm) ==
-            second_data.tm2_devices.end())
-            return false;
-    }
     return true;
 }
 
@@ -115,19 +107,6 @@ namespace librealsense
         {
         case backend_type::standard:
             _backend = platform::create_backend();
-#if WITH_TRACKING
-            _tm2_context = std::make_shared<tm2_context>(this);
-            _tm2_context->on_device_changed += [this](std::shared_ptr<tm2_info> removed, std::shared_ptr<tm2_info> added)-> void
-            {
-                std::vector<rs2_device_info> rs2_devices_info_added;
-                std::vector<rs2_device_info> rs2_devices_info_removed;
-                if (removed)
-                    rs2_devices_info_removed.push_back({ shared_from_this(), removed });
-                if (added)
-                    rs2_devices_info_added.push_back({ shared_from_this(), added });
-                raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
-            };
-#endif
             break;
         case backend_type::record:
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
@@ -350,9 +329,9 @@ namespace librealsense
         }
 
 #ifdef WITH_TRACKING
-        if (_tm2_context && (mask & RS2_PRODUCT_LINE_T200) )
+        if (mask & RS2_PRODUCT_LINE_T200)
         {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context, devices.usb_devices);
+            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
             std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
         }
 #endif
@@ -573,7 +552,6 @@ namespace librealsense
 #if WITH_TRACKING
     void context::unload_tracking_module()
     {
-        _tm2_context.reset();
     }
 #endif
 

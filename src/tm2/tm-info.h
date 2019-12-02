@@ -7,7 +7,6 @@
 
 #include "../context.h"
 #include "tm-device.h"
-#include "tm-context.h"
 
 namespace librealsense
 {
@@ -21,11 +20,8 @@ namespace librealsense
         
         static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
             std::shared_ptr<context> ctx,
-            std::shared_ptr<tm2_context> _tm2_context,
             std::vector<platform::usb_device_info>& usb);
     private:
-        static void boot_tm2_devices(std::shared_ptr<tm2_context> tm2_context);
         platform::usb_device_info _hwm;
-        std::shared_ptr<tm2_context> _tm2_context;
     };
 }

@@ -12,7 +12,7 @@
 #include "stream.h"
 #include "media/playback/playback_device.h"
 #include "media/ros/ros_reader.h"
-#include "libusb.h"
+#include "usb/usb-enumerator.h"
 
 // uncomment to get debug messages at info severity
 //#undef LOG_DEBUG
@@ -55,16 +55,18 @@ using namespace t265;
 #define ENDPOINT_DEV_OUT 0
 #define ENDPOINT_DEV_MSGS_IN 1
 #define ENDPOINT_DEV_MSGS_OUT 1
+#define ENDPOINT_DEV_INT_IN 2
 #define ENDPOINT_DEV_INT_OUT 2
 
 
-// in libusb, endpoint numbering starts at 1 and has a 0x80 when the
+// on host, endpoint numbering starts at 1 and has a 0x80 when the
 // direction is into the host
 #define ENDPOINT_HOST_IN            (ENDPOINT_DEV_OUT + 1 + 0x80)
 #define ENDPOINT_HOST_OUT           (ENDPOINT_DEV_IN  + 1)
 #define ENDPOINT_HOST_MSGS_IN       (ENDPOINT_DEV_MSGS_OUT + 1 + 0x80)
 #define ENDPOINT_HOST_MSGS_OUT      (ENDPOINT_DEV_MSGS_IN  + 1)
 #define ENDPOINT_HOST_INT_IN        (ENDPOINT_DEV_INT_OUT + 1 + 0x80)
+#define ENDPOINT_HOST_INT_OUT       (ENDPOINT_DEV_INT_IN + 1)
 
 enum log_level {
         NO_LOG        = 0x0000,
@@ -387,8 +389,8 @@ namespace librealsense
     tm2_sensor::~tm2_sensor()
     {
         // We have to do everything in dispose() because the tm2_device gets destroyed
-        // (and releases the libusb handle) before this destructor
-        // gets called (since it is a member variable)
+        // before this destructor gets called (since it is a member
+        // variable)
     }
 
     void tm2_sensor::dispose()
@@ -1221,24 +1223,24 @@ namespace librealsense
         uint8_t buffer[BUFFER_SIZE];
 
         while(!_interrupt_endpoint_thread_stop) {
-            int received = 0;
+            uint32_t received = 0;
             {
-                int result = _device->interrupt_read(buffer, BUFFER_SIZE, received);
-                if (result == LIBUSB_ERROR_TIMEOUT) {
+                platform::usb_status result = _device->interrupt_read(buffer, BUFFER_SIZE, received);
+                if (result == platform::RS2_USB_STATUS_TIMEOUT) {
                     //fprintf(stderr, ".");
                     continue;
                 }
-                if (result == LIBUSB_ERROR_IO) {
+                if (result == platform::RS2_USB_STATUS_IO) {
                     // This seems to happen when we are reading but nothing is started yet, but not always (and we never get an ERROR_TIMEOUT in this state)
                     //fprintf(stderr, ",");
                     continue;
                 }
-                else if(result == LIBUSB_ERROR_NO_DEVICE) {
+                else if(result == platform::RS2_USB_STATUS_NO_DEVICE) {
                     LOG_ERROR("Interrupt NO DEVICE!"); // TODO raise notification
                     break;
                 }
-                else if (result != LIBUSB_SUCCESS) {
-                    LOG_ERROR("Interrupt message error: " << libusb_error_name(result));
+                else if (result != platform::RS2_USB_STATUS_SUCCESS) {
+                    LOG_ERROR("Interrupt message error: " << platform::usb_status_to_string.at(result));
                     continue;
                 }
             }
@@ -1298,18 +1300,18 @@ namespace librealsense
         auto buffer = std::unique_ptr<uint8_t []>(new uint8_t[MAX_TRANSFER_SIZE]);
         auto response = (bulk_message_raw_stream_header *)buffer.get();
         while(!_stream_endpoint_thread_stop) {
-            int transferred = 0;
-            int e = _device->stream_read(buffer.get(), MAX_TRANSFER_SIZE, transferred);
-            if (e == LIBUSB_ERROR_TIMEOUT) {
+            uint32_t transferred = 0;
+            platform::usb_status e = _device->stream_read(buffer.get(), MAX_TRANSFER_SIZE, transferred);
+            if (e == platform::RS2_USB_STATUS_TIMEOUT) {
                 //fprintf(stderr, "+");
                 continue;
             }
-            else if(e == LIBUSB_ERROR_NO_DEVICE || e == LIBUSB_ERROR_PIPE) {
+            else if(e == platform::RS2_USB_STATUS_NO_DEVICE || e == platform::RS2_USB_STATUS_PIPE) {
                 LOG_ERROR("Stream NO DEVICE!"); // TODO: raise notification
                 break;
             }
-            else if (e != LIBUSB_SUCCESS) {
-                LOG_ERROR("Bulk libusb error " << libusb_error_name(e));
+            else if (e != platform::RS2_USB_STATUS_SUCCESS) {
+                LOG_ERROR("Bulk error " << platform::usb_status_to_string.at(e));
                 continue;
             }
             if (transferred != response->header.dwLength) {
@@ -1812,84 +1814,36 @@ namespace librealsense
     ///////////////
     // Device
 
-    tm2_device::tm2_device( std::shared_ptr<context> ctx, libusb_context * tm_context, const platform::backend_device_group& group, bool register_device_notifications) :
+    tm2_device::tm2_device( std::shared_ptr<context> ctx, const platform::backend_device_group& group, bool register_device_notifications) :
         device(ctx, group, register_device_notifications)
     {
-        // Find the libusb_device corresponding to the backend_device_group
-        libusb_device **dev_list;
-        ssize_t n_devices = libusb_get_device_list(tm_context, &dev_list);
-        if (n_devices < 0)
-            LOG_ERROR("Failed to get device list");
-
         if(group.usb_devices.size() != 1 || group.uvc_devices.size() != 0 || group.hid_devices.size() !=0)
             throw io_exception("Tried to create a T265 with a bad backend_device_group");
 
-        auto dev_info = group.usb_devices[0];
-        libusb_device * device = nullptr;
-        for (ssize_t i = 0; i < n_devices; i++) {
-            libusb_device_descriptor desc;
-            if (libusb_get_device_descriptor(dev_list[i], &desc) < 0) {
-                LOG_ERROR("Failed to get device descriptor for device " << i << "...ignoring");
-                continue;
-            }
-
-            int bus = libusb_get_bus_number(dev_list[i]);
-            int address = libusb_get_device_address(dev_list[i]);
-#if WIN32
-            //TODO: This current approach will break with multiple
-            //T265s.
-            //Make a way to get an equivalend bus/address from
-            //windows to figure out which libusb device matches
-            if(desc.idVendor == 0x8087 && desc.idProduct == 0x0B37) {
-                device = dev_list[i];
-                break;
-            }
-#else
-            uint8_t port_chain[8];
-            int chain_depth = libusb_get_port_numbers(dev_list[i], &port_chain[0], 7);
-            std::string port_str;
-            for(int i = 0; i < chain_depth; i++) {
-                port_str += std::to_string(port_chain[i]);
-                if(i != chain_depth-1) port_str += ".";
-            }
-            std::string usb_id = std::to_string(bus) + "-" + port_str + "-" + std::to_string(address); 
-
-            LOG_INFO("Comparing " << usb_id << " and " << group.usb_devices[0].id);
-            if(usb_id == group.usb_devices[0].id) {
-                LOG_INFO("Found the device " << usb_id);
-                device = dev_list[i];
-                break;
-            }
-#endif
-        }
-
-
-        if(!device) {
-            LOG_ERROR("Couldn't find the device");
-            throw io_exception("Couldn't find the device");
-        }
-        libusb_ref_device(device);
-
-        libusb_free_device_list(dev_list, 1);
-
-        // The device opens the underlying usb device and claims the
-        // interface. It then sends two messages (to set power state
-        // and get device info) and hands off all other communication
-        // to the tm2_sensor
         LOG_DEBUG("Creating a T265 device");
 
-        device_ptr = device;
+        usb_device = platform::usb_enumerator::create_usb_device(group.usb_devices[0]);
+        usb_info = usb_device->get_info();
+        const std::vector<platform::rs_usb_interface> interfaces = usb_device->get_interfaces();
+        for(auto & iface : interfaces) {
+            auto endpoints = iface->get_endpoints();
+            for(const auto & endpoint : endpoints) {
+                int addr = endpoint->get_address();
 
-        if(libusb_open(device_ptr, &handle) != LIBUSB_SUCCESS) {
-            LOG_ERROR("Unable to open libusb device");
-            throw io_exception("Unable to open device");
+                if      (addr == ENDPOINT_HOST_IN)  endpoint_bulk_in = endpoint;
+                else if (addr == ENDPOINT_HOST_OUT) endpoint_bulk_out = endpoint;
+                else if (addr == ENDPOINT_HOST_MSGS_IN)  endpoint_msg_in = endpoint;
+                else if (addr == ENDPOINT_HOST_MSGS_OUT) endpoint_msg_out = endpoint;
+                else if (addr == ENDPOINT_HOST_INT_IN)   endpoint_int_in = endpoint;
+                else if (addr == ENDPOINT_HOST_INT_OUT)  endpoint_int_out = endpoint;
+                else    LOG_ERROR("Unknown endpoint address " << addr);
+            }
         }
+        if(!endpoint_bulk_in || !endpoint_bulk_out || !endpoint_msg_in || !endpoint_msg_out || !endpoint_int_in || !endpoint_int_out)
+            throw io_exception("Missing a T265 usb endpoint");
 
-        if(libusb_claim_interface(handle, 0) != LIBUSB_SUCCESS) {
-            LOG_ERROR("Unable to claim libusb interface");
-            libusb_close(handle);
-            throw io_exception("Unable to claim interface");
-        }
+
+        usb_messenger = usb_device->open(0); // T265 only has one interface, 0
 
         LOG_DEBUG("Successfully opened and claimed interface 0");
 
@@ -1905,39 +1859,19 @@ namespace librealsense
         if(info_response.message.bStatus == 0x1 || info_response.message.dwStatusCode == FW_STATUS_CODE_NO_CALIBRATION_DATA)
             throw io_exception("T265 device is uncalibrated");
 
-        libusb_device_descriptor desc = {};
-        if(libusb_get_device_descriptor(device_ptr, &desc)) {
-            LOG_ERROR("Unable to get device descriptor");
-            throw io_exception("Unable to get device descriptor");
-        }
-
-        std::string vendorIdStr = hexify(desc.idVendor);
-        std::string productIdStr = hexify(desc.idProduct);
-        std::string busStr = std::to_string(libusb_get_bus_number(device_ptr));
-        std::string portStr = std::to_string(libusb_get_port_number(device_ptr));
         std::string serial = to_string() << hexify(bytesSwap(info_response.message.llSerialNumber) >> 16);
         LOG_INFO("Serial: " << serial);
 
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, to_string() << info_response.message.bFWVersionMajor << "." << info_response.message.bFWVersionMinor << "." << info_response.message.bFWVersionPatch << "." << info_response.message.dwFWVersionBuild);
-        register_info(RS2_CAMERA_INFO_PRODUCT_ID, productIdStr);
+        std::string firmware = to_string() << std::to_string(info_response.message.bFWVersionMajor) << "." << std::to_string(info_response.message.bFWVersionMinor) << "." << std::to_string(info_response.message.bFWVersionPatch) << "." << std::to_string(info_response.message.dwFWVersionBuild);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, firmware);
+        LOG_INFO("Firmware version: " << firmware);
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID, hexify(usb_info.pid));
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "T200");
 
-        std::stringstream usb_string;
-        uint16_t major = (desc.bcdUSB >> 8) & 0x7;
-        uint16_t minor = (desc.bcdUSB >> 4) & 0x7;
-        usb_string << std::hex << major << "." << minor;
-        register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_string.str());
-
-        uint8_t port_chain[8];
-        int chain_depth = libusb_get_port_numbers(device_ptr, &port_chain[0], 7);
-        std::string device_path = std::string("vid_") + vendorIdStr + std::string(" pid_") + productIdStr + std::string(" bus_") + busStr + std::string(" port_") + portStr;
-        for(int i=1; i< chain_depth; i++)
-            device_path += "-" + std::to_string(port_chain[i]);
-        LOG_INFO("Device path: " << device_path);
-
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, device_path);
+        register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, platform::usb_spec_names.at(usb_info.conn_spec));
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, usb_info.id); // TODO uvc has device_path, usb_info has id and unique_id
 
         _sensor = std::make_shared<tm2_sensor>(this);
         add_sensor(_sensor);
@@ -1971,18 +1905,10 @@ namespace librealsense
         // Note this is the last chance the tm2_sensor gets to use USB
         _sensor->dispose();
         LOG_DEBUG("Destroying T265 device");
-        if(handle) {
-            LOG_DEBUG("Releasing interface and closing handle");
-            libusb_release_interface(handle, 0);
-            libusb_close(handle);
-        }
-
-        libusb_unref_device(device_ptr);
-
     }
 
     template<typename Request, typename Response>
-    int tm2_device::bulk_request_response(const Request &request, Response &response, size_t max_response_size, bool assert_success)
+    platform::usb_status tm2_device::bulk_request_response(const Request &request, Response &response, size_t max_response_size, bool assert_success)
     {
         std::lock_guard<std::mutex> lock(bulk_mutex);
 
@@ -1990,20 +1916,20 @@ namespace librealsense
         uint32_t length = request.header.dwLength;
         uint16_t message_id = request.header.wMessageID;
         LOG_DEBUG("Sending message " << message_name(request.header) << " length " << length);
-        int transferred = 0;
-        int e = 0;
-        e = libusb_bulk_transfer(handle, ENDPOINT_HOST_MSGS_OUT, (uint8_t *)&request, length, &transferred, USB_TIMEOUT);
-        if (e == LIBUSB_ERROR_NO_DEVICE) {
-            //TODO: LIBUSB_ERROR_NO_DEVICE raise disconnection
+        uint32_t transferred = 0;
+        platform::usb_status e;
+        e = usb_messenger->bulk_transfer(endpoint_msg_out, (uint8_t*)&request, length, transferred, USB_TIMEOUT);
+        if (e == platform::RS2_USB_STATUS_NO_DEVICE) {
+            //TODO: platform::RS2_USB_STATUS_NO_DEVICE raise disconnection
             return e;
         }
-        else if (e != LIBUSB_SUCCESS) {
-            LOG_ERROR("libusb_error " << libusb_error_name(e));
+        else if (e != platform::RS2_USB_STATUS_SUCCESS) {
+            LOG_ERROR("Bulk request error " << platform::usb_status_to_string.at(e));
             return e;
         }
-        if (transferred != (int)length) {
+        if (transferred != length) {
             LOG_ERROR("error: sent " << transferred << " not " << length);
-            return LIBUSB_ERROR_OTHER;
+            return platform::RS2_USB_STATUS_OTHER;
         }
 
         // response
@@ -2012,14 +1938,14 @@ namespace librealsense
         LOG_DEBUG("Receiving message with max_response_size " << max_response_size);
 
         transferred = 0;
-        e = libusb_bulk_transfer(handle, ENDPOINT_HOST_MSGS_IN, (unsigned char *)&response, max_response_size, &transferred, USB_TIMEOUT);
-        if (e != LIBUSB_SUCCESS) {
-            LOG_ERROR("libusb_error " << libusb_error_name(e));
+        e = usb_messenger->bulk_transfer(endpoint_msg_in, (uint8_t*)&response, int(max_response_size), transferred, USB_TIMEOUT);
+        if (e != platform::RS2_USB_STATUS_SUCCESS) {
+            LOG_ERROR("Bulk response error " << platform::usb_status_to_string.at(e));
             return e;
         }
         if (transferred != response.header.dwLength) {
             LOG_ERROR("Received " << transferred << " but header was " << response.header.dwLength << " bytes (max_response_size was " << max_response_size << ")");
-            return LIBUSB_ERROR_OTHER;
+            return platform::RS2_USB_STATUS_OTHER;
         }
         if (assert_success && MESSAGE_STATUS(response.header.wStatus) != MESSAGE_STATUS::SUCCESS) {
             LOG_ERROR("Received " << message_name(response.header) << " with length " << response.header.dwLength << " but got non-zero status of " << status_name(response.header));
@@ -2029,39 +1955,39 @@ namespace librealsense
     }
 
     // all messages must have dwLength and wMessageID as first two members
-    int tm2_device::stream_write(const t265::bulk_message_request_header * request)
+    platform::usb_status tm2_device::stream_write(const t265::bulk_message_request_header * request)
     {
         std::lock_guard<std::mutex> lock(stream_mutex);
 
         uint32_t length = request->dwLength;
         uint16_t message_id = request->wMessageID;
         LOG_DEBUG("Sending stream message " << message_name(*request) << " length " << length);
-        int transferred = 0;
-        int e = 0;
-        e = libusb_bulk_transfer(handle, ENDPOINT_HOST_OUT, (uint8_t *)request, length, &transferred, USB_TIMEOUT);
-        if (e != LIBUSB_SUCCESS) {
-            LOG_ERROR("libusb_error " << libusb_error_name(e));
+        uint32_t transferred = 0;
+        platform::usb_status e;
+        e = usb_messenger->bulk_transfer(endpoint_bulk_out, (uint8_t *)request, length, transferred, USB_TIMEOUT);
+        if (e != platform::RS2_USB_STATUS_SUCCESS) {
+            LOG_ERROR("Stream write error " << platform::usb_status_to_string.at(e));
             return e;
         }
-        if (transferred != (int)length) {
+        if (transferred != length) {
             LOG_ERROR("error: sent " << transferred << " not " << length);
-            return LIBUSB_ERROR_OTHER;
+            return platform::RS2_USB_STATUS_OTHER;
         }
         return e;
     }
 
-    int tm2_device::stream_read(uint8_t * buffer, size_t max_size, int & received)
+    platform::usb_status tm2_device::stream_read(uint8_t * buffer, size_t max_size, uint32_t & received)
     {
         std::lock_guard<std::mutex> lock(stream_mutex);
 
-        return libusb_bulk_transfer(handle, ENDPOINT_HOST_IN, buffer, int(max_size), &received, USB_SHORT_TIMEOUT);
+        return usb_messenger->bulk_transfer(endpoint_bulk_in, buffer, int(max_size), received, USB_SHORT_TIMEOUT);
     }
 
-    int tm2_device::interrupt_read(uint8_t * buffer, size_t max_size, int & received)
+    platform::usb_status tm2_device::interrupt_read(uint8_t * buffer, size_t max_size, uint32_t & received)
     {
         std::lock_guard<std::mutex> lock(interrupt_mutex);
 
-        return libusb_interrupt_transfer(handle, ENDPOINT_HOST_INT_IN, buffer, int(max_size), &received, USB_SHORT_TIMEOUT);
+        return usb_messenger->bulk_transfer(endpoint_int_in, buffer, int(max_size), received, USB_SHORT_TIMEOUT);
     }
 
     /**

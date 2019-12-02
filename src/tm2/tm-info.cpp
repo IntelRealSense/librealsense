@@ -30,7 +30,7 @@ namespace librealsense
         bool register_device_notifications) const
     {
         LOG_DEBUG("tm2_info::create " << this);
-        return std::make_shared<tm2_device>(ctx, tm2_context::get(), get_device_data(), register_device_notifications);
+        return std::make_shared<tm2_device>(ctx, get_device_data(), register_device_notifications);
     }
 
     platform::backend_device_group tm2_info::get_device_data() const
@@ -42,7 +42,6 @@ namespace librealsense
 
     std::vector<std::shared_ptr<device_info>> tm2_info::pick_tm2_devices(
         std::shared_ptr<context> ctx,
-        std::shared_ptr<tm2_context> tm2_context,
         std::vector<platform::usb_device_info>& usb)
     {
         // We shouldn't talk to the device here, it might not

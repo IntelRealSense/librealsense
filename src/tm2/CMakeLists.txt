@@ -3,10 +3,8 @@
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/tm-boot.h"
-        "${CMAKE_CURRENT_LIST_DIR}/tm-context.h"
         "${CMAKE_CURRENT_LIST_DIR}/tm-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/tm-info.h"
-        "${CMAKE_CURRENT_LIST_DIR}/tm-context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tm-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tm-info.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/t265-messages.h"
