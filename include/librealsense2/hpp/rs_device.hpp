@@ -282,11 +282,41 @@ return results;
         }
     };
 
-    class auto_calibrated_device : public device
+    typedef std::vector<uint8_t> calibration_table;
+
+    class calibrated_device : public device
+    {
+    public:
+        calibrated_device(device d)
+            : device(d.get())
+        {}
+
+        /**
+        * Write calibration that was set by set_calibration_table to device's EEPROM.
+        */
+        void write_calibration() const
+        {
+            rs2_error* e = nullptr;
+            rs2_write_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Reset device to factory calibration
+        */
+        void reset_to_factory_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_reset_to_factory_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+    };
+
+    class auto_calibrated_device : public calibrated_device
     {
     public:
         auto_calibrated_device(device d)
-            : device(d.get())
+            : calibrated_device(d)
         {
             rs2_error* e = nullptr;
             if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, &e) == 0 && !e)
@@ -310,10 +340,10 @@ return results;
                                         [0.15, 0.25) - Can be Improved
                                         [0.25, ) - Requires Calibration
         * \param[in] callback           Callback to get progress notifications
-        * \return                       Nnew calibration table
+        * \return                       New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health, T callback) const
+        calibration_table run_on_chip_calibration(int timeout_ms, std::string json_content, float* health, T callback) const
         {
             std::vector<uint8_t> results;
 
@@ -346,9 +376,9 @@ return results;
                                         [0, 0.15) - Good
                                         [0.15, 0.25) - Can be Improved
                                         [0.25, ) - Requires Calibration
-        * \return                       Nnew calibration table
+        * \return                       New calibration table
         */
-        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json_content, float* health) const
+        calibration_table run_on_chip_calibration(int timeout_ms, std::string json_content, float* health) const
         {
             std::vector<uint8_t> results;
 
@@ -387,7 +417,7 @@ return results;
         * \return                        New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health, T callback) const
+        calibration_table run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health, T callback) const
         {
             std::vector<uint8_t> results;
 
@@ -425,7 +455,7 @@ return results;
         * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
         * \return                        New calibration table
         */
-        std::vector<uint8_t> run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health) const
+        calibration_table run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health) const
         {
             std::vector<uint8_t> results;
 
@@ -449,7 +479,7 @@ return results;
         *  Read current calibration table from flash.
         * \return    Calibration table
         */
-        std::vector<uint8_t> get_calibration_table()
+        calibration_table get_calibration_table()
         {
             std::vector<uint8_t> results;
 
@@ -473,32 +503,14 @@ return results;
         *  Set current table to dynamic area.
         * \param[in]     Calibration table
         */
-        void set_calibration_table(const std::vector<uint8_t>& calibration)
+        void set_calibration_table(const calibration_table& calibration)
         {
             rs2_error* e = nullptr;
             rs2_set_calibration_table(_dev.get(), calibration.data(), calibration.size(), &e);
             error::handle(e);
         }
 
-        /**
-        * Write calibration that was set by set_calibration_table to device's EEPROM.
-        */
-        void write_calibration() const
-        {
-            rs2_error* e = nullptr;
-            rs2_write_calibration(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Reset device to factory calibration
-        */
-        void reset_to_factory_calibration()
-        {
-            rs2_error* e = nullptr;
-            rs2_reset_to_factory_calibration(_dev.get(), &e);
-            error::handle(e);
-        }
+ 
     };
 
     class debug_protocol : public device
@@ -653,11 +665,11 @@ return results;
      * - pose_sensor: map and relocalization functions.
      * - wheel_odometer: input for odometry data.
      */
-    class tm2 : public device // TODO: add to wrappers [Python done]
+    class tm2 : public calibrated_device // TODO: add to wrappers [Python done]
     {
     public:
         tm2(device d)
-            : device(d.get())
+            : calibrated_device(d)
         {
             rs2_error* e = nullptr;
             if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TM2, &e) == 0 && !e)
@@ -762,30 +774,6 @@ return results;
             rs2_error* e = nullptr;
             auto motion_sensor = get_sensor_profile(stream_type, 0);
             rs2_set_motion_device_intrinsics(motion_sensor.first.get().get(), motion_sensor.second.get(), &motion_intriniscs, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Reset tm2 to factory calibration
-        * \param[in] device       tm2 device
-        * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-        */
-        void reset_to_factory_calibration()
-        {
-            rs2_error* e = nullptr;
-            rs2_reset_to_factory_calibration(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Write calibration to tm2 device's EEPROM
-        * \param[in] device       tm2 device
-        * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-        */
-        void write_calibration()
-        {
-            rs2_error* e = nullptr;
-            rs2_write_calibration(_dev.get(), &e);
             error::handle(e);
         }
 

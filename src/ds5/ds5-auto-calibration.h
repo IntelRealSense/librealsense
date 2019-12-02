@@ -6,12 +6,6 @@
 #include "auto-calibrated-device.h"
 #include "../core/advanced_mode.h"
 
-const int DEFUALT_AVERAGE_STEP_COUNT = 20;
-const int DEFUALT_STEP_COUNT = 10;
-const int DEFUALT_ACCURACY = 2;
-const int DEFUALT_SPEED = 3;
-
-
 namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
@@ -57,7 +51,7 @@ namespace librealsense
             RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
         };
 
-        enum speed
+        enum auto_calib_speed
         {
             speed_very_fast = 0,
             speed_fast = 1,
@@ -90,6 +84,11 @@ namespace librealsense
 
 #pragma pack(pop)
 
+        const int DEFAULT_AVERAGE_STEP_COUNT = 20;
+        const int DEFAULT_STEP_COUNT = 10;
+        const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
+        const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
+
     public:
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
@@ -104,15 +103,15 @@ namespace librealsense
         void handle_calibration_error(rs2_dsc_status status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
-        void check_params();
+        void check_params() const;
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
 
-        int _average_step_count = DEFUALT_AVERAGE_STEP_COUNT;
-        int _step_count = DEFUALT_STEP_COUNT;
-        int _accuracy = DEFUALT_ACCURACY;
-        int _speed = DEFUALT_SPEED;
+        int _average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
+        int _step_count = DEFAULT_STEP_COUNT;
+        int _accuracy = DEFAULT_ACCURACY;
+        int _speed = DEFAULT_SPEED;
     };
 
 }

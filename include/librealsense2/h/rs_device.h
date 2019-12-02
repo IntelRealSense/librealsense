@@ -255,7 +255,7 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
                                 [0.15, 0.25) - Can be Improved
                                 [0.25, ) - Requires Calibration
 * \param[in] callback           Callback to get progress notifications
-* \return                       Nnew calibration table
+* \return                       New calibration table
 */
 const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, int timeout_ms, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, rs2_error** error);
 

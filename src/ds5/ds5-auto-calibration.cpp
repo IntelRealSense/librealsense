@@ -233,7 +233,7 @@ namespace librealsense
         return recover_preset;
     }
 
-    void auto_calibrated::check_params()
+    void auto_calibrated::check_params() const
     {
         if (_speed < speed_very_fast || _speed >  speed_white_wall)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << _speed << " is out of range (0 - 4).");

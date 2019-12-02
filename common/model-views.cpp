@@ -996,7 +996,7 @@ namespace rs2
             auto sensor_profiles = s->get_stream_profiles();
             reverse(begin(sensor_profiles), end(sensor_profiles));
             rs2_format def_format{ RS2_FORMAT_ANY };
-            std::pair<int, int> default_resolution;
+            auto default_resolution = std::make_pair(1280, 720);
             for (auto&& profile : sensor_profiles)
             {
                 std::stringstream res;
