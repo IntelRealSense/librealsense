@@ -241,7 +241,6 @@ namespace librealsense
                 assign_stream(_default_stream, p);
                 environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_default_stream, *p);
             }
-            add_source_profiles_missing_data();
 
             return results;
         }
