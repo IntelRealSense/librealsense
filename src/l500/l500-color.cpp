@@ -14,11 +14,15 @@ namespace librealsense
     using namespace ivcam2;
 
     std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format = {
-        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV}
+        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
     };
 
     std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
     };
 
     std::shared_ptr<synthetic_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)
