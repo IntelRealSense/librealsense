@@ -1704,7 +1704,8 @@ namespace librealsense
 
         bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
-            v4l2_ext_control xctrl{xu_to_cid(xu,control), 0, 0, value};
+            v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
             v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &xctrl};
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {

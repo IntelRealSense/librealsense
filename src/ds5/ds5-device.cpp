@@ -489,8 +489,6 @@ namespace librealsense
     float ds5_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
-        if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS431 Development. to be removed. TODO
-            return 55;
 
         auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
@@ -620,11 +618,11 @@ namespace librealsense
                     std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         raw_sensor, depth_xu, DS5_HWMONITOR),raw_sensor));
-//            else
-//                _hw_monitor = std::make_shared<hw_monitor>(
-//                    std::make_shared<locked_transfer>(
-//                    std::make_shared<command_transfer_over_v4l_ctl>(
-//                        raw_sensor, /*DS5_CAMERA_CID_HWMC*/123),raw_sensor));
+            else
+                _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(
+                    std::make_shared<command_transfer_over_v4l_ctl>(
+                        raw_sensor, depth_xu, DS5_HWMONITOR),raw_sensor));
         }
 
         // Define Left-to-Right extrinsics calculation (lazy)
@@ -653,22 +651,14 @@ namespace librealsense
         std::string optic_serial;
         std::string asic_serial;
         std::string fwv;
-        if (!mipi_sensor)
-        {
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-            // fooling tests recordings - don't remove
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
-        }
-        else
-        {
-            fwv = "1.1.1.1"; // D431 temporal
-            optic_serial = "11114444";
-            asic_serial = "22223333";
-        }
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+        // fooling tests recordings - don't remove
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+
+        optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
+        fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
 
         _fw_version = firmware_version(fwv);
 
@@ -721,23 +711,20 @@ namespace librealsense
 
         if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
         {
-            if (!mipi_sensor)
-            {
-                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
 
 #ifdef HWM_OVER_XU
-                //if hw_monitor was created by usb replace it with xu
-                // D400_IMU will remain using USB interface due to HW limitations
-                if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
-                {
-                    _hw_monitor = std::make_shared<hw_monitor>(
-                        std::make_shared<locked_transfer>(
-                            std::make_shared<command_transfer_over_xu>(
-                                raw_depth_sensor, depth_xu, DS5_HWMONITOR),
-                            raw_depth_sensor));
-                }
-#endif
+            //if hw_monitor was created by usb replace it with xu
+            // D400_IMU will remain using USB interface due to HW limitations
+            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
+            {
+                _hw_monitor = std::make_shared<hw_monitor>(
+                    std::make_shared<locked_transfer>(
+                        std::make_shared<command_transfer_over_xu>(
+                            raw_depth_sensor, depth_xu, DS5_HWMONITOR),
+                        raw_depth_sensor));
             }
+#endif
 
             depth_sensor.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,

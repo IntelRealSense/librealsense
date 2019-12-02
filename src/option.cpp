@@ -147,7 +147,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_v4l_ctl::send_receive(c
     return _uvc.invoke_powered([this, &data, require_response]
         (platform::uvc_device& dev)
         {
-            std::vector<uint8_t> result;
+            std::vector<uint8_t> result{};
             std::lock_guard<platform::uvc_device> lock(dev);
 
             if (data.size() > HW_MONITOR_BUFFER_SIZE)
@@ -157,7 +157,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_v4l_ctl::send_receive(c
                     std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
             }
 
-            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
+            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE+SIZE_OF_HW_MONITOR_HEADER, 0); // TBD- Elaborate 1028
             std::copy(data.begin(), data.end(), transmit_buf.begin());
 
             if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
@@ -165,13 +165,19 @@ std::vector<uint8_t> librealsense::command_transfer_over_v4l_ctl::send_receive(c
 
             if (require_response)
             {
-                result.resize(HW_MONITOR_BUFFER_SIZE);
-                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
-                    throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
+                //result.resize(HW_MONITOR_BUFFER_SIZE+SIZE_OF_HW_MONITOR_HEADER);
+//                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
+//                    throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
 
                 // Returned data size located in the last 4 bytes
-                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
-                result.resize(data_size);
+                // Hard-coded override - return full buffer except for the hwm 24 bytes
+                //auto data_size = *(reinterpret_cast<uint32_t*>(transmit_buf.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
+                //result.resize(data_size);
+                result.insert(result.begin(),transmit_buf.begin()+24,transmit_buf.end());
+                // Override bytes 20-24 with bytes 0-3
+                //result[0] = transmit_buf[0];
+                //for (int i=1; i<4; i++)
+                     //result[i]= 0;
             }
             return result;
         });

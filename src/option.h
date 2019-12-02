@@ -368,25 +368,19 @@ namespace librealsense
             : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
         {}
 
-    private:
+    protected:
         uvc_sensor&       _uvc;
         platform::extension_unit _xu;
         uint8_t             _ctrl;
     };
 
-    class command_transfer_over_v4l_ctl : public platform::command_transfer
+    class command_transfer_over_v4l_ctl : public command_transfer_over_xu
     {
     public:
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
-        command_transfer_over_v4l_ctl(uvc_sensor& uvc, uint8_t ctrl)
-            : _uvc(uvc), _ctrl(ctrl)
-        {}
-
-    private:
-        uvc_sensor&       _uvc;
-        platform::extension_unit _xu;
-        uint8_t             _ctrl;
+        command_transfer_over_v4l_ctl(uvc_sensor& uvc, platform::extension_unit xu, uint8_t ctrl) :
+            command_transfer_over_xu(uvc,xu,ctrl){}
     };
 
     class polling_error_handler;
