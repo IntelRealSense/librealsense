@@ -637,8 +637,6 @@ namespace librealsense
     float ds5_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
-        if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS431 Development. to be removed. TODO
-            return 55;
 
         auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
@@ -810,22 +808,14 @@ namespace librealsense
         std::string optic_serial;
         std::string asic_serial;
         std::string fwv;
-        if (!mipi_sensor)
-        {
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-            // fooling tests recordings - don't remove
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
-        }
-        else
-        {
-            fwv = "1.1.1.1"; // D431 temporal
-            optic_serial = "11114444";
-            asic_serial = "22223333";
-        }
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+        // fooling tests recordings - don't remove
+        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+
+        optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
+        fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
 
         _fw_version = firmware_version(fwv);
 
@@ -883,9 +873,7 @@ namespace librealsense
 
         if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
         {
-            if (!mipi_sensor)
-            {
-                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
 			}
         }
 
@@ -922,7 +910,6 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
 
-        }
         // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.8.100");
 
