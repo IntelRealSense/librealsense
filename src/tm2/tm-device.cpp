@@ -83,7 +83,6 @@ enum log_level {
 
 static const int MAX_TRANSFER_SIZE = 848 * 800 + sizeof(bulk_message_video_stream); // max size on ENDPOINT_HOST_IN
 static const int USB_TIMEOUT = 10000/*ms*/;
-static const int USB_SHORT_TIMEOUT = 100/*ms*/;
 static const int BUFFER_SIZE = 1024; // Max size for control transfers
 
 const std::map<PixelFormat, rs2_format> tm2_formats_map =
@@ -377,13 +376,8 @@ namespace librealsense
         _time_sync_thread_stop = false;
         _time_sync_thread = std::thread(&tm2_sensor::time_sync, this);
 
-        // start interrupt thread
-        _interrupt_endpoint_thread_stop = false;
-        _interrupt_endpoint_thread = std::thread(&tm2_sensor::interrupt_endpoint, this);
-
-        // start bulk thread
-        _stream_endpoint_thread_stop = false;
-        _stream_endpoint_thread = std::thread(&tm2_sensor::stream_endpoint, this);
+        start_interrupt();
+        start_stream();
     }
 
     tm2_sensor::~tm2_sensor()
@@ -395,32 +389,46 @@ namespace librealsense
 
     void tm2_sensor::dispose()
     {
+        // It is important not to throw here because this gets called
+        // from ~tm2_device
         try {
-            if (_is_streaming)
+            // Use this as a proxy to know if we are still able to communicate with the device
+            bool device_valid = _stream_request && _interrupt_request;
+
+            if (device_valid && _is_streaming)
                 stop();
 
-            if (_is_opened)
+            if (device_valid && _is_opened)
                 close();
+
+            _log_poll_thread_stop = true;
+            _time_sync_thread_stop = true;
+            _log_poll_thread.join();
+            _time_sync_thread.join();
+
+            if (device_valid) {
+                // poll the firmware logs one last time
+                auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
+                if(log_poll_once(log_buffer))
+                    print_logs(log_buffer);
+            }
+
+            if(_stream_request) {
+                _stream_callback->cancel();
+                _device->cancel_request(_stream_request);
+            }
+            _stream_request.reset();
+
+            if(_interrupt_request) {
+                _interrupt_callback->cancel();
+                _device->cancel_request(_interrupt_request);
+            }
+            _interrupt_request.reset();
         }
         catch (...) {
             LOG_ERROR("An error has occurred while disposing the sensor!");
         }
 
-        _log_poll_thread_stop = true;
-        _time_sync_thread_stop = true;
-        _log_poll_thread.join();
-        _time_sync_thread.join();
-
-        // stop the endpoint threads
-        _interrupt_endpoint_thread_stop = true;
-        _stream_endpoint_thread_stop = true;
-        _interrupt_endpoint_thread.join();
-        _stream_endpoint_thread.join();
-
-        // poll the firmware logs one last time
-        auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
-        if(log_poll_once(log_buffer))
-            print_logs(log_buffer);
     }
 
     //sensor
@@ -1218,46 +1226,33 @@ namespace librealsense
         return result;
     }
 
-    void tm2_sensor::interrupt_endpoint()
+    void tm2_sensor::start_interrupt()
     {
-        uint8_t buffer[BUFFER_SIZE];
+        std::vector<uint8_t> buffer(BUFFER_SIZE);
 
-        while(!_interrupt_endpoint_thread_stop) {
-            uint32_t received = 0;
-            {
-                platform::usb_status result = _device->interrupt_read(buffer, BUFFER_SIZE, received);
-                if (result == platform::RS2_USB_STATUS_TIMEOUT) {
-                    //fprintf(stderr, ".");
-                    continue;
-                }
-                if (result == platform::RS2_USB_STATUS_IO) {
-                    // This seems to happen when we are reading but nothing is started yet, but not always (and we never get an ERROR_TIMEOUT in this state)
-                    //fprintf(stderr, ",");
-                    continue;
-                }
-                else if(result == platform::RS2_USB_STATUS_NO_DEVICE) {
-                    LOG_ERROR("Interrupt NO DEVICE!"); // TODO raise notification
-                    break;
-                }
-                else if (result != platform::RS2_USB_STATUS_SUCCESS) {
-                    LOG_ERROR("Interrupt message error: " << platform::usb_status_to_string.at(result));
-                    continue;
-                }
+        _interrupt_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
+            uint32_t transferred = request->get_actual_length();
+            if(transferred == 0) { // something went wrong, exit
+                LOG_ERROR("Interrupt transfer failed, exiting");
+                _interrupt_request.reset();
+                return;
             }
-            interrupt_message_header* header = (interrupt_message_header*)buffer;
+
+            interrupt_message_header* header = (interrupt_message_header*)request->get_buffer().data();
             if(header->wMessageID == DEV_GET_POSE)
                 receive_pose_message(*((interrupt_message_get_pose*)header));
             else if(header->wMessageID == DEV_SAMPLE) {
-                if(!_is_streaming) continue;
-                int sensor_type = GET_SENSOR_TYPE(((interrupt_message_raw_stream_header*)header)->bSensorID);
-                if(sensor_type == SensorType::Accelerometer)
-                    receive_accel_message(*((interrupt_message_accelerometer_stream*)header));
-                else if(sensor_type == SensorType::Gyro)
-                    receive_gyro_message(*((interrupt_message_gyro_stream*)header));
-                else if(sensor_type == SensorType::Velocimeter)
-                    LOG_ERROR("Did not expect to receive a velocimeter message");
-                else
-                    LOG_ERROR("Received DEV_SAMPLE with unknown type " << sensor_type);
+                if(_is_streaming) {
+                    int sensor_type = GET_SENSOR_TYPE(((interrupt_message_raw_stream_header*)header)->bSensorID);
+                    if(sensor_type == SensorType::Accelerometer)
+                        receive_accel_message(*((interrupt_message_accelerometer_stream*)header));
+                    else if(sensor_type == SensorType::Gyro)
+                        receive_gyro_message(*((interrupt_message_gyro_stream*)header));
+                    else if(sensor_type == SensorType::Velocimeter)
+                        LOG_ERROR("Did not expect to receive a velocimeter message");
+                    else
+                        LOG_ERROR("Received DEV_SAMPLE with unknown type " << sensor_type);
+                }
             }
             else if(header->wMessageID == SLAM_ERROR) {
                 //TODO: current librs ignores these
@@ -1292,44 +1287,41 @@ namespace librealsense
             }
             else
                 LOG_ERROR("Unknown interrupt message " <<  message_name(*((bulk_message_response_header*)header)) << " with status " << status_name(*((bulk_message_response_header*)header)));
-        }
+
+            _device->submit_request(request);
+        });
+
+        _interrupt_request = _device->interrupt_read_request(buffer, _interrupt_callback);
+        _device->submit_request(_interrupt_request);
     }
 
-    void tm2_sensor::stream_endpoint()
+    void tm2_sensor::start_stream()
     {
-        auto buffer = std::unique_ptr<uint8_t []>(new uint8_t[MAX_TRANSFER_SIZE]);
-        auto response = (bulk_message_raw_stream_header *)buffer.get();
-        while(!_stream_endpoint_thread_stop) {
-            uint32_t transferred = 0;
-            platform::usb_status e = _device->stream_read(buffer.get(), MAX_TRANSFER_SIZE, transferred);
-            if (e == platform::RS2_USB_STATUS_TIMEOUT) {
-                //fprintf(stderr, "+");
-                continue;
+        std::vector<uint8_t> buffer(MAX_TRANSFER_SIZE);
+
+        _stream_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
+            uint32_t transferred = request->get_actual_length();
+            if(!transferred) {
+                LOG_ERROR("Stream transfer failed, exiting");
+                _stream_request.reset();
+                return;
             }
-            else if(e == platform::RS2_USB_STATUS_NO_DEVICE || e == platform::RS2_USB_STATUS_PIPE) {
-                LOG_ERROR("Stream NO DEVICE!"); // TODO: raise notification
-                break;
-            }
-            else if (e != platform::RS2_USB_STATUS_SUCCESS) {
-                LOG_ERROR("Bulk error " << platform::usb_status_to_string.at(e));
-                continue;
-            }
-            if (transferred != response->header.dwLength) {
-                LOG_ERROR("Bulk received " << transferred << " but header was " << response->header.dwLength << " bytes (max_response_size was " << MAX_TRANSFER_SIZE << ")");
-                continue;
+
+            auto header = (bulk_message_raw_stream_header *)request->get_buffer().data();
+            if (transferred != header->header.dwLength) {
+                LOG_ERROR("Bulk received " << transferred << " but header was " << header->header.dwLength << " bytes (max_response_size was " << MAX_TRANSFER_SIZE << ")");
             }
             LOG_DEBUG("Got " << transferred << " on bulk stream endpoint");
 
-            auto header = (bulk_message_raw_stream_header*)buffer.get();
             if(header->header.wMessageID == DEV_STATUS) {
-                auto res = (bulk_message_response_header*)response;
+                auto res = (bulk_message_response_header*)header;
                 if(res->wStatus == DEVICE_STOPPED)
                     LOG_DEBUG("Got device stopped message");
                 else
                     LOG_WARNING("Unhandled DEV_STATUS " << status_name(*res));
             }
             else if(header->header.wMessageID == SLAM_GET_LOCALIZATION_DATA_STREAM) {
-                LOG_INFO("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)response)));
+                LOG_INFO("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)header)));
                 receive_localization_data_chunk((interrupt_message_get_localization_data_stream *)header);
             }
             else if(header->header.wMessageID == DEV_SAMPLE) {
@@ -1340,10 +1332,15 @@ namespace librealsense
                 else
                     LOG_ERROR("Unexpected DEV_SAMPLE with " << GET_SENSOR_TYPE(header->bSensorID) << " " << GET_SENSOR_INDEX(header->bSensorID));
             }
-            else
+            else {
                 LOG_ERROR("Unexpected message on raw endpoint " << header->header.wMessageID);
-                continue;
-        }
+            }
+
+            _device->submit_request(request);
+        });
+
+        _stream_request = _device->stream_read_request(buffer, _stream_callback);
+        _device->submit_request(_stream_request);
     }
 
     void tm2_sensor::print_logs(const std::unique_ptr<bulk_message_response_get_and_clear_event_log> & log)
@@ -1366,8 +1363,8 @@ namespace librealsense
     {
         bulk_message_request_get_and_clear_event_log log_request = {{ sizeof(log_request), DEV_GET_AND_CLEAR_EVENT_LOG }};
         bulk_message_response_get_and_clear_event_log *log_response = log_buffer.get();
-        int usb_response = _device->bulk_request_response(log_request, *log_response, sizeof(bulk_message_response_get_and_clear_event_log), false);
-        if(usb_response) return false;
+        platform::usb_status usb_response = _device->bulk_request_response(log_request, *log_response, sizeof(bulk_message_response_get_and_clear_event_log), false);
+        if(usb_response != platform::RS2_USB_STATUS_SUCCESS) return false;
 
         if(log_response->header.wStatus == INVALID_REQUEST_LEN || log_response->header.wStatus == INTERNAL_ERROR)
             LOG_ERROR("T265 log size mismatch " << status_name(log_response->header));
@@ -1385,8 +1382,10 @@ namespace librealsense
                 print_logs(log_buffer);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-            else
+            else {
+                LOG_INFO("Got bad response, stopping log_poll");
                 break;
+            }
         }
     }
 
@@ -1397,7 +1396,11 @@ namespace librealsense
             bulk_message_response_get_time response = {};
 
             auto start = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
-            _device->bulk_request_response(request, response);
+            platform::usb_status usb_response = _device->bulk_request_response(request, response);
+            if(usb_response != platform::RS2_USB_STATUS_SUCCESS) {
+                LOG_INFO("Got bad response, stopping time sync");
+                break;
+            }
             auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
 
             double device_ms = (double)response.llNanoseconds*1e-6;
@@ -1919,11 +1922,7 @@ namespace librealsense
         uint32_t transferred = 0;
         platform::usb_status e;
         e = usb_messenger->bulk_transfer(endpoint_msg_out, (uint8_t*)&request, length, transferred, USB_TIMEOUT);
-        if (e == platform::RS2_USB_STATUS_NO_DEVICE) {
-            //TODO: platform::RS2_USB_STATUS_NO_DEVICE raise disconnection
-            return e;
-        }
-        else if (e != platform::RS2_USB_STATUS_SUCCESS) {
+        if (e != platform::RS2_USB_STATUS_SUCCESS) {
             LOG_ERROR("Bulk request error " << platform::usb_status_to_string.at(e));
             return e;
         }
@@ -1976,18 +1975,34 @@ namespace librealsense
         return e;
     }
 
-    platform::usb_status tm2_device::stream_read(uint8_t * buffer, size_t max_size, uint32_t & received)
+    platform::rs_usb_request tm2_device::stream_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback)
     {
-        std::lock_guard<std::mutex> lock(stream_mutex);
-
-        return usb_messenger->bulk_transfer(endpoint_bulk_in, buffer, int(max_size), received, USB_SHORT_TIMEOUT);
+        auto request = usb_messenger->create_request(endpoint_bulk_in);
+        request->set_buffer(buffer);
+        request->set_callback(callback);
+        return request;
     }
 
-    platform::usb_status tm2_device::interrupt_read(uint8_t * buffer, size_t max_size, uint32_t & received)
+    void tm2_device::submit_request(platform::rs_usb_request request)
     {
-        std::lock_guard<std::mutex> lock(interrupt_mutex);
+        auto e = usb_messenger->submit_request(request);
+        if (e != platform::RS2_USB_STATUS_SUCCESS)
+            throw std::runtime_error("failed to submit request, error: " + platform::usb_status_to_string.at(e));
+    }
 
-        return usb_messenger->bulk_transfer(endpoint_int_in, buffer, int(max_size), received, USB_SHORT_TIMEOUT);
+    void tm2_device::cancel_request(platform::rs_usb_request request)
+    {
+        auto e = usb_messenger->cancel_request(request);
+        if (e != platform::RS2_USB_STATUS_SUCCESS)
+            throw std::runtime_error("failed to cancel request, error: " + platform::usb_status_to_string.at(e));
+    }
+
+    platform::rs_usb_request tm2_device::interrupt_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback)
+    {
+        auto request = usb_messenger->create_request(endpoint_int_in);
+        request->set_buffer(buffer);
+        request->set_callback(callback);
+        return request;
     }
 
     /**

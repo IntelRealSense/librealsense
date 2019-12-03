@@ -61,13 +61,15 @@ namespace librealsense
         std::mutex bulk_mutex;
         template<typename Request, typename Response> platform::usb_status bulk_request_response(const Request &request, Response &response, size_t max_response_size = 0, bool assert_success = true);
 
-        std::mutex interrupt_mutex;
-        platform::usb_status interrupt_read(uint8_t * buffer, size_t max_read, uint32_t & received);
+        platform::rs_usb_request interrupt_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback);
 
         std::mutex stream_mutex;
-        platform::usb_status stream_read(uint8_t * buffer, size_t max_read, uint32_t & received);
         platform::usb_status stream_write(const t265::bulk_message_request_header * request);
 
+        platform::rs_usb_request stream_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback);
+
+        void submit_request(platform::rs_usb_request request);
+        void cancel_request(platform::rs_usb_request request);
 
         friend class tm2_sensor;
     };
@@ -160,19 +162,21 @@ namespace librealsense
 
         void print_logs(const std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log);
 
-        void interrupt_endpoint();
-        void stream_endpoint();
+        void start_stream();
+        void start_interrupt();
         void time_sync();
         void log_poll();
         bool log_poll_once(std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log_buffer);
-        std::thread _interrupt_endpoint_thread;
-        std::thread _stream_endpoint_thread;
         std::thread _time_sync_thread;
         std::thread _log_poll_thread;
-        std::atomic<bool> _interrupt_endpoint_thread_stop;
-        std::atomic<bool> _stream_endpoint_thread_stop;
         std::atomic<bool> _time_sync_thread_stop;
         std::atomic<bool> _log_poll_thread_stop;
+
+        platform::rs_usb_request          _interrupt_request;
+        platform::rs_usb_request_callback _interrupt_callback;
+
+        platform::rs_usb_request          _stream_request;
+        platform::rs_usb_request_callback _stream_callback;
 
         float last_exposure = 200.f;
         float last_gain = 1.f;
