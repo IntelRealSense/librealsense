@@ -219,7 +219,7 @@ namespace librealsense
         if (!frame || frame.is<rs2::frameset>())
             return false;
 
-        if (frame.get_profile().format() != RS2_FORMAT_Z16)
+        if (frame.get_profile().stream_type() != RS2_STREAM_DEPTH)
             return false;
 
         return true;
