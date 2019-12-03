@@ -1910,6 +1910,13 @@ namespace librealsense
         LOG_DEBUG("Destroying T265 device");
     }
 
+    void tm2_device::hardware_reset()
+    {
+        LOG_INFO("Sending hardware reset");
+        uint32_t transferred;
+        usb_messenger->control_transfer(0x40, 0x10, 0, 0, nullptr, 0, transferred, USB_TIMEOUT);
+    }
+
     template<typename Request, typename Response>
     platform::usb_status tm2_device::bulk_request_response(const Request &request, Response &response, size_t max_response_size, bool assert_success)
     {

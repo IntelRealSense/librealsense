@@ -28,6 +28,8 @@ namespace librealsense
 
         virtual ~tm2_device();
 
+        void hardware_reset() override;
+
         void enable_loopback(const std::string& source_file) override;
         void disable_loopback() override;
         bool is_enabled() const override;
