@@ -52,12 +52,9 @@ function(dl_vino_model filename sha1)
         file(DOWNLOAD "${OPENVINO_MODEL_SRC_URL}/${filename}" "${path}"
             EXPECTED_HASH SHA1=${sha1}
             STATUS status)
-        list(GET status 0 error_code)
-        if (NOT ${error_code} EQUAL 0)
-            message(FATAL_ERROR "Error (${status}) downloading: ${OPENVINO_MODEL_SRC_URL}/${filename}")
-        endif()
     endif()
 endfunction()
 
 # List all the specific examples for OpenVINO
 add_subdirectory(face)
+add_subdirectory(dnn)

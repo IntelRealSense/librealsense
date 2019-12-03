@@ -8,6 +8,7 @@ be used together with the OpenVINO™ toolkit in the domain of computer-vision.
 
 ## List of Samples:
 1. [Face](./face) - Facial recognition
+2. [DNN](./dnn) - Object detection with MobileNet-SSD
 
 ## Getting Started:
 Before attempting any installation of OpenVINO, it is highly recommended that
@@ -75,11 +76,11 @@ and the individual samples to see how to properly integrate with OpenVINO.
 
 ### Runtime Dependencies
 
-Many of the examples require DLL files or collaterals that can be found. Rather
-than specify a hard-coded path, they usually expect these to be available in the
-same directory as the .exe. If the .exe is at `c:/work/lrs/build/Release` then
-place any missing DLLs or models in the same directory, or change the code to
-look in a different place.
+Many of the examples require DLL files or collaterals that need to be found.
+Rather than specify a hard-coded path, they usually expect these to be available
+in the same directory as the .exe.
+If the .exe is at `c:/work/lrs/build/Release` then place any missing DLLs or
+models in the same directory, or change the code to look in a different place.
 
 For example, the following OpenCV DLLs were needed for the non-Debug executable,
 and were copied from `${OpenCV_DIR}/bin` to the `RelWithDebInfo` directory where
@@ -102,6 +103,22 @@ following three are placed in `build/wrappers/openvino/face`:
 Pre-trained models were taken from the [OpenVINO model zoo](https://software.intel.com/en-us/openvino-toolkit/documentation/pretrained-models),
 and [public models](https://software.intel.com/en-us/articles/model-downloader-essentials)
 were converted using the Model Converter.
+
+### The Device
+
+The OpenVINO models may be loaded into any available device—CPU, GPU, Movidius™
+Neural Compute Stick, or FPGA—provided the right .dll or .so files are
+available.
+
+By default, the samples use the `CPU` device for running rather than assuming a
+GPU. If no discreet GPU is available, the CPU will likely run faster, but feel
+free to experiment by chaning the device.
+
+To use the `CPU` device, the samples compile and depend on `cpu_extension.dll`
+(Windows) or `libcpu_extension.so` (Linux) at runtime.
+If you encounter runtime error complaining of a missing component by these names,
+these can be found as a result of the regular build and then placed in the same
+place as all the model files (i.e., the current directory or alongside the .exe).
 
 ### Linux
 
