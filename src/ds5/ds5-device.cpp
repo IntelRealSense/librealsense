@@ -609,10 +609,6 @@ namespace librealsense
         }
         else
         {
-            //#define V4L2_CTRL_CLASS_CAMERA		0x009a0000	/* Camera class controls */
-            //#define DS5_CAMERA_CID_BASE           (V4L2_CTRL_CLASS_CAMERA | DS5_STREAM_CONFIG_0)
-            //#define DS5_CAMERA_CID_HWMC           (DS5_CAMERA_CID_BASE+15)
-
             if (!mipi_sensor)
                 _hw_monitor = std::make_shared<hw_monitor>(
                     std::make_shared<locked_transfer>(
@@ -669,7 +665,7 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        auto advanced_mode = mipi_sensor ? false : is_camera_in_advanced_mode();
+        auto advanced_mode = is_camera_in_advanced_mode();
 
         using namespace platform;
         auto _usb_mode = usb3_type;
