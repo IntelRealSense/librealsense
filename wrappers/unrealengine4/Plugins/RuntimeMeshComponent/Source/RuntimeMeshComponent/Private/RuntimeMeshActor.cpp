@@ -12,7 +12,11 @@ ARuntimeMeshActor::ARuntimeMeshActor(const FObjectInitializer& ObjectInitializer
 	, bRunGenerateMeshesOnConstruction(true)
 	, bRunGenerateMeshesOnBeginPlay(false)
 {
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 24
 	SetCanBeDamaged(false);
+#else
+	bCanBeDamaged = false;
+#endif
 
 	RuntimeMeshComponent = CreateDefaultSubobject<URuntimeMeshComponent>(TEXT("RuntimeMeshComponent0"));
 	RuntimeMeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
