@@ -158,6 +158,8 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_relocalization", RS2_OPTION_ENABLE_RELOCALIZATION)
         .value("enable_pose_jumping", RS2_OPTION_ENABLE_POSE_JUMPING)
         .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
+        .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
+        .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

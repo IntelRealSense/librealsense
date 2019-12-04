@@ -62,6 +62,8 @@ classdef option < int64
         depth_offset                    (59)
         led_power                       (60)
         zero_order_enabled              (61)
-        count                           (62)
+        enable_depth_offset             (62)
+        enable_map_preservation         (63)
+        count                           (64)
     end
 end
