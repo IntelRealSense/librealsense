@@ -851,47 +851,49 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 		
-        auto advanced_mode = is_camera_in_advanced_mode();
+        //D431 Development
+        auto advanced_mode = mipi_sensor ? true : is_camera_in_advanced_mode();
 
-            auto _usb_mode = usb3_type;
-            usb_type_str = usb_spec_names.at(_usb_mode);
-            usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
-            if (usb_modality)
-            {
-                _usb_mode = raw_depth_sensor.get_usb_specification();
-                if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
-                    usb_type_str = usb_spec_names.at(_usb_mode);
-                else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
-                    usb_modality = false;
-            }
+        using namespace platform;
+        auto _usb_mode = usb3_type;
+        usb_type_str = usb_spec_names.at(_usb_mode);
+        usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
+        if (usb_modality)
+        {
+            _usb_mode = raw_depth_sensor.get_usb_specification();
+            if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
+                usb_type_str = usb_spec_names.at(_usb_mode);
+            else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
+                usb_modality = false;
+        }
 
-            if (_fw_version >= firmware_version("5.12.1.1"))
-            {
-                depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-            }
+        if (_fw_version >= firmware_version("5.12.1.1"))
+        {
+            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
+        }
 
-            depth_sensor.register_processing_block(
-                { {RS2_FORMAT_Y8I} },
-                { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-                []() { return std::make_shared<y8i_to_y8y8>(); }
-            ); // L+R
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Y8I} },
+            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+            []() { return std::make_shared<y8i_to_y8y8>(); }
+        ); // L+R
 
-            depth_sensor.register_processing_block(
-                { RS2_FORMAT_Y12I },
-                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y12i_to_y16y16>(); }
-            );
-            pid_hex_str = hexify(_pid);
+        depth_sensor.register_processing_block(
+            { RS2_FORMAT_Y12I },
+            { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+            []() {return std::make_shared<y12i_to_y16y16>(); }
+        );
+        pid_hex_str = hexify(_pid);
 
-            if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
-            {
-                depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
-                    std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
-                        "Hardware pipe configuration"));
-                depth_sensor.register_option(RS2_OPTION_LED_POWER,
-                    std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_sensor, depth_xu, DS5_LED_PWR,
-                        "Set the power level of the LED, with 0 meaning LED off"));
-            }
+        if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
+        {
+            depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
+                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
+                    "Hardware pipe configuration"));
+            depth_sensor.register_option(RS2_OPTION_LED_POWER,
+                std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_sensor, depth_xu, DS5_LED_PWR,
+                    "Set the power level of the LED, with 0 meaning LED off"));
+        }
 
         if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
             {
