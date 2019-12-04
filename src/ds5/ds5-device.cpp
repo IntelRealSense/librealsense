@@ -665,7 +665,8 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        auto advanced_mode = is_camera_in_advanced_mode();
+        //D431 Development
+        auto advanced_mode = mipi_sensor ? true : is_camera_in_advanced_mode();
 
         using namespace platform;
         auto _usb_mode = usb3_type;
