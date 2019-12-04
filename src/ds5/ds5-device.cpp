@@ -900,7 +900,6 @@ namespace librealsense
             auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
                 ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
-            auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
             _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
 
@@ -1014,7 +1013,7 @@ namespace librealsense
                         options_and_reasons));
             }
 
-            if (_fw_version >= hdr_firmware_version)
+        if (_fw_version >= firmware_version("5.5.8.0"))
             {
                 std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
                         std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
@@ -1034,16 +1033,18 @@ namespace librealsense
                         options_and_reasons));
             }
             else
+        if (!mipi_sensor)
+        {
             {
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
             }
-        }
-        else if (_fw_version >= firmware_version("5.10.9.0") && 
+            }
+        else if (_fw_version >= firmware_version("5.10.9.0") &&
             (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
-            _fw_version.experimental()) // Not yet available in production firmware
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-        }
+                _fw_version.experimental()) // Not yet available in production firmware
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
+            }
 
         if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
         {
@@ -1062,11 +1063,12 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                     std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
             }
-        }
+            }
 
-        roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-        if (roi_sensor)
-            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
+            if (roi_sensor)
+                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        }
 
         depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
