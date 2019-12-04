@@ -312,6 +312,18 @@ namespace librealsense
                 _device->probe_and_commit(req_profile_base->get_backend_profile(),
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
+                    // D431 demo - avoid handling of the partial frames
+//                    const auto&& vspl = As<video_stream_profile, stream_profile_interface>(req_profile);
+//                    int w = vspl ? vspl->get_width() : 0;
+//                    int h = vspl ? vspl->get_height() : 0;
+//                    int bppl = get_image_bpp(req_profile_base->get_format());
+//                    size_t req_size = size_t(w * h * bppl / 8);
+//                    if (f.frame_size < req_size)
+//                    {
+//                        std::cout << "Actual size = " <<  f.frame_size << " , expected = " << req_size << std::endl;
+//                        return;
+//                    }
+
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option

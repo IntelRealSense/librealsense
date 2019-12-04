@@ -272,9 +272,12 @@ namespace librealsense
 
     void global_time_interface::enable_time_diff_keeper(bool is_enable)
     {
-        if (is_enable)
-            _tf_keeper->start();
-        else
-            _tf_keeper->stop();
+        if (_tf_keeper->is_enabled())
+        {
+            if (is_enable)
+                _tf_keeper->start();
+            else
+                _tf_keeper->stop();
+        }
     }
 }

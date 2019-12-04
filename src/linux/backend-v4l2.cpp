@@ -1719,7 +1719,18 @@ namespace librealsense
 
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
-            LOG_INFO("Function not implemented - " << __FUNCTION__);
+            v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
+            xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
+            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &xctrl};
+            if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
+            {
+                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                    return false;
+
+                throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
+            }
+            // TODO verify parsing is correct D431
+            //memcpy((void*)data,xctrl.ptr,size);
             return true;
         }
 

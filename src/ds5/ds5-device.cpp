@@ -559,19 +559,27 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+        enable_global_time_option->set(false);
+        _tf_keeper->set_enabling_opt(enable_global_time_option);
         auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
 
         raw_depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, raw_depth_ep);
-        depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        // D431 Demo
+        bool mipi_sensor = (ds::RS431_PID == all_device_infos.front().pid);
+        if (!mipi_sensor)
+            depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
         depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1));
         depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
 
-        depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
-        depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
+        if (!mipi_sensor)
+        {
+            depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
+            depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
+        }
 
         return depth_ep;
     }
@@ -666,7 +674,7 @@ namespace librealsense
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
         //D431 Development
-        auto advanced_mode = mipi_sensor ? true : is_camera_in_advanced_mode();
+        auto advanced_mode = mipi_sensor ? false : is_camera_in_advanced_mode();
 
         using namespace platform;
         auto _usb_mode = usb3_type;

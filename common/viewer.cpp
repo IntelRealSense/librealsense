@@ -766,9 +766,10 @@ namespace rs2
         }
     }
 
+    //D431 Demo - no sync by default to improve performance
     viewer_model::viewer_model()
             : ppf(*this), 
-              synchronization_enable(true),
+              synchronization_enable(false),
               zo_sensors(0),
               frameset_alloc(this)
     {
