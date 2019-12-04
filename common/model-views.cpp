@@ -1409,6 +1409,15 @@ namespace rs2
 
             int selection_index{};
 
+            // D431 dev
+            if ((std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Sensor") &&
+                  (std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) == "ABCD"))
+             {
+                 resolution_constrain = std::make_pair(1920, 1080);
+             }
+
+            std::cout   << "Sensor = " << std::string(s->get_info(RS2_CAMERA_INFO_NAME))
+                        << " PID = " << std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) << std::endl;
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)
