@@ -939,6 +939,9 @@ namespace librealsense
 
             }
 
+			// minimal firmware version in which hdr feature is supported
+            firmware_version hdr_firmware_version("5.12.8.100");
+
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
@@ -1064,7 +1067,10 @@ namespace librealsense
                 }
                 else
                 {
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+			    	if (!mipi_sensor)
+                    {
+                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+				    }
                 }
             }
             else if (_fw_version >= firmware_version("5.10.9.0") && 
@@ -1096,6 +1102,7 @@ namespace librealsense
             roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
             if (roi_sensor)
                 roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        }
 
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
                 lazy<float>([this]() { return get_stereo_baseline_mm(); })));
