@@ -723,7 +723,8 @@ namespace librealsense
             }
 #endif
 
-            depth_sensor.register_pu(RS2_OPTION_GAIN);
+            if (!mipi_sensor)
+                depth_sensor.register_pu(RS2_OPTION_GAIN);
             auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
                 depth_xu,
                 DS5_EXPOSURE,
@@ -742,7 +743,7 @@ namespace librealsense
                     enable_auto_exposure));
         }
 
-        if (_fw_version >= firmware_version("5.5.8.0"))
+        if (_fw_version >= firmware_version("5.5.8.0") && (!mipi_sensor) )
         {
             depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                 std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
@@ -765,25 +766,28 @@ namespace librealsense
 
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
-        if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+        if (!mipi_sensor)
         {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor));
-        }
-        else if (_fw_version >= firmware_version("5.10.9.0") &&
-            _fw_version.experimental()) // Not yet available in production firmware
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-        }
+            if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor));
+            }
+            else if (_fw_version >= firmware_version("5.10.9.0") &&
+                _fw_version.experimental()) // Not yet available in production firmware
+            {
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
+            }
 
-        if (_fw_version >= firmware_version("5.9.15.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor));
-        }
+            if (_fw_version >= firmware_version("5.9.15.1"))
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor));
+            }
 
-        roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-        if (roi_sensor)
-            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
+            if (roi_sensor)
+                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        }
 
         depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));

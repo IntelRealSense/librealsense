@@ -73,7 +73,7 @@ namespace librealsense
         {
             if (!one_time_note)
             {
-                LOG_WARNING("UVC metadata payloads not available. Please refer to the installation chapter for details.");
+                LOG_INFO("UVC metadata payloads not available. Please refer to the installation chapter for details.");
                 one_time_note = true;
             }
             return _backup_timestamp_reader->get_frame_timestamp(frame);

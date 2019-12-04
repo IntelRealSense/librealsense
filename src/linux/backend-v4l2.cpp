@@ -477,7 +477,7 @@ namespace librealsense
                         continue;
                     if (!std::regex_search(real_path, video_dev_pattern))
                     {
-                        LOG_INFO("Skipping Video4Linux entry " << real_path << " - not a device");
+                        //LOG_INFO("Skipping Video4Linux entry " << real_path << " - not a device");
                         continue;
                     }
                 }
@@ -1742,7 +1742,7 @@ namespace librealsense
                     << "\n Elements = " << xctrl_query.elems);
 
             return { static_cast<int32_t>(xctrl_query.minimum), static_cast<int32_t>(xctrl_query.maximum),
-                     static_cast<int32_t>(xctrl_query.default_value), static_cast<int32_t>(xctrl_query.step)};
+                     static_cast<int32_t>(xctrl_query.step), static_cast<int32_t>(xctrl_query.default_value)};
         }
 
         control_range v4l_mipi_device::get_pu_range(rs2_option option) const
@@ -1773,10 +1773,10 @@ namespace librealsense
                 {
                     case RS_HWMONITOR: return RS_CAMERA_CID_HWMC;
                     case RS_DEPTH_EMITTER_ENABLED: return RS_CAMERA_CID_LASER_POWER;
-                    case RS_EXPOSURE: return RS_CAMERA_CID_MANUAL_EXPOSURE;
+                    case RS_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE;//RS_CAMERA_CID_MANUAL_EXPOSURE; V4L2_CID_EXPOSURE_ABSOLUTE
                     case RS_LASER_POWER: return RS_CAMERA_CID_MANUAL_LASER_POWER;
                     case RS_ENABLE_AUTO_WHITE_BALANCE : return RS_CAMERA_CID_WHITE_BALANCE_MODE;
-                    case RS_ENABLE_AUTO_EXPOSURE: return RS_CAMERA_CID_EXPOSURE_MODE;
+                    case RS_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; //RS_CAMERA_CID_EXPOSURE_MODE;
                     case RS_HARDWARE_PRESET : return RS_CAMERA_CID_PRESET;
                     // D431 Missing functionality
                     //case RS_ERROR_REPORTING: TBD;

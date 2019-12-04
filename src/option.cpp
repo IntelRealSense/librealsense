@@ -166,7 +166,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_v4l_ctl::send_receive(c
             if (require_response)
             {
                 uint32_t data_size = *(reinterpret_cast<uint32_t*>(transmit_buf.data() + HW_MONITOR_BUFFER_SIZE));
-                std::cout << " data_size  =" << data_size << std::endl;
+                //std::cout << " data_size  =" << data_size << std::endl;
                 result.insert(result.begin(),transmit_buf.begin()+24,transmit_buf.begin()+24+data_size);
                 //result.resize(HW_MONITOR_BUFFER_SIZE+SIZE_OF_HW_MONITOR_HEADER);
 //                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))

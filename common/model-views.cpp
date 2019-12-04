@@ -1057,6 +1057,15 @@ namespace rs2
 
             int fps_constrain = usb2 ? 15 : 30;
             auto resolution_constrain = usb2 ? std::make_pair(640, 480) : default_resolution;
+            // D431 dev
+            if ((std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Sensor") &&
+                  (std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) == "ABCD"))
+             {
+                 resolution_constrain = std::make_pair(1920, 1080);
+             }
+
+            std::cout   << "Sensor = " << std::string(s->get_info(RS2_CAMERA_INFO_NAME))
+                        << " PID = " << std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) << std::endl;
 
             // TODO: Once GLSL parts are properly optimised
             // and tested on all types of hardware
