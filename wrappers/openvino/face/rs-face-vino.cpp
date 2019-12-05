@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) try
 
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
-    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and disable the exception):
+    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
     openvino::Core engine;
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) try
     const auto window_name = "OpenVINO face detection sample";
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
 
-    bool firstFrame = true;
+    bool first_frame = true;
     cv::Mat prev_image;
     openvino_helpers::detected_faces faces;
     size_t id = 0;
@@ -85,11 +85,11 @@ int main(int argc, char * argv[]) try
         auto image = frame_to_mat( color_frame );
 
         // We process the previous frame so if this is our first then queue it and continue
-        if( firstFrame )
+        if( first_frame )
         {
             faceDetector.enqueue( image );
             faceDetector.submit_request();
-            firstFrame = false;
+            first_frame = false;
             prev_image = image;
             continue;
         }
@@ -104,9 +104,8 @@ int main(int argc, char * argv[]) try
 
         openvino_helpers::detected_faces prev_faces { std::move( faces ) };
         faces.clear();
-        for( size_t i = 0; i < results.size(); ++i )
+        for( auto const & result : results )
         {
-            auto const & result = results[i];
             cv::Rect rect = result.location;
             rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
             auto face_ptr = openvino_helpers::find_face( rect, prev_faces );

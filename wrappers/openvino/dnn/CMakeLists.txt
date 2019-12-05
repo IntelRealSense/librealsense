@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealSenseVinoDnnExample)
 
 
-# OpenCV is required here
+# OpenCV is required here. You can simply use the version that's supplied with
+# OpenVINO (${INTEL_OPENVINO_DIR}/opencv/cmake).
 if(NOT DEFINED OpenCV_DIR  OR  NOT IS_DIRECTORY ${OpenCV_DIR})
 	set(OpenCV_DIR "" CACHE PATH "The path to the OpenCV Toolkit build directory")
 	message( FATAL_ERROR "OpenVINO examples require OpenCV; specify OpenCV_DIR" )

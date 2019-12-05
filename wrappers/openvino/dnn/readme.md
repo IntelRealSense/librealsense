@@ -9,9 +9,15 @@ basic depth information to approximate distance.
 The same exact neural network is used here as in the OpenCV DNN sample, for
 comparison.
 
-## Implementation
+## Requirements
 
-This sample makes use of OpenCV.
+A camera with both depth and RGB sensors is required.
+
+This sample makes use of OpenCV. You can use the OpenCV that is packaged
+with OpenVINO by pointing OpenCV_DIR to `${INTEL_OPENVINO_DIR}/opencv/cmake`.
+
+
+## Implementation
 
 Though we are detecting general objects in the neural network, the inputs and
 outputs are the same as those for facial detections. We can therefore reuse the
@@ -42,6 +48,7 @@ These are not provided by the OpenVINO model zoo and need to be created
 manually according to the classes used when training the model.
 See the format in `mobilenet-ssd.labels` for an example: one line per
 classification, starting at 0 (which is expected to be the background).
+
 
 ## Speed
 

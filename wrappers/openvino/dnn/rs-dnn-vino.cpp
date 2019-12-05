@@ -89,6 +89,107 @@ void load_detectors_into(
 }
 
 
+/*
+    Main detection code:
+
+    Detected objects are placed into 'objects'. Each new object is assigned 'next_id', which is then incremented.
+    The 'labels' are optional, and used to give labels to each object.
+    
+    Some basic effort is made to keep the creation of new objects to a minimum: previous objects (passed in via
+    'objects') are compared with new detections to see if the new are simply new positions for the old. An
+    "intersection over union" (IoU) quotient is calculated and, if over a threshold, an existing object is moved
+    rather than a new one created.
+*/
+void detect_objects(
+    cv::Mat const & image,
+    std::vector< openvino_helpers::face_detection::Result > const & results,
+    std::vector< std::string > & labels,
+    size_t & next_id,
+    openvino_helpers::detected_faces & objects
+)
+{
+    openvino_helpers::detected_faces prev_objects{ std::move( objects ) };
+    objects.clear();
+    for( auto const & result : results )
+    {
+        if( result.label <= 0 )
+            continue;  // ignore "background", though not clear why we'd get it
+        cv::Rect rect = result.location;
+        rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
+        auto object_ptr = openvino_helpers::find_face( rect, prev_objects );
+        if( ! object_ptr )
+        {
+            // New face
+            std::string label;
+            if( result.label < labels.size() )
+                label = labels[result.label];
+            object_ptr = std::make_shared< openvino_helpers::detected_face >( next_id++, label, rect );
+        }
+        else
+        {
+            // Existing face; just update its parameters
+            object_ptr->move( rect );
+        }
+        objects.push_back( object_ptr );
+    }
+}
+
+
+/*
+    Draws the detected objects with a distance calculated at the center pixel of each face
+*/
+void draw_objects(
+    cv::Mat & image,
+    rs2::depth_frame depth_frame,
+    openvino_helpers::detected_faces const & objects
+)
+{
+    cv::Scalar const green( 0, 255, 0 );  // BGR
+    cv::Scalar const white( 255, 255, 255 );  // BGR
+    
+    for( auto && object : objects )
+    {
+        auto r = object->get_location();
+        cv::rectangle( image, r, green );
+
+        // Output the distance to the center
+        auto center_x = r.x + r.width / 2;
+        auto center_y = r.y + r.height / 2;
+        auto d = depth_frame.get_distance( center_x, center_y );
+        if( d )
+        {
+            std::ostringstream ss;
+            ss << object->get_label() << " ";
+            ss << std::setprecision( 2 ) << d;
+            ss << " meters away";
+            cv::putText( image, ss.str(), cv::Point( r.x + 5, r.y + r.height - 5 ), cv::FONT_HERSHEY_SIMPLEX, 0.4, white );
+        }
+    }
+}
+
+
+/*
+    When the user switches betweem models we show the detector number for 1 second as an
+    overlay over the image, centered.
+*/
+void draw_detector_overlay(
+    cv::Mat & image,
+    size_t current_detector,
+    high_resolution_clock::time_point switch_time
+)
+{
+    double alpha = std::max( 0LL, 1000 - duration_cast<milliseconds>(high_resolution_clock::now() - switch_time).count() ) / 1000.;
+    std::string str( 1, char( '1' + current_detector ) );
+    auto size = cv::getTextSize( str, cv::FONT_HERSHEY_SIMPLEX, 3, 1, nullptr );
+    cv::Point center{ image.cols / 2, image.rows / 2 };
+    cv::Rect r{ center.x - size.width, center.y - size.height, size.width * 2, size.height * 2 };
+    cv::Mat roi = image( r );
+    cv::Mat overlay( roi.size(), CV_8UC3, cv::Scalar( 32, 32, 32 ) );
+    cv::putText( overlay, str, cv::Point{ r.width / 2 - size.width / 2, r.height / 2 + size.height / 2 }, cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar{ 255, 255, 255 } );
+    cv::addWeighted( overlay, alpha, roi, 1 - alpha, 0, roi );   // roi = overlay * alpha + roi * (1-alpha) + 0
+}
+
+
 int main(int argc, char * argv[]) try
 {
     el::Configurations conf;
@@ -104,7 +205,7 @@ int main(int argc, char * argv[]) try
 
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
-    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and disable the exception):
+    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
     openvino::Core engine;
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
@@ -136,7 +237,7 @@ int main(int argc, char * argv[]) try
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
 
     cv::Mat prev_image;
-    openvino_helpers::detected_faces faces;
+    openvino_helpers::detected_faces objects;
     size_t id = 0;
     uint64 last_frame_number = 0;
     high_resolution_clock::time_point switch_time = high_resolution_clock::now();
@@ -150,6 +251,8 @@ int main(int argc, char * argv[]) try
 
         auto color_frame = frames.get_color_frame();
         auto depth_frame = frames.get_depth_frame();
+        if( ! color_frame  ||  ! depth_frame )
+            continue;
 
         // If we only received a new depth frame, but the color did not update, continue
         if( color_frame.get_frame_number() == last_frame_number )
@@ -175,69 +278,18 @@ int main(int argc, char * argv[]) try
         p_detector->enqueue( image );
         p_detector->submit_request();
 
-        openvino_helpers::detected_faces prev_faces { std::move( faces ) };
-        faces.clear();
-        for( size_t i = 0; i < results.size(); ++i )
-        {
-            auto const & result = results[i];
-            if( result.label <= 0 )
-                continue;  // ignore "background", though not clear why we'd get it
-            cv::Rect rect = result.location;
-            rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
-            auto face_ptr = openvino_helpers::find_face( rect, prev_faces );
-            if( !face_ptr )
-            {
-                // New face
-                std::string label;
-                if( result.label < p_labels->size() )
-                    label = (*p_labels)[result.label];
-                face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, label, rect );
-            }
-            else
-            {
-                // Existing face; just update its parameters
-                face_ptr->move( rect );
-            }
-            faces.push_back( face_ptr );
-        }
+        // MAIN DETECTION
+        detect_objects( image, results, *p_labels, id, objects );
 
-        // Keep this image so we can actually process pieces of it once we have the results
+        // Keep it alive so we can actually process pieces of it once we have the results
         prev_image = image;
 
         // Display the results (from the last frame) as rectangles on top (of the current frame)
-        for( auto && face : faces )
-        {
-            cv::Scalar green( 0, 255, 0 );  // BGR
-            auto r = face->get_location();
-            cv::rectangle( image, r, green );
-
-            // Output the distance to the center
-            auto center_x = (r.x + r.width / 2) * depth_frame.get_width() / color_frame.get_width();
-            auto center_y = (r.y + r.height / 2) * depth_frame.get_height() / color_frame.get_height();
-            auto d = depth_frame.get_distance( center_x, center_y );
-            if( d )
-            {
-                std::ostringstream ss;
-                ss << face->get_label() << " ";
-                ss << std::setprecision( 2 ) << d;
-                ss << " meters away";
-                cv::Scalar white( 255, 255, 255 );  // BGR
-                cv::putText( image, ss.str(), cv::Point( r.x + 5, r.y + r.height - 5 ), cv::FONT_HERSHEY_SIMPLEX, 0.4, white );
-            }
-        }
-
-        // Show the current detector number as an overlay over the image for 1 second
-        double alpha = std::max( 0LL, 1000 - duration_cast<milliseconds>(high_resolution_clock::now() - switch_time).count() ) / 1000.;
-        std::string str( 1, char( '1' + current_detector ));
-        auto size = cv::getTextSize( str, cv::FONT_HERSHEY_SIMPLEX, 3, 1, nullptr );
-        cv::Point center { image.cols / 2, image.rows / 2 };
-        cv::Rect r { center.x - size.width, center.y - size.height, size.width * 2, size.height * 2 };
-        cv::Mat roi = image( r );
-        cv::Mat overlay( roi.size(), CV_8UC3, cv::Scalar( 32, 32, 32 ) );
-        cv::putText( overlay, str, cv::Point { r.width / 2 - size.width / 2, r.height / 2 + size.height / 2 }, cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar { 255, 255, 255 } );
-        cv::addWeighted( overlay, alpha, roi, 1 - alpha, 0, roi );   // roi = overlay * alpha + roi * (1-alpha) + 0
-
+        draw_objects( image, depth_frame, objects );
+        draw_detector_overlay( image, current_detector, switch_time );
         imshow( window_name, image );
+
+        // Handle the keyboard before moving to the next frame
         const int key = cv::waitKey( 1 );
         if( key == 27 )
             break;  // escape
@@ -249,7 +301,7 @@ int main(int argc, char * argv[]) try
                 current_detector = detector_index;
                 p_detector = detectors[current_detector].detector;
                 p_labels = &detectors[current_detector].labels;
-                faces.clear();
+                objects.clear();
                 LOG(INFO) << "Current detector set to (" << current_detector+1 << ") \"" << openvino_helpers::remove_ext( p_detector->pathToModel ) << "\"";
             }
             switch_time = high_resolution_clock::now();
