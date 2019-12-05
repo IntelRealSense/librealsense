@@ -19,7 +19,7 @@ import java.io.File;
 public class FileBrowserActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_READ = 0;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
     private String mFolder = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +31,7 @@ public class FileBrowserActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
@@ -41,14 +41,14 @@ public class FileBrowserActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if(!mPermissionsGrunted)
+        if(!mPermissionsGranted)
             return;
 
         TextView message = findViewById(R.id.list_view_title);

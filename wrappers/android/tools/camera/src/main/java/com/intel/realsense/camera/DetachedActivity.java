@@ -20,9 +20,11 @@ import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.FwLogger;
 import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.RsContext;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +34,7 @@ public class DetachedActivity extends AppCompatActivity {
     private static final int PLAYBACK_REQUEST_CODE = 1;
     private static final String MINIMAL_D400_FW_VERSION = "5.10.0.0";
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
     private Button mPlaybackButton;
 
     private Context mAppContext;
@@ -78,7 +80,7 @@ public class DetachedActivity extends AppCompatActivity {
 
         mMinimalFirmwares.put(ProductLine.D400, MINIMAL_D400_FW_VERSION);
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
@@ -88,14 +90,14 @@ public class DetachedActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mDetached = true;
-        if(mPermissionsGrunted) {
+        if(mPermissionsGranted) {
             RsContext.init(getApplicationContext());
             mRsContext.setDevicesChangedCallback(mListener);
             validatedDevice();
@@ -121,6 +123,12 @@ public class DetachedActivity extends AppCompatActivity {
                     if (!validateFwVersion(d))
                         return;
                     mDetached = false;
+                    SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+                    boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
+                    String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
+                    if(fw_logging_enabled && !fw_logging_file_path.equals("")){
+                        FwLogger.startFwLogging(fw_logging_file_path);
+                    }
                     finish();
                     Intent intent = new Intent(this, PreviewActivity.class);
                     startActivity(intent);

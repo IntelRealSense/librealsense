@@ -27,7 +27,7 @@ public class RecordingActivity extends AppCompatActivity {
     private Streamer mStreamer;
     private GLRsSurfaceView mGLSurfaceView;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private FloatingActionButton mStopRecordFab;
 
@@ -54,7 +54,7 @@ public class RecordingActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
@@ -64,14 +64,14 @@ public class RecordingActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if(mPermissionsGrunted){
+        if(mPermissionsGranted){
             mStreamer = new Streamer(this,true, new Streamer.Listener() {
                 @Override
                 public void config(Config config) {
