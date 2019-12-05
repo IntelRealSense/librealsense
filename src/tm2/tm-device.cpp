@@ -1220,11 +1220,11 @@ namespace librealsense
         return result;
     }
 
-    void tm2_sensor::start_interrupt()
+    bool tm2_sensor::start_interrupt()
     {
         std::vector<uint8_t> buffer(BUFFER_SIZE);
 
-        if (_interrupt_request) return;
+        if (_interrupt_request) return false;
 
         _interrupt_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
             uint32_t transferred = request->get_actual_length();
@@ -1289,6 +1289,7 @@ namespace librealsense
 
         _interrupt_request = _device->interrupt_read_request(buffer, _interrupt_callback);
         _device->submit_request(_interrupt_request);
+        return true;
     }
 
     void tm2_sensor::stop_interrupt()
@@ -1301,11 +1302,11 @@ namespace librealsense
         }
     }
 
-    void tm2_sensor::start_stream()
+    bool tm2_sensor::start_stream()
     {
         std::vector<uint8_t> buffer(MAX_TRANSFER_SIZE);
 
-        if (_stream_request) return;
+        if (_stream_request) return false;
 
         _stream_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
             uint32_t transferred = request->get_actual_length();
@@ -1349,6 +1350,7 @@ namespace librealsense
 
         _stream_request = _device->stream_read_request(buffer, _stream_callback);
         _device->submit_request(_stream_request);
+        return true;
     }
 
     void tm2_sensor::stop_stream()
@@ -1604,8 +1606,8 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("Unable to export relocalization map while streaming");
 
         auto sensor = _device->get_tm2_sensor();
-        sensor->start_interrupt();
-        sensor->start_stream();
+        bool interrupt_started = sensor->start_interrupt();
+        bool stream_started = sensor->start_stream();
 
         // Export first sends SLAM_GET_LOCALIZATION_DATA on bulk
         // endpoint and gets an acknowledgement there. That triggers
@@ -1625,8 +1627,8 @@ namespace librealsense
             },
             "Export localization map");
 
-        sensor->stop_stream();
-        sensor->stop_interrupt();
+        if(stream_started) sensor->stop_stream();
+        if(interrupt_started) sensor->stop_interrupt();
 
         if (res != async_op_state::_async_success)
             LOG_ERROR("Export localization map failed");
@@ -1640,8 +1642,8 @@ namespace librealsense
             throw wrong_api_call_sequence_exception("Unable to import relocalization map while streaming");
 
         auto sensor = _device->get_tm2_sensor();
-        sensor->start_interrupt();
-        sensor->start_stream();
+        bool interrupt_started = sensor->start_interrupt();
+        bool stream_started = sensor->start_stream();
 
         // Import the map by sending chunks of with id SLAM_SET_LOCALIZATION_DATA_STREAM
         auto res = perform_async_transfer(
@@ -1679,8 +1681,8 @@ namespace librealsense
             [&]() {},
             "Import localization map");
 
-        sensor->stop_stream();
-        sensor->stop_interrupt();
+        if(stream_started) sensor->stop_stream();
+        if(interrupt_started) sensor->stop_interrupt();
 
         if (res != async_op_state::_async_success)
             LOG_ERROR("Import localization map failed");

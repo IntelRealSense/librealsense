@@ -166,8 +166,8 @@ namespace librealsense
 
         void print_logs(const std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log);
 
-        void start_stream();
-        void start_interrupt();
+        bool start_stream();
+        bool start_interrupt();
         void stop_stream();
         void stop_interrupt();
         void time_sync();
