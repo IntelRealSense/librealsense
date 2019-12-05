@@ -201,7 +201,7 @@ namespace librealsense
         bool is_read_only() const override { return s._is_streaming; }
 
         explicit tracking_mode_option(tm2_sensor& sensor, const char *description_) :
-            s(sensor), description(description_), option_base(option_range{ 0, 1, !!(sensor._tm_mode & flag) ^ invert ? 1.f : 0.f, 1 }) { }
+            s(sensor), description(description_), option_base(option_range{ 0, 1, 1, !!(sensor._tm_mode & flag) ^ invert ? 1.f : 0.f }) { }
 
     private:
         tm2_sensor &s;
