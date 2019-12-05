@@ -42,6 +42,8 @@ namespace librealsense
         };
         bool compress_while_record() const override { return false; }
 
+        std::shared_ptr<tm2_sensor> get_tm2_sensor() { return _sensor; }
+
     protected:
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 
@@ -71,7 +73,7 @@ namespace librealsense
         platform::rs_usb_request stream_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback);
 
         void submit_request(platform::rs_usb_request request);
-        void cancel_request(platform::rs_usb_request request);
+        bool cancel_request(platform::rs_usb_request request);
 
         friend class tm2_sensor;
     };
@@ -166,6 +168,8 @@ namespace librealsense
 
         void start_stream();
         void start_interrupt();
+        void stop_stream();
+        void stop_interrupt();
         void time_sync();
         void log_poll();
         bool log_poll_once(std::unique_ptr<t265::bulk_message_response_get_and_clear_event_log> & log_buffer);

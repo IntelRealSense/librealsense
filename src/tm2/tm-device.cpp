@@ -375,9 +375,6 @@ namespace librealsense
         // start time sync thread
         _time_sync_thread_stop = false;
         _time_sync_thread = std::thread(&tm2_sensor::time_sync, this);
-
-        start_interrupt();
-        start_stream();
     }
 
     tm2_sensor::~tm2_sensor()
@@ -407,23 +404,14 @@ namespace librealsense
             _time_sync_thread.join();
 
             if (device_valid) {
+                stop_stream();
+                stop_interrupt();
+
                 // poll the firmware logs one last time
                 auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
                 if(log_poll_once(log_buffer))
                     print_logs(log_buffer);
             }
-
-            if(_stream_request) {
-                _stream_callback->cancel();
-                _device->cancel_request(_stream_request);
-            }
-            _stream_request.reset();
-
-            if(_interrupt_request) {
-                _interrupt_callback->cancel();
-                _device->cancel_request(_interrupt_request);
-            }
-            _interrupt_request.reset();
         }
         catch (...) {
             LOG_ERROR("An error has occurred while disposing the sensor!");
@@ -813,6 +801,9 @@ namespace librealsense
         else if (!_is_opened)
             throw wrong_api_call_sequence_exception("start_streaming(...) failed. T265 device was not opened!");
 
+        start_interrupt();
+        start_stream();
+
         _source.set_callback(callback);
         raise_on_before_streaming_changes(true);
 
@@ -862,6 +853,9 @@ namespace librealsense
             throw io_exception(to_string() << "Unknown error stopping " << status_name(response.header));
 
         LOG_DEBUG("T265 stopped");
+
+        stop_stream();
+        stop_interrupt();
 
         raise_on_before_streaming_changes(false);
         _is_streaming = false;
@@ -1230,6 +1224,8 @@ namespace librealsense
     {
         std::vector<uint8_t> buffer(BUFFER_SIZE);
 
+        if (_interrupt_request) return;
+
         _interrupt_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
             uint32_t transferred = request->get_actual_length();
             if(transferred == 0) { // something went wrong, exit
@@ -1295,9 +1291,21 @@ namespace librealsense
         _device->submit_request(_interrupt_request);
     }
 
+    void tm2_sensor::stop_interrupt()
+    {
+        if (_interrupt_request) {
+            if (_device->cancel_request(_interrupt_request)) {
+                _interrupt_callback->cancel();
+                _interrupt_request.reset();
+            }
+        }
+    }
+
     void tm2_sensor::start_stream()
     {
         std::vector<uint8_t> buffer(MAX_TRANSFER_SIZE);
+
+        if (_stream_request) return;
 
         _stream_callback = std::make_shared<platform::usb_request_callback>([&](platform::rs_usb_request request) {
             uint32_t transferred = request->get_actual_length();
@@ -1341,6 +1349,16 @@ namespace librealsense
 
         _stream_request = _device->stream_read_request(buffer, _stream_callback);
         _device->submit_request(_stream_request);
+    }
+
+    void tm2_sensor::stop_stream()
+    {
+        if (_stream_request) {
+            if (_device->cancel_request(_stream_request)) {
+                _stream_callback->cancel();
+                _stream_request.reset();
+            }
+        }
     }
 
     void tm2_sensor::print_logs(const std::unique_ptr<bulk_message_response_get_and_clear_event_log> & log)
@@ -1585,6 +1603,10 @@ namespace librealsense
         if(_is_streaming)
             throw wrong_api_call_sequence_exception("Unable to export relocalization map while streaming");
 
+        auto sensor = _device->get_tm2_sensor();
+        sensor->start_interrupt();
+        sensor->start_stream();
+
         // Export first sends SLAM_GET_LOCALIZATION_DATA on bulk
         // endpoint and gets an acknowledgement there. That triggers
         // the firmware to send map chunks via
@@ -1603,6 +1625,9 @@ namespace librealsense
             },
             "Export localization map");
 
+        sensor->stop_stream();
+        sensor->stop_interrupt();
+
         if (res != async_op_state::_async_success)
             LOG_ERROR("Export localization map failed");
 
@@ -1613,6 +1638,10 @@ namespace librealsense
     {
         if(_is_streaming)
             throw wrong_api_call_sequence_exception("Unable to import relocalization map while streaming");
+
+        auto sensor = _device->get_tm2_sensor();
+        sensor->start_interrupt();
+        sensor->start_stream();
 
         // Import the map by sending chunks of with id SLAM_SET_LOCALIZATION_DATA_STREAM
         auto res = perform_async_transfer(
@@ -1649,6 +1678,9 @@ namespace librealsense
             },
             [&]() {},
             "Import localization map");
+
+        sensor->stop_stream();
+        sensor->stop_interrupt();
 
         if (res != async_op_state::_async_success)
             LOG_ERROR("Import localization map failed");
@@ -1997,11 +2029,12 @@ namespace librealsense
             throw std::runtime_error("failed to submit request, error: " + platform::usb_status_to_string.at(e));
     }
 
-    void tm2_device::cancel_request(platform::rs_usb_request request)
+    bool tm2_device::cancel_request(platform::rs_usb_request request)
     {
         auto e = usb_messenger->cancel_request(request);
         if (e != platform::RS2_USB_STATUS_SUCCESS)
-            throw std::runtime_error("failed to cancel request, error: " + platform::usb_status_to_string.at(e));
+            return false;
+        return true;
     }
 
     platform::rs_usb_request tm2_device::interrupt_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback)
