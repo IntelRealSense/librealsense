@@ -1895,6 +1895,8 @@ namespace librealsense
         std::string serial = to_string() << hexify(bytesSwap(info_response.message.llSerialNumber) >> 16);
         LOG_INFO("Serial: " << serial);
 
+        LOG_INFO("Connection type: " << platform::usb_spec_names.at(usb_info.conn_spec));
+
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         std::string firmware = to_string() << std::to_string(info_response.message.bFWVersionMajor) << "." << std::to_string(info_response.message.bFWVersionMinor) << "." << std::to_string(info_response.message.bFWVersionPatch) << "." << std::to_string(info_response.message.dwFWVersionBuild);
