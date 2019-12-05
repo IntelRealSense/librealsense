@@ -244,7 +244,7 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+    //rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
     ux_window window("Intel RealSense Viewer");
 
@@ -261,6 +261,13 @@ int main(int argc, const char** argv) try
 
     viewer_model viewer_model;
     viewer_model.ctx = ctx;
+
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [&viewer_model]( rs2_log_severity severity, rs2::log_message const & msg )
+        {
+            viewer_model.not_model.add_log( msg.to_string() );
+        }
+    );
 
     std::vector<device> connected_devs;
     std::mutex m;

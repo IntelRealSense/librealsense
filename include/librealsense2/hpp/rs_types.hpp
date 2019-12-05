@@ -43,9 +43,11 @@ struct rs2_notifications_callback
     virtual                                 ~rs2_notifications_callback() {}
 };
 
+typedef void ( *log_callback_function_ptr )(rs2_log_severity severity, rs2_log_message const * msg );
+
 struct rs2_log_callback
 {
-    virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;
+    virtual void                            on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_log_callback() {}
 };
@@ -172,6 +174,14 @@ namespace rs2
         int max_x;
         int max_y;
     };
+
+    /* Convert rs2_string to std::string */
+    inline std::string get_string( rs2_string const* str_ptr )
+    {
+        unsigned cch;
+        const char* lpsz = rs2_get_string( str_ptr, &cch );
+        return std::string{ lpsz, cch };
+    }
 }
 
 inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }

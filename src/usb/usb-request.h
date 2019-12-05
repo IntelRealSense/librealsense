@@ -53,7 +53,7 @@ namespace librealsense
             {
                 _buffer = buffer;
                 set_native_buffer(_buffer.data());
-                set_native_buffer_length(_buffer.size());
+                set_native_buffer_length( static_cast< int >( _buffer.size() ));
             }
 
         protected:

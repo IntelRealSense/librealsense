@@ -193,8 +193,11 @@ namespace librealsense
     // Logging mechanism //
     ///////////////////////
 
+    typedef std::shared_ptr< rs2_log_callback > log_callback_ptr;
+
     void log_to_console(rs2_log_severity min_severity);
-    void log_to_file(rs2_log_severity min_severity, const char * file_path);
+    void log_to_file( rs2_log_severity min_severity, const char* file_path );
+    void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback );
 
 #if BUILD_EASYLOGGINGPP
 
@@ -1009,7 +1012,6 @@ namespace librealsense
         void release() { delete this; }
     };
 
-    typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
