@@ -1,4 +1,4 @@
-ARG FROM_IMAGE=ros:dashing
+ARG FROM_IMAGE=ros:eloquent
 
 # multi-stage for caching
 FROM $FROM_IMAGE AS cache
