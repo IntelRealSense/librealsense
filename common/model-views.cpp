@@ -1174,6 +1174,9 @@ namespace rs2
                 if (is_rgb_camera)
                     model->enable(false);
             }
+			//D431 Demo
+            if (shared_filter->is<spatial_filter>())
+                continue;
 
             if (shared_filter->is<threshold_filter>())
             {
@@ -4922,7 +4925,8 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
-        auto is_advanced_mode = dev.is<advanced_mode>();
+        //D431 Demo
+        auto is_advanced_mode = (dev.is<advanced_mode>() && ("ABCD" != std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID))));
         if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
         {
             try

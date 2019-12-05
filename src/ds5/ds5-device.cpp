@@ -875,10 +875,9 @@ namespace librealsense
         }
 
 
-        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
+        if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-			}
         }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
@@ -909,7 +908,7 @@ namespace librealsense
 
 
             _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
-
+            {
             depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
 
@@ -922,19 +921,19 @@ namespace librealsense
 
         //EXPOSURE AND GAIN - preparing uvc options
         auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
-            depth_xu,
-            DS5_EXPOSURE,
-            "Depth Exposure (usec)");
+                depth_xu,
+                DS5_EXPOSURE,
+                "Depth Exposure (usec)");
         option_range exposure_range = uvc_xu_exposure_option->get_range();
         auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
         option_range gain_range = uvc_pu_gain_option->get_range();
 
         //AUTO EXPOSURE
-        auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
-            depth_xu,
-            DS5_ENABLE_AUTO_EXPOSURE,
-            "Enable Auto Exposure");
-        depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+            auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+                depth_xu,
+                DS5_ENABLE_AUTO_EXPOSURE,
+                "Enable Auto Exposure");
+            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
         // register HDR options
         //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
@@ -990,10 +989,10 @@ namespace librealsense
         }
 
         //EXPOSURE
-        depth_sensor.register_option(RS2_OPTION_EXPOSURE,
-            std::make_shared<auto_disabling_control>(
-                exposure_option,
-                enable_auto_exposure));
+            depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+                std::make_shared<auto_disabling_control>(
+                    exposure_option,
+                    enable_auto_exposure));
 
         //GAIN
         depth_sensor.register_option(RS2_OPTION_GAIN,
@@ -1005,7 +1004,6 @@ namespace librealsense
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
-        {
             bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
             auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
