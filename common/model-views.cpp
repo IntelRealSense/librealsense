@@ -4407,7 +4407,7 @@ namespace rs2
 
                     if (auto tm_sensor = dev.first<pose_sensor>())
                     {
-                        if (ImGui::Selectable("Export Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
+                        if (ImGui::Selectable("Export Localization map"))
                         {
                             if (auto target_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.map\0", NULL, NULL))
                             {
@@ -4426,10 +4426,7 @@ namespace rs2
 
                         if (ImGui::IsItemHovered())
                         {
-                            if (is_streaming)
-                                ImGui::SetTooltip("Stop streaming to Export localization map");
-                            else
-                                ImGui::SetTooltip("Retrieve the localization map from device");
+                            ImGui::SetTooltip("Retrieve the localization map from device");
                         }
 
                         if (ImGui::Selectable("Import Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))

@@ -1602,9 +1602,6 @@ namespace librealsense
 
     bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
     {
-        if(_is_streaming)
-            throw wrong_api_call_sequence_exception("Unable to export relocalization map while streaming");
-
         auto sensor = _device->get_tm2_sensor();
         bool interrupt_started = sensor->start_interrupt();
         bool stream_started = sensor->start_stream();
