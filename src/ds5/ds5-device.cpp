@@ -714,7 +714,7 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
+        if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
 
@@ -732,23 +732,25 @@ namespace librealsense
 #endif
 
             if (!mipi_sensor)
+            {
                 depth_sensor.register_pu(RS2_OPTION_GAIN);
-            auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
-                depth_xu,
-                DS5_EXPOSURE,
-                "Depth Exposure (usec)");
-            depth_sensor.register_option(RS2_OPTION_EXPOSURE, exposure_option);
+                auto exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
+                    depth_xu,
+                    DS5_EXPOSURE,
+                    "Depth Exposure (usec)");
+                depth_sensor.register_option(RS2_OPTION_EXPOSURE, exposure_option);
 
-            auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
-                depth_xu,
-                DS5_ENABLE_AUTO_EXPOSURE,
-                "Enable Auto Exposure");
-            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+                auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+                    depth_xu,
+                    DS5_ENABLE_AUTO_EXPOSURE,
+                    "Enable Auto Exposure");
+                depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            depth_sensor.register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<auto_disabling_control>(
-                    exposure_option,
-                    enable_auto_exposure));
+                depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+                    std::make_shared<auto_disabling_control>(
+                        exposure_option,
+                        enable_auto_exposure));
+            }
         }
 
         if (_fw_version >= firmware_version("5.5.8.0") && (!mipi_sensor) )

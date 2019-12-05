@@ -974,9 +974,13 @@ namespace rs2
             if (shared_filter->is<decimation_filter>())
             {
                 std::string sn_name(s->get_info(RS2_CAMERA_INFO_NAME));
-                if (sn_name == "RGB Camera")
+                if (sn_name == "RGB Sensor") // D431 fixed in v2.31.0
                     model->enabled = false;
             }
+
+            //D431 Demo
+            if (shared_filter->is<spatial_filter>())
+                continue;
 
             post_processing.push_back(model);
         }
@@ -4159,7 +4163,8 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
-        auto is_advanced_mode = dev.is<advanced_mode>();
+        //D431 Demo
+        auto is_advanced_mode = (dev.is<advanced_mode>() && ("ABCD" != std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID))));
         if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
         {
             try
