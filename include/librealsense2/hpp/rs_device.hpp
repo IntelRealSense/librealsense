@@ -328,28 +328,32 @@ return results;
 
         /**
         * This will improve the depth noise.
-        * \param[in] timeout_ms         Timeout in ms
-        * \param[in] json_content       Json file to configure speed on chip calibration parameters:
+        * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                             {
-                                              "speed": 3
+                                              "speed": 3,
+                                              "scan_direction": 0,
+                                              "data_sampling": 0
                                             }
-                                        speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow
-                                        if json is nullptr it will be ignored and calibration will use the defualt parameters
+                                            speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
         * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
-                                        [0, 0.15) - Good
-                                        [0.15, 0.25) - Can be Improved
-                                        [0.25, ) - Requires Calibration
-        * \param[in] callback           Callback to get progress notifications
+                                        [0, 0.25) - Good
+                                        [0.25, 0.75) - Can be Improved
+                                        [0.75, ) - Requires Calibration
+        * \param[in] callback           Optional callback to get progress notifications
+        * \param[in] timeout_ms         Timeout in ms
         * \return                       New calibration table
         */
         template<class T>
-        calibration_table run_on_chip_calibration(int timeout_ms, std::string json_content, float* health, T callback) const
+        calibration_table run_on_chip_calibration(std::string json_content, float* health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), timeout_ms, json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -364,27 +368,31 @@ return results;
         }
 
         /**
-        * This will improve the depth noise.
-        * \param[in] timeout_ms         Timeout in ms
-        * \param[in] json_content       Json file to configure speed on chip calibration parameters:
+         * This will improve the depth noise.
+         * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                             {
-                                              "speed": 3
+                                              "speed": 3,
+                                              "scan_direction": 0,
+                                              "data_sampling": 0
                                             }
-                                        speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
-                                        if json is nullptr it will be ignored and calibration will use the defualt parameters
-        * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
-                                        [0, 0.15) - Good
-                                        [0.15, 0.25) - Can be Improved
-                                        [0.25, ) - Requires Calibration
-        * \return                       New calibration table
-        */
-        calibration_table run_on_chip_calibration(int timeout_ms, std::string json_content, float* health) const
+                                            speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+         * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                         [0, 0.25) - Good
+                                         [0.25, 0.75) - Can be Improved
+                                         [0.75, ) - Requires Calibration
+         * \param[in] timeout_ms         Timeout in ms
+         * \return                       New calibration table
+         */
+        calibration_table run_on_chip_calibration(std::string json_content, float* health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), timeout_ms, json_content.data(), json_content.size(), health, nullptr, &e),
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
             auto size = rs2_get_raw_data_size(list.get(), &e);
@@ -400,30 +408,33 @@ return results;
         /**
         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
         * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
-        * \param[in] timeout_ms          Timeout in ms
-        * \param[in] json_content        Json file to configure tare calibration parametars:
+        * \param[in] json_content        Json string to configure tare calibration parameters:
                                             {
                                               "average_step_count": 20,
                                               "step_count": 20,
-                                              "accuracy": 2
+                                              "accuracy": 2,
+                                              "scan_direction": 0,
+                                              "data_sampling": 0
                                             }
                                             average step count - number of frames to average, must be between 1 - 30, default = 20
                                             step count - max iteration steps, must be between 5 - 30, default = 10
                                             accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
-                                         if json is nullptr it will be ignored and calibration will use the defualt parameters
-        * \param[in] content_size        Json file size if its 0 the json will be ignored and calibration will use the defualt parameters
-        * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
-        * \param[in] callback            Callback to get progress notifications
-        * \return                        New calibration table
+                                            scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+        * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+        * \param[in]  callback            Optional callback to get progress notifications
+        * \param[in] timeout_ms           Timeout in ms
+        * \return                         New calibration table
         */
         template<class T>
-        calibration_table run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health, T callback) const
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm,  timeout_ms, json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -438,30 +449,33 @@ return results;
         }
 
         /**
-        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
-        * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
-        * \param[in] timeout_ms          Timeout in ms
-        * \param[in] json_content        Json file to configure tare calibration parametars:
-                                            {
-                                              "average_step_count": 20,
-                                              "step_count": 20,
-                                              "accuracy": 2
-                                            }
-                                            average step count - number of frames to average, must be between 1 - 30, default = 20
-                                            step count - max iteration steps, must be between 5 - 30, default = 10
-                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
-                                         if json is nullptr it will be ignored and calibration will use the defualt parameters
-        * \param[in] content_size        Json file size if its 0 the json will be ignored and calibration will use the defualt parameters
-        * \param[out] health             Calibration Health-Check captures how far camera calibration is from the optimal one
-        * \return                        New calibration table
-        */
-        calibration_table run_tare_calibration(float ground_truth_mm, int timeout_ms, std::string json_content, float* health) const
+         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+         * \param[in] json_content        Json string to configure tare calibration parameters:
+                                             {
+                                               "average_step_count": 20,
+                                               "step_count": 20,
+                                               "accuracy": 2,
+                                               "scan_direction": 0,
+                                               "data_sampling": 0
+                                             }
+                                             average step count - number of frames to average, must be between 1 - 30, default = 20
+                                             step count - max iteration steps, must be between 5 - 30, default = 10
+                                             accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                             scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                             data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                             if json is nullptr it will be ignored and calibration will use the default parameters
+         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[in] timeout_ms           Timeout in ms
+         * \return                         New calibration table
+         */
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, timeout_ms, json_content.data(), json_content.size(), health, nullptr, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
