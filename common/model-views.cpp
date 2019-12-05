@@ -4645,7 +4645,7 @@ namespace rs2
                                             "then press calibrate."
                                             "The health-check will be calculated.\n"
                                             "If >0.25 we recommend applying the new calibration.\n"
-                                            "“White wall” mode should only be used when pointing at a flat white wall with projector on");
+                                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
 
                     if (ImGui::Selectable("Tare Calibration"))
                     {
