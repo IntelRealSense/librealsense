@@ -929,7 +929,7 @@ namespace librealsense
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
                 _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
-
+            
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                     std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
 
