@@ -289,6 +289,7 @@ namespace librealsense
             CASE(DEPTH_OFFSET)
             CASE(LED_POWER)
             CASE(ZERO_ORDER_ENABLED)
+            CASE(ENABLE_MAP_PRESERVATION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

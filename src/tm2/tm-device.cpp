@@ -1664,6 +1664,7 @@ namespace librealsense
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_RELOCALIZATION,      std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_RELOCALIZATION,       perc::SIXDOF_MODE_ENABLE_MAPPING, false>>(*_sensor, "Use appearance based relocalization (depends on mapping)"));
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_POSE_JUMPING,        std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_DISABLE_JUMPING,             perc::SIXDOF_MODE_ENABLE_MAPPING,  true>>(*_sensor, "Allow pose jumping (depends on mapping)"));
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION, perc::SIXDOF_MODE_NORMAL,          true>>(*_sensor, "Enable dynamic calibration (recommended)"));
+        _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_MAP_PRESERVATION,    std::make_shared<tracking_mode_option<perc::SIXDOF_MODE_ENABLE_MAP_PRESERVATION,     perc::SIXDOF_MODE_ENABLE_MAPPING, false>>(*_sensor, "Preserve the map from the previous run as if it was loaded"));
 
         // Assing the extrinsic nodes to the default group
         auto tm2_profiles = _sensor->get_stream_profiles();
