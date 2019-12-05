@@ -367,6 +367,12 @@ namespace librealsense
         _metadata_parsers->operator[](RS2_FRAME_METADATA_TIME_OF_ARRIVAL) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
         _metadata_parsers->operator[](RS2_FRAME_METADATA_FRAME_TIMESTAMP) = std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
+        // Set log level
+        bulk_message_request_log_control log_request = {{ sizeof(log_request), DEV_LOG_CONTROL }};
+        log_request.bVerbosity = log_level::LOG_ERR;
+        log_request.bLogMode = 0x1; // rollover mode
+        bulk_message_response_log_control log_response = {};
+        _device->bulk_request_response(log_request, log_response);
 
         // start log thread
         _log_poll_thread_stop = false;
@@ -652,13 +658,6 @@ namespace librealsense
             throw io_exception("open(...) failed. Invalid stream specification");
         else if(response.header.wStatus != SUCCESS)
             throw io_exception(to_string() << "open(...) unknown error " << status_name(response.header));
-
-        // Set log level
-        bulk_message_request_log_control log_request = {{ sizeof(request), DEV_LOG_CONTROL }};
-        log_request.bVerbosity = log_level::LOG_ERR;
-        log_request.bLogMode = 0x1; // rollover mode
-        bulk_message_response_log_control log_response = {};
-        _device->bulk_request_response(log_request, log_response);
 
         bulk_message_request_6dof_control control_request = {{ sizeof(control_request), SLAM_6DOF_CONTROL }};
         control_request.bEnable = _pose_output_enabled;
