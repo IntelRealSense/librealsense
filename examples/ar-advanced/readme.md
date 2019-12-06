@@ -3,24 +3,26 @@
 > In order to run this example, a device supporting pose stream (T265) is required.
 
 ## Overview
-This sample demonstrates how to extend the [`rs-ar-basic` Sample](../ar-basic) with map import/export API.
-It also shows how to receive a relocalization event callback, and how to use the get and set static node API to add landmarks to the localization map.
+This sample demonstrates how to extend the [`rs-ar-basic` Sample](../ar-basic) with `rs2::pose_sensor` API to:
+* Import/export localization data file(s),
+* Receive a relocalization event callback,
+* Set/get static node to add/read landmark to/from the localization map.
 
 ## Command Line Inputs
 
-Users should specify the path(s) to the localization map data file(s) by using command line arguments. For example, to set input map file `src_map.raw` at current directory:
+Users should specify the path(s) to the localization map data file(s) by using command line arguments. For example, to load a map file, users can run the application `rs-ar-advanced` followed by a command line option `--load_map` and file path `src_map.raw` which is located at the same directory as `rs-ar-advanced`:
 
 ```cpp
-rs-ar-advanced --load_map src_map.raw
+>>rs-ar-advanced --load_map src_map.raw
 ```
 
-To set both input map file `src_map.raw` and output map file `dst_map.raw` at current directory:
+To set both input map file `src_map.raw` and output map file `dst_map.raw` at same directory of the application:
 
 ```cpp
-rs-ar-advanced --load_map src_map.raw --save_map dst_map.raw`
+>>rs-ar-advanced --load_map src_map.raw --save_map dst_map.raw`
 ```
 
-Then, the application will import localization map data from `src_map.raw` at the beginning of tracking and will export the modified map including a virtual object as a static node to `dst_map.raw`.
+Then, the application will import localization map data from `src_map.raw` file at the beginning of tracking and will export the modified map including a virtual object as a static node to `dst_map.raw` file.
 
 >Note: if neither input nor output path is given, this application will behave exactly the same as the `rs-ar-basic` example.
 
@@ -55,7 +57,7 @@ tm_sensor.set_notifications_callback([&](const rs2::notification& n) {
            std::cout << "Relocalization Event Detected." << std::endl;
 ```
 
-Continue within the callback is that we load the virtual object saved as static node in the map file in previous run:
+Continue within the callback is that we load the virtual object which had been saved as a static node in the map file in previous run:
 
 ```cpp
            // Get static node if available
@@ -65,7 +67,7 @@ Continue within the callback is that we load the virtual object saved as static 
            }
 ```
 
-The rest of the main body is similar to the [`rs-ar-basic` Sample](../ar-basic), except, at the end of the application we will save the modified virtual object as static node:
+The rest of the main body is similar to the [`rs-ar-basic` Sample](../ar-basic), except, at the end of the application, we  save the modified virtual object as a static node:
 
 ```cpp
 // Exit if user presses escape
@@ -74,7 +76,7 @@ if (tm_sensor.set_static_node(virtual_object_guid, object_pose_in_world.translat
 }
 ```
 
-We also save the modified localization map to file path given by the command line inputs (if available):
+Finally, we also save the modified localization map to file path given by the command line inputs (if available):
 
 ```cpp
 // Export map to a raw file
