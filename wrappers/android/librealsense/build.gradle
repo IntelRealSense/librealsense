@@ -1,30 +1,12 @@
 apply plugin: 'com.android.library'
+apply from: "${project.rootDir}/androidConfig.gradle"
 
 android {
-    compileSdkVersion 26
-
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
         externalNativeBuild {
             cmake {
                 arguments "-DFORCE_RSUSB_BACKEND=TRUE"
             }
-        }
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            debuggable true
         }
     }
     externalNativeBuild {
@@ -37,8 +19,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'com.android.support:appcompat-v7:26.0.0'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation parent.ext.appCompat
+    testImplementation parent.ext.junit
+    androidTestImplementation parent.ext.androidJunit
+    androidTestImplementation parent.ext.espresso
 }
