@@ -397,7 +397,7 @@ namespace librealsense
         memcpy(calib.data(), header, calib.size()); // Copy to new_calib
 
         if(health)
-            *health = abs(reslt->m_dscResultParams.m_healthCheck);
+            *health = reslt->m_dscResultParams.m_healthCheck;
 
         return calib;
     }
