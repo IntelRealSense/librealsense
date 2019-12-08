@@ -11,13 +11,13 @@ message(STATUS "Fetching recommended firmwares:")
 string(REGEX MATCH "D4XX_RC_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_RC_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_RC_VERSION: ${D4XX_RC_VERSION}")
-set(D4XX_RC_SHA1 b81d8b8dcdbbf89d0b1451a3da002b255851eddc)
+set(D4XX_RC_SHA1 563d6075a3f34c264a86897afa09b2278353979b)
 set(D4XX_RC_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW")
 
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 b81d8b8dcdbbf89d0b1451a3da002b255851eddc)
+set(D4XX_FW_SHA1 563d6075a3f34c264a86897afa09b2278353979b)
 set(D4XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW")
 
 
