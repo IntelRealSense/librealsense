@@ -67,8 +67,8 @@ namespace librealsense
         void handle_calibration_error(rs2_dsc_status status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
-        void check_params(int speed, int scan_direction, int data_sampling) const;
-        void check_tare_params(int speed, int scan_direction, int data_sampling, int average_step_count, int step_count, int accuracy);
+        void check_params(int speed, int scan_parameter, int data_sampling) const;
+        void check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy);
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;

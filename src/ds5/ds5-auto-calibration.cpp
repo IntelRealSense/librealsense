@@ -41,7 +41,7 @@ namespace librealsense
         interrupt = 1
     };
 
-    enum scan_direction
+    enum scan_parameter
     {
         py_scan = 0,
         rx_scan = 1
@@ -57,7 +57,7 @@ namespace librealsense
 
     struct params4
     {
-        int scan_direction : 1;
+        int scan_parameter : 1;
         int reserved : 2;
         int data_sampling : 1;
     };
@@ -78,7 +78,7 @@ namespace librealsense
     const int DEFAULT_STEP_COUNT = 20;
     const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
     const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
-    const int DEFAULT_SCAN = scan_direction::py_scan;
+    const int DEFAULT_SCAN = scan_parameter::py_scan;
     const int DEFAULT_SAMPLING = data_sampling::polling;
 
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
@@ -103,7 +103,7 @@ namespace librealsense
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int speed = DEFAULT_SPEED;
-        int scan_direction = DEFAULT_SCAN;
+        int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
 
         if (json.size() > 0)
@@ -115,7 +115,7 @@ namespace librealsense
             }
             if (jsn.find("scan direction") != jsn.end())
             {
-                scan_direction = jsn["scan direction"];
+                scan_parameter = jsn["scan direction"];
             }
             if (jsn.find("data sampling") != jsn.end())
             {
@@ -123,9 +123,9 @@ namespace librealsense
             }
         }
 
-        check_params(speed, scan_direction, data_sampling);
+        check_params(speed, scan_parameter, data_sampling);
 
-        param4 param{ (byte)scan_direction, 0, (byte)data_sampling };
+        param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (speed == speed_white_wall)
@@ -199,7 +199,7 @@ namespace librealsense
         int step_count = DEFAULT_STEP_COUNT;
         int accuracy = DEFAULT_ACCURACY;
         int speed = DEFAULT_SPEED;
-        int scan_direction = DEFAULT_SCAN;
+        int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
 
         if (json.size() > 0)
@@ -221,9 +221,9 @@ namespace librealsense
             {
                 accuracy = jsn["accuracy"];
             }
-            if (jsn.find("scan_direction") != jsn.end())
+            if (jsn.find("scan_parameter") != jsn.end())
             {
-                scan_direction = jsn["scan direction"];
+                scan_parameter = jsn["scan direction"];
             }
             if (jsn.find("data_sampling") != jsn.end())
             {
@@ -231,7 +231,7 @@ namespace librealsense
             }
         }
 
-        check_tare_params(speed, scan_direction, data_sampling, average_step_count, step_count, accuracy);
+        check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
         auto preset_recover = change_preset();
 
@@ -239,7 +239,7 @@ namespace librealsense
 
         tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0};
 
-        param4 param{ (byte)scan_direction, 0, (byte)data_sampling };
+        param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
         _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4});
 
@@ -327,20 +327,20 @@ namespace librealsense
         return recover_preset;
     }
 
-    void auto_calibrated::check_params(int speed, int scan_direction, int data_sampling) const
+    void auto_calibrated::check_params(int speed, int scan_parameter, int data_sampling) const
     {
         if (speed < speed_very_fast || speed >  speed_white_wall)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
-       if (scan_direction != py_scan && scan_direction != rx_scan)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan direction' " << scan_direction << " is out of range (0 - 1).");
+       if (scan_parameter != py_scan && scan_parameter != rx_scan)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan direction' " << scan_parameter << " is out of range (0 - 1).");
         if (data_sampling != polling && data_sampling != interrupt)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
 
     }
 
-    void auto_calibrated::check_tare_params(int speed, int scan_direction, int data_sampling, int average_step_count, int step_count, int accuracy)
+    void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
     {
-        check_params(speed, scan_direction, data_sampling);
+        check_params(speed, scan_parameter, data_sampling);
 
         if (average_step_count < 1 || average_step_count > 30)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'number of frames to average' " << average_step_count << " is out of range (1 - 30).");

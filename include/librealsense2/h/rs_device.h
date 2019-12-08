@@ -246,11 +246,11 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
 * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                     {
                                       "speed": 3,
-                                      "scan_direction": 0,
+                                      "scan_parameter": 0,
                                       "data_sampling": 0
                                     }
                                     speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
-                                    scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
@@ -268,11 +268,11 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, c
 * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                     {
                                       "speed": 3,
-                                      "scan_direction": 0,
+                                      "scan_parameter": 0,
                                       "data_sampling": 0
                                     }
                                     speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
-                                    scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
@@ -294,13 +294,13 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
                                       "average_step_count": 20,
                                       "step_count": 20,
                                       "accuracy": 2,
-                                      "scan_direction": 0,
+                                      "scan_parameter": 0,
                                       "data_sampling": 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
                                     accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
-                                    scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
@@ -318,13 +318,13 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float g
                                       "average_step_count": 20,
                                       "step_count": 20,
                                       "accuracy": 2,
-                                      "scan_direction": 0,
+                                      "scan_parameter": 0,
                                       "data_sampling": 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
                                     accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
-                                    scan_direction - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
