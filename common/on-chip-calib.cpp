@@ -318,9 +318,9 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (tare)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, 5000, json, &_health, [&](const float progress) {_progress = progress;});
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
         else
-            _new_calib = calib_dev.run_on_chip_calibration(5000, json, &_health, [&](const float progress) {_progress = progress;});
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, 5000);
     }
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
@@ -429,7 +429,7 @@ namespace rs2
         using namespace chrono;
 
         auto health = get_manager().get_health();
-        auto recommend_keep = health > 0.15;
+        auto recommend_keep = health > 0.25;
         if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !get_manager().tare)
         {
             auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -709,7 +709,7 @@ namespace rs2
             {
                 auto health = get_manager().get_health();
 
-                auto recommend_keep = health > 0.15;
+                auto recommend_keep = health > 0.25;
 
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
 
@@ -747,7 +747,7 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
                     }
-                    else if (health < 0.25f)
+                    else if (health < 0.75f)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
                         ImGui::Text("%s", "(Can be Improved)");

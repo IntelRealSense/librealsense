@@ -51,67 +51,27 @@ namespace librealsense
             RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
         };
 
-        enum auto_calib_speed
-        {
-            speed_very_fast = 0,
-            speed_fast = 1,
-            speed_medium = 2,
-            speed_slow = 3,
-            speed_white_wall = 4
-        };
-
-        enum subpixel_accuracy
-        {
-            very_high = 0, //(0.025%)
-            high = 1, //(0.05%)
-            medium = 2, //(0.1%)
-            low = 3 //(0.2%)
-        };
-
-        struct tare_params3
-        {
-            byte average_step_count;
-            byte step_count;
-            byte accuracy;
-            byte reserved;
-        };
-
-        union tare_calibration_params
-        {
-            tare_params3 param3_struct;
-            int param3;
-        };
-
 #pragma pack(pop)
-
-        const int DEFAULT_AVERAGE_STEP_COUNT = 20;
-        const int DEFAULT_STEP_COUNT = 20;
-        const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
-        const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
 
     public:
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
 
     private:
-        std::vector<uint8_t> get_calibration_results(float* health) const;
+        std::vector<uint8_t> get_calibration_results(float* health = nullptr) const;
         void handle_calibration_error(rs2_dsc_status status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
-        void check_params() const;
+        void check_params(int speed, int scan_parameter, int data_sampling) const;
+        void check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy);
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
-
-        int _average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
-        int _step_count = DEFAULT_STEP_COUNT;
-        int _accuracy = DEFAULT_ACCURACY;
-        int _speed = DEFAULT_SPEED;
     };
 
 }
