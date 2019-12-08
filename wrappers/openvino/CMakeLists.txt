@@ -24,10 +24,10 @@ include_directories( ${IE_ROOT_DIR}/src/extension )
 set(OPENVINO_FILES
 	../rs-vino/base-detection.cpp
 	../rs-vino/base-detection.h
-	../rs-vino/face-detection.cpp
-	../rs-vino/face-detection.h
-	../rs-vino/detected-face.cpp
-	../rs-vino/detected-face.h
+	../rs-vino/object-detection.cpp
+	../rs-vino/object-detection.h
+	../rs-vino/detected-object.cpp
+	../rs-vino/detected-object.h
 	../rs-vino/openvino-helpers.h
 	${IE_ROOT_DIR}/src/extension/ext_list.hpp
 )
@@ -52,12 +52,9 @@ function(dl_vino_model filename sha1)
         file(DOWNLOAD "${OPENVINO_MODEL_SRC_URL}/${filename}" "${path}"
             EXPECTED_HASH SHA1=${sha1}
             STATUS status)
-        list(GET status 0 error_code)
-        if (NOT ${error_code} EQUAL 0)
-            message(FATAL_ERROR "Error (${status}) downloading: ${OPENVINO_MODEL_SRC_URL}/${filename}")
-        endif()
     endif()
 endfunction()
 
 # List all the specific examples for OpenVINO
 add_subdirectory(face)
+add_subdirectory(dnn)

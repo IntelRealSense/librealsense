@@ -9,11 +9,12 @@
 namespace openvino_helpers
 {
     /*
-        Detects face bounding boxes in an image.
+        Detects object bounding boxes in an image.
 
-
+        Can take any object detection model with a single input layer (type="Input") and
+        a single output layer ("DetectionOutput").
     */
-    struct face_detection : public base_detection
+    struct object_detection : public base_detection
     {
     public:
         struct Result
@@ -29,6 +30,10 @@ namespace openvino_helpers
 
         // Intermediates and helpers
         std::string _input_layer_name;
+        size_t _input_width;              // dimensions in the model
+        size_t _input_height;
+        std::string _im_info_name;        // optional
+        size_t _im_info_size;
         std::string _output_layer_name;
         size_t _max_results;
         int _n_enqued_frames;
@@ -36,7 +41,7 @@ namespace openvino_helpers
         float _height;
 
     public:
-        face_detection( const std::string &pathToModel,
+        object_detection( const std::string &pathToModel,
             double detectionThreshold,
             bool isAsync = true, 
             int maxBatch = 1, bool isBatchDynamic = false,

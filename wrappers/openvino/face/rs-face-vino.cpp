@@ -5,8 +5,8 @@
 
 #include "cv-helpers.hpp"         // frame_to_mat
 
-#include <rs-vino/face-detection.h>
-#include <rs-vino/detected-face.h>
+#include <rs-vino/object-detection.h>
+#include <rs-vino/detected-object.h>
 
 #include <easylogging++.h>
 INITIALIZE_EASYLOGGINGPP
@@ -30,14 +30,14 @@ int main(int argc, char * argv[]) try
 
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
-    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and disable the exception):
+    // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
     openvino::Core engine;
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
     std::string const device_name { "CPU" };
     engine.AddExtension( std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name );
 
-    openvino_helpers::face_detection faceDetector(
+    openvino_helpers::object_detection faceDetector(
         "face-detection-adas-0001.xml",
         0.5     // Probability threshold -- anything with less confidence will be thrown out
     );
@@ -61,9 +61,9 @@ int main(int argc, char * argv[]) try
     const auto window_name = "OpenVINO face detection sample";
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
 
-    bool firstFrame = true;
+    bool first_frame = true;
     cv::Mat prev_image;
-    openvino_helpers::detected_faces faces;
+    openvino_helpers::detected_objects faces;
     size_t id = 0;
 
     while( cv::getWindowProperty( window_name, cv::WND_PROP_AUTOSIZE ) >= 0 )
@@ -85,11 +85,11 @@ int main(int argc, char * argv[]) try
         auto image = frame_to_mat( color_frame );
 
         // We process the previous frame so if this is our first then queue it and continue
-        if( firstFrame )
+        if( first_frame )
         {
             faceDetector.enqueue( image );
             faceDetector.submit_request();
-            firstFrame = false;
+            first_frame = false;
             prev_image = image;
             continue;
         }
@@ -102,17 +102,16 @@ int main(int argc, char * argv[]) try
         faceDetector.enqueue( image );
         faceDetector.submit_request();
 
-        openvino_helpers::detected_faces prev_faces { std::move( faces ) };
+        openvino_helpers::detected_objects prev_faces { std::move( faces ) };
         faces.clear();
-        for( size_t i = 0; i < results.size(); ++i )
+        for( auto const & result : results )
         {
-            auto const & result = results[i];
             cv::Rect rect = result.location;
             rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
-            auto face_ptr = openvino_helpers::find_face( rect, prev_faces );
+            auto face_ptr = openvino_helpers::find_object( rect, prev_faces );
             if( !face_ptr )
                 // New face
-                face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, std::string(), rect );
+                face_ptr = std::make_shared< openvino_helpers::detected_object >( id++, std::string(), rect );
             else
                 // Existing face; just update its parameters
                 face_ptr->move( rect );

@@ -11,7 +11,7 @@
 namespace openvino_helpers
 {
     /*
-        Base class for any type of OpenVINO detection implementation, e.g. face_detection, age_gender_detection, etc.
+        Base class for any type of OpenVINO detection implementation, e.g. object_detection, age_gender_detection, etc.
 
         Encapsulates an ExecutableNetwork via operator->().
     */
