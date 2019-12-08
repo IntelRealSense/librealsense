@@ -113,9 +113,9 @@ namespace librealsense
             {
                 speed = jsn["speed"];
             }
-            if (jsn.find("scan direction") != jsn.end())
+            if (jsn.find("scan parameter") != jsn.end())
             {
-                scan_parameter = jsn["scan direction"];
+                scan_parameter = jsn["scan parameter"];
             }
             if (jsn.find("data sampling") != jsn.end())
             {
@@ -165,7 +165,7 @@ namespace librealsense
                 LOG_WARNING(ex.what());
             }
             if (progress_callback)
-                progress_callback->on_update_progress(count++ * (2 * speed));
+                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -223,7 +223,7 @@ namespace librealsense
             }
             if (jsn.find("scan_parameter") != jsn.end())
             {
-                scan_parameter = jsn["scan direction"];
+                scan_parameter = jsn["scan parameter"];
             }
             if (jsn.find("data_sampling") != jsn.end())
             {
@@ -275,7 +275,7 @@ namespace librealsense
             }
 
             if (progress_callback)
-                progress_callback->on_update_progress(count * (2 * speed));
+                progress_callback->on_update_progress(count * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -332,7 +332,7 @@ namespace librealsense
         if (speed < speed_very_fast || speed >  speed_white_wall)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
        if (scan_parameter != py_scan && scan_parameter != rx_scan)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan direction' " << scan_parameter << " is out of range (0 - 1).");
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan parameter' " << scan_parameter << " is out of range (0 - 1).");
         if (data_sampling != polling && data_sampling != interrupt)
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
 
