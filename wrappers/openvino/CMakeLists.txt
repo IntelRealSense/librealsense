@@ -24,10 +24,10 @@ include_directories( ${IE_ROOT_DIR}/src/extension )
 set(OPENVINO_FILES
 	../rs-vino/base-detection.cpp
 	../rs-vino/base-detection.h
-	../rs-vino/face-detection.cpp
-	../rs-vino/face-detection.h
-	../rs-vino/detected-face.cpp
-	../rs-vino/detected-face.h
+	../rs-vino/object-detection.cpp
+	../rs-vino/object-detection.h
+	../rs-vino/detected-object.cpp
+	../rs-vino/detected-object.h
 	../rs-vino/openvino-helpers.h
 	${IE_ROOT_DIR}/src/extension/ext_list.hpp
 )

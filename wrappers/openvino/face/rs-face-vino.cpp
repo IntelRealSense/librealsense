@@ -5,8 +5,8 @@
 
 #include "cv-helpers.hpp"         // frame_to_mat
 
-#include <rs-vino/face-detection.h>
-#include <rs-vino/detected-face.h>
+#include <rs-vino/object-detection.h>
+#include <rs-vino/detected-object.h>
 
 #include <easylogging++.h>
 INITIALIZE_EASYLOGGINGPP
@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) try
     std::string const device_name { "CPU" };
     engine.AddExtension( std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name );
 
-    openvino_helpers::face_detection faceDetector(
+    openvino_helpers::object_detection faceDetector(
         "face-detection-adas-0001.xml",
         0.5     // Probability threshold -- anything with less confidence will be thrown out
     );
@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) try
 
     bool first_frame = true;
     cv::Mat prev_image;
-    openvino_helpers::detected_faces faces;
+    openvino_helpers::detected_objects faces;
     size_t id = 0;
 
     while( cv::getWindowProperty( window_name, cv::WND_PROP_AUTOSIZE ) >= 0 )
@@ -102,16 +102,16 @@ int main(int argc, char * argv[]) try
         faceDetector.enqueue( image );
         faceDetector.submit_request();
 
-        openvino_helpers::detected_faces prev_faces { std::move( faces ) };
+        openvino_helpers::detected_objects prev_faces { std::move( faces ) };
         faces.clear();
         for( auto const & result : results )
         {
             cv::Rect rect = result.location;
             rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
-            auto face_ptr = openvino_helpers::find_face( rect, prev_faces );
+            auto face_ptr = openvino_helpers::find_object( rect, prev_faces );
             if( !face_ptr )
                 // New face
-                face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, std::string(), rect );
+                face_ptr = std::make_shared< openvino_helpers::detected_object >( id++, std::string(), rect );
             else
                 // Existing face; just update its parameters
                 face_ptr->move( rect );

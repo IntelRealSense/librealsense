@@ -7,8 +7,8 @@
 #include <opencv2/core/utils/filesystem.hpp>   // glob
 namespace fs = cv::utils::fs;
 
-#include <rs-vino/face-detection.h>
-#include <rs-vino/detected-face.h>
+#include <rs-vino/object-detection.h>
+#include <rs-vino/detected-object.h>
 
 #include <easylogging++.h>
 INITIALIZE_EASYLOGGINGPP
@@ -26,15 +26,15 @@ using namespace std::chrono;
 */
 struct detector_and_labels
 {
-    std::shared_ptr< openvino_helpers::face_detection > detector;
+    std::shared_ptr< openvino_helpers::object_detection > detector;
     std::vector< std::string > labels;
 
     detector_and_labels( std::string const & path_to_xml )
-        : detector( std::make_shared< openvino_helpers::face_detection >( path_to_xml, 0.5 ) )
+        : detector( std::make_shared< openvino_helpers::object_detection >( path_to_xml, 0.5 ) )
     {
     }
 
-    openvino_helpers::face_detection * operator->() { return detector.get(); }
+    openvino_helpers::object_detection * operator->() { return detector.get(); }
 
     void load_labels()
     {
@@ -102,13 +102,13 @@ void load_detectors_into(
 */
 void detect_objects(
     cv::Mat const & image,
-    std::vector< openvino_helpers::face_detection::Result > const & results,
+    std::vector< openvino_helpers::object_detection::Result > const & results,
     std::vector< std::string > & labels,
     size_t & next_id,
-    openvino_helpers::detected_faces & objects
+    openvino_helpers::detected_objects & objects
 )
 {
-    openvino_helpers::detected_faces prev_objects{ std::move( objects ) };
+    openvino_helpers::detected_objects prev_objects{ std::move( objects ) };
     objects.clear();
     for( auto const & result : results )
     {
@@ -116,14 +116,14 @@ void detect_objects(
             continue;  // ignore "background", though not clear why we'd get it
         cv::Rect rect = result.location;
         rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
-        auto object_ptr = openvino_helpers::find_face( rect, prev_objects );
+        auto object_ptr = openvino_helpers::find_object( rect, prev_objects );
         if( ! object_ptr )
         {
-            // New face
+            // New object
             std::string label;
             if( result.label < labels.size() )
                 label = labels[result.label];
-            object_ptr = std::make_shared< openvino_helpers::detected_face >( next_id++, label, rect );
+            object_ptr = std::make_shared< openvino_helpers::detected_object >( next_id++, label, rect );
         }
         else
         {
@@ -141,7 +141,7 @@ void detect_objects(
 void draw_objects(
     cv::Mat & image,
     rs2::depth_frame depth_frame,
-    openvino_helpers::detected_faces const & objects
+    openvino_helpers::detected_objects const & objects
 )
 {
     cv::Scalar const green( 0, 255, 0 );  // BGR
@@ -237,7 +237,7 @@ int main(int argc, char * argv[]) try
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
 
     cv::Mat prev_image;
-    openvino_helpers::detected_faces objects;
+    openvino_helpers::detected_objects objects;
     size_t id = 0;
     uint64 last_frame_number = 0;
     high_resolution_clock::time_point switch_time = high_resolution_clock::now();
