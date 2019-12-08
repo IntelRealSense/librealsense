@@ -300,7 +300,7 @@ namespace librealsense
 
     const char* zero_order::get_option_name(rs2_option option) const
     {
-        switch (option)
+        switch (static_cast<zero_order_invalidation_options>(option))
         {
         case zero_order_invalidation_options::RS2_OPTION_FILTER_ZO_IR_THRESHOLD:
             return "IR Threshold";

@@ -260,6 +260,7 @@ namespace librealsense
             int height = 1;
             return source.allocate_motion_frame(_target_stream_profile, f, _extension_type);
         }
+        throw invalid_value_exception("Unable to allocate unknown frame type");
     }
 
     bool is_z_or_disparity(rs2_format format)
