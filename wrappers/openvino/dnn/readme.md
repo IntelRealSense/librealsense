@@ -9,6 +9,7 @@ basic depth information to approximate distance.
 The same exact neural network is used here as in the OpenCV DNN sample, for
 comparison.
 
+
 ## Requirements
 
 A camera with both depth and RGB sensors is required.
@@ -19,16 +20,17 @@ with OpenVINO by pointing OpenCV_DIR to `${INTEL_OPENVINO_DIR}/opencv/cmake`.
 
 ## Implementation
 
-Though we are detecting general objects in the neural network, the inputs and
-outputs are the same as those for facial detections. We can therefore reuse the
-`openvino_helpers::face_detection` code we used in the [rs-face-vino example](../face).
+We can reuse the `openvino_helpers::object_detection` code we used in the
+[rs-face-vino example](../face), but we now provide it with a different model
+aimed at object rather than face detection. You can see it now recognizes a
+`person` rather than each face.
 
 There is a single trained model with two Intermediate Representation files
 (`mobilenet-ssd.xml` and `.bin`) provided with the sample. The sample
 will, however, load any model present in the current directory and is able to
 switch between them at runtime, allowing some experimentation.
 
-> The `face_detection` class does have requirements from the model: it is
+> The `object_detection` class does have requirements from the model: it is
 > expected to have **a single input and output!!!** (bounding box, classification,
 > confidence, etc.), and will be rejected otherwise.
 
@@ -37,9 +39,8 @@ switch between them at runtime, allowing some experimentation.
 > output layer is of `type="DetectionOutput"`.
 
 > Some neural networks (e.g., the version of Faster R-CNN available with
-> OpenVINO) have two inputs, adding an additional layer for more information. It
-> is fairly simple to make `face_detection` provide this information and work
-> with two inputs, though it fails at this time.
+> OpenVINO) have two inputs, adding an additional layer for more information.
+> Some effort was made to support such models. Feel free to experiment.
 
 Each model can optionally provide a `.labels` classification file to help map
 the output "label" integer into a human-recognizable name such as "person",

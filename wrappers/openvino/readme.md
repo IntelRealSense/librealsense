@@ -29,11 +29,11 @@ should be pointed to using a CMake `OpenCV_DIR` entry. Please refer to
 
 See the Windows-specific OpenVINO guide [here](https://docs.openvinotoolkit.org/latest/_docs_install_guides_installing_openvino_windows.html).
 
-After downloading and installing OpenVINO in `C:\work\openvino\openvino_2019.3.379`:
+After downloading and installing OpenVINO in `C:\work\intel\openvino`:
 
 1. Open a shell window
 ```bash
->  cd C:\work\openvino\openvino_2019.3.379
+>  cd C:\work\intel\openvino
 ```
 
 2. Make sure you have Python and its scripts, e.g. `pip`, installed and on your
@@ -71,8 +71,21 @@ path, otherwise some failures may be encountered:
 ```
  This will take a while.
 
+
+6. Convert additional public models
+
+ Some models are put inside a `public` directory in their source (TensorFlow,
+ etc.) format and must be converted to the OpenVINO IR format. This can be done
+ with:
+```bash
+> cd C:\Users\${USER}\Documents\Intel\OpenVINO\models
+> python C:\work\intel\openvino\deployment_tools\tools\model_downloader\converter.py --name faster_rcnn_resnet101_coco [--mo C:\work\intel\openvino\deployment_tools\model_optimizer\mo.py]
+```
+
+
 Please refer to the example `CMakeLists.txt` files provided in this directory
 and the individual samples to see how to properly integrate with OpenVINO.
+
 
 ### Runtime Dependencies
 
