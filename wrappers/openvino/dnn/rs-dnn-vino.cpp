@@ -178,7 +178,10 @@ void draw_detector_overlay(
     high_resolution_clock::time_point switch_time
 )
 {
-    double alpha = std::max( 0LL, 1000 - duration_cast<milliseconds>(high_resolution_clock::now() - switch_time).count() ) / 1000.;
+    auto ms_since_switch = duration_cast< milliseconds >( high_resolution_clock::now() - switch_time ).count();
+    if( ms_since_switch > 1000 )
+        ms_since_switch = 1000;
+    double alpha = ( 1000 - ms_since_switch ) / 1000.;
     std::string str( 1, char( '1' + current_detector ) );
     auto size = cv::getTextSize( str, cv::FONT_HERSHEY_SIMPLEX, 3, 1, nullptr );
     cv::Point center{ image.cols / 2, image.rows / 2 };
