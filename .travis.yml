@@ -73,8 +73,8 @@ matrix:
         - cd ../wrappers/nodejs/
         - npm install
         - cd test
-        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_record_tests.rec
-        - mocha test-functional.js --playback nodejs_record_tests.rec
+        - wget http://realsense-hw-public.s3.amazonaws.com/rs-tests/nodejs_records.rec
+        - mocha test-functional.js --playback nodejs_records.rec
 
     - name: "Mac - cpp"
       os: osx

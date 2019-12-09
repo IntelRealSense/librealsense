@@ -6,15 +6,22 @@ depth information to approximate distance.
 
 <p align="center"><img src="rs-face-vino.jpg" alt="screenshot"/></p>
 
+
+## Requirements
+
+A camera with both depth and RGB sensors is required.
+
+This sample makes use of OpenCV. You can use the OpenCV that is packaged
+with OpenVINO by pointing OpenCV_DIR to `${INTEL_OPENVINO_DIR}/opencv/cmake`.
+
+
 ## Implementation
 
-This sample makes use of OpenCV.
-
 A helper namespace `openvino_helpers` is used, with a helper class
-`face_detection` encapsulating much of the OpenVINO details:
+`object_detection` encapsulating much of the OpenVINO details:
 
 ```cpp
-    openvino_helpers::face_detection faceDetector(
+    openvino_helpers::object_detection faceDetector(
         "face-detection-adas-0001.xml",
         0.5     // Probability threshold -- anything with less confidence will be thrown out
     );
@@ -25,7 +32,7 @@ There are two trained model Intermediate Representation files
 the `.xml` is enough. These are automatically installed into your build's
 `wrappers/openvino/face` directory.
 
-> The `face_detection` class checks that the model includes the required
+> The `object_detection` class checks that the model includes the required
 > input/output layers, so feel free to substitute different models.
 
 Each detection has a `confidence` score. You can specify how confident you
@@ -54,10 +61,10 @@ threshold, an existing face is moved rather than a new face created.
 
 ```cpp
     rect = rect & cv::Rect( 0, 0, image.cols, image.rows );
-    auto face_ptr = openvino_helpers::find_face( rect, prev_faces );
+    auto face_ptr = openvino_helpers::find_object( rect, prev_faces );
     if( !face_ptr )
         // New face
-        face_ptr = std::make_shared< openvino_helpers::detected_face >( id++, rect );
+        face_ptr = std::make_shared< openvino_helpers::detected_object >( id++, rect );
     else
         // Existing face; just update its parameters
         face_ptr->move( rect );

@@ -116,7 +116,7 @@ namespace librealsense
 
         virtual const char* get_option_name(rs2_option option) const override
         {
-            if(option == RS2_OPTION_DEPTH_INVALIDATION_ENABLE)
+            if(option == static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE))
             {
                 static const std::string str = make_less_screamy("DEPTH_INVALIDATION_ENABLE");
                 return str.c_str();

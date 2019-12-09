@@ -18,6 +18,69 @@ namespace librealsense
         set_coefficients = 0x19
     };
 
+    enum auto_calib_speed
+    {
+        speed_very_fast = 0,
+        speed_fast = 1,
+        speed_medium = 2,
+        speed_slow = 3,
+        speed_white_wall = 4
+    };
+
+    enum subpixel_accuracy
+    {
+        very_high = 0, //(0.025%)
+        high = 1, //(0.05%)
+        medium = 2, //(0.1%)
+        low = 3 //(0.2%)
+    };
+
+    enum data_sampling
+    {
+        polling = 0,
+        interrupt = 1
+    };
+
+    enum scan_parameter
+    {
+        py_scan = 0,
+        rx_scan = 1
+    };
+
+    struct tare_params3
+    {
+        byte average_step_count;
+        byte step_count;
+        byte accuracy;
+        byte reserved;
+    };
+
+    struct params4
+    {
+        int scan_parameter : 1;
+        int reserved : 2;
+        int data_sampling : 1;
+    };
+
+    union tare_calibration_params
+    {
+        tare_params3 param3_struct;
+        int param3;
+    };
+
+    union param4
+    {
+        params4 param4_struct;
+        int param_4;
+    };
+
+    const int DEFAULT_AVERAGE_STEP_COUNT = 20;
+    const int DEFAULT_STEP_COUNT = 20;
+    const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
+    const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
+    const int DEFAULT_SCAN = scan_parameter::py_scan;
+    const int DEFAULT_SAMPLING = data_sampling::polling;
+
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
         :_hw_monitor(hwm){}
 
@@ -39,25 +102,39 @@ namespace librealsense
 
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
+        int speed = DEFAULT_SPEED;
+        int scan_parameter = DEFAULT_SCAN;
+        int data_sampling = DEFAULT_SAMPLING;
+
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
             if (jsn.find("speed") != jsn.end())
             {
-                _speed = jsn["speed"];
+                speed = jsn["speed"];
+            }
+            if (jsn.find("scan parameter") != jsn.end())
+            {
+                scan_parameter = jsn["scan parameter"];
+            }
+            if (jsn.find("data sampling") != jsn.end())
+            {
+                data_sampling = jsn["data sampling"];
             }
         }
 
-        check_params();
+        check_params(speed, scan_parameter, data_sampling);
+
+        param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-        if (_speed == speed_white_wall)
+        if (speed == speed_white_wall)
             preset_recover = change_preset();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Begin auto-calibration
-        _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, _speed });
+        _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, 0, param.param_4});
 
         DirectSearchCalibrationResult result{};
 
@@ -88,7 +165,7 @@ namespace librealsense
                 LOG_WARNING(ex.what());
             }
             if (progress_callback)
-                progress_callback->on_update_progress(count++ * (2 * _speed));
+                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -116,38 +193,55 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback)
     {
+        int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
+        int step_count = DEFAULT_STEP_COUNT;
+        int accuracy = DEFAULT_ACCURACY;
+        int speed = DEFAULT_SPEED;
+        int scan_parameter = DEFAULT_SCAN;
+        int data_sampling = DEFAULT_SAMPLING;
+
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
             if (jsn.find("speed") != jsn.end())
             {
-                _speed = jsn["speed"];
+                speed = jsn["speed"];
             }
             if (jsn.find("average_step_count") != jsn.end())
             {
-                _average_step_count = jsn["average_step_count"];
+                average_step_count = jsn["average_step_count"];
             }
             if (jsn.find("step_count") != jsn.end())
             {
-                _step_count = jsn["step_count"];
+                step_count = jsn["step_count"];
             }
             if (jsn.find("accuracy") != jsn.end())
             {
-                _accuracy = jsn["accuracy"];
+                accuracy = jsn["accuracy"];
+            }
+            if (jsn.find("scan_parameter") != jsn.end())
+            {
+                scan_parameter = jsn["scan parameter"];
+            }
+            if (jsn.find("data_sampling") != jsn.end())
+            {
+                data_sampling = jsn["data sampling"];
             }
         }
 
-        check_params();
+        check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
         auto preset_recover = change_preset();
 
         auto param2 = (int)ground_truth_mm * 100;
-       
-        tare_calibration_params param3{ (byte)_average_step_count, (byte)_step_count, (byte)_accuracy, 0};
 
-        _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3});
+        tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0};
+
+        param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
+
+        _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4});
 
         DirectSearchCalibrationResult result;
 
@@ -181,7 +275,7 @@ namespace librealsense
             }
 
             if (progress_callback)
-                progress_callback->on_update_progress(count * (2 * _speed));
+                progress_callback->on_update_progress(count * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
@@ -202,7 +296,7 @@ namespace librealsense
             handle_calibration_error(status);
         }
 
-        return get_calibration_results(health);
+        return get_calibration_results();
     }
 
     std::shared_ptr<ds5_advanced_mode_base> auto_calibrated::change_preset()
@@ -233,16 +327,27 @@ namespace librealsense
         return recover_preset;
     }
 
-    void auto_calibrated::check_params() const
+    void auto_calibrated::check_params(int speed, int scan_parameter, int data_sampling) const
     {
-        if (_speed < speed_very_fast || _speed >  speed_white_wall)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << _speed << " is out of range (0 - 4).");
-        if(_average_step_count < 1 || _average_step_count > 30)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'number of frames to average' " << _average_step_count << " is out of range (1 - 30).");
-        if (_step_count < 5 || _step_count > 30)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'max iteration steps' " << _step_count << " is out of range (5 - 30).");
-        if(_accuracy < very_high || _accuracy > low)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << _accuracy << " is out of range (0 - 3).");
+        if (speed < speed_very_fast || speed >  speed_white_wall)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
+       if (scan_parameter != py_scan && scan_parameter != rx_scan)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan parameter' " << scan_parameter << " is out of range (0 - 1).");
+        if (data_sampling != polling && data_sampling != interrupt)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
+
+    }
+
+    void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
+    {
+        check_params(speed, scan_parameter, data_sampling);
+
+        if (average_step_count < 1 || average_step_count > 30)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'number of frames to average' " << average_step_count << " is out of range (1 - 30).");
+        if (step_count < 5 || step_count > 30)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'max iteration steps' " << step_count << " is out of range (5 - 30).");
+        if (accuracy < very_high || accuracy > low)
+            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy << " is out of range (0 - 3).");
     }
 
     void auto_calibrated::handle_calibration_error(rs2_dsc_status status) const
@@ -291,7 +396,8 @@ namespace librealsense
         calib.resize(sizeof(table_header) + header->table_size, 0);
         memcpy(calib.data(), header, calib.size()); // Copy to new_calib
 
-        *health = abs(reslt->m_dscResultParams.m_healthCheck);
+        if(health)
+            *health = reslt->m_dscResultParams.m_healthCheck;
 
         return calib;
     }

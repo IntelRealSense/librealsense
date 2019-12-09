@@ -112,6 +112,10 @@ enum class ERealSenseOptionType : uint8
     ENABLE_RELOCALIZATION                      , /**< Enable appearance based relocalization */
     ENABLE_POSE_JUMPING                        , /**< Enable position jumping */
     ENABLE_DYNAMIC_CALIBRATION                 , /**< Enable dynamic calibration */
+    DEPTH_OFFSET                               , /**< Offset from sensor to depth origin in millimetrers */
+    LED_POWER                                  , /**< Power of the LED (light emitting diode), with 0 meaning LED off */
+    ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
+    ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
 };
 
 UENUM(Blueprintable)

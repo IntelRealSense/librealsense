@@ -8,16 +8,17 @@
 #include <map>
 
 #include "RealSenseNative.h"
+#include "RealSensePlugin.h"
 
 #pragma warning(disable: 4101) // unreferenced local variable
 
 DECLARE_LOG_CATEGORY_EXTERN(LogRealSense, Log, All);
-#define REALSENSE_ERR(Format, ...) UE_LOG(LogRealSense, Error, Format, __VA_ARGS__)
+#define REALSENSE_ERR(Format, ...) UE_LOG(LogRealSense, Error, Format, ## __VA_ARGS__)
 
 #if UE_BUILD_SHIPPING
 	#define REALSENSE_TRACE(Format, ...)
 #else
-	#define REALSENSE_TRACE(Format, ...) UE_LOG(LogRealSense, Display, Format, __VA_ARGS__)
+	#define REALSENSE_TRACE(Format, ...) UE_LOG(LogRealSense, Display, Format, ## __VA_ARGS__)
 #endif
 
 #if 0

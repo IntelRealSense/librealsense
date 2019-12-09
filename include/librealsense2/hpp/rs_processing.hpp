@@ -675,6 +675,8 @@ namespace rs2
         */
         align(rs2_stream align_to) : filter(init(align_to), 1) {}
 
+        using filter::process;
+
         /**
         * Run the alignment process on the given frames to get an aligned set of frames
         *

@@ -4472,7 +4472,7 @@ namespace rs2
                     {
                         if (ImGui::Selectable("Export Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                         {
-                            if (auto target_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
+                            if (auto target_path = file_dialog_open(save_file, "Tracking device Localization map (RAW)\0*.map\0", NULL, NULL))
                             {
                                 error_message = safe_call([&]()
                                 {
@@ -4497,7 +4497,7 @@ namespace rs2
 
                         if (ImGui::Selectable("Import Localization map", false, is_streaming ? ImGuiSelectableFlags_Disabled : 0))
                         {
-                            if (auto source_path = file_dialog_open(open_file, "Tracking device Localization map (RAW)\0*.*\0", NULL, NULL))
+                            if (auto source_path = file_dialog_open(open_file, "Tracking device Localization map (RAW)\0*.map\0", NULL, NULL))
                             {
                                 error_message = safe_call([&]()
                                 {
@@ -4645,7 +4645,7 @@ namespace rs2
                                             "then press calibrate."
                                             "The health-check will be calculated.\n"
                                             "If >0.25 we recommend applying the new calibration.\n"
-                                            "“White wall” mode should only be used when pointing at a flat white wall with projector on");
+                                            "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
 
                     if (ImGui::Selectable("Tare Calibration"))
                     {

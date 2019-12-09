@@ -65,26 +65,24 @@ void init_device(py::module &m) {
     py::class_<rs2::auto_calibrated_device, rs2::device> auto_calibrated_device(m, "auto_calibrated_device");
     auto_calibrated_device.def(py::init<rs2::device>(), "device"_a)
         .def("write_calibration", &rs2::auto_calibrated_device::write_calibration, "Write calibration that was set by set_calibration_table to device's EEPROM.")
-        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, int timeout_ms, std::string json_content)
+        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, int timeout_ms)
         { 
             float health;
-            return py::make_tuple(self.run_on_chip_calibration(timeout_ms, json_content, &health), health);
-        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and it supports progress notifications via the callback.", "timeout_ms"_a, "json_content"_a, py::call_guard<py::gil_scoped_release>())
-        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, int timeout_ms, std::string json_content, std::function<void(float)> f)
+            return py::make_tuple(self.run_on_chip_calibration(json_content, &health, timeout_ms), health);
+        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread.","json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, std::function<void(float)> f, int timeout_ms)
         {
             float health;
-            return py::make_tuple(self.run_on_chip_calibration(timeout_ms, json_content, &health, f), health);
-        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread.", "timeout_ms"_a, "json_content"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
-        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, int timeout_ms, std::string json_content)
+            return py::make_tuple(self.run_on_chip_calibration(json_content, &health, f, timeout_ms), health);
+        },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and it supports progress notifications via the callback.", "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, int timeout_ms)
         {
-            float health;
-            return py::make_tuple(self.run_tare_calibration(ground_truth_mm, timeout_ms, json_content, &health), health);
-        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread and it supports progress notifications via the callback.", "ground_truth_mm"_a, "timeout_ms"_a, "json_content"_a, py::call_guard<py::gil_scoped_release>())
-        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, int timeout_ms, std::string json_content, std::function<void(float)> callback) 
+            return self.run_tare_calibration(ground_truth_mm, json_content, timeout_ms);
+        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread and it supports progress notifications via the callback.", "ground_truth_mm"_a, "json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+        .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, std::function<void(float)> callback, int timeout_ms)
         {
-            float health;
-            return py::make_tuple(self.run_tare_calibration(ground_truth_mm, timeout_ms, json_content, &health, callback), health);
-        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "timeout_ms"_a, "json_content"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+            return self.run_tare_calibration(ground_truth_mm, json_content, callback, timeout_ms);
+        }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");

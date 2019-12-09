@@ -40,6 +40,7 @@ OniStatus Rs2Stream::initialize(class Rs2Device* device, rs2_sensor* sensor, int
 
 	memset(&m_videoMode, 0, sizeof(m_videoMode));
 	memset(&m_intrinsics, 0, sizeof(m_intrinsics));
+	memset(&m_extrinsicsDepthToColor, 0, sizeof(m_extrinsicsDepthToColor));
 
 	m_depthScale = 0;
 	m_fovX = 0;
@@ -155,14 +156,24 @@ OniStatus Rs2Stream::convertDepthToColorCoordinates(StreamBase* colorStream, int
 	{
 		float pixel[2];
 		float point[3] = {0, 0, 0};
+		float transformed_point[3] = { 0 };
+        if (m_needUpdateExtrinsicsDepthToColor) {
+            Rs2StreamProfileInfo* spiDepth = getCurrentProfile();
+            Rs2StreamProfileInfo* spiColor = ((Rs2Stream*)colorStream)->getCurrentProfile();
+            rs2_get_extrinsics(spiDepth->profile, spiColor->profile, &m_extrinsicsDepthToColor, nullptr);
+            m_needUpdateExtrinsicsDepthToColor = false;
+        }
 
 		// depth pixel -> point
 		pixel[0] = (float)depthX;
 		pixel[1] = (float)depthY;
-		rs2_deproject_pixel_to_point(point, &m_intrinsics, pixel, depthZ);
+		rs2_deproject_pixel_to_point(point, &m_intrinsics, pixel, m_depthScale * depthZ);
+
+		// depth point -> color point
+		rs2_transform_point_to_point(transformed_point, &m_extrinsicsDepthToColor, point);
 
 		// point -> color pixel
-		rs2_project_point_to_pixel(pixel, &((Rs2Stream*)colorStream)->m_intrinsics, point);
+		rs2_project_point_to_pixel(pixel, &((Rs2Stream*)colorStream)->m_intrinsics, transformed_point);
 		*pColorX = (int)pixel[0];
 		*pColorY = (int)pixel[1];
 	}
@@ -199,6 +210,7 @@ void Rs2Stream::updateIntrinsics()
 	{
 		m_depthScale = 0;
 	}
+	m_needUpdateExtrinsicsDepthToColor = true;
 }
 
 Rs2StreamProfileInfo* Rs2Stream::getCurrentProfile()

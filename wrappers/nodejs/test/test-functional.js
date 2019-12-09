@@ -50,6 +50,8 @@ function makeContext(section) {
 describe('Pipeline tests', function() {
   let ctx;
   let pipe;
+  this.timeout(5000);
+
   before(function() {
     ctx = makeContext('pipeline');
     pipe = new rs2.Pipeline(ctx);
@@ -95,6 +97,7 @@ describe('Frameset test', function() {
   let pipe;
   let frameset;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('frameset');
@@ -151,6 +154,7 @@ describe('Frame test', function() {
   let color;
   let depth;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('frame');
@@ -231,6 +235,7 @@ if (!(isRecord || isPlayback)) {
     let depth;
     let colorizer;
     let ctx;
+    this.timeout(5000);
 
     before(function() {
       ctx = makeContext('colorizer');
@@ -321,6 +326,7 @@ if (!(isRecord || isPlayback)) {
 
 describe('Context tests', function() {
   let ctx;
+  this.timeout(5000);
 
   before(() => {
     ctx = makeContext('context');
@@ -364,6 +370,7 @@ describe('Context tests', function() {
 describe('Sensor tests', function() {
   let ctx;
   let sensors;
+  this.timeout(10000);
 
   before(() => {
     ctx = makeContext('sensor');
@@ -531,10 +538,10 @@ describe('Sensor tests', function() {
       if (!isPlayback) {
         setTimeout(() => {
           dev.cxxDev.triggerErrorForTest();
-        }, 100);
+        }, 5000);
       }
     });
-  }).timeout(5000);
+  });
 });
 
 // describe('Align tests', function() {
@@ -568,6 +575,7 @@ describe(('syncer test'), function() {
   let syncer;
   let ctx;
   let sensors;
+  this.timeout(5000);
 
   before(() => {
     ctx = makeContext('syncer');
@@ -604,6 +612,7 @@ describe('Config test', function() {
   let pipe;
   let cfg;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('config');
@@ -810,6 +819,8 @@ if (!(isRecord || isPlayback)) {
 
 describe('Device tests', function() {
   let dev;
+  this.timeout(5000);
+
   before(function() {
     let ctx = makeContext('device');
     dev = ctx.queryDevices().devices[0];
@@ -857,6 +868,8 @@ describe('filter tests', function() {
   let temporalFilter;
   let spatialFilter;
   let pipeline;
+  this.timeout(10000);
+
   before(function() {
     ctx = makeContext('filter');
     decimationFilter = new rs2.DecimationFilter();
@@ -877,7 +890,7 @@ describe('filter tests', function() {
     let out = temporalFilter.process(depthFrame);
     assert.equal(out instanceof rs2.DepthFrame, true);
     assert.equal(typeof out.width, 'number');
-  }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
+  })
 
   it('spatial filter', () => {
     let frameset = pipeline.waitForFrames();
