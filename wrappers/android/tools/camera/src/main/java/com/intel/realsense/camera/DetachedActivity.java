@@ -25,6 +25,8 @@ import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.RsContext;
 
 import java.io.File;
+import java.security.Permission;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +35,6 @@ public class DetachedActivity extends AppCompatActivity {
     private static final int PLAYBACK_REQUEST_CODE = 1;
     private static final String MINIMAL_D400_FW_VERSION = "5.10.0.0";
 
-    private boolean mPermissionsGranted = false;
     private Button mPlaybackButton;
 
     private Context mAppContext;
@@ -50,6 +51,8 @@ public class DetachedActivity extends AppCompatActivity {
 
         mAppContext = getApplicationContext();
 
+        requestPermissionsIfNeeded();
+
         mPlaybackButton = findViewById(R.id.playbackButton);
         mPlaybackButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,8 +63,6 @@ public class DetachedActivity extends AppCompatActivity {
                 startActivityForResult(intent, PLAYBACK_REQUEST_CODE);
             }
         });
-
-        requestPermissionsIfNeeded();
 
         runOnUiThread(new Runnable() {
             @Override
@@ -74,38 +75,38 @@ public class DetachedActivity extends AppCompatActivity {
         });
 
         mMinimalFirmwares.put(ProductLine.D400, MINIMAL_D400_FW_VERSION);
-
-        mPermissionsGranted = true;
     }
 
     private void requestPermissionsIfNeeded() {
-        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, FileUtilities.PERMISSIONS_REQUEST_CAMERA);
-            return;
+        ArrayList<String> permissions = new ArrayList<>();
+        if (!isCameraPermissionGranted()) {
+            permissions.add(Manifest.permission.CAMERA);
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, FileUtilities.PERMISSIONS_REQUEST_READ);
-            return;
+        if (!isWritePermissionGranted()) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        requestPermissionsIfNeeded();
-        mPermissionsGranted = true;
+        if (!permissions.isEmpty())
+            ActivityCompat.requestPermissions(this, permissions.toArray(new String[permissions.size()]), PermissionsUtils.PERMISSIONS_REQUEST_ALL);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mDetached = true;
-        if(mPermissionsGranted) {
+        if (isCameraPermissionGranted()) {
             RsContext.init(getApplicationContext());
             mRsContext.setDevicesChangedCallback(mListener);
             validatedDevice();
         }
+    }
+
+    private boolean isCameraPermissionGranted() {
+        return android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isWritePermissionGranted() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     private synchronized void validatedDevice(){

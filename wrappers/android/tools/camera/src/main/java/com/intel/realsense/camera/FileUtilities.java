@@ -1,23 +1,15 @@
 package com.intel.realsense.camera;
 
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Path;
 
 public class FileUtilities {
 
     private static final String TAG = "file_utilities";
-
-    public static final int PERMISSIONS_REQUEST_CAMERA = 0;
-    public static final int PERMISSIONS_REQUEST_READ = 1;
-    public static final int PERMISSIONS_REQUEST_WRITE = 2;
 
     private final static Handler mHandler = new Handler();
     private static Thread mUiThread;

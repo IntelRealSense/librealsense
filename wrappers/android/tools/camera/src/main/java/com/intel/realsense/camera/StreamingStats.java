@@ -13,6 +13,7 @@ import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 public class StreamingStats {
     private static final String TAG = "librs camera streamer";
@@ -73,7 +74,7 @@ public class StreamingStats {
                     mStreamsMap.get(uid).mHWTimestamp = f.getTimestamp();
                     mStreamsMap.get(uid).mSWTimestamp = System.currentTimeMillis();
                     mStreamsMap.get(uid).onFrame(f);
-                    mLastFrames.put(uid, new Statistics(mStreamsMap.get(uid)));
+                    mLastFrames.put(uid, mStreamsMap.get(uid).clone());
                 }
                 else
                     mStreamsMap.get(uid).kick();
@@ -93,7 +94,8 @@ public class StreamingStats {
         return rv;
     }
 
-    private class Statistics{
+    private class Statistics implements Cloneable {
+
         private final String mName;
         private String mStreamType;
         private String mFormat;
@@ -123,30 +125,14 @@ public class StreamingStats {
             reset();
         }
 
-        public Statistics(Statistics other) {
-            mName = other.mName;
-            mStreamType = other.mStreamType;
-            mFormat = other.mFormat;
-            mResolution = other.mResolution;
-            mRequestedFps = other.mRequestedFps;
-            mStartTime = other.mStartTime;
-            mBaseTime = other.mBaseTime;
-            mFps = other.mFps;
-            mFrameCount = other.mFrameCount;
-            mFrameLoss = other.mFrameLoss;
-            mHWTimestamp = other.mHWTimestamp;
-            mHWTimestampDiff = other.mHWTimestampDiff;
-            mSWTimestamp = other.mSWTimestamp;
-            mSWTimestampDiff = other.mSWTimestampDiff;
-            mFrameNumber = other.mFrameNumber;
-            mTotalFrameCount = other.mTotalFrameCount;
-            mFirstFrameLatency = other.mFirstFrameLatency;
-            mEmitter = other.mEmitter;
-            mExposure = other.mExposure;
-            mGain = other.mGain;
-            mAutoExposureMode = other.mAutoExposureMode;
-            mLaserPower = other.mLaserPower;
-            mLedPower = other.mLedPower;
+        public Statistics clone() {
+            Statistics clonedStats = null;
+            try {
+                clonedStats = (Statistics) super.clone();
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+            return clonedStats;
         }
 
         public void reset(){
