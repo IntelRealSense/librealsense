@@ -30,7 +30,6 @@ import java.util.Map;
 
 public class DetachedActivity extends AppCompatActivity {
     private static final String TAG = "librs camera detached";
-    private static final int PERMISSIONS_REQUEST_CAMERA = 0;
     private static final int PLAYBACK_REQUEST_CODE = 1;
     private static final String MINIMAL_D400_FW_VERSION = "5.10.0.0";
 
@@ -62,11 +61,7 @@ public class DetachedActivity extends AppCompatActivity {
             }
         });
 
-        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-            return;
-        }
+        requestPermissionsIfNeeded();
 
         runOnUiThread(new Runnable() {
             @Override
@@ -83,13 +78,22 @@ public class DetachedActivity extends AppCompatActivity {
         mPermissionsGranted = true;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
+    private void requestPermissionsIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, FileUtilities.PERMISSIONS_REQUEST_CAMERA);
             return;
         }
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, FileUtilities.PERMISSIONS_REQUEST_READ);
+            return;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        requestPermissionsIfNeeded();
         mPermissionsGranted = true;
     }
 

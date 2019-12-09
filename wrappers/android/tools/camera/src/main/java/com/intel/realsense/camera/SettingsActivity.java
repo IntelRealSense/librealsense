@@ -161,9 +161,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
                 Object[] keys = settingsMap.keySet().toArray();
-                if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(mContext, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, FileUtilities.PERMISSIONS_REQUEST_WRITE);
-                }
+
                 switch ((int)keys[position]){
                     case INDEX_DEVICE_INFO: {
                         Intent intent = new Intent(SettingsActivity.this, InfoActivity.class);
