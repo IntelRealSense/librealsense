@@ -331,8 +331,8 @@ return results;
         * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                             {
                                               "speed": 3,
-                                              "scan_parameter": 0,
-                                              "data_sampling": 0
+                                              "scan parameter": 0,
+                                              "data sampling": 0
                                             }
                                             speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
                                             scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
@@ -372,12 +372,12 @@ return results;
          * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                             {
                                               "speed": 3,
-                                              "scan_parameter": 0,
-                                              "data_sampling": 0
+                                              "scan parameter": 0,
+                                              "data sampling": 0
                                             }
                                             speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
-                                            scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
-                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            scan parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                             if json is nullptr it will be ignored and calibration will use the default parameters
          * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
                                          [0, 0.25) - Good
@@ -410,11 +410,11 @@ return results;
         * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
         * \param[in] json_content        Json string to configure tare calibration parameters:
                                             {
-                                              "average_step_count": 20,
-                                              "step_count": 20,
+                                              "average step count": 20,
+                                              "step count": 20,
                                               "accuracy": 2,
-                                              "scan_parameter": 0,
-                                              "data_sampling": 0
+                                              "scan parameter": 0,
+                                              "data sampling": 0
                                             }
                                             average step count - number of frames to average, must be between 1 - 30, default = 20
                                             step count - max iteration steps, must be between 5 - 30, default = 10
@@ -453,11 +453,11 @@ return results;
          * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
          * \param[in] json_content        Json string to configure tare calibration parameters:
                                              {
-                                               "average_step_count": 20,
-                                               "step_count": 20,
+                                               "average step count": 20,
+                                               "step count": 20,
                                                "accuracy": 2,
-                                               "scan_parameter": 0,
-                                               "data_sampling": 0
+                                               "scan parameter": 0,
+                                               "data sampling": 0
                                              }
                                              average step count - number of frames to average, must be between 1 - 30, default = 20
                                              step count - max iteration steps, must be between 5 - 30, default = 10

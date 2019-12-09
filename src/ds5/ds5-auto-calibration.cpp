@@ -123,6 +123,8 @@ namespace librealsense
             }
         }
 
+        LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+
         check_params(speed, scan_parameter, data_sampling);
 
         param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
@@ -134,7 +136,7 @@ namespace librealsense
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Begin auto-calibration
-        _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, 0, param.param_4});
+        _hw_monitor->send(command{ ds::AUTO_CALIB, auto_calib_begin, speed, 0, param.param_4});
 
         DirectSearchCalibrationResult result{};
 
@@ -209,28 +211,29 @@ namespace librealsense
             {
                 speed = jsn["speed"];
             }
-            if (jsn.find("average_step_count") != jsn.end())
+            if (jsn.find("average step count") != jsn.end())
             {
-                average_step_count = jsn["average_step_count"];
+                average_step_count = jsn["average step count"];
             }
-            if (jsn.find("step_count") != jsn.end())
+            if (jsn.find("step count") != jsn.end())
             {
-                step_count = jsn["step_count"];
+                step_count = jsn["step count"];
             }
             if (jsn.find("accuracy") != jsn.end())
             {
                 accuracy = jsn["accuracy"];
             }
-            if (jsn.find("scan_parameter") != jsn.end())
+            if (jsn.find("scan parameter") != jsn.end())
             {
                 scan_parameter = jsn["scan parameter"];
             }
-            if (jsn.find("data_sampling") != jsn.end())
+            if (jsn.find("data sampling") != jsn.end())
             {
                 data_sampling = jsn["data sampling"];
             }
         }
 
+        LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
         check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
         auto preset_recover = change_preset();

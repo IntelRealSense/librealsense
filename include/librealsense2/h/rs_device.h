@@ -246,8 +246,8 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
 * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                     {
                                       "speed": 3,
-                                      "scan_parameter": 0,
-                                      "data_sampling": 0
+                                      "scan parameter": 0,
+                                      "data sampling": 0
                                     }
                                     speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
@@ -268,8 +268,8 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, c
 * \param[in] json_content       Json string to configure speed on chip calibration parameters:
                                     {
                                       "speed": 3,
-                                      "scan_parameter": 0,
-                                      "data_sampling": 0
+                                      "scan parameter": 0,
+                                      "data sampling": 0
                                     }
                                     speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
@@ -291,11 +291,11 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
 * \param[in] json_content        Json string to configure tare calibration parameters:
                                     {
-                                      "average_step_count": 20,
-                                      "step_count": 20,
+                                      "average step count": 20,
+                                      "step count": 20,
                                       "accuracy": 2,
-                                      "scan_parameter": 0,
-                                      "data_sampling": 0
+                                      "scan parameter": 0,
+                                      "data sampling": 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
@@ -316,10 +316,10 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float g
 * \param[in] json_content        Json string to configure tare calibration parameters:
                                     {
                                       "average_step_count": 20,
-                                      "step_count": 20,
+                                      "step count": 20,
                                       "accuracy": 2,
-                                      "scan_parameter": 0,
-                                      "data_sampling": 0
+                                      "scan parameter": 0,
+                                      "data sampling": 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
