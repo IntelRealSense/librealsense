@@ -253,6 +253,8 @@ public class PreviewActivity extends AppCompatActivity {
     }
 
     public void onRadioButtonClicked(View view) {
+        // TODO - Ariel - Move touch logic into controls fragment. Only Sensor's logic should stay here.
+        // TODO - Ariel - Add more controls
         boolean checked = ((RadioButton) view).isChecked();
 
         if(!checked)
@@ -264,32 +266,31 @@ public class PreviewActivity extends AppCompatActivity {
                     return;
                 List<Sensor> sensors = device.querySensors();
                 for(Sensor s : sensors){
-                    Log.i(TAG, "onRadioButtonClicked: " + s.getValue(Option.HARDWARE_PRESET));
                     if(!s.supports(Option.EMITTER_ENABLED))
                         continue;
                     switch(view.getId()) {
                         case R.id.radio_no_projector:{
-                            s.setValue(Option.EMITTER_ENABLED, 0);
+                            setOption(s, Option.EMITTER_ENABLED, 0);
                             break;
                         }
                         case R.id.radio_laser:{
-                            s.setValue(Option.EMITTER_ENABLED, 1);
+                            setOption(s, Option.EMITTER_ENABLED, 1);
                             break;
                         }
                         case R.id.radio_laser_auto:{
-                            s.setValue(Option.EMITTER_ENABLED, 2);
+                            setOption(s, Option.EMITTER_ENABLED, 2);
                             break;
                         }
                         case R.id.radio_led:{
-                            s.setValue(Option.EMITTER_ENABLED, 3);
+                            setOption(s, Option.EMITTER_ENABLED, 3);
                             break;
                         }
                         case R.id.radio_custom:{
-                            s.setValue(Option.HARDWARE_PRESET, 0);
+                            setOption(s, Option.HARDWARE_PRESET, 0);
                             break;
                         }
                         case R.id.radio_burst:{
-                            s.setValue(Option.HARDWARE_PRESET, 2);
+                            setOption(s, Option.HARDWARE_PRESET, 2);
                             break;
                         }
                     }
@@ -299,5 +300,12 @@ public class PreviewActivity extends AppCompatActivity {
                 Toast.makeText(this, "Failed to set controls", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void setOption(Sensor s, Option option, int val) {
+        if(s.supports(option))
+            s.setValue(option, val);
+        else
+            Toast.makeText(this, "This control is not supported by this device", Toast.LENGTH_LONG).show();
     }
 }
