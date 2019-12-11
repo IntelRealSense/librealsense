@@ -2373,10 +2373,7 @@ int rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* l
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
 
     std::vector<uint8_t> buffer_to_send(lmap_blob, lmap_blob + blob_size);
-    int ret = pose_snr->import_relocalization_map(buffer_to_send);
-    if (!ret)
-        throw librealsense::invalid_value_exception(librealsense::to_string() << "import localization failed, map size " << blob_size);
-    return ret;
+    return (int)pose_snr->import_relocalization_map(buffer_to_send);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, lmap_blob, blob_size)
 
