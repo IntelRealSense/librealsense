@@ -651,15 +651,23 @@ namespace librealsense
         memcpy(request->stream, _active_raw_streams.data(), request->wNumEnabledStreams*sizeof(supported_raw_stream_libtm_message));
         request->header.dwLength = request->wNumEnabledStreams * sizeof(supported_raw_stream_libtm_message) + sizeof(request->header) + sizeof(request->wNumEnabledStreams);
         bulk_message_response_raw_streams_control response;
-        _device->bulk_request_response(*request, response, sizeof(response), false);
+        for(int i = 0; i < 5; i++) {
+            _device->bulk_request_response(*request, response, sizeof(response), false);
+            if(response.header.wStatus == DEVICE_BUSY) {
+                LOG_WARNING("Device is busy, trying again");
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            else if(response.header.wStatus == INVALID_REQUEST_LEN)
+                throw io_exception("open(...) failed. Invalid stream request packet");
+            else if(response.header.wStatus == INVALID_PARAMETER)
+                throw io_exception("open(...) failed. Invalid stream specification");
+            else if(response.header.wStatus != SUCCESS)
+                throw io_exception(to_string() << "open(...) unknown error " << status_name(response.header));
+            else
+                break;
+        }
         if(response.header.wStatus == DEVICE_BUSY)
             throw wrong_api_call_sequence_exception("open(...) failed to configure streams. T265 is running!");
-        else if(response.header.wStatus == INVALID_REQUEST_LEN)
-            throw io_exception("open(...) failed. Invalid stream request packet");
-        else if(response.header.wStatus == INVALID_PARAMETER)
-            throw io_exception("open(...) failed. Invalid stream specification");
-        else if(response.header.wStatus != SUCCESS)
-            throw io_exception(to_string() << "open(...) unknown error " << status_name(response.header));
 
         bulk_message_request_6dof_control control_request = {{ sizeof(control_request), SLAM_6DOF_CONTROL }};
         control_request.bEnable = _pose_output_enabled;
