@@ -1866,6 +1866,9 @@ namespace librealsense
         LOG_DEBUG("Creating a T265 device");
 
         usb_device = platform::usb_enumerator::create_usb_device(group.usb_devices[0]);
+        if(!usb_device)
+            throw io_exception("Unable to create USB device");
+
         usb_info = usb_device->get_info();
         const std::vector<platform::rs_usb_interface> interfaces = usb_device->get_interfaces();
         for(auto & iface : interfaces) {
@@ -1887,6 +1890,8 @@ namespace librealsense
 
 
         usb_messenger = usb_device->open(0); // T265 only has one interface, 0
+        if(!usb_messenger)
+            throw io_exception("Unable to open device interface");
 
         LOG_DEBUG("Successfully opened and claimed interface 0");
 
