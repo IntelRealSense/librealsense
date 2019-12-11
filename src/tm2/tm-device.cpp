@@ -1578,11 +1578,6 @@ namespace librealsense
     tm2_sensor::async_op_state tm2_sensor::perform_async_transfer(std::function<bool()> transfer_activator,
         std::function<void()> on_success, const std::string& op_description) const
     {
-        std::unique_lock<std::mutex> api_lock(_tm_op_lock);
-
-        // We want to keep holding the _tm_op_lock while waiting for
-        // async transfers to finish, so we use a different lock /
-        // mutex for it
         std::mutex _async_op_lock;
         std::unique_lock<std::mutex> lock(_async_op_lock);
 
@@ -1611,6 +1606,7 @@ namespace librealsense
 
     bool tm2_sensor::export_relocalization_map(std::vector<uint8_t>& lmap_buf) const
     {
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
         auto sensor = _device->get_tm2_sensor();
         bool interrupt_started = sensor->start_interrupt();
         bool stream_started = sensor->start_stream();
@@ -1646,6 +1642,8 @@ namespace librealsense
     {
         if(_is_streaming)
             throw wrong_api_call_sequence_exception("Unable to import relocalization map while streaming");
+
+        std::lock_guard<std::mutex> lock(_tm_op_lock);
 
         auto sensor = _device->get_tm2_sensor();
         bool interrupt_started = sensor->start_interrupt();
