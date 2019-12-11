@@ -30,7 +30,7 @@ set(SR3XX_FW_URL "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases
 string(REGEX MATCH "T26X_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(T26X_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
-set(T26X_FW_SHA1 b7b722b785fcf5f8c31877173c8ba02fed120e03)
+set(T26X_FW_SHA1 1b1bc1f33bcc67dfb0eda9eed61f9e285de5d6dc)
 set(T26X_FW_URL "http://realsense-hw-public.s3.amazonaws.com/Releases/TM2/FW/target/${T26X_FW_VERSION}")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
