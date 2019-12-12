@@ -2201,6 +2201,13 @@ rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0,sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid)
 
+rs2_stream_profile* rs2_software_sensor_add_video_stream_ex(rs2_sensor* sensor, rs2_video_stream video_stream, int is_default, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->add_video_stream(video_stream, is_default)->get_c_wrapper();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid, is_default)
+
 rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs2_motion_stream motion_stream, rs2_error** error) BEGIN_API_CALL
 {
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
@@ -2208,12 +2215,27 @@ rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, motion_stream.type, motion_stream.index, motion_stream.fmt, motion_stream.uid)
 
+rs2_stream_profile* rs2_software_sensor_add_motion_stream_ex(rs2_sensor* sensor, rs2_motion_stream motion_stream, int is_default, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->add_motion_stream(motion_stream, is_default)->get_c_wrapper();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, motion_stream.type, motion_stream.index, motion_stream.fmt, motion_stream.uid, is_default)
+
 rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error) BEGIN_API_CALL
 {
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->add_pose_stream(pose_stream)->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, pose_stream.type, pose_stream.index, pose_stream.fmt, pose_stream.uid)
+
+rs2_stream_profile* rs2_software_sensor_add_pose_stream_ex(rs2_sensor* sensor, rs2_pose_stream pose_stream, int is_default, rs2_error** error) BEGIN_API_CALL
+{
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+
+    return bs->add_pose_stream(pose_stream, is_default)->get_c_wrapper();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, pose_stream.type, pose_stream.index, pose_stream.fmt, pose_stream.uid, is_default)
 
 void rs2_software_sensor_add_read_only_option(rs2_sensor* sensor, rs2_option option, float val, rs2_error** error) BEGIN_API_CALL
 {

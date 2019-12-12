@@ -87,7 +87,7 @@ namespace librealsense
         return matcher_factory::create(_matcher, profiles);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream, bool is_default)
     {
 
         auto currProfile = find_profile_by_uid(video_stream.uid);
@@ -106,12 +106,13 @@ namespace librealsense
         profile->set_stream_type(video_stream.type);
         profile->set_unique_id(video_stream.uid);
         profile->set_intrinsics([=]() {return video_stream.intrinsics; });
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream, bool is_default)
     {
         auto currProfile = find_profile_by_uid(motion_stream.uid);
         if (currProfile)
@@ -128,12 +129,13 @@ namespace librealsense
         profile->set_stream_type(motion_stream.type);
         profile->set_unique_id(motion_stream.uid);
         profile->set_intrinsics([=]() {return motion_stream.intrinsics; });
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return std::move(profile);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream, bool is_default)
     {
         auto currProfile = find_profile_by_uid(pose_stream.uid);
         if (currProfile)
@@ -149,6 +151,7 @@ namespace librealsense
         profile->set_stream_index(pose_stream.index);
         profile->set_stream_type(pose_stream.type);
         profile->set_unique_id(pose_stream.uid);
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return std::move(profile);

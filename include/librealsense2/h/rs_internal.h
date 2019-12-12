@@ -265,20 +265,47 @@ void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, cons
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
 
 /**
+ * Add video stream to sensor
+ * \param[in] sensor the software sensor
+ * \param[in] video_stream all the stream components
+ * \param[in] is_default whether or not the stream should be a default stream for the device
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+rs2_stream_profile* rs2_software_sensor_add_video_stream_ex(rs2_sensor* sensor, rs2_video_stream video_stream, int is_default, rs2_error** error);
+
+/**
 * Add motion stream to sensor
 * \param[in] sensor the software sensor
-* \param[in] video_stream all the stream components
+* \param[in] motion_stream all the stream components
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs2_motion_stream motion_stream, rs2_error** error);
 
 /**
+* Add motion stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] motion_stream all the stream components
+* \param[in] is_default whether or not the stream should be a default stream for the device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_stream_profile* rs2_software_sensor_add_motion_stream_ex(rs2_sensor* sensor, rs2_motion_stream motion_stream, int is_default, rs2_error** error);
+
+/**
 * Add pose stream to sensor
 * \param[in] sensor the software sensor
-* \param[in] video_stream all the stream components
+* \param[in] pose_stream all the stream components
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error);
+
+/**
+* Add pose stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] pose_stream all the stream components
+* \param[in] is_default whether or not the stream should be a default stream for the device
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_stream_profile* rs2_software_sensor_add_pose_stream_ex(rs2_sensor* sensor, rs2_pose_stream pose_stream, int is_default, rs2_error** error);
 
 /**
  * Add read only option to sensor

@@ -93,11 +93,11 @@ namespace rs2
         *
         * \param[in] video_stream   all the parameters that required to defind video stream
         */
-        stream_profile add_video_stream(rs2_video_stream video_stream)
+        stream_profile add_video_stream(rs2_video_stream video_stream, bool is_default=false)
         {
             rs2_error* e = nullptr;
 
-            auto profile = rs2_software_sensor_add_video_stream(_sensor.get(),video_stream, &e);
+            auto profile = rs2_software_sensor_add_video_stream_ex(_sensor.get(), video_stream, is_default, &e);
             error::handle(e);
 
             stream_profile stream(profile);
@@ -109,11 +109,11 @@ namespace rs2
         *
         * \param[in] motion   all the parameters that required to defind motion stream
         */
-        stream_profile add_motion_stream(rs2_motion_stream motion_stream)
+        stream_profile add_motion_stream(rs2_motion_stream motion_stream, bool is_default=false)
         {
             rs2_error* e = nullptr;
 
-            auto profile = rs2_software_sensor_add_motion_stream(_sensor.get(), motion_stream, &e);
+            auto profile = rs2_software_sensor_add_motion_stream_ex(_sensor.get(), motion_stream, is_default, &e);
             error::handle(e);
 
             stream_profile stream(profile);
@@ -125,11 +125,11 @@ namespace rs2
         *
         * \param[in] pose   all the parameters that required to defind pose stream
         */
-        stream_profile add_pose_stream(rs2_pose_stream pose_stream)
+        stream_profile add_pose_stream_ext(rs2_pose_stream pose_stream, bool is_default=false)
         {
             rs2_error* e = nullptr;
 
-            auto profile = rs2_software_sensor_add_pose_stream(_sensor.get(), pose_stream, &e);
+            auto profile = rs2_software_sensor_add_pose_stream_ex(_sensor.get(), pose_stream, is_default, &e);
             error::handle(e);
 
             stream_profile stream(profile);
