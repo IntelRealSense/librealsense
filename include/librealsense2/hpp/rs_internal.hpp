@@ -125,7 +125,7 @@ namespace rs2
         *
         * \param[in] pose   all the parameters that required to defind pose stream
         */
-        stream_profile add_pose_stream_ext(rs2_pose_stream pose_stream, bool is_default=false)
+        stream_profile add_pose_stream(rs2_pose_stream pose_stream, bool is_default=false)
         {
             rs2_error* e = nullptr;
 
