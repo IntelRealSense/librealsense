@@ -2184,7 +2184,7 @@ void rs2_software_sensor_on_notification(rs2_sensor* sensor, rs2_software_notifi
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->on_notification(notif);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor, notif)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, notif.category, notif.type, notif.severity, notif.description, notif.serialized_data)
 
 void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error) BEGIN_API_CALL
 {
