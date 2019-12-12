@@ -286,9 +286,12 @@ EXPORTS
     rs2_export_to_ply
     rs2_create_software_device
     rs2_software_device_add_sensor
+    rs2_software_device_set_destruction_callback
+    rs2_software_device_set_destruction_callback_cpp
     rs2_software_sensor_on_video_frame
     rs2_software_sensor_on_motion_frame
     rs2_software_sensor_on_pose_frame
+    rs2_software_sensor_on_notification
     rs2_software_device_create_matcher
     rs2_software_sensor_add_video_stream
     rs2_software_sensor_add_motion_stream

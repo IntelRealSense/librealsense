@@ -955,7 +955,32 @@ namespace librealsense
                 try { nptr(notification, user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from frame callback!");
+                    LOG_ERROR("Received an execption from notification callback!");
+                }
+            }
+        }
+        void release() override { delete this; }
+    };
+
+    typedef void(*software_device_destruction_callback_function_ptr)(void * user);
+
+    class software_device_destruction_callback : public rs2_software_device_destruction_callback
+    {
+        software_device_destruction_callback_function_ptr nptr;
+        void * user;
+    public:
+        software_device_destruction_callback() : software_device_destruction_callback(nullptr, nullptr) {}
+        software_device_destruction_callback(software_device_destruction_callback_function_ptr on_destruction, void * user)
+            : nptr(on_destruction), user(user) {}
+
+        operator bool() const { return nptr != nullptr; }
+        void on_destruction() override {
+            if (nptr)
+            {
+                try { nptr(user); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an execption from software device destruction callback!");
                 }
             }
         }
@@ -979,7 +1004,7 @@ namespace librealsense
                 try { nptr(removed, added, user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from frame callback!");
+                    LOG_ERROR("Received an execption from devices_changed callback!");
                 }
             }
         }
@@ -1013,6 +1038,7 @@ namespace librealsense
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
+    typedef std::shared_ptr<rs2_software_device_destruction_callback> software_device_destruction_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
     typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
 

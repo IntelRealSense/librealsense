@@ -12,6 +12,11 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
     }
 
+    librealsense::software_device::~software_device()
+    {
+        _user_destruction_callback->on_destruction();
+    }
+
     software_sensor& software_device::add_software_sensor(const std::string& name)
     {
         auto sensor = std::make_shared<software_sensor>(name, this);
@@ -35,6 +40,11 @@ namespace librealsense
             }
         }
         register_stream_to_extrinsic_group(stream, max_idx+1);
+    }
+
+    void software_device::register_destruction_callback(software_device_destruction_callback_ptr callback)
+    {
+        _user_destruction_callback = std::move(callback);
     }
 
     software_sensor& software_device::get_software_sensor(int index)
@@ -344,6 +354,14 @@ namespace librealsense
             software_frame.deleter(software_frame.data);
         }, software_frame.data });
         _source.invoke_callback(frame);
+    }
+
+    void software_sensor::on_notification(rs2_software_notification notif)
+    {
+        notification n{ notif.category, notif.type, notif.severity, notif.description };
+        n.serialized_data = notif.serialized_data;
+        _notifications_processor->raise_notification(n);
+
     }
 
     void software_sensor::add_read_only_option(rs2_option option, float val)

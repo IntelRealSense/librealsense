@@ -70,6 +70,21 @@ namespace rs2
         }
     }
 
+    template<class T>
+    class software_device_destruction_callback : public rs2_software_device_destruction_callback
+    {
+        T on_destruction_function;
+    public:
+        explicit software_device_destruction_callback(T on_destruction) : on_destruction_function(on_destruction) {}
+
+        void on_destruction() override
+        {
+            on_destruction_function();
+        }
+
+        void release() override { delete this; }
+    };
+
     class software_sensor : public sensor
     {
     public:
@@ -204,6 +219,14 @@ namespace rs2
                 range.max, range.step, range.def, is_writable, &e);
             error::handle(e);
         }
+
+        void on_notification(rs2_software_notification notif)
+        {
+            rs2_error * e = nullptr;
+            rs2_software_sensor_on_notification(_sensor.get(), notif, &e);
+            error::handle(e);
+        }
+
     private:
         friend class software_device;
 
@@ -253,6 +276,19 @@ namespace rs2
             return software_sensor(sensor);
         }
         
+        /**
+        * register destruction callback
+        * \param[in] callback   destruction callback
+        */
+        template<class T>
+        void set_destruction_callback(T callback) const
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_set_destruction_callback_cpp(_dev.get(),
+                new software_device_destruction_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
         /**
         * Add software device to existing context
         * Any future queries on the context

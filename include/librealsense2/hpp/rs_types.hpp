@@ -43,6 +43,13 @@ struct rs2_notifications_callback
     virtual                                 ~rs2_notifications_callback() {}
 };
 
+struct rs2_software_device_destruction_callback
+{
+    virtual void                            on_destruction() = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_software_device_destruction_callback() {}
+};
+
 struct rs2_log_callback
 {
     virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;

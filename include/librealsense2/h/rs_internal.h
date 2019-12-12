@@ -111,6 +111,17 @@ typedef struct rs2_software_pose_frame
     const rs2_stream_profile* profile;
 } rs2_software_pose_frame;
 
+typedef struct rs2_software_notification
+{
+    rs2_notification_category category;
+    int type;
+    rs2_log_severity severity;
+    const char* description;
+    const char* serialized_data;
+} rs2_software_notification;
+
+struct rs2_software_device_destruction_callback;
+
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
  * \param[in] api_version realsense API version as provided by RS2_API_VERSION macro
@@ -185,6 +196,15 @@ void rs2_software_sensor_on_motion_frame(rs2_sensor* sensor, rs2_software_motion
 */
 void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_frame frame, rs2_error** error);
 
+
+/**
+* Inject notification to software sonsor
+* \param[in] sensor the software sensor
+* \param[in] notif all the notification components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_on_notification(rs2_sensor* sensor, rs2_software_notification notif, rs2_error** error);
+
 /**
 * Set frame metadata for the upcoming frames
 * \param[in] sensor the software sensor
@@ -193,6 +213,22 @@ void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_fra
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value value, rs2_metadata_type type, rs2_error** error);
+
+/**
+* set callback to be notified when a specific software device is destroyed
+* \param[in] dev             software device
+* \param[in] on_notification function pointer to register as callback
+* \param[out] error          if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_software_device_destruction_callback_ptr on_notification, void* user, rs2_error** error);
+
+/**
+* set callback to be notified when a specific software device is destroyed
+* \param[in] dev      software device
+* \param[in] callback callback object created from c++ application. ownership over the callback object is moved into the relevant device lock
+* \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_device_set_destruction_callback_cpp(const rs2_device* dev, rs2_software_device_destruction_callback* callback, rs2_error** error);
 
 /**
  * Set the wanted matcher type that will be used by the syncer

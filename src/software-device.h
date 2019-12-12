@@ -15,6 +15,7 @@ namespace librealsense
     {
     public:
         software_device();
+        virtual ~software_device();
 
         software_sensor& add_software_sensor(const std::string& name);
 
@@ -33,8 +34,11 @@ namespace librealsense
         };
         void register_extrinsic(const stream_interface& stream);
 
+        void register_destruction_callback(software_device_destruction_callback_ptr);
+
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
+        librealsense::software_device_destruction_callback_ptr _user_destruction_callback;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
         std::shared_ptr<software_device_info> _info;
     };
@@ -104,6 +108,7 @@ namespace librealsense
         void on_video_frame(rs2_software_video_frame frame);
         void on_motion_frame(rs2_software_motion_frame frame);
         void on_pose_frame(rs2_software_pose_frame frame);
+        void on_notification(rs2_software_notification notif);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
         void add_option(rs2_option option, option_range range, bool is_writable);

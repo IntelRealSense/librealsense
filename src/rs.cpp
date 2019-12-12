@@ -668,6 +668,18 @@ void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_c
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_notification, user)
 
+void rs2_software_device_set_destruction_callback(const rs2_device* dev, rs2_software_device_destruction_callback_ptr on_destruction, void* user, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    VALIDATE_NOT_NULL(on_destruction);
+    librealsense::software_device_destruction_callback_ptr callback(
+        new librealsense::software_device_destruction_callback(on_destruction, user),
+        [](rs2_software_device_destruction_callback* p) { delete p; });
+    swdev->register_destruction_callback(std::move(callback));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, on_destruction, user)
+
 void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_changed_callback_ptr callback, void* user, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);
@@ -694,6 +706,15 @@ void rs2_set_notifications_callback_cpp(const rs2_sensor* sensor, rs2_notificati
     sensor->sensor->register_notifications_callback({ callback, [](rs2_notifications_callback* p) { p->release(); } });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, callback)
+
+void rs2_software_device_set_destruction_callback_cpp(const rs2_device* dev, rs2_software_device_destruction_callback* callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
+    VALIDATE_NOT_NULL(callback);
+    swdev->register_destruction_callback({ callback, [](rs2_software_device_destruction_callback* p) { p->release(); } });
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, callback)
 
 void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
@@ -2140,6 +2161,14 @@ void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_fra
     return bs->on_pose_frame(frame);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.data)
+
+void rs2_software_sensor_on_notification(rs2_sensor* sensor, rs2_software_notification notif, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    return bs->on_notification(notif);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, notif)
 
 void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error) BEGIN_API_CALL
 {
