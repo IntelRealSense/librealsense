@@ -288,14 +288,19 @@ EXPORTS
     rs2_software_device_add_sensor
     rs2_software_device_set_destruction_callback
     rs2_software_device_set_destruction_callback_cpp
+    rs2_software_device_register_info
+    rs2_software_device_update_info
     rs2_software_sensor_on_video_frame
     rs2_software_sensor_on_motion_frame
     rs2_software_sensor_on_pose_frame
     rs2_software_sensor_on_notification
     rs2_software_device_create_matcher
     rs2_software_sensor_add_video_stream
+    rs2_software_sensor_add_video_stream_ex
     rs2_software_sensor_add_motion_stream
+    rs2_software_sensor_add_motion_stream_ex
     rs2_software_sensor_add_pose_stream
+    rs2_software_sensor_add_pose_stream_ex
     rs2_software_sensor_add_read_only_option
     rs2_software_sensor_update_read_only_option
     rs2_software_sensor_add_option
