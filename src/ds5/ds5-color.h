@@ -36,7 +36,8 @@ namespace librealsense
 
     class ds5_color_sensor : public synthetic_sensor,
                              public video_sensor_interface,
-                             public roi_sensor_base
+                             public roi_sensor_base,
+                             public color_sensor
     {
     public:
         explicit ds5_color_sensor(ds5_color* owner,
