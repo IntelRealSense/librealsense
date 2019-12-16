@@ -289,7 +289,7 @@ namespace librealsense
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
         protected:
-            static uint32_t get_cid(rs2_option option);
+            virtual uint32_t get_cid(rs2_option option) const;
 
             virtual void capture_loop() override;
 
@@ -373,6 +373,7 @@ namespace librealsense
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
             control_range get_pu_range(rs2_option option) const override;
         protected:
+            virtual uint32_t get_cid(rs2_option option) const;
             uint32_t xu_to_cid(const extension_unit& xu, uint8_t control) const; // Find the mapping of XU to the underlying control
         };
 

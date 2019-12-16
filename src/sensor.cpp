@@ -242,7 +242,21 @@ namespace librealsense
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels(pix, pix + fo.frame_size);
+        std::vector<byte> pixels;
+        try
+        {
+            pixels = std::vector<byte> (pix, pix + fo.frame_size);
+        }
+        catch(std::bad_alloc &exc)
+        {
+            std::cout << " Got you! - " << exc.what() << std::endl;
+            exit(1);
+        }
+        catch(...)
+        {
+            std::cout << " Got you!" << std::endl;
+            exit(1);
+        }
         fr->data = pixels;
         fr->set_stream(profile);
 

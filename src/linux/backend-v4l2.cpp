@@ -1298,7 +1298,7 @@ namespace librealsense
             _named_mtx->unlock();
         }
 
-        uint32_t v4l_uvc_device::get_cid(rs2_option option)
+        uint32_t v4l_uvc_device::get_cid(rs2_option option) const
         {
             switch(option)
             {
@@ -1670,10 +1670,26 @@ namespace librealsense
         v4l_mipi_device::~v4l_mipi_device()
         {}
 
+        // D431 controls map- temporal solution to bypass backend interface with actual codes
+        // DS5 depth XU identifiers
+        const uint8_t RS_HWMONITOR                       = 1;
+        const uint8_t RS_DEPTH_EMITTER_ENABLED           = 2;
+        const uint8_t RS_EXPOSURE                        = 3;
+        const uint8_t RS_LASER_POWER                     = 4;
+        const uint8_t RS_HARDWARE_PRESET                 = 6;
+        const uint8_t RS_ERROR_REPORTING                 = 7;
+        const uint8_t RS_EXT_TRIGGER                     = 8;
+        const uint8_t RS_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
+        const uint8_t RS_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
+        const uint8_t RS_ENABLE_AUTO_EXPOSURE            = 0xB;
+        const uint8_t RS_LED_PWR                         = 0xE;
+
+
         bool v4l_mipi_device::get_pu(rs2_option opt, int32_t& value) const
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, 0};
-            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &control};
+            // Extract the control group from the underlying control query
+            v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, {0 ,0}, &control};
 
             if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
             {
@@ -1691,7 +1707,8 @@ namespace librealsense
         bool v4l_mipi_device::set_pu(rs2_option opt, int32_t value)
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, value};
-            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &control};
+            // Extract the control group from the underlying control query
+            v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, {0 ,0}, &control};
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1706,8 +1723,19 @@ namespace librealsense
         bool v4l_mipi_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
-            xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
-            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &xctrl};
+            switch (size)
+            {
+                case 1: xctrl.value   = *(reinterpret_cast<const uint8_t*>(data)); break;
+                case 2: xctrl.value   = *reinterpret_cast<const uint16_t*>(data); break; // TODO check signed/unsigned
+                case 4: xctrl.value   = *reinterpret_cast<const int32_t*>(data); break;
+                case 8: xctrl.value64 = *reinterpret_cast<const int64_t*>(data); break;
+                default:
+                    xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
+            }
+//            if (size < 8)
+//                xctrl.size = 0; // D431 Debug
+            // Extract the control group from the underlying control query
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1721,17 +1749,16 @@ namespace librealsense
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
-            xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
-            v4l2_ext_controls ctrls_block { V4L2_CTRL_CLASS_CAMERA, 1, 0, {0 ,0}, &xctrl};
+            // Extract the control group from the underlying control query
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
             if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
                     return false;
-
                 throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
             }
-            // TODO verify parsing is correct D431
-            //memcpy((void*)data,xctrl.ptr,size);
+            // TODO check if parsing for non-integer values D431
+            memcpy(data,(void*)(&xctrl.value),size);
             return true;
         }
 
@@ -1762,19 +1789,27 @@ namespace librealsense
             return v4l_uvc_device::get_pu_range(option);
         }
 
-        // D431 controls map- temporal solution to bypass backend interface with actual codes
-        // DS5 depth XU identifiers
-        const uint8_t RS_HWMONITOR                       = 1;
-        const uint8_t RS_DEPTH_EMITTER_ENABLED           = 2;
-        const uint8_t RS_EXPOSURE                        = 3;
-        const uint8_t RS_LASER_POWER                     = 4;
-        const uint8_t RS_HARDWARE_PRESET                 = 6;
-        const uint8_t RS_ERROR_REPORTING                 = 7;
-        const uint8_t RS_EXT_TRIGGER                     = 8;
-        const uint8_t RS_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t RS_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
-        const uint8_t RS_ENABLE_AUTO_EXPOSURE            = 0xB;
-        const uint8_t RS_LED_PWR                         = 0xE;
+        uint32_t v4l_mipi_device::get_cid(rs2_option option) const
+        {
+            switch(option)
+            {
+//            case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+//            case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+//            case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
+                case RS2_OPTION_GAIN: return V4L2_CTRL_CLASS_IMAGE_SOURCE | 0x903; // v4l2-ctl --list-ctrls -d /dev/video0
+//            case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+//            case RS2_OPTION_HUE: return V4L2_CID_HUE;
+//            case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
+//            case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
+//            case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
+                case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
+//            case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
+//            case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
+//            case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
+                default: throw linux_backend_exception(to_string() << "no v4l2 mipi mapping cid for option " << option);
+            }
+        }
 
         // D431 controls map- temporal solution to bypass backend interface with actual codes
         uint32_t v4l_mipi_device::xu_to_cid(const extension_unit& xu, uint8_t control) const
