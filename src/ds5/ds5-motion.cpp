@@ -58,7 +58,8 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor
+    class ds5_hid_sensor : public synthetic_sensor,
+                           public motion_sensor
     {
     public:
         explicit ds5_hid_sensor(std::string name,
