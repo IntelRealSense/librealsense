@@ -906,9 +906,7 @@ namespace librealsense
             auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
                 ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
-
             _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
-            {
             depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
 
@@ -1016,7 +1014,6 @@ namespace librealsense
                     std::make_shared<gated_option>(
                         emitter_always_on_opt,
                         options_and_reasons));
-            }
 
         if (_fw_version >= firmware_version("5.5.8.0"))
             {
@@ -1038,6 +1035,7 @@ namespace librealsense
                         options_and_reasons));
             }
             else
+
         if (!mipi_sensor)
         {
             {
@@ -1068,12 +1066,11 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                     std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
             }
-            }
-
-            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-            if (roi_sensor)
-                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
         }
+
+        roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
+        if (roi_sensor)
+            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
