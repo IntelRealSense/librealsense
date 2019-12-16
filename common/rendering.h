@@ -131,7 +131,8 @@ namespace rs2
 
         float3 normalize() const
         {
-            return (length() > 0)? float3{ x / length(), y / length(), z / length() }:*this;
+            float len = length();
+            return (len > 0)? float3{ x / len, y / len, z / len }:*this;
         }
     };
 
