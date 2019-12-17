@@ -361,6 +361,8 @@ namespace librealsense
     {
         LOG_DEBUG("Making a sensor " << this);
         _source.set_max_publish_list_size(64); //increase frame source queue size for TM2
+        _data_dispatcher = std::make_shared<dispatcher>(64); // make a queue of the same size to dispatch data messages
+        _data_dispatcher->start();
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
         //Replacing md parser for RS2_FRAME_METADATA_TIME_OF_ARRIVAL
@@ -395,6 +397,7 @@ namespace librealsense
         // It is important not to throw here because this gets called
         // from ~tm2_device
         try {
+            _data_dispatcher->stop();
             // Use this as a proxy to know if we are still able to communicate with the device
             bool device_valid = _stream_request && _interrupt_request;
 
@@ -1068,6 +1071,16 @@ namespace librealsense
         _device->bulk_request_response(request, response);
     }
 
+    void tm2_sensor::dispatch_threaded(frame_holder frame)
+    {
+        // TODO: Replace with C++14 move capture
+        auto frame_holder_ptr = std::make_shared<frame_holder>();
+        *frame_holder_ptr = std::move(frame);
+        _data_dispatcher->invoke([this, frame_holder_ptr](dispatcher::cancellable_timer t) {
+                _source.invoke_callback(std::move(*frame_holder_ptr));
+            });
+    }
+
     void tm2_sensor::receive_pose_message(const interrupt_message_get_pose & pose_message)
     {
         const pose_data & pose = pose_message.pose;
@@ -1122,8 +1135,7 @@ namespace librealsense
             LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
-        // TODO: should invoke callback be on a different thread? maybe it already is
-        _source.invoke_callback(std::move(frame));
+        dispatch_threaded(std::move(frame));
     }
 
     void tm2_sensor::receive_accel_message(const interrupt_message_accelerometer_stream & message)
@@ -1216,7 +1228,7 @@ namespace librealsense
             LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
-        _source.invoke_callback(std::move(frame));
+        dispatch_threaded(std::move(frame));
     }
 
     tm2_sensor::coordinated_ts tm2_sensor::get_coordinated_timestamp(uint64_t device_ns)
@@ -1510,7 +1522,7 @@ namespace librealsense
             LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
             return;
         }
-        _source.invoke_callback(std::move(frame));
+        dispatch_threaded(std::move(frame));
     }
 
     void tm2_sensor::raise_relocalization_event(const std::string& msg, double timestamp_ms)

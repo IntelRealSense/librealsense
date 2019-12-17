@@ -200,6 +200,10 @@ namespace librealsense
 
         template <t265::SIXDOF_MODE flag, t265::SIXDOF_MODE depends_on, bool invert> friend class tracking_mode_option;
 
+        // threaded dispatch
+        std::shared_ptr<dispatcher> _data_dispatcher;
+        void dispatch_threaded(frame_holder frame);
+
         // interrupt endpoint receive
         void receive_pose_message(const t265::interrupt_message_get_pose & message);
         void receive_accel_message(const t265::interrupt_message_accelerometer_stream & message);
