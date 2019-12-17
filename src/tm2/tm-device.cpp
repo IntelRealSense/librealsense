@@ -1894,7 +1894,9 @@ namespace librealsense
         bulk_message_request_set_low_power_mode power_request = {{ sizeof(power_request), DEV_SET_LOW_POWER_MODE }};
         bulk_message_response_set_low_power_mode power_response = {};
         power_request.bEnabled = 0; // disable low power mode
-        bulk_request_response(power_request, power_response);
+        auto response = bulk_request_response(power_request, power_response);
+        if(response != platform::RS2_USB_STATUS_SUCCESS)
+            throw io_exception("Unable to communicate with device");
 
         bulk_message_request_get_device_info info_request = {{ sizeof(info_request), DEV_GET_DEVICE_INFO }};
         bulk_message_response_get_device_info info_response = {};
