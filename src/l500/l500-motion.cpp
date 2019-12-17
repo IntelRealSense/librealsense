@@ -51,7 +51,7 @@ namespace librealsense
                         {400,  4}}} };
 #endif
 
-    class l500_hid_sensor : public synthetic_sensor
+    class l500_hid_sensor : public synthetic_sensor, public motion_sensor
     {
     public:
         explicit l500_hid_sensor(std::string name,
