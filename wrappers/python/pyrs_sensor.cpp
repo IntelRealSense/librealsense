@@ -67,6 +67,9 @@ void init_sensor(py::module &m) {
         .def("__nonzero__", &rs2::sensor::operator bool) // No docstring in C++
         .def(BIND_DOWNCAST(sensor, roi_sensor))
         .def(BIND_DOWNCAST(sensor, depth_sensor))
+        .def(BIND_DOWNCAST(sensor, color_sensor))
+        .def(BIND_DOWNCAST(sensor, motion_sensor))
+        .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
@@ -85,6 +88,18 @@ void init_sensor(py::module &m) {
              "Retrieves mapping between the units of the depth image and meters.")
         .def("__nonzero__", &rs2::depth_sensor::operator bool); // No docstring in C++
 
+    py::class_<rs2::color_sensor, rs2::sensor> color_sensor(m, "color_sensor"); // No docstring in C++
+    color_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("__nonzero__", &rs2::color_sensor::operator bool); // No docstring in C++
+
+    py::class_<rs2::motion_sensor, rs2::sensor> motion_sensor(m, "motion_sensor"); // No docstring in C++
+    motion_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("__nonzero__", &rs2::motion_sensor::operator bool); // No docstring in C++
+
+    py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
+    fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("__nonzero__", &rs2::fisheye_sensor::operator bool); // No docstring in C++
+
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++
     depth_stereo_sensor.def(py::init<rs2::sensor>())
@@ -96,7 +111,7 @@ void init_sensor(py::module &m) {
              "Load relocalization map onto device. Only one relocalization map can be imported at a time; "
              "any previously existing map will be overwritten.\n"
              "The imported map exists simultaneously with the map created during the most recent tracking "
-             "session after \start(),"
+             "session after start(),"
              "and they are merged after the imported map is relocalized.\n"
              "This operation must be done before start().", "lmap_buf"_a)
         .def("export_localization_map", &rs2::pose_sensor::export_localization_map,
