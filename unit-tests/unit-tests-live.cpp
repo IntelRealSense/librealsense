@@ -3863,6 +3863,26 @@ TEST_CASE("motion sensor API", "[live][options]")
     }
 }
 
+TEST_CASE("fisheye sensor API", "[live][options]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        auto sensor = profile.get_device().first<rs2::fisheye_sensor>();
+        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        WARN("module_name=" << module_name);
+        REQUIRE(module_name.size() > 0);
+    }
+}
+
 // FW Sub-presets API
 TEST_CASE("Alternating Emitter", "[live][options]")
 {

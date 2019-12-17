@@ -176,6 +176,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_AUTO_CALIBRATED_DEVICE,
     RS2_EXTENSION_COLOR_SENSOR,
     RS2_EXTENSION_MOTION_SENSOR,
+    RS2_EXTENSION_FISHEYE_SENSOR,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);
