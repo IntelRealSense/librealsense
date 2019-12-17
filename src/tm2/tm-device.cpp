@@ -1588,9 +1588,7 @@ namespace librealsense
         if(!start_success)
             return async_op_state::_async_fail;
 
-        std::cv_status status = _async_op.wait_for(lock, std::chrono::seconds(10));
-
-        if (status == std::cv_status::timeout)
+        if (!_async_op.wait_for(lock, std::chrono::seconds(2), [this] { return _async_op_status != _async_progress;}))
             LOG_WARNING(op_description << " aborted on timeout");
         else if (_async_op_status == _async_success)
             on_success();
