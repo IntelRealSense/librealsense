@@ -3838,6 +3838,7 @@ TEST_CASE("color sensor API", "[live][options]")
         REQUIRE(dev);
         auto sensor = profile.get_device().first<rs2::color_sensor>();
         std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        REQUIRE(sensor.is<rs2::color_sensor>());
         WARN("module_name=" << module_name);
         REQUIRE(module_name.size() > 0);
     }
