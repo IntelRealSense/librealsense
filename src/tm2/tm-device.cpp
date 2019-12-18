@@ -1619,7 +1619,15 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_tm_op_lock);
         auto sensor = _device->get_tm2_sensor();
         bool interrupt_started = sensor->start_interrupt();
+        std::shared_ptr<void> stop_interrupt(nullptr, [&](...) {
+            if (interrupt_started)
+                sensor->stop_interrupt();
+        });
         bool stream_started = sensor->start_stream();
+        std::shared_ptr<void> stop_stream(nullptr, [&](...) {
+            if (stream_started)
+                sensor->stop_stream();
+        });
 
         // Export first sends SLAM_GET_LOCALIZATION_DATA on bulk
         // endpoint and gets an acknowledgement there. That triggers
@@ -1639,9 +1647,6 @@ namespace librealsense
             },
             "Export localization map");
 
-        if(stream_started) sensor->stop_stream();
-        if(interrupt_started) sensor->stop_interrupt();
-
         if (res != async_op_state::_async_success)
             LOG_ERROR("Export localization map failed");
 
@@ -1657,7 +1662,15 @@ namespace librealsense
 
         auto sensor = _device->get_tm2_sensor();
         bool interrupt_started = sensor->start_interrupt();
+        std::shared_ptr<void> stop_interrupt(nullptr, [&](...) {
+            if (interrupt_started)
+                sensor->stop_interrupt();
+        });
         bool stream_started = sensor->start_stream();
+        std::shared_ptr<void> stop_stream(nullptr, [&](...) {
+            if (stream_started)
+                sensor->stop_stream();
+        });
 
         // Import the map by sending chunks of with id SLAM_SET_LOCALIZATION_DATA_STREAM
         auto res = perform_async_transfer(
@@ -1694,9 +1707,6 @@ namespace librealsense
             },
             [&]() {},
             "Import localization map");
-
-        if(stream_started) sensor->stop_stream();
-        if(interrupt_started) sensor->stop_interrupt();
 
         if (res != async_op_state::_async_success)
             LOG_ERROR("Import localization map failed");
