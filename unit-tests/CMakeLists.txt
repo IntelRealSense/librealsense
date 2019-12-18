@@ -15,6 +15,8 @@ set (unit_tests_sources
     unit-tests-main.cpp
     unit-tests-common.h
     unit-tests-post-processing-from-bag.cpp
+    unit-tests-l500.cpp
+    unit-tests-groundtruth.h
 )
 
 add_executable(live-test ${unit_tests_sources})

@@ -52,8 +52,6 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
         color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
 
-        color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-
         auto white_balance_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_WHITE_BALANCE);
         auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
         color_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);

@@ -5,20 +5,300 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <cmath>
 #include "unit-tests-common.h"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
-#include <librealsense2/hpp/rs_types.hpp>
-#include <librealsense2/hpp/rs_frame.hpp>
+
+#include <cmath>
 #include <iostream>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
-#include <librealsense2/rsutil.h>
+#include <vector>
+#include <unordered_set>
+#include <string>
+
+#include "unit-tests-groundtruth.h"
+
+#include "librealsense2/rsutil.h"
+#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include "librealsense2/hpp/rs_types.hpp"
+#include "librealsense2/hpp/rs_frame.hpp"
+//#include "../common/fw-update-helper.h"
+
 
 using namespace rs2;
 
-TEST_CASE("Sync sanity", "[live][!mayfail]") {
+rs2::device_list get_all_devices()
+{
+    rs2::context ctx;
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+
+    return ctx.query_devices();
+}
+
+std::vector<rs2::sensor> get_all_sensors()
+{
+    rs2::context ctx;
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+
+    return ctx.query_all_sensors();
+}
+
+// Note: This test should be first among live tests
+//TEST_CASE("Firmware update", "[live]")
+//{
+//    // Update the connected devices to the latest recommended firmware version
+//
+//    auto&& devices = get_all_devices();
+//
+//    // For each device
+//    for (auto&& d : devices)
+//    {
+//        // Check firmware version
+//        bool required_supported_fw_info =   d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
+//                                            d.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
+//                                            d.supports(RS2_CAMERA_INFO_PRODUCT_LINE);
+//        REQUIRE(required_supported_fw_info);
+//
+//        std::string fw = d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+//        std::string recommended = d.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+//        int product_line = parse_product_line(d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
+//
+//        std::string available = get_available_firmware_version(product_line);
+//        // Update if recommended firmware version if needed
+//    }
+//
+//
+//        std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+//        std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+//
+//        int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
+//
+//        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
+//        bool is_rc = (product_line == RS2_PRODUCT_LINE_D400) && allow_rc_firmware;
+//        std::string available = get_available_firmware_version(product_line);
+//
+//        std::shared_ptr<firmware_update_manager> manager = nullptr;
+//
+//        if (is_upgradeable(fw, available))
+//        {
+//            recommended = available;
+//
+//            static auto table = create_default_fw_table();
+//
+//            manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
+//        }
+//
+//        if (is_upgradeable(fw, recommended))
+//        {
+//            std::stringstream msg;
+//            msg << name.first << " (S/N " << name.second << ")\n"
+//                << "Current Version: " << fw << "\n";
+//
+//            if (is_rc)
+//                msg << "Release Candidate: " << recommended << " Pre-Release";
+//            else
+//                msg << "Recommended Version: " << recommended;
+//
+//            if (!fw_update_required)
+//            {
+//                auto n = std::make_shared<fw_update_notification_model>(
+//                    msg.str(), manager, false);
+//                viewer.not_model.add_notification(n);
+//
+//                fw_update_required = true;
+//
+//                related_notifications.push_back(n);
+//            }
+//        }
+//    }
+//
+//}
+
+TEST_CASE("Timestamp domain consistency", "[live]") {
+    // Check consistency of timestamp domain.
+
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        auto dev = list[0];
+        disable_sensitive_options_for(dev);
+
+        int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+        rs2::syncer sync;
+
+        auto profiles = configure_all_supported_streams(dev, 640, 480, fps);
+
+        for (auto s : dev.query_sensors())
+        {
+            s.start(sync);
+        }
+
+        for (auto i = 0; i < 30; i++)
+        {
+            auto frames = sync.wait_for_frames(500);
+        }
+
+        bool hw_timestamp_domain = false;
+        bool system_timestamp_domain = false;
+        bool global_timestamp_domain = false;
+
+        for (auto i = 0; i < 200; i++)
+        {
+            auto frames = sync.wait_for_frames(5000);
+            REQUIRE(frames.size() > 0);
+
+            for (auto&& f : frames)
+            {
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+                {
+                    hw_timestamp_domain = true;
+                }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                {
+                    system_timestamp_domain = true;
+                }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                    global_timestamp_domain = true;
+                }
+            }
+
+        }
+
+        CAPTURE(hw_timestamp_domain);
+        CAPTURE(system_timestamp_domain);
+        CAPTURE(global_timestamp_domain);
+        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
+    }
+}
+
+TEST_CASE("Verify device profiles", "[live]")
+{
+    // Get all devices
+    const auto&& devices = get_all_devices();
+
+    // For each connected device
+    for (auto&& d : devices)
+    {
+        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        auto groundtruth_profiles = librealsense::generate_device_profiles(pid);
+        std::vector<rs2::stream_profile> supported_profiles;
+
+        // For each device's sensor
+        for (auto&& s : d.query_sensors())
+        {
+            // Get supported profiles
+            auto&& sp = s.get_stream_profiles();
+            supported_profiles.insert(supported_profiles.end(), sp.begin(), sp.end());
+        }
+
+        CAPTURE("Device is missing profiles.");
+        REQUIRE(supported_profiles.size() == groundtruth_profiles.size());
+
+        // Remove intersecting profiles from ground truth list
+        for (auto&& p : supported_profiles)
+        {
+            auto&& prof = librealsense::to_profile(p.get()->profile);
+            groundtruth_profiles.erase(prof);
+        }
+
+        CAPTURE("Device profiles do not match the anticipated profiles list.");
+        REQUIRE(groundtruth_profiles.empty());
+    }
+}
+
+TEST_CASE("Verify device options", "[live]")
+{
+    // Get all devices
+    const auto&& devices = get_all_devices();
+
+    // For each connected device
+    for (auto&& d : devices)
+    {
+        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        auto&& gt_options = librealsense::generate_device_options(pid);
+        std::unordered_set<int> supported_options;
+
+        // For each device's sensor
+        for (auto&& s : d.query_sensors())
+        {
+            // Get supported options
+            auto&& so = s.get_supported_options();
+            supported_options.insert(so.begin(), so.end());
+        }
+
+        CAPTURE("Device is missing options.");
+        REQUIRE(supported_options.size() == gt_options.size());
+
+        // Remove intersecting options from ground truth list
+        for (auto&& opt : supported_options)
+        {
+            gt_options.erase(opt);
+        }
+
+        CAPTURE("Device profiles do not match the anticipated options list.");
+        REQUIRE(gt_options.empty());
+    }
+}
+
+//TEST_CASE("Verify device metadata", "[live]")
+//{
+//    // Get all devices
+//    const auto&& devices = get_all_devices();
+//
+//    // For each connected device
+//    for (auto&& d : devices)
+//    {
+//        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+//        auto&& gt_options = librealsense::generate_device_metadata(pid);
+//        std::unordered_set<int> supported_options;
+//
+//        // For each device's sensor
+//        for (auto&& s : d.query_sensors())
+//        {
+//            // obtain a frame
+//            rs2::frame f;
+//            s.open()
+//            supported_options.insert(so.begin(), so.end());
+//        }
+//
+//        REQUIRE(supported_options.size() == gt_options.size());
+//
+//        // Remove intersecting options from ground truth list
+//        for (auto&& opt : supported_options)
+//        {
+//            gt_options.erase(opt);
+//        }
+//
+//        REQUIRE(gt_options.empty());
+//    }
+//}
+
+// TODO - Ariel - Extrinsics test
+
+// TODO - Ariel - stream fps > 25?
+
+// TODO - Ariel - Start stop couple of times
+
+// TODO - Ariel - Pipeline start stop
+
+// TODO - Ariel - Configure all supported profiles and test frame arrived.
+
+// TODO - Ariel - gyro and accelerometer data not stuck?
+
+// TODO - Ariel - profiles consistency with configuration and frame result
+
+// TODO - Ariel - recordings - start stop
+
+// TODO - Ariel - recordings - via pipeline
+
+// TODO - Ariel - playback - 
+
+
+TEST_CASE("Sync sanity", "[live]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -63,28 +343,10 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
                     if (val < actual_fps)
                         actual_fps = val;
                 }
-                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
-                {
-                    hw_timestamp_domain = true;
-                }
-                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-                {
-                    system_timestamp_domain = true;
-                }
-                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
-                {
-                    global_timestamp_domain = true;
-                }
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
-
         }
-
-        CAPTURE(hw_timestamp_domain);
-        CAPTURE(system_timestamp_domain);
-        CAPTURE(global_timestamp_domain);
-        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
 
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
@@ -101,6 +363,8 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
 
         CAPTURE(num_of_partial_sync_sets);
         CAPTURE(all_timestamps.size());
+
+        // at least 10% of the frames were synced.
         REQUIRE((float(num_of_partial_sync_sets) / all_timestamps.size()) < 0.9f);
 
         for (auto s : dev.query_sensors())
@@ -110,7 +374,7 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Sync different fps", "[live][!mayfail]") {
+TEST_CASE("Sync different fps", "[live]") {
 
     rs2::context ctx;
 
@@ -230,7 +494,7 @@ TEST_CASE("Sync different fps", "[live][!mayfail]") {
     }
 }
 
-bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
+bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0)
 {
     auto sensors = dev.query_sensors();
     REQUIRE(sensors.size() > 0);
@@ -249,7 +513,7 @@ bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
     return false;
 }
 
-TEST_CASE("Sync start stop", "[live][!mayfail]") {
+TEST_CASE("Sync start stop", "[live]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))

@@ -793,6 +793,29 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
     throw std::runtime_error(ss.str());
 }
 
+inline rs2::stream_profile get_profile_by(const rs2::sensor& s, const rs2_format& fmt, const int width = 0, const int height = 0)
+{
+    auto&& sp = s.get_stream_profiles();
+    auto&& it = std::find_if(sp.begin(), sp.end(), [fmt, width, height](const rs2::stream_profile& sp_)
+        {
+            bool res = false;
+            if (const auto&& vsp_ = sp_.as<rs2::video_stream_profile>())
+                res = vsp_.width() && vsp_.height();
+            return res && sp_.format() == fmt;
+        });
+    REQUIRE(it != sp.end());
+    return *it;
+}
+
+inline rs2::device get_device_by(const std::string& product_line, const std::vector<rs2::device>& devices)
+{
+    auto&& device = std::find_if(devices.begin(), devices.end(), [product_line](const rs2::device& dev) 
+        {
+            return dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE) == product_line;
+        });
+    REQUIRE(device != devices.end());
+    return *device;
+}
 
 enum special_folder
 {
