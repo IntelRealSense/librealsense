@@ -21,7 +21,8 @@ void init_types(py::module &m) {
         });
 
     py::class_<rs2::region_of_interest> region_of_interest(m, "region_of_interest"); // No docstring in C++
-    region_of_interest.def_readwrite("min_x", &rs2::region_of_interest::min_x)
+    region_of_interest.def(py::init<>())
+        .def_readwrite("min_x", &rs2::region_of_interest::min_x)
         .def_readwrite("min_y", &rs2::region_of_interest::min_y)
         .def_readwrite("max_x", &rs2::region_of_interest::max_x)
         .def_readwrite("max_y", &rs2::region_of_interest::max_y);
