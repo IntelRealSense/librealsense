@@ -80,7 +80,7 @@ namespace librealsense
         std::vector<usb_device_info> usb_enumerator::query_devices_info()
         {
             std::vector<usb_device_info> rv;
-            auto ctx = std::make_shared<usb_context>();
+            auto ctx = get_usb_context();
 
             for (uint8_t idx = 0; idx < ctx->device_count(); ++idx)
             {
@@ -93,6 +93,7 @@ namespace librealsense
                 auto ret = libusb_get_device_descriptor(device, &desc);
                 if (LIBUSB_SUCCESS == ret)
                 {
+                    LOG_DEBUG("Found device " << hexify(desc.idVendor) << " " << hexify(desc.idProduct));
                     auto sd = get_subdevices(device, desc);
                     rv.insert(rv.end(), sd.begin(), sd.end());
                 }
@@ -104,7 +105,7 @@ namespace librealsense
 
         rs_usb_device usb_enumerator::create_usb_device(const usb_device_info& info)
         {
-            auto ctx = std::make_shared<usb_context>();
+            auto ctx = get_usb_context();
 
             for (uint8_t idx = 0; idx < ctx->device_count(); ++idx)
             {

@@ -10,12 +10,12 @@ namespace librealsense
     {       
         usb_context::usb_context() : _ctx(NULL), _list(NULL), _count(0)
         {
-            auto sts = libusb_init(NULL);
+            auto sts = libusb_init(&_ctx);
             if(sts != LIBUSB_SUCCESS)
             {
                 LOG_ERROR("libusb_init failed");
             }
-            _count = libusb_get_device_list(_ctx, &_list);
+            update_device_list();
             _event_handler = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
             {
                 if(_kill_handler_thread)
@@ -24,6 +24,13 @@ namespace librealsense
             });
         }
         
+        void usb_context::update_device_list()
+        {
+            if(_list)
+                libusb_free_device_list(_list, true);
+            _count = libusb_get_device_list(_ctx, &_list);
+        }
+
         usb_context::~usb_context()
         {
             libusb_free_device_list(_list, true);
@@ -66,7 +73,15 @@ namespace librealsense
         
         size_t usb_context::device_count()
         {
+            update_device_list();
             return _count;
+        }
+
+        static std::shared_ptr<usb_context> _context;
+        const std::shared_ptr<usb_context> get_usb_context()
+        {
+            if(!_context) _context = std::make_shared<usb_context>();
+            return _context;
         }
     }
 }
