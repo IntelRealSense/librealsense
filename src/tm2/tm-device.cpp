@@ -407,20 +407,16 @@ namespace librealsense
             if (device_valid && _is_opened)
                 close();
 
-            _log_poll_thread_stop = true;
             _time_sync_thread_stop = true;
-            _log_poll_thread.join();
             _time_sync_thread.join();
 
             if (device_valid) {
                 stop_stream();
                 stop_interrupt();
-
-                // poll the firmware logs one last time
-                auto log_buffer = std::unique_ptr<bulk_message_response_get_and_clear_event_log>(new bulk_message_response_get_and_clear_event_log);
-                if(log_poll_once(log_buffer))
-                    print_logs(log_buffer);
             }
+
+            _log_poll_thread_stop = true;
+            _log_poll_thread.join();
         }
         catch (...) {
             LOG_ERROR("An error has occurred while disposing the sensor!");
