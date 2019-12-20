@@ -1697,7 +1697,7 @@ namespace librealsense
                     left_length -= chunk_size;
 
                     LOG_DEBUG("Sending chunk length " << chunk_size << " of map size " << map_size);
-                    _device->stream_write((t265::bulk_message_request_header *)message);
+                    _device->stream_write(&message->header);
                 }
                 return true;
             },
@@ -1768,7 +1768,7 @@ namespace librealsense
 
         //TODO: There is no way on the firmware to know if this succeeds.
 
-        _device->stream_write((t265::bulk_message_request_header *)&request);
+        _device->stream_write(&request.header);
 
         return true;
     }
@@ -1789,7 +1789,7 @@ namespace librealsense
         request.metadata.flVy = translational_velocity.y;
         request.metadata.flVz = translational_velocity.z;
 
-        _device->stream_write((t265::bulk_message_request_header *)&request);
+        _device->stream_write(&request.rawStreamHeader.header);
 
         return true;
     }
