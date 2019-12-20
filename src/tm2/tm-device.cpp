@@ -1347,7 +1347,7 @@ namespace librealsense
                     LOG_WARNING("Unhandled DEV_STATUS " << status_name(*res));
             }
             else if(header->header.wMessageID == SLAM_GET_LOCALIZATION_DATA_STREAM) {
-                LOG_INFO("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)header)));
+                LOG_DEBUG("GET_LOCALIZATION_DATA_STREAM status " << status_name(*((bulk_message_response_header*)header)));
                 receive_localization_data_chunk((interrupt_message_get_localization_data_stream *)header);
             }
             else if(header->header.wMessageID == DEV_SAMPLE) {
@@ -1556,7 +1556,7 @@ namespace librealsense
     void tm2_sensor::receive_localization_data_chunk(const interrupt_message_get_localization_data_stream * chunk)
     {
         size_t bytes = chunk->header.dwLength - offsetof(interrupt_message_get_localization_data_stream, bLocalizationData);
-        LOG_INFO("Received chunk " << chunk->wIndex << " with status " << chunk->wStatus);
+        LOG_DEBUG("Received chunk " << chunk->wIndex << " with status " << chunk->wStatus << " length " << bytes);
 
         _async_op_res_buffer.reserve(_async_op_res_buffer.size() + bytes);
         auto start = (const char*)chunk->bLocalizationData;
