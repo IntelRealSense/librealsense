@@ -27,6 +27,12 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
+  <build_depend>libx11-dev</build_depend>
+  <build_depend>libxrandr</build_depend>
+  <build_depend>libxinerama-dev</build_depend>
+  <build_depend>libxcursor-dev</build_depend>
+  <build_depend>libxi-dev</build_depend>
+  <build_depend>opengl</build_depend>
 
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
