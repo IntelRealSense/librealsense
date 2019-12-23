@@ -257,7 +257,7 @@ namespace librealsense
                     throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect: " << e.what() << timeout_ms);
                 }
             }
-            throw std::runtime_error(to_string() << "Frame didn't arrived within " << timeout_ms);
+            throw std::runtime_error(to_string() << "Frame didn't arrive within " << timeout_ms);
         }
 
         bool pipeline::poll_for_frames(frame_holder* frame)
