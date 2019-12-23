@@ -1072,13 +1072,22 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
     {
-        auto cloned = profile->clone();
+        auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
 
-        auto vsp = std::dynamic_pointer_cast<video_stream_profile>(cloned);
+        auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile);
         if (vsp)
         {
-            vsp->set_dims(vsp->get_width(), vsp->get_height());
+            cloned = std::make_shared<video_stream_profile>(platform::stream_profile{});
+            std::shared_ptr<video_stream_profile> cloned_vsp = std::dynamic_pointer_cast<video_stream_profile>(cloned);
+            cloned_vsp->set_dims(vsp->get_width(), vsp->get_height());
         }
+
+        auto msp = std::dynamic_pointer_cast<motion_stream_profile>(profile);
+        if (msp)
+        {
+            cloned = std::make_shared<motion_stream_profile>(platform::stream_profile{});
+        }
+
         cloned->set_unique_id(profile->get_unique_id());
         cloned->set_format(profile->get_format());
         cloned->set_stream_index(profile->get_stream_index());
