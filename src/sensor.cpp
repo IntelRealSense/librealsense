@@ -1513,6 +1513,11 @@ namespace librealsense
         return _raw_sensor->register_before_streaming_changes_callback(callback);
     }
 
+    void synthetic_sensor::unregister_before_start_callback(int token)
+    {
+        _raw_sensor->unregister_before_start_callback(token);
+    }
+
     void synthetic_sensor::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const
     {
         sensor_base::register_metadata(metadata, metadata_parser);
