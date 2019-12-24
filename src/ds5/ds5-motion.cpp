@@ -334,10 +334,19 @@ namespace librealsense
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
 
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
+            try
+            {
+                //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+                // Writing to log to dereference underlying structure
+                LOG_INFO("Accel Sensitivity Diagonal" << (*_accel_intrinsic).sensitivity);
+                LOG_INFO("Gyro Sensitivity Diagonal" << (*_gyro_intrinsic).sensitivity);
+
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
                 std::make_shared<enable_motion_correction>(hid_ep.get(),
                     _depth_to_imu,
                     option_range{ 0, 1, 1, 1 }));
+            }
+            catch (...) {}
 
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
