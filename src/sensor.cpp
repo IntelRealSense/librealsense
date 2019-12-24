@@ -1074,16 +1074,13 @@ namespace librealsense
     {
         auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
 
-        auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile);
-        if (vsp)
+        if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
         {
             cloned = std::make_shared<video_stream_profile>(platform::stream_profile{});
-            std::shared_ptr<video_stream_profile> cloned_vsp = std::dynamic_pointer_cast<video_stream_profile>(cloned);
-            cloned_vsp->set_dims(vsp->get_width(), vsp->get_height());
+            std::dynamic_pointer_cast<video_stream_profile>(cloned)->set_dims(vsp->get_width(), vsp->get_height());
         }
 
-        auto msp = std::dynamic_pointer_cast<motion_stream_profile>(profile);
-        if (msp)
+        if (auto msp = std::dynamic_pointer_cast<motion_stream_profile>(profile))
         {
             cloned = std::make_shared<motion_stream_profile>(platform::stream_profile{});
         }
