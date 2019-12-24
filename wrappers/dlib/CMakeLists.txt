@@ -6,6 +6,10 @@ project(RealsenseDlibSamples)
 # Add DLIB_DIR as an option -- this needs to be configured in CMake
 set(DLIB_DIR "" CACHE PATH "The path to the DLIB installation")
 
+if( NOT DEFINED DLIB_DIR  OR  NOT IS_DIRECTORY ${DLIB_DIR} )
+	message( FATAL_ERROR "Invalid DLIB directory specified with DLIB_DIR" )
+endif()
+
 # Actually make it part of the compilation
 add_subdirectory(${DLIB_DIR} build)
 

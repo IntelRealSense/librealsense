@@ -325,3 +325,10 @@ EXPORTS
     rs2_update_firmware_unsigned
     rs2_update_firmware_unsigned_cpp
     rs2_enter_update_state
+    rs2_run_on_chip_calibration_cpp
+    rs2_run_tare_calibration_cpp
+    rs2_run_on_chip_calibration
+    rs2_run_tare_calibration
+    rs2_get_calibration_table
+    rs2_set_calibration_table
+

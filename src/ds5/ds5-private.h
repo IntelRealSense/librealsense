@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <string>
 
-
 namespace librealsense
 {
     namespace ds
@@ -34,9 +33,10 @@ namespace librealsense
         const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
         const uint16_t RS405_PID            = 0x0b0c; // DS5U
         const uint16_t RS435I_PID           = 0x0b3a; // D435i
-        const uint16_t RS416_PID            = 0x0b49;
+        const uint16_t RS416_PID            = 0x0b49; // F416
         const uint16_t RS430I_PID           = 0x0b4b; // D430i
-        const uint16_t RS465_PID            = 0x0b4d;
+        const uint16_t RS465_PID            = 0x0b4d; // D465
+        const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -49,6 +49,7 @@ namespace librealsense
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
         const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
+        const uint8_t DS5_LED_PWR                         = 0xE;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -56,6 +57,7 @@ namespace librealsense
             ds::RS410_PID,
             ds::RS415_PID,
             ds::RS416_PID,
+            ds::RS416_RGB_PID,
             ds::RS430_PID,
             ds::RS430I_PID,
             ds::RS430_MM_PID,
@@ -117,6 +119,7 @@ namespace librealsense
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS415_PID,            "Intel RealSense D415"},
             { RS416_PID,            "Intel RealSense F416"},
+            { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS430_PID,            "Intel RealSense D430"},
@@ -164,6 +167,7 @@ namespace librealsense
             GLD             = 0x0f,     // FW logs
             GVD             = 0x10,     // camera details
             GETINTCAL       = 0x15,     // Read calibration table
+            SETINTCAL       = 0x16,     // Set Internal sub calibration table
             LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
@@ -176,6 +180,7 @@ namespace librealsense
             SETAEROI        = 0x44,     // set auto-exposure region of interest
             GETAEROI        = 0x45,     // get auto-exposure region of interest
             MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
+            CALIBRECALC     = 0x51,     // Calibration recalc and update on the fly
             GET_EXTRINSICS  = 0x53,     // get extrinsics
             CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
             SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
@@ -189,6 +194,7 @@ namespace librealsense
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
+            AUTO_CALIB      = 0x80      // auto calibration commands
         };
 
         #define TOSTRING(arg) #arg
@@ -303,6 +309,7 @@ namespace librealsense
 
         const std::string DEPTH_STEREO = "Stereo Module";
 
+#pragma pack(push, 1)
         struct table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian
@@ -311,6 +318,7 @@ namespace librealsense
             uint32_t                param;          // This field content is defined ny table type
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
+#pragma pack(pop)
 
         enum ds5_rect_resolutions : unsigned short
         {

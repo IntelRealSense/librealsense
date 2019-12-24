@@ -12,7 +12,7 @@
 #include "upload.h"
 #include "pc-shader.h"
 #include "colorizer-gl.h"
-#include "proc/yuy2rgb.h"
+#include "proc/color-formats-converter.h"
 #include "proc/colorizer.h"
 #include "proc/align.h"
 #include "log.h"
@@ -71,7 +71,7 @@ rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** err
     verify_version_compatibility(api_version);
 
     auto block = std::make_shared<librealsense::gl::yuy2rgb>();
-    auto backup = std::make_shared<librealsense::yuy2rgb>();
+    auto backup = std::make_shared<librealsense::yuy2_converter>(RS2_FORMAT_RGB8);
     auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
     dual->add(block);
     dual->add(backup);
@@ -114,7 +114,7 @@ int rs2_gl_is_frame_extendable_to(const rs2_frame* f, rs2_gl_extension extension
         if (!gpu->get_gpu_section().on_gpu()) return false;
         return true;
     }
-    default: return 0;
+    default: return false;
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)

@@ -18,3 +18,6 @@ project(':recording').projectDir = new File('examples/recording')
 
 include ':processing'
 project(':processing').projectDir = new File('examples/processing')
+
+include ':multicam'
+project(':multicam').projectDir = new File('examples/multicam')

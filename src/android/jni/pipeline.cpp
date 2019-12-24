@@ -60,3 +60,12 @@ Java_com_intel_realsense_librealsense_PipelineProfile_nDelete(JNIEnv *env, jclas
                                                               jlong handle) {
     rs2_delete_pipeline_profile(reinterpret_cast<rs2_pipeline_profile *>(handle));
 }
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_PipelineProfile_nGetDevice(JNIEnv *env, jclass type,
+                                                              jlong handle) {
+    rs2_error* e = NULL;
+    rs2_device *rv = rs2_pipeline_profile_get_device(reinterpret_cast<rs2_pipeline_profile *>(handle), &e);
+    handle_error(env, e);
+    return reinterpret_cast<jlong>(rv);
+}

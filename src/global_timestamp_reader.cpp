@@ -5,19 +5,6 @@
 
 namespace librealsense
 {
-    CLinearCoefficients::CLinearCoefficients(unsigned int buffer_size) :
-        _base_sample(0, 0),
-        _buffer_size(buffer_size)
-    {
-        //LOG_DEBUG("CLinearCoefficients started");
-    }
-
-    void CLinearCoefficients::reset()
-    {
-        _last_values.clear();
-        //LOG_DEBUG("CLinearCoefficients::reset");
-    }
-
     CSample& CSample::operator-=(const CSample& other)
     {
         _x -= other._x;
@@ -32,7 +19,19 @@ namespace librealsense
         return *this;
     }
 
-    bool CLinearCoefficients::is_full() const 
+    CLinearCoefficients::CLinearCoefficients(unsigned int buffer_size) :
+        _base_sample(0, 0),
+        _buffer_size(buffer_size),
+        _time_span_ms(1000) // Spread the linear equation modifications over a whole second.
+    {
+    }
+
+    void CLinearCoefficients::reset()
+    {
+        _last_values.clear();
+    }
+
+    bool CLinearCoefficients::is_full() const
     {
         return _last_values.size() >= _buffer_size;
     }
@@ -52,20 +51,29 @@ namespace librealsense
     {
         // Calculate linear coefficients, based on calculus described in: https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/regression-analysis/find-a-linear-regression-equation/
         // Calculate Std 
-        double sum_x(0);
-        double sum_y(0);
-        double sum_xy(0);
-        double sum_x2(0);
         double n(static_cast<double>(_last_values.size()));
-        CSample base_sample = _last_values.back();
         double a(1);
         double b(0);
-        if (n > 1)
+        double crnt_time(_last_values.front()._x);
+        double dt(1);
+        if (n == 1)
         {
+            _base_sample = _last_values.back();
+            _dest_a = 1;
+            _dest_b = 0;
+            _prev_a = 0;
+            _prev_b = 0;
+        }
+        else
+        {
+            double sum_x(0);
+            double sum_y(0);
+            double sum_xy(0);
+            double sum_x2(0);
             for (auto sample = _last_values.begin(); sample != _last_values.end(); sample++)
             {
                 CSample crnt_sample(*sample);
-                crnt_sample -= base_sample;
+                crnt_sample -= _base_sample;
                 sum_x += crnt_sample._x;
                 sum_y += crnt_sample._y;
                 sum_xy += (crnt_sample._x * crnt_sample._y);
@@ -73,17 +81,32 @@ namespace librealsense
             }
             b = (sum_y*sum_x2 - sum_x * sum_xy) / (n*sum_x2 - sum_x * sum_x);
             a = (n*sum_xy - sum_x * sum_y) / (n*sum_x2 - sum_x * sum_x);
+
+            if (crnt_time - _prev_time < _time_span_ms)
+            {
+                dt = (crnt_time - _prev_time) / _time_span_ms;
+            }
         }
         std::lock_guard<std::recursive_mutex> lock(_stat_mtx);
-        _base_sample = base_sample;
-        _a = a;
-        _b = b;
+        _prev_a = _dest_a * dt + _prev_a * (1 - dt);
+        _prev_b = _dest_b * dt + _prev_b * (1 - dt);
+        _dest_a = a;
+        _dest_b = b;
+        _prev_time = crnt_time;
     }
 
     double CLinearCoefficients::calc_value(double x) const
     {
         std::lock_guard<std::recursive_mutex> lock(_stat_mtx);
-        double y(_a * (x - _base_sample._x) + _b + _base_sample._y);
+        double a(_dest_a), b(_dest_b);
+        if (x - _prev_time < _time_span_ms)
+        {
+            double dt( (x - _prev_time) / _time_span_ms );
+            a = _dest_a * dt + _prev_a * (1 - dt);
+            b = _dest_b * dt + _prev_b * (1 - dt);
+        }
+        double y(a * (x - _base_sample._x) + b + _base_sample._y);
+        LOG_DEBUG("CLinearCoefficients::calc_value: " << x << " -> " << y << " with coefs:" << a << ", " << b << ", " << _base_sample._x << ", " << _base_sample._y);
         return y;
     }
 
@@ -211,10 +234,10 @@ namespace librealsense
     {
     }
 
-    double global_timestamp_reader::get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo)
+    double global_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
-        double frame_time = _device_timestamp_reader->get_frame_timestamp(mode, fo);
-        rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
+        double frame_time = _device_timestamp_reader->get_frame_timestamp(frame);
+        rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(frame);
         if (_option_is_enabled->is_true() && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
         {
             auto sp = _time_diff_keeper.lock();
@@ -227,14 +250,14 @@ namespace librealsense
     }
 
 
-    unsigned long long global_timestamp_reader::get_frame_counter(const request_mapping& mode, const platform::frame_object& fo) const
+    unsigned long long global_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
-        return _device_timestamp_reader->get_frame_counter(mode, fo);
+        return _device_timestamp_reader->get_frame_counter(frame);
     }
 
-    rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const request_mapping& mode, const platform::frame_object& fo) const
+    rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
-        rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(mode, fo);
+        rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(frame);
         return (_option_is_enabled->is_true() && _ts_is_ready && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;
     }
 

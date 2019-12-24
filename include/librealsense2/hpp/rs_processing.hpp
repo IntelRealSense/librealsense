@@ -26,7 +26,7 @@ namespace rs2
         * \param[in] new_bpp     Frame bit per pixel to create.
         * \param[in] new_width   Frame width to create.
         * \param[in] new_height  Frame height to create.
-        * \param[in] new_stride  Frame stride to crate.
+        * \param[in] new_stride  Frame stride to create.
         * \param[in] frame_type  Which frame type are going to create.
         * \return   The allocated frame
         */
@@ -41,6 +41,25 @@ namespace rs2
             rs2_error* e = nullptr;
             auto result = rs2_allocate_synthetic_video_frame(_source, profile.get(),
                 original.get(), new_bpp, new_width, new_height, new_stride, frame_type, &e);
+            error::handle(e);
+            return result;
+        }
+
+        /**
+        * Allocate a new motion frame with given params
+        *
+        * \param[in] profile     Stream profile going to allocate.
+        * \param[in] original    Original frame.
+        * \param[in] frame_type  Which frame type are going to create.
+        * \return   The allocated frame
+        */
+        frame allocate_motion_frame(const stream_profile& profile,
+            const frame& original,
+            rs2_extension frame_type = RS2_EXTENSION_MOTION_FRAME) const
+        {
+            rs2_error* e = nullptr;
+            auto result = rs2_allocate_synthetic_motion_frame(_source, profile.get(),
+                original.get(), frame_type, &e);
             error::handle(e);
             return result;
         }
@@ -655,6 +674,8 @@ namespace rs2
         * \param[in] align_to      The stream type to which alignment should be made.
         */
         align(rs2_stream align_to) : filter(init(align_to), 1) {}
+
+        using filter::process;
 
         /**
         * Run the alignment process on the given frames to get an aligned set of frames

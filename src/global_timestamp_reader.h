@@ -36,6 +36,7 @@ namespace librealsense
         CLinearCoefficients(unsigned int buffer_size);
         void reset();
         void add_value(CSample val);
+        void update_linear_coefs(double x);
         double calc_value(double x) const;
         bool is_full() const;
 
@@ -45,8 +46,10 @@ namespace librealsense
     private:
         unsigned int _buffer_size;
         std::deque<CSample> _last_values;
-        double _b, _a;    //Linear regression coeffitions.
         CSample _base_sample;
+        double _prev_a, _prev_b;    //Linear regression coeffitions - previously used values.
+        double _dest_a, _dest_b;    //Linear regression coeffitions - recently calculated.
+        double _prev_time, _time_span_ms;
         mutable std::recursive_mutex _add_mtx;
         mutable std::recursive_mutex _stat_mtx;
     };
@@ -86,9 +89,9 @@ namespace librealsense
                                 std::shared_ptr<time_diff_keeper> timediff,
                                 std::shared_ptr<global_time_option>);
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
-        unsigned long long get_frame_counter(const request_mapping& mode, const platform::frame_object& fo) const override;
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         void reset() override;
 
     private:

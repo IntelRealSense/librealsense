@@ -14,7 +14,7 @@ namespace librealsense
     class l500_motion : public virtual l500_device
     {
     public:
-        std::shared_ptr<hid_sensor> create_hid_device(std::shared_ptr<context> ctx,
+        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
             const std::vector<platform::hid_device_info>& all_hid_infos);
 
         l500_motion(std::shared_ptr<context> ctx,

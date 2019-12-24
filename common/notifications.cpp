@@ -118,7 +118,7 @@ namespace rs2
 
             if (ellapsed > 0.f) progress_speed = delta / ellapsed;
 
-            threshold_progress = std::min(100, progress + delta);
+            threshold_progress = float(std::min(100, progress + delta));
 
             last_progress = progress;
         }
@@ -252,6 +252,17 @@ namespace rs2
         draw_text(get_title().c_str(), x, y, height - 35);
     }
 
+    void rs2::notification_model::draw_dismiss(ux_window & win, int x, int y)
+    {
+        ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
+
+        string id = to_string() << "Dismiss" << "##" << index;
+        if (ImGui::Button(id.c_str(), { 100, 20 }))
+        {
+            dismiss(true);
+        }
+    }
+
     std::function<void()> notification_model::draw(ux_window& win, int w, int y, 
         std::shared_ptr<notification_model>& selected, std::string& error_message)
     {
@@ -382,13 +393,7 @@ namespace rs2
 
             if (enable_dismiss)
             {
-                ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
-
-                string id = to_string() << "Dismiss" << "##" << index;
-                if (ImGui::Button(id.c_str(), { 100, 20 }))
-                {
-                    dismiss(true);
-                }
+                draw_dismiss(win, x, y);
             }
             
             unset_color_scheme();
@@ -851,5 +856,128 @@ namespace rs2
         t.detach();
 
         _started = true;
+    }
+
+    void export_manager::process_flow(
+        std::function<void()> cleanup,
+        invoker invoke)
+    {
+        _progress = 5;
+        _exporter->process(_data);
+        _progress = 100;
+
+        _done = true;
+    }
+
+    void export_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        using namespace std;
+        using namespace chrono;
+
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImVec4 shadow{ 1.f, 1.f, 1.f, 0.1f };
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+        { float(x + width), float(y + 25) }, ImColor(shadow));
+
+        if (update_state != STATE_COMPLETE)
+        {
+            ImGui::Text("Export in progress");
+
+            ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
+
+            ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
+
+            std::string s = to_string() << "Saving 3D view to " <<
+                get_file_name(get_manager().get_filename());
+            ImGui::Text("%s", s.c_str());
+
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            ImGui::Text("Export Completed");
+
+            ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
+            ImGui::PushFont(win.get_large_font());
+            std::string txt = to_string() << textual_icons::throphy;
+            ImGui::Text("%s", txt.c_str());
+            ImGui::PopFont();
+
+            ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
+            std::string s = to_string() << "Finished saving 3D view  to " <<
+                get_file_name(get_manager().get_filename());
+
+            ImGui::Text("%s", s.c_str());
+        }
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+
+        const auto bar_width = width - 115;
+
+        if (update_state == STATE_IN_PROGRESS)
+        {
+            if (update_manager->done())
+            {
+                update_state = STATE_COMPLETE;
+                pinned = false;
+                last_progress_time = last_interacted = system_clock::now();
+            }
+
+            if (!expanded)
+            {
+                if (update_manager->failed())
+                {
+                    update_manager->check_error(error_message);
+                    update_state = STATE_FAILED;
+                    pinned = false;
+                    dismiss(false);
+                }
+
+                draw_progress_bar(win, bar_width);
+
+                ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
+            }
+        }
+    }
+
+    int export_notification_model::calc_height()
+    {
+        return 85;
+    }
+
+    void export_notification_model::set_color_scheme(float t) const
+    {
+        notification_model::set_color_scheme(t);
+
+        ImGui::PopStyleColor(1);
+
+        ImVec4 c;
+
+        if (update_state == STATE_COMPLETE)
+        {
+            c = alpha(saturate(light_blue, 0.7f), 1 - t);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, c);
+        }
+        else
+        {
+            c = alpha(sensor_bg, 1 - t);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, c);
+        }
+    }
+
+    export_notification_model::export_notification_model(std::shared_ptr<export_manager> manager)
+        : process_notification_model(manager)
+    {
+        enable_expand = false;
+        expanded = false;
+        if (expanded) visible = false;
+
+        message = "";
+        update_state = STATE_IN_PROGRESS;
+        this->severity = RS2_LOG_SEVERITY_INFO;
+        this->category = RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED;
+
+        pinned = true;
     }
 }

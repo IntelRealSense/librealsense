@@ -25,7 +25,7 @@ namespace librealsense
             throw std::runtime_error("DFU - failed to parse serial number!");
 
         auto rev = buffer;
-        std::reverse(std::begin(rev), std::end(rev));// TODO: FW bug?
+
         std::stringstream rv;
         for (auto i = 0; i < ivcam2::module_serial_size; i++)
             rv << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(rev[i]);

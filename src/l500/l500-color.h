@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <string>
+#include <map>
+
 #include "l500-device.h"
 #include "stream.h"
 #include "l500-depth.h"
@@ -14,7 +16,7 @@ namespace librealsense
     class l500_color : public virtual l500_device
     {
     public:
-        std::shared_ptr<uvc_sensor> create_color_device(std::shared_ptr<context> ctx,
+        std::shared_ptr<synthetic_sensor> create_color_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& color_devices_info);
 
         l500_color(std::shared_ptr<context> ctx,
@@ -38,13 +40,16 @@ namespace librealsense
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 
-    class l500_color_sensor : public uvc_sensor, public video_sensor_interface
+    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface
         {
         public:
-            explicit l500_color_sensor(l500_color* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-                std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                std::shared_ptr<context> ctx)
-                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            explicit l500_color_sensor(l500_color* owner,
+                std::shared_ptr<uvc_sensor> uvc_sensor,
+                std::shared_ptr<context> ctx,
+                std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format,
+                std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream)
+                : synthetic_sensor("RGB Camera", uvc_sensor, owner, l500_color_fourcc_to_rs2_format, l500_color_fourcc_to_rs2_stream),
+                _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -89,9 +94,9 @@ namespace librealsense
             {
                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-                auto results = uvc_sensor::init_stream_profiles();
+                auto&& results = synthetic_sensor::init_stream_profiles();
 
-                for (auto p : results)
+                for (auto&& p : results)
                 {
                     // Register stream types
                     if (p->get_stream_type() == RS2_STREAM_COLOR)
@@ -100,9 +105,8 @@ namespace librealsense
                     }
 
                     // Register intrinsics
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
-
-                    auto profile = to_profile(p.get());
+                    auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<l500_color_sensor> wp =
                         std::dynamic_pointer_cast<l500_color_sensor>(this->shared_from_this());
                     video->set_intrinsics([profile, wp]()

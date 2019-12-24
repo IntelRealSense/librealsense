@@ -3,7 +3,7 @@ package com.intel.realsense.librealsense;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Sensor extends LrsClass {
+public class Sensor extends Options {
 
     Sensor(long h) {
         mHandle = h;

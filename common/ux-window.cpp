@@ -46,6 +46,10 @@ namespace rs2
         config_file::instance().set_default(configurations::performance::show_fps, false);
         config_file::instance().set_default(configurations::performance::vsync, true);
 
+        config_file::instance().set_default(configurations::ply::mesh, true);
+        config_file::instance().set_default(configurations::ply::use_normals, false);
+        config_file::instance().set_default(configurations::ply::encoding, configurations::ply::binary);
+
 #ifdef __APPLE__
         config_file::instance().set_default(configurations::performance::font_oversample, 8);
         config_file::instance().set_default(configurations::performance::enable_msaa, true);

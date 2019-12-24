@@ -23,12 +23,12 @@ namespace rs2
     public:
         on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub,
             device_model& model, device dev)
-            : process_manager("On-Chip Calibration", model), 
+            : process_manager("On-Chip Calibration"), _model(model),
              _dev(dev), _sub(sub), _viewer(viewer)
         {
         }
 
-        bool allow_calib_keep() const { return get_health() > 0.15 || tare; }
+        bool allow_calib_keep() const { return true; }
 
         // Get health number from the calibration summary
         float get_health() const { return _health; }
@@ -66,7 +66,7 @@ namespace rs2
 
         void process_flow(std::function<void()> cleanup, invoker invoke) override;
 
-        float _health = 0.f;
+        float _health = -1.0f;
         device _dev;
 
         bool _was_streaming = false;
@@ -80,6 +80,7 @@ namespace rs2
 
         std::vector<uint8_t> _old_calib, _new_calib;
         std::vector<std::pair<float, float>> _metrics;
+        device_model& _model;
 
         bool _restored = true;
 
@@ -99,6 +100,7 @@ namespace rs2
             RS2_CALIB_STATE_CALIB_IN_PROCESS,// Calibration in process... Shows progressbar
             RS2_CALIB_STATE_CALIB_COMPLETE,  // Calibration complete, show before/after toggle and metrics
             RS2_CALIB_STATE_TARE_INPUT,      // Collect input parameters for Tare calib
+            RS2_CALIB_STATE_TARE_INPUT_ADVANCED,      // Collect input parameters for Tare calib
             RS2_CALIB_STATE_SELF_INPUT,      // Collect input parameters for Self calib
         };
 
@@ -111,6 +113,7 @@ namespace rs2
 
         void set_color_scheme(float t) const override;
         void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        void draw_dismiss(ux_window& win, int x, int y) override;
         void draw_expanded(ux_window& win, std::string& error_message) override;
         int calc_height() override;
         void dismiss(bool snooze) override;

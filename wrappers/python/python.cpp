@@ -3,6 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_export.hpp"
 
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
@@ -10,6 +11,7 @@ PYBIND11_MODULE(NAME, m) {
         ==============================
         Library for accessing Intel RealSenseTM cameras
     )pbdoc";
+    m.attr("__version__") = RS2_API_VERSION_STR;
 
     init_c_files(m);
     init_types(m);
@@ -25,6 +27,13 @@ PYBIND11_MODULE(NAME, m) {
     init_export(m);
     init_advanced_mode(m);
     init_util(m);
+    py::class_<rs2::save_to_ply, rs2::filter>(m, "save_to_ply")
+        .def(py::init<std::string, rs2::pointcloud>(), "filename"_a = "RealSense Pointcloud ", "pc"_a = rs2::pointcloud())
+        .def_property_readonly_static("option_ignore_color", []() { return rs2::save_to_ply::OPTION_IGNORE_COLOR; })
+        .def_property_readonly_static("option_ply_mesh", []() { return rs2::save_to_ply::OPTION_PLY_MESH; })
+        .def_property_readonly_static("option_ply_binary", []() { return rs2::save_to_ply::OPTION_PLY_BINARY; })
+        .def_property_readonly_static("option_ply_normals", []() { return rs2::save_to_ply::OPTION_PLY_NORMALS; })
+        .def_property_readonly_static("option_ply_threshold", []() { return rs2::save_to_ply::OPTION_PLY_THRESHOLD; });
 
     /** rs.hpp **/
     m.def("log_to_console", &rs2::log_to_console, "min_severity"_a);

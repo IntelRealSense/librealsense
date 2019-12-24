@@ -1233,8 +1233,13 @@ namespace rs2
                     }
                 }
 
-                if (ply_texture )
-                    export_to_ply(filename_base + "_" + fn.str() + "_3d_mesh.ply", _viewer_model.not_model, frames, ply_texture, false);
+                if (ply_texture)
+                {
+                    auto fname = filename_base + "_" + fn.str() + "_3d_mesh.ply";
+                    std::unique_ptr<rs2::filter> exporter;
+                    exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
+                    export_frame(fname, std::move(exporter), _viewer_model.not_model, frames, false);
+                }
             }
         }
 

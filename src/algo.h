@@ -102,16 +102,11 @@ namespace librealsense
         std::recursive_mutex state_mutex;
     };
 
-    struct frame_and_callback{
-        frame_holder f_holder;
-        callback_invocation_holder callback;
-    };
-
     class auto_exposure_mechanism {
     public:
         auto_exposure_mechanism(option& gain_option, option& exposure_option, const auto_exposure_state& auto_exposure_state);
         ~auto_exposure_mechanism();
-        void add_frame(frame_holder frame, callback_invocation_holder callback);
+        void add_frame(frame_holder frame);
         void update_auto_exposure_state(const auto_exposure_state& auto_exposure_state);
         void update_auto_exposure_roi(const region_of_interest& roi);
 
@@ -129,8 +124,6 @@ namespace librealsense
         };
 
     private:
-        bool try_pop_front_data(frame_and_callback* data);
-
         static const int                          queue_size = 2;
         option&                                   _gain_option;
         option&                                   _exposure_option;
@@ -138,7 +131,7 @@ namespace librealsense
         std::shared_ptr<std::thread>              _exposure_thread;
         std::condition_variable                   _cv;
         std::atomic<bool>                         _keep_alive;
-        single_consumer_queue<frame_and_callback> _data_queue;
+        single_consumer_queue<frame_holder>       _data_queue;
         std::mutex                                _queue_mtx;
         std::atomic<unsigned>                     _frames_counter;
         std::atomic<unsigned>                     _skip_frames;

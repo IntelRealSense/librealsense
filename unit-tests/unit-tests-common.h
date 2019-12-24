@@ -117,39 +117,39 @@ inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor
     for (auto profile : all_profiles)
     {
         if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
-        {
-            if (auto  video = p.as<rs2::video_stream_profile>())
             {
-                if (p.fps() == profile.fps &&
-                    p.stream_index() == profile.index &&
-                    p.stream_type() == profile.stream &&
-                    p.format() == profile.format &&
-                    video.width() == profile.width &&
-                    video.height() == profile.height)
-                {
-                    modes.push_back(p);
-                    return true;
-                }
-            }
-            else
-            {
-                if (auto  motion = p.as<rs2::motion_stream_profile>())
+                if (auto  video = p.as<rs2::video_stream_profile>())
                 {
                     if (p.fps() == profile.fps &&
                         p.stream_index() == profile.index &&
                         p.stream_type() == profile.stream &&
-                        p.format() == profile.format)
+                        p.format() == profile.format &&
+                        video.width() == profile.width &&
+                        video.height() == profile.height)
                     {
                         modes.push_back(p);
                         return true;
                     }
                 }
                 else
-                    return false;
-            }
+                {
+                    if (auto  motion = p.as<rs2::motion_stream_profile>())
+                    {
+                        if (p.fps() == profile.fps &&
+                            p.stream_index() == profile.index &&
+                            p.stream_type() == profile.stream &&
+                            p.format() == profile.format)
+                        {
+                            modes.push_back(p);
+                            return true;
+                        }
+                    }
+                    else
+                        return false;
+                }
 
-            return false;
-        }) != all_modes.end())
+                return false;
+            }) != all_modes.end())
         {
             profiles.push_back(profile);
 
@@ -206,6 +206,9 @@ inline void disable_sensitive_options_for(rs2::sensor& sen)
 
     if (sen.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+
+    if (sen.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 0));
 
     if (sen.supports(RS2_OPTION_EXPOSURE))
     {

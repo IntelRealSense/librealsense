@@ -191,6 +191,18 @@ namespace rs2
             static const char* vsync               { "performance.vsync" };
             static const char* font_oversample     { "performance.font_oversample.v2" };
         }
+        namespace ply
+        {
+            static const char* mesh                { "ply.mesh" };
+            static const char* use_normals         { "ply.normals" };
+            static const char* encoding            { "ply.encoding" };
+
+            enum encoding_types
+            {
+                textual = 0,
+                binary = 1
+            };
+        }
     }
 
     namespace textual_icons
@@ -593,6 +605,7 @@ namespace rs2
         bool draw_stream_selection();
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_supported_profiles();
         void stop(viewer_model& viewer);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
@@ -615,6 +628,13 @@ namespace rs2
 
         bool can_enable_zero_order();
         void verify_zero_order_conditions();
+
+        void update_ui(std::vector<stream_profile> profiles_vec);
+        void get_sorted_profiles(std::vector<stream_profile>& profiles);
+
+        template<typename T, typename V>
+        bool check_profile(stream_profile p, T cond, std::map<V, std::map<int, stream_profile>>& profiles_map,
+            std::vector<stream_profile>& results, V key, int num_streams, stream_profile& def_p);
 
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
@@ -652,6 +672,7 @@ namespace rs2
         std::vector<std::string> shared_fpses;
         std::map<int, std::vector<std::string>> formats;
         std::map<int, bool> stream_enabled;
+        std::map<int, bool> prev_stream_enabled;
         std::map<int, std::string> stream_display_names;
 
         subdevice_ui_selection ui;
@@ -949,7 +970,7 @@ namespace rs2
         std::shared_ptr<gl::uploader> uploader; // GL element that helps pre-emptively copy frames to the GPU
     };
 
-    void export_to_ply(const std::string& file_name, notifications_model& ns, points p, video_frame texture, bool notify = true);
+    void export_frame(const std::string& fname, std::unique_ptr<rs2::filter> exporter, notifications_model& ns, rs2::frame data, bool notify = true);
 
     // Auxillary function to save stream data in its internal (raw) format
     bool save_frame_raw_data(const std::string& filename, rs2::frame frame);

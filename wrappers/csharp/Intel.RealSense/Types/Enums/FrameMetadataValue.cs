@@ -94,5 +94,11 @@ namespace Intel.RealSense
 
         /// <summary>Color lowlight compensation. Zero corresponds to switched off.</summary>
         LowLightCompensation = 28,
+
+        /// <summary>Emitter mode: 0 – all emitters disabled. 1 – laser enabled. 2 – auto laser enabled (opt). 3 – LED enabled (opt).</summary>
+        FrameEmitterMode = 29,
+
+        /// <summary>Led power value 0-360.</summary>
+        FrameLedPower = 30,
     }
 }

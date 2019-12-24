@@ -16,61 +16,6 @@
 
 namespace rs2
 {
-#pragma pack(push, 1)
-#pragma pack(1)
-    struct table_header
-    {
-        uint16_t version;        // major.minor. Big-endian
-        uint16_t table_type;     // ctCalibration
-        uint32_t table_size;     // full size including: TOC header + TOC + actual tables
-        uint32_t param;          // This field content is defined ny table type
-        uint32_t crc32;          // crc of all the actual table data excluding header/CRC
-    };
-
-    enum rs2_dsc_status : uint16_t
-    {
-        RS2_DSC_STATUS_SUCCESS = 0, /**< Self calibration succeeded*/
-        RS2_DSC_STATUS_RESULT_NOT_READY = 1, /**< Self calibration result is not ready yet*/
-        RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW = 2, /**< There are too little textures in the scene*/
-        RS2_DSC_STATUS_EDGE_TOO_CLOSE = 3, /**< Self calibration range is too small*/
-        RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
-        RS2_DSC_STATUS_BURN_SUCCESS = 5,
-        RS2_DSC_STATUS_BURN_ERROR = 6,
-        RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7,
-    };
-
-#define MAX_STEP_COUNT 256
-
-    struct DirectSearchCalibrationResult
-    {
-        uint32_t opcode;
-        uint16_t status;      // DscStatus
-        uint16_t stepCount;
-        uint16_t stepSize; // 1/1000 of a pixel
-        uint32_t pixelCountThreshold; // minimum number of pixels in
-                                      // selected bin
-        uint16_t minDepth;  // Depth range for FWHM
-        uint16_t maxDepth;
-        uint32_t rightPy;   // 1/1000000 of normalized unit
-        float healthCheck;
-        float rightRotation[9]; // Right rotation
-        //uint16_t results[0]; // 1/100 of a percent
-    };
-
-    typedef struct
-    {
-        uint16_t m_status;
-        float    m_healthCheck;
-    } DscResultParams;
-
-    typedef struct
-    {
-        uint16_t m_paramSize;
-        DscResultParams m_dscResultParams;
-        uint16_t m_tableSize;
-    } DscResultBuffer;
-#pragma pack(pop)
-
     void on_chip_calib_manager::stop_viewer(invoker invoke)
     {
         try
@@ -162,8 +107,9 @@ namespace rs2
             {
                 for (int i = 0; i < _sub->shared_fps_values.size(); i++)
                 {
-                    if (_sub->shared_fps_values[i] == 30)
+                    //if (_sub->shared_fps_values[i] == 30)
                         _sub->ui.selected_shared_fps_id = i;
+                        if (_sub->is_selected_combination_supported()) break;
                 }
 
                 // If still not supported, try VGA30
@@ -361,169 +307,20 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        rs2_dsc_status status = RS2_DSC_STATUS_BURN_SUCCESS;
+        std::stringstream ss;
+        ss << "{\n \"speed\":" << speed <<
+               ",\n \"average_step_count\":" << average_step_count <<
+               ",\n \"step_count\":" << step_count <<
+               ",\n \"accuracy\":" << accuracy <<"}";
 
-        DirectSearchCalibrationResult result;
+        std::string json = ss.str();
+        
 
+        auto calib_dev = _dev.as<auto_calibrated_device>();
         if (tare)
-        {
-            std::vector<uint8_t> cmd =
-            {
-                0x14, 0x00, 0xab, 0xcd,
-                0x80, 0x00, 0x00, 0x00,
-                0x0b, 0x00, 0x00, 0x00,
-                0xb8, 0x0b, 0x00, 0x00,
-                0x1e, 0x1e, 0x03, 0x00,
-                0x00, 0x00, 0x00, 0x00
-            };
-            uint32_t* param2 = (uint32_t*)cmd.data() + 3;
-            *param2 = ground_truth * 100;
-            cmd.data()[16] = average_step_count;
-            cmd.data()[17] = step_count;
-            cmd.data()[18] = accuracy;
-
-            safe_send_command(cmd, "START_TARE");
-
-            // While not ready...
-            int count = 0;
-            bool done = false;
-            do
-            {
-                memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-                // Check calibration status
-                cmd =
-                {
-                    0x14, 0x00, 0xab, 0xcd,
-                    0x80, 0x00, 0x00, 0x00,
-                    0x0c, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00
-                };
-
-                try
-                {
-                    auto res = safe_send_command(cmd, "CALIB_STATUS");
-
-                    if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
-                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
-                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                }
-                catch (const std::exception& ex)
-                {
-                    log(to_string() << "Warning: " << ex.what());
-                }
-
-                _progress = count * (2 * speed);
-            } while (count++ < 200 && !done);
-
-            // If we exit due to counter, report timeout
-            if (!done)
-            {
-                throw std::runtime_error("Operation timed-out!\n"
-                    "Calibration state did not converged in time");
-            }
-
-            status = (rs2_dsc_status)result.status;
-        }
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
         else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-            // Begin auto-calibration
-            std::vector<uint8_t> cmd =
-            {
-                0x14, 0x00, 0xab, 0xcd,
-                0x80, 0x00, 0x00, 0x00,
-                0x08, 0x00, 0x00, 0x00,
-                (uint8_t)speed, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00
-            };
-
-            safe_send_command(cmd, "START_CALIB");
-
-            memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
-            // While not ready...
-            int count = 0;
-            bool done = false;
-            do
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-                // Check calibration status
-                cmd =
-                {
-                    0x14, 0x00, 0xab, 0xcd,
-                    0x80, 0x00, 0x00, 0x00,
-                    0x03, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00
-                };
-
-                try
-                {
-                    auto res = safe_send_command(cmd, "CALIB_STATUS");
-
-                    if (res.size() < sizeof(int32_t) + sizeof(DirectSearchCalibrationResult))
-                        throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
-                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                    done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                }
-                catch (const std::exception& ex)
-                {
-                    log(to_string() << "Warning: " << ex.what());
-                }
-
-                _progress = count * (2 * speed);
-
-            } while (count++ < 200 && !done);
-
-            // If we exit due to counter, report timeout
-            if (!done)
-            {
-                throw std::runtime_error("Operation timed-out!\n"
-                    "Calibration state did not converged in time");
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            status = (rs2_dsc_status)result.status;
-        }
-
-        // Handle errors from firmware
-        if (status != RS2_DSC_STATUS_SUCCESS)
-        {
-            if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (EDGE_TO_CLOSE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
-            {
-                throw std::runtime_error("Not enough depth pixels! (FILL_FACTOR_LOW)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (status == RS2_DSC_STATUS_NOT_CONVERGE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (NOT_CONVERGE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
-            {
-                throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
-                    "Please retry in different lighting conditions");
-            }
-            else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << result.status << ")");
-        }
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, 5000);
     }
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, 
@@ -536,21 +333,8 @@ namespace rs2
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = true;
 
-        // Fetch current calibration using GETINITCAL command
-        std::vector<uint8_t> fetch_calib{
-            0x14, 0, 0xAB, 0xCD, 0x15, 0, 0, 0, 0x19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        };
-        auto calib = safe_send_command(fetch_calib, "GETINITCAL");
-        if (calib.size() < sizeof(table_header) + sizeof(int32_t)) throw std::runtime_error("Missing calibration header from GETINITCAL!");
-
-        auto table = (uint8_t*)(calib.data() + sizeof(int32_t) + sizeof(table_header));
-        auto hd = (table_header*)(calib.data() + sizeof(int32_t));
-
-        if (calib.size() < sizeof(table_header) + sizeof(int32_t) + hd->table_size) 
-            throw std::runtime_error("Table truncated from GETINITCAL!");
-
-        _old_calib.resize(sizeof(table_header) + hd->table_size, 0);
-        memcpy(_old_calib.data(), hd, _old_calib.size()); // Copy to old_calib
+        auto calib_dev = _dev.as<auto_calibrated_device>();
+        _old_calib = calib_dev.get_calibration_table();
 
         _was_streaming = _sub->streaming;
         _synchronized = _viewer.synchronization_enable.load();
@@ -576,45 +360,7 @@ namespace rs2
         // Switch into special Auto-Calibration mode
         start_viewer(256, 144, 90, invoke);
 
-        if (speed == 4) // White-wall
-        {
-            if (_sub->s->supports(RS2_OPTION_VISUAL_PRESET))
-            {
-                log("Switching into High-Quality preset for White-Wall mode");
-                _sub->s->set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            }
-        }
-
         calibrate();
-
-        // Get new calibration from the firmware
-        std::vector<uint8_t> cmd =
-        {
-            0x14, 0x00, 0xab, 0xcd,
-            0x80, 0x00, 0x00, 0x00,
-            13, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
-
-        auto res = safe_send_command(cmd, "CALIB_RESULT");
-
-        if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer))
-            throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
-        auto result = (DscResultBuffer*)(res.data() + sizeof(int32_t));
-
-        table_header* header = reinterpret_cast<table_header*>(res.data() + sizeof(int32_t) + sizeof(DscResultBuffer));
-
-        if (res.size() < sizeof(int32_t) + sizeof(DscResultBuffer) + sizeof(table_header) + header->table_size)
-            throw std::runtime_error("Table truncated in CALIB_STATUS!");
-
-        _new_calib.resize(sizeof(table_header) + header->table_size, 0);
-        memcpy(_new_calib.data(), header, _new_calib.size()); // Copy to new_calib
-
-        _health = abs(result->m_dscResultParams.m_healthCheck);
 
         log(to_string() << "Calibration completed, health factor = " << _health);
 
@@ -666,37 +412,35 @@ namespace rs2
     void on_chip_calib_manager::keep()
     {
         // Write new calibration using SETINITCAL command
-        uint16_t size = (uint16_t)(0x14 + _new_calib.size());
+        auto calib_dev = _dev.as<auto_calibrated_device>();
+        calib_dev.write_calibration();
 
-        std::vector<uint8_t> save_calib{
-            0x14, 0, 0xAB, 0xCD, 0x16, 0, 0, 0, 0x19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        };
-
-        auto up = (uint16_t*)save_calib.data();
-        up[0] = size;
-
-        save_calib.insert(save_calib.end(), _new_calib.data(), _new_calib.data() + _new_calib.size());
-
-        safe_send_command(save_calib, "SETINITCAL");
     }
 
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
-        table_header* hd = (table_header*)(use_new ? _new_calib.data() : _old_calib.data());
-        uint8_t* table = (uint8_t*)((use_new ? _new_calib.data() : _old_calib.data()) + sizeof(table_header));
+        auto calib_dev = _dev.as<auto_calibrated_device>();
+        calib_dev.set_calibration_table(use_new ? _new_calib : _old_calib);
+    }
 
-        uint16_t size = (uint16_t)(0x14 + hd->table_size);
+    void autocalib_notification_model::draw_dismiss(ux_window& win, int x, int y)
+    {
+        using namespace std;
+        using namespace chrono;
 
-        std::vector<uint8_t> apply_calib{
-            0x14, 0, 0xAB, 0xCD, 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfe, 0xca, 0xfe, 0xca
-        };
+        auto health = get_manager().get_health();
+        auto recommend_keep = health > 0.25;
+        if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !get_manager().tare)
+        {
+            auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
-        auto up = (uint16_t*)apply_calib.data();
-        up[0] = size;
-
-        apply_calib.insert(apply_calib.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
-
-        safe_send_command(apply_calib, "CALIBRECALC");
+            ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+            notification_model::draw_dismiss(win, x, y);
+            ImGui::PopStyleColor(2);
+        }
+        else
+            notification_model::draw_dismiss(win, x, y);
     }
 
     void autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
@@ -720,12 +464,15 @@ namespace rs2
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
                 ImGui::Text("%s", "On-Chip Calibration");
-            else if (update_state == RS2_CALIB_STATE_TARE_INPUT)
+            else if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 ImGui::Text("%s", "Tare Calibration");
             if (update_state == RS2_CALIB_STATE_FAILED)
                 ImGui::Text("%s", "Calibration Failed");
 
-            ImGui::SetCursorScreenPos({ float(x + 9), float(y + 27) });
+            if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
+                ImGui::SetCursorScreenPos({ float(x + width - 30), float(y) });
+            else
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 27) });
 
             ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1. - t));
 
@@ -748,56 +495,106 @@ namespace rs2
                 enable_dismiss = false;
                 ImGui::Text("%s", "Camera is being calibrated...\nKeep the camera stationary pointing at a wall");
             }
-            else if (update_state == RS2_CALIB_STATE_TARE_INPUT)
+            else if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
             {
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
-                ImGui::Text("%s", "Avg Step Count:");
+                ImGui::PushStyleColor(ImGuiCol_Text, update_state != RS2_CALIB_STATE_TARE_INPUT_ADVANCED ? light_grey : light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, update_state != RS2_CALIB_STATE_TARE_INPUT_ADVANCED ? light_grey : light_blue);
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
+                if (ImGui::Button(u8"\uf0d7"))
+                {
+                    if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
+                        update_state = RS2_CALIB_STATE_TARE_INPUT;
+                    else
+                        update_state = RS2_CALIB_STATE_TARE_INPUT_ADVANCED;
+                }
 
-                std::string id = to_string() << "##avg_step_count_" << index;
-                ImGui::PushItemWidth(width - 145);
-                ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
-                ImGui::PopItemWidth();
+                if (ImGui::IsItemHovered())
+                {
+                    if(update_state == RS2_CALIB_STATE_TARE_INPUT)
+                        ImGui::SetTooltip("%s", "More Options...");
+                    else
+                        ImGui::SetTooltip("%s", "Less Options...");
+                }
 
-                //-------------------------
+                ImGui::PopStyleColor(2);
+                if(update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
+                {
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                    ImGui::Text("%s", "Avg Step Count:");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Number of frames to average, Min = 1, Max = 30, Default = 10");
+                    }
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
-                ImGui::Text("%s", "Step Count:");
+                    std::string id = to_string() << "##avg_step_count_" << index;
+                    ImGui::PushItemWidth(width - 145);
+                    ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
+                    ImGui::PopItemWidth();
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
+                    //-------------------------
 
-                id = to_string() << "##step_count_" << index;
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::Text("%s", "Step Count:");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Max iteration steps, Min = 5, Max = 30, Default = 10");
+                    }
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
-                ImGui::PushItemWidth(width - 145);
-                ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
-                ImGui::PopItemWidth();
+                    id = to_string() << "##step_count_" << index;
 
-                //-------------------------
+                    ImGui::PushItemWidth(width - 145);
+                    ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
+                    ImGui::PopItemWidth();
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 43 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
-                ImGui::Text("%s", "Accuracy:");
+                    //-------------------------
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 43 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::Text("%s", "Accuracy:");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Subpixel accuracy level, Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%)");
+                    }
 
-                id = to_string() << "##accuracy_" << index;
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
 
-                std::vector<std::string> vals{ "Very High", "High", "Medium", "Low" };
-                std::vector<const char*> vals_cstr;
-                for (auto&& s : vals) vals_cstr.push_back(s.c_str());
+                    id = to_string() << "##accuracy_" << index;
 
-                ImGui::PushItemWidth(width - 145);
-                ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), vals.size());
-                ImGui::PopItemWidth();
+                    std::vector<std::string> vals{ "Very High", "High", "Medium", "Low" };
+                    std::vector<const char*> vals_cstr;
+                    for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
-                //-------------------------
+                    ImGui::PushItemWidth(width - 145);
+                    ImGui::Combo(id.c_str(), &get_manager().accuracy, vals_cstr.data(), vals.size());
+                   
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 48 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
-                ImGui::Text("%s", "Ground Truth(mm):");
+                    ImGui::PopItemWidth();
+                }
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
+                {
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 48 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::Text("%s", "Ground Truth(mm):");
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                }
+                else
+                {
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                    ImGui::Text("%s", "Ground Truth(mm):");
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
+                }
 
-                id = to_string() << "##ground_truth_for_tare" << index;
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Tare depth in 1 / 100 of depth unit, Min = 2500, Max = 2000000");
+                }
+                
+
+                //ImGui::SetCursorScreenPos({ float(x + 135), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+
+                std::string id = to_string() << "##ground_truth_for_tare" << index;
 
                 std::string gt = to_string() << get_manager().ground_truth;
                 const int MAX_SIZE = 256;
@@ -867,6 +664,7 @@ namespace rs2
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
+                    get_manager().tare = false;
                     get_manager().start(shared_from_this());
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
@@ -911,7 +709,7 @@ namespace rs2
             {
                 auto health = get_manager().get_health();
 
-                auto recommend_keep = get_manager().allow_calib_keep();
+                auto recommend_keep = health > 0.25;
 
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
 
@@ -921,7 +719,7 @@ namespace rs2
                 }
                 else
                 {
-                    ImGui::Text("%s", "Calibration Error: ");
+                    ImGui::Text("%s", "Health-Check: ");
 
                     std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
                     auto health_str = ss.str();
@@ -949,7 +747,7 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
                     }
-                    else if (health < 0.25f)
+                    else if (health < 0.75f)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
                         ImGui::Text("%s", "(Can be Improved)");
@@ -963,41 +761,38 @@ namespace rs2
 
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Calibration error captures how far camera calibration is from the optimal one\n"
+                        ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
                             "[0, 0.15) - Good\n"
                             "[0.15, 0.25) - Can be Improved\n"
                             "[0.25, ) - Requires Calibration");
                     }
                 }
 
-                if (recommend_keep)
+                auto old_fr = get_manager().get_metric(false).first;
+                auto new_fr = get_manager().get_metric(true).first;
+
+                auto old_rms = fabs(get_manager().get_metric(false).second);
+                auto new_rms = fabs(get_manager().get_metric(true).second);
+
+                auto fr_improvement = 100.f * ((new_fr - old_fr) / old_fr);
+                auto rms_improvement = 100.f * ((old_rms - new_rms) / old_rms);
+
+                std::string old_units = "mm";
+                if (old_rms > 10.f)
                 {
-                
-                    auto old_fr = get_manager().get_metric(false).first;
-                    auto new_fr = get_manager().get_metric(true).first;
+                    old_rms /= 10.f;
+                    old_units = "cm";
+                }
+                std::string new_units = "mm";
+                if (new_rms > 10.f)
+                {
+                    new_rms /= 10.f;
+                    new_units = "cm";
+                }
 
-                    auto old_rms = fabs(get_manager().get_metric(false).second);
-                    auto new_rms = fabs(get_manager().get_metric(true).second);
-
-                    auto fr_improvement = 100.f * ((new_fr - old_fr) / old_fr);
-                    auto rms_improvement = 100.f * ((old_rms - new_rms) / old_rms);
-
-                    std::string old_units = "mm";
-                    if (old_rms > 10.f)
-                    {
-                        old_rms /= 10.f;
-                        old_units = "cm";
-                    }
-                    std::string new_units = "mm";
-                    if (new_rms > 10.f)
-                    {
-                        new_rms /= 10.f;
-                        new_units = "cm";
-                    }
-
-                    // NOTE: Disabling metrics temporarily
-                    // TODO: Re-enable in future release
-                    if (/* fr_improvement > 1.f || rms_improvement > 1.f */ false)
+                // NOTE: Disabling metrics temporarily
+                // TODO: Re-enable in future release
+                if (/* fr_improvement > 1.f || rms_improvement > 1.f */ false)
                     {
                         std::string txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << new_fr << "%%";
 
@@ -1054,58 +849,60 @@ namespace rs2
                             }
                         }
                     }
-                    else
-                    {
-                        ImGui::SetCursorScreenPos({ float(x + 12), float(y + 100) });
-                        ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
-                    }
+                else
+                {
+                    ImGui::SetCursorScreenPos({ float(x + 12), float(y + 100) });
+                    ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
+                }
 
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60) });
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60) });
 
-                    if (ImGui::RadioButton("New", use_new_calib))
-                    {
-                        use_new_calib = true;
-                        get_manager().apply_calib(true);
-                    }
+                if (ImGui::RadioButton("New", use_new_calib))
+                {
+                    use_new_calib = true;
+                    get_manager().apply_calib(true);
+                }
 
-                    ImGui::SetCursorScreenPos({ float(x + 150), float(y + 60) });
-                    if (ImGui::RadioButton("Original", !use_new_calib))
-                    {
-                        use_new_calib = false;
-                        get_manager().apply_calib(false);
-                    }
+                ImGui::SetCursorScreenPos({ float(x + 150), float(y + 60) });
+                if (ImGui::RadioButton("Original", !use_new_calib))
+                {
+                    use_new_calib = false;
+                    get_manager().apply_calib(false);
+                }
 
-                    auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
+                auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
-                
+                if (recommend_keep || get_manager().tare)
+                {
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                }
+                
+                std::string button_name = to_string() << "Apply New" << "##apply" << index;
+                if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
 
-                    std::string button_name = to_string() << "Apply New" << "##apply" << index;
-                    if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
-
-                    ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-                    if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+                if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+                {
+                    if (use_new_calib)
                     {
-                        if (use_new_calib)
-                        {
-                            get_manager().keep();
-                            update_state = RS2_CALIB_STATE_COMPLETE;
-                            pinned = false;
-                            enable_dismiss = false;
-                            last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
-                        }
-                        else dismiss(false);
-
-                        get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                        get_manager().keep();
+                        update_state = RS2_CALIB_STATE_COMPLETE;
+                        pinned = false;
+                        enable_dismiss = false;
+                        last_progress_time = last_interacted = system_clock::now() + milliseconds(500);
                     }
+                    else dismiss(false);
 
+                    get_manager().restore_workspace([this](std::function<void()> a) { a(); });
+                }
+                if (recommend_keep || get_manager().tare)
+                {
                     ImGui::PopStyleColor(2);
-
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("%s", "New calibration values will be saved in device memory");
-                    }
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "New calibration values will be saved in device memory");
                 }
             }
 
@@ -1289,7 +1086,8 @@ namespace rs2
             else return 80;
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 160;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 160;
         else return 100;
     }
 

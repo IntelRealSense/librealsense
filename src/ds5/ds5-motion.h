@@ -197,7 +197,6 @@ namespace librealsense
     {
     public:
         mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, ds::d400_caps dev_cap);
-        mm_calib_handler(const mm_calib_handler&);
         ~mm_calib_handler() {}
 
         ds::imu_intrinsic get_intrinsic(rs2_stream);
@@ -217,7 +216,7 @@ namespace librealsense
     class ds5_motion : public virtual ds5_device
     {
     public:
-        std::shared_ptr<hid_sensor> create_hid_device(std::shared_ptr<context> ctx,
+        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
                                                       const std::vector<platform::hid_device_info>& all_hid_infos,
                                                       const firmware_version& camera_fw_version);
 
@@ -226,7 +225,7 @@ namespace librealsense
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
-        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(uvc_sensor* uvc_ep,
+        std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
                                                                                 const platform::extension_unit* fisheye_xu);
 
     private:
@@ -248,8 +247,8 @@ namespace librealsense
         // Bandwidth parameters required for HID sensors
         // The Acceleration configuration will be resolved according to the IMU sensor type at run-time
         std::vector<std::pair<std::string, stream_profile>> sensor_name_and_hid_profiles =
-        { { gyro_sensor_name,     {RS2_STREAM_GYRO,  0, 1, 1, int(odr::IMU_FPS_200), RS2_FORMAT_MOTION_XYZ32F}},
-          { gyro_sensor_name,     {RS2_STREAM_GYRO,  0, 1, 1, int(odr::IMU_FPS_400), RS2_FORMAT_MOTION_XYZ32F}}};
+        { { gyro_sensor_name,     {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, 0, 1, 1, int(odr::IMU_FPS_200)}},
+          { gyro_sensor_name,     {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, 0, 1, 1, int(odr::IMU_FPS_400)}}};
 
         // Translate frequency to SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL.
         std::map<rs2_stream, std::map<unsigned, unsigned>> fps_and_sampling_frequency_per_rs2_stream =
