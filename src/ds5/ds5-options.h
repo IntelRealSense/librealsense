@@ -61,20 +61,17 @@ namespace librealsense
 
         float query() const override;
 
-        bool is_enabled() const override { return _is_enabled.load(); }
+        bool is_enabled() const override { return true; }
 
         const char* get_description() const override
         {
             return "Enable/Disable Automatic Motion Data Correction";
         }
 
-        enable_motion_correction(sensor_base* mm_ep,
-                                 std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
-                                 const option_range& opt_range);
+        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
 
     private:
-        std::atomic<bool>   _is_enabled;
-        rs2_extrinsics      _depth_to_imu;
+        std::atomic<bool>   _is_active;
     };
 
     class enable_auto_exposure_option : public option_base

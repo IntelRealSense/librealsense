@@ -168,20 +168,19 @@ namespace librealsense
         if (!is_valid(value))
             throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
 
-        _is_enabled = value > _opt_range.min;
+        _is_active = value > _opt_range.min;
         _recording_function(*this);
     }
 
     float enable_motion_correction::query() const
     {
-        auto is_enabled = _is_enabled.load();
-        return is_enabled ? _opt_range.max : _opt_range.min;
+        auto is_active = _is_active.load();
+        return is_active ? _opt_range.max : _opt_range.min;
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _depth_to_imu(**depth_to_imu)
+        : option_base(opt_range), _is_active(true)
     {}
 
     void enable_auto_exposure_option::set(float value)
