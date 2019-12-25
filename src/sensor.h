@@ -155,6 +155,7 @@ namespace librealsense
         void set_frames_callback(frame_callback_ptr callback) override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
         bool is_opened() const override;
