@@ -331,6 +331,7 @@ namespace librealsense
             CASE(INZI)
             CASE(INVI)
             CASE(W10)
+            CASE(Z16H)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
