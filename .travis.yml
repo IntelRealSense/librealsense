@@ -109,6 +109,7 @@ matrix:
       env:
         - ROS_DISTRO=kinetic
         - ROS_REPO=ros
+        - TEST_BLACKLIST="librealsense2"
       script:
         - cd $TRAVIS_BUILD_DIR
         - git clone --depth 1 -q https://github.com/ros-planning/moveit_ci.git .moveit_ci
@@ -126,6 +127,7 @@ matrix:
       env:
         - ROS_DISTRO=melodic
         - ROS_REPO=ros
+        - TEST_BLACKLIST="librealsense2"
       script:
         - cd $TRAVIS_BUILD_DIR
         - git clone --depth 1 -q https://github.com/ros-planning/moveit_ci.git .moveit_ci
