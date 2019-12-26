@@ -9,6 +9,8 @@
 #include "../hid/hid-device.h"
 #include "../usb/usb-enumerator.h"
 
+#include "../tm2/tm-boot.h"
+
 #include <chrono>
 #include <cctype> // std::tolower
 
@@ -50,7 +52,14 @@ namespace librealsense
 
         std::vector<usb_device_info> rs_backend::query_usb_devices() const
         {
-            return usb_enumerator::query_devices_info();
+            auto device_infos = usb_enumerator::query_devices_info();
+            // Give the device a chance to restart, if we don't catch
+            // it, the watcher will find it later.
+            if(tm_boot(device_infos)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                device_infos = usb_enumerator::query_devices_info();
+            }
+            return device_infos;
         }
 
         std::shared_ptr<hid_device> rs_backend::create_hid_device(hid_device_info info) const

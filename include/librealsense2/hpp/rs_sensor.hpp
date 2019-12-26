@@ -473,16 +473,15 @@ namespace rs2
          */
         std::vector<uint8_t> export_localization_map() const
         {
+            std::vector<uint8_t> results;
             rs2_error* e = nullptr;
-            std::shared_ptr<const rs2_raw_data_buffer> loc_map(
-                    rs2_export_localization_map(_sensor.get(), &e),
-                    rs2_delete_raw_data);
+            const rs2_raw_data_buffer *map = rs2_export_localization_map(_sensor.get(), &e);
             error::handle(e);
+            std::shared_ptr<const rs2_raw_data_buffer> loc_map(map, rs2_delete_raw_data);
 
             auto start = rs2_get_raw_data(loc_map.get(), &e);
             error::handle(e);
 
-            std::vector<uint8_t> results;
             if (start)
             {
                 auto size = rs2_get_raw_data_size(loc_map.get(), &e);

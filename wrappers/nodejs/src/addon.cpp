@@ -2454,8 +2454,6 @@ class RSDevice : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "enableLoopback", EnableLoopback);
     Nan::SetPrototypeMethod(tpl, "disableLoopback", DisableLoopback);
     Nan::SetPrototypeMethod(tpl, "isLoopbackEnabled", IsLoopbackEnabled);
-    Nan::SetPrototypeMethod(tpl, "connectController", ConnectController);
-    Nan::SetPrototypeMethod(tpl, "disconnectController", DisconnectController);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSDevice").ToLocalChecked(), tpl->GetFunction());
@@ -2803,27 +2801,6 @@ class RSDevice : public Nan::ObjectWrap {
     auto val = GetNativeResult<int>(rs2_loopback_is_enabled, &me->error_,
         me->dev_, &me->error_);
     info.GetReturnValue().Set(val ? Nan::True() : Nan::False());
-  }
-
-  static NAN_METHOD(ConnectController) {
-    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
-    info.GetReturnValue().Set(Nan::Undefined());
-    if (!me) return;
-
-    auto array_buffer = v8::Local<v8::ArrayBuffer>::Cast(info[0]);
-    auto contents = array_buffer->GetContents();
-    CallNativeFunc(rs2_connect_tm2_controller, &me->error_, me->dev_,
-        static_cast<const uint8_t*>(contents.Data()), &me->error_);
-  }
-
-  static NAN_METHOD(DisconnectController) {
-    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
-    info.GetReturnValue().Set(Nan::Undefined());
-    if (!me) return;
-
-    auto id = info[0]->IntegerValue();
-    CallNativeFunc(rs2_disconnect_tm2_controller, &me->error_, me->dev_,
-        id, &me->error_);
   }
 
  private:

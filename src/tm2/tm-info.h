@@ -8,27 +8,20 @@
 #include "../context.h"
 #include "tm-device.h"
 
-namespace perc
-{
-    class TrackingManager;
-    class TrackingDevice;
-}
-
 namespace librealsense
 {
     class tm2_info : public device_info
     {
     public:
-        tm2_info(std::shared_ptr<perc::TrackingManager> manager, perc::TrackingDevice* dev, std::shared_ptr<context> ctx);
+        tm2_info(std::shared_ptr<context> ctx, platform::usb_device_info hwm);
+        ~tm2_info();
         std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx, bool register_device_notifications) const override;
         platform::backend_device_group get_device_data() const override;
         
         static std::vector<std::shared_ptr<device_info>> pick_tm2_devices(
-            std::shared_ptr<context> ctx, 
-            std::shared_ptr<perc::TrackingManager> manager, 
-            const std::vector<perc::TrackingDevice*>& tm_devices);
+            std::shared_ptr<context> ctx,
+            std::vector<platform::usb_device_info>& usb);
     private:
-        std::shared_ptr<perc::TrackingManager> _manager;
-        perc::TrackingDevice* _dev;
+        platform::usb_device_info _hwm;
     };
 }
