@@ -40,7 +40,7 @@ namespace librealsense
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 
-    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface
+    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface, public color_sensor
         {
         public:
             explicit l500_color_sensor(l500_color* owner,

@@ -58,7 +58,8 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor
+    class ds5_hid_sensor : public synthetic_sensor,
+                           public motion_sensor
     {
     public:
         explicit ds5_hid_sensor(std::string name,
@@ -104,7 +105,7 @@ namespace librealsense
         const ds5_motion* _owner;
     };
 
-    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base
+    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
     {
     public:
         explicit ds5_fisheye_sensor(std::shared_ptr<sensor_base> sensor,

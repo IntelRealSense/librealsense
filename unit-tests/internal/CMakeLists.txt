@@ -12,6 +12,8 @@ set (INTERNAL_TESTS_SOURCES
     internal-tests-types.cpp
     internal-tests-uv-map.cpp
     internal-tests-class-logic.cpp
+    internal-tests-sensor.cpp
+    internal-tests-l500.cpp
 )
 
 add_executable(${PROJECT_NAME} ${INTERNAL_TESTS_SOURCES})

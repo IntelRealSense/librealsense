@@ -5,6 +5,8 @@
 #define LIBREALSENSE_UNITTESTS_COMMON_H
 
 #include "catch/catch.hpp"
+
+#include "stream.h"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_context.hpp"
 #include "../include/librealsense2/hpp/rs_internal.hpp"
@@ -34,8 +36,6 @@
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
-
-
 struct stream_request
 {
     rs2_stream stream;
@@ -53,6 +53,14 @@ struct stream_request
             height == other.height() &&
             index == other.stream_index();
     }
+};
+
+enum class sensor_type
+{
+    depth_sensor,
+    color_sensor,
+    motion_sensor,
+    fisheye_sensor
 };
 
 struct profile
@@ -793,18 +801,51 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
     throw std::runtime_error(ss.str());
 }
 
-inline rs2::stream_profile get_profile_by(const rs2::sensor& s, const rs2_format& fmt, const int width = 0, const int height = 0)
+inline rs2::stream_profile get_profile_by(const rs2::sensor& s, librealsense::stream_profile request)
 {
     auto&& sp = s.get_stream_profiles();
-    auto&& it = std::find_if(sp.begin(), sp.end(), [fmt, width, height](const rs2::stream_profile& sp_)
+    auto&& it = std::find_if(sp.begin(), sp.end(), [request](const rs2::stream_profile& sp_)
         {
-            bool res = false;
-            if (const auto&& vsp_ = sp_.as<rs2::video_stream_profile>())
-                res = vsp_.width() && vsp_.height();
-            return res && sp_.format() == fmt;
+            return librealsense::to_profile(sp_.get()->profile) == request;
         });
     REQUIRE(it != sp.end());
     return *it;
+}
+
+inline rs2::sensor get_sensor_by(const std::vector<rs2::sensor>& sensors, sensor_type st)
+{
+    auto is_sensor_type_match = [st](const rs2::sensor& sen)
+    {
+        switch (st)
+        {
+        case sensor_type::depth_sensor:
+            return sen.is<rs2::depth_sensor>();
+        case sensor_type::color_sensor:
+            return sen.is<rs2::color_sensor>();
+        case sensor_type::motion_sensor:
+            return sen.is<rs2::motion_sensor>();
+        case sensor_type::fisheye_sensor:
+            return sen.is<rs2::fisheye_sensor>();
+        default:
+            throw std::exception("sensor type is not supported");
+        }
+    };
+    auto&& snsr = std::find_if(sensors.begin(), sensors.end(), is_sensor_type_match);
+
+    REQUIRE(snsr != sensors.end());
+    return *snsr;
+}
+
+inline sensor_type get_sensor_type(const rs2::sensor& sensor)
+{
+    if (sensor.is<rs2::depth_sensor>())
+        return sensor_type::depth_sensor;
+    else if (sensor.is<rs2::color_sensor>())
+        return sensor_type::color_sensor;
+    else if (sensor.is<rs2::motion_sensor>())
+        return sensor_type::motion_sensor;
+    else if (sensor.is<rs2::fisheye_sensor>())
+        return sensor_type::fisheye_sensor;
 }
 
 inline rs2::device get_device_by(const std::string& product_line, const std::vector<rs2::device>& devices)
@@ -815,6 +856,32 @@ inline rs2::device get_device_by(const std::string& product_line, const std::vec
         });
     REQUIRE(device != devices.end());
     return *device;
+}
+
+inline std::string get_device_pid(const rs2::device& device)
+{
+    return device.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+}
+
+inline std::string get_device_serial(const rs2::device& device)
+{
+    return device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+}
+
+inline rs2::device_list get_all_devices()
+{
+    rs2::context ctx;
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+
+    return ctx.query_devices();
+}
+
+inline std::vector<rs2::sensor> get_all_sensors()
+{
+    rs2::context ctx;
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+
+    return ctx.query_all_sensors();
 }
 
 enum special_folder
