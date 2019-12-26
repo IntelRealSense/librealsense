@@ -181,15 +181,16 @@ namespace librealsense
             CASE(POSE)
             CASE(POSE_SENSOR)
             CASE(WHEEL_ODOMETER)
+            CASE(GLOBAL_TIMER)
             CASE(UPDATABLE)
             CASE(UPDATE_DEVICE)
-            CASE(GLOBAL_TIMER)
             CASE(L500_DEPTH_SENSOR)
             CASE(TM2_SENSOR)
             CASE(AUTO_CALIBRATED_DEVICE)
             CASE(COLOR_SENSOR)
             CASE(MOTION_SENSOR)
             CASE(FISHEYE_SENSOR)
+            CASE(DEPTH_HUFFMAN_DECODER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

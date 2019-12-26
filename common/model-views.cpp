@@ -895,6 +895,7 @@ namespace rs2
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
+        depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer)
     {
         restore_processing_block("colorizer", depth_colorizer);
@@ -984,6 +985,11 @@ namespace rs2
             this, "Depth Visualization", depth_colorizer,
             [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
         const_effects.push_back(colorizer);
+
+        auto depth_decode = std::make_shared<processing_block_model>(
+                this, "Depth Decompression", depth_decoder,
+                [=](rs2::frame f) { return depth_decoder->process(f); }, error_message);
+        const_effects.push_back(depth_decode);
 
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
@@ -2044,6 +2050,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->yuy2rgb = d->yuy2rgb;
+        texture->depth_decode = d->depth_decoder;
 
         if (auto vd = p.as<video_stream_profile>())
         {

@@ -36,6 +36,7 @@
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
+#include "proc/depth-decompress.h"
 #include "software-device.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "global_timestamp_reader.h"
@@ -1992,6 +1993,14 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::zero_order>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::depth_decompression_huffman>();
 
     return new rs2_processing_block{ block };
 }

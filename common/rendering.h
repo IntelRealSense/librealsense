@@ -1013,6 +1013,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
+        std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
@@ -1134,6 +1135,9 @@ namespace rs2
                 {
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
+                case RS2_FORMAT_Z16H: // Fallthrough case
+                    if (frame.is<depth_frame>())
+                        frame = depth_decode->process(frame);
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:
