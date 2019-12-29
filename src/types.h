@@ -1482,6 +1482,9 @@ namespace librealsense
             polling(cancellable_timer);
         }), _devices_data()
         {
+            _devices_data = {   _backend->query_uvc_devices(),
+                                _backend->query_usb_devices(),
+                                _backend->query_hid_devices() };
         }
 
         ~polling_device_watcher()
@@ -1512,10 +1515,6 @@ namespace librealsense
         {
             stop();
             _callback = std::move(callback);
-            _devices_data = {   _backend->query_uvc_devices(),
-                                _backend->query_usb_devices(),
-                                _backend->query_hid_devices() };
-
             _active_object.start();
         }
 

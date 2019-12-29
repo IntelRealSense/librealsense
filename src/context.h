@@ -103,9 +103,6 @@ namespace librealsense
 
     typedef std::vector<std::shared_ptr<device_info>> devices_info;
 
-    //FW Decl
-    class tm2_context;
-
     class context : public std::enable_shared_from_this<context>
     {
     public:
@@ -146,9 +143,6 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
 
         std::shared_ptr<platform::backend> _backend;
-#if WITH_TRACKING
-        std::shared_ptr<tm2_context> _tm2_context;
-#endif
         std::shared_ptr<platform::device_watcher> _device_watcher;
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;

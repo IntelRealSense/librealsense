@@ -48,6 +48,7 @@
 
 const size_t MAX_DEV_PARENT_DIR = 10;
 
+#include "../tm2/tm-boot.h"
 
 #ifdef ANDROID
 
@@ -1594,7 +1595,14 @@ namespace librealsense
 
         std::vector<usb_device_info> v4l_backend::query_usb_devices() const
         {
-            return usb_enumerator::query_devices_info();
+            auto device_infos = usb_enumerator::query_devices_info();
+            // Give the device a chance to restart, if we don't catch
+            // it, the watcher will find it later.
+            if(tm_boot(device_infos)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                device_infos = usb_enumerator::query_devices_info();
+            }
+            return device_infos;
         }
 
         std::shared_ptr<hid_device> v4l_backend::create_hid_device(hid_device_info info) const

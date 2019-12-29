@@ -1072,13 +1072,19 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
     {
-        auto cloned = profile->clone();
+        auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
 
-        auto vsp = std::dynamic_pointer_cast<video_stream_profile>(cloned);
-        if (vsp)
+        if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
         {
-            vsp->set_dims(vsp->get_width(), vsp->get_height());
+            cloned = std::make_shared<video_stream_profile>(platform::stream_profile{});
+            std::dynamic_pointer_cast<video_stream_profile>(cloned)->set_dims(vsp->get_width(), vsp->get_height());
         }
+
+        if (auto msp = std::dynamic_pointer_cast<motion_stream_profile>(profile))
+        {
+            cloned = std::make_shared<motion_stream_profile>(platform::stream_profile{});
+        }
+
         cloned->set_unique_id(profile->get_unique_id());
         cloned->set_format(profile->get_format());
         cloned->set_stream_index(profile->get_stream_index());
@@ -1511,6 +1517,11 @@ namespace librealsense
     int synthetic_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
     {
         return _raw_sensor->register_before_streaming_changes_callback(callback);
+    }
+
+    void synthetic_sensor::unregister_before_start_callback(int token)
+    {
+        _raw_sensor->unregister_before_start_callback(token);
     }
 
     void synthetic_sensor::register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const

@@ -68,7 +68,7 @@ namespace rs2
 
         std::map<int, std::vector<uint8_t>> rv;
 
-        if ("" != FW_D4XX_FW_IMAGE_VERSION && !allow_rc_firmware)
+        if (strlen(FW_D4XX_FW_IMAGE_VERSION) && !allow_rc_firmware)
         {
             int size = 0;
             auto hex = fw_get_D4XX_FW_Image(size);
@@ -76,7 +76,7 @@ namespace rs2
             rv[RS2_PRODUCT_LINE_D400] = vec;
         }
 
-        if ("" != FW_D4XX_RC_IMAGE_VERSION && allow_rc_firmware)
+        if (strlen(FW_D4XX_RC_IMAGE_VERSION) && allow_rc_firmware)
         {
             int size = 0;
             auto hex = fw_get_D4XX_RC_Image(size);
@@ -84,7 +84,7 @@ namespace rs2
             rv[RS2_PRODUCT_LINE_D400] = vec;
         }
 
-        if ("" != FW_SR3XX_FW_IMAGE_VERSION)
+        if (strlen(FW_SR3XX_FW_IMAGE_VERSION))
         {
             int size = 0;
             auto hex = fw_get_SR3XX_FW_Image(size);

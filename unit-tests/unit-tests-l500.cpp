@@ -13,8 +13,6 @@
 #include "librealsense2/hpp/rs_types.hpp"
 #include "librealsense2/hpp/rs_frame.hpp"
 
-const std::string L500_TAG = "L500";
-
 inline rs2::device get_l500_device()
 {
     return get_device_by(L500_TAG, get_all_devices());

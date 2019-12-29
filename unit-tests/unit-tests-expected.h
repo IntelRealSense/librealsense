@@ -11,12 +11,14 @@
 #include <vector>
 #include <string>
 
-#include "unit-tests-common.h"
+//#include "unit-tests-common.h"
 #include "l500/l500-device.h"
 #include "ds5/ds5-device.h"
 #include "frame-validator.h"
 
 typedef uint16_t PID_t;
+
+const std::string L500_TAG = "L500";
 
 inline PID_t string_to_hex(std::string pid)
 {
@@ -337,6 +339,90 @@ inline std::unordered_map<sensor_type, std::vector<rs2_frame_metadata_value>> ge
     PID_t pid_num = string_to_hex(pid);
 
     return generate_device_metadata(pid_num);
+}
+
+inline std::unordered_map<sensor_type,
+    std::vector<std::pair<std::vector<librealsense::stream_profile>, std::vector<librealsense::stream_profile>>>> generate_sensor_resolver_profiles(std::string pid)
+{
+    // pair first = source profiles to resolve
+    // pair second = resolved target profiles
+
+    using namespace librealsense;
+    using namespace ds;
+
+    PID_t pid_num = string_to_hex(pid);
+
+    switch (pid_num)
+    {
+    case L500_PID:
+    case L515_PID:
+        return
+        {
+            {
+                // DEPTH SENSOR
+                sensor_type::depth_sensor,
+                { // vector of expected pairs
+                    { // pairs of source profiles to resolve and expected resolved profiles
+                        { // vector of source profiles to resolve
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
+                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                        },
+                        { // vector of expected resolved target profiles
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
+                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                        },
+                    },
+                    {
+                        {
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                        },
+                        {
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
+                        },
+                    },
+                    {
+                        {
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                        },
+                        {
+                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
+                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
+                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                        },
+                    },
+                },
+            },
+            {
+                // COLOR SENSOR
+                sensor_type::color_sensor,
+                { // vector of expected pairs
+                    { // pairs of source profiles to resolve and expected resolved profiles
+                        { // vector of source profiles to resolve
+                            { RS2_FORMAT_RGB8,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                        },
+                        { // vector of expected resolved target profiles
+                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                        },
+                    },
+                    {
+                        {
+                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                        },
+                        {
+                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                        },
+                    },
+                },
+            }
+        };
+    default:
+        // TODO - ARIEL - throw? log error?
+        return {};
+    }
 }
 
 // TODO - Ariel - all supported device info

@@ -2614,7 +2614,7 @@ void reset_device(std::shared_ptr<rs2::device>& strong, std::weak_ptr<rs2::devic
     disable_sensitive_options_for(*strong);
 }
 
-TEST_CASE("Disconnect events works", "[live][l500]") {
+TEST_CASE("Disconnect events works", "[live][L500]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))

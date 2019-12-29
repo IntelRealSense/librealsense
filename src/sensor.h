@@ -154,6 +154,7 @@ namespace librealsense
         void register_pu(rs2_option id);
 
         virtual stream_profiles init_stream_profiles() override;
+        stream_profiles resolve_requests(const stream_profiles& requests);
 
         void open(const stream_profiles& requests) override;
         void close() override;
@@ -171,6 +172,7 @@ namespace librealsense
         void set_frames_callback(frame_callback_ptr callback) override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
+        void unregister_before_start_callback(int token) override;
         void register_metadata(rs2_frame_metadata_value metadata, std::shared_ptr<md_attribute_parser_base> metadata_parser) const override;
         bool is_streaming() const override;
         bool is_opened() const override;
@@ -179,7 +181,6 @@ namespace librealsense
         void add_source_profiles_missing_data();
 
     private:
-        stream_profiles resolve_requests(const stream_profiles& requests);
         std::shared_ptr<stream_profile_interface> filter_frame_by_requests(const frame_interface* f);
         void sort_profiles(stream_profiles * profiles);
         std::pair<std::shared_ptr<processing_block_factory>, stream_profiles> find_requests_best_pb_match(const stream_profiles& sp);
