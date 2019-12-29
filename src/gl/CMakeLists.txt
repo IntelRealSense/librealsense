@@ -33,6 +33,13 @@ set(REALSENSE_GL_CPP
     ${LZ4_DIR}/lz4.c
 )
 
+set(REALSENSE_GL_PUBLIC_HEADERS
+    ../../include/librealsense2-gl/rs_processing_gl.h
+    ../../include/librealsense2-gl/rs_processing_gl.hpp
+)
+
+set(CMAKECONFIG_GL_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${LRS_GL_TARGET}")
+
 include(${CMAKE_SOURCE_DIR}/CMake/opengl_config.cmake)
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
@@ -62,16 +69,17 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_LIST_DIR}/../../common
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
-        $<INSTALL_INTERFACE:/../../include>
+        $<INSTALL_INTERFACE:include>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${REALSENSE_GL_PUBLIC_HEADERS}")
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/realsense2-glConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
 configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense2-glConfig.cmake
-    INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    INSTALL_DESTINATION ${CMAKECONFIG_GL_INSTALL_DIR}
     INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
@@ -90,21 +98,21 @@ install(TARGETS ${LRS_GL_TARGET}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/librealsense2"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/librealsense2-gl"
 )
 
 install(EXPORT realsense2-glTargets
     FILE realsense2-glTargets.cmake
     NAMESPACE ${LRS_GL_TARGET}::
-    DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    DESTINATION ${CMAKECONFIG_GL_INSTALL_DIR}
 )
 
 install(FILES "${CMAKE_BINARY_DIR}/src/gl/realsense2-glConfig.cmake"
-    DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+    DESTINATION ${CMAKECONFIG_GL_INSTALL_DIR}
 )
 
 install(FILES "${CMAKE_BINARY_DIR}/src/gl/realsense2-glConfigVersion.cmake"
-        DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+        DESTINATION ${CMAKECONFIG_GL_INSTALL_DIR}
 )
 
 # Set library pkgconfig file for facilitating 3rd party integration
