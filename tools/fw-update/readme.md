@@ -3,7 +3,7 @@
 ## Goal
 `rs-fw-update` tool is a console application for updating the depth cameras firmware.
 
-#Prerequisites
+## Prerequisites
 In order to update a depth camera firmware, a signed image file is required.
 The latest firmware for D400 cameras is available [here.](https://downloadcenter.intel.com/download/28870/Latest-Firmware-for-Intel-RealSense-D400-Product-Family?product=128255)
 The firmware is packed into zip file and contains a file with "bin" extension with the following naming convension: "Signed_Image_UVC_<firmware_version>.bin"
@@ -75,5 +75,7 @@ recovery done
 |`-l`|List all available devices and exits|
 |`-v`|Displays version information and exits|
 |`-h`|Displays usage information and exits|
-
 | None| List supported streaming modes|
+
+## Limitation
+* Do not run additional applications that use the RealSense camera, such as Viewer, together with the rs-fw-update tool

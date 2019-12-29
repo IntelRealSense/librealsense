@@ -23,6 +23,9 @@
         https://glad.dav1d.de/#profile=compatibility&language=c&specification=gl&api=gl%3D3.2&extensions=GL_APPLE_vertex_array_object&extensions=GL_ARB_multisample&extensions=GL_ARB_robustness&extensions=GL_ARB_vertex_array_object&extensions=GL_KHR_debug
 */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1718,3 +1721,4 @@ int gladLoadGLLoader(GLADloadproc load) {
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
 
+#pragma GCC diagnostic pop
