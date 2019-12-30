@@ -3852,6 +3852,10 @@ TEST_CASE("color sensor API", "[live][options]")
         }
         auto sensor = profile.get_device().first<rs2::color_sensor>();
         std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        std::cout << "depth sensor: " << librealsense::get_string(RS2_EXTENSION_DEPTH_SENSOR) << "\n";
+        std::cout << "color sensor: " << librealsense::get_string(RS2_EXTENSION_COLOR_SENSOR) << "\n";
+        std::cout << "motion sensor: " << librealsense::get_string(RS2_EXTENSION_MOTION_SENSOR) << "\n";
+        std::cout << "fisheye sensor: " << librealsense::get_string(RS2_EXTENSION_FISHEYE_SENSOR) << "\n";
         REQUIRE(sensor.is<rs2::color_sensor>());
         REQUIRE(!sensor.is<rs2::motion_sensor>());
         REQUIRE(!sensor.is<rs2::depth_sensor>());
