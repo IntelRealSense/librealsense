@@ -260,8 +260,6 @@ namespace librealsense
         auto mf = f.as<rs2::motion_frame>();
         if (mf)
         {
-            int width = f.get_data_size();
-            int height = 1;
             return source.allocate_motion_frame(_target_stream_profile, f, _extension_type);
         }
         throw invalid_value_exception("Unable to allocate unknown frame type");

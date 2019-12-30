@@ -29,8 +29,8 @@ namespace librealsense
         _is_streaming(false),
           _is_opened(false),
           _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
-          _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_open(nullptr),
+          _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _owner(dev),
           _profiles([this]() {
                 auto profiles = this->init_stream_profiles();
