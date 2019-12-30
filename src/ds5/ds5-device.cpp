@@ -34,6 +34,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
+#include "proc/depth-decompress.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"

@@ -954,8 +954,8 @@ namespace rs2
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
 
-            //if (shared_filter->is<disparity_transform>())
-               // model->visible = false;
+            if (shared_filter->is<depth_huffman_decoder>())
+                model->visible = false;
 
             if (is_zo)
             {
@@ -985,11 +985,6 @@ namespace rs2
             this, "Depth Visualization", depth_colorizer,
             [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
         const_effects.push_back(colorizer);
-
-        auto depth_decode = std::make_shared<processing_block_model>(
-                this, "Depth Decompression", depth_decoder,
-                [=](rs2::frame f) { return depth_decoder->process(f); }, error_message);
-        const_effects.push_back(depth_decode);
 
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)

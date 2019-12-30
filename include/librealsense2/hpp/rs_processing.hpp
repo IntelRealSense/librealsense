@@ -1006,7 +1006,7 @@ namespace rs2
         depth_huffman_decoder(filter f) :filter(f)
         {
             rs2_error* e = nullptr;
-            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_ZERO_ORDER_FILTER, &e) && !e)
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_HUFFMAN_DECODER, &e) && !e)
             {
                 _block.reset();
             }

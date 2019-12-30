@@ -1205,6 +1205,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
     case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
+    case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::depth_decompression_huffman) != nullptr;
   
     default:
         return false;

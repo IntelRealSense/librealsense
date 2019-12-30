@@ -7,6 +7,7 @@
 #include "option.h"
 #include "context.h"
 #include "stream.h"
+#include "types.h"
 
 namespace librealsense
 {
@@ -100,9 +101,9 @@ namespace librealsense
         // in case the input is a single frame, return the processed frame.
         // in case the input frame is a frameset, create an output frameset from the input frameset and the processed frame by the following heuristic:
         // if one of the input frames has the same stream type and format as the processed frame,
-        //     remove the input frame from the output frameset (i.e. temporal filter), otherwise kepp the input frame (i.e. colorizer).
-        // the only exception is in case one of the input frames is z16 or disparity and the result frame is disparity or z16 respectively,
-        // in this case the the input frmae will be removed.
+        //     remove the input frame from the output frameset (i.e. temporal filter), otherwise keep the input frame (i.e. colorizer).
+        // the exception is in case one of the input frames is z16/z16h or disparity and the result frame is disparity or z16 respectively,
+        // in this case the input frame will be removed.
 
         if (results.empty())
         {
@@ -126,7 +127,7 @@ namespace librealsense
             composite.foreach_rs([&](const rs2::frame& frame)
             {
                 auto format = frame.get_profile().format();
-                if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
+                if (depth_result_frame &&  val_in_range(format, { RS2_FORMAT_DISPARITY32, RS2_FORMAT_DISPARITY16, RS2_FORMAT_Z16H }))
                     return;
                 if (disparity_result_frame && format == RS2_FORMAT_Z16)
                     return;
@@ -176,7 +177,7 @@ namespace librealsense
             _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
-        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_DISPARITY32, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
+        auto format_selector = std::make_shared<ptr_option<int>>(RS2_FORMAT_ANY, RS2_FORMAT_COUNT, 1, RS2_FORMAT_ANY, (int*)&_stream_filter.format, "Stream format");
         for (int f = RS2_FORMAT_ANY; f < RS2_FORMAT_COUNT; f++)
         {
             format_selector->set_description(f, "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
