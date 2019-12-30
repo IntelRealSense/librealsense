@@ -179,8 +179,11 @@ namespace Intel.RealSense
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_zero_order_invalidation_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
-#endregion
-#region rs_option
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_create_huffman_depth_decompress_block([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        #endregion
+        #region rs_option
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int rs2_is_option_read_only(IntPtr options, Option option, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
@@ -495,7 +498,7 @@ namespace Intel.RealSense
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rs2_create_flash_backup(IntPtr device, rs2_update_progress_callback callback, IntPtr user_data, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
-    
+
         #endregion
         #region rs_context
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]

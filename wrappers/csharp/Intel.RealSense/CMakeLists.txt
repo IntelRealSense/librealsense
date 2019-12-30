@@ -8,10 +8,10 @@ add_library(${PROJECT_NAME}
     Context.cs
     NativeMethods.cs
     .nuget/Intel.RealSense.targets
-	GlobalSuppressions.cs
+    GlobalSuppressions.cs
     Properties/AssemblyInfo.cs
-	packages.config
-	stylecop.json
+    packages.config
+    stylecop.json
 )
 
 include(Base/CMakeLists.txt)
