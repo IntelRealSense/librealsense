@@ -3823,6 +3823,112 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
     }
 }
 
+TEST_CASE("color sensor API", "[live][options]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        dev_type PID = get_PID(dev);
+        if (!librealsense::val_in_range(PID.first, { std::string("0AA5"),
+                                                     std::string("0B48"),
+                                                     std::string("0AD3"),
+                                                     std::string("0AD4"),
+                                                     std::string("0AD5"),
+                                                     std::string("0B01"),
+                                                     std::string("0B07"),
+                                                     std::string("0B3A"),
+                                                     std::string("0B3D") }))
+        {
+            WARN("Skipping test - no motion sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+            return;
+        }
+        auto sensor = profile.get_device().first<rs2::color_sensor>();
+        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        std::cout << "depth sensor: " << librealsense::get_string(RS2_EXTENSION_DEPTH_SENSOR) << "\n";
+        std::cout << "color sensor: " << librealsense::get_string(RS2_EXTENSION_COLOR_SENSOR) << "\n";
+        std::cout << "motion sensor: " << librealsense::get_string(RS2_EXTENSION_MOTION_SENSOR) << "\n";
+        std::cout << "fisheye sensor: " << librealsense::get_string(RS2_EXTENSION_FISHEYE_SENSOR) << "\n";
+        REQUIRE(sensor.is<rs2::color_sensor>());
+        REQUIRE(!sensor.is<rs2::motion_sensor>());
+        REQUIRE(!sensor.is<rs2::depth_sensor>());
+        REQUIRE(!sensor.is<rs2::fisheye_sensor>());
+        REQUIRE(module_name.size() > 0);
+    }
+}
+
+TEST_CASE("motion sensor API", "[live][options]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+        dev_type PID = get_PID(dev);
+        if (!librealsense::val_in_range(PID.first, { std::string("0AD5"),
+                                                     std::string("0AFE"),
+                                                     std::string("0AFF"),
+                                                     std::string("0B00"),
+                                                     std::string("0B01"),
+                                                     std::string("0B3A"),
+                                                     std::string("0B3D")}))
+        {
+            WARN("Skipping test - no motion sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+            return;
+        }
+        auto sensor = profile.get_device().first<rs2::motion_sensor>();
+        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        REQUIRE(!sensor.is<rs2::color_sensor>());
+        REQUIRE(!sensor.is<rs2::depth_sensor>());
+        REQUIRE(module_name.size() > 0);
+    }
+}
+
+TEST_CASE("fisheye sensor API", "[live][options]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
+    {
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile profile;
+        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+        REQUIRE(profile);
+        REQUIRE_NOTHROW(dev = profile.get_device());
+        REQUIRE(dev);
+
+        dev_type PID = get_PID(dev);
+        if (!librealsense::val_in_range(PID.first, { std::string("0AD5"),
+                                                     std::string("0AFE"),
+                                                     std::string("0AFF"),
+                                                     std::string("0B00"),
+                                                     std::string("0B01") }))
+        {
+            WARN("Skipping test - no fisheye sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
+            return;
+        }
+        auto sensor = profile.get_device().first<rs2::fisheye_sensor>();
+        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
+        REQUIRE(!sensor.is<rs2::color_sensor>());
+        REQUIRE(!sensor.is<rs2::depth_sensor>());
+        REQUIRE(module_name.size() > 0);
+    }
+}
+
 // FW Sub-presets API
 TEST_CASE("Alternating Emitter", "[live][options]")
 {

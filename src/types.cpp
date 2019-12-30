@@ -187,6 +187,9 @@ namespace librealsense
             CASE(L500_DEPTH_SENSOR)
             CASE(TM2_SENSOR)
             CASE(AUTO_CALIBRATED_DEVICE)
+            CASE(COLOR_SENSOR)
+            CASE(MOTION_SENSOR)
+            CASE(FISHEYE_SENSOR)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

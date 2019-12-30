@@ -122,6 +122,22 @@ namespace librealsense
 
     class processing_block;
 
+    class motion_sensor
+    {
+    public:
+        virtual ~motion_sensor() = default;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_MOTION_SENSOR, librealsense::motion_sensor);
+
+    class fisheye_sensor
+    {
+    public:
+        virtual ~fisheye_sensor() = default;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_FISHEYE_SENSOR, librealsense::fisheye_sensor);
+
     class synthetic_sensor :
         public sensor_base
     {
