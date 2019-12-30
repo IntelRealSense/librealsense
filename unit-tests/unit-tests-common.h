@@ -55,14 +55,6 @@ struct stream_request
     }
 };
 
-enum class sensor_type
-{
-    depth_sensor,
-    color_sensor,
-    motion_sensor,
-    fisheye_sensor
-};
-
 struct profile
 {
     rs2_stream stream;
@@ -104,6 +96,16 @@ struct device_profiles
     int fps;
     bool sync;
 };
+
+inline std::vector<librealsense::stream_profile> to_profiles(std::vector<rs2::stream_profile> profiles)
+{
+    std::vector<librealsense::stream_profile> result;
+    for (auto&& p : profiles)
+    {
+        result.push_back(to_profile(p.get()->profile));
+    }
+    return result;
+}
 
 inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
 {
@@ -812,42 +814,6 @@ inline rs2::stream_profile get_profile_by(const rs2::sensor& s, librealsense::st
     return *it;
 }
 
-inline rs2::sensor get_sensor_by(const std::vector<rs2::sensor>& sensors, sensor_type st)
-{
-    auto is_sensor_type_match = [st](const rs2::sensor& sen)
-    {
-        switch (st)
-        {
-        case sensor_type::depth_sensor:
-            return sen.is<rs2::depth_sensor>();
-        case sensor_type::color_sensor:
-            return sen.is<rs2::color_sensor>();
-        case sensor_type::motion_sensor:
-            return sen.is<rs2::motion_sensor>();
-        case sensor_type::fisheye_sensor:
-            return sen.is<rs2::fisheye_sensor>();
-        default:
-            throw std::exception("sensor type is not supported");
-        }
-    };
-    auto&& snsr = std::find_if(sensors.begin(), sensors.end(), is_sensor_type_match);
-
-    REQUIRE(snsr != sensors.end());
-    return *snsr;
-}
-
-inline sensor_type get_sensor_type(const rs2::sensor& sensor)
-{
-    if (sensor.is<rs2::depth_sensor>())
-        return sensor_type::depth_sensor;
-    else if (sensor.is<rs2::color_sensor>())
-        return sensor_type::color_sensor;
-    else if (sensor.is<rs2::motion_sensor>())
-        return sensor_type::motion_sensor;
-    else if (sensor.is<rs2::fisheye_sensor>())
-        return sensor_type::fisheye_sensor;
-}
-
 inline rs2::device get_device_by(const std::string& product_line, const std::vector<rs2::device>& devices)
 {
     auto&& device = std::find_if(devices.begin(), devices.end(), [product_line](const rs2::device& dev) 
@@ -858,35 +824,34 @@ inline rs2::device get_device_by(const std::string& product_line, const std::vec
     return *device;
 }
 
-inline std::string get_device_pid(const rs2::device& device)
+template<class T>
+inline std::string get_pid(const T& device)
 {
     return device.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
 }
 
-inline std::string get_device_product_line(const rs2::device& device)
+template<class T>
+inline std::string get_product_line(const T& device)
 {
     return device.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
 }
 
-inline std::string get_device_serial(const rs2::device& device)
+template<class T>
+inline std::string get_serial(const T& device)
 {
     return device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 }
 
-inline rs2::device_list get_all_devices()
+template<class T>
+inline std::string get_fw_version(const T& device)
 {
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-
-    return ctx.query_devices();
+    return device.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
 }
 
-inline std::vector<rs2::sensor> get_all_sensors()
+template<class T>
+inline std::string get_name(const T& device)
 {
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-
-    return ctx.query_all_sensors();
+    return device.get_info(RS2_CAMERA_INFO_NAME);
 }
 
 enum special_folder
@@ -897,6 +862,54 @@ enum special_folder
     user_videos,
     temp_folder
 };
+
+inline std::vector<uint32_t> split(const std::string& s, char delim) {
+    std::stringstream ss(s);
+    std::string item;
+    std::vector<uint32_t> tokens;
+    while (std::getline(ss, item, delim)) {
+        tokens.push_back(std::stoi(item, nullptr));
+    }
+    return tokens;
+}
+
+inline bool is_fw_version_newer(const std::string& current_fw, const uint32_t other_fw[4])
+{
+    auto fw = split(current_fw, '.');
+    if (fw[0] > other_fw[0])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] > other_fw[1])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] > other_fw[2])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] > other_fw[3])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
+        return true;
+    return false;
+}
+
+inline bool is_fw_version_older(const std::string& current_fw, const uint32_t other_fw[4])
+{
+    auto fw = split(current_fw, '.');
+    if (fw[0] < other_fw[0])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] < other_fw[1])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] < other_fw[2])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] < other_fw[3])
+        return true;
+    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
+        return true;
+    return false;
+}
+
+inline bool is_fw_in_range(const std::string& current_fw, const uint32_t min_fw[4], const uint32_t max_fw[4])
+{
+    auto fw = split(current_fw, '.');
+    return is_fw_version_older(current_fw, max_fw) && is_fw_version_newer(current_fw, min_fw);
+}
 
 #ifdef _WIN32
 #include <windows.h>
@@ -944,6 +957,22 @@ inline std::string get_folder_path(special_folder f)
         }
     }
     return res;
+}
+
+inline std::string generate_product_line_param(const std::string& param)
+{
+    rs2::context ctx;
+    auto devices = ctx.query_devices();
+    std::string generated_param = param;
+    for (auto&& device : devices)
+    {
+        auto pl = get_product_line(device);
+        pl.insert(pl.begin(), '[');
+        pl.insert(pl.begin(), ',');
+        pl.insert(pl.end(), ']');
+        generated_param.append(pl);
+    }
+    return generated_param;
 }
 #endif //_WIN32
 

@@ -643,8 +643,9 @@ namespace librealsense
         int index;
         uint32_t width, height, fps;
         resolution_func stream_resolution; // Calculates the relevant resolution from the given backend resolution.
-    };
 
+        std::string to_string() const;
+    };
 
     inline bool operator==(const stream_profile& a,
         const stream_profile& b)
@@ -663,6 +664,11 @@ namespace librealsense
         if (lhs.format != rhs.format) return lhs.format < rhs.format;
         if (lhs.index != rhs.index)   return lhs.index  < rhs.index;
         return lhs.stream < rhs.stream;
+    }
+
+    inline std::ostream& operator<<(std::ostream& s, const stream_profile& sp)
+    {
+        return s << sp.to_string();
     }
 
     struct stream_descriptor

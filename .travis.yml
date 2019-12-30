@@ -14,8 +14,9 @@ matrix:
         - cd $LRS_RUN_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
-        - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam] from "$i"; done
-        - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam] from "$i"; done
+        - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam]~[device_specific] from "$i"; done
+        - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam]~[device_specific] from "$i"; done
+        - for i in ../records/device_specific/l500/*; do ./live-test -d yes -i [L500] from "$i"; done
         
     - name: "Windows - cpp"
       os: windows
@@ -45,8 +46,9 @@ matrix:
         - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=false -DBUILD_WITH_TM2=false
         - cmake --build . --config $LRS_RUN_CONFIG -- -j4
         - ./unit-tests/live-test -d yes -i [software-device]
-        - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
-        - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+        - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam]~[device_specific] from "$i"; done
+        - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam]~[device_specific] from "$i"; done
+        - for i in ../records/device_specific/l500/*; do ./live-test -d yes -i [L500] from "$i"; done
 
     - name: "Linux - cpp"
       os: linux
@@ -117,7 +119,7 @@ before_install:
   - if [[ "$RS_CPP_TEST" == "true" ]]; then
       export LRS_LOG_LEVEL="DEBUG";
       url_records_path="http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/";
-      records_name="records_test.txt";
+      records_name="records_tests.txt";
       url_records_list=$url_records_path$records_name;
       wget $url_records_path$records_name;
       tests_list=`cat $records_name`;

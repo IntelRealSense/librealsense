@@ -635,4 +635,16 @@ namespace librealsense
         auto from = reinterpret_cast<uint8_t const*>(src);
         std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
     }
+
+    std::string stream_profile::to_string() const
+    {
+        std::stringstream s;
+        s << "Format: " << format << std::endl;
+        s << "Stream: " << stream << std::endl;
+        s << "Width: " << width << std::endl;
+        s << "Height: " << height << std::endl;
+        s << "Index: " << index << std::endl;
+        s << "Fps: " << fps << std::endl;
+        return s.str();
+    }
 }

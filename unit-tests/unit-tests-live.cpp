@@ -5,319 +5,20 @@
 // This set of tests is valid for any number and combination of RealSense cameras, including R200 and F200 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "unit-tests-common.h"
-
 #include <cmath>
+#include "unit-tests-common.h"
+#include "../include/librealsense2/rs_advanced_mode.hpp"
+#include <librealsense2/hpp/rs_types.hpp>
+#include <librealsense2/hpp/rs_frame.hpp>
 #include <iostream>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
-#include <vector>
-#include <unordered_set>
-#include <string>
-
-#include "unit-tests-expected.h"
-
-#include "librealsense2/rsutil.h"
-#include "../include/librealsense2/rs_advanced_mode.hpp"
-#include "librealsense2/hpp/rs_types.hpp"
-#include "librealsense2/hpp/rs_frame.hpp"
-//#include "../common/fw-update-helper.h"
-
+#include <librealsense2/rsutil.h>
 
 using namespace rs2;
 
-// Note: This test should be first among live tests
-//TEST_CASE("Firmware update", "[live]")
-//{
-//    // Update the connected devices to the latest recommended firmware version
-//
-//    auto&& devices = get_all_devices();
-//
-//    // For each device
-//    for (auto&& d : devices)
-//    {
-//        // Check firmware version
-//        bool required_supported_fw_info =   d.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
-//                                            d.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
-//                                            d.supports(RS2_CAMERA_INFO_PRODUCT_LINE);
-//        REQUIRE(required_supported_fw_info);
-//
-//        std::string fw = d.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-//        std::string recommended = d.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
-//        int product_line = parse_product_line(d.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
-//
-//        std::string available = get_available_firmware_version(product_line);
-//        // Update if recommended firmware version if needed
-//    }
-//
-//
-//        std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-//        std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
-//
-//        int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
-//
-//        bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
-//        bool is_rc = (product_line == RS2_PRODUCT_LINE_D400) && allow_rc_firmware;
-//        std::string available = get_available_firmware_version(product_line);
-//
-//        std::shared_ptr<firmware_update_manager> manager = nullptr;
-//
-//        if (is_upgradeable(fw, available))
-//        {
-//            recommended = available;
-//
-//            static auto table = create_default_fw_table();
-//
-//            manager = std::make_shared<firmware_update_manager>(*this, dev, viewer.ctx, table[product_line], true);
-//        }
-//
-//        if (is_upgradeable(fw, recommended))
-//        {
-//            std::stringstream msg;
-//            msg << name.first << " (S/N " << name.second << ")\n"
-//                << "Current Version: " << fw << "\n";
-//
-//            if (is_rc)
-//                msg << "Release Candidate: " << recommended << " Pre-Release";
-//            else
-//                msg << "Recommended Version: " << recommended;
-//
-//            if (!fw_update_required)
-//            {
-//                auto n = std::make_shared<fw_update_notification_model>(
-//                    msg.str(), manager, false);
-//                viewer.not_model.add_notification(n);
-//
-//                fw_update_required = true;
-//
-//                related_notifications.push_back(n);
-//            }
-//        }
-//    }
-//
-//}
-
-//TEST_CASE("Verify device profiles", "[live]")
-//{
-//    // Verify all expected profiles are supported by the devices
-//
-//    // Get all devices
-//    const auto&& devices = get_all_devices();
-//
-//    // For each connected device
-//    for (auto&& d : devices)
-//    {
-//        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-//        auto&& groundtruth_profiles = generate_device_profiles(pid);
-//        std::vector<rs2::stream_profile> supported_profiles;
-//
-//        // For each device's sensor
-//        for (auto&& s : d.query_sensors())
-//        {
-//            // Get supported profiles
-//            auto&& sp = s.get_stream_profiles();
-//            supported_profiles.insert(supported_profiles.end(), sp.begin(), sp.end());
-//        }
-//
-//        CAPTURE("Device is missing profiles.");
-//        REQUIRE(supported_profiles.size() == groundtruth_profiles.size());
-//
-//        // Remove intersecting profiles from ground truth list
-//        for (auto&& p : supported_profiles)
-//        {
-//            auto&& prof = librealsense::to_profile(p.get()->profile);
-//            groundtruth_profiles.erase(prof);
-//        }
-//
-//        CAPTURE("Device profiles do not match the anticipated profiles list.");
-//        REQUIRE(groundtruth_profiles.empty());
-//    }
-//}
-//
-//TEST_CASE("Verify device options", "[live]")
-//{
-//    // Verify all expected options are supported by the device
-//
-//    // Get all devices
-//    const auto&& devices = get_all_devices();
-//
-//    // For each connected device
-//    for (auto&& d : devices)
-//    {
-//        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-//        auto&& gt_options = generate_device_options(pid);
-//        std::unordered_set<int> supported_options;
-//
-//        // For each device's sensor
-//        for (auto&& s : d.query_sensors())
-//        {
-//            // Get supported options
-//            auto&& so = s.get_supported_options();
-//            supported_options.insert(so.begin(), so.end());
-//        }
-//
-//        CAPTURE("Device is missing options.");
-//        REQUIRE(supported_options.size() == gt_options.size());
-//
-//        // Remove intersecting options from ground truth list
-//        for (auto&& opt : supported_options)
-//        {
-//            gt_options.erase(opt);
-//        }
-//
-//        CAPTURE("Device profiles do not match the anticipated options list.");
-//        REQUIRE(gt_options.empty());
-//    }
-//}
-//
-//TEST_CASE("Verify device metadata", "[live]")
-//{
-//    // Compare expected metadata with frames' metadata
-//
-//    rs2::context ctx;
-//    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-//
-//    // Stream everything
-//    rs2::pipeline pipe(ctx);
-//    rs2::config conf;
-//    conf.enable_all_streams();
-//    auto pp = pipe.start(conf);
-//    const auto pid = pp.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-//
-//    // Wait for stream to stabilize
-//    for (size_t i = 0; i < 20; i++)
-//        pipe.wait_for_frames(5000);
-//
-//    // Poll for frames
-//    rs2::frameset frms;
-//    for (size_t i = 0; i < 10; i++)
-//    {
-//        if (pipe.poll_for_frames(&frms))
-//        {
-//            // Check if the device metadata is enabled
-//            //if (!frms[0].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
-//            //{
-//            //    pipe.stop();
-//            //    LOG_WARNING("Cant retrieve metadata, try to enable it with scripts or debians");
-//            //    return;
-//            //}
-//
-//            // Get all sensor's expected metadata 
-//            auto&& expected_md = generate_device_metadata(pid);
-//
-//            // Check if all the frames have all the expected metadata
-//            for (auto&& fr : frms)
-//            {
-//                auto snsr = rs2::sensor(std::shared_ptr<rs2_sensor>(fr.get_sensor()));
-//                auto snsr_type = get_sensor_type(snsr);
-//
-//                // Verify the metadata
-//                for (auto&& md : expected_md.at(snsr_type))
-//                {
-//                    CAPTURE(pid);
-//                    CAPTURE(snsr.get_info(RS2_CAMERA_INFO_NAME));
-//                    CAPTURE(rs2_frame_metadata_to_string(md));
-//                    REQUIRE_NOTHROW(fr.get_frame_metadata(md));
-//                }
-//
-//                // Verify that each sensor generates its expected frame type
-//                switch (snsr_type)
-//                {
-//                case sensor_type::color_sensor:
-//                    REQUIRE_NOTHROW(frms.first(RS2_STREAM_COLOR));
-//                    break;
-//                case sensor_type::depth_sensor:
-//                    REQUIRE_NOTHROW(frms.first(RS2_STREAM_DEPTH));
-//                    break;
-//                case sensor_type::motion_sensor:
-//                    REQUIRE_NOTHROW(frms.first(RS2_STREAM_ACCEL));
-//                    break;
-//                default:
-//                    return;
-//                }
-//            }
-//        }
-//    }
-//    pipe.stop();
-//}
-
-// TODO - Ariel - pipeline resources deallocation
-
-// TODO - Ariel - Extrinsics test
-
-// TODO - Ariel - stream fps > 25?
-
-// TODO - Ariel - Start stop couple of times
-
-// TODO - Ariel - Configure all supported profiles and test frame arrived.
-
-// TODO - Ariel - Consistency between frame profile and requested profile
-
-// TODO - Ariel - IR and Depth resolution must be equal
-
-// TODO - Ariel - gyro and accelerometer data not stuck?
-
-// TODO - Ariel - profiles consistency with configuration and frame result
-
-// TODO - Ariel - recordings - start stop
-
-// TODO - Ariel - recordings - via pipeline
-
-// TODO - Ariel - playback - 
-
-// TODO - Ariel - resources deallocation - stay as before.
-
-TEST_CASE("Timestamp domain consistency", "[live][l500]") {
-    // Check consistency of timestamp domain.
-
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-
-    rs2::pipeline pipe(ctx);
-    rs2::config cfg;
-    cfg.enable_all_streams();
-
-    pipe.start(cfg);
-
-    for (auto i = 0; i < 30; i++)
-    {
-        auto frames = pipe.wait_for_frames(5000);
-    }
-
-    bool hw_timestamp_domain = false;
-    bool system_timestamp_domain = false;
-    bool global_timestamp_domain = false;
-
-    for (auto i = 0; i < 5; i++)
-    {
-        auto frames = pipe.wait_for_frames(5000);
-        REQUIRE(frames.size() > 0);
-
-        for (auto&& f : frames)
-        {
-            if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
-            {
-                hw_timestamp_domain = true;
-            }
-            if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-            {
-                system_timestamp_domain = true;
-            }
-            if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
-            {
-                global_timestamp_domain = true;
-            }
-        }
-    }
-
-    CAPTURE(hw_timestamp_domain);
-    CAPTURE(system_timestamp_domain);
-    CAPTURE(global_timestamp_domain);
-    REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
-}
-
-TEST_CASE("Sync sanity", "[live]") {
+TEST_CASE("Sync sanity", "[live][!mayfail]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -362,10 +63,28 @@ TEST_CASE("Sync sanity", "[live]") {
                     if (val < actual_fps)
                         actual_fps = val;
                 }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+                {
+                    hw_timestamp_domain = true;
+                }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                {
+                    system_timestamp_domain = true;
+                }
+                if (f.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                {
+                    global_timestamp_domain = true;
+                }
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
+
         }
+
+        CAPTURE(hw_timestamp_domain);
+        CAPTURE(system_timestamp_domain);
+        CAPTURE(global_timestamp_domain);
+        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
 
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
@@ -382,8 +101,6 @@ TEST_CASE("Sync sanity", "[live]") {
 
         CAPTURE(num_of_partial_sync_sets);
         CAPTURE(all_timestamps.size());
-
-        // at least 10% of the frames were synced.
         REQUIRE((float(num_of_partial_sync_sets) / all_timestamps.size()) < 0.9f);
 
         for (auto s : dev.query_sensors())
@@ -393,7 +110,7 @@ TEST_CASE("Sync sanity", "[live]") {
     }
 }
 
-TEST_CASE("Sync different fps", "[live]") {
+TEST_CASE("Sync different fps", "[live][!mayfail]") {
 
     rs2::context ctx;
 
@@ -513,7 +230,7 @@ TEST_CASE("Sync different fps", "[live]") {
     }
 }
 
-bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0)
+bool get_mode(rs2::device& dev, stream_profile* profile, int mode_index = 0)
 {
     auto sensors = dev.query_sensors();
     REQUIRE(sensors.size() > 0);
@@ -532,7 +249,7 @@ bool get_mode(rs2::device& dev, rs2::stream_profile* profile, int mode_index = 0
     return false;
 }
 
-TEST_CASE("Sync start stop", "[live]") {
+TEST_CASE("Sync start stop", "[live][!mayfail]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -624,171 +341,26 @@ TEST_CASE("Sync start stop", "[live]") {
     }
 }
 
-TEST_CASE("Verify device profiles", "[live][l500]")
+TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
-    // Verify all expected profiles are supported by the devices
-
-    const auto&& devices = get_all_devices();
-
-    for (auto&& d : devices)
-    {
-        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        auto&& expected_profiles = generate_device_profiles(pid);
-        std::vector<rs2::stream_profile> supported_profiles;
-
-        // For each device's sensor
-        for (auto&& s : d.query_sensors())
-        {
-            // Get supported profiles
-            auto&& sp = s.get_stream_profiles();
-            supported_profiles.insert(supported_profiles.end(), sp.begin(), sp.end());
-        }
-
-        CAPTURE("Device is missing profiles.");
-        REQUIRE(expected_profiles.size() == expected_profiles.size());
-
-        // Remove intersecting profiles from ground truth list
-        for (auto&& p : supported_profiles)
-        {
-            auto&& prof = librealsense::to_profile(p.get()->profile);
-            expected_profiles.erase(prof);
-        }
-
-        CAPTURE("Device profiles do not match the anticipated profiles list.");
-        REQUIRE(expected_profiles.empty());
-    }
-}
-
-TEST_CASE("Verify device options", "[live][l500]")
-{
-    // Verify all expected options are supported by the device
-
-    const auto&& devices = get_all_devices();
-
-    for (auto&& d : devices)
-    {
-        const auto pid = d.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        auto&& gt_options = generate_device_options(pid);
-        std::unordered_set<int> supported_options;
-
-        // For each device's sensor
-        for (auto&& s : d.query_sensors())
-        {
-            // Get supported options
-            auto&& so = s.get_supported_options();
-            supported_options.insert(so.begin(), so.end());
-        }
-
-        CAPTURE("Device is missing options.");
-        REQUIRE(supported_options.size() == gt_options.size());
-
-        // Remove intersecting options from ground truth list
-        for (auto&& opt : supported_options)
-        {
-            gt_options.erase(opt);
-        }
-
-        CAPTURE("Device profiles do not match the anticipated options list.");
-        REQUIRE(gt_options.empty());
-    }
-}
-
-// TODO - check this, registered metadata does not arrive - i.e. laser power
-TEST_CASE("Verify device metadata", "[live][l500]")
-{
-    // Compare expected metadata with frames' metadata
-
     rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {       // Require at least one device to be plugged in
+        std::vector<rs2::device> list;
+        REQUIRE_NOTHROW(list = ctx.query_devices());
+        REQUIRE(list.size() > 0);
 
-    const auto&& devices = get_all_devices();
-
-    for (auto&& d : devices)
-    {
-        // Stream everything
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        cfg.enable_all_streams();
-        auto pp = pipe.start(cfg);
-        const auto pid = pp.get_device().get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-
-        // Wait for stream to stabilize
-        for (size_t i = 0; i < 20; i++)
-            pipe.wait_for_frames(5000);
-
-        // Poll for frames
-        rs2::frameset frms;
-        for (size_t i = 0; i < 10; i++)
+        // For each device
+        for (auto&& dev : list)
         {
-            if (pipe.poll_for_frames(&frms))
+            SECTION("supported device metadata strings are nonempty, unsupported ones throw")
             {
-                // Check if the device metadata is enabled
-                //if (!frms[0].supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP))
-                //{
-                //    pipe.stop();
-                //    LOG_WARNING("Cant retrieve metadata, try to enable it with scripts or debians");
-                //    return;
-                //}
-
-                // Get all sensor's expected metadata 
-                auto&& expected_md = generate_device_metadata(pid);
-
-                // Check if all the frames have all the expected metadata
-                for (auto&& fr : frms)
-                {
-                    auto snsr = rs2::sensor(std::shared_ptr<rs2_sensor>(fr.get_sensor()));
-                    auto snsr_type = get_sensor_type(snsr);
-
-                    // Verify the metadata
-                    for (auto&& md : expected_md.at(snsr_type))
-                    {
-                        CAPTURE(pid);
-                        CAPTURE(snsr.get_info(RS2_CAMERA_INFO_NAME));
-                        CAPTURE(rs2_frame_metadata_to_string(md));
-                        REQUIRE_NOTHROW(fr.get_frame_metadata(md));
-                    }
-
-                    // Verify that each sensor generates its expected frame type
-                    switch (snsr_type)
-                    {
-                    case sensor_type::color_sensor:
-                        REQUIRE_NOTHROW(frms.first(RS2_STREAM_COLOR));
-                        break;
-                    case sensor_type::depth_sensor:
-                        REQUIRE_NOTHROW(frms.first(RS2_STREAM_DEPTH));
-                        break;
-                    case sensor_type::motion_sensor:
-                        REQUIRE_NOTHROW(frms.first(RS2_STREAM_ACCEL));
-                        break;
-                    default:
-                        return;
-                    }
+                for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j) {
+                    auto is_supported = false;
+                    REQUIRE_NOTHROW(is_supported = dev.supports(rs2_camera_info(j)));
+                    if (is_supported) REQUIRE(dev.get_info(rs2_camera_info(j)) != nullptr);
+                    else REQUIRE_THROWS(dev.get_info(rs2_camera_info(j)));
                 }
-            }
-        }
-        pipe.stop();
-    }
-}
-
-TEST_CASE("Device info enumeration", "[live][l500]")
-{
-    // Iterate over all of the device supported info and try to obtain them
-
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-
-    auto devices = get_all_devices();
-
-    // For each device
-    for (auto&& dev : devices)
-    {
-        SECTION("supported device metadata strings are nonempty, unsupported ones throw")
-        {
-            for (auto j = 0; j < RS2_CAMERA_INFO_COUNT; ++j) {
-                auto is_supported = false;
-                REQUIRE_NOTHROW(is_supported = dev.supports(rs2_camera_info(j)));
-                if (is_supported) REQUIRE(dev.get_info(rs2_camera_info(j)) != nullptr);
-                else REQUIRE_THROWS(dev.get_info(rs2_camera_info(j)));
             }
         }
     }
@@ -797,60 +369,88 @@ TEST_CASE("Device info enumeration", "[live][l500]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-TEST_CASE("Start-Stop stream - Pipeline", "[live][l500]")
+TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
 {
+    // Require at least one device to be plugged in
     rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-
-    rs2::pipeline pipe(ctx);
-    rs2::config cfg;
-    rs2::device dev;
-
-    // Configure all supported streams to run at 30 frames per second
-    for (auto i = 0; i < 3; i++)
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
-        REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
 
-        // Test sequence
-        REQUIRE_NOTHROW(pipe.start(cfg));
-        REQUIRE_NOTHROW(pipe.stop());
+        pipeline pipe(ctx);
+        device dev;
+        // Configure all supported streams to run at 30 frames per second
+
+        for (auto i = 0; i < 5; i++)
+        {
+            rs2::config cfg;
+            rs2::pipeline_profile profile;
+            REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
+            REQUIRE(profile);
+            REQUIRE_NOTHROW(dev = profile.get_device());
+            REQUIRE(dev);
+            disable_sensitive_options_for(dev);
+
+            // Test sequence
+            REQUIRE_NOTHROW(pipe.start(cfg));
+
+            REQUIRE_NOTHROW(pipe.stop());
+        }
     }
 }
 
-TEST_CASE("Start-Stop stream - Sensors", "[live][l500]")
+TEST_CASE("Start-Stop streaming  - Sensors callbacks API", "[live][using_callbacks]")
 {
-    auto&& devices = get_all_devices();
-
-    // Test start stop for 5 times
-    for (auto i = 0; i < 3; i++)
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
-        for (auto&& d : devices)
+        for (auto i = 0; i < 5; i++)
         {
-            const auto&& pid = get_device_pid(d);
+            std::vector<rs2::device> list;
+            REQUIRE_NOTHROW(list = ctx.query_devices());
+            REQUIRE(list.size());
 
-            // For each sensor
-            for (auto&& s : d.query_sensors())
+            auto dev = list[0];
+            CAPTURE(dev.get_info(RS2_CAMERA_INFO_NAME));
+            disable_sensitive_options_for(dev);
+
+            std::mutex m;
+            int fps = is_usb3(dev) ? 30 : 15; // In USB2 Mode the devices will switch to lower FPS rates
+            std::map<std::string, size_t> frames_per_stream{};
+
+            auto profiles = configure_all_supported_streams(dev, 640, 480, fps);
+
+            for (auto s : profiles.first)
             {
-                // Get first supported profile
-                auto prof = s.get_stream_profiles()[0];
+                REQUIRE_NOTHROW(s.start([&m, &frames_per_stream](rs2::frame f)
+                    {
+                        std::lock_guard<std::mutex> lock(m);
+                        ++frames_per_stream[f.get_profile().stream_name()];
+                    }));
+            }
 
-                // Start stream with callback
-                rs2::frame fr;
-                auto callback = [&fr](rs2::frame f) { fr = f; };
-                REQUIRE_NOTHROW(s.open(prof));
-                REQUIRE_NOTHROW(s.start(callback));
-
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-
-                REQUIRE(fr.get() != nullptr);
-
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Stop & flush all active sensors
+            for (auto s : profiles.first)
+            {
                 REQUIRE_NOTHROW(s.stop());
                 REQUIRE_NOTHROW(s.close());
             }
+
+            // Verify frames arrived for all the profiles specified
+            std::stringstream active_profiles, streams_arrived;
+            active_profiles << "Profiles requested : " << profiles.second.size() << std::endl;
+            for (auto& pf : profiles.second)
+                active_profiles << pf << std::endl;
+            streams_arrived << "Streams recorded : " << frames_per_stream.size() << std::endl;
+            for (auto& frec : frames_per_stream)
+                streams_arrived << frec.first << ": frames = " << frec.second << std::endl;
+
+            CAPTURE(active_profiles.str().c_str());
+            CAPTURE(streams_arrived.str().c_str());
+            REQUIRE(profiles.second.size() == frames_per_stream.size());
         }
     }
 }
@@ -926,7 +526,7 @@ TEST_CASE("Start-Stop stream - Sensors", "[live][l500]")
 //////// Calibration information tests //
 /////////////////////////////////////////
 
-TEST_CASE("No extrinsic transformation between a stream and itself", "[live][l500]")
+TEST_CASE("No extrinsic transformation between a stream and itself", "[live]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -961,7 +561,7 @@ TEST_CASE("No extrinsic transformation between a stream and itself", "[live][l50
     }
 }
 
-TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "[live][l500]")
+TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "[live]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1020,7 +620,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
     }
 }
 
-TEST_CASE("Extrinsic transformations are transitive", "[live][l500]")
+TEST_CASE("Extrinsic transformations are transitive", "[live]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1135,7 +735,7 @@ std::shared_ptr<device> do_with_waiting_for_camera_connection(rs2::context ctx, 
     return result;
 }
 
-TEST_CASE("Toggle Advanced Mode", "[live][l500][AdvMd]") {
+TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
     for (int i = 0; i < 3; ++i)
     {
         rs2::context ctx;
@@ -1180,7 +780,7 @@ TEST_CASE("Toggle Advanced Mode", "[live][l500][AdvMd]") {
 }
 
 
-TEST_CASE("Advanced Mode presets", "[live][l500][AdvMd]")
+TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
 {
     static const std::vector<res_type> resolutions = { low_resolution,
                                                        medium_resolution,
@@ -1270,7 +870,7 @@ TEST_CASE("Advanced Mode presets", "[live][l500][AdvMd]")
     }
 }
 
-TEST_CASE("Advanced Mode JSON", "[live][l500][AdvMd]") {
+TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1333,7 +933,7 @@ TEST_CASE("Advanced Mode JSON", "[live][l500][AdvMd]") {
     }
 }
 
-TEST_CASE("Advanced Mode controls", "[live][l500][AdvMd]") {
+TEST_CASE("Advanced Mode controls", "[live][AdvMd]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1609,7 +1209,7 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
     }
 }
 
-TEST_CASE("Motion profiles sanity", "[live][l500]")
+TEST_CASE("Motion profiles sanity", "[live]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1665,7 +1265,7 @@ TEST_CASE("Motion profiles sanity", "[live][l500]")
     }
 }
 
-TEST_CASE("Check width and height of stream intrinsics", "[live][l500][AdvMd]")
+TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1744,7 +1344,7 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][l500][AdvMd]")
     }
 }
 
-TEST_CASE("Check option API", "[live][l500][options]")
+TEST_CASE("Check option API", "[live][options]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1921,7 +1521,7 @@ const std::map<dev_group, std::vector<option_bundle> > auto_disabling_controls =
 };
 
 // Verify that the bundled controls (Exposure<->Aut-Exposure) are in sync
-TEST_CASE("Auto-Disabling Controls", "[live][l500][options]")
+TEST_CASE("Auto-Disabling Controls", "[live][options]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -2005,7 +1605,7 @@ TEST_CASE("Auto-Disabling Controls", "[live][l500][options]")
 
 /// The test may fail due to changes in profiles list that do not indicate regression.
 /// TODO - refactoring required to make the test agnostic to changes imposed by librealsense core
-TEST_CASE("Multiple devices", "[live][l500][multicam][!mayfail]")
+TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2490,36 +2090,7 @@ TEST_CASE("Error handling sanity", "[live][!mayfail]") {
     }
 }
 
-std::vector<uint32_t> split(const std::string &s, char delim) {
-    std::stringstream ss(s);
-    std::string item;
-    std::vector<uint32_t> tokens;
-    while (std::getline(ss, item, delim)) {
-        tokens.push_back(std::stoi(item, nullptr));
-    }
-    return tokens;
-}
-
-bool is_fw_version_newer(rs2::sensor& subdevice, const uint32_t other_fw[4])
-{
-    std::string fw_version_str;
-    REQUIRE_NOTHROW(fw_version_str = subdevice.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
-    auto fw = split(fw_version_str, '.');
-    if (fw[0] > other_fw[0])
-            return true;
-    if (fw[0] == other_fw[0] && fw[1] > other_fw[1])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] > other_fw[2])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] > other_fw[3])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
-        return true;
-    return false;
-}
-
-// TODO - Ariel - Fix
-TEST_CASE("Auto disabling control behavior", "[live][l500]") {
+TEST_CASE("Auto disabling control behavior", "[live]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2565,7 +2136,7 @@ TEST_CASE("Auto disabling control behavior", "[live][l500]") {
                         //0 - on, 1- off, 2 - deprecated for fw later than 5.9.11.0
                         //check if the fw version supports elem = 2
                         const uint32_t MIN_FW_VER[4] = { 5, 9, 11, 0 };
-                        if (is_fw_version_newer(subdevice, MIN_FW_VER)) break;
+                        if (is_fw_version_newer(get_fw_version(subdevice), MIN_FW_VER)) break;
                     }
                 }
             }
@@ -2614,7 +2185,7 @@ void reset_device(std::shared_ptr<rs2::device>& strong, std::weak_ptr<rs2::devic
     disable_sensitive_options_for(*strong);
 }
 
-TEST_CASE("Disconnect events works", "[live][L500]") {
+TEST_CASE("Disconnect events works", "[live]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2687,7 +2258,7 @@ TEST_CASE("Disconnect events works", "[live][L500]") {
     }
 }
 
-TEST_CASE("Connect events works", "[live][l500]") {
+TEST_CASE("Connect events works", "[live]") {
 
 
     rs2::context ctx;
@@ -2820,7 +2391,7 @@ std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const 
     return func;
 }
 
-TEST_CASE("Connect Disconnect events while streaming", "[live][l500]") {
+TEST_CASE("Connect Disconnect events while streaming", "[live]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -2913,7 +2484,7 @@ void check_controls_sanity(const context& ctx, const sensor& dev)
     }
 }
 //
-TEST_CASE("Connect Disconnect events while controls", "[live][l500]")
+TEST_CASE("Connect Disconnect events while controls", "[live]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -3315,7 +2886,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline wait_for_frames", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
 
     rs2::context ctx;
 
@@ -3381,7 +2952,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][l500][pipeline][using_pipeline]") 
     }
 }
 
-TEST_CASE("Pipeline poll_for_frames", "[live][l500][pipeline][using_pipeline]")
+TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
 {
     rs2::context ctx;
 
@@ -3474,7 +3045,7 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
 
     auto dev_requests = pipeline_custom_configurations;
 
@@ -3571,7 +3142,7 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream auto complete", "[live][l500][pipeline][using_pipeline]")
+TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline]")
 {
     auto configurations = pipeline_autocomplete_configurations;
 
@@ -3646,7 +3217,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][l500][pipeline][using_
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
 
     auto not_default_configurations = pipeline_custom_configurations;
     auto default_configurations = pipeline_default_configurations;
@@ -3724,7 +3295,7 @@ TEST_CASE("Pipeline disable_all", "[live][l500][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline disable stream", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3803,7 +3374,7 @@ TEST_CASE("Pipeline disable stream", "[live][l500][pipeline][using_pipeline]") {
     }
 }
 // The test relies on default profiles that may alter
-TEST_CASE("Pipeline with specific device", "[live][l500][pipeline][using_pipeline]")
+TEST_CASE("Pipeline with specific device", "[live][pipeline][using_pipeline]")
 {
 
     rs2::context ctx;
@@ -3865,7 +3436,7 @@ bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
     return equals;
 }
 
-TEST_CASE("Pipeline start stop", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3987,7 +3558,7 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
-TEST_CASE("Pipeline get selection", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
     auto configurations = pipeline_configurations_for_extrinsic;
 
@@ -4223,110 +3794,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("color sensor API", "[live][l500][options]")
-{
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
-    {
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
-        REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
-        dev_type PID = get_PID(dev);
-        if (!librealsense::val_in_range(PID.first, { std::string("0AA5"),
-                                                     std::string("0B48"),
-                                                     std::string("0AD3"),
-                                                     std::string("0AD4"),
-                                                     std::string("0AD5"),
-                                                     std::string("0B01"),
-                                                     std::string("0B07"),
-                                                     std::string("0B3A"),
-                                                     std::string("0B3D") }))
-        {
-            WARN("Skipping test - no motion sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
-            return;
-        }
-        auto sensor = profile.get_device().first<rs2::color_sensor>();
-        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
-        REQUIRE(sensor.is<rs2::color_sensor>());
-        REQUIRE(!sensor.is<rs2::motion_sensor>());
-        REQUIRE(!sensor.is<rs2::depth_sensor>());
-        REQUIRE(!sensor.is<rs2::fisheye_sensor>());
-        REQUIRE(module_name.size() > 0);
-    }
-}
-
-TEST_CASE("motion sensor API", "[live][l500][options]")
-{
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
-    {
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
-        REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
-        dev_type PID = get_PID(dev);
-        if (!librealsense::val_in_range(PID.first, { std::string("0AD5"),
-                                                     std::string("0AFE"),
-                                                     std::string("0AFF"),
-                                                     std::string("0B00"),
-                                                     std::string("0B01"),
-                                                     std::string("0B3A"),
-                                                     std::string("0B3D")}))
-        {
-            WARN("Skipping test - no motion sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
-            return;
-        }
-        auto sensor = profile.get_device().first<rs2::motion_sensor>();
-        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
-        REQUIRE(!sensor.is<rs2::color_sensor>());
-        REQUIRE(!sensor.is<rs2::depth_sensor>());
-        REQUIRE(module_name.size() > 0);
-    }
-}
-
-TEST_CASE("fisheye sensor API", "[live][l500][options]")
-{
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.17.1"))
-    {
-        rs2::device dev;
-        rs2::pipeline pipe(ctx);
-        rs2::config cfg;
-        rs2::pipeline_profile profile;
-        REQUIRE_NOTHROW(profile = cfg.resolve(pipe));
-        REQUIRE(profile);
-        REQUIRE_NOTHROW(dev = profile.get_device());
-        REQUIRE(dev);
-
-        dev_type PID = get_PID(dev);
-        if (!librealsense::val_in_range(PID.first, { std::string("0AD5"),
-                                                     std::string("0AFE"),
-                                                     std::string("0AFF"),
-                                                     std::string("0B00"),
-                                                     std::string("0B01") }))
-        {
-            WARN("Skipping test - no fisheye sensor is device type: " << PID.first << (PID.second ? " USB3" : " USB2"));
-            return;
-        }
-        auto sensor = profile.get_device().first<rs2::fisheye_sensor>();
-        std::string module_name = sensor.get_info(RS2_CAMERA_INFO_NAME);
-        REQUIRE(!sensor.is<rs2::color_sensor>());
-        REQUIRE(!sensor.is<rs2::depth_sensor>());
-        REQUIRE(module_name.size() > 0);
-    }
-}
-
 // FW Sub-presets API
-TEST_CASE("Alternating Emitter", "[live][l500][options]")
+TEST_CASE("Alternating Emitter", "[live][options]")
 {
     rs2::context ctx;
     //log_to_console(RS2_LOG_SEVERITY_DEBUG);
@@ -4578,7 +4047,7 @@ TEST_CASE("All suggested profiles can be opened", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Pipeline config enable resolve start flow", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4646,7 +4115,7 @@ TEST_CASE("Pipeline config enable resolve start flow", "[live][l500][pipeline][u
     }
 }
 
-TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][l500][multicam][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][multicam][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4768,7 +4237,7 @@ TEST_CASE("Pipeline - multicam scenario with specific devices", "[live][l500][mu
     }
 }
 
-TEST_CASE("Empty Pipeline Profile", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Empty Pipeline Profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4846,7 +4315,7 @@ void require_pipeline_profile_same(const rs2::pipeline_profile& profile1, const 
         throw std::runtime_error(std::string("Profiles contain different streams"));
     }
 }
-TEST_CASE("Pipeline empty Config", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline empty Config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4866,7 +4335,7 @@ TEST_CASE("Pipeline empty Config", "[live][l500][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline 2 Configs", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline 2 Configs", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4894,7 +4363,7 @@ TEST_CASE("Pipeline 2 Configs", "[live][l500][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline start after resolve uses the same profile", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline start after resolve uses the same profile", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4913,7 +4382,7 @@ TEST_CASE("Pipeline start after resolve uses the same profile", "[live][l500][pi
     }
 }
 
-TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][l500][pipeline][using_pipeline][!mayfail]") {
+TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][pipeline][using_pipeline][!mayfail]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
@@ -4930,7 +4399,7 @@ TEST_CASE("Pipeline start ignores previous config if it was changed", "[live][l5
     }
 }
 
-TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -4949,7 +4418,7 @@ TEST_CASE("Pipeline Config disable all is a nop with empty config", "[live][l500
         REQUIRE_NOTHROW(require_pipeline_profile_same(profile1, profile2));
     }
 }
-TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][l500][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline Config disable each stream is nop on empty config", "[live][pipeline][using_pipeline]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
@@ -5063,7 +4532,7 @@ TEST_CASE("Pipeline stream enable hierarchy", "[pipeline]")
     }
 }
 
-TEST_CASE("Pipeline stream with callback", "[live][l500][pipeline][using_pipeline]")
+TEST_CASE("Pipeline stream with callback", "[live][pipeline][using_pipeline]")
 {
     rs2::context ctx;
 
@@ -5301,7 +4770,7 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
     }
 }
 
-TEST_CASE("Unit transform test", "[live][l500][software-device]") {
+TEST_CASE("Unit transform test", "[live][software-device]") {
 	rs2::context ctx;
 
 	if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -5368,7 +4837,7 @@ TEST_CASE("Unit transform test", "[live][l500][software-device]") {
 }
 
 #define ADD_ENUM_TEST_CASE(rs2_enum_type, RS2_ENUM_COUNT)                                  \
-TEST_CASE(#rs2_enum_type " enum test", "[live][l500]") {                                         \
+TEST_CASE(#rs2_enum_type " enum test", "[live]") {                                         \
     int last_item_index = static_cast<int>(RS2_ENUM_COUNT);                                \
     for (int i = 0; i < last_item_index; i++)                                              \
     {                                                                                      \
@@ -5409,7 +4878,7 @@ ADD_ENUM_TEST_CASE(rs2_frame_metadata_value, RS2_FRAME_METADATA_COUNT)
 ADD_ENUM_TEST_CASE(rs2_rs400_visual_preset, RS2_RS400_VISUAL_PRESET_COUNT)
 
 void dev_changed(rs2_device_list* removed_devs, rs2_device_list* added_devs, void* ptr) {}
-TEST_CASE("C API Compilation", "[live][l500]") {
+TEST_CASE("C API Compilation", "[live]") {
     rs2_error* e;
     REQUIRE_NOTHROW(rs2_set_devices_changed_callback(NULL, dev_changed, NULL, &e));
     REQUIRE(e != nullptr);
@@ -5417,7 +4886,7 @@ TEST_CASE("C API Compilation", "[live][l500]") {
 
 
 
-TEST_CASE("Syncer try wait for frames", "[live][l500][software-device]") {
+TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -5777,7 +5246,7 @@ void compare(std::vector<filter> first, std::vector<std::shared_ptr<filter>> sec
     }
 }
 
-TEST_CASE("Sensor get recommended filters", "[live][l500]") {
+TEST_CASE("Sensor get recommended filters", "[live]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
 
@@ -5854,7 +5323,67 @@ TEST_CASE("Sensor get recommended filters", "[live][l500]") {
     }
 }
 
-TEST_CASE("Positional_Sensors_API", "[live][l500]")
+TEST_CASE("L500 zero order sanity", "[live]") {
+    //Require at least one device to be plugged in
+    rs2::context ctx;
+    const int RETRIES = 30;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        std::vector<sensor> sensors;
+        REQUIRE_NOTHROW(sensors = ctx.query_all_sensors());
+        REQUIRE(sensors.size() > 0);
+
+        for (auto sensor : sensors)
+        {
+            auto processing_blocks = sensor.get_recommended_filters();
+            auto zo = std::find_if(processing_blocks.begin(), processing_blocks.end(), [](filter f)
+            {
+                return f.is<zero_order_invalidation>();
+            });
+
+            if(zo != processing_blocks.end())
+            {
+                rs2::config c;
+                c.enable_stream(RS2_STREAM_DEPTH);
+                c.enable_stream(RS2_STREAM_INFRARED);
+                c.enable_stream(RS2_STREAM_CONFIDENCE);
+
+                rs2::pipeline p;
+                p.start(c);
+                rs2::frame frame;
+
+                std::map<rs2_stream, bool> stream_arrived;
+                stream_arrived[RS2_STREAM_DEPTH] = false;
+                stream_arrived[RS2_STREAM_INFRARED] = false;
+                stream_arrived[RS2_STREAM_CONFIDENCE] = false;
+
+                for (auto i = 0;i < RETRIES;i++)
+                {
+                    REQUIRE_NOTHROW(frame = p.wait_for_frames(15000));
+                    auto res = zo->process(frame);
+                    if (res.is<rs2::frameset>())
+                    {
+                        auto set = res.as<rs2::frameset>();
+                        REQUIRE(set.size() == stream_arrived.size());   // depth, ir, confidance
+                        for (auto&& f : set)
+                        {
+                            stream_arrived[f.get_profile().stream_type()] = true;
+                        }
+                        auto stream_missing = std::find_if(stream_arrived.begin(), stream_arrived.end(), [](std::pair< rs2_stream, bool> item)
+                        {
+                            return !item.second;
+                        });
+
+                        REQUIRE(stream_missing == stream_arrived.end());
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("Positional_Sensors_API", "[live]")
 {
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
@@ -5987,7 +5516,7 @@ TEST_CASE("Positional_Sensors_API", "[live][l500]")
     }
 }
 
-TEST_CASE("Wheel_Odometry_API", "[live][l500]")
+TEST_CASE("Wheel_Odometry_API", "[live]")
 {
     rs2::context ctx;
     auto dev_list = ctx.query_devices();
@@ -6076,7 +5605,7 @@ TEST_CASE("Wheel_Odometry_API", "[live][l500]")
 }
 
 
-TEST_CASE("get_sensor_from_frame", "[live][l500][using_pipeline]")
+TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;

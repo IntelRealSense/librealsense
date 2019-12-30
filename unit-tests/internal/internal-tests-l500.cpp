@@ -1,112 +1,107 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "catch/catch.hpp"
 
 #include <cmath>
 #include <iostream>
-#include <chrono>
-#include <ctime>
 #include <vector>
+#include <unordered_set>
 #include <algorithm>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 
 #include "../unit-tests-common.h"
+#include "internal-tests-common.h"
 #include "../unit-tests-expected.h"
-#include <librealsense2/rs.hpp>
-//#include <librealsense2/hpp/rs_sensor.hpp>
 
 #include "../src/sensor.h"
 #include "../src/l500/l500-factory.h"
-#include "../src/l500/l500-depth.h"
-#include "../src/l500/l500-motion.h"
-#include "../src/l500/l500-color.h"
-
-// TODO - Discuss with Sergey and find a better way to include this without including rs.cpp
-struct rs2_context
-{
-    ~rs2_context() { ctx->stop(); }
-    std::shared_ptr<librealsense::context> ctx;
-};
-
-std::string get_device_pid(const librealsense::device& device)
-{
-    return device.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-}
-
-//std::shared_ptr<librealsense::l500_device> create_l500_device()
-//{
-//
-//}
 
 using namespace librealsense;
 using namespace librealsense::platform;
 
-std::vector<std::shared_ptr<stream_profile_interface>> retrieve_profiles(const librealsense::synthetic_sensor& sensor, const std::vector<librealsense::stream_profile>& profiles)
+inline std::shared_ptr<librealsense::l500_device> create_l500_device()
 {
-    std::vector<std::shared_ptr<stream_profile_interface>> res;
-    auto&& supported_profiles = sensor.get_stream_profiles();
-    for (auto&& p : profiles)
-    {
-        auto profiles_are_equal = [&p](const std::shared_ptr<stream_profile_interface>& sp) { return to_profile(sp.get()) == p; };
-        auto profile_it = std::find_if(supported_profiles.begin(), supported_profiles.end(), profiles_are_equal);
-        res.push_back(*profile_it);
-    }
-    return res;
-}
-
-TEST_CASE("Sensor Resolver Test", "[L500][live][device_specific]")
-{
-    // check if the expected resolved profiles are equal to the resolver result
-
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
-    auto ctxptr = std::shared_ptr<rs2_context>(ctx);
-    auto&& lrsctx = ctxptr->ctx;
-    auto&& be = lrsctx->get_backend();
-
-    platform::backend_device_group devices(be.query_uvc_devices(), be.query_usb_devices(), be.query_hid_devices());
-    auto info = l500_info::pick_l500_devices(lrsctx, devices);
-    auto l500_info = std::dynamic_pointer_cast<librealsense::l500_info>(info[0]);
-    auto device = l500_info->create(lrsctx, false);
-    auto l500_color_dev = std::dynamic_pointer_cast<l500_color>(device);
-
-    auto&& l500_sen = l500_color_dev->get_color_sensor();
-    //auto l500_color_sen = std::dynamic_cast<librealsense::l500_color_sensor*>(&l500_sen);
-    auto pid = get_device_pid(*l500_color_dev);
-    auto expected_resolver_set = generate_sensor_resolver_profiles(pid);
-    auto&& expected_resolver_pairs = expected_resolver_set[sensor_type::color_sensor];
-
-    // iterate over all of the sensor expected resolver pairs
-    for (auto&& expctd_rslvr_pr : expected_resolver_pairs)
-    {
-        // check if the expected resolved profiles are equal to the resolver result
-
-        auto&& to_resolve = retrieve_profiles(l500_sen, expctd_rslvr_pr.first);
-        auto&& expected_resolved_profiles = retrieve_profiles(l500_sen, expctd_rslvr_pr.second);
-        auto&& resolved_profiles = l500_sen.resolve_requests(to_resolve);
-
-        for (auto&& expctd : expected_resolved_profiles)
+    auto&& devices = create_lrs_devices();
+    auto l500_it = std::find_if(devices.begin(), devices.end(), [](const std::shared_ptr<device>& d)
         {
-            auto profiles_equality_predicate = [&expctd](const std::shared_ptr<stream_profile_interface>& sp)
-            {
-                bool res = sp->get_format() == expctd->get_format() &&
-                    sp->get_stream_index() == expctd->get_stream_index() &&
-                    sp->get_stream_type() == expctd->get_stream_type();
-                auto vsp = As<video_stream_profile, stream_profile_interface>(sp);
-                auto expct_vsp = As<video_stream_profile, stream_profile_interface>(expctd);
-                if (vsp)
-                    res = res && vsp->get_width() == expct_vsp->get_width() &&
-                    vsp->get_height() == expct_vsp->get_height();
-                return res;
-            };
-            expected_resolved_profiles.erase(std::remove_if(expected_resolved_profiles.begin(), expected_resolved_profiles.end(), profiles_equality_predicate));
-        }
-
-        REQUIRE(expected_resolved_profiles.empty());
-    }
+            return std::dynamic_pointer_cast<librealsense::l500_device>(d);
+        });
+    REQUIRE(l500_it != devices.end());
+    return std::dynamic_pointer_cast<l500_device>(*l500_it);
 }
 
-// Check processing blocks factories
-// check start callbacks
-// check init stream profiles
+TEST_CASE("L500 Internal - Single frame per request", "[live][L500][device_specific]")
+{
+    // Sensor is not allowed to publish duplicated frames.
+
+    // Create l500 depth sensor
+    auto device = create_l500_device();
+    auto l500_depth_dev = std::dynamic_pointer_cast<l500_device>(device);
+    auto&& l500_depth_sen = l500_depth_dev->get_depth_sensor();
+
+    // Lock for a desired number of frames
+    std::mutex mtx;
+    std::condition_variable cv;
+    int num_of_frames = 10;
+
+    // Config stream with confidence, IR and depth.
+    std::vector<librealsense::stream_profile> profiles = {
+        { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH, 0, 640, 480, 30 },
+        { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
+        { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 }
+    };
+    auto sensor_profiles = retrieve_profiles(l500_depth_sen, profiles);
+
+    // Stream histogram based on frame's timestamp
+    std::unordered_map<rs2_stream, std::unordered_map<rs2_metadata_type, int>> stream_history;
+
+    // Sensor's start callback which saves the frames' history by timestamp
+    auto history_save_cb = [&stream_history, &cv, &num_of_frames](frame_holder f)
+    {
+        auto stream_type = f->get_stream()->get_stream_type();
+        auto ts = f->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+        stream_history[stream_type][ts]++;
+        num_of_frames--;
+        cv.notify_one();
+    };
+    auto frame_callback = frame_callback_ptr(new internal_frame_callback<decltype(history_save_cb)>(history_save_cb));
+
+    // Start / stop the stream and verify no duplicated frames arrived.
+    auto stream_and_verify = [&]() {
+        l500_depth_sen.open(sensor_profiles);
+        l500_depth_sen.start(frame_callback);
+
+        // Wait for @num_of_frames frames
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait_for(lock, std::chrono::seconds(60), [&num_of_frames]() { return num_of_frames <= 0; });
+
+        l500_depth_sen.stop();
+        l500_depth_sen.close();
+
+        // Verify only one frame per stream type
+        for (auto&& entry : stream_history)
+        {
+            auto frames_map_by_timestamp = entry.second;
+            auto bigger_than_one_predicate = [](std::pair<const rs2_metadata_type, int>& hist) { return hist.second > 1;; };
+            std::string error_msg = "Received duplicated frames from the same requested profile";
+            CAPTURE(error_msg);
+            CAPTURE(entry.first);
+            REQUIRE(std::none_of(frames_map_by_timestamp.begin(), frames_map_by_timestamp.end(), bigger_than_one_predicate));
+        }
+    };
+
+    // Run this test twice
+    SECTION("Zero order enabled")
+    {
+        l500_depth_sen.get_option(RS2_OPTION_ZERO_ORDER_ENABLED).set(true);
+        stream_and_verify();
+    }
+    SECTION("Zero order disabled")
+    {
+        l500_depth_sen.get_option(RS2_OPTION_ZERO_ORDER_ENABLED).set(false);
+        stream_and_verify();
+    }
+}

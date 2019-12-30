@@ -24,8 +24,6 @@ namespace librealsense
 
         std::vector<tagged_profile> get_profiles_tags() const override;
 
-        synthetic_sensor& get_color_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_color_device_idx)); }
-
     protected:
         std::shared_ptr<stream_interface> _color_stream;
 
