@@ -691,7 +691,7 @@ namespace librealsense
     struct pixel_format_unpacker
     {
         bool requires_processing;
-        void(*unpack)(byte * const dest[], const byte * source, int width, int height, int actual_size);
+        void(*unpack)(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size);
         std::vector<stream_output> outputs;
 
         platform::stream_profile get_uvc_profile(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const

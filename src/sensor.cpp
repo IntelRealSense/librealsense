@@ -255,7 +255,8 @@ namespace librealsense
             fo.backend_time,
             last_timestamp,
             last_frame_number,
-            false);
+            false,
+            fo.frame_size);
         fr->additional_data = additional_data;
 
         // update additional data
@@ -916,6 +917,7 @@ namespace librealsense
           _timestamp_reader(std::move(timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP,     make_additional_data_parser(&frame_additional_data::backend_timestamp));
+        register_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE,        make_additional_data_parser(&frame_additional_data::raw_size));
     }
 
     iio_hid_timestamp_reader::iio_hid_timestamp_reader()

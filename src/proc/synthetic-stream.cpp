@@ -228,16 +228,19 @@ namespace librealsense
         auto&& ret = prepare_frame(source, f);
         int width = 0;
         int height = 0;
+        int raw_size = 0;
         auto vf = ret.as<rs2::video_frame>();
         if (vf)
         {
             width = vf.get_width();
             height = vf.get_height();
+            if (f.supports_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE))
+                raw_size = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE));
         }
         byte* planes[1];
         planes[0] = (byte*)ret.get_data();
 
-        process_function(planes, (const byte*)f.get_data(), width, height, height * width * _target_bpp);
+        process_function(planes, (const byte*)f.get_data(), width, height, height * width * _target_bpp, raw_size);
 
         return ret;
     }
@@ -626,7 +629,7 @@ namespace librealsense
             planes[0] = (byte*)lf.frame->get_frame_data();
             planes[1] = (byte*)rf.frame->get_frame_data();
 
-            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0);
+            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0, 0);
 
             source->frame_ready(std::move(lf));
             source->frame_ready(std::move(rf));

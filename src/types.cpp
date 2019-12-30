@@ -413,7 +413,7 @@ namespace librealsense
             CASE(LOW_LIGHT_COMPENSATION)
             CASE(FRAME_EMITTER_MODE)
             CASE(FRAME_LED_POWER)
-
+            CASE(RAW_FRAME_SIZE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
