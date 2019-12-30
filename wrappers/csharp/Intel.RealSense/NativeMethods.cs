@@ -393,6 +393,9 @@ namespace Intel.RealSense
         internal static extern IntPtr rs2_clone_stream_profile(IntPtr mode, Stream stream, int index, Format format, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rs2_clone_video_stream_profile(IntPtr mode, Stream stream, int index, Format format, int width, int height, Intrinsics intr, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rs2_delete_stream_profile(IntPtr mode);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
