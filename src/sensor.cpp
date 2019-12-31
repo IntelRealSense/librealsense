@@ -220,12 +220,7 @@ namespace librealsense
     {
         processing_blocks res;
         auto huffman_decode = std::make_shared<depth_decompression_huffman>();
-        //if (huffman_decode->supports_option(RS2_OPTION_STREAM_FILTER))
-        //{
-        //    huffman_decode->get_option(RS2_OPTION_STREAM_FILTER).set(RS2_STREAM_DEPTH);
-        //    huffman_decode->get_option(RS2_OPTION_STREAM_FORMAT_FILTER).set(RS2_FORMAT_Z16H);
         res.push_back(huffman_decode);
-        //}
 
         auto dec = std::make_shared<decimation_filter>();
         if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
