@@ -12,10 +12,13 @@ namespace Intel.RealSense
     using System.Runtime.InteropServices;
 
     // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
-    public class Sensor : Base.PooledObject, IOptions
+    public class Sensor : Base.RefCountedPooledObject, IOptions
     {
+        protected static Base.RefCount refCount = new Base.RefCount();
+
         internal override void Initialize()
         {
+            Retain();
             Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
             Options = new OptionsList(Handle);
         }
@@ -44,10 +47,9 @@ namespace Intel.RealSense
         }
 
         internal Sensor(IntPtr sensor)
-            : base(sensor, NativeMethods.rs2_delete_sensor)
+            : base(sensor, NativeMethods.rs2_delete_sensor, refCount)
         {
-            Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
-            Options = new OptionsList(Handle);
+            Initialize();
         }
 
         protected override void Dispose(bool disposing)
