@@ -177,6 +177,7 @@ list(APPEND PP_Rosbag_Recordings_List
     all_combinations_depth_color.bag
     [pointcloud]_all_combinations_depth_color.bag
     single_depth_color_640x480.bag
+    D435i_Depth_and_IMU.bag
 )
  set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
 foreach(i ${PP_Rosbag_Recordings_List})
