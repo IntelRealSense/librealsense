@@ -1539,4 +1539,14 @@ namespace librealsense
     {
         return _raw_sensor->is_opened();
     }
+
+    void motion_sensor::create_snapshot(std::shared_ptr<motion_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<motion_sensor_snapshot>();
+    }
+
+    void fisheye_sensor::create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<fisheye_sensor_snapshot>();
+    }
 }

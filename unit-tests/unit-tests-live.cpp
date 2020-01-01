@@ -5164,6 +5164,8 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
         {
             REQUIRE_NOTHROW(depth_scale = s.as<rs2::depth_sensor>().get_depth_scale());
         }
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module") == (s.is<rs2::depth_sensor>()));
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera") == (s.is<rs2::color_sensor>()));
     }
 
     int count = 0;
