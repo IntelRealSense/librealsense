@@ -90,10 +90,10 @@ namespace rs2
     private:
         static const int _numerator = 1000;
         static const int _skip_frames = 5;
-        unsigned long long _num_of_frames;
         int _counter;
         double _delta;
         double _last_timestamp;
+        unsigned long long _num_of_frames;
         unsigned long long _last_frame_counter;
         mutable std::mutex _mtx;
     };

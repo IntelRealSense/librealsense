@@ -241,7 +241,7 @@ namespace librealsense
         byte* planes[1];
         planes[0] = (byte*)ret.get_data();
 
-        process_function(planes, (const byte*)f.get_data(), width, height, height * width * _target_bpp, raw_size);
+        process_function(planes, static_cast<const byte*>(f.get_data()), width, height, height * width * _target_bpp, raw_size);
 
         return ret;
     }

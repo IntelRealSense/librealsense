@@ -313,6 +313,30 @@ namespace librealsense
             };
         }
 
+        void buffers_mgr::set_md_from_video_node()
+        {
+            void* start = nullptr;
+            auto size = 0;
+
+            if (buffers.at(e_video_buf)._file_desc >=0)
+            {
+                auto buffer = buffers.at(e_video_buf)._data_buf;
+                auto dq  = buffers.at(e_video_buf)._dq_buf;
+
+                //std::cout <<" DQBuf: bytesused " << std::dec << buffers.at(e_video_buf)._dq_buf.bytesused
+                       //  << " length " << buffers.at(e_video_buf)._dq_buf.length << std::endl;
+                //std::cout <<" data_buf: get_length_frame_only " << buffer->get_length_frame_only() << std::endl;
+                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
+                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
+                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
+
+
+                start = buffer->get_frame_start() + buffer->get_length_frame_only();
+                size = (*(uint8_t*)start);
+            }
+            set_md_attributes(size,start);
+        }
+
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
@@ -864,7 +888,8 @@ namespace librealsense
                                     return;
                                 }
 
-                                if(_profile.format != 1296715847 && // allow JPEG frames size to be smaller than the uncompressed frame
+                                // Relax the required frame size for compressed formats, i.e. MJPG, Z16H
+                                if (!val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U}) &&
                                         (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE))
                                 {
                                     auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
@@ -885,7 +910,7 @@ namespace librealsense
 
                                     if (val > 1)
                                         LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
-                                    frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
+                                    frame_object fo{ buf.bytesused - buf_mgr.metadata_size(), buf_mgr.metadata_size(),
                                         buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                      buffer->attach_buffer(buf);

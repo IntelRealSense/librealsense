@@ -656,7 +656,7 @@ namespace librealsense
                 usb_modality = false;
         }
 
-        if (_fw_version >= firmware_version("5.9.14.50")) // TODO - Z16H update for release
+        if (_fw_version >= firmware_version("5.12.1.1"))
         {
             depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
         }
