@@ -242,6 +242,7 @@ namespace librealsense
         void stop() override;
         float get_depth_offset() const;
     private:
+        action_delayer _action_delayer;
         const l500_device* _owner;
         float _depth_units;
         stream_profiles _user_requests;
