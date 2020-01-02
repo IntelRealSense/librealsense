@@ -254,16 +254,20 @@ namespace librealsense
 
     void l500_depth_sensor::start(frame_callback_ptr callback)
     {
-        if(_depth_invalidation_enabled)
-            synthetic_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _user_requests, _validator_requests));
-        else
-            synthetic_sensor::start(callback);
+        _action_delayer.do_after_delay([&]() {
+            if (_depth_invalidation_enabled)
+                synthetic_sensor::start(std::make_shared<frame_validator>(shared_from_this(), callback, _user_requests, _validator_requests));
+            else
+                synthetic_sensor::start(callback);
+        });
     }
 
     void l500_depth_sensor::stop()
     {
-        synthetic_sensor::stop();
-        _depth_invalidation_option->set_streaming(false);
+        _action_delayer.do_after_delay([&]() {
+            synthetic_sensor::stop();
+            _depth_invalidation_option->set_streaming(false);
+        });
     }
 
     void l500_depth_sensor::open(const stream_profiles& requests)
