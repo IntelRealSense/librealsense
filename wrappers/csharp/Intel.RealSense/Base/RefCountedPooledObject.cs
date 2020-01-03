@@ -52,12 +52,19 @@ namespace Intel.RealSense.Base
                 return;
             }
 
-            Release(disposing);
-            m_instance.SetHandleAsInvalid();
+            bool didDispose = Release(disposing);
+
+            //Dispose of this instance even if the underlying resource still exists
+            if (!didDispose)
+            {
+                m_instance.SetHandleAsInvalid();
+                ObjectPool.Release(this);
+            }
         }
 
-        internal void Release(bool disposing)
+        private bool Release(bool disposing)
         {
+            bool didDispose = false;
             var cnt = Thread.VolatileRead(ref refCount.count);
             for (; ; )
             {
@@ -70,12 +77,13 @@ namespace Intel.RealSense.Base
                     if (u == 0)
                     {
                         base.Dispose(disposing);
+                        didDispose = true;
                     }
                     break;
                 }
                 cnt = b;
             }
-
+            return didDispose;
         }
 
         internal override void Initialize()
