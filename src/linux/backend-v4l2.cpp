@@ -315,26 +315,35 @@ namespace librealsense
 
         void buffers_mgr::set_md_from_video_node()
         {
-            void* start = nullptr;
-            auto size = 0;
+            void* md_start = nullptr;
+            auto md_size = 0;
 
             if (buffers.at(e_video_buf)._file_desc >=0)
             {
                 auto buffer = buffers.at(e_video_buf)._data_buf;
                 auto dq  = buffers.at(e_video_buf)._dq_buf;
 
-                //std::cout <<" DQBuf: bytesused " << std::dec << buffers.at(e_video_buf)._dq_buf.bytesused
-                       //  << " length " << buffers.at(e_video_buf)._dq_buf.length << std::endl;
-                //std::cout <<" data_buf: get_length_frame_only " << buffer->get_length_frame_only() << std::endl;
-                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
-                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
-                //assert(buffer._dq_buf.bytesused >= buffer._data_buf->get_length_frame_only());
+                auto md_payload_size = 0L;
+                // For compressed data assume D4XX metadata struct
+                if (dq.bytesused < buffer->get_length_frame_only())
+                    md_payload_size = 248; // The compressed stream appendix is not
+                else
+                    md_payload_size = dq.bytesused - buffer->get_length_frame_only();
 
+                if (md_payload_size < 0)
+                {
+                    md_payload_size = 0;
+                    std::stringstream msg;
+                    msg <<  "Unexpected metadata size: kernel bytesused: " << std::dec << dq.bytesused
+                        << " buffer size: " << dq.length << " , payload length: "
+                        << buffer->get_length_frame_only() << " frame size: " << buffer->get_full_length();
+                    LOG_WARNING(msg.str().c_str());
+                }
 
-                start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                size = (*(uint8_t*)start);
+                md_start = buffer->get_frame_start() + dq.bytesused - md_payload_size;
+                md_size = (*(static_cast<uint8_t*>(md_start)));
             }
-            set_md_attributes(size,start);
+            set_md_attributes(static_cast<uint8_t>(md_size),md_start);
         }
 
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
@@ -686,8 +695,7 @@ namespace librealsense
                                 if (fourcc == profile.format)
                                 {
                                     throw linux_backend_exception(to_string() << "The requested pixel format '"  << fourcc_to_string(id)
-                                                                  << "' is not natively supported by the Linux kernel and likely requires a patch"
-                                                                  <<  "!\nAlternatively please upgrade to kernel 4.12 or later.");
+                                                                  << "' is not natively supported by the running Linux kernel and likely requires a patch");
                                 }
                             }
                         }
