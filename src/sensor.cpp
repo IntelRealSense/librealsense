@@ -335,7 +335,7 @@ namespace librealsense
                     }
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
-                    
+
                     LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                         << ",Counter," << std::dec << fr->additional_data.frame_number
                             << ",Index," << req_profile_base->get_stream_index()
