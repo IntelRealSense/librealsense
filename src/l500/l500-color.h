@@ -127,8 +127,22 @@ namespace librealsense
                 return get_color_recommended_proccesing_blocks();
             }
 
+            void start(frame_callback_ptr callback) override
+            {
+                _action_delayer.do_after_delay([&]() {
+                        synthetic_sensor::start(callback);
+                });
+            }
+
+            void stop() override
+            {
+                _action_delayer.do_after_delay([&]() {
+                    synthetic_sensor::stop();
+                });
+            }
         private:
             const l500_color* _owner;
+            action_delayer _action_delayer;
         };
 
 }

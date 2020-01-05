@@ -560,7 +560,7 @@ namespace librealsense
                             sensor_data sens_data{};
                             sens_data.sensor = hid_sensor{get_sensor_name()};
 
-                            auto hid_data_size = channel_size - HID_METADATA_SIZE;
+                            auto hid_data_size = channel_size - (metadata ? HID_METADATA_SIZE : 0);
                             // Populate HID IMU data - Header
                             metadata_hid_raw meta_data{};
                             meta_data.header.report_type = md_hid_report_type::hid_report_imu;
