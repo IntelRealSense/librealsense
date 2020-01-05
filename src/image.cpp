@@ -48,6 +48,7 @@ namespace librealsense
         case RS2_FORMAT_INZI: return 32;
         case RS2_FORMAT_INVI: return 16;
         case RS2_FORMAT_W10: return 32;
+        case RS2_FORMAT_Z16H: return 16;
         default: assert(false); return 0;
         }
     }

@@ -27,7 +27,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 28b91b7d7..f50a2b148 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -203,6 +203,43 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -203,6 +203,48 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_INZI,
  		.fcc		= V4L2_PIX_FMT_INZI,
  	},
@@ -68,6 +68,11 @@ index 28b91b7d7..f50a2b148 100644
 +		.guid		= UVC_GUID_FORMAT_BAYER16,
 +		.fcc		= V4L2_PIX_FMT_SBGGR16,
 +	},
++	{
++		.name		= "Z16 Huffman Compression",
++		.guid		= UVC_GUID_FORMAT_Z16H,
++		.fcc		= V4L2_PIX_FMT_Z16H,
++	},
  };
 
  /* ------------------------------------------------------------------------
@@ -75,7 +80,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 05398784d..8c99aabef 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -153,6 +153,28 @@
+@@ -153,6 +153,31 @@
  #define UVC_GUID_FORMAT_INVI \
  	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
  	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
@@ -101,6 +106,9 @@ index 05398784d..8c99aabef 100644
 +#define UVC_GUID_FORMAT_BAYER16 \
 +	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
 +	0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_Z16H \
++	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 
  /* ------------------------------------------------------------------------
   * Driver specific constants.
@@ -108,13 +116,18 @@ diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2
 index 89e0878ce..c422d70a2 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1246,6 +1246,9 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1246,6 +1246,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
 +	/* Librealsense formats*/
 +	case V4L2_PIX_FMT_RW16:		descr = "16-bit Raw data"; break;
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
++	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "4-bit per pixel packed"; break;
++	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
++	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
++	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
++	case V4L2_PIX_FMT_Z16H:		descr = "Z16 Huffman Compression"; break;
 
  	default:
  		/* Compressed formats */
@@ -122,13 +135,18 @@ diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
 index 1c095b5a9..3e20f2b8a 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -668,6 +668,9 @@ struct v4l2_pix_format {
+@@ -668,6 +668,14 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
 +#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
 +#define V4L2_PIX_FMT_CONFIDENCE_MAP	v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
++/*  Librealsense development*/
++#define V4L2_PIX_FMT_FG       v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
++#define V4L2_PIX_FMT_INZC     v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
++#define V4L2_PIX_FMT_PAIR     v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
++#define V4L2_PIX_FMT_Z16H     v4l2_fourcc('Z', '1', '6', 'H') /* Depth Z16 custom Huffman Code compression*/
 
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

@@ -27,7 +27,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 28b91b7..a262064 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -203,6 +203,58 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -203,6 +203,63 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_INZI,
  		.fcc		= V4L2_PIX_FMT_INZI,
  	},
@@ -83,6 +83,11 @@ index 28b91b7..a262064 100644
 +		.guid		= UVC_GUID_FORMAT_PAIR,
 +		.fcc		= V4L2_PIX_FMT_PAIR,
 +	},
++	{
++		.name		= "Z16 Huffman Compression",
++		.guid		= UVC_GUID_FORMAT_Z16H,
++		.fcc		= V4L2_PIX_FMT_Z16H,
++	},
  };
  
  /* ------------------------------------------------------------------------
@@ -90,7 +95,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 0539878..401882d 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -153,6 +153,40 @@
+@@ -153,6 +153,43 @@
  #define UVC_GUID_FORMAT_INVI \
  	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
  	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
@@ -128,6 +133,9 @@ index 0539878..401882d 100644
 +#define UVC_GUID_FORMAT_PAIR \
 +	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
 +	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
++#define UVC_GUID_FORMAT_Z16H \
++	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
@@ -135,7 +143,7 @@ diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2
 index 89e0878..b584ff1 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1246,7 +1246,13 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1246,7 +1246,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
@@ -147,6 +155,7 @@ index 89e0878..b584ff1 100644
 +	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
 +	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
 +	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
++	case V4L2_PIX_FMT_Z16H:		descr = "Z16 Huffman Compression"; break;
  	default:
  		/* Compressed formats */
  		flags = V4L2_FMT_FLAG_COMPRESSED;
@@ -154,7 +163,7 @@ diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
 index 1c095b5..959bf0b 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -668,6 +668,14 @@ struct v4l2_pix_format {
+@@ -668,6 +668,15 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
@@ -166,6 +175,7 @@ index 1c095b5..959bf0b 100644
 +#define V4L2_PIX_FMT_FG	v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
 +#define V4L2_PIX_FMT_INZC	v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
 +#define V4L2_PIX_FMT_PAIR	v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
++#define V4L2_PIX_FMT_Z16H	v4l2_fourcc('Z', '1', '6', 'H') /* Depth Z16 custom Huffman Code compression*/
  
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

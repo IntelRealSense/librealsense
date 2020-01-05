@@ -40,7 +40,6 @@ namespace librealsense
             // RS400 rolling-shutter Skus allow to get low-quality color image from the same viewport as the depth
             depth_ep.register_processing_block({ {RS2_FORMAT_BGR8} }, { {RS2_FORMAT_RGB8, RS2_STREAM_INFRARED} }, []() { return std::make_shared<bgr_to_rgb>(); });
 
-            depth_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
             depth_ep.register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
         }

@@ -40,7 +40,8 @@ namespace librealsense
 
     protected:
         acceleration_transform(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt);
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
+        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+
     };
 
     class gyroscope_transform : public motion_transform
@@ -50,6 +51,6 @@ namespace librealsense
 
     protected:
         gyroscope_transform(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt);
-        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) override;
+        void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
 }

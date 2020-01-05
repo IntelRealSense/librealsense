@@ -46,9 +46,7 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
 
         std::vector<std::vector<double>> all_timestamps;
         auto actual_fps = fps;
-        bool hw_timestamp_domain = false;
-        bool system_timestamp_domain = false;
-        bool global_timestamp_domain = false;
+
         for (auto i = 0; i < 200; i++)
         {
             auto frames = sync.wait_for_frames(5000);
@@ -57,6 +55,10 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
             std::vector<double> timestamps;
             for (auto&& f : frames)
             {
+                bool hw_timestamp_domain = false;
+                bool system_timestamp_domain = false;
+                bool global_timestamp_domain = false;
+
                 if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 {
                     auto val = static_cast<int>(f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS));
@@ -75,16 +77,16 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
                 {
                     global_timestamp_domain = true;
                 }
+                CAPTURE(hw_timestamp_domain);
+                CAPTURE(system_timestamp_domain);
+                CAPTURE(global_timestamp_domain);
+                REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
+
                 timestamps.push_back(f.get_timestamp());
             }
             all_timestamps.push_back(timestamps);
-
         }
 
-        CAPTURE(hw_timestamp_domain);
-        CAPTURE(system_timestamp_domain);
-        CAPTURE(global_timestamp_domain);
-        REQUIRE(int(hw_timestamp_domain) + int(system_timestamp_domain) + int(global_timestamp_domain) == 1);
 
         size_t num_of_partial_sync_sets = 0;
         for (auto set_timestamps : all_timestamps)
@@ -101,7 +103,8 @@ TEST_CASE("Sync sanity", "[live][!mayfail]") {
 
         CAPTURE(num_of_partial_sync_sets);
         CAPTURE(all_timestamps.size());
-        REQUIRE((float(num_of_partial_sync_sets) / all_timestamps.size()) < 0.9f);
+        // Require some coherent framesets, no KPI
+        REQUIRE((float(num_of_partial_sync_sets) / all_timestamps.size()) < 1.f);
 
         for (auto s : dev.query_sensors())
         {
@@ -2898,7 +2901,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true}},
 /* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
 /* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 1 } }, 15, true } },
-/* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
+/* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* D415/USB2*/          { { "0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 /* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
 /* RS430_MM/AWGT*/      { { "0AD5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 1280, 720, 1 } }, 30, true }},
@@ -2908,7 +2911,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS400_MM/PSR*/       { { "0B00", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true } },
 /* RS430_MM_RGB/AWGTC*/ { { "0B01", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* RS405/D460/DS5U*/    { { "0B03", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 1 } }, 30, true }},
-/* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
+/* RS435_RGB/AWGC*/     { { "0B07", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* D435/USB2*/          { { "0B07", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 // TODO - IMU data profiles are pending FW timestamp fix
 /* D435I/USB3*/         { { "0B3A", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true } },
@@ -5381,7 +5384,7 @@ void compare(std::vector<filter> first, std::vector<std::shared_ptr<filter>> sec
     }
 }
 
-TEST_CASE("Sensor get recommended filters", "[live]") {
+TEST_CASE("Sensor get recommended filters", "[live][!mayfail]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
 
@@ -5402,6 +5405,7 @@ TEST_CASE("Sensor get recommended filters", "[live]") {
         dec_color
     };
 
+    auto huff_decoder = std::make_shared<depth_huffman_decoder>();
     auto dec_depth = std::make_shared<decimation_filter>();
     dec_depth->set_option(RS2_OPTION_STREAM_FILTER, RS2_STREAM_DEPTH);
     dec_depth->set_option(RS2_OPTION_STREAM_FORMAT_FILTER, RS2_FORMAT_Z16);
@@ -5423,6 +5427,7 @@ TEST_CASE("Sensor get recommended filters", "[live]") {
     auto disparity2depth = std::make_shared<disparity_transform>(false);
 
     sensors_to_filters[depth_stereo] = {
+        huff_decoder,
         dec_depth,
         threshold,
         depth2disparity,

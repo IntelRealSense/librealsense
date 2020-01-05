@@ -14,6 +14,7 @@
 #include "metadata.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+#include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
 
 namespace librealsense
@@ -28,8 +29,8 @@ namespace librealsense
         _is_streaming(false),
           _is_opened(false),
           _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
-          _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _on_open(nullptr),
+          _metadata_parsers(std::make_shared<metadata_parser_map>()),
           _owner(dev),
           _profiles([this]() {
                 auto profiles = this->init_stream_profiles();
@@ -218,6 +219,9 @@ namespace librealsense
     processing_blocks get_depth_recommended_proccesing_blocks()
     {
         processing_blocks res;
+        auto huffman_decode = std::make_shared<depth_decompression_huffman>();
+        res.push_back(huffman_decode);
+
         auto dec = std::make_shared<decimation_filter>();
         if (dec->supports_option(RS2_OPTION_STREAM_FILTER))
         {
@@ -255,7 +259,8 @@ namespace librealsense
             fo.backend_time,
             last_timestamp,
             last_frame_number,
-            false);
+            false,
+            fo.frame_size);
         fr->additional_data = additional_data;
 
         // update additional data
@@ -330,7 +335,7 @@ namespace librealsense
                     }
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
-                    
+
                     LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                         << ",Counter," << std::dec << fr->additional_data.frame_number
                             << ",Index," << req_profile_base->get_stream_index()
@@ -916,6 +921,7 @@ namespace librealsense
           _timestamp_reader(std::move(timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP,     make_additional_data_parser(&frame_additional_data::backend_timestamp));
+        register_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE,        make_additional_data_parser(&frame_additional_data::raw_size));
     }
 
     iio_hid_timestamp_reader::iio_hid_timestamp_reader()

@@ -130,19 +130,19 @@ else
 	# See reference https://patchwork.kernel.org/patch/9907707/
 	if [ ${k_maj_min} -lt 418 ]; then
 		echo -e "\e[32mRetrofit uvc bug fix enabled with 4.18+\e[0m"
-		patch -R -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
+		patch -N -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
 	fi
 	if [ $xhci_patch -eq 1 ]; then
 		echo -e "\e[32mApplying streamoff hotfix patch in videobuf2-core\e[0m"
 		patch -p1 < ../scripts/01-Backport-streamoff-vb2-core-hotfix.patch
 		echo -e "\e[32mApplying 01-xhci-Add-helper-to-get-hardware-dequeue-pointer-for patch\e[0m"
-		patch -p1 < "../scripts/01-xhci-Add-helper-to-get-hardware-dequeue-pointer-for.patch"
+		patch -p1 < ../scripts/01-xhci-Add-helper-to-get-hardware-dequeue-pointer-for.patch
 		echo -e "\e[32mApplying 02-xhci-Add-stream-id-to-to-xhci_dequeue_state-structur patch\e[0m"
-		patch -p1 < "../scripts/02-xhci-Add-stream-id-to-to-xhci_dequeue_state-structur.patch"
+		patch -p1 < ../scripts/02-xhci-Add-stream-id-to-to-xhci_dequeue_state-structur.patch
 		echo -e "\e[32mApplying 03-xhci-Find-out-where-an-endpoint-or-stream-stopped-fr patch\e[0m"
-		patch -p1 < "../scripts/03-xhci-Find-out-where-an-endpoint-or-stream-stopped-fr.patch"
+		patch -p1 < ../scripts/03-xhci-Find-out-where-an-endpoint-or-stream-stopped-fr.patch
 		echo -e "\e[32mApplying 04-xhci-remove-unused-stopped_td-pointer patch\e[0m"
-		patch -p1 < "../scripts/04-xhci-remove-unused-stopped_td-pointer.patch"
+		patch -p1 < ../scripts/04-xhci-remove-unused-stopped_td-pointer.patch
 	fi
 fi
 

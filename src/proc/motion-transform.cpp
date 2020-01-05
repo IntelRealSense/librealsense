@@ -20,7 +20,7 @@ namespace librealsense
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
     // Librealsense output format: floating point 32bit. units m/s^2,
-    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int output_size)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
         static constexpr double accelerator_transform_factor = 0.001*gravity;
@@ -30,7 +30,7 @@ namespace librealsense
 
     // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
     // Librealsense output format: floating point 32bit. units rad/sec,
-    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size)
     {
         static const double gyro_transform_factor = deg2rad(0.1);
 
@@ -104,7 +104,7 @@ namespace librealsense
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, mm_calib, mm_correct_opt)
     {}
 
-    void acceleration_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void acceleration_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
     {
         unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
     }
@@ -117,7 +117,7 @@ namespace librealsense
         : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, mm_calib, mm_correct_opt)
     {}
 
-    void gyroscope_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void gyroscope_transform::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
     {
         unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
     }

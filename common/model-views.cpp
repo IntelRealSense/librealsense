@@ -895,6 +895,7 @@ namespace rs2
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
+        depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer)
     {
         restore_processing_block("colorizer", depth_colorizer);
@@ -953,8 +954,8 @@ namespace rs2
                 this, shared_filter->get_info(RS2_CAMERA_INFO_NAME), shared_filter,
                 [=](rs2::frame f) { return shared_filter->process(f); }, error_message);
 
-            //if (shared_filter->is<disparity_transform>())
-               // model->visible = false;
+            if (shared_filter->is<depth_huffman_decoder>())
+                model->visible = false;
 
             if (is_zo)
             {
@@ -2044,6 +2045,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->yuy2rgb = d->yuy2rgb;
+        texture->depth_decode = d->depth_decoder;
 
         if (auto vd = p.as<video_stream_profile>())
         {
@@ -3546,8 +3548,13 @@ namespace rs2
         {
             if(auto depth = viewer.get_3d_depth_source(filtered))
             {
-                if (depth.get_profile().format() == RS2_FORMAT_DISPARITY32)
-                    depth = disp_to_depth.process(depth);
+                switch (depth.get_profile().format())
+                {
+                    case RS2_FORMAT_DISPARITY32: depth = disp_to_depth.process(depth); break;
+                    case RS2_FORMAT_Z16H: depth = depth_decoder.process(depth); break;
+                    default: break;
+                }
+
                 res.push_back(pc->calculate(depth));
             }
             if(auto texture = viewer.get_3d_texture_source(filtered))

@@ -52,6 +52,7 @@ namespace Intel.RealSense
         AutoCalibratedDevice = 41,
         ColorSensor = 42,
         MotionSensor = 43,
-        FisheyeSensor = 44
+        FisheyeSensor = 44,
+        DepthHuffmanDecoder = 45
     }
 }

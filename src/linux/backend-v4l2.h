@@ -176,20 +176,7 @@ namespace librealsense
 
             void    set_md_attributes(uint8_t md_size, void* md_start)
                     { _md_start = md_start; _md_size = md_size; }
-
-            void    set_md_from_video_node()
-                    {
-                        void* start = nullptr;
-                        auto size = 0;
-
-                        if (buffers.at(e_video_buf)._file_desc >=0)
-                        {
-                            auto buffer = buffers.at(e_video_buf)._data_buf;
-                            start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                            size = (*(uint8_t*)start);
-                        }
-                        set_md_attributes(size,start);
-                    }
+            void    set_md_from_video_node();
 
         private:
             void*                               _md_start;  // marks the address of metadata blob
@@ -210,11 +197,10 @@ namespace librealsense
                         }
                     }
                 }
-
-                int                                 _file_desc=-1;
-                bool                                _managed=false;
                 std::shared_ptr<platform::buffer>   _data_buf=nullptr;
                 v4l2_buffer                         _dq_buf{};
+                int                                 _file_desc=-1;
+                bool                                _managed=false;
             };
 
             std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;

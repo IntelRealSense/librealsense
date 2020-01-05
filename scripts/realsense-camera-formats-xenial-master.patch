@@ -31,7 +31,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 4a07535..ac186a7 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -168,6 +168,92 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -168,6 +168,97 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_RW10,
  		.fcc		= V4L2_PIX_FMT_SRGGB10P,
  	},
@@ -121,6 +121,11 @@ index 4a07535..ac186a7 100644
 +		.guid		= UVC_GUID_FORMAT_PAIR,
 +		.fcc		= V4L2_PIX_FMT_PAIR,
 +	},
++	{
++		.name		= "Z16 Huffman Compression",
++		.guid		= UVC_GUID_FORMAT_Z16H,
++		.fcc		= V4L2_PIX_FMT_Z16H,
++	},
  };
  
  /* ------------------------------------------------------------------------
@@ -128,7 +133,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 7e4d3ee..24904e2 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -131,6 +131,57 @@
+@@ -131,6 +131,60 @@
  #define UVC_GUID_FORMAT_RW10 \
  	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -183,6 +188,9 @@ index 7e4d3ee..24904e2 100644
 +#define UVC_GUID_FORMAT_PAIR \
 +	{ 'P',  'A',  'I',  'R', 0x36, 0x85, 0x41, 0x48, \
 +	0xb6, 0xbf, 0x8f, 0xc6, 0xff, 0xb0, 0x83, 0xa8}
++#define UVC_GUID_FORMAT_Z16H \
++	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
@@ -190,7 +198,7 @@ diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2
 index 5e2a7e5..7ac69b3 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1229,6 +1229,16 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1229,6 +1229,17 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_SDR_FMT_CS8:		descr = "Complex S8"; break;
  	case V4L2_SDR_FMT_CS14LE:	descr = "Complex S14LE"; break;
  	case V4L2_SDR_FMT_RU12LE:	descr = "Real U12LE"; break;
@@ -204,6 +212,7 @@ index 5e2a7e5..7ac69b3 100644
 +	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
 +	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
 +	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
++	case V4L2_PIX_FMT_Z16H:		descr = "Z16 Huffman Compression"; break;
  
  	default:
  		/* Compressed formats */
@@ -211,7 +220,7 @@ diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
 index 421d274..c17b625 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -624,6 +624,18 @@ struct v4l2_pix_format {
+@@ -624,6 +624,19 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
  #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
@@ -224,9 +233,10 @@ index 421d274..c17b625 100644
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
 +#define V4L2_PIX_FMT_CONFIDENCE_MAP  v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
 +/*  Librealsense development*/
-+#define V4L2_PIX_FMT_FG			v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
-+#define V4L2_PIX_FMT_INZC		v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
-+#define V4L2_PIX_FMT_PAIR		v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
++#define V4L2_PIX_FMT_FG       v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
++#define V4L2_PIX_FMT_INZC     v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
++#define V4L2_PIX_FMT_PAIR     v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
++#define V4L2_PIX_FMT_Z16H     v4l2_fourcc('Z', '1', '6', 'H') /* Depth Z16 custom Huffman Code compression*/
  
  /* SDR formats - used only for Software Defined Radio devices */
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

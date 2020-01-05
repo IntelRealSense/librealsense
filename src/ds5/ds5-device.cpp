@@ -34,6 +34,7 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
+#include "proc/depth-decompress.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
@@ -50,6 +51,7 @@ namespace librealsense
         {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
+        {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8}
         
     };
@@ -64,6 +66,7 @@ namespace librealsense
         {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
         {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
         {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
+        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH}
     };
 
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
@@ -566,10 +569,10 @@ namespace librealsense
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
         auto_calibrated(_hw_monitor),
+        _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
         _depth_stream(new stream(RS2_STREAM_DEPTH)),
         _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
-        _device_capabilities(ds::d400_caps::CAP_UNDEFINED)
+        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -651,6 +654,11 @@ namespace librealsense
                 usb_type_str = usb_spec_names.at(_usb_mode);
             else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
                 usb_modality = false;
+        }
+
+        if (_fw_version >= firmware_version("5.12.1.1"))
+        {
+            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
         }
 
         if (advanced_mode && (_usb_mode >= usb3_type))
@@ -924,7 +932,6 @@ namespace librealsense
 
         raw_depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
-        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
         depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_RAW10, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_RAW10); });
         depth_ep->register_processing_block({ {RS2_FORMAT_W10} }, { {RS2_FORMAT_Y10BPACK, RS2_STREAM_INFRARED, 1} }, []() { return std::make_shared<w10_converter>(RS2_FORMAT_Y10BPACK); });
 

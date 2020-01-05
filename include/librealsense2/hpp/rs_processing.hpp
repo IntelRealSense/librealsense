@@ -994,6 +994,40 @@ namespace rs2
         }
     };
 
+    class depth_huffman_decoder : public filter
+    {
+    public:
+        /**
+        * Create decoder for Huffman-code compressed Depth frames
+        */
+        depth_huffman_decoder() : filter(init())
+        {}
+
+        depth_huffman_decoder(filter f) :filter(f)
+        {
+            rs2_error* e = nullptr;
+            if (!rs2_is_processing_block_extendable_to(f.get(), RS2_EXTENSION_DEPTH_HUFFMAN_DECODER, &e) && !e)
+            {
+                _block.reset();
+            }
+            error::handle(e);
+        }
+
+    private:
+        friend class context;
+
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_huffman_depth_decompress_block(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
+
     class hole_filling_filter : public filter
     {
     public:

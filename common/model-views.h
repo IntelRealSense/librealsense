@@ -711,6 +711,7 @@ namespace rs2
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
+        std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
@@ -953,6 +954,7 @@ namespace rs2
         rs2::frameset model;
         std::shared_ptr<processing_block_model> pc_gen;
         rs2::disparity_transform disp_to_depth;
+        rs2::depth_huffman_decoder depth_decoder;
 
         /* Post processing filter rendering */
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise
