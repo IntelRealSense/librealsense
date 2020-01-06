@@ -382,6 +382,7 @@ namespace librealsense
         // return the frame as is.
         if (auto is_enabled = _is_enabled_opt.lock())
             if (!is_enabled->is_true())
+                // zero order is disabled, passthrough the frame
                 return f;
 
         std::vector<rs2::frame> result;
@@ -474,10 +475,16 @@ namespace librealsense
     bool zero_order::should_process(const rs2::frame& frame)
     {
         // If is_enabled_opt is false, meaning this processing block is not active,
-        // return true in order to passthrough the frame.
+        // passthrough depth frames only.
         if (auto is_enabled = _is_enabled_opt.lock())
             if (!is_enabled->is_true())
-                return true;
+                // zero order is disabled
+                if (frame.is<rs2::depth_frame>())
+                    // frame is a depth frame, passthrough it.
+                    return true;
+                else
+                    // frame is not a depth frame, drop it.
+                    return false;
 
         if (auto set = frame.as<rs2::frameset>())
         {
