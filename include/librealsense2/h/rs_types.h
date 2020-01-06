@@ -119,15 +119,15 @@ typedef struct rs2_pose
 
 /** \brief Severity of the librealsense logger. */
 typedef enum rs2_log_severity {
-    RS2_LOG_SEVERITY_ALL, /**< Include any/all log messages */
-    RS2_LOG_SEVERITY_DEBUG = RS2_LOG_SEVERITY_ALL, /**< Detailed information about ordinary operations */
+    RS2_LOG_SEVERITY_DEBUG, /**< Detailed information about ordinary operations */
     RS2_LOG_SEVERITY_INFO , /**< Terse information about ordinary operations */
     RS2_LOG_SEVERITY_WARN , /**< Indication of possible failure */
     RS2_LOG_SEVERITY_ERROR, /**< Indication of definite failure */
     RS2_LOG_SEVERITY_FATAL, /**< Indication of unrecoverable failure */
     RS2_LOG_SEVERITY_NONE , /**< No logging will occur */
-    RS2_LOG_SEVERITY_COUNT  /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-} rs2_log_severity;
+    RS2_LOG_SEVERITY_COUNT, /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    RS2_LOG_SEVERITY_ALL = RS2_LOG_SEVERITY_DEBUG   /**< Include any/all log messages */
+ } rs2_log_severity;
 const char* rs2_log_severity_to_string(rs2_log_severity info);
 
 /** \brief Specifies advanced interfaces (capabilities) objects may implement. */
@@ -213,7 +213,6 @@ typedef enum rs2_matchers
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
 typedef struct rs2_error rs2_error;
-typedef struct rs2_string rs2_string;
 typedef struct rs2_log_message rs2_log_message;
 typedef struct rs2_raw_data_buffer rs2_raw_data_buffer;
 typedef struct rs2_frame rs2_frame;
@@ -243,7 +242,7 @@ typedef struct rs2_options_list rs2_options_list;
 typedef struct rs2_devices_changed_callback rs2_devices_changed_callback;
 typedef struct rs2_notification rs2_notification;
 typedef struct rs2_notifications_callback rs2_notifications_callback;
-typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *);
+typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);
 typedef void (*rs2_notification_callback_ptr)(rs2_notification*, void*);
 typedef void (*rs2_devices_changed_callback_ptr)(rs2_device_list*, rs2_device_list*, void*);
 typedef void (*rs2_frame_callback_ptr)(rs2_frame*, void*);

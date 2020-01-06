@@ -174,14 +174,6 @@ namespace rs2
         int max_x;
         int max_y;
     };
-
-    /* Convert rs2_string to std::string */
-    inline std::string get_string( rs2_string const* str_ptr )
-    {
-        unsigned cch;
-        const char* lpsz = rs2_get_string( str_ptr, &cch );
-        return std::string{ lpsz, cch };
-    }
 }
 
 inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }

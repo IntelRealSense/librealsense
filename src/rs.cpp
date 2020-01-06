@@ -4,6 +4,7 @@
 #include <functional>   // For function
 
 #include "api.h"
+#include "log.h"
 #include "context.h"
 #include "device.h"
 #include "algo.h"
@@ -1086,17 +1087,6 @@ const char* rs2_get_failed_args(const rs2_error* error) { return error ? error->
 const char* rs2_get_error_message(const rs2_error* error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error* error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }
 
-const char* rs2_get_string( const rs2_string* str, unsigned* cch )
-{
-    if( !str )
-        return nullptr;
-    std::string const & s = *reinterpret_cast< std::string const * >( str );
-    if( cch )
-        *cch = s.length();
-    return s.c_str();
-}
-void rs2_free_string( rs2_string * str ) { if( str ) delete reinterpret_cast< std::string * >( str ); }
-
 const char* rs2_stream_to_string(rs2_stream stream)                                       { return librealsense::get_string(stream);       }
 const char* rs2_format_to_string(rs2_format format)                                       { return librealsense::get_string(format);       }
 const char* rs2_distortion_to_string(rs2_distortion distortion)                           { return librealsense::get_string(distortion);   }
@@ -1139,9 +1129,10 @@ HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
 class on_log_callback : public rs2_log_callback
 {
     rs2_log_callback_ptr _on_log;
+    void* _user_arg;
 
 public:
-    on_log_callback( rs2_log_callback_ptr on_log ) : _on_log( on_log ) {}
+    on_log_callback( rs2_log_callback_ptr on_log, void * user_arg ) : _on_log( on_log ), _user_arg( user_arg ) {}
 
     void on_log( rs2_log_severity severity, rs2_log_message const& msg ) noexcept override
     {
@@ -1149,7 +1140,7 @@ public:
         {
             try
             {
-                _on_log( severity, &msg );
+                _on_log( severity, &msg, _user_arg );
             }
             catch( ... )
             {
@@ -1165,49 +1156,53 @@ public:
     }
 };
 
-void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr on_log, rs2_error** error ) BEGIN_API_CALL
+void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr on_log, void * arg, rs2_error** error ) BEGIN_API_CALL
 {
     // Wrap the C function with a callback interface that will get deleted when done
     librealsense::log_to_callback( min_severity,
-        librealsense::log_callback_ptr{ new on_log_callback( on_log ) }
+        librealsense::log_callback_ptr{ new on_log_callback( on_log, arg ) }
     );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log )
-
-rs2_string * rs2_build_log_message( rs2_log_message const * log_msg, rs2_error** error ) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL( log_msg );
-    el::LogMessage const& el_msg = *reinterpret_cast< el::LogMessage const * >( log_msg );
-    bool const append_new_line = false;
-    std::string msg_string = el_msg.logger()->logBuilder()->build( &el_msg, append_new_line );
-    return reinterpret_cast<rs2_string*>(new std::string{ msg_string });
-}
-HANDLE_EXCEPTIONS_AND_RETURN( nullptr, log_msg )
+HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log, arg )
 
 
 unsigned rs2_get_log_message_line_number( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
-    el::LogMessage const & el_msg = *reinterpret_cast< el::LogMessage const * >( msg );
-    return el_msg.line();
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.line();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, msg )
 
 const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
-    el::LogMessage const & el_msg = *reinterpret_cast< el::LogMessage const * >( msg );
-    return el_msg.file().c_str();
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.file().c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 
 const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
-    el::LogMessage const & el_msg = *reinterpret_cast< el::LogMessage const * >( msg );
-    return el_msg.message().c_str();
+    log_message const & wrapper = *( log_message const * )( msg );
+    return wrapper.el_msg.message().c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
+const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message & wrapper = *( log_message * )( msg );
+    if( wrapper.built_msg.empty() )
+    {
+        bool const append_new_line = false;
+        wrapper.built_msg = wrapper.el_msg.logger()->logBuilder()->build( &wrapper.el_msg, append_new_line );
+    }
+    return wrapper.built_msg.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
 
 int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {

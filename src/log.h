@@ -8,6 +8,14 @@
 namespace librealsense
 {
 #if BUILD_EASYLOGGINGPP
+    struct log_message
+    {
+        el::LogMessage const& el_msg;
+        std::string built_msg;
+
+        log_message( el::LogMessage const& el_msg ) : el_msg( el_msg ) {}
+    };
+
     template<char const * NAME>
     class logger_type
     {
@@ -64,10 +72,6 @@ namespace librealsense
             defaultConf.setGlobally(el::ConfigurationType::ToStandardOutput, "false");
             defaultConf.setGlobally(el::ConfigurationType::LogFlushThreshold, "10");
             defaultConf.setGlobally(el::ConfigurationType::Format, " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg");
-
-            // Have the logger immediately write to a file, so we catch any message right away
-            // Note this may have performance implications -- better to use callbacks!
-            el::Loggers::addFlag( el::LoggingFlag::ImmediateFlush );
 
             for (int i = minimum_console_severity; i < RS2_LOG_SEVERITY_NONE; i++)
             {
@@ -169,10 +173,14 @@ namespace librealsense
         protected:
             void handle( el::LogDispatchData const* data ) noexcept override
             {
+                // NOTE: once a callback is set, it gets ALL messages -- even from other (non-"librealsense") loggers!
                 el::LogMessage const& msg = *data->logMessage();
                 auto severity = level_to_severity( msg.level() );
                 if( callback && severity >= min_severity )
-                    callback->on_log( severity, reinterpret_cast<rs2_log_message const&>(msg) );  // noexcept!
+                {
+                    log_message msg_wrapper( msg );
+                    callback->on_log( severity, reinterpret_cast<rs2_log_message const&>(msg_wrapper) );  // noexcept!
+                }
             }
         };
 

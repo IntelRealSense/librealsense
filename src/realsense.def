@@ -106,9 +106,6 @@ EXPORTS
     rs2_enqueue_frame
     rs2_flush_queue
 
-    rs2_get_string
-    rs2_free_string
-
     rs2_create_error
     rs2_get_failed_function
     rs2_get_failed_args
@@ -138,10 +135,10 @@ EXPORTS
     rs2_log_to_callback
     rs2_log_to_callback_cpp
     
-    rs2_build_log_message
     rs2_get_log_message_line_number
     rs2_get_log_message_filename
     rs2_get_raw_log_message
+    rs2_get_full_log_message
 
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp

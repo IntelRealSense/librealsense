@@ -41,23 +41,6 @@ namespace rs2
         log_message( rs2_log_message const & msg ) : _msg( msg ) {}
 
     public:
-        /* 
-            Builds a complete log message, as defined by librealsense, with level, timestamp, etc.:
-                11/12 13:49:40,153 INFO [10604] (rs.cpp:2271) Framebuffer size changed to 1552 x 919
-        */
-        std::shared_ptr< rs2_string > build() const
-        {
-            rs2_error* e = nullptr;
-            rs2_string* str_ptr = rs2_build_log_message( &_msg, &e );
-            error::handle( e );
-            return std::shared_ptr< rs2_string >( str_ptr, rs2_free_string );
-        }
-        /* Quick way to build() and return a string */
-        std::string to_string() const
-        {
-            return get_string( build().get() );
-        }
-
         /* Returns the line-number in the file where the LOG() comment was issued */
         size_t line_number() const
         {
@@ -81,6 +64,17 @@ namespace rs2
             const char* r = rs2_get_raw_log_message( &_msg, &e );
             error::handle( e );
             return r;
+        }
+        /*
+            Returns a complete log message, as defined by librealsense, with level, timestamp, etc.:
+                11/12 13:49:40,153 INFO [10604] (rs.cpp:2271) Framebuffer size changed to 1552 x 919
+        */
+        const char* full() const
+        {
+            rs2_error* e = nullptr;
+            const char* str = rs2_get_full_log_message( &_msg, &e );
+            error::handle( e );
+            return str;
         }
 
     private:
