@@ -458,14 +458,12 @@ namespace librealsense
             _options, zo.first, zo.second))
         {
             result.push_back(depth_out);
-            result.push_back(ir_frame);
             if (confidence_frame)
                 result.push_back(confidence_out);
         }
         else
         {
             result.push_back(depth_frame);
-            result.push_back(ir_frame);
             if (confidence_frame)
                 result.push_back(confidence_frame);
         }
@@ -474,17 +472,9 @@ namespace librealsense
 
     bool zero_order::should_process(const rs2::frame& frame)
     {
-        // If is_enabled_opt is false, meaning this processing block is not active,
-        // passthrough depth frames only.
-        if (auto is_enabled = _is_enabled_opt.lock())
-            if (!is_enabled->is_true())
-                // zero order is disabled
-                if (frame.is<rs2::depth_frame>())
-                    // frame is a depth frame, passthrough it.
-                    return true;
-                else
-                    // frame is not a depth frame, drop it.
-                    return false;
+        // Zero order might get frames to process even if it is disabled by option.
+        // In such case, it should passthrough all of the frames it receives, except for IR frames,
+        // which are handled by processing blocks and must me droped.
 
         if (auto set = frame.as<rs2::frameset>())
         {
@@ -504,7 +494,11 @@ namespace librealsense
             return true;
 
         }
-        return false;
+        else if (frame.get_profile().stream_type() == RS2_STREAM_INFRARED)
+            // a single IR frame received, drop it.
+            return false;
+
+        return true;
     }
 
     rs2::frame zero_order::prepare_output(const rs2::frame_source & source, rs2::frame input, std::vector<rs2::frame> results)
