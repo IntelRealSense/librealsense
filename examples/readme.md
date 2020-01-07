@@ -52,10 +52,11 @@ For a detailed explanations and API documentation see our [Documentation](../doc
 6. [OpenCV threaded depth cleaner](https://github.com/juniorxsound/ThreadedDepthCleaner) - RealSense depth-map cleaning and inpainting using OpenCV
 7. [Sample of how to use the IMU of D435i as well as doing PCL rotations based on this](https://github.com/GruffyPuffy/imutest)
 8. [realsense-ir-to-vaapi-h264](https://github.com/bmegli/realsense-ir-to-vaapi-h264) - hardware encode infrared stream to H.264 with Intel VAAPI
-9. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore
-10. [Unofficial OpenVino example + D400](https://github.com/gbr1/ros_openvino) - example of using OpenVino with RealSense and ROS for object detection
-11. [keijiro/Rsvfx](https://github.com/keijiro/Rsvfx) - An example that shows how to connect RealSense depth camera to Unity VFX Graph
-12. [kougaku/RealSenseOSC](https://github.com/kougaku/RealSenseOSC) - Client-Server project with Processing example for T265
-13. [Vimeo Depth Viewer](https://github.com/vimeo/vimeo-depth-viewer) - A RealSense depth viewer using [nanogui](https://github.com/wjakob/nanogui)
-14. [PINTO0309/MobileNet-SSD-RealSense](https://github.com/PINTO0309/MobileNet-SSD-RealSense) - RaspberryPi3 or Ubuntu + Multi Neural Compute Stick(NCS/NCS2) + RealSense D435 + MobileNet-SSD(MobileNetSSD) + Background Multi-transparent(Simple multi-class segmentation) + FaceDetection + MultiGraph + MultiProcessing + MultiClustering
-15. [realsenseOnCyber](https://github.com/mickeyouyou/realsenseOnCyber) Realsense module Based on Apollo Cyber RT
+9. [realsense-depth-to-vaapi-hevc10](https://github.com/bmegli/realsense-depth-to-vaapi-hevc10) - hardware encode depth stream to 10 bit HEVC with Intel VAAPI
+10. [EtherSense](https://github.com/krejov100/EtherSense) - Ethernet client and server for RealSense using python's Asyncore
+11. [Unofficial OpenVino example + D400](https://github.com/gbr1/ros_openvino) - example of using OpenVino with RealSense and ROS for object detection
+12. [keijiro/Rsvfx](https://github.com/keijiro/Rsvfx) - An example that shows how to connect RealSense depth camera to Unity VFX Graph
+13. [kougaku/RealSenseOSC](https://github.com/kougaku/RealSenseOSC) - Client-Server project with Processing example for T265
+14. [Vimeo Depth Viewer](https://github.com/vimeo/vimeo-depth-viewer) - A RealSense depth viewer using [nanogui](https://github.com/wjakob/nanogui)
+15. [PINTO0309/MobileNet-SSD-RealSense](https://github.com/PINTO0309/MobileNet-SSD-RealSense) - RaspberryPi3 or Ubuntu + Multi Neural Compute Stick(NCS/NCS2) + RealSense D435 + MobileNet-SSD(MobileNetSSD) + Background Multi-transparent(Simple multi-class segmentation) + FaceDetection + MultiGraph + MultiProcessing + MultiClustering
+16. [realsenseOnCyber](https://github.com/mickeyouyou/realsenseOnCyber) Realsense module Based on Apollo Cyber RT
