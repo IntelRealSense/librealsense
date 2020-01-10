@@ -45,8 +45,11 @@ ARG OVERLAY_MIXINS="release ccache"
 RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
     colcon build \
       --symlink-install \
-      --mixin \
-        $OVERLAY_MIXINS \
+      --mixin $OVERLAY_MIXINS \
+      --cmake-args \
+        --no-warn-unused-cli \
+        -DCMAKE_CXX_FLAGS="\
+          -Wno-pedantic" \
       --event-handlers console_direct+
 
 # source overlay from entrypoint
