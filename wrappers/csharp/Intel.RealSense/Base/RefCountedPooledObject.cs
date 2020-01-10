@@ -12,12 +12,11 @@ namespace Intel.RealSense.Base
     /// </summary>
     public class RefCountedPooledObject : PooledObject
     {
-        private RefCount refCount;
+        protected RefCount refCount;
 
-        protected RefCountedPooledObject(IntPtr ptr, Deleter deleter, RefCount _refCount)
+        protected RefCountedPooledObject(IntPtr ptr, Deleter deleter)
             : base(ptr, deleter)
         {
-            refCount = _refCount;
         }
 
         internal void Retain()
@@ -27,22 +26,11 @@ namespace Intel.RealSense.Base
                 throw new ObjectDisposedException("RefCountedPooledObject");
             }
 
-            var cnt = Thread.VolatileRead(ref refCount.count);
-
-            for (; ;)
+            if (refCount.count == int.MaxValue)
             {
-                if (cnt == int.MaxValue)
-                {
-                    throw new OverflowException("RefCountedPooledObject can't handle more than " + int.MaxValue + " disposables");
-                }
-
-                var u = Interlocked.CompareExchange(ref refCount.count, cnt + 1, cnt);
-                if (u == cnt)
-                {
-                    break;
-                }
-                cnt = u;
+                throw new OverflowException("RefCountedPooledObject can't handle more than " + int.MaxValue + " disposables");
             }
+            refCount.count++;  
         }
 
         protected override void Dispose(bool disposing)
@@ -64,26 +52,16 @@ namespace Intel.RealSense.Base
 
         private bool Release(bool disposing)
         {
-            bool didDispose = false;
-            var cnt = Thread.VolatileRead(ref refCount.count);
-            for (; ; )
-            {
-                System.Diagnostics.Debug.Assert(cnt > 0);
+            System.Diagnostics.Debug.Assert(refCount.count > 0);
 
-                var u = cnt - 1;
-                var b = Interlocked.CompareExchange(ref refCount.count, u, cnt);
-                if (b == cnt)
-                {
-                    if (u == 0)
-                    {
-                        base.Dispose(disposing);
-                        didDispose = true;
-                    }
-                    break;
-                }
-                cnt = b;
+            refCount.count--;
+            if (refCount.count == 0)
+            {
+                base.Dispose(disposing);
+                return true;
             }
-            return didDispose;
+
+            return false;
         }
 
         internal override void Initialize()

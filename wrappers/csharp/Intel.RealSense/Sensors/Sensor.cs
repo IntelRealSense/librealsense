@@ -10,15 +10,27 @@ namespace Intel.RealSense
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using System.Threading;
 
     // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
     public class Sensor : Base.RefCountedPooledObject, IOptions
     {
-        protected static Base.RefCount refCount = new Base.RefCount();
+        protected static Hashtable refCountTable = new Hashtable();
+        protected static readonly object tableLock = new object();
 
         internal override void Initialize()
         {
-            Retain();
+            lock (tableLock)
+            {
+                if (refCountTable.Contains(Handle))
+                    refCount = refCountTable[Handle] as Base.RefCount;
+                else
+                {
+                    refCount = new Base.RefCount();
+                    refCountTable[Handle] = refCount;
+                }
+                Retain();
+            }
             Info = new InfoCollection(NativeMethods.rs2_supports_sensor_info, NativeMethods.rs2_get_sensor_info, Handle);
             Options = new OptionsList(Handle);
         }
@@ -47,7 +59,7 @@ namespace Intel.RealSense
         }
 
         internal Sensor(IntPtr sensor)
-            : base(sensor, NativeMethods.rs2_delete_sensor, refCount)
+            : base(sensor, NativeMethods.rs2_delete_sensor)
         {
             Initialize();
         }
@@ -56,7 +68,24 @@ namespace Intel.RealSense
         {
             //m_queue.Dispose();
             (Options as OptionsList).Dispose();
-            base.Dispose(disposing);
+
+            lock (tableLock)
+            {
+                if (m_instance.IsInvalid)
+                {
+                    return;
+                }
+
+                IntPtr localHandle = Handle;
+                System.Diagnostics.Debug.Assert(refCountTable.Contains(localHandle));
+
+                base.Dispose(disposing);
+
+                if (refCount.count == 0)
+                {
+                    refCountTable.Remove(localHandle);
+                }
+            }
         }
 
         public class CameraInfos : IEnumerable<KeyValuePair<CameraInfo, string>>
