@@ -766,8 +766,9 @@ namespace rs2
         }
     }
 
-    viewer_model::viewer_model()
-            : ppf(*this), 
+    viewer_model::viewer_model(context &ctx_)
+            : ppf(*this),
+              ctx(ctx_),
               synchronization_enable(true),
               zo_sensors(0),
               frameset_alloc(this)

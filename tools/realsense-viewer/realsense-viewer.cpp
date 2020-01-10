@@ -259,8 +259,7 @@ int main(int argc, const char** argv) try
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
     device_model* device_to_remove = nullptr;
 
-    viewer_model viewer_model;
-    viewer_model.ctx = ctx;
+    viewer_model viewer_model(ctx);
 
     std::vector<device> connected_devs;
     std::mutex m;
