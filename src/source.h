@@ -7,12 +7,13 @@
 #include "concurrency.h"
 #include "archive.h"
 #include "metadata-parser.h"
+#include "frame-archive.h"
 
 namespace librealsense
 {
     class option;
 
-    class frame_source
+    class LRS_EXTENSION_API frame_source
     {
     public:
         frame_source(uint32_t max_publish_list_size = 16);
@@ -38,7 +39,15 @@ namespace librealsense
 
         double get_time() const { return _ts ? _ts->get_time() : 0; }
 
-        void set_sensor(std::shared_ptr<sensor_interface> s);
+        void set_sensor(const std::shared_ptr<sensor_interface>& s);
+
+        template<class T>
+        void add_extension(rs2_extension ex)
+        {
+            _archive[ex] = std::make_shared<frame_archive<T>>(&_max_publish_list_size, _ts, _metadata_parsers);
+        }
+
+        void set_max_publish_list_size(int qsize) {_max_publish_list_size = qsize; }
 
     private:
         friend class syncer_process_unit;
@@ -50,5 +59,6 @@ namespace librealsense
         std::atomic<uint32_t> _max_publish_list_size;
         frame_callback_ptr _callback;
         std::shared_ptr<platform::time_service> _ts;
+        std::shared_ptr<metadata_parser_map> _metadata_parsers;
     };
 }

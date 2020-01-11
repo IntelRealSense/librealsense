@@ -14,6 +14,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
+#include "core/options.h"   // Workaround for the missing DLL_EXPORT template
+#include "core/info.h"   // Workaround for the missing DLL_EXPORT template
 #include "../src/backend.h"
 #include "pybackend_extras.h"
 #include "../../third-party/stb_image_write.h"
@@ -84,7 +86,7 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<platform::extension_unit> extension_unit(m, "extension_unit");
     extension_unit.def(py::init<>())
-                  .def("__init__", [](platform::extension_unit & xu, int s, int u, int n, platform::guid g)
+                  .def("__init__", [](platform::extension_unit & xu, int s, uint8_t u, int n, platform::guid g)
                       {
                           new (&xu) platform::extension_unit { s, u, n, g };
                       }, "subdevice"_a, "unit"_a, "node"_a, "guid"_a)
@@ -138,6 +140,28 @@ PYBIND11_MODULE(NAME, m) {
         .value("filter_smooth_delta", RS2_OPTION_FILTER_SMOOTH_DELTA)
         .value("filter_holes_fill", RS2_OPTION_HOLES_FILL)
         .value("stereo_baseline", RS2_OPTION_STEREO_BASELINE)
+        .value("auto_exposure_converge_step", RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP)
+        .value("inter_cam_sync_mode", RS2_OPTION_INTER_CAM_SYNC_MODE)
+        .value("stream_filter", RS2_OPTION_STREAM_FILTER)
+        .value("stream_format_filter", RS2_OPTION_STREAM_FORMAT_FILTER)
+        .value("stream_index_filter", RS2_OPTION_STREAM_INDEX_FILTER)
+        .value("emitter_on_off", RS2_OPTION_EMITTER_ON_OFF)
+        .value("zero_order_point_x", RS2_OPTION_ZERO_ORDER_POINT_X)
+        .value("zero_order_point_y", RS2_OPTION_ZERO_ORDER_POINT_Y)
+        .value("lld_temperature", RS2_OPTION_LLD_TEMPERATURE)
+        .value("mc_temperature", RS2_OPTION_MC_TEMPERATURE)
+        .value("ma_temperature", RS2_OPTION_MA_TEMPERATURE)
+        .value("hardware_preset", RS2_OPTION_HARDWARE_PRESET)
+        .value("global_time_enabled", RS2_OPTION_GLOBAL_TIME_ENABLED)
+        .value("apd_temperature", RS2_OPTION_APD_TEMPERATURE)
+        .value("enable_mapping", RS2_OPTION_ENABLE_MAPPING)
+        .value("enable_relocalization", RS2_OPTION_ENABLE_RELOCALIZATION)
+        .value("enable_pose_jumping", RS2_OPTION_ENABLE_POSE_JUMPING)
+        .value("enable_dynamic_calibration", RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION)
+        .value("enable_depth_offset", RS2_OPTION_DEPTH_OFFSET)
+        .value("enable_led_power", RS2_OPTION_LED_POWER)
+        .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
+        .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
@@ -327,7 +351,7 @@ PYBIND11_MODULE(NAME, m) {
         .def("unlock", &platform::retry_controls_work_around::unlock)
         .def("get_device_location", &platform::retry_controls_work_around::get_device_location);
 
-    py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
+    //py::class_<platform::usb_device, platform::command_transfer, std::shared_ptr<platform::usb_device>> usb_device(m, "usb_device");
 
     py::class_<platform::backend, std::shared_ptr<platform::backend>> backend(m, "backend");
     backend.def("create_uvc_device", &platform::backend::create_uvc_device, "info"_a)
@@ -417,3 +441,14 @@ PYBIND11_MODULE(NAME, m) {
             return encode_command(static_cast<command>(opcode), p1, p2, p3, p4, data);
         }, "opcode"_a, "p1"_a=0, "p2"_a=0, "p3"_a=0, "p4"_a=0, "data"_a = py::list(0));
 }
+
+// Workaroud for failure to export template <typename T> class recordable
+void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const {}
+void librealsense::info_container::create_snapshot(std::shared_ptr<librealsense::info_interface> &) const {}
+void librealsense::info_container::register_info(rs2_camera_info info, const std::string& val){}
+void librealsense::info_container::update_info(rs2_camera_info info, const std::string& val) {}
+void librealsense::info_container::enable_recording(std::function<void(const info_interface&)> record_action){}
+void librealsense::info_container::update(std::shared_ptr<extension_snapshot> ext){}
+bool librealsense::info_container::supports_info(rs2_camera_info info) const { return false; }
+const std::string& librealsense::info_container::get_info(enum rs2_camera_info) const { static std::string s = ""; return s; }
+std::vector<rs2_option> librealsense::options_container::get_supported_options(void)const { return{}; }

@@ -4,6 +4,7 @@
 #pragma once
 #include <memory>
 #include <map>
+#include <string>
 #include <functional>
 #include <thread>
 #include "Dispatcher.h"
@@ -29,12 +30,12 @@ namespace perc
         Manager(Listener*, void* param = 0);
         virtual ~Manager();
         // [interface] TrackingManager
-        virtual Handle getHandle() { return mEvent.handle(); };
-        virtual Status handleEvents(bool blocking);
-        virtual size_t getDeviceList(TrackingDevice** list, unsigned int maxListSize);
-        virtual Status setHostLogControl(IN const TrackingData::LogControl& logControl);
-        virtual Status getHostLog(OUT TrackingData::Log* log);
-        virtual uint64_t version();
+        virtual Handle getHandle() override { return mEvent.handle(); };
+        virtual Status handleEvents(bool blocking) override;
+        virtual size_t getDeviceList(TrackingDevice** list, unsigned int maxListSize) override;
+        virtual Status setHostLogControl(IN const TrackingData::LogControl& logControl) override;
+        virtual Status getHostLog(OUT TrackingData::Log* log) override;
+        virtual uint64_t version() override;
 
         // [interface] CompleteQueueHandler
         virtual void addTask(std::shared_ptr<CompleteTask>&) override;
@@ -42,6 +43,8 @@ namespace perc
 
         static std::mutex instanceExistMutex;
         static bool instanceExist;
+
+        bool isInitialized() const override { return mUsbPlugListener->isInitialized(); }
 
     protected:
         std::thread mThread;
@@ -155,6 +158,5 @@ namespace perc
         std::mutex mCompleteQMutex;
         Event mEvent;
         std::map<Device*, TrackingData::DeviceInfo> mTrackingDeviceInfoMap;
-
     };
 }

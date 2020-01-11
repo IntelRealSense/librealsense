@@ -12,14 +12,14 @@
 using namespace librealsense;
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
+    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
     m_context(ctx),
     m_is_started(false),
     m_is_paused(false),
     m_sample_rate(1),
     m_real_time(true),
     m_prev_timestamp(0),
-    m_last_published_timestamp(0),
-    m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); })
+    m_last_published_timestamp(0)
 {
     if (serializer == nullptr)
     {
@@ -138,8 +138,8 @@ std::shared_ptr<stream_profile_interface> playback_device::get_stream(const std:
 
 rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const rs2_extrinsics& to)
 {
-    //NOTE: Assuming here that recording is writing extrinsics **from** some reference point **to** the stream at hand
-    return from_pose(inverse(to_pose(from)) * to_pose(to));
+    //NOTE: Assuming here that recording is writing extrinsics **from** the stream at hand **to** some reference point
+    return from_pose(to_pose(to) * inverse(to_pose(from)));
 }
 
 playback_device::~playback_device()
@@ -339,7 +339,7 @@ void playback_device::resume()
 
 void playback_device::set_real_time(bool real_time)
 {
-    LOG_INFO("Set real time to " << (real_time) ? "True" : "False");
+    LOG_INFO("Set real time to " << ((real_time) ? "True" : "False"));
     m_real_time = real_time;
 }
 
@@ -696,6 +696,7 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
     case RS2_EXTENSION_VIDEO:   return try_extend<video_sensor_interface>(e, ext);
     case RS2_EXTENSION_ROI:     return try_extend<roi_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_SENSOR: return try_extend<depth_sensor>(e, ext);
+    case RS2_EXTENSION_L500_DEPTH_SENSOR: return try_extend<l500_depth_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return try_extend<depth_stereo_sensor>(e, ext);
     case RS2_EXTENSION_UNKNOWN: //[[fallthrough]]
     case RS2_EXTENSION_COUNT:   //[[fallthrough]]

@@ -30,9 +30,13 @@ function require_package {
 #	master		UBUNTU: Ubuntu-4.4.0-128.154				Stefan Bader					4 weeks
 #	master-next	UBUNTU: SAUCE: Redpine: fix soft-ap invisible issue	Sanjay Kumar Konduri	2 days
 
+# As of Aug  5th, 2019
 #Ubuntu bionic repo : http://kernel.ubuntu.com/git/ubuntu/ubuntu-bionic.git/
-#	master		UBUNTU: Ubuntu-4.15.0-23.25					Stefan Bader					4 weeks
-#	master-next	ixgbe/ixgbevf: Free IRQ when PCI error recovery removes the device	Mauro S M Rodrigues	2 days
+#	hwe			UBUNTU: Ubuntu-hwe-5.0.0-24.25~18.04.1	Stefan Bader	6 days
+#	hwe-edge	UBUNTU: [Packaging] Support building libperf-jvmti.so	Thadeu Lima de Souza Cascardo	2 weeks
+#	master		UBUNTU: Ubuntu-4.15.0-55.60	Kleber Sacilotto de Souza	5 weeks
+#	4.18 		TAG:	Ubuntu-hwe-4.18.0-25.26_18.04.1	
+
 
 function choose_kernel_branch {
 
@@ -59,24 +63,32 @@ function choose_kernel_branch {
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu LTS with kernel versions 4.4, 4.8, 4.10 and 4.13 only\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu16 (Xenial) with LTS kernel versions 4.4, 4.8, 4.10, 4.13 and 4.15\e[0m" >&2
 			exit 1
 			;;
 		esac
 	else
 		if [ "$2" != "bionic" ];
 		then
-			echo -e "\e[31mUnsupported distribution $2 kernel version $1 . The patches are maintained for Ubuntu LTS bionic/xenial with kernel versions 4.4, 4.8, 4.10 and 4.15 only\e[0m" >&2
+			echo -e "\e[31mUnsupported distribution $2 kernel version $1 . The patches are maintained for Ubuntu16/18 (Xenial/Bionic) with LTS kernels 4-[4,8,10,13,15,18]\e[0m" >&2
 			exit 1
 		fi
-
-		case "${kernel_version[1]}" in
-		"15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
+		case "${kernel_version[0]}.${kernel_version[1]}" in
+		"4.15")								 	# kernel 4.15 for Ubuntu 18/Bionic Beaver
 			echo master
+			;;
+		"4.18")								 	# kernel 4.18 for Ubuntu 18/Bionic Beaver
+			echo Ubuntu-hwe-4.18.0-25.26_18.04.1
+			;;
+		"5.0")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
+			echo hwe
+			;;
+		"5.2")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
+			echo Ubuntu-hwe-edge-5.2.0-9.10_18.04.1
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The patches are maintained for Ubuntu Bionic LTS with kernel 4.15 only\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The Bionic patches are maintained for Ubuntu LTS with kernels 4.15, 4.18 and 5.0 only\e[0m" >&2
 			exit 1
 			;;
 		esac
@@ -100,8 +112,12 @@ function try_load_module {
 	load_module_name=$1
 	op_failed=0
 
-	sudo modprobe ${load_module_name} || op_failed=$?
-
+	if [ $(lsmod | grep ^${load_module_name} | wc -l) -eq 0 ]; then
+		sudo modprobe ${load_module_name} || op_failed=$?
+	else
+		printf "\e[32mn/a\e[0m"
+	fi
+	
 	if [ $op_failed -ne 0 ];
 	then
 		echo -e "\e[31mFailed to reload module $load_module_name. error type $op_failed . Operation is aborted\e[0m"  >&2
@@ -116,7 +132,7 @@ function try_module_insert {
 	backup_available=1
 	dependent_modules=""
 
-	printf "\e[32mReplacing \e[93m\e[1m%s \e[32m:\n\e[0m" ${module_name}
+	printf "\e[32mReplacing \e[93m\e[1m%s \e[32m -\n\e[0m" ${module_name}
 
 	#Check if the module is loaded, and if does - are there dependent kernel modules.
 	#Unload those first, then unload the requsted module and proceed with replacement
@@ -124,17 +140,22 @@ function try_module_insert {
 	#videodev              176128  4 uvcvideo,v4l2_common,videobuf2_core,videobuf2_v4l2
 	# In the above scenario videodev cannot be unloaded untill all the modules listed on the right are unloaded
 	# Note that in case of multiple dependencies we'll remove only modules one by one starting with the first on the list
+	# And that the modules stack unwinding will start from the last (i.e leaf) dependency,
+	# for instance : videobuf2_core,videobuf2_v4l2,uvcvideo will start with unloading uvcvideo as it should automatically unwind dependent modules
 	if [ $(lsmod | grep ^${module_name} | wc -l) -ne 0 ];
 	then
-		dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $1}')
-
+		dependencies=$(lsmod | grep ^${module_name} | awk '{printf $4}')
+		dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $NF}')
+		if [ ! -z "$dependencies" ];
+		then
+			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependencies\n\e[0m" ${module_name}
+		fi
 		while [ ! -z "$dependent_module" ]
 		do
-			printf "\e[32m\tModule \e[93m\e[1m%s \e[32m\e[21m is used by \e[34m$dependent_module\n\e[0m" ${module_name}
 			printf "\e[32m\tUnloading dependency \e[34m$dependent_module\e[0m\n\t"
 			dependent_modules+="$dependent_module "
 			try_unload_module $dependent_module
-			dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $1}')
+			dependent_module=$(lsmod | grep ^${module_name} | awk '{printf $4}' | awk -F, '{printf $NF}')
 		done
 
 		# Unload existing modules if resident
@@ -156,7 +177,7 @@ function try_module_insert {
 
 	# try to load the new module
 	modprobe_failed=0
-	printf "\e[32mApplying the patched module ... \e[0m"
+	printf "\e[32m\tApplying the patched module ... \e[0m"
 	sudo modprobe ${module_name} || modprobe_failed=$?
 
 	# Check and revert the backup module if 'modprobe' operation crashed
@@ -173,7 +194,7 @@ function try_module_insert {
 		exit 1
 	else
 		# Everything went OK, delete backup
-		printf "\e[32m succeeded\n\e[0m"
+		printf "\e[32m succeeded\e[0m"
 		sudo rm ${tgt_ko}.bckup
 	fi
 

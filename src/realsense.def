@@ -9,6 +9,7 @@ EXPORTS
     rs2_get_time
     rs2_context_add_device
     rs2_context_remove_device
+    rs2_context_add_software_device
 
     rs2_query_devices
     rs2_query_devices_ex
@@ -54,7 +55,9 @@ EXPORTS
     rs2_supports_frame_metadata
     rs2_get_frame_timestamp
     rs2_get_frame_timestamp_domain
+    rs2_get_frame_sensor
     rs2_get_frame_number
+    rs2_get_frame_data_size
     rs2_get_frame_data
     rs2_get_frame_width
     rs2_get_frame_height
@@ -74,8 +77,13 @@ EXPORTS
     rs2_supports_option
     rs2_get_option_range
     rs2_get_option_description
+    rs2_get_option_name
     rs2_get_option_value_description
     rs2_is_option_read_only
+    rs2_get_options_list
+    rs2_get_option_from_list
+    rs2_get_options_list_size
+    rs2_delete_options_list
 
     rs2_set_region_of_interest
     rs2_get_region_of_interest
@@ -98,6 +106,7 @@ EXPORTS
     rs2_enqueue_frame
     rs2_flush_queue
 
+    rs2_create_error
     rs2_get_failed_function
     rs2_get_failed_args
     rs2_get_error_message
@@ -145,6 +154,7 @@ EXPORTS
 
     rs2_delete_stream_profile
     rs2_clone_stream_profile
+    rs2_clone_video_stream_profile
 
     rs2_allocate_synthetic_video_frame
     rs2_allocate_points
@@ -161,16 +171,22 @@ EXPORTS
     rs2_create_sync_processing_block
     rs2_create_pointcloud
     rs2_create_colorizer
+    rs2_create_yuy_decoder
+    rs2_create_threshold
+    rs2_create_units_transform
     rs2_create_decimation_filter_block
     rs2_create_temporal_filter_block
     rs2_create_spatial_filter_block
     rs2_create_hole_filling_filter_block
     rs2_create_rates_printer_block
     rs2_create_disparity_transform_block
+    rs2_create_zero_order_invalidation_block
+    
     rs2_embedded_frames_count
     rs2_extract_frame
     rs2_depth_frame_get_distance
     rs2_depth_stereo_frame_get_baseline
+    rs2_get_stereo_baseline
 
     rs2_set_depth_control
     rs2_get_depth_control
@@ -196,6 +212,8 @@ EXPORTS
     rs2_get_ae_control
     rs2_set_census
     rs2_get_census
+    rs2_get_amp_factor
+    rs2_set_amp_factor
     rs2_rs400_visual_preset_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
@@ -210,6 +228,7 @@ EXPORTS
 
     rs2_context_add_device
     rs2_context_remove_device
+    rs2_context_unload_tracking_module
 
     rs2_playback_device_get_file_path
     rs2_playback_get_duration
@@ -281,3 +300,35 @@ EXPORTS
     rs2_loopback_is_enabled
     rs2_connect_tm2_controller
     rs2_disconnect_tm2_controller
+    rs2_set_intrinsics
+    rs2_set_extrinsics
+    rs2_set_motion_device_intrinsics
+    rs2_reset_to_factory_calibration
+    rs2_write_calibration
+    rs2_import_localization_map
+    rs2_export_localization_map
+    rs2_set_static_node
+    rs2_get_static_node
+    rs2_load_wheel_odometry_config
+    rs2_send_wheel_odometry
+    rs2_get_processing_block
+    rs2_get_recommended_processing_blocks
+    rs2_get_recommended_processing_blocks_count
+    rs2_delete_recommended_processing_blocks
+    rs2_get_processing_block_info
+    rs2_supports_processing_block_info
+    rs2_is_processing_block_extendable_to
+    rs2_update_firmware_cpp
+    rs2_update_firmware
+    rs2_create_flash_backup
+    rs2_create_flash_backup_cpp
+    rs2_update_firmware_unsigned
+    rs2_update_firmware_unsigned_cpp
+    rs2_enter_update_state
+    rs2_run_on_chip_calibration_cpp
+    rs2_run_tare_calibration_cpp
+    rs2_run_on_chip_calibration
+    rs2_run_tare_calibration
+    rs2_get_calibration_table
+    rs2_set_calibration_table
+

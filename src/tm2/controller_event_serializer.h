@@ -5,6 +5,13 @@
 #include <string>
 #include "TrackingManager.h"
 
+namespace perc {
+    inline std::ostream& operator<<(std::ostream& os, const perc::TrackingData::Version& v)
+    {
+        return os << v.major << "." << v.minor << "." << v.patch << "." << v.build;
+    }
+}
+
 namespace librealsense
 {
     template<size_t SIZE>
@@ -21,11 +28,6 @@ namespace librealsense
             oss << (int)buff[i];
         }
         return oss.str();
-    }
-
-    inline std::ostream& operator<<(std::ostream& os, const perc::TrackingData::Version& v)
-    {
-        return os << v.major << "." << v.minor << "." << v.patch << "." << v.build;
     }
 
     //TODO: Use json library for class
@@ -62,11 +64,7 @@ namespace librealsense
             std::string serialized_data = to_string() <<
                 "\"status\": \"" << (int)frame.status << "\","
                 "\"controllerId\": " << (int)frame.controllerId << ","
-                "\"manufacturerId\": " << (int)frame.manufacturerId << ","
-                "\"protocol\": \"" << frame.protocol << "\","
-                "\"app\": \"" << frame.app << "\","
-                "\"softDevice\": \"" << frame.softDevice << "\","
-                "\"bootLoader\": \"" << frame.bootLoader << "\"";
+                "\"manufacturerId\": " << (int)frame.manufacturerId << ",";
             return to_json(event_type_frame(), serialized_data);
         }
         

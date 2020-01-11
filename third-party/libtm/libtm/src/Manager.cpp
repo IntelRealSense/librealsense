@@ -9,7 +9,7 @@
 #include <chrono>
 #include "Version.h"
 #include <vector>
-#include "fw.h"
+#include "fw_target.h"
 #include "Common.h"
 
 using namespace std::chrono;
@@ -32,7 +32,7 @@ TrackingManager* TrackingManager::CreateInstance(Listener* lis, void* param)
     {
         if (Manager::instanceExist)
         {
-            LOGE("Manager instance already exist");
+            LOGW("Manager instance already exist");
             return nullptr;
         }
         Manager::instanceExist = true;
@@ -67,6 +67,8 @@ void TrackingManager::ReleaseInstance(TrackingManager*& manager)
 // -[interface]----------------------------------------------------------------
 Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mListener(nullptr), mContext(nullptr), mFwFileName(""), mLibUsbDeviceToTrackingDeviceMap(), mEvent(), mCompleteQMutex(), mCompleteQ(), mTrackingDeviceInfoMap()
 {
+    setHostLogControl({ LogVerbosityLevel::Error, LogOutputMode::LogOutputModeScreen, true });
+
     // start running context 
     mThread = std::thread([this] {
         mFsm.init(FSM(main), this, mDispatcher.get(), LOG_TAG);
@@ -77,15 +79,7 @@ Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mL
     {
         throw std::runtime_error("Failed to init manager");
     }
-
-
-    TrackingData::LogControl logControl(LogVerbosityLevel::None,
-        LogOutputMode::LogOutputModeBuffer,
-        true);
-
-    setHostLogControl(logControl);
 }
-
 
 Manager::~Manager()
 {
@@ -455,7 +449,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
     }
 
     /* USB Device Firmware Upgrade (DFU) */
-    if (mUsbPlugListener->identifyUDFDevice(&desc) == true)
+    if (mUsbPlugListener->identifyDFUDevice(&desc) == true)
     {
         libusb_ref_device(m.device);
 
@@ -467,9 +461,10 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_ATTACH, msg)
         }
         else
         {
-            LOGD("USB Device FW Load start - loading internal FW image \"%s\"", FW_VERSION);
-            auto size = sizeof(target_hex);
-            status = loadBufferToDevice(m.device, (unsigned char*)target_hex, size);
+            LOGD("USB Device FW Load start - loading internal FW image \"%s\"", FW_TARGET_VERSION);
+            int size;
+            auto target_hex = fw_get_target(size);
+            status = loadBufferToDevice(m.device, const_cast<unsigned char*>(target_hex), size);
         }
     }
 
@@ -547,7 +542,7 @@ DEFINE_FSM_ACTION(Manager, ACTIVE_STATE, ON_DETACH, msg)
         delete device;
         libusb_unref_device(m.device);
     }
-    else if (mUsbPlugListener->identifyUDFDevice(&desc) == true)
+    else if (mUsbPlugListener->identifyDFUDevice(&desc) == true)
     {
         libusb_unref_device(m.device);
     }

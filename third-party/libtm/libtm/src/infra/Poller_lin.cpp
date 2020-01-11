@@ -1,7 +1,10 @@
+// License: Apache 2.0. See LICENSE file in root directory.
 /*******************************************************************************
 INTEL CORPORATION PROPRIETARY INFORMATION
 Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 *******************************************************************************/
+
+#ifdef __linux__
 
 #define LOG_TAG "infra/Poller"
 #define LOG_NDEBUG 1    // controls LOGV only
@@ -110,3 +113,6 @@ namespace perc
     }
 
 } // namespace perc
+
+
+#endif

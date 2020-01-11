@@ -2,7 +2,7 @@
 
 ## Goal
 
-This tool is designed to help collect statistics about various streams.
+This tool is designed to help collect statistics about various streams. For full data capture, you can use [recorder](../recorder/) or [realsense-viewer](../realsense-viewer).
 
 ## Description
 Given a configuration file the tool will configure the first Realsense device recognized to the desired streams and wait for either set number of frames or a timeout.  
@@ -51,8 +51,18 @@ COLOR,640,480,30,RGB8,0
 #Lines starting with non-alpha character (#@!...) will be skipped
 # IMU streams will produce data in m/sec^2 & rad/sec
 ACCEL,1,1,63,MOTION_XYZ32F
-GYRO,1,1,200,MOTION_XYZ32F  
+GYRO,1,1,200,MOTION_XYZ32F
 ```
+
+T265
+```
+ACCEL,1,1,62,MOTION_XYZ32F
+GYRO,1,1,200,MOTION_XYZ32F
+FISHEYE,848,800,30,Y8,1
+FISHEYE,848,800,30,Y8,2
+POSE,0,0,200,6DOF,0
+```
+
 SR300  
 ```
 DEPTH,640,480,30,Z16,0

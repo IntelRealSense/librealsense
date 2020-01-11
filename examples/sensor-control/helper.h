@@ -81,7 +81,7 @@ namespace helper
                     {
                         try
                         {
-                            renderer.render(colorize.process(decimate.process(frame)), { 0, 0, view_width, view_height });
+                            renderer.render(colorize.process(decimate.process(frame)).as<rs2::video_frame>(), { 0, 0, view_width, view_height });
                         }
                         catch (const std::exception& e)
                         {

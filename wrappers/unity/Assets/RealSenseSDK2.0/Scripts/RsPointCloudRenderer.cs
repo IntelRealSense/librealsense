@@ -17,10 +17,6 @@ public class RsPointCloudRenderer : MonoBehaviour
 
     [NonSerialized]
     private Vector3[] vertices;
-    private GCHandle handle;
-    private IntPtr verticesPtr;
-    // private int frameSize;
-    // private IntPtr frameData;
 
     FrameQueue q;
 
@@ -34,7 +30,7 @@ public class RsPointCloudRenderer : MonoBehaviour
     {
         q = new FrameQueue(1);
 
-        using (var depth = obj.Streams.FirstOrDefault(s => s.Stream == Stream.Depth) as VideoStreamProfile)
+        using (var depth = obj.Streams.FirstOrDefault(s => s.Stream == Stream.Depth && s.Format == Format.Z16).As<VideoStreamProfile>())
             ResetMesh(depth.Width, depth.Height);
 
         Source.OnNewSample += OnNewSample;
@@ -59,10 +55,6 @@ public class RsPointCloudRenderer : MonoBehaviour
             };
 
         vertices = new Vector3[width * height];
-        if (handle.IsAllocated)
-            handle.Free();
-        handle = GCHandle.Alloc(vertices, GCHandleType.Pinned);
-        verticesPtr = handle.AddrOfPinnedObject();
 
         var indices = new int[vertices.Length];
         for (int i = 0; i < vertices.Length; i++)
@@ -98,9 +90,6 @@ public class RsPointCloudRenderer : MonoBehaviour
             q = null;
         }
 
-        if (handle.IsAllocated)
-            handle.Free();
-
         if (mesh != null)
             Destroy(null);
     }
@@ -114,30 +103,18 @@ public class RsPointCloudRenderer : MonoBehaviour
             q.Dispose();
             q = null;
         }
-
-        if (handle.IsAllocated)
-            handle.Free();
-    }
-
-    private Points TryGetPoints(FrameSet frameset)
-    {
-        foreach (var f in frameset)
-        {
-            if (f is Points)
-                return f as Points;
-            f.Dispose();
-        }
-        return null;
     }
 
     private void OnNewSample(Frame frame)
     {
+        if (q == null)
+            return;
         try
         {
             if (frame.IsComposite)
             {
-                using (var fs = FrameSet.FromFrame(frame))
-                using (var points = TryGetPoints(fs))
+                using (var fs = frame.As<FrameSet>())
+                using (var points = fs.FirstOrDefault<Points>(Stream.Depth, Format.Xyz32f))
                 {
                     if (points != null)
                     {
@@ -147,7 +124,7 @@ public class RsPointCloudRenderer : MonoBehaviour
                 return;
             }
 
-            if (frame is Points)
+            if (frame.Is(Extension.Points))
             {
                 q.Enqueue(frame);
             }
@@ -159,41 +136,34 @@ public class RsPointCloudRenderer : MonoBehaviour
     }
 
 
-    protected void Update()
+    protected void LateUpdate()
     {
         if (q != null)
         {
-            Frame f;
-            if (!q.PollForFrame(out f))
-                return;
-
-            using (var points = f as Points)
-            {
-                if (points.Count != mesh.vertexCount)
+            Points points;
+            if (q.PollForFrame<Points>(out points))
+                using (points)
                 {
-                    using (var p = f.Profile as VideoStreamProfile)
-                        ResetMesh(p.Width, p.Height);
+                    if (points.Count != mesh.vertexCount)
+                    {
+                        using (var p = points.GetProfile<VideoStreamProfile>())
+                            ResetMesh(p.Width, p.Height);
+                    }
+
+                    if (points.TextureData != IntPtr.Zero)
+                    {
+                        uvmap.LoadRawTextureData(points.TextureData, points.Count * sizeof(float) * 2);
+                        uvmap.Apply();
+                    }
+
+                    if (points.VertexData != IntPtr.Zero)
+                    {
+                        points.CopyVertices(vertices);
+
+                        mesh.vertices = vertices;
+                        mesh.UploadMeshData(false);
+                    }
                 }
-
-                int s = points.Count * sizeof(float);
-
-                if (points.TextureData != IntPtr.Zero)
-                {
-                    uvmap.LoadRawTextureData(points.TextureData, s * 2);
-                    uvmap.Apply();
-                }
-
-                if (points.VertexData != IntPtr.Zero)
-                {
-                    memcpy(verticesPtr, points.VertexData, s * 3);
-
-                    mesh.vertices = vertices;
-                    mesh.UploadMeshData(false);
-                }
-            }
         }
     }
-
-    [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
-    internal static extern IntPtr memcpy(IntPtr dest, IntPtr src, int count);
 }

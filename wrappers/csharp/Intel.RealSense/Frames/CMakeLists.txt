@@ -1,0 +1,13 @@
+target_sources(${LRS_DOTNET_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/DepthFrame.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Frame.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/FrameQueue.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/FrameSet.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/FramesReleaser.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Points.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/VideoFrame.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/DisparityFrame.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/MotionFrame.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/PoseFrame.cs"
+)

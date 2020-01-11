@@ -3914,6 +3914,33 @@ const format = {
    * <br>Equivalent to its uppercase counterpart.
    */
   format_disparity32: 'disparity32',
+   /**
+   * String literal of <code>'mjpeg'</code>.
+   * <br>Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB.
+   */
+  format_mjpeg: 'mjpeg',
+   /**
+   * String literal of <code>'y8i'</code>. <br>8-bit per pixel interleaved. 8-bit left, 8-bit right.
+   */
+  format_y8i: 'y8i',
+   /**
+   * String literal of <code>'y12i'</code>.
+   * <br>12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   */
+  format_y12i: 'y12i',
+   /**
+   * String literal of <code>'inzi'</code>. <br>multi-planar Depth 16bit + IR 10bit.
+   */
+  format_inzi: 'inzi',
+   /**
+   * String literal of <code>'invi'</code>. <br>8-bit IR stream
+   */
+  format_invi: 'invi',
+   /**
+   * String literal of <code>'w10'</code>.
+   * <br>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes
+   */
+  format_w10: 'w10',
   /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
@@ -4029,6 +4056,36 @@ const format = {
    * @type {Integer}
    */
   FORMAT_DISPARITY32: RS2.RS2_FORMAT_DISPARITY32,
+   /**
+   * Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB.
+   * @type {Integer}
+   */
+  FORMAT_MJPEG: RS2.RS2_FORMAT_MJPEG,
+   /**
+   * 8-bit per pixel interleaved. 8-bit left, 8-bit right.
+   * @type {Integer}
+   */
+  FORMAT_Y8I: RS2.RS2_FORMAT_Y8I,
+   /**
+   * 12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   * @type {Integer}
+   */
+  FORMAT_Y12I: RS2.RS2_FORMAT_Y12I,
+   /**
+   * multi-planar Depth 16bit + IR 10bit.
+   * @type {Integer}
+   */
+  FORMAT_INZI: RS2.RS2_FORMAT_INZI,
+   /**
+   * 8-bit IR stream.
+   * @type {Integer}
+   */
+  FORMAT_INVI: RS2.RS2_FORMAT_INVI,
+   /**
+   * Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes.
+   * @type {Integer}
+   */
+  FORMAT_W10: RS2.RS2_FORMAT_W10,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * <br>Equivalent to its lowercase counterpart.
@@ -4085,7 +4142,19 @@ const format = {
       case this.FORMAT_6DOF:
         return this.format_6dof;
       case this.FORMAT_DISPARITY32:
-        return this.format_disparity32;
+		return this.format_disparity32;
+	  case this.RS2_FORMAT_MJPEG:
+		return this.format_mjpeg;
+	  case this.RS2_FORMAT_Y8I:
+		return this.format_y8i;
+	  case this.RS2_FORMAT_Y12I:
+		return this.format_y12i;
+	  case this.RS2_FORMAT_INZI:
+		return this.format_inzi;
+	  case this.RS2_FORMAT_INVI:
+		return this.format_invi;
+	  case this.RS2_FORMAT_W10:
+		return this.format_w10;
     }
   },
 };
@@ -4545,6 +4614,26 @@ const option = {
    * <br>Equivalent to its uppercase counterpart.
    */
   option_inter_cam_sync_mode: 'inter-cam-sync-mode',
+  option_stream_filter: 'stream-filter',
+  option_stream_format_filter: 'stream-format-filter',
+  option_stream_index_filter: 'stream-index-filter',
+  option_emitter_on_off: 'emitter-on-off',
+  option_zero_order_point_x: 'zero-order-point-x',
+  option_zero_order_point_y: 'zero-order-point-y',
+  option_lld_temperature: 'lld-temperature',
+  option_mc_temperature: 'mc-temperature',
+  option_ma_temperature: 'ma-temperature',
+  option_apd_temperature: 'apd-temperature',
+  option_hardware_preset: 'hardware-preset',
+  option_global_time_enabled: 'global-time-enabled',
+  option_enable_mapping: 'enable-mapping',
+  option_enable_relocalization: 'enable-relocalization',
+  option_enable_pose_jumping: 'enable-pose-jumping',
+  option_enable_dynamic_calibration: 'enable-dynamic-calibration',
+  option_depth_offset: 'depth-offset',
+  option_led_power: 'led-power',
+  option_zero_order_enabled: 'zero-order-enabled',
+  option_enable_map_preservation: 'enable-map-preservation',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -4791,6 +4880,26 @@ const option = {
    * @type {Integer}
    */
   OPTION_INTER_CAM_SYNC_MODE: RS2.RS2_OPTION_INTER_CAM_SYNC_MODE,
+  OPTION_STREAM_FILTER: RS2.RS2_OPTION_STREAM_FILTER,
+  OPTION_STREAM_FORMAT_FILTER: RS2.RS2_OPTION_STREAM_FORMAT_FILTER,
+  OPTION_STREAM_INDEX_FILTER: RS2.RS2_OPTION_STREAM_INDEX_FILTER,
+  OPTION_EMITTER_ON_OFF: RS2.RS2_OPTION_EMITTER_ON_OFF,
+  OPTION_ZERO_ORDER_POINT_X: RS2.RS2_OPTION_ZERO_ORDER_POINT_X,
+  OPTION_ZERO_ORDER_POINT_Y: RS2.RS2_OPTION_ZERO_ORDER_POINT_Y,
+  OPTION_LLD_TEMPERATURE: RS2.RS2_OPTION_LLD_TEMPERATURE,
+  OPTION_MC_TEMPERATURE: RS2.RS2_OPTION_MC_TEMPERATURE,
+  OPTION_MA_TEMPERATURE: RS2.RS2_OPTION_MA_TEMPERATURE,
+  OPTION_HARDWARE_PRESET: RS2.RS2_OPTION_HARDWARE_PRESET,
+  OPTION_GLOBAL_TIME_ENABLED: RS2.RS2_OPTION_GLOBAL_TIME_ENABLED,
+  OPTION_APD_TEMPERATURE: RS2.RS2_OPTION_APD_TEMPERATURE,
+  OPTION_ENABLE_MAPPING: RS2.RS2_OPTION_ENABLE_MAPPING,
+  OPTION_ENABLE_RELOCALIZATION: RS2.RS2_OPTION_ENABLE_RELOCALIZATION,
+  OPTION_ENABLE_POSE_JUMPING: RS2.RS2_OPTION_ENABLE_POSE_JUMPING,
+  OPTION_ENABLE_DYNAMIC_CALIBRATION: RS2.RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION,
+  OPTION_DEPTH_OFFSET: RS2.RS2_OPTION_DEPTH_OFFSET,
+  OPTION_LED_POWER: RS2.RS2_OPTION_LED_POWER,
+  OPTION_ZERO_ORDER_ENABLED: RS2.RS2_OPTION_ZERO_ORDER_ENABLED,
+  OPTION_ENABLE_MAP_PRESERVATION: RS2.RS2_OPTION_ENABLE_MAP_PRESERVATION,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -4893,6 +5002,46 @@ const option = {
         return this.option_auto_exposure_converge_step;
       case this.OPTION_INTER_CAM_SYNC_MODE:
         return this.option_inter_cam_sync_mode;
+      case this.OPTION_STREAM_FILTER:
+        return this.option_stream_filter;
+      case this.OPTION_STREAM_FORMAT_FILTER:
+        return this.option_stream_format_filter;
+      case this.OPTION_STREAM_INDEX_FILTER:
+        return this.option_stream_index_filter;
+      case this.OPTION_EMITTER_ON_OFF:
+        return this.option_emitter_on_off;
+      case this.OPTION_ZERO_ORDER_POINT_X:
+        return this.option_zero_order_point_x;
+      case this.OPTION_ZERO_ORDER_POINT_Y:
+        return this.option_zero_order_point_y;
+      case this.OPTION_LLD_TEMPERATURE:
+        return this.option_lld_temperature;
+      case this.OPTION_MC_TEMPERATURE:
+        return this.option_mc_temperature;
+      case this.OPTION_MA_TEMPERATURE:
+        return this.option_ma_temperature;
+      case this.OPTION_HARDWARE_PRESET:
+        return this.option_hardware_preset;
+      case this.OPTION_GLOBAL_TIME_ENABLED:
+        return this.option_global_time_enabled;
+      case this.OPTION_APD_TEMPERATURE:
+        return this.option_apd_temperature;
+      case this.OPTION_ENABLE_MAPPING:
+        return this.option_enable_mapping;
+      case this.OPTION_ENABLE_RELOCALIZATION:
+        return this.option_enable_relocalization;
+      case this.OPTION_ENABLE_POSE_JUMPING:
+        return this.option_enable_pose_jumping;
+      case this.OPTION_ENABLE_DYNAMIC_CALIBRATION:
+        return this.option_enable_dynamic_calibration;
+      case this.OPTION_DEPTH_OFFSET:
+        return this.option_depth_offset;
+      case this.OPTION_LED_POWER:
+        return this.option_led_power;
+      case this.OPTION_ZERO_ORDER_ENABLED:
+        return this.option_zero_order_enabled;
+      case this.OPTION_ENABLE_MAP_PRESERVATION:
+        return this.option_enable_map_preservation;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');

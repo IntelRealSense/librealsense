@@ -21,7 +21,7 @@ namespace librealsense
             return max_ds5_rect_resolutions;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height, uint32_t fps)
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height)
         {
             auto table = check_calib<ds::coefficients_table>(raw_data);
 
@@ -72,8 +72,7 @@ namespace librealsense
                 if (width == 848 && height == 100)
                 {
                     intrinsics.height = 100;
-                    if (fps <= 90)
-                        intrinsics.ppy -= 190;
+                    intrinsics.ppy -= 190;
                 }
 
                 return intrinsics;
@@ -95,10 +94,22 @@ namespace librealsense
                     rect_params.w = intrinsics.height * 0.5f;
                 }
 
-                intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
-                intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
-                intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
-                intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                // Special resolution for auto-calibration requires special treatment...
+                if (width == 256 && height == 144)
+                {
+                    intrinsics.fx = rect_params[0];
+                    intrinsics.fy = rect_params[1];
+                    intrinsics.ppx = rect_params[2] - 832;
+                    intrinsics.ppy = rect_params[3] - 468;
+                }
+                else
+                {
+                    intrinsics.fx = rect_params[0] * width / resolutions_list[resolution].x;
+                    intrinsics.fy = rect_params[1] * height / resolutions_list[resolution].y;
+                    intrinsics.ppx = rect_params[2] * width / resolutions_list[resolution].x;
+                    intrinsics.ppy = rect_params[3] * height / resolutions_list[resolution].y;
+                }
+                
                 intrinsics.model = RS2_DISTORTION_BROWN_CONRADY;
                 memset(intrinsics.coeffs, 0, sizeof(intrinsics.coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
 
@@ -132,13 +143,29 @@ namespace librealsense
         {
              auto table = check_calib<ds::rgb_calibration_table>(raw_data);
 
-             // Compensate for aspect ratio as the normalized intrinsic is calculated with 16/9 factor
+             // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
              float3x3 intrin = table->intrinsic;
-             static const float base_aspect_ratio_factor = 16.f / 9.f;
+             float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
+
+             if (table->calib_width && table->calib_height)
+                 calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
+             else
+             {
+                 LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
+             }
 
              // Compensate for aspect ratio
-             intrin(0, 0) *= base_aspect_ratio_factor * (height / (float)width);
-             intrin(2, 0) *= base_aspect_ratio_factor * (height / (float)width);
+             float actual_aspect_ratio = height / (float)width;
+             if (actual_aspect_ratio < calib_aspect_ratio)
+             {
+                 intrin(1, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+                 intrin(2, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+             }
+             else
+             {
+                 intrin(0, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+                 intrin(2, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+             }
 
             // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
             rs2_intrinsics calc_intrinsic{
@@ -148,7 +175,7 @@ namespace librealsense
                 ((1 + intrin(2, 1))*height) / 2.f,
                 intrin(0, 0) * width / 2.f,
                 intrin(1, 1) * height / 2.f,
-                RS2_DISTORTION_BROWN_CONRADY
+                RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
             };
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
@@ -156,13 +183,40 @@ namespace librealsense
             return calc_intrinsic;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height, uint32_t fps)
+        // Parse intrinsics from newly added RECPARAMSGET command
+        bool try_get_intrinsic_by_resolution_new(const vector<uint8_t>& raw_data,
+                uint32_t width, uint32_t height, rs2_intrinsics* result)
+        {
+            using namespace ds;
+            auto count = raw_data.size() / sizeof(new_calibration_item);
+            auto items = (new_calibration_item*)raw_data.data();
+            for (int i = 0; i < count; i++)
+            {
+                auto&& item = items[i];
+                if (item.width == width && item.height == height)
+                {
+                    result->width = width;
+                    result->height = height;
+                    result->ppx = item.ppx;
+                    result->ppy = item.ppy;
+                    result->fx = item.fx;
+                    result->fy = item.fy;
+                    result->model = RS2_DISTORTION_BROWN_CONRADY;
+                    memset(result->coeffs, 0, sizeof(result->coeffs));  // All coefficients are zeroed since rectified depth is defined as CS origin
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
             case coefficients_table_id:
             {
-                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height, fps);
+                return get_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
             case fisheye_calibration_id:
             {
@@ -194,11 +248,8 @@ namespace librealsense
             auto table = check_calib<rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;
             float3x3 rect_rot_mat = table->rotation_matrix_rect;
-            float trans_scale = 0.001f; // Convert units from mm to meter
-            if (table->translation.x > 0.f) // Extrinsic of color is referenced to the Depth Sensor CS
-            {
-                trans_scale *= -1;
-            }
+            float trans_scale = -0.001f; // Convert units from mm to meter. Extrinsic of color is referenced to the Depth Sensor CS
+
             trans_vector.x *= trans_scale;
             trans_vector.y *= trans_scale;
             trans_vector.z *= trans_scale;
@@ -221,11 +272,15 @@ namespace librealsense
                     case RS400_PID:
                     case RS405_PID:
                     case RS410_PID:
+                    case RS416_PID:
                     case RS460_PID:
                     case RS430_PID:
                     case RS420_PID:
                     case RS400_IMU_PID:
                         found = (result.mi == 3);
+                        break;
+                    case RS430I_PID:
+                        found = (result.mi == 4);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
@@ -233,7 +288,9 @@ namespace librealsense
                         found = (result.mi == 6);
                         break;
                     case RS415_PID:
+                    case RS416_RGB_PID:
                     case RS435_RGB_PID:
+                    case RS465_PID:
                         found = (result.mi == 5);
                         break;
                     default:
@@ -273,5 +330,53 @@ namespace librealsense
             return results;
         }
 
+        flash_structure get_rw_flash_structure(const uint32_t flash_version)
+        {
+            switch (flash_version)
+            {
+                // { number of payloads in section { ro table types }} see Flash.xml
+            case 100: return { 2, { 17, 10, 40, 29, 30, 54} };
+            case 101: return { 3, { 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 103: return { 4, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            default:
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
+            }
+        }
+
+        flash_structure get_ro_flash_structure(const uint32_t flash_version)
+        {
+            switch (flash_version)
+            {
+                // { number of payloads in section { ro table types }} see Flash.xml
+            case 100: return { 2, { 134, 25 } };
+            default:
+                throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
+            }
+        }
+
+        flash_info get_flash_info(const std::vector<uint8_t>& flash_buffer)
+        {
+            flash_info rv = {};
+
+            uint32_t header_offset = FLASH_INFO_HEADER_OFFSET;
+            memcpy(&rv.header, flash_buffer.data() + header_offset, sizeof(rv.header));
+
+            uint32_t ro_toc_offset = FLASH_RO_TABLE_OF_CONTENT_OFFSET;
+            uint32_t rw_toc_offset = FLASH_RW_TABLE_OF_CONTENT_OFFSET;
+
+            auto ro_toc = parse_table_of_contents(flash_buffer, ro_toc_offset);
+            auto rw_toc = parse_table_of_contents(flash_buffer, rw_toc_offset);
+
+            auto ro_structure = get_ro_flash_structure(ro_toc.header.version);
+            auto rw_structure = get_rw_flash_structure(rw_toc.header.version);
+
+            rv.read_only_section = parse_flash_section(flash_buffer, ro_toc, ro_structure);
+            rv.read_only_section.offset = rv.header.read_only_start_address;
+            rv.read_write_section = parse_flash_section(flash_buffer, rw_toc, rw_structure);
+            rv.read_write_section.offset = rv.header.read_write_start_address;
+
+            return rv;
+        }
     } // librealsense::ds
 } // namespace librealsense

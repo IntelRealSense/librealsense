@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Intel.RealSense
 {
@@ -7,13 +9,11 @@ namespace Intel.RealSense
     {
         static void Main(string[] args)
         {
-            FrameQueue q = new FrameQueue();
-
             using (var ctx = new Context())
             {
                 var devices = ctx.QueryDevices();
 
-                Console.WriteLine("There are " + devices.Count + " connected RealSense devices.");
+                Console.WriteLine("There are {0} connected RealSense devices.", devices.Count);
                 if (devices.Count == 0) return;
                 var dev = devices[0];
 
@@ -21,36 +21,26 @@ namespace Intel.RealSense
                 Console.WriteLine("    Serial number: {0}", dev.Info[CameraInfo.SerialNumber]);
                 Console.WriteLine("    Firmware version: {0}", dev.Info[CameraInfo.FirmwareVersion]);
 
-                var depthSensor = dev.Sensors[0];
+                var depthSensor = dev.QuerySensors()[0];
 
-                var sp = depthSensor.VideoStreamProfiles
+                var sp = depthSensor.StreamProfiles
                                     .Where(p => p.Stream == Stream.Depth)
                                     .OrderByDescending(p => p.Framerate)
-                                    .Where(p => p.Width == 640 && p.Height == 480)
-                                    .First();
+                                    .Select(p => p.As<VideoStreamProfile>())
+                                    .First(p => p.Width == 640 && p.Height == 480);
+
                 depthSensor.Open(sp);
-                depthSensor.Start(q);
 
                 int one_meter = (int)(1f / depthSensor.DepthScale);
+                ushort[] depth = new ushort[640 * 480];
+                char[] buffer = new char[(640 / 10 + 1) * (480 / 20)];
+                int[] coverage = new int[64];
 
-                var run = true;
-                Console.CancelKeyPress += (s, e) =>
+                depthSensor.Start(f =>
                 {
-                    e.Cancel = true;
-                    run = false;
-                };
-
-                ushort[] depth = new ushort[sp.Width * sp.Height];
-
-                while (run)
-                {
-                    using (var f = q.WaitForFrame() as VideoFrame)
-                    {
-                        f.CopyTo(depth);
-                    }
-
-                    var buffer = new char[(640 / 10 + 1) * (480 / 20)];
-                    var coverage = new int[64];
+                    using (var vf = f.As<VideoFrame>())
+                        vf.CopyTo(depth);
+                    
                     int b = 0;
                     for (int y = 0; y < 480; ++y)
                     {
@@ -76,12 +66,19 @@ namespace Intel.RealSense
                     Console.SetCursorPosition(0, 0);
                     Console.WriteLine();
                     Console.Write(buffer);
-                }
+                });
+
+                AutoResetEvent stop = new AutoResetEvent(false);
+                Console.CancelKeyPress += (s, e) =>
+                {
+                    e.Cancel = true;
+                    stop.Set();
+                };
+                stop.WaitOne();
 
                 depthSensor.Stop();
                 depthSensor.Close();
             }
-
         }
     }
 }

@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#ifdef RS2_USE_WMF_BACKEND
-
 #if (_MSC_FULL_VER < 180031101)
     #error At least Visual Studio 2013 Update 4 is required to compile this backend
 #endif
@@ -26,15 +24,18 @@
 
 #include <initguid.h>
 
+//https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
 #ifndef WITH_TRACKING
-DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, \
-    0xC0, 0x4F, 0xB9, 0x51, 0xED);
+DEFINE_GUID(GUID_DEVINTERFACE_USB_DEVICE, 0xA5DCBF10L, 0x6530, 0x11D2, 0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED);
 #endif
-DEFINE_GUID(GUID_DEVINTERFACE_IMAGE, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, \
-    0x2b, 0xe2, 0x09, 0x2f);
+DEFINE_GUID(GUID_DEVINTERFACE_IMAGE_WIN10, 0x6bdd1fc6L, 0x810f, 0x11d0, 0xbe, 0xc7, 0x08, 0x00, 0x2b, 0xe2, 0x09, 0x2f);
+DEFINE_GUID(GUID_DEVINTERFACE_CAMERA_WIN10, 0xca3e7ab9, 0xb4c3, 0x4ae6, 0x82, 0x51, 0x57, 0x9e, 0xf9, 0x33, 0x89, 0x0f);
 
-DEFINE_GUID(GUID_DEVINTERFACE_CAMERA, 0xca3e7ab9, 0xb4c3, 0x4ae6, 0x82, 0x51, 0x57, 0x9e, \
-    0xf9, 0x33, 0x89, 0x0f);
+// Intel(R) RealSense(TM) 415 Depth - MI 0: [Interface 0 video control] [Interface 1 video stream] [Interface 2 video stream]
+DEFINE_GUID(GUID_DEVINTERFACE_IMAGE_WIN7, 0xe659c3ec, 0xbf3c, 0x48a5, 0x81, 0x92, 0x30, 0x73, 0xe8, 0x22, 0xd7, 0xcd);
+
+// Intel(R) RealSense(TM) 415 RGB - MI 3: [Interface 3 video control] [Interface 4 video stream]
+DEFINE_GUID(GUID_DEVINTERFACE_CAMERA_WIN7, 0x50537bc3, 0x2919, 0x452d, 0x88, 0xa9, 0xb1, 0x3b, 0xbf, 0x7d, 0x24, 0x59);
 
 #define CREATE_MUTEX_RETRY_NUM  (5)
 
@@ -127,7 +128,7 @@ namespace librealsense
         // ii = USB interface number.
         // aaaaaaaaaaaaaaaa = unique Windows-generated string based on things such as the physical USB port address and/or interface number.
         // gggggggg-gggg-gggg-gggg-gggggggggggg = device interface GUID assigned in the driver or driver INF file and is used to link applications to device with specific drivers loaded.
-        bool parse_usb_path_multiple_interface(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path)
+        bool parse_usb_path_multiple_interface(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path, std::string & device_guid)
         {
             auto name = path;
             std::transform(begin(name), end(name), begin(name), ::tolower);
@@ -169,6 +170,9 @@ namespace librealsense
                 unique_id = ids[1];
             else
                 unique_id = "";
+
+            if (tokens.size() >= 3)
+                device_guid = tokens[3];
 
             return true;
         }
@@ -364,7 +368,7 @@ namespace librealsense
         bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial)
         {
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
-            std::vector<GUID> guids = { GUID_DEVINTERFACE_IMAGE, GUID_DEVINTERFACE_CAMERA };
+            std::vector<GUID> guids = { GUID_DEVINTERFACE_IMAGE_WIN7, GUID_DEVINTERFACE_CAMERA_WIN7, GUID_DEVINTERFACE_IMAGE_WIN10, GUID_DEVINTERFACE_CAMERA_WIN10 };
 
             for (auto guid : guids)
             {
@@ -430,7 +434,7 @@ namespace librealsense
 
                     std::vector<WCHAR> pInstID2(buf_size + 1);
 
-                    if (CM_Get_Device_ID(instance, pInstID2.data(), vector_bytes_size(pInstID2), 0) != CR_SUCCESS) {
+                    if (CM_Get_Device_ID(instance, pInstID2.data(), ULONG(vector_bytes_size(pInstID2)), 0) != CR_SUCCESS) {
                         LOG_ERROR("CM_Get_Device_ID failed");
                         return false;
                     }
@@ -467,7 +471,7 @@ namespace librealsense
 
                     detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
                     SP_DEVINFO_DATA parent_data = { sizeof(SP_DEVINFO_DATA) };
-                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data, vector_bytes_size(detail_data_buff), nullptr, &parent_data))
+                    if (!SetupDiGetDeviceInterfaceDetail(device_info, &interfaceData, detail_data, ULONG(vector_bytes_size(detail_data_buff)), nullptr, &parent_data))
                     {
                         LOG_ERROR("SetupDiGetDeviceInterfaceDetail failed");
                         return false;
@@ -476,12 +480,12 @@ namespace librealsense
                     uint16_t vid = 0;
                     uint16_t pid = 0;
                     uint16_t mi = 0;
-                    std::string uid = "";
+                    std::string uid, guid;
                     std::wstring ws(detail_data->DevicePath);
                     std::string path(ws.begin(), ws.end());
 
                     /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
-                    parse_usb_path_multiple_interface(vid, pid, mi, uid, path);
+                    parse_usb_path_multiple_interface(vid, pid, mi, uid, path, guid);
                     if (uid.empty())
                     {
                         /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp#ssss#{gggggggg - gggg - gggg - gggg - gggggggggggg} */
@@ -509,9 +513,9 @@ namespace librealsense
                     std::wstring targetKey(reinterpret_cast<const wchar_t*>(driver_key.data()));
 
                     // recursively check all hubs, searching for composite device
-                    std::wstringstream buf;
                     for (int i = 0;; i++)
                     {
+                        std::wstringstream buf;
                         buf << "\\\\.\\HCD" << i;
                         std::wstring hcd = buf.str();
 
@@ -845,7 +849,29 @@ namespace librealsense
             }
         }
 
+        winapi_error::winapi_error(const char* message)
+            : runtime_error(generate_message(message).c_str())
+        { }
+
+        std::string winapi_error::generate_message(const std::string& message)
+        {
+            std::stringstream ss;
+            ss << message << " Last Error: " << last_error_string(GetLastError()) << std::endl;
+            return ss.str();
+        }
+
+        std::string winapi_error::last_error_string(DWORD lastError)
+        {
+            // TODO: Error handling
+            LPSTR messageBuffer = nullptr;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr, lastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&messageBuffer), 0, nullptr);
+
+            std::string message(messageBuffer, size);
+
+            LocalFree(messageBuffer);
+
+            return message;
+        }
     }
 }
-
-#endif

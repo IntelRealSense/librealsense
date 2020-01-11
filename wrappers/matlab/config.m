@@ -25,7 +25,7 @@ classdef config < handle
                     which = 'enable_stream#stream';
                 case 3
                     if isa(varargin{2}, 'realsense.format')
-                        validateattributes(varargin{2}, {'realsense.format'}, {'scalar'}, '', 'format', 3);
+                        validateattributes(varargin{2}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 3);
                         which = 'enable_stream#format';
                     else
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
@@ -33,12 +33,12 @@ classdef config < handle
                     end
                 case 4
                     if isa(varargin{2}, 'realsense.format')
-                        validateattributes(varargin{2}, {'realsense.format'}, {'scalar'}, '', 'format', 3);
+                        validateattributes(varargin{2}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 3);
                         validateattributes(varargin{3}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'framerate', 4);
                         which = 'enable_stream#format';
                     elseif isa(varargin{3}, 'realsense.format')
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
-                        validateattributes(varargin{3}, {'realsense.format'}, {'scalar'}, '', 'format', 4);
+                        validateattributes(varargin{3}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 4);
                         which = 'enable_stream#extended';
                     else
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'width', 3);
@@ -48,13 +48,13 @@ classdef config < handle
                 case 5
                     if isa(varargin{3}, 'realsense.format')
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
-                        validateattributes(varargin{3}, {'realsense.format'}, {'scalar'}, '', 'format', 4);
+                        validateattributes(varargin{3}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 4);
                         validateattributes(varargin{4}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'framerate', 5);
                         which = 'enable_stream#extended';
                     elseif isa(varargin{4}, 'realsense.format')
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'width', 3);
                         validateattributes(varargin{3}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'height', 4);
-                        validateattributes(varargin{4}, {'realsense.format'}, {'scalar'}, '', 'format', 5);
+                        validateattributes(varargin{4}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 5);
                         which = 'enable_stream#size';
                     else
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
@@ -66,21 +66,21 @@ classdef config < handle
                     if isa(varargin{4}, 'realsense.format')
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'width', 3);
                         validateattributes(varargin{3}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'height', 4);
-                        validateattributes(varargin{4}, {'realsense.format'}, {'scalar'}, '', 'format', 5);
+                        validateattributes(varargin{4}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 5);
                         validateattributes(varargin{5}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'framerate', 6);
                         which = 'enable_stream#size';
                     else
                         validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
                         validateattributes(varargin{3}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'width', 4);
                         validateattributes(varargin{4}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'height', 5);
-                        validateattributes(varargin{5}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'format', 6);
+                        validateattributes(varargin{5}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 6);
                         which = 'enable_stream#full';
                     end
                 case 7
                     validateattributes(varargin{2}, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'stream_index', 3);
                     validateattributes(varargin{3}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'width', 4);
                     validateattributes(varargin{4}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'height', 5);
-                    validateattributes(varargin{5}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.format.count}, '', 'format', 6);
+                    validateattributes(varargin{5}, {'realsense.format', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.format.count)}, '', 'format', 6);
                     validateattributes(varargin{6}, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'framerate', 7);
                     which = 'enable_stream#full';
             end
@@ -115,11 +115,11 @@ classdef config < handle
         end
         function disable_stream(this, stream, index)
             narginchk(2, 3);
-            validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count}, '', 'stream', 2);
+            validateattributes(stream, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)}, '', 'stream', 2);
             if nargin == 2
                 out = realsense.librealsense_mex('rs2::config', 'disable_stream', this.objectHandle, int64(stream));
             else
-                validateattributes(index, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'}, '', 'index', 3);
+                validateattributes(index, {'numeric'}, {'scalar', 'real', 'integer'}, '', 'index', 3);
                 out = realsense.librealsense_mex('rs2::config', 'disable_stream', this.objectHandle, int64(stream), int64(index));
             end
             stream = realsense.stream_profile(out{:});

@@ -1,9 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "core/video.h"
 #include "proc/synthetic-stream.h"
+
+#include "core/video.h"
 #include "option.h"
+#include "context.h"
+#include "stream.h"
 
 namespace librealsense
 {
@@ -18,10 +21,11 @@ namespace librealsense
         _source.set_callback(callback);
     }
 
-    processing_block::processing_block() :
+    processing_block::processing_block(const char* name) :
         _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
+        register_info(RS2_CAMERA_INFO_NAME, name);
         _source.init(std::shared_ptr<metadata_parser_map>());
     }
 
@@ -44,7 +48,8 @@ namespace librealsense
         }
     }
 
-    generic_processing_block::generic_processing_block()
+    generic_processing_block::generic_processing_block(const char* name)
+        : processing_block(name)
     {
         auto on_frame = [this](rs2::frame f, const rs2::frame_source& source)
         {
@@ -118,7 +123,7 @@ namespace librealsense
 
         std::vector<rs2::frame> original_set;
         if (auto composite = input.as<rs2::frameset>())
-            composite.foreach([&](const rs2::frame& frame)
+            composite.foreach_rs([&](const rs2::frame& frame)
             {
                 auto format = frame.get_profile().format();
                 if (depth_result_frame && (format == RS2_FORMAT_DISPARITY32 || format == RS2_FORMAT_DISPARITY16))
@@ -149,7 +154,8 @@ namespace librealsense
         return source.allocate_composite_frame(results);
     }
 
-    stream_filter_processing_block::stream_filter_processing_block()
+    stream_filter_processing_block::stream_filter_processing_block(const char* name)
+        : generic_processing_block(name)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
         _source.init(std::shared_ptr<metadata_parser_map>());
@@ -186,7 +192,7 @@ namespace librealsense
             _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
-        auto index_selector = std::make_shared<ptr_option<int>>(0, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
+        auto index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
         index_selector->on_set([this, index_selector](float val)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -201,6 +207,60 @@ namespace librealsense
         register_option(RS2_OPTION_STREAM_FILTER, stream_selector);
         register_option(RS2_OPTION_STREAM_FORMAT_FILTER, format_selector);
         register_option(RS2_OPTION_STREAM_INDEX_FILTER, index_selector);
+    }
+
+    functional_processing_block::functional_processing_block(const char * name, rs2_format target_format, rs2_stream target_stream, rs2_extension extension_type) :
+        stream_filter_processing_block(name), _target_format(target_format), _target_stream(target_stream), _extension_type(extension_type) {}
+
+    void functional_processing_block::init_profiles_info(const rs2::frame * f)
+    {
+        auto p = f->get_profile();
+        if (p.get() != _source_stream_profile.get())
+        {
+            _source_stream_profile = p;
+            _target_stream_profile = p.clone(p.stream_type(), p.stream_index(), _target_format);
+            _target_bpp = get_image_bpp(_target_format) / 8;
+        }
+    }
+
+    rs2::frame functional_processing_block::process_frame(const rs2::frame_source & source, const rs2::frame & f)
+    {
+        auto&& ret = prepare_frame(source, f);
+        int width = 0;
+        int height = 0;
+        auto vf = ret.as<rs2::video_frame>();
+        if (vf)
+        {
+            width = vf.get_width();
+            height = vf.get_height();
+        }
+        byte* planes[1];
+        planes[0] = (byte*)ret.get_data();
+
+        process_function(planes, (const byte*)f.get_data(), width, height, height * width * _target_bpp);
+
+        return ret;
+    }
+
+    rs2::frame functional_processing_block::prepare_frame(const rs2::frame_source & source, const rs2::frame & f)
+    {
+        init_profiles_info(&f);
+        auto vf = f.as<rs2::video_frame>();
+        if (vf)
+        {
+            int width = vf.get_width();
+            int height = vf.get_height();
+            return source.allocate_video_frame(_target_stream_profile, f, _target_bpp,
+                width, height, width * _target_bpp, _extension_type);
+        }
+        auto mf = f.as<rs2::motion_frame>();
+        if (mf)
+        {
+            int width = f.get_data_size();
+            int height = 1;
+            return source.allocate_motion_frame(_target_stream_profile, f, _extension_type);
+        }
+        throw invalid_value_exception("Unable to allocate unknown frame type");
     }
 
     bool is_z_or_disparity(rs2_format format)
@@ -250,7 +310,7 @@ namespace librealsense
         _actual_source.invoke_callback(std::move(result));
     }
 
-    frame_interface* synthetic_source::allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original)
+    frame_interface* synthetic_source::allocate_points(std::shared_ptr<stream_profile_interface> stream, frame_interface* original, rs2_extension frame_type)
     {
         auto vid_stream = dynamic_cast<video_stream_profile_interface*>(stream.get());
         if (vid_stream)
@@ -263,7 +323,7 @@ namespace librealsense
             data.system_time = _actual_source.get_time();
             data.is_blocking = original->is_blocking();
 
-            auto res = _actual_source.alloc_frame(RS2_EXTENSION_POINTS, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
+            auto res = _actual_source.alloc_frame(frame_type, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
             res->set_sensor(original->get_sensor());
             res->set_stream(stream);
@@ -326,7 +386,7 @@ namespace librealsense
         frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
-        vf = static_cast<video_frame*>(res);
+        vf = dynamic_cast<video_frame*>(res);
         vf->metadata_parsers = of->metadata_parsers;
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
@@ -337,6 +397,22 @@ namespace librealsense
             original->acquire();
             (dynamic_cast<depth_frame*>(res))->set_original(original);
         }
+
+        return res;
+    }
+
+    frame_interface* synthetic_source::allocate_motion_frame(std::shared_ptr<stream_profile_interface> stream,
+        frame_interface* original,
+        rs2_extension frame_type)
+    {
+        auto of = dynamic_cast<frame*>(original);
+        frame_additional_data data = of->additional_data;
+        auto res = _actual_source.alloc_frame(frame_type, of->get_frame_data_size(), data, true);
+        if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
+        auto mf = dynamic_cast<motion_frame*>(res);
+        mf->metadata_parsers = of->metadata_parsers;
+        mf->set_sensor(original->get_sensor());
+        res->set_stream(stream);
 
         return res;
     }
@@ -406,5 +482,157 @@ namespace librealsense
         cf->set_stream(cf->first()->get_stream());
 
         return res;
+    }
+
+    composite_processing_block::composite_processing_block() :
+        composite_processing_block("Composite Processing Block")
+    {}
+
+    composite_processing_block::composite_processing_block(const char * name) :
+        processing_block(name)
+    {}
+
+    processing_block & composite_processing_block::get(rs2_option option)
+    {
+        // Find the first block which supports the option.
+        // It doesn't matter which one is selected, as long as it supports the option, because of the 
+        // option propogation caused by bypass_option::set(value)
+        int i = 0;
+        for (i = 0; i < _processing_blocks.size(); i++)
+        {
+            if (_processing_blocks[i]->supports_option(option))
+            {
+                auto val = _processing_blocks[i]->get_option(option).query();
+                if (val > 0.f) break;
+            }
+        }
+
+        update_info(RS2_CAMERA_INFO_NAME, _processing_blocks[i]->get_info(RS2_CAMERA_INFO_NAME));
+
+        return *_processing_blocks[i];
+    }
+
+    void composite_processing_block::add(std::shared_ptr<processing_block> block)
+    {
+        _processing_blocks.push_back(block);
+
+        const auto&& supported_options = block->get_supported_options();
+        for (auto&& opt : supported_options)
+        {
+            register_option(opt, std::make_shared<bypass_option>(this, opt));
+        }
+
+        update_info(RS2_CAMERA_INFO_NAME, block->get_info(RS2_CAMERA_INFO_NAME));
+    }
+
+    void composite_processing_block::set_output_callback(frame_callback_ptr callback)
+    {
+        // Each processing block will process the preceding processing block output frame.
+        size_t i = 0;
+        for (i = 1; i < _processing_blocks.size(); i++)
+        {
+            auto output_cb = [i, this](frame_holder fh) {
+                _processing_blocks[i]->invoke(std::move(fh));
+            };
+            _processing_blocks[i - 1]->set_output_callback(std::make_shared<internal_frame_callback<decltype(output_cb)>>(output_cb));
+        }
+
+        // Set the output callback of the composite processing block as last processing block in the vector.
+        _processing_blocks.back()->set_output_callback(callback);
+    }
+
+    void composite_processing_block::invoke(frame_holder frames)
+    {
+        // Invoke the first processing block.
+        // This will trigger processing the frame in a chain by the order of the given processing blocks vector.
+        _processing_blocks.front()->invoke(std::move(frames));
+    }
+
+    interleaved_functional_processing_block::interleaved_functional_processing_block(const char* name,
+        rs2_format source_format,
+        rs2_format left_target_format,
+        rs2_stream left_target_stream,
+        rs2_extension left_extension_type,
+        int left_idx,
+        rs2_format right_target_format,
+        rs2_stream right_target_stream,
+        rs2_extension right_extension_type,
+        int right_idx)
+        :   processing_block(name),
+            _source_format(source_format),
+            _left_target_format(left_target_format),
+            _left_target_stream(left_target_stream),
+            _left_extension_type(left_extension_type),
+            _left_target_profile_idx(left_idx),
+            _right_target_format(right_target_format),
+            _right_target_stream(right_target_stream),
+            _right_extension_type(right_extension_type),
+            _right_target_profile_idx(right_idx) 
+    {
+        configure_processing_callback();
+    }
+
+    void interleaved_functional_processing_block::configure_processing_callback()
+    {
+        // define and set the frame processing callback
+        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        {
+            auto profile = As<video_stream_profile, stream_profile_interface>(frame.frame->get_stream());
+            if (!profile)
+            {
+                LOG_ERROR("Failed configuring interleaved funcitonal processing block: ", get_info(RS2_CAMERA_INFO_NAME));
+                return;
+            }
+
+            auto w = profile->get_width();
+            auto h = profile->get_height();
+
+            if (profile.get() != _source_stream_profile.get())
+            {
+                _source_stream_profile = profile;
+                _right_target_stream_profile = profile->clone();
+                _left_target_stream_profile = profile->clone();
+
+                _left_target_bpp = get_image_bpp(_left_target_format) / 8;
+                _right_target_bpp = get_image_bpp(_right_target_format) / 8;
+
+                _left_target_stream_profile->set_format(_left_target_format);
+                _right_target_stream_profile->set_format(_right_target_format);
+                _left_target_stream_profile->set_stream_type(_left_target_stream);
+                _right_target_stream_profile->set_stream_type(_right_target_stream);
+                _left_target_stream_profile->set_stream_index(_left_target_profile_idx);
+                _left_target_stream_profile->set_unique_id(_left_target_profile_idx);
+                _right_target_stream_profile->set_stream_index(_right_target_profile_idx);
+                _right_target_stream_profile->set_unique_id(_right_target_profile_idx);
+            }
+
+            // passthrough the frame if we don't need to process it.
+            auto format = profile->get_format();
+            if (format != _source_format)
+            {
+                source->frame_ready(std::move(frame));
+                return;
+            }
+
+            frame_holder lf, rf;
+
+            lf = source->allocate_video_frame(_left_target_stream_profile, frame, _left_target_bpp,
+                w, h, w * _left_target_bpp, _left_extension_type);
+            rf = source->allocate_video_frame(_right_target_stream_profile, frame, _right_target_bpp,
+                w, h, w * _right_target_bpp, _right_extension_type);
+
+            // process the frame
+            byte* planes[2];
+            planes[0] = (byte*)lf.frame->get_frame_data();
+            planes[1] = (byte*)rf.frame->get_frame_data();
+
+            process_function(planes, (const byte*)frame->get_frame_data(), w, h, 0);
+
+            source->frame_ready(std::move(lf));
+            source->frame_ready(std::move(rf));
+        };
+
+        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
+            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
     }
 }

@@ -9,6 +9,17 @@
 #ifndef LIBREALSENSE_TYPES_H
 #define LIBREALSENSE_TYPES_H
 
+// Disable declspec(dllexport) warnings:
+// Classes exported via LRS_EXTENSION_API are **not** part of official librealsense API (at least for now)
+// Any extension relying on these APIs must be compiled and distributed together with realsense2.dll
+#pragma warning(disable : 4275)        /* disable: C4275: non dll-interface class used as base for dll-interface class */
+#pragma warning(disable : 4251)        /* disable: C4251: class needs to have dll-interface to be used by clients of class */
+#ifdef WIN32
+#define LRS_EXTENSION_API __declspec(dllexport)
+#else
+#define LRS_EXTENSION_API
+#endif
+
 #include "../include/librealsense2/hpp/rs_types.hpp"
 
 #ifndef _USE_MATH_DEFINES
@@ -28,10 +39,11 @@
 #include <condition_variable>
 #include <functional>
 #include <utility>                          // For std::forward
-
-
+#include <limits>
+#include <iomanip>
 #include "backend.h"
 #include "concurrency.h"
+
 #if BUILD_EASYLOGGINGPP
 #include "../third-party/easyloggingpp/src/easylogging++.h"
 #endif // BUILD_EASYLOGGINGPP
@@ -39,10 +51,6 @@
 typedef unsigned char byte;
 
 const int RS2_USER_QUEUE_SIZE = 128;
-
-#ifndef DBL_EPSILON
-const double DBL_EPSILON = 2.2204460492503131e-016;  // smallest such that 1.0+DBL_EPSILON != 1.0
-#endif
 
 // Usage of non-standard C++ PI derivatives is prohibitive, use local definitions
 static const double pi = std::acos(-1);
@@ -57,19 +65,25 @@ template<typename T> T rad2deg(T val) { return T(val * r2d); }
 #include "../common/android_helpers.h"
 #endif
 
+#define UNKNOWN_VALUE "UNKNOWN"
+
 namespace librealsense
 {
-    #define UNKNOWN_VALUE "UNKNOWN"
-    const double TIMESTAMP_USEC_TO_MSEC = 0.001;
-    const double TIMESTAMP_NSEC_TO_MSEC = 0.000001;
+#pragma pack (push, 1)
 
-#ifdef _WIN32
-/* The FW timestamps for HID are converted to Usec in Windows kernel */
-#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_USEC_TO_MSEC
-#else
-/* The FW timestamps for HID are converted to Nanosec in Linux kernel */
-#define HID_TIMESTAMP_MULTIPLIER TIMESTAMP_NSEC_TO_MSEC
-#endif // define HID_TIMESTAMP_MULTIPLIER
+    struct hid_data
+    {
+        short x;
+        byte reserved1[2];
+        short y;
+        byte reserved2[2];
+        short z;
+        byte reserved3[2];
+    };
+
+#pragma pack(pop)
+
+    static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
 
     ///////////////////////////////////
     // Utility types for general use //
@@ -81,29 +95,71 @@ namespace librealsense
         operator std::string() const { return ss.str(); }
     };
 
-    template<typename T, size_t size>
-    inline size_t copy_array(T(&dst)[size], const T(&src)[size])
+    template<typename T>
+    constexpr size_t arr_size(T const&) { return 1; }
+
+    template<typename T, size_t sz>
+    constexpr size_t arr_size(T(&arr)[sz])
     {
-        assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < size; i++)
-        {
-            dst[i] = src[i];
-        }
-        return size;
+        return sz * arr_size(arr[0]);
     }
 
-    template<typename T, size_t sizem, size_t sizen>
-    inline size_t copy_2darray(T(&dst)[sizem][sizen], const T(&src)[sizem][sizen])
+    template<typename T, size_t sz>
+    constexpr size_t arr_size_bytes(T(&arr)[sz])
     {
-        assert(dst != nullptr && src != nullptr);
-        for (size_t i = 0; i < sizem; i++)
+        return arr_size(arr) * sizeof(T);
+    }
+
+    template<typename T>
+    std::string array2str(T& data)
+    {
+        std::stringstream ss;
+        for (auto i = 0; i < arr_size(data); i++)
+            ss << " [" << i << "] = " << data[i] << "\t";
+        return ss.str();
+    }
+
+    // Auxillary function for compiler to highlight the invoking user code
+    template <typename T, typename S>
+    struct isNarrowing { static bool constexpr value = std::numeric_limits<S>::max() > std::numeric_limits<T>::max(); };
+
+    template<const bool force_narrowing=false, typename T, typename S, size_t size_tgt, size_t size_src>
+    inline size_t copy_array(T(&dst)[size_tgt], const S(&src)[size_src])
+    {
+        static_assert((size_tgt && (size_tgt == size_src)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_array supports arithmetic types only");
+        if (!force_narrowing && isNarrowing<T, S>::value)
         {
-            for (size_t j = 0; j < sizen; j++)
+            static_assert(!(isNarrowing<T, S>::value && !force_narrowing), "Passing narrowing conversion to copy_array requires setting the force flag on");
+        }
+
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < size_tgt; i++)
+        {
+            dst[i] = static_cast<T>(src[i]);
+        }
+        return size_tgt;
+    }
+
+    template<const bool force_narrowing=false, typename T, typename S, size_t tgt_m, size_t tgt_n, size_t src_m, size_t src_n>
+    inline size_t copy_2darray(T(&dst)[tgt_m][tgt_n], const S(&src)[src_m][src_n])
+    {
+        static_assert((src_m && src_n && (tgt_n == src_n) && (tgt_m == src_m)), "copy_array requires similar non-zero size for target and source containers");
+        static_assert((std::is_arithmetic<S>::value) && (std::is_arithmetic<T>::value), "copy_2darray supports arithmetic types only");
+        if (isNarrowing<T, S>::value && !force_narrowing)
+        {
+            static_assert(!(isNarrowing<T, S>::value && !force_narrowing), "Passing narrowing conversion to copy_2darray requires setting the force flag on");
+        }
+
+        assert(dst != nullptr && src != nullptr);
+        for (size_t i = 0; i < src_m; i++)
+        {
+            for (size_t j = 0; j < src_n; j++)
             {
-                dst[i][j] = src[i][j];
+                dst[i][j] = static_cast<T>(src[i][j]);
             }
         }
-        return sizem * sizen;
+        return src_m * src_n;
     }
 
     // Comparing parameter against a range of values of the same type
@@ -119,6 +175,16 @@ namespace librealsense
         return false;
     }
 
+    template<class T>
+    std::string hexify(const T& val)
+    {
+        static_assert((std::is_integral<T>::value), "hexify supports integral built-in types only");
+
+        std::ostringstream oss;
+        oss << std::setw(sizeof(T)*2) << std::setfill('0') << std::uppercase << std::hex << val;
+        return oss.str().c_str();
+    }
+
     void copy(void* dst, void const* src, size_t size);
 
     std::string make_less_screamy(const char* str);
@@ -132,15 +198,34 @@ namespace librealsense
 
 #if BUILD_EASYLOGGINGPP
 
+#ifdef RS2_USE_ANDROID_BACKEND
+#include <android/log.h>
+
+#define LOG_TAG "librs"
+
+#define LOG_INFO(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_INFO, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_WARNING(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_WARN, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_ERROR(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_FATAL(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
+#ifdef NDEBUG
+#define LOG_DEBUG(...)
+#else
+#define LOG_DEBUG(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_DEBUG, LOG_TAG, ss.str().c_str()); } while(false)
+#endif
+
+#else //RS2_USE_ANDROID_BACKEND
+
 #define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
 
+#endif // RS2_USE_ANDROID_BACKEND
+
 #else // BUILD_EASYLOGGINGPP
 
-#define LOG_DEBUG(...)   do { ; } while(false)
+    #define LOG_DEBUG(...)   do { ; } while(false)
 #define LOG_INFO(...)    do { ; } while(false)
 #define LOG_WARNING(...) do { ; } while(false)
 #define LOG_ERROR(...)   do { ; } while(false)
@@ -162,6 +247,11 @@ namespace librealsense
 #endif
     }
 
+#ifdef BUILD_INTERNAL_UNIT_TESTS
+#define PRIVATE_TESTABLE public
+#else
+#define PRIVATE_TESTABLE private
+#endif
     //////////////////////////
     // Exceptions mechanism //
     //////////////////////////
@@ -197,7 +287,7 @@ namespace librealsense
         rs2_exception_type _exception_type;
     };
 
-    class recoverable_exception : public librealsense_exception
+    class LRS_EXTENSION_API recoverable_exception : public librealsense_exception
     {
     public:
         recoverable_exception(const std::string& msg,
@@ -362,6 +452,16 @@ namespace librealsense
             return *this;
         }
 
+        void reset() const
+        {
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (_was_init)
+            {
+                _ptr.reset();
+                _was_init = false;
+            }
+        }
+
     private:
         T* operate() const
         {
@@ -393,27 +493,6 @@ namespace librealsense
         unique_id& operator=(const unique_id&) = delete;
     };
 
-    template<typename T, int sz>
-    int arr_size(T(&)[sz])
-    {
-        return sz;
-    }
-
-    template<typename T, int sz>
-    int arr_size_bytes(T(&)[sz])
-    {
-        return sz*sizeof(T);
-    }
-
-    template<typename T>
-    std::string array2str(T& data)
-    {
-        std::stringstream ss;
-        for (auto i = 0; i < arr_size(data); i++)
-            ss << " [" << i << "] = " << data[i] << "\t";
-        return ss.str();
-    }
-
     typedef float float_4[4];
 
     /////////////////////////////
@@ -421,7 +500,7 @@ namespace librealsense
     /////////////////////////////
 
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) const char* get_string(TYPE value); \
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) LRS_EXTENSION_API const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= 0 && value < RS2_##PREFIX##_COUNT; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; } \
         inline bool try_parse(const std::string& str, TYPE& res)       \
@@ -500,7 +579,39 @@ namespace librealsense
                 r.rotation[j * 3 + i] = (i == j) ? 1.f : 0.f;
         return r;
     }
+    inline bool operator==(const rs2_extrinsics& a, const rs2_extrinsics& b)
+    {
+        for (int i = 0; i < 3; i++) 
+            if (a.translation[i] != b.translation[i]) 
+                return false;
+        for (int j = 0; j < 3; j++)
+            for (int i = 0; i < 3; i++)
+                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i]) 
+                     > std::numeric_limits<float>::epsilon()) 
+                    return false;
+        return true;
+    }
     inline rs2_extrinsics inverse(const rs2_extrinsics& a) { auto p = to_pose(a); return from_pose(inverse(p)); }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float3& elem)
+    {
+        return stream << elem.x << " " << elem.y << " " << elem.z;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float4& elem)
+    {
+        return stream << elem.x << " " << elem.y << " " << elem.z << " " << elem.w;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const float3x3& elem)
+    {
+        return stream << elem.x << "\n" << elem.y << "\n" << elem.z;
+    }
+
+    inline std::ostream& operator <<(std::ostream& stream, const pose& elem)
+    {
+        return stream << "Position:\n " << elem.position  << "\n Orientation :\n" << elem.orientation;
+    }
 
     ///////////////////
     // Pixel formats //
@@ -509,13 +620,29 @@ namespace librealsense
     typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
     typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
     typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
+    
+    struct resolution
+    {
+        uint32_t width, height;
+    };
+    using resolution_func = std::function<resolution(resolution res)>;
 
     struct stream_profile
     {
+        stream_profile(rs2_format fmt = RS2_FORMAT_ANY,
+            rs2_stream strm = RS2_STREAM_ANY,
+            int idx = 0,
+            uint32_t w = 0, uint32_t h = 0,
+            uint32_t framerate = 0,
+            resolution_func res_func = [](resolution res) { return res; }) :
+            format(fmt), stream(strm), index(idx), height(h), width(w), stream_resolution(res_func), fps(framerate)
+        {};
+
+        rs2_format format;
         rs2_stream stream;
         int index;
         uint32_t width, height, fps;
-        rs2_format format;
+        resolution_func stream_resolution; // Calculates the relevant resolution from the given backend resolution.
     };
 
 
@@ -530,6 +657,14 @@ namespace librealsense
             (a.stream == b.stream);
     }
 
+    inline bool operator<(const stream_profile & lhs,
+        const stream_profile & rhs)
+    {
+        if (lhs.format != rhs.format) return lhs.format < rhs.format;
+        if (lhs.index != rhs.index)   return lhs.index  < rhs.index;
+        return lhs.stream < rhs.stream;
+    }
+
     struct stream_descriptor
     {
         stream_descriptor() : type(RS2_STREAM_ANY), index(0) {}
@@ -538,13 +673,6 @@ namespace librealsense
         rs2_stream type;
         int index;
     };
-
-    struct resolution
-    {
-        uint32_t width, height;
-    };
-
-    using resolution_func = std::function<resolution(resolution res)>;
 
     struct stream_output {
         stream_output(stream_descriptor stream_desc_in,
@@ -563,7 +691,7 @@ namespace librealsense
     struct pixel_format_unpacker
     {
         bool requires_processing;
-        void(*unpack)(byte * const dest[], const byte * source, int width, int height);
+        void(*unpack)(byte * const dest[], const byte * source, int width, int height, int actual_size);
         std::vector<stream_output> outputs;
 
         platform::stream_profile get_uvc_profile(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
@@ -630,51 +758,7 @@ namespace librealsense
 
     };
 
-    struct native_pixel_format
-    {
-        uint32_t fourcc;
-        int plane_count;
-        size_t bytes_per_pixel;
-        std::vector<pixel_format_unpacker> unpackers;
-
-        size_t get_image_size(int width, int height) const { return width * height * plane_count * bytes_per_pixel; }
-
-        operator native_pixel_format_tuple() const
-        {
-            return std::make_tuple(fourcc, plane_count, bytes_per_pixel);
-        }
-    };
-
     class stream_profile_interface;
-
-    struct request_mapping
-    {
-        platform::stream_profile profile;
-        native_pixel_format* pf;
-        pixel_format_unpacker* unpacker;
-
-        // The request lists is there just for lookup and is not involved in object comparison
-        mutable std::vector<std::shared_ptr<stream_profile_interface>> original_requests;
-
-        operator request_mapping_tuple() const
-        {
-            return std::make_tuple(profile, *pf, *unpacker);
-        }
-
-        bool requires_processing() const { return unpacker->requires_processing; }
-
-    };
-
-    inline bool operator< (const request_mapping& first, const request_mapping& second)
-    {
-        return request_mapping_tuple(first) < request_mapping_tuple(second);
-    }
-
-    inline bool operator==(const request_mapping& a,
-        const request_mapping& b)
-    {
-        return (a.profile == b.profile) && (a.pf == b.pf) && (a.unpacker == b.unpacker);
-    }
 
     class frame_interface;
 
@@ -902,11 +986,35 @@ namespace librealsense
         void release() override { delete this; }
     };
 
+    class update_progress_callback : public rs2_update_progress_callback
+    {
+        rs2_update_progress_callback_ptr _nptr;
+        void* _client_data;
+    public:
+        update_progress_callback() {}
+        update_progress_callback(rs2_update_progress_callback_ptr on_update_progress, void* client_data = NULL)
+        : _nptr(on_update_progress), _client_data(client_data){}
+
+        operator bool() const { return _nptr != nullptr; }
+        void on_update_progress(const float progress) {
+            if (_nptr)
+            {
+                try { _nptr(progress, _client_data); }
+                catch (...)
+                {
+                    LOG_ERROR("Received an exception from firmware update progress callback!");
+                }
+            }
+        }
+        void release() { delete this; }
+    };
+
     typedef std::unique_ptr<rs2_log_callback, void(*)(rs2_log_callback*)> log_callback_ptr;
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
+    typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
 
     using internal_callback = std::function<void(rs2_device_list* removed, rs2_device_list* added)>;
     class devices_changed_callback_internal : public rs2_devices_changed_callback
@@ -1345,7 +1453,15 @@ namespace librealsense
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
 
-    std::string datetime_string();
+    inline std::string datetime_string()
+    {
+        auto t = time(nullptr);
+        char buffer[20] = {};
+        const tm* time = localtime(&t);
+        if (nullptr != time)
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
+        return to_string() << buffer;
+    }
 
     bool file_exists(const char* filename);
 
@@ -1607,6 +1723,17 @@ namespace librealsense
         bool _valid;
         T _value;
     };
+
+}
+
+template<typename T>
+uint32_t rs_fourcc(const T a, const T b, const  T c, const T d)
+{
+    static_assert((std::is_integral<T>::value), "rs_fourcc supports integral built-in types only");
+    return ((static_cast<uint32_t>(a) << 24) |
+            (static_cast<uint32_t>(b) << 16) |
+            (static_cast<uint32_t>(c) << 8) |
+            (static_cast<uint32_t>(d) << 0));
 }
 
 namespace std {
@@ -1641,15 +1768,13 @@ namespace std {
     };
 
     template <>
-    struct hash<librealsense::request_mapping>
+    struct hash<rs2_format>
     {
-        size_t operator()(const librealsense::request_mapping& k) const
+        size_t operator()(const rs2_format& f) const
         {
             using std::hash;
 
-            return (hash<librealsense::platform::stream_profile>()(k.profile))
-                ^ (hash<librealsense::pixel_format_unpacker*>()(k.unpacker))
-                ^ (hash<librealsense::native_pixel_format*>()(k.pf));
+            return hash<uint32_t>()(f);
         }
     };
 }

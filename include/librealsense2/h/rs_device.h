@@ -146,6 +146,207 @@ void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* m
 */
 void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error);
 
+
+/** 
+* Reset device to factory calibration
+* \param[in] device       The RealSense device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_reset_to_factory_calibration(const rs2_device* device, rs2_error** e);
+
+/**
+* Write calibration to device's EEPROM
+* \param[in] device       The RealSense device
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_write_calibration(const rs2_device* device, rs2_error** e);
+
+/**
+* Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
+* This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+* \param[in]  device        Device to update
+* \param[in]  fw_image      Firmware image buffer
+* \param[in]  fw_image_size Firmware image buffer size
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error);
+
+/**
+* Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE.
+* This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+* \param[in]  device        Device to update
+* \param[in]  fw_image      Firmware image buffer
+* \param[in]  fw_image_size Firmware image buffer size
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data   Optional client data for the callback
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+
+/**
+* Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+* loaded back to the device, but it does contain all calibration and device information.
+* \param[in]  device        Device to update
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device, rs2_update_progress_callback* callback, rs2_error** error);
+
+/**
+* Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+* loaded back to the device, but it does contain all calibration and device information.
+* \param[in]  device        Device to update
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data   Optional client data for the callback
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+
+#define RS2_UNSIGNED_UPDATE_MODE_UPDATE     0
+#define RS2_UNSIGNED_UPDATE_MODE_READ_ONLY  1
+#define RS2_UNSIGNED_UPDATE_MODE_FULL       2
+
+/**
+* Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera.
+* The device must be extendable to RS2_EXTENSION_UPDATABLE.
+* This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+* \param[in]  device        Device to update
+* \param[in]  fw_image      Firmware image buffer
+* \param[in]  fw_image_size Firmware image buffer size
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  update_mode   Select one of RS2_UNSIGNED_UPDATE_MODE, WARNING!!! setting to any option other than RS2_UNSIGNED_UPDATE_MODE_UPDATE will make this call unsafe and might damage the camera
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, int update_mode, rs2_error** error);
+
+/**
+* Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera.
+* The device must be extendable to RS2_EXTENSION_UPDATABLE.
+* This call is executed on the caller's thread and it supports progress notifications via the optional callback.
+* \param[in]  device        Device to update
+* \param[in]  fw_image      Firmware image buffer
+* \param[in]  fw_image_size Firmware image buffer size
+* \param[in]  callback      Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data   Optional client data for the callback
+* \param[in]  update_mode   Select one of RS2_UNSIGNED_UPDATE_MODE, WARNING!!! setting to any option other than RS2_UNSIGNED_UPDATE_MODE_UPDATE will make this call unsafe and might damage the camera
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, int update_mode, rs2_error** error);
+
+/**
+* Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device.
+* \param[in]  device     Device to update
+* \param[out] error      If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
+
+/**
+* This will improve the depth noise.
+* \param[in] json_content       Json string to configure speed on chip calibration parameters:
+                                    {
+                                      "speed": 3,
+                                      "scan parameter": 0,
+                                      "data sampling": 0
+                                    }
+                                    speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.25) - Good
+                                [0.25, 0.75) - Can be Improved
+                                [0.75, ) - Requires Calibration
+* \param[in] callback           Optional callback to get progress notifications
+* \param[in] timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                       New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+
+/**
+* This will improve the depth noise.
+* \param[in] json_content       Json string to configure speed on chip calibration parameters:
+                                    {
+                                      "speed": 3,
+                                      "scan parameter": 0,
+                                      "data sampling": 0
+                                    }
+                                    speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                [0, 0.25) - Good
+                                [0.25, 0.75) - Can be Improved
+                                [0.75, ) - Requires Calibration
+* \param[in]  callback          Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data       Optional client data for the callback
+* \param[in] timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                       New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
+
+/**
+* This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+* \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+* \param[in] json_content        Json string to configure tare calibration parameters:
+                                    {
+                                      "average step count": 20,
+                                      "step count": 20,
+                                      "accuracy": 2,
+                                      "scan parameter": 0,
+                                      "data sampling": 0
+                                    }
+                                    average step count - number of frames to average, must be between 1 - 30, default = 20
+                                    step count - max iteration steps, must be between 5 - 30, default = 10
+                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+* \param[in]  callback            Optional callback to get progress notifications
+* \param[in] timeout_ms          Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                         New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+
+/**
+* This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+* \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+* \param[in] json_content        Json string to configure tare calibration parameters:
+                                    {
+                                      "average_step_count": 20,
+                                      "step count": 20,
+                                      "accuracy": 2,
+                                      "scan parameter": 0,
+                                      "data sampling": 0
+                                    }
+                                    average step count - number of frames to average, must be between 1 - 30, default = 20
+                                    step count - max iteration steps, must be between 5 - 30, default = 10
+                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                    scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                    data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    if json is nullptr it will be ignored and calibration will use the default parameters
+* \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+* \param[in]  callback           Optional callback for update progress notifications, the progress value is normailzed to 1
+* \param[in]  client_data        Optional client data for the callback
+* \param[in] timeout_ms          Timeout in ms (use 5000 msec unless instructed otherwise)
+* \return                        New calibration table
+*/
+const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
+
+/**
+*  Read current calibration table from flash.
+* \return    Calibration table
+*/
+const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* dev, rs2_error** error);
+
+/**
+*  Set current table to dynamic area.
+* \param[in]     Calibration table
+*/
+void rs2_set_calibration_table(const rs2_device* device, const void* calibration, int calibration_size, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

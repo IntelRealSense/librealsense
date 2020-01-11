@@ -147,6 +147,386 @@ namespace rs2
 
     };
 
+    template<class T>
+    class update_progress_callback : public rs2_update_progress_callback
+    {
+        T _callback;
+
+    public:
+        explicit update_progress_callback(T callback) : _callback(callback) {}
+
+        void on_update_progress(const float progress) override
+        {
+            _callback(progress);
+        }
+
+        void release() override { delete this; }
+    };
+
+    class updatable : public device
+    {
+    public:
+        updatable() : device() {}
+        updatable(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATABLE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        // Move the device to update state, this will cause the updatable device to disconnect and reconnect as an update device.
+        void enter_update_state() const
+        {
+            rs2_error* e = nullptr;
+            rs2_enter_update_state(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        // Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be
+        // loaded back to the device, but it does contain all calibration and device information."
+        std::vector<uint8_t> create_flash_backup() const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), nullptr, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        template<class T>
+        std::vector<uint8_t> create_flash_backup(T callback) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_create_flash_backup_cpp(_dev.get(), new update_progress_callback<T>(std::move(callback)), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+return results;
+        }
+
+        // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
+        void update_unsigned(const std::vector<uint8_t>& image, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), (int)image.size(), nullptr, update_mode, &e);
+            error::handle(e);
+        }
+
+        // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread and it supports progress notifications via the callback.
+        template<class T>
+        void update_unsigned(const std::vector<uint8_t>& image, T callback, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_unsigned_cpp(_dev.get(), image.data(), image.size(), new update_progress_callback<T>(std::move(callback)), update_mode, &e);
+            error::handle(e);
+        }
+    };
+
+    class update_device : public device
+    {
+    public:
+        update_device() : device() {}
+        update_device(device d)
+            : device(d.get())
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_UPDATE_DEVICE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread.
+        void update(const std::vector<uint8_t>& fw_image) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), (int)fw_image.size(), NULL, &e);
+            error::handle(e);
+        }
+
+        // Update an updatable device to the provided firmware.
+        // This call is executed on the caller's thread and it supports progress notifications via the callback.
+        template<class T>
+        void update(const std::vector<uint8_t>& fw_image, T callback) const
+        {
+            rs2_error* e = nullptr;
+            rs2_update_firmware_cpp(_dev.get(), fw_image.data(), fw_image.size(), new update_progress_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+    };
+
+    typedef std::vector<uint8_t> calibration_table;
+
+    class calibrated_device : public device
+    {
+    public:
+        calibrated_device(device d)
+            : device(d.get())
+        {}
+
+        /**
+        * Write calibration that was set by set_calibration_table to device's EEPROM.
+        */
+        void write_calibration() const
+        {
+            rs2_error* e = nullptr;
+            rs2_write_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Reset device to factory calibration
+        */
+        void reset_to_factory_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_reset_to_factory_calibration(_dev.get(), &e);
+            error::handle(e);
+        }
+    };
+
+    class auto_calibrated_device : public calibrated_device
+    {
+    public:
+        auto_calibrated_device(device d)
+            : calibrated_device(d)
+        {
+            rs2_error* e = nullptr;
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, &e) == 0 && !e)
+            {
+                _dev.reset();
+            }
+            error::handle(e);
+        }
+
+        /**
+        * This will improve the depth noise.
+        * \param[in] json_content       Json string to configure speed on chip calibration parameters:
+                                            {
+                                              "speed": 3,
+                                              "scan parameter": 0,
+                                              "data sampling": 0
+                                            }
+                                            speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+        * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                        [0, 0.25) - Good
+                                        [0.25, 0.75) - Can be Improved
+                                        [0.75, ) - Requires Calibration
+        * \param[in] callback           Optional callback to get progress notifications
+        * \param[in] timeout_ms         Timeout in ms
+        * \return                       New calibration table
+        */
+        template<class T>
+        calibration_table run_on_chip_calibration(std::string json_content, float* health, T callback, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+         * This will improve the depth noise.
+         * \param[in] json_content       Json string to configure speed on chip calibration parameters:
+                                            {
+                                              "speed": 3,
+                                              "scan parameter": 0,
+                                              "data sampling": 0
+                                            }
+                                            speed - value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is  Slow
+                                            scan parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+         * \param[out] health            Calibration Health-Check captures how far camera calibration is from the optimal one
+                                         [0, 0.25) - Good
+                                         [0.25, 0.75) - Can be Improved
+                                         [0.75, ) - Requires Calibration
+         * \param[in] timeout_ms         Timeout in ms
+         * \return                       New calibration table
+         */
+        calibration_table run_on_chip_calibration(std::string json_content, float* health, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, nullptr, timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+        * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+        * \param[in] json_content        Json string to configure tare calibration parameters:
+                                            {
+                                              "average step count": 20,
+                                              "step count": 20,
+                                              "accuracy": 2,
+                                              "scan parameter": 0,
+                                              "data sampling": 0
+                                            }
+                                            average step count - number of frames to average, must be between 1 - 30, default = 20
+                                            step count - max iteration steps, must be between 5 - 30, default = 10
+                                            accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                            scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                            data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                            if json is nullptr it will be ignored and calibration will use the default parameters
+        * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+        * \param[in]  callback            Optional callback to get progress notifications
+        * \param[in] timeout_ms           Timeout in ms
+        * \return                         New calibration table
+        */
+        template<class T>
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, T callback, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000
+         * \param[in] json_content        Json string to configure tare calibration parameters:
+                                             {
+                                               "average step count": 20,
+                                               "step count": 20,
+                                               "accuracy": 2,
+                                               "scan parameter": 0,
+                                               "data sampling": 0
+                                             }
+                                             average step count - number of frames to average, must be between 1 - 30, default = 20
+                                             step count - max iteration steps, must be between 5 - 30, default = 10
+                                             accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                             scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
+                                             data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                             if json is nullptr it will be ignored and calibration will use the default parameters
+         * \param[in]  content_size        Json string size if its 0 the json will be ignored and calibration will use the default parameters
+         * \param[in] timeout_ms           Timeout in ms
+         * \return                         New calibration table
+         */
+        calibration_table run_tare_calibration(float ground_truth_mm, std::string json_content, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), nullptr, timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Read current calibration table from flash.
+        * \return    Calibration table
+        */
+        calibration_table get_calibration_table()
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_get_calibration_table(_dev.get(), &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Set current table to dynamic area.
+        * \param[in]     Calibration table
+        */
+        void set_calibration_table(const calibration_table& calibration)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_calibration_table(_dev.get(), calibration.data(), calibration.size(), &e);
+            error::handle(e);
+        }
+
+ 
+    };
+
     class debug_protocol : public device
     {
     public:
@@ -290,11 +670,20 @@ namespace rs2
         std::shared_ptr<rs2_device_list> _list;
     };
 
-    class tm2 : public device //TODO: add to wrappers
+    /**
+     * The tm2 class is an interface for T2XX devices, such as T265.
+     *
+     * For T265, it provides RS2_STREAM_FISHEYE (2), RS2_STREAM_GYRO, RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams,
+     * and contains the following sensors:
+     *
+     * - pose_sensor: map and relocalization functions.
+     * - wheel_odometer: input for odometry data.
+     */
+    class tm2 : public calibrated_device // TODO: add to wrappers [Python done]
     {
     public:
         tm2(device d)
-            : device(d.get())
+            : calibrated_device(d)
         {
             rs2_error* e = nullptr;
             if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TM2, &e) == 0 && !e)
@@ -358,6 +747,61 @@ namespace rs2
             rs2_disconnect_tm2_controller(_dev.get(), id, &e);
             error::handle(e);
         }
+
+        /**
+        * Set tm2 camera intrinsics
+        * \param[in] fisheye_senor_id The ID of the fisheye sensor
+        * \param[in] intrinsics       value to be written to the device
+        */
+        void set_intrinsics(int fisheye_sensor_id, const rs2_intrinsics& intrinsics)
+        {
+            rs2_error* e = nullptr;
+            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
+            rs2_set_intrinsics(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), &intrinsics, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Set tm2 camera extrinsics
+        * \param[in] from_stream     only support RS2_STREAM_FISHEYE
+        * \param[in] from_id         only support left fisheye = 1
+        * \param[in] to_stream       only support RS2_STREAM_FISHEYE
+        * \param[in] to_id           only support right fisheye = 2
+        * \param[in] extrinsics      extrinsics value to be written to the device
+        */
+        void set_extrinsics(rs2_stream from_stream, int from_id, rs2_stream to_stream, int to_id, rs2_extrinsics& extrinsics)
+        {
+            rs2_error* e = nullptr;
+            auto from_sensor = get_sensor_profile(from_stream, from_id);
+            auto to_sensor   = get_sensor_profile(to_stream, to_id);
+            rs2_set_extrinsics(from_sensor.first.get().get(), from_sensor.second.get(), to_sensor.first.get().get(), to_sensor.second.get(), &extrinsics, &e);
+            error::handle(e);
+        }
+
+        /** 
+        * Set tm2 motion device intrinsics
+        * \param[in] stream_type       stream type of the motion device
+        * \param[in] motion_intriniscs intrinsics value to be written to the device
+        */
+        void set_motion_device_intrinsics(rs2_stream stream_type, const rs2_motion_device_intrinsic& motion_intriniscs)
+        {
+            rs2_error* e = nullptr;
+            auto motion_sensor = get_sensor_profile(stream_type, 0);
+            rs2_set_motion_device_intrinsics(motion_sensor.first.get().get(), motion_sensor.second.get(), &motion_intriniscs, &e);
+            error::handle(e);
+        }
+
+    private:
+
+        std::pair<sensor, stream_profile> get_sensor_profile(rs2_stream stream_type, int stream_index) {
+            for (auto s : query_sensors()) {
+                for (auto p : s.get_stream_profiles()) {
+                    if (p.stream_type() == stream_type && p.stream_index() == stream_index)
+                        return std::pair<sensor, stream_profile>(s, p);
+                }
+            }
+            return std::pair<sensor, stream_profile>();
+         }
     };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

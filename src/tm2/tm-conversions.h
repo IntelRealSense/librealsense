@@ -67,11 +67,9 @@ namespace librealsense
     {
         switch (model)
         {
-        case 0: return RS2_DISTORTION_NONE;
-        case 1: return RS2_DISTORTION_MODIFIED_BROWN_CONRADY;
-        case 2: return RS2_DISTORTION_INVERSE_BROWN_CONRADY;
-        case 3: return RS2_DISTORTION_FTHETA;
-        case 4: //TODO - add KANNALA_BRANDT4;
+        case 1: return RS2_DISTORTION_FTHETA;
+        case 3: return RS2_DISTORTION_NONE;
+        case 4: return RS2_DISTORTION_KANNALA_BRANDT4;
         default:
             throw invalid_value_exception("Invalid TM2 camera model");
         }
@@ -86,7 +84,7 @@ namespace librealsense
         case perc::SIXDOF_INTERRUPT_RATE_FISHEYE:
             return 30;
         case perc::SIXDOF_INTERRUPT_RATE_IMU:
-            return 262; //TODO - going to change by TM2 to something else...
+            return 200; //TODO - going to change by TM2 to something else...
         default:
             throw invalid_value_exception("Invalid TM2 pose rate");
         }

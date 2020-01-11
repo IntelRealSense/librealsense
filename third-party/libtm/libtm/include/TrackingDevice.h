@@ -265,6 +265,15 @@ namespace perc
          */
          virtual Status GetExtrinsics(IN SensorId id, OUT TrackingData::SensorExtrinsics& extrinsics) = 0;
 
+         /**
+         * @brief SetExtrinsics
+         *        Set extrinsic pose of on individual sensor in the device relative to the default one
+         * @param id - Sensor Id (Sensor type + sensor index)
+         * @param extrinsics - Input container for extrinsic parameters
+         * @return Status
+         */
+         virtual Status SetExtrinsics(IN SensorId id, IN const TrackingData::SensorExtrinsics& extrinsics) = 0;
+
         /**
         * @brief SetOccupancyMapControl
         *        Enables/disables occupancy map calculation. Occupancy map calculation is based on 6DoF calculation, 
@@ -410,14 +419,6 @@ namespace perc
         virtual Status SetLocalizationData(IN Listener* listener, IN uint32_t length, IN const uint8_t* buffer) = 0;
 
         /**
-        * @brief ResetLocalizationData
-        *        Resets the localization data
-        * @param flag - 0 - Reset all localization data tables, 1 - reset only the map by its mapIndex
-        * @return Status
-        */
-        virtual Status ResetLocalizationData(IN uint8_t flag) = 0;
-
-        /**
         * @brief SetStaticNode
         *        Set a relative position of a static node
         * @param guid - Unique name (Null-terminated C-string) for the static node, max length is 127 bytes plus one byte for the terminating null character
@@ -470,6 +471,15 @@ namespace perc
         virtual Status EepromWrite(IN uint16_t offset, IN uint16_t size, IN uint8_t* buffer, OUT uint16_t& actual, IN bool verify = false) = 0;
 
         /**
+        * @brief SetLowPowerMode
+        *        Enable or disable low power mode in idle state in TM2 device.
+        * @param enable - true to enable low power mode, false to disable
+        *
+        * @return Status
+        */
+        virtual Status SetLowPowerMode(bool enable) = 0;
+
+        /**
         * @brief Reset
         *        Resets the device and loads FW
         *        Caution - this function is non blocking, need to sleep at least 2 seconds afterwards to let the FW load again
@@ -479,13 +489,13 @@ namespace perc
         virtual Status Reset(void) = 0;
 
         /**
-        * @brief AppendCalibration
-        *        Append calibration to current SLAM calibration
+        * @brief SetCalibration
+        *        Set new or Append calibration to current SLAM calibration
         * @param calibrationData - Calibration data
         *
         * @return Status
         */
-        virtual Status AppendCalibration(const TrackingData::CalibrationData& calibrationData) = 0;
+        virtual Status SetCalibration(const TrackingData::CalibrationData& calibrationData) = 0;
 
         /**
         * @brief SendFrame

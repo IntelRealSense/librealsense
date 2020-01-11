@@ -1,3 +1,4 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
 /*******************************************************************************
 INTEL CORPORATION PROPRIETARY INFORMATION
 Copyright(c) 2017 Intel Corporation. All Rights Reserved.
@@ -20,10 +21,10 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #define DEV_INTERFACE 0
 
-#define USB_ERR_NONE		0
-#define USB_ERR_TIMEOUT		-1
-#define USB_ERR_FAILED		-2
-#define USB_ERR_INVALID		-3
+#define USB_ERR_NONE        0
+#define USB_ERR_TIMEOUT        -1
+#define USB_ERR_FAILED        -2
+#define USB_ERR_INVALID        -3
 
 namespace tracking
 {

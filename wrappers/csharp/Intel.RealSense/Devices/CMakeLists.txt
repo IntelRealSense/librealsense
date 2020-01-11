@@ -1,0 +1,11 @@
+target_sources(${LRS_DOTNET_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/AdvancedDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/Device.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/DeviceList.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/PlaybackDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/RecordDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/SoftwareDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/UpdatableDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/UpdateDevice.cs"
+)

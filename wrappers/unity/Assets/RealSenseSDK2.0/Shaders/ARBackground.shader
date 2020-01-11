@@ -8,6 +8,7 @@
 		[NoScaleOffset]
 		_DepthTex ("Depth", 2D) = "black" {}
 
+		_BgColor ("Background", Color) = (0.003921569, 0.7098039, 0.9333333, 1)
 		_MinRange("Min Range(m)", Range(0, 10)) = 0.15
 		_MaxRange("Max Range(m)", Range(0, 20)) = 10.0
 
@@ -50,6 +51,7 @@
 			sampler2D _Colormaps;
 			float4 _Colormaps_TexelSize;
 			
+			float4 _BgColor;
 			float _Colormap;
 			float _MinRange;
 			float _MaxRange;
@@ -85,7 +87,7 @@
 				depth = 0;
 				if(i.uv.y < 0 || i.uv.y > 1) {
 					depth = 1;
-					return float4(0.003921569, 0.7098039, 0.9333333, 1);
+					return _BgColor;
 				}
 
 				float d = tex2D(_DepthTex, i.uv);

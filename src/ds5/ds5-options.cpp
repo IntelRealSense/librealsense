@@ -15,11 +15,15 @@ namespace librealsense
             }
             case 1:
             {
-                return "On";
+                return "Laser";
             }
             case 2:
             {
-                return "Auto";
+                return "Laser Auto";
+            }
+            case 3:
+            {
+                return "LED";
             }
             default:
                 throw invalid_value_exception("value not found");
@@ -28,7 +32,7 @@ namespace librealsense
 
     emitter_option::emitter_option(uvc_sensor& ep)
         : uvc_xu_option(ep, ds::depth_xu, ds::DS5_DEPTH_EMITTER_ENABLED,
-                        "Power Control for D400 Projector, 0-off, 1-on, (2-deprecated)")
+                        "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
 
     float asic_and_projector_temperature_options::query() const
@@ -75,11 +79,11 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
 
         if (0 == temperature_data.*is_valid_field)
-            LOG_ERROR(rs2_option_to_string(_option) << " value is not valid!");
+            LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
 
         return temperature_data.*field;
     }
@@ -103,7 +107,7 @@ namespace librealsense
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
             return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(to_string() << rs2_option_to_string(_option) << " is not temperature option!");
+            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
         }
     }
 
@@ -175,32 +179,10 @@ namespace librealsense
     }
 
     enable_motion_correction::enable_motion_correction(sensor_base* mm_ep,
-                                                       const ds::imu_intrinsic& accel,
-                                                       const ds::imu_intrinsic& gyro,
                                                        std::shared_ptr<librealsense::lazy<rs2_extrinsics>> depth_to_imu,
-                                                       on_before_frame_callback frame_callback,
                                                        const option_range& opt_range)
-        : option_base(opt_range), _is_enabled(true), _accel(accel), _gyro(gyro), _depth_to_imu(**depth_to_imu)
-    {
-        mm_ep->register_on_before_frame_callback(
-            [this, frame_callback](rs2_stream stream, frame_interface* fr, callback_invocation_holder callback)
-            {
-                if (_is_enabled.load() && fr->get_stream()->get_format() == RS2_FORMAT_MOTION_XYZ32F)
-                {
-                    auto xyz = (float3*)(fr->get_frame_data());
-
-                    if (stream == RS2_STREAM_ACCEL)
-                        *xyz = (_accel.sensitivity * (*xyz)) - _accel.bias;
-
-                    if (stream == RS2_STREAM_GYRO)
-                        *xyz = _gyro.sensitivity * (*xyz) - _gyro.bias;
-                }
-
-                // Align IMU axes to the established Coordinates System
-                if (frame_callback)
-                    frame_callback(stream, fr, std::move(callback));
-            });
-    }
+        : option_base(opt_range), _is_enabled(true), _depth_to_imu(**depth_to_imu)
+    {}
 
     void enable_auto_exposure_option::set(float value)
     {
@@ -232,7 +214,7 @@ namespace librealsense
         return _auto_exposure_state->get_enable_auto_exposure();
     }
 
-    enable_auto_exposure_option::enable_auto_exposure_option(uvc_sensor* fisheye_ep,
+    enable_auto_exposure_option::enable_auto_exposure_option(synthetic_sensor* fisheye_ep,
                                                              std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                              std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                                              const option_range& opt_range)
@@ -240,19 +222,7 @@ namespace librealsense
           _auto_exposure_state(auto_exposure_state),
           _to_add_frames((_auto_exposure_state->get_enable_auto_exposure())),
           _auto_exposure(auto_exposure)
-    {
-        fisheye_ep->register_on_before_frame_callback(
-                    [this](rs2_stream stream, frame_interface* f, callback_invocation_holder callback)
-        {
-            if (!_to_add_frames || stream != RS2_STREAM_FISHEYE)
-                return;
-
-            ((frame*)f)->additional_data.fisheye_ae_mode = true;
-
-            f->acquire();
-            _auto_exposure->add_frame(f, std::move(callback));
-        });
-    }
+    {}
 
     auto_exposure_mode_option::auto_exposure_mode_option(std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                                          std::shared_ptr<auto_exposure_state> auto_exposure_state,
@@ -318,9 +288,9 @@ namespace librealsense
                                                                                  const option_range& opt_range,
                                                                                  const std::map<float, std::string>& description_per_value)
         : option_base(opt_range),
+          _description_per_value(description_per_value),
           _auto_exposure_state(auto_exposure_state),
-          _auto_exposure(auto_exposure),
-          _description_per_value(description_per_value)
+          _auto_exposure(auto_exposure)
     {}
 
     void auto_exposure_antiflicker_rate_option::set(float value)
@@ -471,5 +441,37 @@ namespace librealsense
     option_range emitter_on_and_off_option::get_range() const
     {
         return *_range;
+    }
+
+    alternating_emitter_option::alternating_emitter_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void alternating_emitter_option::set(float value)
+    {
+        std::vector<uint8_t> pattern{};
+        if (static_cast<int>(value))
+            pattern = ds::alternating_emitter_pattern;
+
+        command cmd(ds::SETSUBPRESET, static_cast<int>(pattern.size()));
+        cmd.data = pattern;
+        auto res = _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float alternating_emitter_option::query() const
+    {
+        command cmd(ds::GETSUBPRESETNAME);
+        auto res = _hwm.send(cmd);
+        if (res.size()>20)
+            throw invalid_value_exception("HWMON::GETSUBPRESETNAME invalid size");
+
+        static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
+        return (alt_emitter_name == res);
     }
 }

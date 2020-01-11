@@ -21,15 +21,15 @@ namespace librealsense
     public:
         ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader);
 
-        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size);
+        bool has_metadata(const std::shared_ptr<frame_interface>& frame);
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
         void reset() override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
     class ds5_timestamp_reader : public frame_timestamp_reader
@@ -43,31 +43,11 @@ namespace librealsense
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
-    };
-
-    class ds5_iio_hid_timestamp_reader : public frame_timestamp_reader
-    {
-        static const int sensors = 2;
-        bool started;
-        mutable std::vector<int64_t> counter;
-        mutable std::recursive_mutex _mtx;
-    public:
-        ds5_iio_hid_timestamp_reader();
-
-        void reset() override;
-
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
-
-        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const;
-
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
-
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
     class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
@@ -81,12 +61,12 @@ namespace librealsense
 
         void reset() override;
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-        bool has_metadata(const request_mapping& mode, const void * metadata, size_t metadata_size) const;
+        bool has_metadata(const std::shared_ptr<frame_interface>& frame) const;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 }

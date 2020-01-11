@@ -160,13 +160,13 @@ device::~device()
     _sensors.clear();
 }
 
-int device::add_sensor(std::shared_ptr<sensor_interface> sensor_base)
+int device::add_sensor(const std::shared_ptr<sensor_interface>& sensor_base)
 {
     _sensors.push_back(sensor_base);
     return (int)_sensors.size() - 1;
 }
 
-int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx)
+int device::assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx)
 {
     try
     {
@@ -177,11 +177,6 @@ int device::assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t
     {
         throw invalid_value_exception(to_string() << "Cannot assign sensor - invalid subdevice value" << idx);
     }
-}
-
-uvc_sensor& device::get_uvc_sensor(int sub)
-{
-    return dynamic_cast<uvc_sensor&>(*_sensors[sub]);
 }
 
 size_t device::get_sensors_count() const
@@ -248,21 +243,41 @@ std::pair<uint32_t, rs2_extrinsics> librealsense::device::get_extrinsics(const s
     return std::make_pair(pair.first, ext);
 }
 
-void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index)
+void librealsense::device::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
 {
     auto iter = std::find_if(_extrinsics.begin(),
                            _extrinsics.end(),
-                           [groupd_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == groupd_index; });
+                           [group_index](const std::pair<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>>& p) { return p.second.first == group_index; });
     if (iter == _extrinsics.end())
     {
         //First stream to register for this group
-        _extrinsics[stream.get_unique_id()] = std::make_pair(groupd_index, stream.shared_from_this());
+        _extrinsics[stream.get_unique_id()] = std::make_pair(group_index, stream.shared_from_this());
     }
     else
     {
         //iter->second holds the group_id and the key stream
         _extrinsics[stream.get_unique_id()] = iter->second;
     }
+}
+
+std::vector<rs2_format> librealsense::device::map_supported_color_formats(rs2_format source_format)
+{
+    // Mapping from source color format to all of the compatible target color formats.
+
+    std::vector<rs2_format> target_formats = { RS2_FORMAT_RGB8, RS2_FORMAT_RGBA8, RS2_FORMAT_BGR8, RS2_FORMAT_BGRA8 };
+    switch (source_format)
+    {
+    case RS2_FORMAT_YUYV:
+        target_formats.push_back(RS2_FORMAT_YUYV);
+        target_formats.push_back(RS2_FORMAT_Y16);
+        break;
+    case RS2_FORMAT_UYVY:
+        target_formats.push_back(RS2_FORMAT_UYVY);
+        break;
+    default:
+        LOG_ERROR("Format is not supported for mapping");
+    }
+    return target_formats;
 }
 
 void librealsense::device::tag_profiles(stream_profiles profiles) const
@@ -292,4 +307,21 @@ void librealsense::device::tag_profiles(stream_profiles profiles) const
             }
         }
     }
+}
+
+bool librealsense::device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const 
+{
+    if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
+    {
+        for (auto request : others)
+        {
+            if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                return true;
+            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                return true;
+            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                return true;
+        }
+    }
+    return false;
 }

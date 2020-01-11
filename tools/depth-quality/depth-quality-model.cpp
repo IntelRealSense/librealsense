@@ -1,7 +1,11 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include <iomanip>
 #include "depth-quality-model.h"
 #include <librealsense2/rs_advanced_mode.hpp>
 #include "model-views.h"
+#include "viewer.h"
+#include "os.h"
 
 namespace rs2
 {
@@ -69,7 +73,7 @@ namespace rs2
 
             for (auto& cfg : cfgs)
             {
-                if (valid_config = cfg.can_resolve(_pipe))
+                if ((valid_config = cfg.can_resolve(_pipe)))
                 {
                     try {
                         active_profile = _pipe.start(cfg);
@@ -158,6 +162,9 @@ namespace rs2
 
         bool tool_model::draw_instructions(ux_window& win, const rect& viewer_rect, bool& distance, bool& orientation)
         {
+            if (_viewer_model.paused)
+                return false;
+
             auto plane_fit_found = is_valid(_metrics_model.get_plane());
             _metrics_model.set_plane_fit(plane_fit_found);
             _roi_located.add_value(plane_fit_found);
@@ -434,10 +441,6 @@ namespace rs2
 
         void tool_model::render(ux_window& win)
         {
-            if (!win.is_ui_aligned())
-            {
-                _viewer_model.popup_if_ui_not_aligned(win.get_font());
-            }
             rect viewer_rect = { _viewer_model.panel_width,
                 _viewer_model.panel_y, win.width() -
                 _viewer_model.panel_width,
@@ -445,11 +448,12 @@ namespace rs2
 
             if (_first_frame)
             {
-                _viewer_model.update_3d_camera(viewer_rect, win.get_mouse(), true);
+                _viewer_model.update_3d_camera(win, viewer_rect, true);
                 _first_frame = false;
             }
 
-            _viewer_model.show_top_bar(win, viewer_rect);
+            device_models_list list;
+            _viewer_model.show_top_bar(win, viewer_rect, list);
             _viewer_model.roi_rect = _metrics_model.get_plane();
 
             bool distance_guide = false;
@@ -484,7 +488,6 @@ namespace rs2
                 _device_model->draw_controls(_viewer_model.panel_width, _viewer_model.panel_y,
                     win,
                     _error_message, device_to_remove, _viewer_model, windows_width,
-                    _update_readonly_options_timer,
                     draw_later, true,
                     [&](std::function<void()>func)
                     {
@@ -625,7 +628,18 @@ namespace rs2
                             ImGui::SetTooltip("Estimated distance to an average within the ROI of the target (wall) in mm");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::Text("%.2f mm", _metrics_model.get_last_metrics().distance);
+
+                        static float prev_metric_distance = 0;
+                        if (_viewer_model.paused)
+                        {
+                            ImGui::Text("%.2f mm", prev_metric_distance);
+                        }
+                        else
+                        {
+                            auto curr_metric_distance = _metrics_model.get_last_metrics().distance;
+                            ImGui::Text("%.2f mm", curr_metric_distance);
+                            prev_metric_distance = curr_metric_distance;
+                        }
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -668,7 +682,17 @@ namespace rs2
                             ImGui::SetTooltip("Estimated angle to the wall in degrees");
                         }
                         ImGui::SameLine(); ImGui::SetCursorPosX(col1);
-                        ImGui::Text("%.2f deg", _metrics_model.get_last_metrics().angle);
+                        static float prev_metric_angle = 0;
+                        if (_viewer_model.paused)
+                        {
+                            ImGui::Text("%.2f mm", prev_metric_angle);
+                        }
+                        else
+                        {
+                            auto curr_metric_angle = _metrics_model.get_last_metrics().angle;
+                            ImGui::Text("%.2f mm", curr_metric_angle);
+                            prev_metric_angle = curr_metric_angle;
+                        }
 
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
                         ImGui::TreePop();
@@ -768,7 +792,7 @@ namespace rs2
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
             _depth_sensor_model = std::shared_ptr<rs2::subdevice_model>(
-                new subdevice_model(dev, dpt_sensor, _error_message));
+                new subdevice_model(dev, dpt_sensor, _error_message, _viewer_model));
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
@@ -813,12 +837,13 @@ namespace rs2
                 sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
                 sub->depth_colorizer->set_option(RS2_OPTION_MIN_DISTANCE, 0.3f);
                 sub->depth_colorizer->set_option(RS2_OPTION_MAX_DISTANCE, 2.7f);
-                sub->options_invalidated = true;
+                sub->_options_invalidated = true;
 
                 for (auto&& profile : profiles)
                 {
                     _viewer_model.begin_stream(sub, profile);
                     _viewer_model.streams[profile.unique_id()].texture->colorize = sub->depth_colorizer;
+                    _viewer_model.streams[profile.unique_id()].texture->yuy2rgb = sub->yuy2rgb;
 
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
@@ -1159,14 +1184,17 @@ namespace rs2
             {
 
                 // Snapshot the color-augmented version of the frame
-                if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
+                if (auto df = frame.as<depth_frame>())
                 {
+                    if (auto colorized_frame = _colorize.colorize(frame).as<video_frame>())
+                    {
 
-                    auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
-                    auto filename_png = filename_base + "_" + stream_desc + "_" + fn.str() + ".png";
-                    save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
-                        colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+                        auto stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
+                        auto filename_png = filename_base + "_" + stream_desc + "_" + fn.str() + ".png";
+                        save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
+                            colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
 
+                    }
                 }
                 auto original_frame = frame.as<video_frame>();
 
@@ -1178,15 +1206,15 @@ namespace rs2
                     //Capture raw frame
                     auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
                     if (!save_frame_raw_data(filename, original_frame))
-                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame raw data  " << filename,
-                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
 
                     // And the frame's attributes
                     filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
                     if (!frame_metadata_to_csv(filename, original_frame))
-                        _viewer_model.not_model.add_notification({ to_string() << "Failed to save frame metadata file " << filename,
-                            0, RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model.add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
 
                 }
             }
@@ -1205,8 +1233,13 @@ namespace rs2
                     }
                 }
 
-                if (ply_texture )
-                    export_to_ply(filename_base + "_" + fn.str() + "_3d_mesh.ply", _viewer_model.not_model, frames, ply_texture, false);
+                if (ply_texture)
+                {
+                    auto fname = filename_base + "_" + fn.str() + "_3d_mesh.ply";
+                    std::unique_ptr<rs2::filter> exporter;
+                    exporter = std::unique_ptr<rs2::filter>(new rs2::save_to_ply(fname));
+                    export_frame(fname, std::move(exporter), _viewer_model.not_model, frames, false);
+                }
             }
         }
 

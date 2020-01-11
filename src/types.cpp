@@ -2,8 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "types.h"
-#include "device.h"
-#include "archive.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -11,9 +9,14 @@
 #include <fstream>
 #include <cmath>
 
+#include "core/streaming.h"
+#include "../include/librealsense2/hpp/rs_processing.hpp"
+
 #define STRCASE(T, X) case RS2_##T##_##X: {\
         static const std::string s##T##_##X##_str = make_less_screamy(#X);\
         return s##T##_##X##_str.c_str(); }
+
+const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 
 namespace librealsense
 {
@@ -37,17 +40,6 @@ namespace librealsense
         }
 
         return res;
-    }
-
-
-    std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
     }
 
     recoverable_exception::recoverable_exception(const std::string& msg,
@@ -112,16 +104,16 @@ namespace librealsense
 #define CASE(X) STRCASE(STREAM, X)
         switch (value)
         {
-            STRCASE(STREAM, ANY)
-            STRCASE(STREAM, DEPTH)
-            STRCASE(STREAM, COLOR)
-            STRCASE(STREAM, INFRARED)
-            STRCASE(STREAM, FISHEYE)
-            STRCASE(STREAM, GYRO)
-            STRCASE(STREAM, ACCEL)
-            STRCASE(STREAM, GPIO)
-            STRCASE(STREAM, POSE)
-            STRCASE(STREAM, CONFIDENCE)
+            CASE(ANY)
+            CASE(DEPTH)
+            CASE(COLOR)
+            CASE(INFRARED)
+            CASE(FISHEYE)
+            CASE(GYRO)
+            CASE(ACCEL)
+            CASE(GPIO)
+            CASE(POSE)
+            CASE(CONFIDENCE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -178,6 +170,23 @@ namespace librealsense
             CASE(TM2)
             CASE(SOFTWARE_DEVICE)
             CASE(SOFTWARE_SENSOR)
+            CASE(DECIMATION_FILTER)
+            CASE(THRESHOLD_FILTER)
+            CASE(DISPARITY_FILTER)
+            CASE(SPATIAL_FILTER)
+            CASE(TEMPORAL_FILTER)
+            CASE(HOLE_FILLING_FILTER)
+            CASE(ZERO_ORDER_FILTER)
+            CASE(RECOMMENDED_FILTERS)
+            CASE(POSE)
+            CASE(POSE_SENSOR)
+            CASE(WHEEL_ODOMETER)
+            CASE(UPDATABLE)
+            CASE(UPDATE_DEVICE)
+            CASE(GLOBAL_TIMER)
+            CASE(L500_DEPTH_SENSOR)
+            CASE(TM2_SENSOR)
+            CASE(AUTO_CALIBRATED_DEVICE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -265,6 +274,22 @@ namespace librealsense
             CASE(STREAM_FORMAT_FILTER)
             CASE(STREAM_INDEX_FILTER)
             CASE(EMITTER_ON_OFF)
+            CASE(ZERO_ORDER_POINT_X)
+            CASE(ZERO_ORDER_POINT_Y)
+            CASE(LLD_TEMPERATURE)
+            CASE(MC_TEMPERATURE)
+            CASE(MA_TEMPERATURE)
+            CASE(APD_TEMPERATURE)
+            CASE(HARDWARE_PRESET)
+            CASE(GLOBAL_TIME_ENABLED)
+            CASE(ENABLE_MAPPING)
+            CASE(ENABLE_RELOCALIZATION)
+            CASE(ENABLE_POSE_JUMPING)
+            CASE(ENABLE_DYNAMIC_CALIBRATION)
+            CASE(DEPTH_OFFSET)
+            CASE(LED_POWER)
+            CASE(ZERO_ORDER_ENABLED)
+            CASE(ENABLE_MAP_PRESERVATION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -295,6 +320,14 @@ namespace librealsense
             CASE(MOTION_XYZ32F)
             CASE(GPIO_RAW)
             CASE(6DOF)
+            CASE(Y10BPACK)
+            CASE(DISTANCE)
+            CASE(MJPEG)
+            CASE(Y8I)
+            CASE(Y12I)
+            CASE(INZI)
+            CASE(INVI)
+            CASE(W10)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -310,6 +343,7 @@ namespace librealsense
             CASE(INVERSE_BROWN_CONRADY)
             CASE(FTHETA)
             CASE(BROWN_CONRADY)
+            CASE(KANNALA_BRANDT4)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -329,7 +363,10 @@ namespace librealsense
             CASE(ADVANCED_MODE)
             CASE(PRODUCT_ID)
             CASE(CAMERA_LOCKED)
+            CASE(PRODUCT_LINE)
             CASE(USB_TYPE_DESCRIPTOR)
+            CASE(ASIC_SERIAL_NUMBER)
+            CASE(FIRMWARE_UPDATE_ID)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -369,6 +406,8 @@ namespace librealsense
             CASE(MANUAL_WHITE_BALANCE)
             CASE(POWER_LINE_FREQUENCY)
             CASE(LOW_LIGHT_COMPENSATION)
+            CASE(FRAME_EMITTER_MODE)
+            CASE(FRAME_LED_POWER)
 
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
@@ -382,6 +421,7 @@ namespace librealsense
         {
             CASE(HARDWARE_CLOCK)
             CASE(SYSTEM_TIME)
+            CASE(GLOBAL_TIME)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -398,6 +438,7 @@ namespace librealsense
             CASE(HARDWARE_EVENT)
             CASE(UNKNOWN_ERROR)
             CASE(FIRMWARE_UPDATE_RECOMMENDED)
+            CASE(POSE_RELOCALIZATION)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -458,7 +499,7 @@ namespace librealsense
 
         double theta = sqrt(std::inner_product(rot.begin(), rot.end(), rot.begin(), 0.0));
         double r1 = rot[0], r2 = rot[1], r3 = rot[2];
-        if (theta <= sqrt(DBL_EPSILON)) // identityMatrix
+        if (theta <= SQRT_DBL_EPSILON) // identityMatrix
         {
             rot_mat(0, 0) = rot_mat(1, 1) = rot_mat(2, 2) = 1.0;
             rot_mat(0, 1) = rot_mat(0, 2) = rot_mat(1, 0) = rot_mat(1, 2) = rot_mat(2, 0) = rot_mat(2, 1) = 0.0;

@@ -1,5 +1,6 @@
 // Copyright 2016-2018 Chris Conway (Koderz). All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class RuntimeMeshComponent : ModuleRules
@@ -7,21 +8,23 @@ public class RuntimeMeshComponent : ModuleRules
     public RuntimeMeshComponent(ReadOnlyTargetRules rules) : base(rules)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        bFasterWithoutUnity = true;
 
-        PublicIncludePaths.AddRange(
-            new string[] {
-                "RuntimeMeshComponent/Public"
-				// ... add public include paths required here ...
-			}
-            );
+        // HORU: this was throwing warnings
+        //     PublicIncludePaths.AddRange(
+        //         new string[] {
+        //             "RuntimeMeshComponent/Public"
+        //	// ... add public include paths required here ...
+        //}
+        //         );
 
-
-        PrivateIncludePaths.AddRange(
-            new string[] {
-                "RuntimeMeshComponent/Private",
-				// ... add other private include paths required here ...
-			}
-            );
+        // HORU: this was throwing warnings
+        //     PrivateIncludePaths.AddRange(
+        //         new string[] {
+        //             "RuntimeMeshComponent/Private",
+        //	// ... add other private include paths required here ...
+        //}
+        //         );
 
 
         PublicDependencyModuleNames.AddRange(
@@ -40,8 +43,8 @@ public class RuntimeMeshComponent : ModuleRules
                 "Engine",
 				// ... add private dependencies that you statically link with here ...	
                 "RenderCore",
-                "ShaderCore",
                 "RHI",
+                "NavigationSystem"
             }
             );
 

@@ -30,7 +30,7 @@ typedef enum rs2_recording_mode
     RS2_RECORDING_MODE_COUNT
 } rs2_recording_mode;
 
-/** \brief All the parameters are requaired to define video stream*/
+/** \brief All the parameters are required to define video stream*/
 typedef struct rs2_video_stream
 {
     rs2_stream type;
@@ -44,7 +44,7 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
-/** \brief All the parameters are requaired to define motion stream*/
+/** \brief All the parameters are required to define motion stream*/
 typedef struct rs2_motion_stream
 {
     rs2_stream type;
@@ -55,7 +55,7 @@ typedef struct rs2_motion_stream
     rs2_motion_device_intrinsic intrinsics;
 } rs2_motion_stream;
 
-/** \brief All the parameters are requaired to define pose stream*/
+/** \brief All the parameters are required to define pose stream*/
 typedef struct rs2_pose_stream
 {
     rs2_stream type;
@@ -65,7 +65,7 @@ typedef struct rs2_pose_stream
     rs2_format fmt;
 } rs2_pose_stream;
 
-/** \brief All the parameters are requaired to define video frame*/
+/** \brief All the parameters are required to define video frame*/
 typedef struct rs2_software_video_frame
 {
     void* pixels;
@@ -78,7 +78,7 @@ typedef struct rs2_software_video_frame
     const rs2_stream_profile* profile;
 } rs2_software_video_frame;
 
-/** \brief All the parameters are requaired to define motion frame*/
+/** \brief All the parameters are required to define motion frame*/
 typedef struct rs2_software_motion_frame
 {
     void* data;
@@ -89,7 +89,7 @@ typedef struct rs2_software_motion_frame
     const rs2_stream_profile* profile;
 } rs2_software_motion_frame;
 
-/** \brief All the parameters are requaired to define pose frame*/
+/** \brief All the parameters are required to define pose frame*/
 typedef struct rs2_software_pose_frame
 {
     struct pose_frame_info

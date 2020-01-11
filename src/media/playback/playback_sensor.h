@@ -26,7 +26,7 @@ namespace librealsense
         signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > opened;
         signal<playback_sensor, const std::vector<device_serializer::stream_identifier>& > closed;
 
-        playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
+        playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description);
         virtual ~playback_sensor();
 
         stream_profiles get_stream_profiles(int tag = profile_tag::PROFILE_TAG_ANY) const override;
@@ -38,7 +38,7 @@ namespace librealsense
         void stop() override;
         bool is_streaming() const override;
         bool extend_to(rs2_extension extension_type, void** ext) override;
-        const device_interface& get_device() override;
+        device_interface& get_device() override;
         void update_option(rs2_option id, std::shared_ptr<option> option);
         void stop(bool invoke_required);
         void flush_pending_frames();
@@ -50,6 +50,20 @@ namespace librealsense
         void unregister_before_start_callback(int token) override;
         void raise_notification(const notification& n);
         bool streams_contains_one_frame_or_more();
+        virtual processing_blocks get_recommended_processing_blocks() const override
+        {
+            auto processing_blocks_snapshot = m_sensor_description.get_sensor_extensions_snapshots().find(RS2_EXTENSION_RECOMMENDED_FILTERS);
+            if (processing_blocks_snapshot == nullptr)
+            {
+                throw invalid_value_exception("Recorded file does not contain sensor processing blocks");
+            }
+            auto processing_blocks_api = As<recommended_proccesing_blocks_interface>(processing_blocks_snapshot);
+            if (processing_blocks_api == nullptr)
+            {
+                throw invalid_value_exception("Failed to get options interface from sensor snapshots");
+            }
+            return processing_blocks_api->get_recommended_processing_blocks();
+        }
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
@@ -64,7 +78,7 @@ namespace librealsense
         uint32_t m_sensor_id;
         std::mutex m_mutex;
         std::map<std::pair<rs2_stream, uint32_t>, std::shared_ptr<stream_profile_interface>> m_streams;
-        const device_interface& m_parent_device;
+        device_interface& m_parent_device;
         stream_profiles m_available_profiles;
         stream_profiles m_active_streams;
         const unsigned int _default_queue_size;

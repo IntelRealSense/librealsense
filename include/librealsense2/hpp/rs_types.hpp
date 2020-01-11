@@ -64,6 +64,13 @@ struct rs2_playback_status_changed_callback
     virtual                                 ~rs2_playback_status_changed_callback() {}
 };
 
+struct rs2_update_progress_callback
+{
+    virtual void                            on_update_progress(const float update_progress) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_update_progress_callback() {}
+};
+
 namespace rs2
 {
     class error : public std::runtime_error
@@ -166,5 +173,8 @@ namespace rs2
         int max_y;
     };
 }
+
+inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
+inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
 
 #endif // LIBREALSENSE_RS2_TYPES_HPP

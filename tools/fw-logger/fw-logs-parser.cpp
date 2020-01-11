@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "fw-logs-parser.h"
 #include <regex>
 #include <sstream>
@@ -48,7 +50,7 @@ namespace fw_logger
 
     void fw_logs_parser::fill_log_data(const char* fw_logs, fw_log_data* log_data)
     {
-        string_formatter reg_exp;
+        string_formatter reg_exp(_fw_logs_formating_options.get_enums());
         fw_log_event log_event_data;
 
         auto* log_binary = reinterpret_cast<const fw_log_binary*>(fw_logs);

@@ -22,12 +22,11 @@ public class RsDeviceListener : MonoBehaviour
         Instance = this;
     }
 
-    // void Start()
     IEnumerator Start()
     {
         ctx = new Context();
-        // pipeline = new Pipeline(ctx);
-        pipeline = new Pipeline();
+        pipeline = new Pipeline(ctx);
+
         ctx.OnDevicesChanged += OnDevicesChanged;
 
         yield return null;
@@ -40,9 +39,9 @@ public class RsDeviceListener : MonoBehaviour
         if (e.WaitOne(0))
         {
             var avail = FindObjectsOfType<RsStreamAvailability>();
-            AutoResetEvent done = new AutoResetEvent(false);
-            Dictionary<RsStreamAvailability, bool> resolvables = new Dictionary<RsStreamAvailability, bool>();
             int tasks = avail.Count();
+            AutoResetEvent done = new AutoResetEvent(false);
+            Dictionary<RsStreamAvailability, bool> resolvables = new Dictionary<RsStreamAvailability, bool>(tasks);
             foreach (var a in avail)
             {
                 ThreadPool.QueueUserWorkItem(state =>
@@ -75,11 +74,13 @@ public class RsDeviceListener : MonoBehaviour
     {
         try
         {
+            foreach (var d in added)
+                Debug.LogFormat("{0} {1}", d.Info[CameraInfo.Name], d.Info[CameraInfo.SerialNumber]);
+
             m_removed.Clear();
 
             foreach (var d in m_added)
             {
-                Debug.Log(d.Info[CameraInfo.SerialNumber]);
                 if (removed.Contains(d))
                     m_removed.Add(d);
             }
@@ -98,6 +99,11 @@ public class RsDeviceListener : MonoBehaviour
 
     void OnDestroy()
     {
+        foreach (var d in m_added)
+            d.Dispose();
+        m_added.Clear();
+        m_removed.Clear();
+
         if (pipeline != null)
         {
             pipeline.Dispose();
@@ -106,6 +112,7 @@ public class RsDeviceListener : MonoBehaviour
 
         if (ctx != null)
         {
+            ctx.OnDevicesChanged -= OnDevicesChanged;
             ctx.Dispose();
             ctx = null;
         }

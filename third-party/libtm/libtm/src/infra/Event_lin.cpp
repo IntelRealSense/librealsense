@@ -1,7 +1,10 @@
+// License: Apache 2.0. See LICENSE file in root directory.
 /*******************************************************************************
 INTEL CORPORATION PROPRIETARY INFORMATION
 Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 *******************************************************************************/
+
+#ifdef __linux__
 
 #include "Event.h"
 #include <unistd.h>
@@ -33,3 +36,5 @@ int perc::Event::signal() {
 
     return !::eventfd_write(mEvent, 1);
 }
+
+#endif

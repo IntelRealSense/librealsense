@@ -32,7 +32,7 @@
 #define MAX_EEPROM_CONFIGURATION_SIZE 1200
 #define MAX_GUID_LENGTH 128
 #define MAX_FW_UPDATE_FILE_COUNT 6
-#define MAX_SLAM_APPEND_CALIBRATION 10000
+#define MAX_SLAM_CALIBRATION_SIZE 10000
 
 namespace perc
 {
@@ -78,6 +78,7 @@ namespace perc
         DEV_RESET_CONFIGURATION = 0x0022,
         DEV_LOCK_CONFIGURATION = 0x0023,
         DEV_LOCK_EEPROM = 0x0024,
+        DEV_SET_LOW_POWER_MODE = 0x0025,
 
         /* SLAM messages */
         SLAM_STATUS = 0x1001,
@@ -87,7 +88,6 @@ namespace perc
         SLAM_SET_6DOF_INTERRUPT_RATE = 0x1005,
         SLAM_6DOF_CONTROL = 0x1006,
         SLAM_OCCUPANCY_MAP_CONTROL = 0x1007,
-        SLAM_RESET_LOCALIZATION_DATA = 0x1008,
         SLAM_GET_LOCALIZATION_DATA_STREAM = 0x1009,
         SLAM_SET_STATIC_NODE = 0x100A,
         SLAM_GET_STATIC_NODE = 0x100B,
@@ -449,7 +449,7 @@ namespace perc
         float_t flPpy;              /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge                                    */
         float_t flFx;               /**< Focal length of the image plane, as a multiple of pixel width                                                                   */
         float_t flFy;               /**< Focal length of the image plane, as a multiple of pixel Height                                                                  */
-        uint32_t dwDistortionModel; /**< Distortion model of the image: NONE = 0, MODIFIED_BROWN_CONRADY = 1, INVERSE_BROWN_CONRADY = 2, FTHETA = 3, KANNALA_BRANDT4 = 4 */
+        uint32_t dwDistortionModel; /**< Distortion model of the image: F-THETA = 1, NONE (UNDISTORTED) = 3, KANNALA_BRANDT4 = 4 */
         float_t flCoeffs[5];        /**< Distortion coefficients                                                                                                         */
     } camera_intrinsics;
 
@@ -513,6 +513,15 @@ namespace perc
         sensor_extrinsics extrinsics;        /**< Extrinsics pose of an individual sensor in the device relative to another one      */
     } bulk_message_response_get_extrinsics;
 
+    typedef struct {
+        bulk_message_request_header header;
+        uint8_t bSensorID;
+        sensor_extrinsics extrinsics;
+    } bulk_message_request_set_extrinsics;
+
+    typedef struct {
+        bulk_message_response_header header;
+    } bulk_message_response_set_extrinsics;
 
     /**
     * @brief Bulk Set Camera Intrinsics Message
@@ -878,8 +887,8 @@ namespace perc
         bulk_message_request_header header; /**< Message request header: dwLength = 12 bytes, wMessageID = DEV_LOCK_CONFIGURATION or DEV_LOCK_EEPROM                          */
         uint16_t wReserved;                 /**< Reserved = 0                                                                                                                 */
         uint32_t dwLock;                    /**< 0x0 - Unlock, 0x1 - Lock                                                                                                     */
-                                                    /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
-                                                    /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
+                                            /**< 0xDEAD10CC - the configuration data shall be permanently locked. *** WARNING *** this might be an irreversible action.       */
+                                            /**< After calling this the write protection the settings cannot be modified and therefore the memory write protection is frozen. */
     } bulk_message_request_lock_eeprom;
 
     typedef struct {
@@ -958,6 +967,22 @@ namespace perc
         bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_TIMEOUT_CONFIGURATION    */
     } bulk_message_response_timeout_configuration;
 
+    
+    /**
+    * @brief Bulk enable low power Message
+    *
+    * enable or disable low power mode of TM2 device
+    */
+    typedef struct {
+        bulk_message_request_header header; /**< Message request header: dwLength = 8, wMessageID = DEV_SET_LOW_POWER_MODE    */
+        uint8_t bEnabled;                   /**< 1 to enable low power mode, 0 to disable                                   */
+        uint8_t bReserved;                  /**< Reserved = 0                                                               */
+    } bulk_message_request_set_low_power_mode;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLendth = 8, wMessageID = DEV_SET_LOW_POWER_MODE  */
+    } bulk_message_response_set_low_power_mode;
+
 
     /**
     * @brief Bulk Get Occupancy Map Tiles Message
@@ -1021,22 +1046,6 @@ namespace perc
 
 
     /**
-    * @brief Bulk reset Localization Data Message
-    *
-    * Resets the localization data
-    */
-    typedef struct {
-        bulk_message_request_header header; /**< Message request header: dwLength = 8 bytes, wMessageID = SLAM_RESET_LOCALIZATION_DATA */
-        uint8_t bFlag;                      /**< 0 - Reset all localization data, 1 - Reset only the map by its bMapIndex              */
-        uint8_t bReserved;                  /**< Reserved = 0                                                                          */
-    } bulk_message_request_reset_localization_data;
-
-    typedef struct {
-        bulk_message_response_header header; /**< Message response header: dwLength = 8 bytes, wMessageID = SLAM_RESET_LOCALIZATION_DATA */
-    } bulk_message_response_reset_localization_data;
-
-
-    /**
     * @brief Bulk Set Static Node Message
     *
     * Set relative position of a static node
@@ -1081,17 +1090,31 @@ namespace perc
     /**
     * @brief Bulk SLAM override calibration Message
     *
-    * Override current SLAM calibration
+    * Append current SLAM calibration
     */
     typedef struct {
-        bulk_message_request_header header;                        /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_APPEND_CALIBRATION */
-        uint8_t calibration_append_string[MAX_SLAM_APPEND_CALIBRATION]; /**< Calibration string                                                                     */
+        bulk_message_request_header header;                           /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_APPEND_CALIBRATION */
+        uint8_t calibration_append_string[MAX_SLAM_CALIBRATION_SIZE]; /**< Calibration string                                                                   */
     } bulk_message_request_slam_append_calibration;
 
     typedef struct {
         bulk_message_response_header header; /**< Message response header: dwLength = 8 byte, wMessageID = SLAM_APPEND_CALIBRATION */
     } bulk_message_response_slam_append_calibration;
 
+
+    /**
+    * @brief Bulk SLAM calibration Message
+    *
+    * Override current SLAM calibration
+    */
+    typedef struct {
+        bulk_message_request_header header;                    /**< Message request header: dwLength = 10006 bytes, wMessageID = SLAM_CALIBRATION */
+        uint8_t calibration_string[MAX_SLAM_CALIBRATION_SIZE]; /**< Calibration string                                                            */
+    } bulk_message_request_slam_calibration;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: dwLength = 8 byte, wMessageID = SLAM_CALIBRATION */
+    } bulk_message_response_slam_calibration;
 
     /**
     * @brief Bulk Set 6DoF Interrupt Rate Message
@@ -1305,9 +1328,9 @@ namespace perc
         uint32_t dwMetadataLength; /**< Metadata length in bytes (4 bytes)     */
         float_t flTemperature;     /**< velocimeter temperature                */
         uint32_t dwFrameLength;    /**< Length of frame below (12 bytes)       */
-        float_t flVx;              /**< X value of velocimeter, in radians/sec */
-        float_t flVy;              /**< Y value of velocimeter, in radians/sec */
-        float_t flVz;              /**< Z value of velocimeter, in radians/sec */
+        float_t flVx;              /**< X value of velocimeter, in meters/sec */
+        float_t flVy;              /**< Y value of velocimeter, in meters/sec */
+        float_t flVz;              /**< Z value of velocimeter, in meters/sec */
     } bulk_message_velocimeter_stream_metadata;
 
     /**

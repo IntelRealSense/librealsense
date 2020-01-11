@@ -144,7 +144,7 @@ namespace librealsense
                 // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
                 md_type expected_type = md_type_trait<S>::type;
 
-                if ((s->header.md_type_id != expected_type) || (s->header.md_size !=sizeof(*s)))
+                if ((s->header.md_type_id != expected_type) || (s->header.md_size < sizeof(*s)))
                 {
                     std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
                                 md_type_desc.at(s->header.md_type_id) : (to_string()
@@ -215,6 +215,46 @@ namespace librealsense
     std::shared_ptr<md_attribute_parser_base> make_uvc_header_parser(Attribute St::* attribute, attrib_modifyer mod = nullptr)
     {
         std::shared_ptr<md_uvc_header_parser<St, Attribute>> parser(new md_uvc_header_parser<St, Attribute>(attribute, mod));
+        return parser;
+    }
+
+    /**\brief A HID-Header metadata parser class*/
+    template<class St, class Attribute>
+    class md_hid_header_parser : public md_attribute_parser_base
+    {
+    public:
+        md_hid_header_parser(Attribute St::* attribute_name, attrib_modifyer mod) :
+            _md_attribute(attribute_name), _modifyer(mod) {};
+
+        rs2_metadata_type get(const librealsense::frame & frm) const override
+        {
+            if (!supports(frm))
+                throw invalid_value_exception("HID header is not available");
+
+            auto attrib = static_cast<rs2_metadata_type>((*reinterpret_cast<const St*>((const uint8_t*)frm.additional_data.metadata_blob.data())).*_md_attribute);
+            attrib &= 0x00000000ffffffff;
+            if (_modifyer) attrib = _modifyer(attrib);
+            return attrib;
+        }
+
+        bool supports(const librealsense::frame & frm) const override
+        {
+            return (frm.additional_data.metadata_size >= platform::hid_header_size);
+        }
+
+    private:
+        md_hid_header_parser() = delete;
+        md_hid_header_parser(const md_hid_header_parser&) = delete;
+
+        Attribute St::*     _md_attribute;  // Pointer to the attribute within uvc header that provides the relevant data
+        attrib_modifyer     _modifyer;      // Post-processing on received attribute
+    };
+
+    /**\brief A utility function to create HID metadata header parser*/
+    template<class St, class Attribute>
+    std::shared_ptr<md_attribute_parser_base> make_hid_header_parser(Attribute St::* attribute, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_hid_header_parser<St, Attribute>> parser(new md_hid_header_parser<St, Attribute>(attribute, mod));
         return parser;
     }
 

@@ -23,11 +23,13 @@
 #define IN
 #define OUT
 
-#ifdef __unix
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
 #endif
+
+#include <type_traits>
 
 namespace perc {
 
@@ -55,11 +57,15 @@ namespace perc {
         Depth = 1,
         IR = 2,
         Fisheye = 3,
-        Gyro = 4, 
+        Gyro = 4,
         Accelerometer = 5,
         Controller = 6,
         Rssi = 7,
         Velocimeter = 8,
+        Stereo = 9,
+        Pose = 10,
+        ControllerProperty = 11,
+        Mask = 12,
         Max
     };
 
@@ -135,8 +141,25 @@ namespace perc {
         SIXDOF_MODE_NORMAL = 0X0000,
         SIXDOF_MODE_FAST_PLAYBACK = 0x0001,
         SIXDOF_MODE_ENABLE_MAPPING = 0x0002,
-        SIXDOF_MODE_ENABLE_RELOCALIZATION = 0x0004, 
-        SIXDOF_MODE_MAX
+        SIXDOF_MODE_ENABLE_RELOCALIZATION = 0x0004,
+        SIXDOF_MODE_DISABLE_JUMPING = 0x0008,
+        SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION = 0x0010,
+        SIXDOF_MODE_ENABLE_MAP_PRESERVATION = 0x0020,
+        SIXDOF_MODE_MAX = ((SIXDOF_MODE_FAST_PLAYBACK | SIXDOF_MODE_ENABLE_MAPPING | SIXDOF_MODE_ENABLE_RELOCALIZATION | SIXDOF_MODE_DISABLE_JUMPING | SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION | SIXDOF_MODE_ENABLE_MAP_PRESERVATION) + 1)
     } SIXDOF_MODE;
+
+    inline SIXDOF_MODE &operator|=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) |
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE &operator&=(SIXDOF_MODE &x, SIXDOF_MODE y) {
+        return x = static_cast<SIXDOF_MODE>(static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x) &
+                                            static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(y));
+    }
+    inline SIXDOF_MODE operator~(SIXDOF_MODE x) {
+        return static_cast<SIXDOF_MODE>(~static_cast<typename std::underlying_type<SIXDOF_MODE>::type>(x));
+    }
+    inline SIXDOF_MODE operator|(SIXDOF_MODE x, SIXDOF_MODE y) { return x |= y; }
+    inline SIXDOF_MODE operator&(SIXDOF_MODE x, SIXDOF_MODE y) { return x &= y; }
 
 }

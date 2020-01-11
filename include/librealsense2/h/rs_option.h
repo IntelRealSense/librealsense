@@ -17,7 +17,7 @@ extern "C" {
 #include "rs_types.h"
 
     /** \brief Defines general configuration controls.
-    These can generally be mapped to camera UVC controls, and unless stated otherwise, can be set/queried at any time.
+    These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.
     */
     typedef enum rs2_option
     {
@@ -34,12 +34,12 @@ extern "C" {
         RS2_OPTION_ENABLE_AUTO_EXPOSURE, /**< Enable / disable color image auto-exposure*/
         RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, /**< Enable / disable color image auto-white-balance*/
         RS2_OPTION_VISUAL_PRESET, /**< Provide access to several recommend sets of option presets for the depth camera */
-        RS2_OPTION_LASER_POWER, /**< Power of the F200 / SR300 projector, with 0 meaning projector off*/
+        RS2_OPTION_LASER_POWER, /**< Power of the laser emitter, with 0 meaning projector off*/
         RS2_OPTION_ACCURACY, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
         RS2_OPTION_MOTION_RANGE, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
         RS2_OPTION_FILTER_OPTION, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
         RS2_OPTION_CONFIDENCE_THRESHOLD, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-        RS2_OPTION_EMITTER_ENABLED, /**< Laser Emitter enabled */
+        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/
         RS2_OPTION_FRAMES_QUEUE_SIZE, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         RS2_OPTION_TOTAL_FRAME_DROPS, /**< Total number of detected frame drops from all streams */
         RS2_OPTION_AUTO_EXPOSURE_MODE, /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
@@ -68,8 +68,26 @@ extern "C" {
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
         RS2_OPTION_EMITTER_ON_OFF, /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
+        RS2_OPTION_ZERO_ORDER_POINT_X, /**< Zero order point x*/
+        RS2_OPTION_ZERO_ORDER_POINT_Y, /**< Zero order point y*/
+        RS2_OPTION_LLD_TEMPERATURE, /**< LLD temperature*/
+        RS2_OPTION_MC_TEMPERATURE, /**< MC temperature*/
+        RS2_OPTION_MA_TEMPERATURE, /**< MA temperature*/
+        RS2_OPTION_HARDWARE_PRESET, /**< Hardware stream configuration */
+        RS2_OPTION_GLOBAL_TIME_ENABLED, /**< disable global time  */
+        RS2_OPTION_APD_TEMPERATURE, /**< APD temperature*/
+        RS2_OPTION_ENABLE_MAPPING, /**< Enable an internal map */
+        RS2_OPTION_ENABLE_RELOCALIZATION, /**< Enable appearance based relocalization */
+        RS2_OPTION_ENABLE_POSE_JUMPING, /**< Enable position jumping */
+        RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, /**< Enable dynamic calibration */
+        RS2_OPTION_DEPTH_OFFSET, /**< Offset from sensor to depth origin in millimetrers*/
+        RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
+        RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
+        RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
+
+    // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
     const char* rs2_option_to_string(rs2_option option);
 
     /** \brief For SR300 devices: provides optimized settings (presets) for specific types of usage. */
@@ -130,6 +148,42 @@ extern "C" {
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     */
     void rs2_set_option(const rs2_options* options, rs2_option option, float value, rs2_error** error);
+
+   /**
+   * get the list of supported options of options container
+   * \param[in] options    the options container
+   * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+   */
+    rs2_options_list* rs2_get_options_list(const rs2_options* options, rs2_error** error);
+
+    /**
+   * get the size of options list
+   * \param[in] options    the option list
+   * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+   */
+    int rs2_get_options_list_size(const rs2_options_list* options, rs2_error** error);
+
+    /**
+    * get option name
+    * \param[in] options     options object
+    * \param[in] option      option id to be checked
+    * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return human-readable option name
+    */
+    const char* rs2_get_option_name(const rs2_options* options, rs2_option option, rs2_error** error);
+
+    /**
+   * get the specific option from options list
+   * \param[in] i    the index of the option
+   * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+   */
+    rs2_option rs2_get_option_from_list(const rs2_options_list* options, int i, rs2_error** error);
+
+    /**
+    * Deletes options list
+    * \param[in] list list to delete
+    */
+    void rs2_delete_options_list(rs2_options_list* list);
 
     /**
     * check if particular option is supported by a subdevice

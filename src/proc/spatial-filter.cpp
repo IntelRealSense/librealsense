@@ -49,6 +49,7 @@ namespace librealsense
     const uint8_t holes_fill_def = sp_hf_disabled;
 
     spatial_filter::spatial_filter() :
+        depth_processing_block("Spatial Filter"),
         _spatial_alpha_param(alpha_default_val),
         _spatial_delta_param(delta_default_val),
         _spatial_iterations(filter_iter_def),
@@ -135,7 +136,7 @@ namespace librealsense
                 break;
             default:
                 throw invalid_value_exception(to_string()
-                    << "Unsupported spatial hole filling requested: value " << _holes_filling_mode << " is out of range.");
+                    << "Unsupported spatial hole-filling requested: value " << _holes_filling_mode << " is out of range.");
                 break;
             }
         });
@@ -188,7 +189,7 @@ namespace librealsense
             if (auto a = As<librealsense::extendable_interface>(snr))
             {
                 librealsense::depth_stereo_sensor* ptr;
-                if (_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr))
+                if ((_stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr)))
                 {
                     dss = ptr;
                     _stereo_baseline_mm = dss->get_stereo_baseline_mm();

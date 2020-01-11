@@ -165,6 +165,14 @@ void FRuntimeMeshData::CheckBoundingBox(const FBox& Box) const
 
 
 
+void FRuntimeMeshData::EnterSerializedMode()
+{
+	if (!SyncRoot->IsThreadSafe())
+	{
+		SyncRoot = MakeUnique<FRuntimeMeshMutexLockProvider>();
+	}
+}
+
 void FRuntimeMeshData::CreateMeshSection(int32 SectionIndex, bool bWantsHighPrecisionTangents, bool bWantsHighPrecisionUVs, int32 NumUVs, bool bWants32BitIndices, bool bCreateCollision, EUpdateFrequency UpdateFrequency /*= EUpdateFrequency::Average*/)
 {
 	SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_CreateMeshSection_NoData);
@@ -326,7 +334,7 @@ void FRuntimeMeshData::CreateMeshSectionFromComponents(int32 SectionIndex, const
 	FRuntimeMeshScopeLock Lock(SyncRoot);
 
 	// Create the section
-	auto NewSection = CreateOrResetSectionForBlueprint(SectionIndex, false, bUseHighPrecisionTangents, bUseHighPrecisionUVs, UpdateFrequency);
+	auto NewSection = CreateOrResetSectionForBlueprint(SectionIndex, bWantsSecondUV, bUseHighPrecisionTangents, bUseHighPrecisionUVs, UpdateFrequency);
 
 	TSharedPtr<FRuntimeMeshAccessor> MeshData = NewSection->GetSectionMeshAccessor();
 
@@ -439,7 +447,30 @@ void FRuntimeMeshData::UpdateMeshSectionFromComponents(int32 SectionIndex, const
 	UpdateSectionInternal(SectionIndex, BuffersToUpdate, UpdateFlags);
 }
 
+void FRuntimeMeshData::UpdateMeshSectionColors(int32 SectionIndex, TArray<FColor>& Colors, ESectionUpdateFlags UpdateFlags /*= ESectionUpdateFlags::None*/)
+{
+	if (Colors.Num() == 0)
+		return;
 
+	check(DoesSectionExist(SectionIndex));
+
+	FRuntimeMeshScopeLock Lock(SyncRoot);
+	const FRuntimeMeshSectionPtr& Section = MeshSections[SectionIndex];
+	const ERuntimeMeshBuffersToUpdate BuffersToUpdate = ERuntimeMeshBuffersToUpdate::ColorBuffer;
+	TSharedPtr<FRuntimeMeshAccessor> MeshData = Section->GetSectionMeshAccessor();
+
+	for (int i = 0; i < Colors.Num(); i++)
+		MeshData->SetColor(i, Colors[i]);
+
+	if (RenderProxy.IsValid())
+		RenderProxy->UpdateSection_GameThread(SectionIndex, Section->GetSectionUpdateData(BuffersToUpdate));
+
+	const bool bRequireProxyRecreate = Section->GetUpdateFrequency() == EUpdateFrequency::Infrequent;
+	if (bRequireProxyRecreate)
+		MarkRenderStateDirty();
+
+	MarkChanged();
+}
 
 void FRuntimeMeshData::CreateMeshSection(int32 SectionIndex, const TArray<FVector>& Vertices, const TArray<int32>& Triangles, const TArray<FVector>& Normals,
 	const TArray<FVector2D>& UV0, const TArray<FColor>& Colors, const TArray<FRuntimeMeshTangent>& Tangents, bool bCreateCollision, EUpdateFrequency UpdateFrequency,
@@ -1048,7 +1079,7 @@ void FRuntimeMeshData::SetCollisionCapsules(const TArray<FRuntimeMeshCollisionCa
 
 FBoxSphereBounds FRuntimeMeshData::GetLocalBounds() const
 {
-	FRuntimeMeshScopeLock Lock(SyncRoot);
+	FRuntimeMeshScopeLock Lock(SyncRoot, false, true);
 	return LocalBounds;
 }
 
@@ -1442,6 +1473,16 @@ void FRuntimeMeshData::SendSectionPropertiesUpdate(int32 SectionIndex)
 
 int32 FRuntimeMeshData::GetSectionFromCollisionFaceIndex(int32 FaceIndex) const
 {
+	int32 FaceIdx = FaceIndex;
+
+	return GetSectionAndFaceFromCollisionFaceIndex(FaceIdx);
+}
+/*
+* Gets the section ID from the given face index reference,
+* The face index reference then gets set to it's face index in the section.
+*/
+int32 FRuntimeMeshData::GetSectionAndFaceFromCollisionFaceIndex(int32& FaceIndex) const
+{
 	SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_GetSectionFromCollisionFaceIndex);
 
 	FRuntimeMeshScopeLock Lock(SyncRoot);
@@ -1457,18 +1498,19 @@ int32 FRuntimeMeshData::GetSectionFromCollisionFaceIndex(int32 FaceIndex) const
 
 		if (Section.IsValid() && Section->IsCollisionEnabled())
 		{
-			int32 NumFaces = Section->GetNumIndices() / 3;
-			TotalFaceCount += NumFaces;
 
-			if (FaceIndex < TotalFaceCount)
+			int32 NumFaces = Section->GetNumIndices() / 3;
+
+			if (FaceIndex < TotalFaceCount + NumFaces)
 			{
 				// Grab the material
 				SectionIndex = SectionIdx;
+				FaceIndex -= TotalFaceCount;
 				break;
 			}
+			TotalFaceCount += NumFaces;
 		}
 	}
-
 	return SectionIndex;
 }
 

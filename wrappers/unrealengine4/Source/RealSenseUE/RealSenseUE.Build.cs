@@ -7,6 +7,8 @@ public class RealSenseUE : ModuleRules
 		bEnableExceptions = true;
 		bUseRTTI = false;
 
+		PrivatePCHHeaderFile = "RealSenseUE.h";
+
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

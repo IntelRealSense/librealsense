@@ -56,6 +56,7 @@ namespace librealsense
         }
 
         bool compress_while_record() const override { return true; }
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override { return false; }
 
     private:
         void update_time_base(device_serializer::nanoseconds base_timestamp);
@@ -75,6 +76,7 @@ namespace librealsense
 
     private:
         lazy<std::shared_ptr<dispatcher>> m_read_thread;
+        std::shared_ptr<context> m_context;
         std::shared_ptr<device_serializer::reader> m_reader;
         device_serializer::device_snapshot m_device_description;
         std::atomic_bool m_is_started;
@@ -86,7 +88,6 @@ namespace librealsense
         std::atomic<double> m_sample_rate;
         std::atomic_bool m_real_time;
         device_serializer::nanoseconds m_prev_timestamp;
-        std::shared_ptr<context> m_context;
         std::vector<std::shared_ptr<lazy<rs2_extrinsics>>> m_extrinsics_fetchers;
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         device_serializer::nanoseconds m_last_published_timestamp;

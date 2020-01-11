@@ -256,6 +256,7 @@ std::string messageCodeToString(libusb_transfer_type type, uint16_t code)
                 case DEV_RESET_CONFIGURATION:               return "DEV_RESET_CONFIGURATION";
                 case DEV_LOCK_CONFIGURATION:                return "DEV_LOCK_CONFIGURATION";
                 case DEV_LOCK_EEPROM:                       return "DEV_LOCK_EEPROM";
+                case DEV_SET_LOW_POWER_MODE:                return "DEV_SET_LOW_POWER_MODE";
                 case SLAM_STATUS:                           return "SLAM_STATUS";
                 case SLAM_GET_OCCUPANCY_MAP_TILES:          return "SLAM_GET_OCCUPANCY_MAP_TILES";
                 case SLAM_GET_LOCALIZATION_DATA:            return "SLAM_GET_LOCALIZATION_DATA";
@@ -263,7 +264,6 @@ std::string messageCodeToString(libusb_transfer_type type, uint16_t code)
                 case SLAM_SET_6DOF_INTERRUPT_RATE:          return "SLAM_SET_6DOF_INTERRUPT_RATE";
                 case SLAM_6DOF_CONTROL:                     return "SLAM_6DOF_CONTROL";
                 case SLAM_OCCUPANCY_MAP_CONTROL:            return "SLAM_OCCUPANCY_MAP_CONTROL";
-                case SLAM_RESET_LOCALIZATION_DATA:          return "SLAM_RESET_LOCALIZATION_DATA";
                 case SLAM_GET_LOCALIZATION_DATA_STREAM:     return "SLAM_GET_LOCALIZATION_DATA_STREAM";
                 case SLAM_SET_STATIC_NODE:                  return "SLAM_SET_STATIC_NODE";
                 case SLAM_GET_STATIC_NODE:                  return "SLAM_GET_STATIC_NODE";

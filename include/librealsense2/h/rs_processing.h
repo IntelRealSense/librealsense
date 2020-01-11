@@ -43,6 +43,32 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
+* Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
+* YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
+* without signficant quality drop. YUY representation can be converted back to more usable RGB form,
+* but this requires somewhat costly conversion.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
+
+/**
+* Creates depth thresholding processing block
+* By controlling min and max options on the block, one could filter out depth values
+* that are either too large or too small, as a software post-processing step
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_threshold(rs2_error** error);
+
+/**
+* Creates depth units transformation processing block
+* All of the pixels are transformed from depth units into meters.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_units_transform(rs2_error** error);
+
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function to be applied to every frame entering the block
@@ -166,6 +192,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
 * Creates Align processing block.
+* \param[in] align_to   stream type to be used as the target of frameset alignment
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
@@ -208,6 +235,40 @@ rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
+
+/**
+* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               zero order fix processing block
+*/
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
+
+/**
+* Retrieve processing block specific information, like name.
+* \param[in]  block     The processing block
+* \param[in]  info      processing block info type to retrieve
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               The requested processing block info string, in a format specific to the device model
+*/
+const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+* Check if a processing block supports a specific info type.
+* \param[in]  block     The processing block to check
+* \param[in]  info      The parameter to check for support
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               True if the parameter both exist and well-defined for the specific device
+*/
+int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+ * Test if the given processing block can be extended to the requested extension
+ * \param[in] block processing block
+ * \param[in] extension The extension to which the sensor should be tested if it is extendable
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return non-zero value iff the processing block can be extended to the given extension
+ */
+int rs2_is_processing_block_extendable_to(const rs2_processing_block* block, rs2_extension extension_type, rs2_error** error);
 
 #ifdef __cplusplus
 }

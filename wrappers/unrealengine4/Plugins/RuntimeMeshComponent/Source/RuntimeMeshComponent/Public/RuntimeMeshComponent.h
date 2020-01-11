@@ -8,13 +8,22 @@
 #include "RuntimeMeshGenericVertex.h"
 #include "PhysicsEngine/ConvexElem.h"
 #include "RuntimeMesh.h"
+#include "Interfaces/Interface_CollisionDataProvider.h"
 #include "RuntimeMeshComponent.generated.h"
 
+UENUM(BlueprintType)		//"BlueprintType" is essential to include
+enum class ERuntimeMeshSetAction : uint8
+{
+	Create 	UMETA(DisplayName = "Created new section"),
+	Update 	UMETA(DisplayName = "Updated section"),
+	Remove	UMETA(DisplayName = "Removed section"),
+	None	UMETA(DisplayName = "Did nothing")
+};
 /**
 *	Component that allows you to specify custom triangle mesh geometry for rendering and collision.
 */
 UCLASS(HideCategories = (Object, LOD), Meta = (BlueprintSpawnableComponent))
-class RUNTIMEMESHCOMPONENT_API URuntimeMeshComponent : public UMeshComponent
+class RUNTIMEMESHCOMPONENT_API URuntimeMeshComponent : public UMeshComponent, public IInterface_CollisionDataProvider
 {
 	GENERATED_BODY()
 
@@ -48,6 +57,28 @@ public:
 		return RuntimeMeshReference;
 	}
 
+	FORCEINLINE FRuntimeMeshDataRef GetRuntimeMeshData()
+	{
+		return GetRuntimeMesh() ? GetRuntimeMesh()->GetRuntimeMeshData() : FRuntimeMeshDataRef();
+	}
+
+	FORCEINLINE FRuntimeMeshDataRef GetOrCreateRuntimeMeshData()
+	{
+		return GetOrCreateRuntimeMesh()->GetRuntimeMeshData();
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	bool ShouldSerializeMeshData()
+	{
+		return GetRuntimeMesh() ? GetRuntimeMesh()->ShouldSerializeMeshData() : false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void SetShouldSerializeMeshData(bool bShouldSerialize)
+	{
+		GetOrCreateRuntimeMesh()->SetShouldSerializeMeshData(bShouldSerialize);
+	}
+
 	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh", Meta = (AllowPrivateAccess = "true", DisplayName = "Get Mobility"))
 		ERuntimeMeshMobility GetRuntimeMeshMobility()
 	{
@@ -71,6 +102,150 @@ public:
 	{
 		GetOrCreateRuntimeMesh()->CreateMeshSection(SectionIndex, bWantsHighPrecisionTangents, bWantsHighPrecisionUVs, NumUVs, bWants32BitIndices, bCreateCollision, UpdateFrequency);
 	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/*
+	 * Creates the mesh section if it doesn't exist,
+	 * Otherwise update the section.
+	 * Will automatically delete the section if there are no vertices given
+	 */
+	template<typename VertexType0, typename IndexType>
+	ERuntimeMeshSetAction SetMeshSection(int32 SectionIndex, TArray<VertexType0>& InVertices0, TArray<IndexType>& InTriangles, bool bCreateCollision = false,
+		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
+	{
+		if (GetOrCreateRuntimeMeshData()->DoesSectionExist(SectionIndex)) {
+			if (InVertices0.Num() == 0) {
+				ClearMeshSection(SectionIndex);
+				return ERuntimeMeshSetAction::Remove;
+			}
+			else {
+				UpdateMeshSection(SectionIndex, InVertices0, InTriangles, UpdateFlags);
+				return ERuntimeMeshSetAction::Update;
+			}
+		}
+		else if (InVertices0.Num() != 0) {
+			CreateMeshSection(SectionIndex, InVertices0, InTriangles, bCreateCollision, UpdateFrequency, UpdateFlags);
+			return ERuntimeMeshSetAction::Create;
+		}
+		return ERuntimeMeshSetAction::None;
+	}
+
+	/*
+	 * Creates the mesh section if it doesn't exist,
+	 * Otherwise update the section.
+	 * Will automatically delete the section if there are no vertices given
+	 */
+	ERuntimeMeshSetAction SetMeshSection(int32 SectionId, const TSharedPtr<FRuntimeMeshBuilder>& MeshData, bool bCreateCollision = false,
+		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
+	{
+		if (GetOrCreateRuntimeMeshData()->DoesSectionExist(SectionId)) {
+			if (MeshData->NumIndices() == 0) {
+				GetOrCreateRuntimeMeshData()->ClearMeshSection(SectionId);
+				return ERuntimeMeshSetAction::Remove;
+			}
+			else {
+				GetOrCreateRuntimeMeshData()->UpdateMeshSection(SectionId, MeshData, UpdateFlags);
+				return ERuntimeMeshSetAction::Update;
+			}
+		}
+		else if (MeshData->NumIndices() != 0) {
+			GetOrCreateRuntimeMeshData()->CreateMeshSection(SectionId, MeshData, bCreateCollision, UpdateFrequency, UpdateFlags);
+			return ERuntimeMeshSetAction::Create;
+		}
+		return ERuntimeMeshSetAction::None;
+	}
+
+	/*
+	 * Creates the mesh section if it doesn't exist,
+	 * Otherwise update the section.
+	 * Will automatically delete the section if there are no vertices given
+	 */
+	ERuntimeMeshSetAction SetMeshSection(int32 SectionIndex, const TArray<FVector>& Vertices, const TArray<int32>& Triangles, const TArray<FVector>& Normals,
+		const TArray<FVector2D>& UV0, const TArray<FColor>& Colors, const TArray<FRuntimeMeshTangent>& Tangents, bool bCreateCollision = false,
+		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None,
+		bool bUseHighPrecisionTangents = false, bool bUseHighPrecisionUVs = true)
+	{
+		if (GetOrCreateRuntimeMeshData()->DoesSectionExist(SectionIndex)) {
+			if (Vertices.Num() == 0) {
+				GetOrCreateRuntimeMeshData()->ClearMeshSection(SectionIndex);
+				return ERuntimeMeshSetAction::Remove;
+			}
+			else {
+				UpdateMeshSection(SectionIndex, Vertices, Triangles, Normals, UV0, Colors, Tangents, UpdateFlags);
+				return ERuntimeMeshSetAction::Update;
+			}
+		}
+		else if (Vertices.Num() != 0) {
+			CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UV0, Colors, Tangents, bCreateCollision,
+				UpdateFrequency, UpdateFlags, bUseHighPrecisionTangents, bUseHighPrecisionUVs);
+			return ERuntimeMeshSetAction::Create;
+		}
+		return ERuntimeMeshSetAction::None;
+	}
+
+	/*
+	 * Creates the mesh section if it doesn't exist,
+	 * Otherwise update the section.
+	 * Will automatically delete the section if there are no vertices given
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh", meta = (DisplayName = "Set Mesh Section", AutoCreateRefTerm = "Normals,Tangents,UV0,UV1,Colors"))
+		ERuntimeMeshSetAction SetMeshSection_Blueprint(int32 SectionIndex, const TArray<FVector>& Vertices, const TArray<int32>& Triangles, const TArray<FVector>& Normals,
+			const TArray<FRuntimeMeshTangent>& Tangents, const TArray<FVector2D>& UV0, const TArray<FVector2D>& UV1, const TArray<FLinearColor>& Colors,
+			bool bCreateCollision = false, bool bCalculateNormalTangent = false, bool bShouldCreateHardTangents = false, bool bGenerateTessellationTriangles = false,
+			EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average, bool bUseHighPrecisionTangents = false, bool bUseHighPrecisionUVs = true)
+	{
+		if (DoesSectionExist(SectionIndex)) {
+			if (Vertices.Num() == 0) {
+				ClearMeshSection(SectionIndex);
+				return ERuntimeMeshSetAction::Remove;
+			}
+			else {
+				UpdateMeshSection_Blueprint(SectionIndex, Vertices, Triangles, Normals, Tangents, UV0, UV1, Colors,
+					bCalculateNormalTangent, bShouldCreateHardTangents, bGenerateTessellationTriangles);
+				return ERuntimeMeshSetAction::Update;
+			}
+		}
+		else if (Vertices.Num() != 0) {
+			CreateMeshSection_Blueprint(SectionIndex, Vertices, Triangles, Normals, Tangents, UV0, UV1, Colors, bCreateCollision,
+				bCalculateNormalTangent, bShouldCreateHardTangents, bGenerateTessellationTriangles, UpdateFrequency, bUseHighPrecisionTangents, bUseHighPrecisionUVs);
+			return ERuntimeMeshSetAction::Create;
+		}
+		return ERuntimeMeshSetAction::None;
+	}
+
+	/*
+	 * Creates the mesh section if it doesn't exist,
+	 * Otherwise update the section.
+	 * Will automatically delete the section if there are no vertices given
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh", meta = (DisplayName = "Set Mesh Section Packed", AutoCreateRefTerm = "Normals,Tangents,UV0,UV1,Colors"))
+		ERuntimeMeshSetAction SetMeshSectionPacked_Blueprint(int32 SectionIndex, const TArray<FRuntimeMeshBlueprintVertexSimple>& Vertices, const TArray<int32>& Triangles,
+			bool bCreateCollision = false, bool bCalculateNormalTangent = false, bool bShouldCreateHardTangents = false, bool bGenerateTessellationTriangles = false, EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average,
+			bool bUseHighPrecisionTangents = false, bool bUseHighPrecisionUVs = true)
+	{
+		if (DoesSectionExist(SectionIndex)) {
+			if (Vertices.Num() == 0) {
+				ClearMeshSection(SectionIndex);
+				return ERuntimeMeshSetAction::Remove;
+			}
+			else {
+				UpdateMeshSectionPacked_Blueprint(SectionIndex, Vertices, Triangles, bCalculateNormalTangent, bShouldCreateHardTangents,
+					bGenerateTessellationTriangles);
+				return ERuntimeMeshSetAction::Update;
+			}
+		}
+		else if (Vertices.Num() != 0) {
+			CreateMeshSectionPacked_Blueprint(SectionIndex, Vertices, Triangles, bCreateCollision, bCalculateNormalTangent, bShouldCreateHardTangents,
+				bGenerateTessellationTriangles, UpdateFrequency, bUseHighPrecisionTangents, bUseHighPrecisionUVs);
+			return ERuntimeMeshSetAction::Create;
+		}
+		return ERuntimeMeshSetAction::None;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<typename VertexType0, typename IndexType>
 	FORCEINLINE void CreateMeshSection(int32 SectionIndex, TArray<VertexType0>& InVertices0, TArray<IndexType>& InTriangles, bool bCreateCollision = false,
@@ -209,7 +384,7 @@ public:
 
 	/** DEPRECATED! Use UpdateMeshSectionDualBuffer() instead.  Updates the dual buffer mesh section */
 	template<typename VertexType>
-	DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
+	UE_DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
 	void UpdateMeshSection(int32 SectionIndex, TArray<FVector>& VertexPositions, TArray<VertexType>& VertexData, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
 	{
 		UpdateMeshSectionDualBuffer(SectionIndex, VertexPositions, VertexData, UpdateFlags);
@@ -217,7 +392,7 @@ public:
 
 	/** DEPRECATED! Use UpdateMeshSectionDualBuffer() instead.  Updates the dual buffer mesh section */
 	template<typename VertexType>
-	DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
+	UE_DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
 	void UpdateMeshSection(int32 SectionIndex, TArray<FVector>& VertexPositions, TArray<VertexType>& VertexData, const FBox& BoundingBox, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
 	{
 		UpdateMeshSectionDualBuffer(SectionIndex, VertexPositions, VertexData, BoundingBox, UpdateFlags);
@@ -225,7 +400,7 @@ public:
 
 	/** DEPRECATED! Use UpdateMeshSectionDualBuffer() instead.  Updates the dual buffer mesh section */
 	template<typename VertexType>
-	DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
+	UE_DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
 	void UpdateMeshSection(int32 SectionIndex, TArray<FVector>& VertexPositions, TArray<VertexType>& VertexData, TArray<int32>& Triangles, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
 	{
 		UpdateMeshSectionDualBuffer(SectionIndex, VertexPositions, VertexData, Triangles, UpdateFlags);
@@ -233,7 +408,7 @@ public:
 
 	/** DEPRECATED! Use UpdateMeshSectionDualBuffer() instead.  Updates the dual buffer mesh section */
 	template<typename VertexType>
-	DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
+	UE_DEPRECATED(3.0, "UpdateMeshSection for dual buffer sections deprecated. Please use UpdateMeshSectionDualBuffer instead.")
 	void UpdateMeshSection(int32 SectionIndex, TArray<FVector>& VertexPositions, TArray<VertexType>& VertexData, TArray<int32>& Triangles, const FBox& BoundingBox, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
 	{
 		UpdateMeshSectionDualBuffer(SectionIndex, VertexPositions, VertexData, Triangles, BoundingBox, UpdateFlags);
@@ -287,6 +462,13 @@ public:
 		GetOrCreateRuntimeMesh()->CreateMeshSectionByMove(SectionId, MeshData, bCreateCollision, UpdateFrequency, UpdateFlags);
 	}
 
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void CreateMeshSectionFromBuilder(int32 SectionId, URuntimeBlueprintMeshBuilder* MeshData, bool bCreateCollision = false,
+		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average/*, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None*/)
+	{
+		GetOrCreateRuntimeMesh()->CreateMeshSectionFromBuilder(SectionId, MeshData, bCreateCollision, UpdateFrequency/*, UpdateFlags*/);
+	}
+
 
 
 	FORCEINLINE void UpdateMeshSection(int32 SectionId, const TSharedPtr<FRuntimeMeshBuilder>& MeshData, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
@@ -297,6 +479,12 @@ public:
 	FORCEINLINE void UpdateMeshSectionByMove(int32 SectionId, const TSharedPtr<FRuntimeMeshBuilder>& MeshData, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None)
 	{
 		GetOrCreateRuntimeMesh()->UpdateMeshSectionByMove(SectionId, MeshData, UpdateFlags);
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void UpdateMeshSectionFromBuilder(int32 SectionId, URuntimeBlueprintMeshBuilder* MeshData/*, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None*/)
+	{
+		GetOrCreateRuntimeMesh()->UpdateMeshSectionFromBuilder(SectionId, MeshData/*, UpdateFlags*/);
 	}
 
 	
@@ -709,6 +897,13 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	bool IsCollisionUsingAsyncCooking()
+	{
+		check(IsInGameThread());
+		return GetRuntimeMesh() != nullptr ? GetRuntimeMesh()->IsCollisionUsingAsyncCooking() : false;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
 	void SetCollisionMode(ERuntimeMeshCollisionCookingMode NewMode)
 	{
 		GetOrCreateRuntimeMesh()->SetCollisionMode(NewMode);
@@ -728,15 +923,31 @@ private:
 	//~ Begin UPrimitiveComponent Interface.
 	virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
 	virtual class UBodySetup* GetBodySetup() override;
+
+public:
+
+	// HORU: returns true if any async collision cooking is pending.
+	UFUNCTION(BlueprintCallable)
+	bool IsAsyncCollisionCookingPending() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	int32 GetSectionIdFromCollisionFaceIndex(int32 FaceIndex) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Components|RuntimeMesh")
+	void GetSectionIdAndFaceIdFromCollisionFaceIndex(int32 FaceIndex, int32& SectionIndex, int32& SectionFaceIndex) const;
+
 	virtual UMaterialInterface* GetMaterialFromCollisionFaceIndex(int32 FaceIndex, int32& SectionIndex) const override;
 	//~ End UPrimitiveComponent Interface.
 
+public:
 	//~ Begin UMeshComponent Interface.
 	virtual int32 GetNumMaterials() const override;
 	virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials = false) const override;
 	virtual UMaterialInterface* GetMaterial(int32 ElementIndex) const override;
+	virtual UMaterialInterface* GetOverrideMaterial(int32 ElementIndex) const;
 	//~ End UMeshComponent Interface.
 
+private:
 
 	/* Serializes this component */
 	virtual void Serialize(FArchive& Ar) override;
@@ -754,6 +965,31 @@ private:
 
 	void SendSectionCreation(int32 SectionIndex);
 	void SendSectionPropertiesUpdate(int32 SectionIndex);
+
+	// This collision setup is only to support older engine versions where the BodySetup being owned by a non UActorComponent breaks runtime cooking
+
+	/** Collision data */
+	UPROPERTY(Instanced)
+	UBodySetup* BodySetup;
+
+	/** Queue of pending collision cooks */
+	UPROPERTY(Transient)
+	TArray<UBodySetup*> AsyncBodySetupQueue;
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 22
+	virtual bool GetPhysicsTriMeshData(struct FTriMeshCollisionData* CollisionData, bool InUseAllTriData) override;
+	virtual bool ContainsPhysicsTriMeshData(bool InUseAllTriData) const override;
+	virtual bool WantsNegXTriMesh() override { return false; }
+	//~ End Interface_CollisionDataProvider Interface
+#endif
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 21
+	UBodySetup* CreateNewBodySetup();
+	void FinishPhysicsAsyncCook(UBodySetup* FinishedBodySetup);
+
+	void UpdateCollision(bool bForceCookNow);
+#endif
+
 
 
 	friend class URuntimeMesh;

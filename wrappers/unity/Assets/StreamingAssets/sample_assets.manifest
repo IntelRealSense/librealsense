@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 827759043
+CRC: 2778896699
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 2d1220d3d98957b62ca102abd8498a76
+    Hash: 740a499bf82751d5b474a321772343b6
   TypeTreeHash:
     serializedVersion: 2
-    Hash: bb5a68657e9add7589f6b3991cc77701
+    Hash: 5ed1980f8c6aeb070f1246e488ad86c4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -15,7 +15,13 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 21
   Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
 - Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
@@ -72,6 +78,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 2a81fc1e64edf3540a7f9ba78a879104, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 7dffddaeb99d79644b99b1d8d18bad86, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 46ef920fe825d5c4996039f57cad2ffa, type: 3}
 - Class: 115
   Script: {instanceID: 0}
@@ -90,17 +98,23 @@ ClassTypes:
 Assets:
 - Assets/RealSenseSDK2.0/Misc/Prefabs/ErrorPanel.prefab
 - Assets/RealSenseSDK2.0/Misc/Textures/realsense_4c_075_white.png
+- Assets/RealSenseSDK2.0/Models/Materials/blinn3.mat
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/color.png
 - Assets/RealSenseSDK2.0/Misc/Prefabs/ColormapDropdown.prefab
 - Assets/RealSenseSDK2.0/ProcessingPipe/AlignmentSample.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/087-on-off.png
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/radiobox.png
 - Assets/RealSenseSDK2.0/ProcessingPipe/BackgroundSegmentation.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/pan.png
+- Assets/RealSenseSDK2.0/Models/T265.fbx
 - Assets/RealSenseSDK2.0/ProcessingPipe/ARBackground.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/254-pause.png
 - Assets/RealSenseSDK2.0/ProcessingPipe/PointCloudDepthAndColor.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/look.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/GitHub-Mark-Light-32px.png
+- Assets/RealSenseSDK2.0/Models/Materials/blinn5.mat
+- Assets/RealSenseSDK2.0/Misc/Textures/switch.png
+- Assets/RealSenseSDK2.0/Models/Materials/blinn2.mat
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/081-arrow-back-left.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/magnify.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/rs16.png
@@ -110,13 +124,14 @@ Assets:
 - Assets/RealSenseSDK2.0/ProcessingPipe/PointCloudProcessingBlocks.asset
 - Assets/RealSenseSDK2.0/Misc/Prefabs/MinMaxSlider.prefab
 - Assets/RealSenseSDK2.0/Misc/Prefabs/SampleUI.prefab
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/073-menu.png
+- Assets/RealSenseSDK2.0/ProcessingPipe/PointCloudDepth.asset
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/grayscale.png
 - Assets/RealSenseSDK2.0/Misc/Textures/Icons/rs256.png
+- Assets/RealSenseSDK2.0/Models/Materials/blinn1.mat
+- Assets/RealSenseSDK2.0/Misc/Textures/Icons/078-down.png
 - Assets/RealSenseSDK2.0/Misc/Prefabs/PlayPause.prefab
 - Assets/RealSenseSDK2.0/Misc/Textures/forkme_left_darkblue_121621.png
+- Assets/RealSenseSDK2.0/Models/Materials/blinn4.mat
 - Assets/RealSenseSDK2.0/Misc/Textures/colormaps.png
 Dependencies: []
-
-CRC: 827759043
-    Hash: 2d1220d3d98957b62ca102abd8498a76
-    Hash: bb5a68657e9add7589f6b3991cc77701

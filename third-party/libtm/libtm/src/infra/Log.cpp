@@ -16,7 +16,7 @@
 #include <time.h>
 #endif
 
-#ifdef __linux__
+#ifndef _WIN32
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
@@ -24,7 +24,11 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#ifdef __linux__
 #define gettid() syscall(SYS_gettid)
+#else
+#define gettid() 0L
+#endif
 #endif
 
 using namespace perc;
@@ -96,7 +100,10 @@ const char* logPrioritySign[] = { "U" ,/* LOG_UNKNOWN */
 const LogVerbosityLevel prio2verbosity[] = {None, None, Verbose, Debug, Trace, Info, Warning, Error, Error, None};
 
 // LOG_FATAL is always enabled by default
-#define isPriorityEnabled(prio)     (LOG_FATAL == prio || (gLogManager.configuration[LogSourceHost].verbosityMask & LOG_PRI2MASK(prio)))
+bool isPriorityEnabled(int prio)
+{
+    return (LOG_FATAL == prio || (gLogManager.configuration[LogSourceHost].verbosityMask & LOG_PRI2MASK(prio)));
+}
 
 void __perc_Log_write(int prio, const char *tag, const char *text)
 {
@@ -157,7 +164,7 @@ void __perc_Log_write(int prio, const char *tag, const char *text)
 }
 
 
-#ifdef __linux__
+#ifndef _WIN32
 int __perc_Log_print_header(char * buf, int bufSize, int prio, const char *tag, const char* deviceId)
 {
     struct timeval tv;

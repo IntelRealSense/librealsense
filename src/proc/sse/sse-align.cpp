@@ -1,3 +1,5 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #ifdef __SSSE3__
 
 #include "sse-align.h"
@@ -286,6 +288,7 @@ void image_transform::align_other_to_depth(const uint16_t* z_pixels, const byte*
     switch (to.model)
     {
     case RS2_DISTORTION_MODIFIED_BROWN_CONRADY:
+    case RS2_DISTORTION_INVERSE_BROWN_CONRADY:
         align_other_to_depth_sse<RS2_DISTORTION_MODIFIED_BROWN_CONRADY>(z_pixels, source, dest, bpp, to, from_to_other);
         break;
     default:
@@ -399,8 +402,12 @@ void align_sse::reset_cache(rs2_stream from, rs2_stream to)
     _stream_transform = nullptr;
 }
 
-void align_sse::align_z_to_other(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale)
+void align_sse::align_z_to_other(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale)
 {
+    byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+    auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
+    memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
+
     auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
 
     auto z_intrin = depth_profile.get_intrinsics();
@@ -417,8 +424,12 @@ void align_sse::align_z_to_other(byte* aligned_data, const rs2::video_frame& dep
     _stream_transform->align_depth_to_other(z_pixels, reinterpret_cast<uint16_t*>(aligned_data), 2, z_intrin, other_intrin, z_to_other);
 }
 
-void align_sse::align_other_to_z(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale)
+void align_sse::align_other_to_z(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale)
 {
+    byte* aligned_data = reinterpret_cast<byte*>(const_cast<void*>(aligned.get_data()));
+    auto aligned_profile = aligned.get_profile().as<rs2::video_stream_profile>();
+    memset(aligned_data, 0, aligned_profile.height() * aligned_profile.width() * aligned.get_bytes_per_pixel());
+
     auto depth_profile = depth.get_profile().as<rs2::video_stream_profile>();
     auto other_profile = other.get_profile().as<rs2::video_stream_profile>();
 

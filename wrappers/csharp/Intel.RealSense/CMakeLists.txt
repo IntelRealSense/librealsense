@@ -2,31 +2,40 @@ cmake_minimum_required( VERSION 3.8.0 )
 
 project(Intel.RealSense)
 
+set(LRS_DOTNET_TARGET ${PROJECT_NAME})
+
 add_library(${PROJECT_NAME}
     Context.cs
-    Device.cs
-    Frame.cs
-    FrameQueue.cs
-    FrameSet.cs
-    Helpers.cs
     NativeMethods.cs
-    Pipeline.cs
-    Processing.cs
-    Sensor.cs
-    StreamProfile.cs
-    Types.cs
-    SoftwareDevice.cs
-    Option.cs
     .nuget/Intel.RealSense.targets
-
+	GlobalSuppressions.cs
     Properties/AssemblyInfo.cs
+	packages.config
+	stylecop.json
 )
+
+include(Base/CMakeLists.txt)
+include(Devices/CMakeLists.txt)
+include(Frames/CMakeLists.txt)
+include(Pipeline/CMakeLists.txt)
+include(Processing/CMakeLists.txt)
+include(StreamProfiles/CMakeLists.txt)
+include(Sensors/CMakeLists.txt)
+include(Types/CMakeLists.txt)
+include(Helpers/CMakeLists.txt)
+include(Options/CMakeLists.txt)
 
 csharp_set_designer_cs_properties(
     .nuget/Intel.RealSense.targets
 )
 
 if(BUILD_UNITY_BINDINGS)
+	string(REPLACE "/" "\\" CMAKE_BINARY_WIN_DIR ${CMAKE_BINARY_DIR})
+	string(REPLACE "/" "\\" CMAKE_SOURCE_WIN_DIR ${CMAKE_SOURCE_DIR})
+	file(MAKE_DIRECTORY ${CMAKE_BINARY_WIN_DIR}/wrappers)
+	if(NOT EXISTS ${CMAKE_BINARY_WIN_DIR}/wrappers/unity)
+		execute_process(COMMAND cmd "/C mklink /D ${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity ${CMAKE_SOURCE_WIN_DIR}\\wrappers\\unity")
+	endif()
     add_custom_command(TARGET ${PROJECT_NAME}
                POST_BUILD
                COMMAND XCOPY /y /s "$(OutDir)Intel.RealSense.dll" "${CMAKE_BINARY_WIN_DIR}\\wrappers\\unity\\Assets\\RealSenseSDK2.0\\Plugins\\"
@@ -62,6 +71,10 @@ set_target_properties (${PROJECT_NAME} PROPERTIES
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
     "System"
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE /define:${CMAKE_SYSTEM_NAME})
+
+set_source_files_properties(stylecop.json PROPERTIES VS_TOOL_OVERRIDE "AdditionalFiles")
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
