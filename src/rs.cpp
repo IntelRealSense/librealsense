@@ -1936,8 +1936,6 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 
     auto res = new rs2_processing_block{ block };
 
-    auto res2 = (rs2_options*)res;
-
     return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
