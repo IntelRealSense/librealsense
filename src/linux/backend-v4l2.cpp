@@ -323,10 +323,11 @@ namespace librealsense
                 auto buffer = buffers.at(e_video_buf)._data_buf;
                 auto dq  = buffers.at(e_video_buf)._dq_buf;
 
-                auto md_payload_size = 0L;
                 // For compressed data assume D4XX metadata struct
+                static const int d4xx_md_size = 248;
+                auto md_payload_size = 0L;
                 if (dq.bytesused < buffer->get_length_frame_only())
-                    md_payload_size = 248; // The compressed stream appendix is not
+                    md_payload_size = d4xx_md_size; // The stream appendix is a fixed size
                 else
                     md_payload_size = dq.bytesused - buffer->get_length_frame_only();
 
@@ -342,6 +343,14 @@ namespace librealsense
 
                 md_start = buffer->get_frame_start() + dq.bytesused - md_payload_size;
                 md_size = (*(static_cast<uint8_t*>(md_start)));
+                int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
+
+                // Heuristics to evaluate whether the buffer has metadata
+                if ((md_size !=d4xx_md_size) || (!val_in_range(md_flags, {0x8e, 0x8f}) ))
+                {
+                    md_size = 0;
+                    md_start=nullptr;
+                }
             }
             set_md_attributes(static_cast<uint8_t>(md_size),md_start);
         }
@@ -918,7 +927,7 @@ namespace librealsense
 
                                     if (val > 1)
                                         LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
-                                    frame_object fo{ buf.bytesused - buf_mgr.metadata_size(), buf_mgr.metadata_size(),
+                                    frame_object fo{ std::min(buf.bytesused, buffer->get_length_frame_only())  - buf_mgr.metadata_size(), buf_mgr.metadata_size(),
                                         buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                      buffer->attach_buffer(buf);
