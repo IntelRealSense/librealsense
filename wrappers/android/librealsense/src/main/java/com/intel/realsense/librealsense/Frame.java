@@ -36,8 +36,8 @@ public class Frame extends LrsClass implements Cloneable{
         return nGetNumber(mHandle);
     }
 
-    public long getTimestamp(){
-        return (long)nGetTimestamp(mHandle);
+    public double getTimestamp(){
+        return nGetTimestamp(mHandle);
     }
 
     public TimestampDomain getTimestampDomain() {

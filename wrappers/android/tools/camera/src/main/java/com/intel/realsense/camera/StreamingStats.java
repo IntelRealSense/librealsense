@@ -106,8 +106,8 @@ public class StreamingStats {
         private float mFps = 0;
         private long mFrameCount = 0;
         private long mFrameLoss = 0;
-        private long mHWTimestamp = 0;
-        private long mHWTimestampDiff = 0;
+        private double mHWTimestamp = 0;
+        private double mHWTimestampDiff = 0;
         private long mSWTimestamp = 0;
         private long mSWTimestampDiff = 0;
         private int mFrameNumber = 0;
@@ -156,7 +156,7 @@ public class StreamingStats {
                     "\nFrame Count: " + mTotalFrameCount +
                     "\nFrame Number: " + mFrameNumber +
                     "\nFrame Loss: " + mFrameLoss +
-                    "\nHW timestamp: " + mHWTimestamp +
+                    "\nHW timestamp: " + (long)mHWTimestamp +
                     "\nSW timestamp: " + mSWTimestamp +
                     "\nRun Time: " + diffInSeconds + " [sec]" +
                     "\nEmitter Mode: " + mEmitter +
@@ -201,8 +201,8 @@ public class StreamingStats {
                     mResolution + ", " +
                     mRequestedFps + ", " +
                     mFrameNumber + ", " +
-                    mHWTimestamp + ", " +
-                    mHWTimestampDiff + ", " +
+                    (long)mHWTimestamp + ", " +
+                    (long)mHWTimestampDiff + ", " +
                     mSWTimestamp + ", " +
                     mSWTimestampDiff + ", " +
                     mAutoExposureMode + ", " +

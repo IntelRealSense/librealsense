@@ -26,12 +26,12 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/jni/options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/jni/advanced_mode.cpp"
 
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logger/fw-log-data.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logger/fw-logs-formating-options.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logger/fw-logs-parser.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logger/fw-logs-xml-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-logger/rs-fw-logger.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/fw-logger/string-formatter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/fw-log-data.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/fw-logs-parser.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/fw-logs-xml-helper.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/string-formatter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/fw-logs-formating-options.cpp"
 )
 
 message(STATUS "Prepare RealSense SDK for Android OS (${ANDROID_NDK_ABI_NAME})")
