@@ -9,7 +9,7 @@
 #include <chrono>
 #include <fstream>
 
-#include "fw-logs-parser.h"
+#include "../../../tools/fw-logger/fw-logs-parser.h"
 #include "../../../include/librealsense2/hpp/rs_context.hpp"
 
 #define TAG "rs_fw_log"
