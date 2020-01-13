@@ -266,34 +266,39 @@ public class PreviewActivity extends AppCompatActivity {
                     return;
                 List<Sensor> sensors = device.querySensors();
                 for(Sensor s : sensors){
-                    if(!s.supports(Option.EMITTER_ENABLED))
-                        continue;
-                    switch(view.getId()) {
-                        case R.id.radio_no_projector:{
-                            setOption(s, Option.EMITTER_ENABLED, 0);
-                            break;
-                        }
-                        case R.id.radio_laser:{
-                            setOption(s, Option.EMITTER_ENABLED, 1);
-                            break;
-                        }
-                        case R.id.radio_laser_auto:{
-                            setOption(s, Option.EMITTER_ENABLED, 2);
-                            break;
-                        }
-                        case R.id.radio_led:{
-                            setOption(s, Option.EMITTER_ENABLED, 3);
-                            break;
-                        }
-                        case R.id.radio_custom:{
-                            setOption(s, Option.HARDWARE_PRESET, 0);
-                            break;
-                        }
-                        case R.id.radio_burst:{
-                            setOption(s, Option.HARDWARE_PRESET, 2);
-                            break;
+                    if(s.supports(Option.EMITTER_ENABLED)) {
+                        switch(view.getId()) {
+                            case R.id.radio_no_projector:{
+                                setOption(s, Option.EMITTER_ENABLED, 0);
+                                break;
+                            }
+                            case R.id.radio_laser:{
+                                setOption(s, Option.EMITTER_ENABLED, 1);
+                                break;
+                            }
+                            case R.id.radio_laser_auto:{
+                                setOption(s, Option.EMITTER_ENABLED, 2);
+                                break;
+                            }
+                            case R.id.radio_led:{
+                                setOption(s, Option.EMITTER_ENABLED, 3);
+                                break;
+                            }
                         }
                     }
+                    if(s.supports(Option.HARDWARE_PRESET)) {
+                        switch(view.getId()) {
+                            case R.id.radio_custom:{
+                                setOption(s, Option.HARDWARE_PRESET, 0);
+                                break;
+                            }
+                            case R.id.radio_burst:{
+                                setOption(s, Option.HARDWARE_PRESET, 2);
+                                break;
+                            }
+                        }
+                    }
+
                 }
             } catch(Exception e){
                 Log.e(TAG, "Failed to set controls: " + e.getMessage());

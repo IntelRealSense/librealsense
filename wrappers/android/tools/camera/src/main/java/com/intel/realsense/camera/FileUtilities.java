@@ -35,7 +35,7 @@ public class FileUtilities {
             File file = new File(getExternalStorageDir() + File.separator + fileName);
             FileOutputStream fos = new FileOutputStream(file);
             fos.write(data);
-            Log.i(TAG, "saveFileToExternalDir: file " + fileName + "saved successfully");
+            Log.i(TAG, "saveFileToExternalDir: file " + fileName + " saved successfully");
         } catch (Exception e) {
             Log.e(TAG, "saveFileToExternalDir: failed to create a file " + fileName, e);
         }
