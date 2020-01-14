@@ -41,7 +41,7 @@ namespace librealsense
                                                  // if true, this will force any queue receiving this frame not to drop it
         uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
 
-        frame_additional_data() {};
+        frame_additional_data() {}
 
         frame_additional_data(double in_timestamp,
             unsigned long long in_frame_number,

@@ -19,7 +19,7 @@ namespace librealsense
     {
         if (!unhuffimage4(reinterpret_cast<uint32_t*>(const_cast<byte*>(source)), uint32_t(input_size >> 2), width << 1, height, const_cast<byte*>(*dest)))
         {
-            LOG_WARNING("Depth decompression failed, ts: " << static_cast<uint64_t>(environment::get_instance().get_time_service()->get_time())
+            LOG_INFO("Depth decompression failed, ts: " << static_cast<uint64_t>(environment::get_instance().get_time_service()->get_time())
                         << " , compressed size: " << input_size);
         }
     }
