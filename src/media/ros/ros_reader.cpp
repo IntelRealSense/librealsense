@@ -13,6 +13,7 @@
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
+#include "proc/depth-decompress.h"
 #include "std_msgs/Float32MultiArray.h"
 
 namespace librealsense
@@ -1396,6 +1397,8 @@ namespace librealsense
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
         case RS2_EXTENSION_ZERO_ORDER_FILTER:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>();
+        case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER:
+            return std::make_shared<ExtensionToType<RS2_EXTENSION_DEPTH_HUFFMAN_DECODER>::type>();
         default:
             return nullptr;
         }

@@ -106,7 +106,7 @@ public:
     frame process(frame f) override
     {
         return _block.process(f);
-    };
+    }
     virtual const std::string& name() const override
     {
         return _name;
@@ -135,7 +135,7 @@ public:
         auto res = pb_test<T>::process(f);
         flush();
         return res;
-    };
+    }
     frame prepare(frame f) override
     {
         auto res = _upload.process(f);
