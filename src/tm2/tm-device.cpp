@@ -360,8 +360,8 @@ namespace librealsense
         : sensor_base("Tracking Module", owner, this), _device(owner)
     {
         LOG_DEBUG("Making a sensor " << this);
-        _source.set_max_publish_list_size(64); //increase frame source queue size for TM2
-        _data_dispatcher = std::make_shared<dispatcher>(64); // make a queue of the same size to dispatch data messages
+        _source.set_max_publish_list_size(256); //increase frame source queue size for TM2
+        _data_dispatcher = std::make_shared<dispatcher>(256); // make a queue of the same size to dispatch data messages
         _data_dispatcher->start();
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
@@ -375,6 +375,9 @@ namespace librealsense
         log_request.bLogMode = 0x1; // rollover mode
         bulk_message_response_log_control log_response = {};
         _device->bulk_request_response(log_request, log_response);
+
+        last_global_ts = 0;
+        last_hw_ts = 0;
 
         // start log thread
         _log_poll_thread_stop = false;
@@ -1207,13 +1210,29 @@ namespace librealsense
             LOG_WARNING("Dropped frame. No valid profile");
             return;
         }
+
+        //Global base time sync may happen between two frames
+        //Make sure 2nd frame global timestamp is not impacted.
+        uint64_t global_ts = ts.global_ts.count();
+        uint32_t allowed_delta = 1000;
+        if (last_exposure != 0 && last_exposure < allowed_delta)
+            allowed_delta = last_exposure;
+
+        if (std::abs((int64_t)(message->rawStreamHeader.llNanoseconds - last_hw_ts)) < (int64_t)allowed_delta)
+        {
+            global_ts = last_global_ts - last_hw_ts + message->rawStreamHeader.llNanoseconds;
+        }
+
+        last_global_ts = global_ts;
+        last_hw_ts = message->rawStreamHeader.llNanoseconds;
+
         //TODO - extension_type param assumes not depth
         frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, height * stride, additional_data, true);
         if (frame.frame)
         {
             auto video = (video_frame*)(frame.frame);
             video->assign(width, height, stride, bpp);
-            frame->set_timestamp(ts.global_ts.count());
+            frame->set_timestamp(global_ts);
             frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
@@ -1428,24 +1447,30 @@ namespace librealsense
 
     void tm2_sensor::time_sync()
     {
+        device_to_host_ns = 0;
         while(!_time_sync_thread_stop) {
             bulk_message_request_get_time request = {{ sizeof(request), DEV_GET_TIME }};
             bulk_message_response_get_time response = {};
 
-            auto start = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
+            uint64_t start = (uint64_t)environment::get_instance().get_time_service()->get_time_ns();
             platform::usb_status usb_response = _device->bulk_request_response(request, response);
             if(usb_response != platform::RS2_USB_STATUS_SUCCESS) {
                 LOG_INFO("Got bad response, stopping time sync");
                 break;
             }
-            auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
+            uint64_t finish = (uint64_t)environment::get_instance().get_time_service()->get_time_ns();
 
-            double device_ms = (double)response.llNanoseconds*1e-6;
-            auto device = duration<double, std::milli>(device_ms);
-            auto diff = duration<double, std::nano>(start + (finish - start)/2 - device);
-            device_to_host_ns = diff.count();
-
-            LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns.load());
+            //If usb response takes too long, skip update. 250us is 5% of 200Hz 
+            if ((finish - start) / 2 < 250 * 1000)
+            {
+                device_to_host_ns = start + (finish - start) / 2 - response.llNanoseconds;
+            }
+            else
+            {
+                if (!device_to_host_ns)
+                    continue;
+            }
+            LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns);
 
             // Only trigger this approximately every 500ms, but don't
             // wait 500ms to stop if we are requested to stop
