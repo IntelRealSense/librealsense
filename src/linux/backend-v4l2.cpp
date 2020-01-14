@@ -927,7 +927,7 @@ namespace librealsense
 
                                     if (val > 1)
                                         LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
-                                    frame_object fo{ std::min(buf.bytesused, buffer->get_length_frame_only())  - buf_mgr.metadata_size(), buf_mgr.metadata_size(),
+                                    frame_object fo{ std::min(buf.bytesused - buf_mgr.metadata_size(), buffer->get_length_frame_only()), buf_mgr.metadata_size(),
                                         buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                      buffer->attach_buffer(buf);
