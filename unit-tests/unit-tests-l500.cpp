@@ -123,7 +123,8 @@ TEST_CASE("L500 - Pipeline - single frame per request", "[live][L500][device_spe
         return false;
     };
     std::string error_msg = "A duplicated frame arrived from stream";
-    CAPTURE(error_msg, duplicated_stream);
+    CAPTURE(error_msg);
+    CAPTURE(duplicated_stream);
     REQUIRE(std::none_of(stream_histogram.begin(), stream_histogram.end(), bigger_than_one_predicate));
 }
 
