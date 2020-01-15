@@ -33,7 +33,7 @@ TEST_CASE("L500 - Multistream", "[L500][device_specific]")
     rs2::context ctx;
     REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
 
-    const int width = 640, height = 480, fps = 30, motion_fps = 100, idx = 0;
+    int width = 640, height = 480, fps = 30, motion_fps = 100, idx = 0;
 
     auto l500_device = get_l500_device(ctx);
     auto&& l500_sensors = l500_device.query_sensors();
@@ -93,7 +93,7 @@ TEST_CASE("L500 - Pipeline - single frame per request", "[live][L500][device_spe
     rs2::pipeline pipe(ctx);
 
     std::vector<rs2_stream> streams {RS2_STREAM_DEPTH, RS2_STREAM_INFRARED, };
-    std::unordered_map<rs2_stream, int> stream_histogram;
+    std::map<rs2_stream, int> stream_histogram;
 
     // Enable IR, Z16, Confidence streams
     for (auto&& stream : streams)
