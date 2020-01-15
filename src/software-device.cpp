@@ -7,14 +7,16 @@
 namespace librealsense
 {
     software_device::software_device()
-        : device(std::make_shared<context>(backend_type::standard), {})
+        : device(std::make_shared<context>(backend_type::standard), {}),
+        _user_destruction_callback()
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
     }
 
     librealsense::software_device::~software_device()
     {
-        _user_destruction_callback->on_destruction();
+        if (_user_destruction_callback)
+            _user_destruction_callback->on_destruction();
     }
 
     software_sensor& software_device::add_software_sensor(const std::string& name)
