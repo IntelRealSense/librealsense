@@ -23,6 +23,8 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
+// For rs2_format
+#include "../include/librealsense2/h/rs_sensor.h"
 
 // Hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
@@ -110,6 +112,79 @@ std::string matrix_to_string(const T(&arr)[N][M])
 
 #define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
 #define BIND_RAW_2D_ARRAY_PROPERTY(T, member, valueT, NROWS, NCOLS) #member, BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS), BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS)
+
+// Map format->data type for various things
+template <rs2_format> struct FmtToType { using type = uint8_t; }; // Default to uint8_t
+#define MAP_FMT_TO_TYPE(F, T) template <> struct FmtToType<F> { using type = T; }
+MAP_FMT_TO_TYPE(RS2_FORMAT_Z16, uint16_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_DISPARITY16, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_XYZ32F, float);
+MAP_FMT_TO_TYPE(RS2_FORMAT_YUYV, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_RGB8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_BGR8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_RGBA8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_BGRA8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_Y8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_Y16, uint16_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_RAW10, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_RAW16, uint16_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_RAW8, uint8_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_UYVY, uint8_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_MOTION_RAW, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_MOTION_XYZ32F, float);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_GPIO_RAW, );
+//MAP_FMT_TO_TYPE(RS2_FORMAT_6DOF, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_DISPARITY32, float);
+MAP_FMT_TO_TYPE(RS2_FORMAT_Y10BPACK, uint16_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_DISTANCE, float);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_MJPEG, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_Y12I, );
+//MAP_FMT_TO_TYPE(RS2_FORMAT_INZI, );
+MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
+
+template <rs2_format FMT> struct itemsize {
+    static constexpr size_t func() { return sizeof(FmtToType<FMT>::type); }
+};
+template <rs2_format FMT> struct fmtstring {
+    static constexpr std::string func() { return py::format_descriptor<FmtToType<FMT>::type>::format(); }
+};
+
+template<template<rs2_format> class F>
+constexpr auto fmt_to_value(rs2_format fmt) {
+    switch (fmt) {
+    case RS2_FORMAT_Z16: return F<RS2_FORMAT_Z16>::func();
+    case RS2_FORMAT_DISPARITY16: return F<RS2_FORMAT_DISPARITY16>::func();
+    case RS2_FORMAT_XYZ32F: return F<RS2_FORMAT_XYZ32F>::func();
+    case RS2_FORMAT_YUYV: return F<RS2_FORMAT_YUYV>::func();
+    case RS2_FORMAT_RGB8: return F<RS2_FORMAT_RGB8>::func();
+    case RS2_FORMAT_BGR8: return F<RS2_FORMAT_BGR8>::func();
+    case RS2_FORMAT_RGBA8: return F<RS2_FORMAT_RGBA8>::func();
+    case RS2_FORMAT_BGRA8: return F<RS2_FORMAT_BGRA8>::func();
+    case RS2_FORMAT_Y8: return F<RS2_FORMAT_Y8>::func();
+    case RS2_FORMAT_Y16: return F<RS2_FORMAT_Y16>::func();
+    case RS2_FORMAT_RAW10: return F<RS2_FORMAT_RAW10>::func();
+    case RS2_FORMAT_RAW16: return F<RS2_FORMAT_RAW16>::func();
+    case RS2_FORMAT_RAW8: return F<RS2_FORMAT_RAW8>::func();
+    case RS2_FORMAT_UYVY: return F<RS2_FORMAT_UYVY>::func();
+    case RS2_FORMAT_MOTION_RAW: return F<RS2_FORMAT_MOTION_RAW>::func();
+    case RS2_FORMAT_MOTION_XYZ32F: return F<RS2_FORMAT_MOTION_XYZ32F>::func();
+    case RS2_FORMAT_GPIO_RAW: return F<RS2_FORMAT_GPIO_RAW>::func();
+    case RS2_FORMAT_6DOF: return F<RS2_FORMAT_6DOF>::func();
+    case RS2_FORMAT_DISPARITY32: return F<RS2_FORMAT_DISPARITY32>::func();
+    case RS2_FORMAT_Y10BPACK: return F<RS2_FORMAT_Y10BPACK>::func();
+    case RS2_FORMAT_DISTANCE: return F<RS2_FORMAT_DISTANCE>::func();
+    case RS2_FORMAT_MJPEG: return F<RS2_FORMAT_MJPEG>::func();
+    case RS2_FORMAT_Y8I: return F<RS2_FORMAT_Y8I>::func();
+    case RS2_FORMAT_Y12I: return F<RS2_FORMAT_Y12I>::func();
+    case RS2_FORMAT_INZI: return F<RS2_FORMAT_INZI>::func();
+    case RS2_FORMAT_INVI: return F<RS2_FORMAT_INVI>::func();
+    case RS2_FORMAT_W10: return F<RS2_FORMAT_W10>::func();
+    case RS2_FORMAT_COUNT: throw std::runtime_error("format.count is not a valid value for arguments of type format!");
+    default: return F<RS2_FORMAT_ANY>::func();
+    }
+}
 
 // Support Python's buffer protocol
 class BufData {
