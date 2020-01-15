@@ -15,6 +15,7 @@
 #include "proc/zero-order.h"
 #include <cstddef>
 #include "metadata-parser.h"
+#include "l500-controls.h"
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -73,6 +74,32 @@ namespace librealsense
         depth_sensor.register_option(RS2_OPTION_APD_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
 
+        //depth_sensor.register_option(RS2_OPTION_CONFIDENCE_THRESHOLD,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), confidence));
+
+        //depth_sensor.register_option(RS2_OPTION_SHARPNESS,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), sharpness));
+
+        //depth_sensor.register_option(RS2_OPTION_RAST_BILT,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), rast_bilt));
+
+        //depth_sensor.register_option(RS2_OPTION_EDGE,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), edge));
+
+        //depth_sensor.register_option(RS2_OPTION_APD,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), apd));
+
+        //depth_sensor.register_option(RS2_OPTION_LASER_POWER,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), laser_gain));
+
+        ///*depth_sensor.register_option(RS2_OPTION_MIN_DISTANCE,
+        //    std::make_shared <l500_controls>(_hw_monitor.get(), min_distance));*/
+
+        //depth_sensor.register_option(RS2_OPTION_MIN_DISTANCE,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), min_distance));
+
+        //depth_sensor.register_option(RS2_OPTION_INVALIDATION_BYPASS,
+        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), min_distance));
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -135,7 +162,7 @@ namespace librealsense
         }
         else
         {
-            matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
+            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
         }
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
@@ -313,6 +340,20 @@ namespace librealsense
             {
                 _validator_requests = requests;
             }
+
+            auto dp = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
+            {return sp->get_stream_type() == RS2_STREAM_DEPTH;});
+
+            const int XGA = 0;
+            const int VGA = 1;
+
+            if (dp != requests.end() && supports_option(RS2_OPTION_CAMERA_MODE))
+            {
+                auto&& camera_mode_option = get_option(RS2_OPTION_CAMERA_MODE);
+                auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
+                camera_mode_option.set(vs->get_width() == 640 || vs->get_height() == 640 ? VGA : XGA);
+            }
+
 
             synthetic_sensor::open(_validator_requests);
         }

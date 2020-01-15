@@ -294,11 +294,18 @@ namespace librealsense
             CASE(LED_POWER)
             CASE(ZERO_ORDER_ENABLED)
             CASE(ENABLE_MAP_PRESERVATION)
+            CASE(AVALANCHE_PHOTO_DIODE)
+            CASE(POST_PROCESSING_SHARPENING)
+            CASE(PRE_PROCESSING_SHARPENING)
+            CASE(NOISE_FILTERING)
+            CASE(INVALIDATION_BYPASS)
+            CASE(SENSETIVITY)
+            CASE(CAMERA_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
     }
-
+   
     const char* get_string(rs2_format value)
     {
 #define CASE(X) case RS2_FORMAT_##X: return #X;

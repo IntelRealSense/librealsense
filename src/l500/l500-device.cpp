@@ -135,18 +135,13 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
         raw_depth_ep->register_xu(depth_xu);
 
-        auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream);
+        auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream, _advanced_option);
         
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
-        depth_ep->register_option(RS2_OPTION_VISUAL_PRESET,
-            std::make_shared<uvc_xu_option<int>>(
-                *raw_depth_ep,
-                ivcam2::depth_xu,
-                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range",
-                std::map<float, std::string>{ { 1, "Long range"},
-                { 2, "Short range" }}));
 
+
+       
         auto is_zo_enabled_opt = std::make_shared<bool_option>();
         auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
         is_zo_enabled_opt->set(false);

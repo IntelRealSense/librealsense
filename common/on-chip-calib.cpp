@@ -309,8 +309,8 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
-               ",\n \"average_step_count\":" << average_step_count <<
-               ",\n \"step_count\":" << step_count <<
+               ",\n \"average step count\":" << average_step_count <<
+               ",\n \"step count\":" << step_count <<
                ",\n \"accuracy\":" << accuracy <<"}";
 
         std::string json = ss.str();

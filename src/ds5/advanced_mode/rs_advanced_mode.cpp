@@ -297,7 +297,7 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(json_content);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
     advanced_mode->load_json(std::string(static_cast<const char*>(json_content), content_size));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
@@ -305,7 +305,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
 rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
-    return new rs2_raw_data_buffer{ advanced_mode->serialize_json() };
+    auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
+    return new rs2_raw_data_buffer{ serializable->serialize_json() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)

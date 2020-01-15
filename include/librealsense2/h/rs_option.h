@@ -84,6 +84,13 @@ extern "C" {
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
         RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
+        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the Avalanche Photo Diode in the reciever */
+        RS2_OPTION_POST_PROCESSING_SHARPENING,  /**< Changes the amount of sharpening in the post-processed image */
+        RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
+        RS2_OPTION_NOISE_FILTERING, /**< Control edges and background noise */
+        RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
+        RS2_OPTION_SENSETIVITY, /**< Canges the depth sensetivity to ambient: 1 for no ambient and 2 for low ambient*/
+        RS2_OPTION_CAMERA_MODE, /**< Device specific for L515: 0 for XGA and 1 for VGA */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

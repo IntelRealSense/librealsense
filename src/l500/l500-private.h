@@ -21,7 +21,7 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_DEPTH_VISUAL_PRESET = 2;
+        const uint8_t L500_AMBIENT = 2;
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const uint32_t FLASH_SIZE = 0x00200000;
@@ -54,7 +54,9 @@ namespace librealsense
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
-            RGB_EXTRINSIC_GET           = 0x82
+            RGB_EXTRINSIC_GET           = 0x82,
+            AMCSET                      = 0x2B,
+            AMCGET                      = 0x2C
         };
 
         enum gvd_fields

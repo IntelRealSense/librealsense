@@ -147,5 +147,5 @@ namespace librealsense
 
             return rv;
         }
-    } // librealsense::ivcam2
+} // librealsense::ivcam2
 } // namespace librealsense

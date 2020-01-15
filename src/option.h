@@ -83,7 +83,7 @@ namespace librealsense
         std::string _desc;
     };
 
-    class LRS_EXTENSION_API option_base : public option
+    class LRS_EXTENSION_API option_base : public virtual option
     {
     public:
         option_base(const option_range& opt_range)
@@ -98,8 +98,33 @@ namespace librealsense
      protected:
         const option_range _opt_range;
         std::function<void(const option&)> _recording_function = [](const option&) {};
-
     };
+
+    class option_with_description : public virtual option
+    {
+    public:
+        option_with_description(std::string description, const std::map<float, std::string> description_per_value)
+        :
+        _description_per_value(description_per_value),
+          _desciption(description){}
+    
+        const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        }
+
+        const char* get_description() const override
+        {
+            return _desciption.c_str();
+        }
+
+    protected:
+        const std::map<float, std::string> _description_per_value;
+        std::string _desciption;
+    };
+
 
     template<class T>
     class LRS_EXTENSION_API ptr_option : public option_base
@@ -172,6 +197,16 @@ namespace librealsense
         const char* get_description() const override { return "A simple custom option for a processing block"; }
     protected:
         float _value;
+    };
+
+    class float_option_with_description : public float_option, public option_with_description
+    {
+    public:
+        float_option_with_description(option_range range, std::string description, const std::map<float, std::string> description_per_value)
+            :float_option(range),
+            option_with_description(description, description_per_value){}
+
+        const char* get_description() const override { return option_with_description::get_description(); }
     };
 
     class LRS_EXTENSION_API bool_option : public float_option

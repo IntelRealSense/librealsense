@@ -269,7 +269,8 @@ namespace rs2
         if (opt == RS2_OPTION_STREAM_FILTER ||
             opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
             opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
+            opt == RS2_OPTION_CAMERA_MODE)
             return true;
         return false;
     }

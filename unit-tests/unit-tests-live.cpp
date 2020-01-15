@@ -5808,3 +5808,102 @@ TEST_CASE("get_sensor_from_frame", "[live][using_pipeline]")
         REQUIRE_NOTHROW(pipe.stop());
     }
 }
+
+TEST_CASE("l500_presets_set_preset", "[live]")
+{
+    std::vector<rs2_option> _hw_controls = { RS2_OPTION_VISUAL_PRESET, RS2_OPTION_PRE_PROCESSING_SHARPENING, RS2_OPTION_CONFIDENCE_THRESHOLD, RS2_OPTION_POST_PROCESSING_SHARPENING, RS2_OPTION_NOISE_FILTERING, RS2_OPTION_AVALANCHE_PHOTO_DIODE, RS2_OPTION_LASER_POWER ,RS2_OPTION_MIN_DISTANCE, RS2_OPTION_INVALIDATION_BYPASS };
+    // Require at least one device to be plugged in
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.31.0"))
+    {
+        std::vector<sensor> list;
+        REQUIRE_NOTHROW(list = ctx.query_all_sensors());
+        REQUIRE(list.size() > 0);
+
+         sensor ds;
+
+         for (auto&& s : list)
+         {
+             if (s.is < rs2::depth_sensor>())
+             {
+                 ds = s.as < rs2::depth_sensor>();
+                 break;
+             }
+         }
+
+        REQUIRE(ds);
+
+        for (auto&& option : _hw_controls)
+        {
+            REQUIRE(ds.supports(option));
+        }
+        REQUIRE(ds.supports(RS2_OPTION_CAMERA_MODE));
+
+        auto presets = ds.get_option_range(RS2_OPTION_VISUAL_PRESET);
+        REQUIRE(presets.min == 0);
+        REQUIRE(presets.max == 4);
+        REQUIRE(presets.step == 1);
+        REQUIRE(presets.def == 1);
+
+        std::map< rs2_option, option_range> _options_range;
+
+        for (auto&& option : _hw_controls)
+        {
+            if (option != RS2_OPTION_VISUAL_PRESET)
+            {
+                _options_range[option] = ds.get_option_range(option);
+            }
+        }
+
+        std::vector<int> resolutions{ 1,2 }; //XGA, VGA
+
+        std::map<int, int> expected_sensetivity_per_preset =
+        {
+            {1, 1},
+            {2, 2},
+            {3, 1},
+            {4, 2}
+        };
+
+        std::map<int, int> expected_laser_power_per_preset =
+        {
+            {2, 100},
+            {3, 100}
+        };
+
+        for (auto i = presets.min + 1; i < presets.max; i++)
+        {
+            for (auto&& opt : _options_range)
+            {
+                ds.set_option(opt.first, -1);
+            }
+            CAPTURE(ds.get_option(RS2_OPTION_VISUAL_PRESET));
+            REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == 0);   //custom
+
+
+            for (auto res : resolutions)
+            {
+                ds.set_option(RS2_OPTION_CAMERA_MODE, res);
+                ds.set_option(RS2_OPTION_VISUAL_PRESET, i);
+                CAPTURE(ds.get_option(RS2_OPTION_SENSETIVITY));
+                REQUIRE(ds.get_option(RS2_OPTION_SENSETIVITY) == expected_sensetivity_per_preset[i]);
+
+                auto expected_laser_power = expected_laser_power_per_preset.find(i);
+                if (expected_laser_power != expected_laser_power_per_preset.end())
+                {
+                    CAPTURE(ds.get_option(RS2_OPTION_LASER_POWER));
+                    REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == expected_laser_power->second);
+                }
+
+                for (auto &&control : _hw_controls)
+                {
+                    CAPTURE(ds.get_option(control));
+                    //REQUIRE(ds.get_option(control) != _options_range[control].min));
+                }
+            }
+           
+        }
+       
+
+    }
+}
