@@ -32,7 +32,7 @@ namespace librealsense
                                                                         RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
     {}
 
-    void y8i_to_y8y8::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void y8i_to_y8y8::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_y8_y8_from_y8i(dest, source, width, height, actual_size);
     }

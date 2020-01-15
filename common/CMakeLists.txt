@@ -2,7 +2,7 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 set(COMMON_SRC
-	"${CMAKE_CURRENT_LIST_DIR}/rendering.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rendering.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/notifications.h"
@@ -23,4 +23,5 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.h"
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/decompress-huffman.h"
 )

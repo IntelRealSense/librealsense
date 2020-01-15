@@ -244,6 +244,14 @@ rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
 
 /**
+* Creates Depth frame decompression module. Decoded frames compressed and transmitted with Z16H variable-lenght Huffman code to 
+* standartized Z16 Depth data format. Using the compression allows to reduce the Depth frames bandwidth by more than 50 percent
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Huffman-code decompression processing block
+*/
+rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error);
+
+/**
 * Retrieve processing block specific information, like name.
 * \param[in]  block     The processing block
 * \param[in]  info      processing block info type to retrieve

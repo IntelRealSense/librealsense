@@ -15,7 +15,7 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index 33a22c016..a7b76c987 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -219,6 +219,38 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -219,6 +219,43 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_CNF4,
  		.fcc		= V4L2_PIX_FMT_CNF4,
  	},
@@ -51,6 +51,11 @@ index 33a22c016..a7b76c987 100644
 +		.guid		= UVC_GUID_FORMAT_BAYER16,
 +		.fcc		= V4L2_PIX_FMT_SBGGR16,
 +	},
++	{
++		.name		= "Z16 Huffman Compression",
++		.guid		= UVC_GUID_FORMAT_Z16H,
++		.fcc		= V4L2_PIX_FMT_Z16H,
++	},
  };
  
  /* ------------------------------------------------------------------------
@@ -58,7 +63,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 9b41b14ce..4b88f31f5 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -165,6 +165,25 @@
+@@ -165,6 +165,28 @@
  	{0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
@@ -81,6 +86,9 @@ index 9b41b14ce..4b88f31f5 100644
 +	#define UVC_GUID_FORMAT_BAYER16 \
 +	{ 'R',  'W',  '1',  '6', 0x66, 0x1a, 0x42, 0xa2, \
 +		0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++	#define UVC_GUID_FORMAT_Z16H \
++	{ 'Z',  '1',  '6',  'H', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  
  /* ------------------------------------------------------------------------
   * Driver specific constants.
@@ -88,7 +96,7 @@ diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2
 index 90aad465f..e2d757e9a 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1302,6 +1302,11 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1302,6 +1302,15 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_META_FMT_VSP1_HGO:	descr = "R-Car VSP1 1-D Histogram"; break;
  	case V4L2_META_FMT_VSP1_HGT:	descr = "R-Car VSP1 2-D Histogram"; break;
  	case V4L2_META_FMT_UVC:		descr = "UVC payload header metadata"; break;
@@ -97,6 +105,10 @@ index 90aad465f..e2d757e9a 100644
 +	case V4L2_PIX_FMT_W10:		descr = "10-bit packed 8888[2222]"; break;
 +	case V4L2_META_FMT_D4XX:		descr = "D4XX Payload Header metadata"; break;
 +	case V4L2_PIX_FMT_CONFIDENCE_MAP:	descr = "Packed [44] confidence data"; break;
++	case V4L2_PIX_FMT_FG:		descr = "Frame Grabber (FG  )"; break;
++	case V4L2_PIX_FMT_INZC:		descr = "Planar Depth/Confidence (INZC)"; break;
++	case V4L2_PIX_FMT_PAIR:		descr = "Relative IR (PAIR)"; break;
++	case V4L2_PIX_FMT_Z16H:		descr = "Z16 Huffman Compression"; break;
  
  	default:
  		/* Compressed formats */
@@ -104,13 +116,18 @@ diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
 index b5671ce27..8954f78be 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -692,6 +692,9 @@ struct v4l2_pix_format {
+@@ -692,6 +692,14 @@ struct v4l2_pix_format {
  #define V4L2_PIX_FMT_INZI     v4l2_fourcc('I', 'N', 'Z', 'I') /* Intel Planar Greyscale 10-bit and Depth 16-bit */
  #define V4L2_PIX_FMT_SUNXI_TILED_NV12 v4l2_fourcc('S', 'T', '1', '2') /* Sunxi Tiled NV12 Format */
  #define V4L2_PIX_FMT_CNF4     v4l2_fourcc('C', 'N', 'F', '4') /* Intel 4-bit packed depth confidence information */
 +#define V4L2_PIX_FMT_RW16     v4l2_fourcc('R', 'W', '1', '6') /* Raw data 16-bit */
 +#define V4L2_PIX_FMT_W10      v4l2_fourcc('W', '1', '0', ' ') /* Packed raw data 10-bit */
 +#define V4L2_PIX_FMT_CONFIDENCE_MAP	v4l2_fourcc('C', ' ', ' ', ' ') /* Two pixels in one byte */
++/*  Librealsense development*/
++#define V4L2_PIX_FMT_FG       v4l2_fourcc('F', 'G', ' ', ' ') /* Frame Grabber */
++#define V4L2_PIX_FMT_INZC     v4l2_fourcc('I', 'N', 'Z', 'C') /* Planar Depth/Confidence */
++#define V4L2_PIX_FMT_PAIR     v4l2_fourcc('P', 'A', 'I', 'R') /* Relative IR */
++#define V4L2_PIX_FMT_Z16H     v4l2_fourcc('Z', '1', '6', 'H') /* Depth Z16 custom Huffman Code compression*/
  
  /* 10bit raw bayer packed, 32 bytes for every 25 pixels, last LSB 6 bits unused */
  #define V4L2_PIX_FMT_IPU3_SBGGR10	v4l2_fourcc('i', 'p', '3', 'b') /* IPU3 packed 10-bit BGGR bayer */
