@@ -352,7 +352,6 @@ inline std::vector<int> generate_device_options(uint16_t pid)
             RS2_OPTION_BRIGHTNESS,
             RS2_OPTION_CONTRAST,
             RS2_OPTION_GAIN,
-            RS2_OPTION_GAMMA,
             RS2_OPTION_HUE,
             RS2_OPTION_SATURATION,
             RS2_OPTION_AUTO_EXPOSURE_PRIORITY,

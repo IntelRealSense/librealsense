@@ -2093,34 +2093,6 @@ TEST_CASE("Error handling sanity", "[live][!mayfail]") {
     }
 }
 
-std::vector<uint32_t> split(const std::string &s, char delim) {
-    std::stringstream ss(s);
-    std::string item;
-    std::vector<uint32_t> tokens;
-    while (std::getline(ss, item, delim)) {
-        tokens.push_back(std::stoi(item, nullptr));
-    }
-    return tokens;
-}
-
-bool is_fw_version_newer(rs2::sensor& subdevice, const uint32_t other_fw[4])
-{
-    std::string fw_version_str;
-    REQUIRE_NOTHROW(fw_version_str = subdevice.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION));
-    auto fw = split(fw_version_str, '.');
-    if (fw[0] > other_fw[0])
-            return true;
-    if (fw[0] == other_fw[0] && fw[1] > other_fw[1])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] > other_fw[2])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] > other_fw[3])
-        return true;
-    if (fw[0] == other_fw[0] && fw[1] == other_fw[1] && fw[2] == other_fw[2] && fw[3] == other_fw[3])
-        return true;
-    return false;
-}
-
 
 TEST_CASE("Auto disabling control behavior", "[live]") {
     //Require at least one device to be plugged in
@@ -2168,7 +2140,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                         //0 - on, 1- off, 2 - deprecated for fw later than 5.9.11.0
                         //check if the fw version supports elem = 2
                         const uint32_t MIN_FW_VER[4] = { 5, 9, 11, 0 };
-                        if (is_fw_version_newer(subdevice, MIN_FW_VER)) break;
+                        if (is_fw_version_newer(get_fw_version(subdevice), MIN_FW_VER)) break;
                     }
                 }
             }
