@@ -185,7 +185,7 @@ namespace rs2
         }
 
         /**
-        * Register option that will be supported by the sensor
+        * Register read-only option that will be supported by the sensor
         *
         * \param[in] option  the option
         * \param[in] val  the initial value
@@ -198,7 +198,7 @@ namespace rs2
         }
 
         /**
-        * Update value of registered option
+        * Update value of registered read-only option
         *
         * \param[in] option  the option
         * \param[in] val  the initial value
@@ -264,7 +264,7 @@ namespace rs2
         {}
 
         /**
-        * Add sensor stream to software sensor
+        * Add software sensor with given name to the software device.
         *
         * \param[in] name   the name of the sensor
         */
@@ -280,7 +280,7 @@ namespace rs2
         }
 
         /**
-        * register destruction callback
+        * Register destruction callback
         * \param[in] callback   destruction callback
         */
         template<class T>
@@ -293,9 +293,8 @@ namespace rs2
         }
 
         /**
-        * Add software device to existing context
-        * Any future queries on the context
-        * Will return this device
+        * Add software device to existing context.
+        * Any future queries on the context will return this device.
         * This operation cannot be undone (except for destroying the context)
         *
         * \param[in] ctx   context to add the device to
