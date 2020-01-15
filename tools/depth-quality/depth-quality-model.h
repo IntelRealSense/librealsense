@@ -353,7 +353,7 @@ namespace rs2
         class tool_model
         {
         public:
-            tool_model();
+            tool_model(rs2::context& ctx);
 
             bool start(ux_window& win);
 
@@ -381,7 +381,7 @@ namespace rs2
 
             std::string capture_description();
 
-            rs2::context                    _ctx;
+            rs2::context&                   _ctx;
             pipeline                        _pipe;
             std::shared_ptr<device_model>   _device_model;
             viewer_model                    _viewer_model;

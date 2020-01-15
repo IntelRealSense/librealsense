@@ -246,10 +246,10 @@ int main(int argc, const char** argv) try
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
 
-    ux_window window("Intel RealSense Viewer");
+    context ctx;
+    ux_window window("Intel RealSense Viewer", ctx);
 
     // Create RealSense Context
-    context ctx;
     device_changes devices_connection_changes(ctx);
     std::vector<std::pair<std::string, std::string>> device_names;
 
