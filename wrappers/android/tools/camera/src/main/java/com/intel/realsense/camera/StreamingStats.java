@@ -151,12 +151,13 @@ public class StreamingStats {
         public String prettyPrint(){
             long curr = System.currentTimeMillis();
             int diffInSeconds = (int) ((curr - mStartTime) * 0.001);
+            String hwTimestampAsString = String.format("%.3f", mHWTimestamp);
             return mName +
                     "\nFrame Rate: " + mFps +
                     "\nFrame Count: " + mTotalFrameCount +
                     "\nFrame Number: " + mFrameNumber +
                     "\nFrame Loss: " + mFrameLoss +
-                    "\nHW timestamp: " + (long)mHWTimestamp +
+                    "\nHW timestamp: " + hwTimestampAsString +
                     "\nSW timestamp: " + mSWTimestamp +
                     "\nRun Time: " + diffInSeconds + " [sec]" +
                     "\nEmitter Mode: " + mEmitter +
@@ -195,14 +196,16 @@ public class StreamingStats {
         }
 
         private void logFrameData() {
+            String hwTimestampAsString = String.format("%.3f", mHWTimestamp);
+            String hwTimestampDiffAsString = String.format("%.3f", mHWTimestampDiff);
             String data =
                     mStreamType + ", " +
                     mFormat + ", " +
                     mResolution + ", " +
                     mRequestedFps + ", " +
                     mFrameNumber + ", " +
-                    (long)mHWTimestamp + ", " +
-                    (long)mHWTimestampDiff + ", " +
+                    hwTimestampAsString + ", " +
+                    hwTimestampDiffAsString + ", " +
                     mSWTimestamp + ", " +
                     mSWTimestampDiff + ", " +
                     mAutoExposureMode + ", " +
