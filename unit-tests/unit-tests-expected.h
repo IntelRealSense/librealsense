@@ -317,7 +317,7 @@ inline std::vector<librealsense::stream_profile> generate_device_profiles(const 
         // HID SENSOR
         ep.create_builder(RS2_FORMAT_MOTION_XYZ32F)
             .add_stream_type(RS2_STREAM_ACCEL)
-            .add_fps({ 400, 200, 100, 50 });
+            .add_fps({ 400, 200, 100 });
 
         ep.create_builder(RS2_FORMAT_MOTION_XYZ32F)
             .add_stream_type(RS2_STREAM_GYRO)

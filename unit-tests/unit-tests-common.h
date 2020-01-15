@@ -911,6 +911,22 @@ inline bool is_fw_in_range(const std::string& current_fw, const uint32_t min_fw[
     return is_fw_version_older(current_fw, max_fw) && is_fw_version_newer(current_fw, min_fw);
 }
 
+inline std::string generate_product_line_param(const std::string& param)
+{
+    rs2::context ctx;
+    auto devices = ctx.query_devices();
+    std::string generated_param = param;
+    for (auto&& device : devices)
+    {
+        auto pl = get_product_line(device);
+        pl.insert(pl.begin(), '[');
+        pl.insert(pl.begin(), ',');
+        pl.insert(pl.end(), ']');
+        generated_param.append(pl);
+    }
+    return generated_param;
+}
+
 #ifdef _WIN32
 #include <windows.h>
 #include <wchar.h>
@@ -959,21 +975,6 @@ inline std::string get_folder_path(special_folder f)
     return res;
 }
 
-inline std::string generate_product_line_param(const std::string& param)
-{
-    rs2::context ctx;
-    auto devices = ctx.query_devices();
-    std::string generated_param = param;
-    for (auto&& device : devices)
-    {
-        auto pl = get_product_line(device);
-        pl.insert(pl.begin(), '[');
-        pl.insert(pl.begin(), ',');
-        pl.insert(pl.end(), ']');
-        generated_param.append(pl);
-    }
-    return generated_param;
-}
 #endif //_WIN32
 
 #if defined __linux__ || defined __APPLE__

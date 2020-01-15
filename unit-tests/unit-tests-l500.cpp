@@ -33,7 +33,7 @@ TEST_CASE("L500 - Multistream", "[L500][device_specific]")
     rs2::context ctx;
     REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
 
-    const int width = 640, height = 480, fps = 30, gyro_fps = 100, accel_fps = 50, idx = 0;
+    const int width = 640, height = 480, fps = 30, motion_fps = 100, idx = 0;
 
     auto l500_device = get_l500_device(ctx);
     auto&& l500_sensors = l500_device.query_sensors();
@@ -62,8 +62,8 @@ TEST_CASE("L500 - Multistream", "[L500][device_specific]")
 
     color_profiles.push_back(get_profile_by(color_snsr, { RS2_FORMAT_RGB8, RS2_STREAM_COLOR, idx, width, height, fps }));
 
-    motion_profiles.push_back(get_profile_by(motion_snsr, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, idx, 0, 0, accel_fps }));
-    motion_profiles.push_back(get_profile_by(motion_snsr, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, idx, 0, 0, gyro_fps }));
+    motion_profiles.push_back(get_profile_by(motion_snsr, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, idx, 0, 0, motion_fps }));
+    motion_profiles.push_back(get_profile_by(motion_snsr, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, idx, 0, 0, motion_fps }));
 
     REQUIRE_NOTHROW(depth_snsr.open(depth_profiles));
     REQUIRE_NOTHROW(color_snsr.open(color_profiles));
