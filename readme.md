@@ -27,7 +27,7 @@ You can download and install librealsense using the [vcpkg](https://github.com/M
     cd vcpkg
     ./bootstrap-vcpkg.sh
     ./vcpkg integrate install
-    vcpkg install realsense2
+    ./vcpkg install realsense2
 
 The librealsense port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
