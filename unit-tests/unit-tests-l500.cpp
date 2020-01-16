@@ -33,7 +33,8 @@ TEST_CASE("L500 - Multistream", "[L500][device_specific]")
     rs2::context ctx;
     REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
 
-    int width = 640, height = 480, fps = 30, motion_fps = 100, idx = 0;
+    uint32_t width = 640, height = 480, fps = 30, motion_fps = 100;
+    int idx = 0;
 
     auto l500_device = get_l500_device(ctx);
     auto&& l500_sensors = l500_device.query_sensors();
