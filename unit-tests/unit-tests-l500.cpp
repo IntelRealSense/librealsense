@@ -223,7 +223,7 @@ TEST_CASE("Verify device profiles", "[live][L500][device_specific]")
             supported_profiles.insert(supported_profiles.end(), sp.begin(), sp.end());
         }
 
-        std::vector<librealsense::stream_profile> lrs_supported_profiles = to_profiles(supported_profiles);
+        std::vector<profile> lrs_supported_profiles = to_profiles(supported_profiles);
 
         // Verify that expected profiles contains the actual retrieved profiles
         require_first_contains_second(expected_profiles, lrs_supported_profiles, "There were actual retrieved profiles which didn't find a match with expected profiles");
@@ -278,7 +278,7 @@ TEST_CASE("Stream All Profiles", "[live][heavy_test][L500][device_specific]")
         {
             rs2::pipeline pipe(ctx);
             rs2::config cfg;
-            std::cout << "Streaming:\n" << profile.to_string() << std::endl;
+            std::cout << "Streaming:\n" << profile << std::endl;
             cfg.enable_stream(profile.stream, profile.index, profile.width, profile.height, profile.format, profile.fps);
             REQUIRE_NOTHROW(pipe.start(cfg));
 

@@ -17,7 +17,6 @@
 #include "l500/l500-device.h"
 #include "ds5/ds5-device.h"
 #include "frame-validator.h"
-#include "image.h"
 
 typedef uint16_t PID_t;
 
@@ -37,11 +36,21 @@ inline PID_t string_to_hex(std::string pid)
 // Builds profiles by desired configurations
 struct expected_profiles
 {
+    static resolution rotate_resolution(resolution res)
+    {
+        return resolution{ res.height , res.width };
+    }
+
+    static resolution l500_confidence_resolution(resolution res)
+    {
+        return resolution{ res.height , res.width * 2 };
+    }
+
     struct builder
     {
         builder(rs2_format fmt) : _format(fmt)
         {
-            _resolution_function = [](librealsense::resolution res) { return res; };
+            _resolution_function = [](resolution res) { return res; };
         };
 
         builder& add_fps(std::vector<uint32_t> fps)
@@ -50,13 +59,13 @@ struct expected_profiles
             return *this;
         }
 
-        builder& add_resolution(librealsense::resolution resolution)
+        builder& add_resolution(resolution resolution)
         {
             _resolutions.push_back(resolution);
             return *this;
         }
 
-        builder& add_resolutions(std::vector<librealsense::resolution> resolutions)
+        builder& add_resolutions(std::vector<resolution> resolutions)
         {
             for (auto&& res : resolutions)
                 _resolutions.push_back(res);
@@ -64,7 +73,7 @@ struct expected_profiles
             return *this;
         }
 
-        builder& set_resolution_function(librealsense::resolution_func resolution_func)
+        builder& set_resolution_function(resolution_func resolution_func)
         {
             _resolution_function = resolution_func;
             return *this;
@@ -96,12 +105,12 @@ struct expected_profiles
             return *this;
         }
 
-        std::unordered_set<librealsense::stream_profile> build(const std::string& fw_version)
+        std::unordered_set<profile> build(const std::string& fw_version)
         {
             if (!is_fw_in_range(fw_version, _min_fw, _max_fw))
                 return {};
 
-            std::unordered_set<librealsense::stream_profile> profiles;
+            std::unordered_set<profile> profiles;
 
             if (_resolutions.empty())
                 _resolutions.push_back({0,0});
@@ -128,8 +137,8 @@ struct expected_profiles
                                 auto new_w = res_func(res).width;
                                 auto new_h = res_func(res).height;
 
-                                profiles.insert({ _format, strm_type, idx, res.width, res.height, fps, res_func });
-                                profiles.insert({ _format, strm_type, idx, new_w, new_h, fps });
+                                profiles.insert({ strm_type, _format, idx, (int)res.width, (int)res.height, (int)fps, res_func });
+                                profiles.insert({ strm_type, _format, idx, (int)new_w, (int)new_h, (int)fps });
                             }
                         }
                     }
@@ -143,8 +152,8 @@ struct expected_profiles
         rs2_format                                              _format;
         std::vector<rs2_stream>                                 _streams;
         std::vector<uint32_t>                                   _fps;
-        std::vector<librealsense::resolution>                   _resolutions;
-        librealsense::resolution_func                           _resolution_function;
+        std::vector<resolution>                                 _resolutions;
+        resolution_func                                         _resolution_function;
         std::vector<int>                                        _idx;
         uint32_t                                                _min_fw[4] = { 0,0,0,0 };
         uint32_t                                                _max_fw[4] = { 99,99,99,99 };
@@ -156,9 +165,9 @@ struct expected_profiles
         return *builders.insert(builders.end(), b);
     }
 
-    std::unordered_set<librealsense::stream_profile> generate_profiles(const std::string& fw_version)
+    std::unordered_set<profile> generate_profiles(const std::string& fw_version)
     {
-        std::unordered_set<librealsense::stream_profile> profiles;
+        std::unordered_set<profile> profiles;
         for (auto&& builder : builders)
         {
             auto&& p = builder.build(fw_version);
@@ -171,7 +180,7 @@ struct expected_profiles
     std::vector<builder> builders;
 };
 
-inline std::vector<librealsense::stream_profile> generate_device_profiles(const rs2::device& device)
+inline std::vector<profile> generate_device_profiles(const rs2::device& device)
 {
     using namespace librealsense;
     using namespace ds;
@@ -190,7 +199,7 @@ inline std::vector<librealsense::stream_profile> generate_device_profiles(const 
         ep.create_builder(RS2_FORMAT_Z16)
             .add_stream_type(RS2_STREAM_DEPTH)
             .add_fps({ 30 })
-            .set_resolution_function(rotate_resolution)
+            .set_resolution_function(expected_profiles::rotate_resolution)
             .add_resolutions({
                 {480, 640},
                 {480, 1024},
@@ -200,7 +209,7 @@ inline std::vector<librealsense::stream_profile> generate_device_profiles(const 
         ep.create_builder(RS2_FORMAT_Y8)
             .add_stream_type(RS2_STREAM_INFRARED)
             .add_fps({ 30 })
-            .set_resolution_function(rotate_resolution)
+            .set_resolution_function(expected_profiles::rotate_resolution)
             .add_resolutions({
                 {480, 640},
                 {480, 1024},
@@ -210,7 +219,7 @@ inline std::vector<librealsense::stream_profile> generate_device_profiles(const 
         ep.create_builder(RS2_FORMAT_RAW8)
             .add_stream_type(RS2_STREAM_CONFIDENCE)
             .add_fps({ 30 })
-            .set_resolution_function(l500_confidence_resolution)
+            .set_resolution_function(expected_profiles::l500_confidence_resolution)
             .add_resolutions({
                 {240, 640},
                 {240, 1024},
@@ -388,7 +397,7 @@ inline std::vector<int> generate_device_options(std::string pid)
     return generate_device_options(pid_num);
 }
 
-inline std::vector<librealsense::stream_profile> generate_device_default_profiles(std::string pid)
+inline std::vector<profile> generate_device_default_profiles(std::string pid)
 {
     using namespace librealsense;
     using namespace ds;
@@ -401,15 +410,15 @@ inline std::vector<librealsense::stream_profile> generate_device_default_profile
     case L515_PID:
         return {
             // DEPTH SENSOR
-            { RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 640, 480, 30 },
-            { RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0, 640, 480, 30 },
+            { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 0, 640, 480, 30 },
+            { RS2_STREAM_INFRARED, RS2_FORMAT_Y8, 0, 640, 480, 30 },
 
             // COLOR SENSOR
-            { RS2_FORMAT_RGB8, RS2_STREAM_COLOR, 0, 1280, 720, 30 },
+            { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 1280, 720, 30 },
 
             // MOTION SENSOR
-            { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 0, 0, 200 },
-            { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO, 0, 0, 0, 200 }
+            { RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F, 0, 0, 0, 200 },
+            { RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F, 0, 0, 0, 200 }
         };
     case RS435I_PID:
         return {
@@ -488,7 +497,7 @@ inline std::unordered_map<std::string, std::vector<rs2_frame_metadata_value>> ge
 }
 
 inline std::unordered_map<std::string,
-    std::vector<std::pair<std::vector<librealsense::stream_profile>, std::vector<librealsense::stream_profile>>>> generate_sensor_resolver_profiles(std::string pid)
+    std::vector<std::pair<std::vector<profile>, std::vector<profile>>>> generate_sensor_resolver_profiles(std::string pid)
 {
     // pair first = source profiles to resolve
     // pair second = resolved target profiles
@@ -510,14 +519,14 @@ inline std::unordered_map<std::string,
                 { // vector of expected pairs
                     { // pairs of source profiles to resolve and expected resolved profiles
                         { // vector of source profiles to resolve
-                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
-                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
-                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                            { RS2_STREAM_DEPTH,      RS2_FORMAT_Z16,  0, 640, 480, 30 },
+                            { RS2_STREAM_INFRARED,   RS2_FORMAT_Y8,   0, 640, 480, 30 },
+                            { RS2_STREAM_CONFIDENCE, RS2_FORMAT_RAW8, 0, 640, 480, 30 },
                         },
                         { // vector of expected resolved target profiles
-                            { RS2_FORMAT_Z16,  RS2_STREAM_DEPTH,      0, 640, 480, 30 },
-                            { RS2_FORMAT_Y8,   RS2_STREAM_INFRARED,   0, 640, 480, 30 },
-                            { RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 640, 480, 30 },
+                            { RS2_STREAM_DEPTH,      RS2_FORMAT_Z16,  0, 640, 480, 30 },
+                            { RS2_STREAM_INFRARED,   RS2_FORMAT_Y8,   0, 640, 480, 30 },
+                            { RS2_STREAM_CONFIDENCE, RS2_FORMAT_RAW8, 0, 640, 480, 30 },
                         },
                     },
                 },
@@ -528,18 +537,18 @@ inline std::unordered_map<std::string,
                 { // vector of expected pairs
                     { // pairs of source profiles to resolve and expected resolved profiles
                         { // vector of source profiles to resolve
-                            { RS2_FORMAT_RGB8,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                            { RS2_STREAM_COLOR,      RS2_FORMAT_RGB8,  0, 640, 480, 30 },
                         },
                         { // vector of expected resolved target profiles
-                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                            { RS2_STREAM_COLOR,      RS2_FORMAT_YUYV,  0, 640, 480, 30 },
                         },
                     },
                     {
                         {
-                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                            { RS2_STREAM_COLOR,      RS2_FORMAT_YUYV,  0, 640, 480, 30 },
                         },
                         {
-                            { RS2_FORMAT_YUYV,  RS2_STREAM_COLOR,      0, 640, 480, 30 },
+                            { RS2_STREAM_COLOR,      RS2_FORMAT_YUYV,  0, 640, 480, 30 },
                         },
                     },
                 },
@@ -550,18 +559,18 @@ inline std::unordered_map<std::string,
                 { // vector of expected pairs
                     { // pairs of source profiles to resolve and expected resolved profiles
                         { // vector of source profiles to resolve
-                            { RS2_FORMAT_MOTION_XYZ32F,  RS2_STREAM_ACCEL,      0, 0, 0, 100 },
+                            { RS2_STREAM_ACCEL,      RS2_FORMAT_MOTION_XYZ32F,  0, 0, 0, 100 },
                         },
                         { // vector of expected resolved target profiles
-                            { RS2_FORMAT_MOTION_XYZ32F,  RS2_STREAM_ACCEL,      0, 0, 0, 100 },
+                            { RS2_STREAM_ACCEL,      RS2_FORMAT_MOTION_XYZ32F,  0, 0, 0, 100 },
                         },
                     },
                     {
                         {
-                            { RS2_FORMAT_MOTION_XYZ32F,  RS2_STREAM_GYRO,      0, 0, 0, 100 },
+                            { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,  0, 0, 0, 100 },
                         },
                         {
-                            { RS2_FORMAT_MOTION_XYZ32F,  RS2_STREAM_GYRO,      0, 0, 0, 100 },
+                            { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,  0, 0, 0, 100 },
                         },
                     },
                 },

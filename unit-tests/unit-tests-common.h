@@ -55,6 +55,12 @@ struct stream_request
     }
 };
 
+struct resolution
+{
+    uint32_t width, height;
+};
+using resolution_func = std::function<resolution(resolution res)>;
+
 struct profile
 {
     rs2_stream stream;
@@ -63,6 +69,16 @@ struct profile
     int height;
     int index;
     int fps;
+    resolution_func stream_resolution;
+
+    profile(rs2_stream strm = RS2_STREAM_ANY,
+        rs2_format fmt = RS2_FORMAT_ANY,
+        int idx = 0,
+        int w = 0, int h = 0,
+        int framerate = 0,
+        resolution_func res_func = [](resolution res) { return res; }) :
+        format(fmt), stream(strm), index(idx), height(h), width(w), stream_resolution(res_func), fps(framerate)
+    {};
 
     bool operator==(const profile& other) const
     {
@@ -97,12 +113,23 @@ struct device_profiles
     bool sync;
 };
 
-inline std::vector<librealsense::stream_profile> to_profiles(std::vector<rs2::stream_profile> profiles)
+inline profile to_profile(const rs2::stream_profile sp)
 {
-    std::vector<librealsense::stream_profile> result;
+    auto fps = static_cast<uint32_t>(sp.fps());
+    if (auto vid = sp.as<const rs2::video_stream_profile>())
+    {
+        return { sp.stream_type(), sp.format(), sp.stream_index(), (int)vid.width(), (int)vid.height(), (int)fps };
+    }
+
+    return { sp.stream_type(), sp.format(), sp.stream_index(), 0, 0, (int)fps };
+}
+
+inline std::vector<profile> to_profiles(std::vector<rs2::stream_profile> profiles)
+{
+    std::vector<profile> result;
     for (auto&& p : profiles)
     {
-        result.push_back(to_profile(p.get()->profile));
+        result.push_back(to_profile(p));
     }
     return result;
 }
@@ -976,6 +1003,24 @@ inline std::string get_folder_path(special_folder f)
 }
 
 #endif //_WIN32
+
+namespace std {
+
+    template <>
+    struct hash<profile>
+    {
+        size_t operator()(const profile& k) const
+        {
+            using std::hash;
+
+            return (hash<uint32_t>()(k.height))
+                ^ (hash<uint32_t>()(k.width))
+                ^ (hash<uint32_t>()(k.fps))
+                ^ (hash<uint32_t>()(k.format))
+                ^ (hash<uint32_t>()(k.stream));
+        }
+    };
+}
 
 #if defined __linux__ || defined __APPLE__
 #include <unistd.h>

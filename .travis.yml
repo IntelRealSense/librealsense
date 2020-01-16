@@ -48,7 +48,7 @@ matrix:
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam]~[device_specific] from "$i"; done
         - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam]~[device_specific] from "$i"; done
-        - for i in ../records/device_specific/l500/*; do ./live-test -d yes -i [L500] from "$i"; done
+        - for i in ../records/device_specific/l500/*; do ./unit-tests/live-test -d yes -i [L500] from "$i"; done
 
     - name: "Linux - cpp"
       os: linux
