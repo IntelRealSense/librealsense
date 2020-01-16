@@ -923,7 +923,7 @@ TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
             REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_COUNT - 1));
             REQUIRE_NOTHROW(advanced.load_json(json1));
             REQUIRE_NOTHROW(json2 = advanced.serialize_json());
-            REQUIRE_NOTHROW(json1 == json2);
+            REQUIRE(json1 == json2);
 
             dev = do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
             {
