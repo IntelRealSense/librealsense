@@ -26,6 +26,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 // For rs2_format
 #include "../include/librealsense2/h/rs_sensor.h"
 
+namespace py = pybind11;
+using namespace pybind11::literals;
+
 // Hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
 
@@ -152,7 +155,7 @@ template <rs2_format FMT> struct fmtstring {
 };
 
 template<template<rs2_format> class F>
-constexpr auto fmt_to_value(rs2_format fmt) {
+constexpr auto fmt_to_value(rs2_format fmt) -> typename std::result_of<decltype(&F<RS2_FORMAT_ANY>::func)()>::type {
     switch (fmt) {
     case RS2_FORMAT_Z16: return F<RS2_FORMAT_Z16>::func();
     case RS2_FORMAT_DISPARITY16: return F<RS2_FORMAT_DISPARITY16>::func();
@@ -209,9 +212,6 @@ public:
 };
 
 /*PYBIND11_MAKE_OPAQUE(std::vector<rs2::stream_profile>)*/
-
-namespace py = pybind11;
-using namespace pybind11::literals;
 
 // Partial module definition functions
 void init_c_files(py::module &m);
