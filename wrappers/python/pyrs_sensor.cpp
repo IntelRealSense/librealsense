@@ -134,6 +134,9 @@ void init_sensor(py::module &m) {
            "Thus, poses of static nodes of an imported map are consistent with current device poses after relocalization.\n"
            "This function fails if the current tracker confidence is below 3 (high confidence).",
            "guid"_a)
+        .def("remove_static_node", &rs2::pose_sensor::remove_static_node,
+             "Removes a named virtual landmark in the current map, known as static node.\n"
+             "guid"_a)
         .def("__nonzero__", &rs2::pose_sensor::operator bool); // No docstring in C++
 
     py::class_<rs2::wheel_odometer, rs2::sensor> wheel_odometer(m, "wheel_odometer"); // No docstring in C++

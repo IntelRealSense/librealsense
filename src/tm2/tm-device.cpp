@@ -1753,6 +1753,21 @@ namespace librealsense
         return true;
     }
 
+    bool tm2_sensor::remove_static_node(const std::string& guid) const
+    {
+        bulk_message_request_remove_static_node request = {{ sizeof(request), SLAM_REMOVE_STATIC_NODE }};
+        strncpy((char *)&request.bGuid[0], guid.c_str(), MAX_GUID_LENGTH-1);
+        bulk_message_response_remove_static_node response = {};
+
+        _device->bulk_request_response(request, response, sizeof(response), false);
+        if(response.header.wStatus == INTERNAL_ERROR)
+            return false; // Failed to get static node
+        else if(response.header.wStatus != SUCCESS) {
+            LOG_ERROR("Error: " << status_name(response.header) << " deleting static node");
+            return false;
+        }
+        return true;
+    }
 
     bool tm2_sensor::load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const
     {

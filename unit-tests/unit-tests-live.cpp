@@ -5649,6 +5649,9 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE(test_or.z == Approx(vnv_or.z));
                     REQUIRE(test_or.w == Approx(vnv_or.w));
 
+                    REQUIRE_NOTHROW(res = pose_snr.remove_static_node("wp1"));
+                    REQUIRE_NOTHROW(!(res = pose_snr.remove_static_node("wp1")));
+
                     REQUIRE_NOTHROW(pipe.stop());
                 }
             }
