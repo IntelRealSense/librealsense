@@ -120,7 +120,7 @@ namespace librealsense
             auto s = reinterpret_cast<const S*>(((const uint8_t*)frm.additional_data.metadata_blob.data()) + _offset);
 
             if (!is_attribute_valid(s))
-                throw invalid_value_exception("metadata not available");
+                throw invalid_value_exception("metadata not available (to enable metadata support in your OS, see the documentation)");
 
             auto attrib = static_cast<rs2_metadata_type>((*s).*_md_attribute);
             if (_modifyer) attrib = _modifyer(attrib);
