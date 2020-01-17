@@ -189,14 +189,13 @@ namespace librealsense
         bool manual_exposure = false;
 
         std::atomic<int64_t> device_to_host_ns;
-        uint64_t last_global_ts;
-        uint64_t last_hw_ts;
         class coordinated_ts {
             public:
             std::chrono::duration<double, std::milli> device_ts;
             std::chrono::duration<double, std::milli> global_ts;
             std::chrono::duration<double, std::milli> arrival_ts;
         };
+        coordinated_ts last_ts;
 
         coordinated_ts get_coordinated_timestamp(uint64_t device_nanoseconds);
 

@@ -376,14 +376,12 @@ namespace librealsense
         bulk_message_response_log_control log_response = {};
         _device->bulk_request_response(log_request, log_response);
 
-        last_global_ts = 0;
-        last_hw_ts = 0;
-
         // start log thread
         _log_poll_thread_stop = false;
         _log_poll_thread = std::thread(&tm2_sensor::log_poll, this);
 
         // start time sync thread
+        last_ts = { std::chrono::duration<double, std::milli>(0) };
         device_to_host_ns = 0;
         _time_sync_thread_stop = false;
         _time_sync_thread = std::thread(&tm2_sensor::time_sync, this);
@@ -1214,18 +1212,12 @@ namespace librealsense
 
         //Global base time sync may happen between two frames
         //Make sure 2nd frame global timestamp is not impacted.
-        uint64_t global_ts = ts.global_ts.count();
-        uint32_t allowed_delta = 1000;
-        if (last_exposure != 0 && last_exposure < allowed_delta)
-            allowed_delta = last_exposure;
+        auto global_ts = ts.global_ts;
+        auto delta_dev_ts = ts.device_ts - last_ts.device_ts;
+        if (std::chrono::abs(delta_dev_ts) < std::chrono::microseconds(1000))
+            global_ts = last_ts.global_ts + delta_dev_ts; // keep stereo pairs times in sync
 
-        if (std::abs((int64_t)(message->rawStreamHeader.llNanoseconds - last_hw_ts)) < (int64_t)allowed_delta)
-        {
-            global_ts = last_global_ts - last_hw_ts + message->rawStreamHeader.llNanoseconds;
-        }
-
-        last_global_ts = global_ts;
-        last_hw_ts = message->rawStreamHeader.llNanoseconds;
+        last_ts = ts;
 
         //TODO - extension_type param assumes not depth
         frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, height * stride, additional_data, true);
@@ -1233,7 +1225,7 @@ namespace librealsense
         {
             auto video = (video_frame*)(frame.frame);
             video->assign(width, height, stride, bpp);
-            frame->set_timestamp(global_ts);
+            frame->set_timestamp(global_ts.count());
             frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
