@@ -97,7 +97,6 @@ namespace librealsense
         {
         public:
             virtual double get_time() const = 0;
-            virtual double get_time_ns() const = 0;
             virtual ~time_service() = default;
         };
 
@@ -107,11 +106,6 @@ namespace librealsense
             rs2_time_t get_time() const override
             {
                 return std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
-            }
-
-            rs2_time_t get_time_ns() const override
-            {
-                return std::chrono::duration<double, std::nano>(std::chrono::system_clock::now().time_since_epoch()).count();
             }
         };
 

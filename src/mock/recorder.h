@@ -615,13 +615,6 @@ namespace librealsense
             {
                 return _rec.get_time();
             }
-
-            virtual rs2_time_t get_time_ns() const override
-            {
-                //Dummy override. Not in use.
-                return _rec.get_time() * 1e6;
-            }
-
         private:
             recording& _rec;
         };
