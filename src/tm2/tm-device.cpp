@@ -1452,24 +1452,28 @@ namespace librealsense
             bulk_message_request_get_time request = {{ sizeof(request), DEV_GET_TIME }};
             bulk_message_response_get_time response = {};
 
-            uint64_t start = (uint64_t)environment::get_instance().get_time_service()->get_time_ns();
+            auto start = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
             platform::usb_status usb_response = _device->bulk_request_response(request, response);
             if(usb_response != platform::RS2_USB_STATUS_SUCCESS) {
                 LOG_INFO("Got bad response, stopping time sync");
                 break;
             }
-            uint64_t finish = (uint64_t)environment::get_instance().get_time_service()->get_time_ns();
+            auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
 
-            //If usb response takes too long, skip update. 250us is 5% of 200Hz 
-            if ((finish - start) / 2 < 250 * 1000)
+            //If usb response takes too long, skip update. 0.25ms is 5% of 200Hz
+            if ((finish.count() - start.count()) / 2 < 0.25)
             {
-                device_to_host_ns = start + (finish - start) / 2 - response.llNanoseconds;
+                double device_ms = (double)response.llNanoseconds*1e-6;
+                auto device = duration<double, std::milli>(device_ms);
+                auto diff = duration<double, std::nano>(start + (finish - start) / 2 - device);
+                device_to_host_ns = diff.count();
             }
             else
             {
                 if (!device_to_host_ns)
                     continue;
             }
+
             LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns);
 
             // Only trigger this approximately every 500ms, but don't
