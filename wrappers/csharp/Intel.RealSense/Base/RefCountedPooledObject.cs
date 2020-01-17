@@ -5,7 +5,6 @@
 namespace Intel.RealSense.Base
 {
     using System;
-    using System.Threading;
 
     /// <summary>
     /// Base class for objects in an <cref see="ObjectPool">ObjectPool</cref>
