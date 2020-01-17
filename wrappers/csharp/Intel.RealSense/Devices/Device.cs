@@ -35,13 +35,13 @@ namespace Intel.RealSense
 
         protected override void Dispose(bool disposing)
         {
+            if (m_instance.IsInvalid)
+            {
+                return;
+            }
+
             lock (tableLock)
             {
-                if (m_instance.IsInvalid)
-                {
-                    return;
-                }
-
                 IntPtr localHandle = Handle;
                 System.Diagnostics.Debug.Assert(refCountTable.Contains(localHandle));
 

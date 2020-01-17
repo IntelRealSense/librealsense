@@ -10,7 +10,6 @@ namespace Intel.RealSense
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
-    using System.Threading;
 
     // TODO: subclasses - DepthSensor, DepthStereoSensor, PoseSensor...
     public class Sensor : Base.RefCountedPooledObject, IOptions
@@ -66,16 +65,16 @@ namespace Intel.RealSense
 
         protected override void Dispose(bool disposing)
         {
+            if (m_instance.IsInvalid)
+            {
+                return;
+            }
+
             //m_queue.Dispose();
             (Options as OptionsList).Dispose();
 
             lock (tableLock)
             {
-                if (m_instance.IsInvalid)
-                {
-                    return;
-                }
-
                 IntPtr localHandle = Handle;
                 System.Diagnostics.Debug.Assert(refCountTable.Contains(localHandle));
 
