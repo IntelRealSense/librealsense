@@ -1461,18 +1461,13 @@ namespace librealsense
             auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
 
             //If usb response takes too long, skip update. 0.25ms is 5% of 200Hz
-            if ((finish.count() - start.count()) / 2 < 0.25)
-            {
-                double device_ms = (double)response.llNanoseconds*1e-6;
-                auto device = duration<double, std::milli>(device_ms);
-                auto diff = duration<double, std::nano>(start + (finish - start) / 2 - device);
-                device_to_host_ns = diff.count();
-            }
-            else
-            {
-                if (!device_to_host_ns)
-                    continue;
-            }
+            if ((finish - start) / 2 > duration<double, std::milli>(0.25))
+                continue;
+
+            double device_ms = (double)response.llNanoseconds*1e-6;
+            auto device = duration<double, std::milli>(device_ms);
+            auto diff = duration<double, std::nano>(start + (finish - start) / 2 - device);
+            device_to_host_ns = diff.count();
 
             LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns);
 

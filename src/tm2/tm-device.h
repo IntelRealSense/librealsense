@@ -188,7 +188,7 @@ namespace librealsense
         float last_gain = 1.f;
         bool manual_exposure = false;
 
-        std::atomic<uint64_t> device_to_host_ns;
+        std::atomic<int64_t> device_to_host_ns;
         uint64_t last_global_ts;
         uint64_t last_hw_ts;
         class coordinated_ts {
