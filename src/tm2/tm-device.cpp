@@ -384,6 +384,7 @@ namespace librealsense
         _log_poll_thread = std::thread(&tm2_sensor::log_poll, this);
 
         // start time sync thread
+        device_to_host_ns = 0;
         _time_sync_thread_stop = false;
         _time_sync_thread = std::thread(&tm2_sensor::time_sync, this);
     }
@@ -1447,7 +1448,6 @@ namespace librealsense
 
     void tm2_sensor::time_sync()
     {
-        device_to_host_ns = 0;
         while(!_time_sync_thread_stop) {
             bulk_message_request_get_time request = {{ sizeof(request), DEV_GET_TIME }};
             bulk_message_response_get_time response = {};
