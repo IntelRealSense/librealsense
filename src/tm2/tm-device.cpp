@@ -1214,7 +1214,10 @@ namespace librealsense
         //Make sure 2nd frame global timestamp is not impacted.
         auto global_ts = ts.global_ts;
         auto delta_dev_ts = ts.device_ts - last_ts.device_ts;
-        if (std::chrono::abs(delta_dev_ts) < std::chrono::microseconds(1000))
+        if (delta_dev_ts < delta_dev_ts.zero())
+            delta_dev_ts = -delta_dev_ts;
+
+        if (delta_dev_ts < std::chrono::microseconds(1000))
             global_ts = last_ts.global_ts + delta_dev_ts; // keep stereo pairs times in sync
 
         last_ts = ts;
