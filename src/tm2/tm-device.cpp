@@ -1212,13 +1212,12 @@ namespace librealsense
 
         //Global base time sync may happen between two frames
         //Make sure 2nd frame global timestamp is not impacted.
-        auto global_ts = ts.global_ts;
         auto delta_dev_ts = ts.device_ts - last_ts.device_ts;
         if (delta_dev_ts < delta_dev_ts.zero())
             delta_dev_ts = -delta_dev_ts;
 
         if (delta_dev_ts < std::chrono::microseconds(1000))
-            global_ts = last_ts.global_ts + delta_dev_ts; // keep stereo pairs times in sync
+            ts.global_ts = last_ts.global_ts + delta_dev_ts; // keep stereo pairs times in sync
 
         last_ts = ts;
 
@@ -1228,7 +1227,7 @@ namespace librealsense
         {
             auto video = (video_frame*)(frame.frame);
             video->assign(width, height, stride, bpp);
-            frame->set_timestamp(global_ts.count());
+            frame->set_timestamp(ts.global_ts.count());
             frame->set_timestamp_domain(RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME);
             frame->set_stream(profile);
             frame->set_sensor(this->shared_from_this()); //TODO? uvc doesn't set it?
