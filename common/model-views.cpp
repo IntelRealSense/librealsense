@@ -27,6 +27,8 @@
 
 #include "os.h"
 
+#include "metadata-helper.h"
+
 using namespace rs400;
 using namespace nlohmann;
 
@@ -991,6 +993,22 @@ namespace rs2
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
         populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
+
+        if (dev.supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        {
+            std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
+            std::string id = dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+            bool has_metadata = rs2::metadata_helper::instance().is_enabled(id) ||
+                !(product == "D400" || product == "SR300" || product == "L500");
+            static bool showed_metadata_prompt = false;
+
+            if (!has_metadata && !showed_metadata_prompt)
+            {
+                auto n = std::make_shared<metadata_warning_model>();
+                viewer.not_model.add_notification(n);
+                showed_metadata_prompt = true;
+            }
+        }
 
         try
         {
