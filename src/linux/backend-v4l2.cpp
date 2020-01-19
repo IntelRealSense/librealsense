@@ -320,6 +320,7 @@ namespace librealsense
 
             if (buffers.at(e_video_buf)._file_desc >=0)
             {
+                static const int d4xx_md_size = 248;
                 auto buffer = buffers.at(e_video_buf)._data_buf;
                 auto fr_payload_size = buffer->get_length_frame_only();
 
@@ -329,7 +330,6 @@ namespace librealsense
                 // For compressed data assume D4XX metadata struct. TODO - make provisions for L500
                 if (compressed)
                 {
-                    static const int d4xx_md_size = 248;
                     auto md_payload_size = 0L;
                     auto dq  = buffers.at(e_video_buf)._dq_buf;
 
@@ -341,13 +341,14 @@ namespace librealsense
                     md_start = buffer->get_frame_start() + dq.bytesused - md_payload_size;
                     md_size = (*(static_cast<uint8_t*>(md_start)));
 
-                    // Use heuristics to validate metadata buffer. Strict to D4XX
-                    int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
-                    if ((md_size !=d4xx_md_size) || (!val_in_range(md_flags, {0x8e, 0x8f}) ))
-                    {
-                        md_size = 0;
-                        md_start=nullptr;
-                    }
+                }
+
+                // Use heuristics to validate metadata buffer. Strict to D4XX
+                int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
+                if ((md_size !=d4xx_md_size) || (!val_in_range(md_flags, {0x8e, 0x8f}) ))
+                {
+                    md_size = 0;
+                    md_start=nullptr;
                 }
             }
 
@@ -904,14 +905,31 @@ namespace librealsense
                                     return;
                                 }
 
-                                bool compressed_format = val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U});
                                 // Relax the required frame size for compressed formats, i.e. MJPG, Z16H
-                                if (!compressed_format && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE))
+                                // Drop partial and overflow frames (assumes D4XX metadata only)
+                                bool compressed_format = val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U});
+                                bool partial_frame = (!compressed_format && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE));
+                                bool overflow_frame = (buf.bytesused ==  buffer->get_length_frame_only() + MAX_META_DATA_SIZE);
+                                if (partial_frame || overflow_frame)
                                 {
                                     auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
                                     std::stringstream s;
-                                    s << "Incomplete video frame detected!\nSize " << buf.bytesused
-                                      << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                    if (partial_frame)
+                                    {
+                                        s << "Incomplete video frame detected!\nSize " << buf.bytesused
+                                            << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                        if (overflow_frame)
+                                        {
+                                            s << ". Overflow detected: payload size " << buffer->get_length_frame_only();
+                                            LOG_ERROR("Corrupted UVC frame data, underflow and overflow reported:\n" << s.str().c_str());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (overflow_frame)
+                                            s << "overflow video frame detected!\nSize " << buf.bytesused
+                                                << ", payload size " << buffer->get_length_frame_only();
+                                    }
                                     librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
 
                                     _error_handler(n);

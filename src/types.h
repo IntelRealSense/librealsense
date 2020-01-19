@@ -636,7 +636,7 @@ namespace librealsense
             uint32_t framerate = 0,
             resolution_func res_func = [](resolution res) { return res; }) :
             format(fmt), stream(strm), index(idx), height(h), width(w), stream_resolution(res_func), fps(framerate)
-        {};
+        {}
 
         rs2_format format;
         rs2_stream stream;
