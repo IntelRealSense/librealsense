@@ -16,7 +16,7 @@ matrix:
         - ./live-test.exe -d yes -i [software-device]
         - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam]~[device_specific] from "$i"; done
         - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam]~[device_specific] from "$i"; done
-        - for i in ../records/device_specific/l500/L500_fw_1_3_4_5.rec; do ./live-test -d yes -i [L500] from "$i"; done
+        - for i in ../records/device_specific/*; do ./live-test -d yes -i [L500] from "$i"; done
         
     - name: "Windows - cpp"
       os: windows
@@ -48,7 +48,7 @@ matrix:
         - ./unit-tests/live-test -d yes -i [software-device]
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam]~[device_specific] from "$i"; done
         - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam]~[device_specific] from "$i"; done
-        - for i in ./records/device_specific/l500/L500_fw_1_3_4_5.rec; do ./unit-tests/live-test -d yes -i [L500] from "$i"; done
+        - for i in ./records/device_specific/*; do ./unit-tests/live-test -d yes -i [L500] from "$i"; done
 
     - name: "Linux - cpp"
       os: linux
