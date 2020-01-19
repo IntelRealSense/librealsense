@@ -12,11 +12,10 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "../unit-tests-common.h"
 #include "internal-tests-common.h"
-#include "../unit-tests-expected.h"
 
 #include "../src/sensor.h"
+#include "../src/l500/l500-device.h"
 #include "../src/l500/l500-factory.h"
 
 using namespace librealsense;

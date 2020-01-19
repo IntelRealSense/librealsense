@@ -1,6 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
+#pragma once
+#ifndef LIBREALSENSE_INTERNALTESTS_COMMON_H
+#define LIBREALSENSE_INTERNALTESTS_COMMON_H
+
 #include "catch/catch.hpp"
 
 #include <cmath>
@@ -9,8 +13,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "../unit-tests-common.h"
-#include "../unit-tests-expected.h"
+#include "../project-common.h"
 
 #include "../src/context.h"
 #include "../src/sensor.h"
@@ -82,8 +85,6 @@ inline void create_context(std::shared_ptr<librealsense::context>& ctx, libreals
 
 inline std::shared_ptr<librealsense::context> make_lrs_context(const char* id, std::string min_api_version = "0.0.0")
 {
-    rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG);
-
     static std::map<std::string, int> _counters;
 
     _counters[id]++;
@@ -170,28 +171,11 @@ inline void compare_profiles(synthetic_sensor& sensor, std::pair<std::vector<lib
     auto&& resolved_profiles = sensor.resolve_requests(to_resolve);
     auto&& expected_resolved_profiles = retrieve_profiles(sensor, expected_resolved_pair.second);
 
-    REQUIRE(expected_resolved_profiles.size() == resolved_profiles.size());
+    // Verify that expected resolved profiles contain the actual resolved profiles
+    require_first_contains_second(expected_resolved_profiles, resolved_profiles, "There were resolved profiles which didn't find a match with expected");
 
-    for (auto&& rslvd_p : resolved_profiles)
-    {
-        auto profiles_equality_predicate = [rslvd_p](const std::shared_ptr<stream_profile_interface>& sp)
-        {
-            bool res = sp->get_format() == rslvd_p->get_format() &&
-                sp->get_stream_index() == rslvd_p->get_stream_index() &&
-                sp->get_stream_type() == rslvd_p->get_stream_type();
-            auto vsp = As<video_stream_profile, stream_profile_interface>(sp);
-            auto rslvd_vsp = As<video_stream_profile, stream_profile_interface>(rslvd_p);
-            if (vsp)
-                res = res && vsp->get_width() == rslvd_vsp->get_width() &&
-                vsp->get_height() == rslvd_vsp->get_height();
-            return res;
-        };
-        expected_resolved_profiles.erase(std::remove_if(expected_resolved_profiles.begin(), expected_resolved_profiles.end(), profiles_equality_predicate), expected_resolved_profiles.end());
-    }
-
-    std::string error_msg = "expected resolved profiles vector should be empty after comparison";
-    CAPTURE(error_msg);
-    CAPTURE(get_sensor_name(sensor));
-    CAPTURE(expected_resolved_profiles.size());
-    REQUIRE(expected_resolved_profiles.empty());
+    // Verify that the actual resolved profiles contain the expected resolved profiles
+    require_first_contains_second(resolved_profiles, expected_resolved_profiles, "There were expected resolved profiles which didn't find a match with the actual resolved ones");
 };
+
+#endif // LIBREALSENSE_INTERNALTESTS_COMMON_H

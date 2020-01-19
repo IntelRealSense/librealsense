@@ -6,10 +6,6 @@
 
 #include "catch/catch.hpp"
 
-#include "stream.h"
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/hpp/rs_context.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include <limits> // For std::numeric_limits
 #include <cmath> // For std::sqrt
 #include <cassert> // For assert
@@ -21,6 +17,13 @@
 #include <vector>
 #include <fstream>
 #include <array>
+
+#include "project-common.h"
+
+#include "stream.h"
+#include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/hpp/rs_context.hpp"
+#include "../include/librealsense2/hpp/rs_internal.hpp"
 #include "../src/types.h"
 
 // noexcept is not accepted by Visual Studio 2013 yet, but noexcept(false) is require on throwing destructors on gcc and clang
@@ -101,7 +104,7 @@ struct profile
 
 inline std::ostream& operator <<(std::ostream& stream, const profile& cap)
 {
-    stream << cap.stream << " " << cap.stream << " " << cap.format << " "
+    stream << cap.stream << " " << cap.format << " "
         << cap.width << " " << cap.height << " " << cap.index << " " << cap.fps;
     return stream;
 }
@@ -215,20 +218,6 @@ inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> configure_all_s
     return{ sensors, profiles };
 }
 
-inline std::string space_to_underscore(const std::string& text) {
-    const std::string from = " ";
-    const std::string to = "__";
-    auto temp = text;
-    size_t start_pos = 0;
-    while ((start_pos = temp.find(from, start_pos)) != std::string::npos) {
-        temp.replace(start_pos, from.size(), to);
-        start_pos += to.size();
-    }
-    return temp;
-}
-
-#define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
-
 //inline long long current_time()
 //{
 //    return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 10000);
@@ -311,39 +300,6 @@ inline dev_type get_PID(rs2::device& dev)
     }
 
     return designator;
-}
-
-class command_line_params
-{
-public:
-    command_line_params(int argc, char * const argv[])
-    {
-        for (auto i = 0; i < argc; i++)
-        {
-            _params.push_back(argv[i]);
-        }
-    }
-
-    char * const * get_argv() const { return _params.data(); }
-    char * get_argv(int i) const { return _params[i]; }
-    size_t get_argc() const { return _params.size(); }
-
-    static command_line_params& instance(int argc = 0, char * const argv[] = 0)
-    {
-        static command_line_params params(argc, argv);
-        return params;
-    }
-
-    bool _found_any_section = false;
-private:
-
-    std::vector<char*> _params;
-};
-
-inline bool file_exists(const std::string& filename)
-{
-    std::ifstream f(filename);
-    return f.good();
 }
 
 inline bool make_context(const char* id, rs2::context* ctx, std::string min_api_version = "0.0.0")
@@ -954,6 +910,25 @@ inline std::string generate_product_line_param(const std::string& param)
     return generated_param;
 }
 
+namespace std {
+
+    template <>
+    struct hash<profile>
+    {
+        size_t operator()(const profile& k) const
+        {
+            using std::hash;
+
+            return (hash<uint32_t>()(k.height))
+                ^ (hash<uint32_t>()(k.width))
+                ^ (hash<uint32_t>()(k.fps))
+                ^ (hash<uint32_t>()(k.format))
+                ^ (hash<uint32_t>()(k.stream));
+        }
+    };
+}
+
+
 #ifdef _WIN32
 #include <windows.h>
 #include <wchar.h>
@@ -1003,24 +978,6 @@ inline std::string get_folder_path(special_folder f)
 }
 
 #endif //_WIN32
-
-namespace std {
-
-    template <>
-    struct hash<profile>
-    {
-        size_t operator()(const profile& k) const
-        {
-            using std::hash;
-
-            return (hash<uint32_t>()(k.height))
-                ^ (hash<uint32_t>()(k.width))
-                ^ (hash<uint32_t>()(k.fps))
-                ^ (hash<uint32_t>()(k.format))
-                ^ (hash<uint32_t>()(k.stream));
-        }
-    };
-}
 
 #if defined __linux__ || defined __APPLE__
 #include <unistd.h>

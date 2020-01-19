@@ -8,9 +8,7 @@
 #include <memory>
 #include <iostream>
 
-#include "../unit-tests-common.h"
 #include "internal-tests-common.h"
-#include "../unit-tests-expected.h"
 
 #include "../src/types.h"
 #include "../src/software-device.h"
@@ -48,9 +46,6 @@ TEST_CASE("Processing Blocks - Rotation Sanity", "[processing][software-device]"
     //                             |            |
     //                             |3          4|
     //                             --------------
-
-    rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
 
     // Create a synthetics frame, which holds four known points at the four edges of the frame.
     std::shared_ptr<software_device> dev = std::make_shared<software_device>();

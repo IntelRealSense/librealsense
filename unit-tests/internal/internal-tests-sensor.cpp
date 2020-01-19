@@ -11,8 +11,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "../unit-tests-common.h"
-#include "../unit-tests-expected.h"
+#include "internal-tests-expected.h"
 #include "internal-tests-common.h"
 
 #include "../src/sensor.h"

@@ -16,6 +16,7 @@ set (INTERNAL_TESTS_SOURCES
     internal-tests-sensor.cpp
     internal-tests-l500.cpp
     internal-tests-processing-blocks.cpp
+    internal-tests-expected.h
 )
 
 add_executable(${PROJECT_NAME} ${INTERNAL_TESTS_SOURCES})

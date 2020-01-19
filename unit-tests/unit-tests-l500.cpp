@@ -157,21 +157,6 @@ TEST_CASE("L500 - Verify Sensors", "[L500][device_specific]")
     REQUIRE(has_color_sensor + has_depth_sensor + has_motion_sensor == 3);
 }
 
-template<class T>
-void require_first_contains_second(std::vector<T> first, std::vector<T> second, std::string error_msg)
-{
-    for (auto&& f : first)
-    {
-        second.erase(std::remove(second.begin(), second.end(), f), second.end());
-    }
-    CAPTURE(error_msg);
-    std::stringstream not_contained;
-    for (auto&& s : second)
-        not_contained << s << std::endl;
-    CAPTURE(not_contained.str());
-    REQUIRE(second.empty());
-}
-
 // TODO - Following tests should move into live later and be recorded.
 // TODO - Remove [L500][device_specific] tags from them after moved.
 // TODO - When expanding to other devices, add usb type check...

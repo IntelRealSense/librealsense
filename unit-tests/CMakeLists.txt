@@ -9,6 +9,7 @@ find_package(Threads REQUIRED)
 set(DEPENDENCIES realsense2)
 
 set (unit_tests_sources
+    project-common.h
     unit-tests-live.cpp
     unit-tests-post-processing.cpp
     unit-tests-post-processing.h
