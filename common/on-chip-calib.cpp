@@ -48,35 +48,6 @@ namespace rs2
         catch (...) {}
     }
 
-    // Wait for next depth frame and return it
-    rs2::depth_frame on_chip_calib_manager::fetch_depth_frame(invoker invoke)
-    {
-        auto profiles = _sub->get_selected_profiles();
-        bool frame_arrived = false;
-        rs2::depth_frame res = rs2::frame{};
-        while (!frame_arrived)
-        {
-            for (auto&& stream : _viewer.streams)
-            {
-                if (std::find(profiles.begin(), profiles.end(),
-                    stream.second.original_profile) != profiles.end())
-                {
-                    auto now = std::chrono::high_resolution_clock::now();
-                    if (now - stream.second.last_frame < std::chrono::milliseconds(100))
-                    {
-                        if (auto f = stream.second.texture->get_last_frame(false).as<rs2::depth_frame>())
-                        {
-                            frame_arrived = true;
-                            res = f;
-                        }
-                    }
-                }
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        return res;
-    }
-
     void on_chip_calib_manager::start_viewer(int w, int h, int fps, invoker invoke)
     {
         try
@@ -159,129 +130,6 @@ namespace rs2
         catch (...) {}
     }
 
-    std::pair<float, float> on_chip_calib_manager::get_metric(bool use_new)
-    {
-        return _metrics[use_new ? 1 : 0];
-    }
-
-    std::pair<float, float> on_chip_calib_manager::get_depth_metrics(invoker invoke)
-    {
-        using namespace depth_quality;
-
-        auto f = fetch_depth_frame(invoke);
-        auto sensor = _sub->s->as<rs2::depth_stereo_sensor>();
-        auto intr = f.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-        rs2::region_of_interest roi { (int)(f.get_width() * 0.45f), (int)(f.get_height()  * 0.45f), 
-                                      (int)(f.get_width() * 0.55f), (int)(f.get_height() * 0.55f) };
-        std::vector<single_metric_data> v;
-
-        std::vector<float> fill_rates;
-        std::vector<float> rmses;
-
-        auto show_plane = _viewer.draw_plane;
-
-        auto on_frame = [sensor, &fill_rates, &rmses, this](
-            const std::vector<rs2::float3>& points,
-            const plane p,
-            const rs2::region_of_interest roi,
-            const float baseline_mm,
-            const float focal_length_pixels,
-            const int ground_thruth_mm,
-            const bool plane_fit,
-            const float plane_fit_to_ground_truth_mm,
-            const float distance_mm,
-            bool record,
-            std::vector<single_metric_data>& samples)
-        {
-            float TO_METERS = sensor.get_depth_scale();
-            static const float TO_MM = 1000.f;
-            static const float TO_PERCENT = 100.f;
-
-            // Calculate fill rate relative to the ROI
-            auto fill_rate = points.size() / float((roi.max_x - roi.min_x)*(roi.max_y - roi.min_y)) * TO_PERCENT;
-            fill_rates.push_back(fill_rate);
-
-            if (!plane_fit) return;
-
-            std::vector<rs2::float3> points_set = points;
-            std::vector<float> distances;
-
-            // Reserve memory for the data
-            distances.reserve(points.size());
-
-            // Convert Z values into Depth values by aligning the Fitted plane with the Ground Truth (GT) plane
-            // Calculate distance and disparity of Z values to the fitted plane.
-            // Use the rotated plane fit to calculate GT errors
-            for (auto point : points_set)
-            {
-                // Find distance from point to the reconstructed plane
-                auto dist2plane = p.a*point.x + p.b*point.y + p.c*point.z + p.d;
-                // Project the point to plane in 3D and find distance to the intersection point
-                rs2::float3 plane_intersect = { float(point.x - dist2plane*p.a),
-                    float(point.y - dist2plane*p.b),
-                    float(point.z - dist2plane*p.c) };
-
-                // Store distance, disparity and gt- error
-                distances.push_back(dist2plane * TO_MM);
-            }
-
-            // Remove outliers [below 1% and above 99%)
-            std::sort(points_set.begin(), points_set.end(), [](const rs2::float3& a, const rs2::float3& b) { return a.z < b.z; });
-            size_t outliers = points_set.size() / 50;
-            points_set.erase(points_set.begin(), points_set.begin() + outliers); // crop min 0.5% of the dataset
-            points_set.resize(points_set.size() - outliers); // crop max 0.5% of the dataset
-
-            // Calculate Plane Fit RMS  (Spatial Noise) mm
-            double plane_fit_err_sqr_sum = std::inner_product(distances.begin(), distances.end(), distances.begin(), 0.);
-            auto rms_error_val = static_cast<float>(std::sqrt(plane_fit_err_sqr_sum / distances.size()));
-            auto rms_error_val_per = TO_PERCENT * (rms_error_val / distance_mm);
-            rmses.push_back(rms_error_val_per);
-        };
-
-        auto rms_std = 1000.f;
-        auto new_rms_std = rms_std;
-        auto count = 0;
-
-        // Capture metrics on bundles of 31 frame
-        // Repeat until get "decent" bundle or reach 10 sec
-        do
-        {
-            rms_std = new_rms_std;
-
-            rmses.clear();
-
-            for (int i = 0; i < 31; i++)
-            {
-                f = fetch_depth_frame(invoke);
-                auto res = depth_quality::analyze_depth_image(f, sensor.get_depth_scale(), sensor.get_stereo_baseline(),
-                    &intr, roi, 0, true, v, false, on_frame);
-
-                _viewer.draw_plane = true;
-                _viewer.roi_rect = res.plane_corners;
-            }
-
-            auto rmses_sum_sqr = std::inner_product(rmses.begin(), rmses.end(), rmses.begin(), 0.);
-            new_rms_std = static_cast<float>(std::sqrt(rmses_sum_sqr / rmses.size()));
-        } while ((new_rms_std < rms_std * 0.8f && new_rms_std > 10.f) && count++ < 10);
-
-        std::sort(fill_rates.begin(), fill_rates.end());
-        std::sort(rmses.begin(), rmses.end());
-
-        float median_fill_rate, median_rms;
-        if (fill_rates.empty())
-            median_fill_rate = 0;
-        else
-            median_fill_rate = fill_rates[fill_rates.size() / 2];
-        if (rmses.empty())
-            median_rms = 0;
-        else
-            median_rms = rmses[rmses.size() / 2];
-
-        _viewer.draw_plane = show_plane;
-
-        return { median_fill_rate, median_rms };
-    }
-
     std::vector<uint8_t> on_chip_calib_manager::safe_send_command(
         const std::vector<uint8_t>& cmd, const std::string& name)
     {
@@ -349,10 +197,6 @@ namespace rs2
         {
             start_viewer(0,0,0, invoke);
         }
-
-        // Capture metrics before
-        auto metrics_before = get_depth_metrics(invoke);
-        _metrics.push_back(metrics_before);
        
         stop_viewer(invoke);
 
@@ -371,10 +215,6 @@ namespace rs2
 
         // Make new calibration active
         apply_calib(true);
-
-        // Capture metrics after
-        auto metrics_after = get_depth_metrics(invoke);
-        _metrics.push_back(metrics_after);
 
         _progress = 100;
 
@@ -805,92 +645,8 @@ namespace rs2
                     }
                 }
 
-                auto old_fr = get_manager().get_metric(false).first;
-                auto new_fr = get_manager().get_metric(true).first;
-
-                auto old_rms = fabs(get_manager().get_metric(false).second);
-                auto new_rms = fabs(get_manager().get_metric(true).second);
-
-                auto fr_improvement = 100.f * ((new_fr - old_fr) / old_fr);
-                auto rms_improvement = 100.f * ((old_rms - new_rms) / old_rms);
-
-                std::string old_units = "mm";
-                if (old_rms > 10.f)
-                {
-                    old_rms /= 10.f;
-                    old_units = "cm";
-                }
-                std::string new_units = "mm";
-                if (new_rms > 10.f)
-                {
-                    new_rms /= 10.f;
-                    new_units = "cm";
-                }
-
-                // NOTE: Disabling metrics temporarily
-                // TODO: Re-enable in future release
-                if (/* fr_improvement > 1.f || rms_improvement > 1.f */ false)
-                    {
-                        std::string txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << new_fr << "%%";
-
-                        if (!use_new_calib)
-                        {
-                            txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << old_fr << "%%\n";
-                        }
-
-                        ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90) });
-                        ImGui::PushFont(win.get_large_font());
-                        ImGui::Text("%s", static_cast<const char *>(textual_icons::check));
-                        ImGui::PopFont();
-
-                        ImGui::SetCursorScreenPos({ float(x + 35), float(y + 92) });
-                        ImGui::Text("%s", txt.c_str());
-
-                        if (use_new_calib)
-                        {
-                            ImGui::SameLine();
-
-                            ImGui::PushStyleColor(ImGuiCol_Text, white);
-                            txt = to_string() << " ( +" << std::fixed << std::setprecision(0) << fr_improvement << "%% )";
-                            ImGui::Text("%s", txt.c_str());
-                            ImGui::PopStyleColor();
-                        }
-
-                        if (rms_improvement > 1.f)
-                        {
-                            if (use_new_calib)
-                            {
-                                txt = to_string() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << new_rms << new_units;
-                            }
-                            else
-                            {
-                                txt = to_string() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << old_rms << old_units;
-                            }
-
-                            ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90 + ImGui::GetTextLineHeight() + 6) });
-                            ImGui::PushFont(win.get_large_font());
-                            ImGui::Text("%s", static_cast<const char *>(textual_icons::check));
-                            ImGui::PopFont();
-
-                            ImGui::SetCursorScreenPos({ float(x + 35), float(y + 92 + ImGui::GetTextLineHeight() + 6) });
-                            ImGui::Text("%s", txt.c_str());
-
-                            if (use_new_calib)
-                            {
-                                ImGui::SameLine();
-
-                                ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                txt = to_string() << " ( -" << std::setprecision(0) << std::fixed << rms_improvement << "%% )";
-                                ImGui::Text("%s", txt.c_str());
-                                ImGui::PopStyleColor();
-                            }
-                        }
-                    }
-                else
-                {
-                    ImGui::SetCursorScreenPos({ float(x + 12), float(y + 100) });
-                    ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
-                }
+                ImGui::SetCursorScreenPos({ float(x + 12), float(y + 100) });
+                ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60) });
 
