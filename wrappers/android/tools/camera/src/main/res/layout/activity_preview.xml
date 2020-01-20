@@ -100,6 +100,21 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
+        <TextView
+            android:id="@+id/controls_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:textSize="14dp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#000000"
+            android:text="controls"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
     </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
@@ -112,4 +127,5 @@
         android:clickable="true"
         android:backgroundTint="#ffffff"
         app:srcCompat="@android:drawable/ic_notification_overlay" />
+
 </RelativeLayout>

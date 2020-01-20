@@ -59,7 +59,6 @@ Java_com_intel_realsense_librealsense_Device_nQuerySensors(JNIEnv *env, jclass t
     jlongArray rv = env->NewLongArray(sensors.size());
     env->SetLongArrayRegion(rv, 0, sensors.size(), reinterpret_cast<const jlong *>(sensors.data()));
     return rv;
-
 }
 
 extern "C"
