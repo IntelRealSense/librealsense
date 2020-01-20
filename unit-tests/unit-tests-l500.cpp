@@ -267,7 +267,7 @@ TEST_CASE("Stream All Profiles", "[live][heavy_test][L500][device_specific]")
             cfg.enable_stream(profile.stream, profile.index, profile.width, profile.height, profile.format, profile.fps);
             REQUIRE_NOTHROW(pipe.start(cfg));
 
-            for (size_t i = 0; i < 40; i++)
+            for (size_t i = 0; i < 100; i++)
                 REQUIRE_NOTHROW(pipe.wait_for_frames());
 
             REQUIRE_NOTHROW(pipe.stop());
