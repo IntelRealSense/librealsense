@@ -1442,6 +1442,7 @@ namespace librealsense
 
     void tm2_sensor::time_sync()
     {
+        int tried_count = 0;
         while(!_time_sync_thread_stop) {
             bulk_message_request_get_time request = {{ sizeof(request), DEV_GET_TIME }};
             bulk_message_response_get_time response = {};
@@ -1453,16 +1454,22 @@ namespace librealsense
                 break;
             }
             auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
+            auto usb_delay = (finish - start) / 2;
 
             //If usb response takes too long, skip update. 0.25ms is 5% of 200Hz
-            if ((finish - start) / 2 > duration<double, std::milli>(0.25))
-                continue;
+            if (!device_to_host_ns && usb_delay >= duration<double, std::milli>(0.25))
+            {
+                //In case of slower USB, not to skip after a few tries.
+                if (tried_count++ < 3) continue;
+            }
 
-            double device_ms = (double)response.llNanoseconds*1e-6;
-            auto device = duration<double, std::milli>(device_ms);
-            auto diff = duration<double, std::nano>(start + (finish - start) / 2 - device);
-            device_to_host_ns = diff.count();
-
+            if (usb_delay < duration<double, std::milli>(0.25) || !device_to_host_ns)
+            {
+                double device_ms = (double)response.llNanoseconds*1e-6;
+                auto device = duration<double, std::milli>(device_ms);
+                auto diff = duration<double, std::nano>(start + usb_delay - device);
+                device_to_host_ns = diff.count();
+            }
             LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns);
 
             // Only trigger this approximately every 500ms, but don't
