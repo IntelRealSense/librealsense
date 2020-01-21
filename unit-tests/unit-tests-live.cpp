@@ -5106,6 +5106,26 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
     }
 }
 
+TEST_CASE("Test Motion Module Extension", "[software-device][using_pipeline][projection]") {
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+    std::string folder_name = get_folder_path(special_folder::temp_folder);
+    const std::string filename = folder_name + "D435i_Depth_and_IMU.bag";
+    REQUIRE(file_exists(filename));
+    auto dev = ctx.load_device(filename);
+    dev.set_real_time(false);
+
+    syncer sync;
+    std::vector<sensor> sensors = dev.query_sensors();
+    for (auto s : sensors)
+    {
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module") == (s.is<rs2::depth_sensor>()));
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera") == (s.is<rs2::color_sensor>()));
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "Motion Module") == (s.is<rs2::motion_sensor>()));
+    }
+}
+
 // Marked as MayFail due to DSO-11753. TODO -revisit once resolved
 TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection][!mayfail]") {
     rs2::context ctx;
@@ -5167,6 +5187,8 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
         {
             REQUIRE_NOTHROW(depth_scale = s.as<rs2::depth_sensor>().get_depth_scale());
         }
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "Stereo Module") == (s.is<rs2::depth_sensor>()));
+        REQUIRE((std::string(s.get_info(RS2_CAMERA_INFO_NAME)) == "RGB Camera") == (s.is<rs2::color_sensor>()));
     }
 
     int count = 0;

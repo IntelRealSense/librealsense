@@ -640,4 +640,9 @@ namespace librealsense
         auto from = reinterpret_cast<uint8_t const*>(src);
         std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
     }
+
+    void color_sensor::create_snapshot(std::shared_ptr<color_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<color_sensor_snapshot>();
+    }
 }
