@@ -277,6 +277,15 @@ namespace librealsense
 
     class depth_stereo_sensor;
 
+    class color_sensor
+    {
+    public:
+        virtual ~color_sensor() = default;
+    };
+
+    MAP_EXTENSION(RS2_EXTENSION_COLOR_SENSOR, librealsense::color_sensor);
+
+
     class depth_sensor : public recordable<depth_sensor>
     {
     public:

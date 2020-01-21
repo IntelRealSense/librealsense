@@ -532,7 +532,6 @@ namespace rs2
         tm2_model() : _trajectory_tracking(true)
         {   
         }
-        void draw_controller_pose_object();
         void draw_trajectory(bool is_trajectory_button_pressed);
         void update_model_trajectory(const pose_frame& pose, bool track);
         void record_trajectory(bool on) { _trajectory_tracking = on; };
@@ -712,6 +711,7 @@ namespace rs2
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
+        std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
@@ -830,8 +830,6 @@ namespace rs2
         bool allow_remove = true;
         bool show_depth_only = false;
         bool show_stream_selection = true;
-        std::map<int, std::array<uint8_t, 6>> controllers;
-        std::set<std::array<uint8_t, 6>> available_controllers;
         std::vector<std::pair<std::string, std::string>> infos;
         std::vector<std::string> restarting_device_info;
         std::set<std::string> advanced_mode_settings_file_names;
@@ -845,7 +843,6 @@ namespace rs2
         int draw_playback_controls(ux_window& window, ImFont* font, viewer_model& view);
         advanced_mode_control amc;
         std::string pretty_time(std::chrono::nanoseconds duration);
-        void draw_controllers_panel(ImFont* font, bool is_device_streaming);
         float draw_device_panel(float panel_width,
                                 ux_window& window,
                                 std::string& error_message,
@@ -957,6 +954,7 @@ namespace rs2
         rs2::frameset model;
         std::shared_ptr<processing_block_model> pc_gen;
         rs2::disparity_transform disp_to_depth;
+        rs2::depth_huffman_decoder depth_decoder;
 
         /* Post processing filter rendering */
         std::atomic<bool> render_thread_active; // True when render post processing filter rendering thread is active, False otherwise

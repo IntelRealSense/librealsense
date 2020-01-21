@@ -2026,8 +2026,8 @@ class RSSensor : public Nan::ObjectWrap, Options {
     Nan::SetPrototypeMethod(tpl, "setRegionOfInterest", SetRegionOfInterest);
     Nan::SetPrototypeMethod(tpl, "getRegionOfInterest", GetRegionOfInterest);
     Nan::SetPrototypeMethod(tpl, "getDepthScale", GetDepthScale);
-    Nan::SetPrototypeMethod(tpl, "isDepthSensor", IsDepthSensor);
     Nan::SetPrototypeMethod(tpl, "isROISensor", IsROISensor);
+    Nan::SetPrototypeMethod(tpl, "is", Is);
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSSensor").ToLocalChecked(), tpl->GetFunction());
   }
@@ -2343,16 +2343,18 @@ class RSSensor : public Nan::ObjectWrap, Options {
     info.GetReturnValue().Set(Nan::New(scale));
   }
 
-  static NAN_METHOD(IsDepthSensor) {
+  static NAN_METHOD(Is) {
     info.GetReturnValue().Set(Nan::Undefined());
+    int32_t stype = info[0]->IntegerValue();
+
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (!me) return;
 
-    bool is_depth = GetNativeResult<int>(rs2_is_sensor_extendable_to,
-        &me->error_, me->sensor_, RS2_EXTENSION_DEPTH_SENSOR, &me->error_);
+    bool is_ok = GetNativeResult<int>(rs2_is_sensor_extendable_to,
+        &me->error_, me->sensor_, static_cast<rs2_extension>(stype), &me->error_);
     if (me->error_) return;
 
-    info.GetReturnValue().Set(Nan::New(is_depth));
+    info.GetReturnValue().Set(Nan::New(is_ok));
   }
 
   static NAN_METHOD(IsROISensor) {
@@ -2454,8 +2456,6 @@ class RSDevice : public Nan::ObjectWrap {
     Nan::SetPrototypeMethod(tpl, "enableLoopback", EnableLoopback);
     Nan::SetPrototypeMethod(tpl, "disableLoopback", DisableLoopback);
     Nan::SetPrototypeMethod(tpl, "isLoopbackEnabled", IsLoopbackEnabled);
-    Nan::SetPrototypeMethod(tpl, "connectController", ConnectController);
-    Nan::SetPrototypeMethod(tpl, "disconnectController", DisconnectController);
 
     constructor_.Reset(tpl->GetFunction());
     exports->Set(Nan::New("RSDevice").ToLocalChecked(), tpl->GetFunction());
@@ -2803,27 +2803,6 @@ class RSDevice : public Nan::ObjectWrap {
     auto val = GetNativeResult<int>(rs2_loopback_is_enabled, &me->error_,
         me->dev_, &me->error_);
     info.GetReturnValue().Set(val ? Nan::True() : Nan::False());
-  }
-
-  static NAN_METHOD(ConnectController) {
-    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
-    info.GetReturnValue().Set(Nan::Undefined());
-    if (!me) return;
-
-    auto array_buffer = v8::Local<v8::ArrayBuffer>::Cast(info[0]);
-    auto contents = array_buffer->GetContents();
-    CallNativeFunc(rs2_connect_tm2_controller, &me->error_, me->dev_,
-        static_cast<const uint8_t*>(contents.Data()), &me->error_);
-  }
-
-  static NAN_METHOD(DisconnectController) {
-    auto me = Nan::ObjectWrap::Unwrap<RSDevice>(info.Holder());
-    info.GetReturnValue().Set(Nan::Undefined());
-    if (!me) return;
-
-    auto id = info[0]->IntegerValue();
-    CallNativeFunc(rs2_disconnect_tm2_controller, &me->error_, me->dev_,
-        id, &me->error_);
   }
 
  private:
@@ -4784,6 +4763,56 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_PAUSED);
   _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_STOPPED);
   _FORCE_SET_ENUM(RS2_PLAYBACK_STATUS_COUNT);
+
+
+  // rs2_extension
+  _FORCE_SET_ENUM(RS2_EXTENSION_UNKNOWN);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DEBUG);
+  _FORCE_SET_ENUM(RS2_EXTENSION_INFO);
+  _FORCE_SET_ENUM(RS2_EXTENSION_MOTION);
+  _FORCE_SET_ENUM(RS2_EXTENSION_OPTIONS);
+  _FORCE_SET_ENUM(RS2_EXTENSION_VIDEO);
+  _FORCE_SET_ENUM(RS2_EXTENSION_ROI);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DEPTH_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_VIDEO_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_MOTION_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_COMPOSITE_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_POINTS);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DEPTH_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_ADVANCED_MODE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_RECORD);
+  _FORCE_SET_ENUM(RS2_EXTENSION_VIDEO_PROFILE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_PLAYBACK);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DEPTH_STEREO_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DISPARITY_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_MOTION_PROFILE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_POSE_FRAME);
+  _FORCE_SET_ENUM(RS2_EXTENSION_POSE_PROFILE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_TM2);
+  _FORCE_SET_ENUM(RS2_EXTENSION_SOFTWARE_DEVICE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_SOFTWARE_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DECIMATION_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_THRESHOLD_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_DISPARITY_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_SPATIAL_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_TEMPORAL_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_HOLE_FILLING_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_ZERO_ORDER_FILTER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_RECOMMENDED_FILTERS);
+  _FORCE_SET_ENUM(RS2_EXTENSION_POSE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_POSE_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_WHEEL_ODOMETER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_GLOBAL_TIMER);
+  _FORCE_SET_ENUM(RS2_EXTENSION_UPDATABLE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_UPDATE_DEVICE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_L500_DEPTH_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_TM2_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE);
+  _FORCE_SET_ENUM(RS2_EXTENSION_COLOR_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_MOTION_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_FISHEYE_SENSOR);
+  _FORCE_SET_ENUM(RS2_EXTENSION_COUNT);
+
 }
 
 NODE_MODULE(node_librealsense, InitModule);

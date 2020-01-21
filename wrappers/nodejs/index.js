@@ -50,9 +50,19 @@ class Device {
 
     const array = [];
     sensors.forEach((s) => {
-      if (s.isDepthSensor()) {
+      if (s.is(RS2.RS2_EXTENSION_DEPTH_SENSOR)) {
         array.push(new DepthSensor(s));
-      } else {
+      }
+      else if (s.is(RS2.RS2_EXTENSION_COLOR_SENSOR)) {
+        array.push(new ColorSensor(s));
+      }
+      else if (s.is(RS2.RS2_EXTENSION_MOTION_SENSOR)) {
+        array.push(new MotionSensor(s));
+      }
+      else if (s.is(RS2.RS2_EXTENSION_FISHEYE_SENSOR)) {
+        array.push(new FisheyeSensor(s));
+      }
+      else {
         array.push(new Sensor(s));
       }
     });
@@ -239,30 +249,6 @@ class Tm2 extends Device {
    */
   get loopbackEnabled() {
     return this.cxxDev.isLoopbackEnabled();
-  }
-
-  /**
-   * Connects to a given tm2 controller
-   * @param {ArrayBuffer} macAddress The MAC address of the desired controller
-   * @return {undefined}
-   */
-  connectController(macAddress) {
-    const funcName = 'Tm2.connectController()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, 'ArrayBuffer', 0, funcName);
-    this.cxxDev.connectController(macAddress);
-  }
-
-  /**
-   * Disconnects a given tm2 controller
-   * @param {Integer} id The ID of the desired controller
-   * @return {undefined}
-   */
-  disconnectController(id) {
-    const funcName = 'Tm2.disconnectController()';
-    checkArgumentLength(1, 1, arguments.length, funcName);
-    checkArgumentType(arguments, 'integer', 0, funcName);
-    this.cxxDev.disconnectController(id);
   }
 }
 
@@ -1087,6 +1073,45 @@ class DepthSensor extends Sensor {
     return this.cxxSensor.getDepthScale();
   }
 }
+
+/**
+ * Color sensor
+ */
+class ColorSensor extends Sensor {
+  /**
+   * Construct a device object, representing a RealSense camera
+   */
+  constructor(sensor) {
+    super(sensor);
+  }
+}
+
+
+/**
+ * Motion sensor
+ */
+class MotionSensor extends Sensor {
+  /**
+   * Construct a device object, representing a RealSense camera
+   */
+  constructor(sensor) {
+    super(sensor);
+  }
+}
+
+
+/**
+ * Fisheye sensor
+ */
+class FisheyeSensor extends Sensor {
+  /**
+   * Construct a device object, representing a RealSense camera
+   */
+  constructor(sensor) {
+    super(sensor);
+  }
+}
+
 
 const internal = {
   ctx: [],
@@ -6418,6 +6443,9 @@ module.exports = {
   Sensor: Sensor,
   DepthSensor: DepthSensor,
   ROISensor: ROISensor,
+  ColorSensor: ColorSensor,
+  MotionSensor: MotionSensor,
+  FisheyeSensor: FisheyeSensor,
   StreamProfile: StreamProfile,
   VideoStreamProfile: VideoStreamProfile,
   MotionStreamProfile: MotionStreamProfile,

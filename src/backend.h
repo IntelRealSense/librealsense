@@ -526,14 +526,12 @@ namespace librealsense
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
             std::vector<playback_device_info> playback_devices;
-            std::vector<tm2_device_info> tm2_devices;
 
             bool operator == (const backend_device_group& other)
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) &&
-                    !list_changed(tm2_devices, other.tm2_devices);
+                    !list_changed(playback_devices, other.playback_devices);
             }
 
             operator std::string()

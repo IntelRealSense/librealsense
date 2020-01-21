@@ -652,7 +652,7 @@ namespace librealsense
     /////////////////////////////
     // MJPEG unpacking routines //
     /////////////////////////////
-    void unpack_mjpeg(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void unpack_mjpeg(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         int w, h, bpp;
         auto uncompressed_rgb = stbi_load_from_memory(source, actual_size, &w, &h, &bpp, false);
@@ -682,22 +682,22 @@ namespace librealsense
         }
     }
 
-    void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_yuy2(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
-    void uyvy_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void uyvy_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_uyvyc(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
-    void mjpeg_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void mjpeg_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
-        unpack_mjpeg(dest, source, width, height, actual_size);
+        unpack_mjpeg(dest, source, width, height, actual_size, input_size);
     }
 
-    void bgr_to_rgb::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void bgr_to_rgb::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }

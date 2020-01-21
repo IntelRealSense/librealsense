@@ -45,6 +45,8 @@ public class Frame extends LrsClass implements Cloneable{
         return TimestampDomain.values()[rv];
     }
 
+    public boolean supportsMetadata(FrameMetadata type) { return nSupportsMetadata(mHandle, type.value());}
+
     public long getMetadata(FrameMetadata type) { return nGetMetadata(mHandle, type.value());}
 
     public Frame applyFilter(FilterInterface filter) {
@@ -79,4 +81,5 @@ public class Frame extends LrsClass implements Cloneable{
     private static native double nGetTimestamp(long handle);
     private static native int nGetTimestampDomain(long handle);
     private static native long nGetMetadata(long handle, int metadata_type);
+    private static native boolean nSupportsMetadata(long handle, int metadata_type);
 }

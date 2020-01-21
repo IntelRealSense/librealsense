@@ -102,15 +102,30 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/start_record_fab"
+        <TextView
+            android:id="@+id/controls_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_centerVertical="true"
             android:clickable="true"
-            android:backgroundTint="#ffffff"
-            app:srcCompat="@android:drawable/ic_notification_overlay" />
+            android:textSize="14dp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#000000"
+            android:text="controls"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <android.support.design.widget.FloatingActionButton
+        android:id="@+id/start_record_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:clickable="true"
+        android:backgroundTint="#ffffff"
+        app:srcCompat="@android:drawable/ic_notification_overlay" />
 
         <Space
             android:layout_width="0dp"
@@ -118,5 +133,16 @@
             android:layout_weight="1" />
     </LinearLayout>
 
+    <CheckBox
+        android:id="@+id/statistics_log_checkbox"
+        android:buttonTint="@color/intel_blue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dp"
+        android:layout_marginStart="15dp"
+        android:text=" Log \nStats"
+        android:checked="true"
+        android:textColor="#ffffff" />
 
 </RelativeLayout>

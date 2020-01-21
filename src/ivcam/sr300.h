@@ -236,7 +236,7 @@ namespace librealsense
             sr300_camera& _owner;
         };
 
-        class sr300_color_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base
+        class sr300_color_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public color_sensor
         {
         public:
             explicit sr300_color_sensor(sr300_camera* owner,

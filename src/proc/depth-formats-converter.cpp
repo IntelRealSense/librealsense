@@ -123,13 +123,13 @@ namespace librealsense
                                                                          target_ir_format, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 1)
     {}
 
-    void inzi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void inzi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         // convension: right frame is IR and left is Z16
         unpack_inzi(_right_target_format, dest, source, width, height, actual_size);
     }
 
-    void invi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void invi_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_invi(_target_format, dest, source, width, height, actual_size);
     }
@@ -137,7 +137,7 @@ namespace librealsense
     w10_converter::w10_converter(const char * name, const rs2_format& target_format) :
         functional_processing_block(name, target_format, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME) {}
 
-    void w10_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void w10_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_w10(_target_format, dest, source, width, height, actual_size);
     }

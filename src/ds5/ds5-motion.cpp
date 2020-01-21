@@ -26,11 +26,11 @@
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
+    const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
         {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
     };
-    std::map<uint32_t, rs2_stream> fisheye_fourcc_to_rs2_stream = {
+    const std::map<uint32_t, rs2_stream> fisheye_fourcc_to_rs2_stream = {
         {rs_fourcc('R','A','W','8'), RS2_STREAM_FISHEYE},
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_FISHEYE},
     };
@@ -58,7 +58,8 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor
+    class ds5_hid_sensor : public synthetic_sensor,
+                           public motion_sensor
     {
     public:
         explicit ds5_hid_sensor(std::string name,
@@ -104,7 +105,7 @@ namespace librealsense
         const ds5_motion* _owner;
     };
 
-    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base
+    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
     {
     public:
         explicit ds5_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
@@ -163,10 +164,10 @@ namespace librealsense
     rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
     {
         if (stream == RS2_STREAM_ACCEL)
-            return create_motion_intrinsics(*_accel_intrinsic);
+            return create_motion_intrinsics(**_accel_intrinsic);
 
         if (stream == RS2_STREAM_GYRO)
-            return create_motion_intrinsics(*_gyro_intrinsic);
+            return create_motion_intrinsics(**_gyro_intrinsic);
 
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
@@ -214,22 +215,32 @@ namespace librealsense
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
         // register pre-processing
-        bool enable_motion_correction = false;
-        if (hid_ep->supports_option(RS2_OPTION_ENABLE_MOTION_CORRECTION))
+        bool enable_imu_correction = false;
+        std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
+
+        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        try
         {
-            auto&& motion_correction_opt = hid_ep->get_option(RS2_OPTION_ENABLE_MOTION_CORRECTION);
-            enable_motion_correction = motion_correction_opt.is_enabled();
+            // Writing to log to dereference underlying structure
+            LOG_INFO("Accel Sensitivity:" << (**_accel_intrinsic).sensitivity);
+            LOG_INFO("Gyro Sensitivity:" << (**_gyro_intrinsic).sensitivity);
+
+            mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                option_range{ 0, 1, 1, 1 });
+            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
         }
+        catch (...) {}
+
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, enable_motion_correction]() { return std::make_shared<acceleration_transform>(_mm_calib, enable_motion_correction);
+            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
         });
 
         hid_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, enable_motion_correction]() { return std::make_shared<gyroscope_transform>(_mm_calib, enable_motion_correction);
+            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
         });
 
         uint16_t pid = static_cast<uint16_t>(strtoul(all_hid_infos.front().pid.data(), nullptr, 16));
@@ -311,16 +322,12 @@ namespace librealsense
 
         _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor,_device_capabilities);
 
-        _accel_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); };
-        _gyro_intrinsic = [this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); };
+        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+        // D435i to use predefined values extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
         initialize_fisheye_sensor(ctx,group);
-
-        // D435i to use predefined values extrinsics
-        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL);
-        });
 
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
@@ -328,16 +335,11 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_gyro_stream, 0);
         register_stream_to_extrinsic_group(*_accel_stream, 0);
 
-        // Try to add hid endpoint
+        // Try to add HID endpoint
         auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
         if (hid_ep)
         {
             _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
-
-            hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION,
-                std::make_shared<enable_motion_correction>(hid_ep.get(),
-                    _depth_to_imu,
-                    option_range{ 0, 1, 1, 1 }));
 
             // HID metadata attributes
             hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));

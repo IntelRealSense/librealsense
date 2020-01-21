@@ -15,15 +15,13 @@ namespace librealsense
         {{ "HID Sensor Class Device: Gyroscope",     {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 100  }},
          { "HID Sensor Class Device: Gyroscope",     {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 200  }},
          { "HID Sensor Class Device: Gyroscope",     {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 400  }},
-         { "HID Sensor Class Device: Accelerometer", {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 50   }},
          { "HID Sensor Class Device: Accelerometer", {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 100  }},
          { "HID Sensor Class Device: Accelerometer", {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 200  }},
          { "HID Sensor Class Device: Accelerometer", {  RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 400  }}};
 
         // Translate frequency to SENSOR_PROPERTY_CURRENT_REPORT_INTERVAL
         std::map<rs2_stream, std::map<unsigned, unsigned>> l500_fps_and_sampling_frequency_per_rs2_stream =
-        { {RS2_STREAM_ACCEL,{{50,   2000},
-                             {100,  1000},
+        { {RS2_STREAM_ACCEL,{{100,  1000},
                              {200,  500},
                              {400,  250}}},
          {RS2_STREAM_GYRO,  {{100,  1000},
@@ -35,15 +33,13 @@ namespace librealsense
    {{ "gyro_3d",        {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 100   }},
     { "gyro_3d",        {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 200   }},
     { "gyro_3d",        {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO,  0, 1, 1, 400   }},
-    { "accel_3d",       {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 50    }},
     { "accel_3d",       {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 100   }},
     { "accel_3d",       {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 200   }},
     { "accel_3d",       {   RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, 400   }}};
 
    // The frequency selector is vendor and model-specific
    std::map<rs2_stream, std::map<unsigned, unsigned>> l500_fps_and_sampling_frequency_per_rs2_stream =
-   { {RS2_STREAM_ACCEL,{{50,   1},
-                        {100,  1},
+   { {RS2_STREAM_ACCEL,{{100,  1},
                         {200,  2},
                         {400,  4}}},
     {RS2_STREAM_GYRO,  {{100,  1},
@@ -51,7 +47,7 @@ namespace librealsense
                         {400,  4}}} };
 #endif
 
-    class l500_hid_sensor : public synthetic_sensor
+    class l500_hid_sensor : public synthetic_sensor, public motion_sensor
     {
     public:
         explicit l500_hid_sensor(std::string name,

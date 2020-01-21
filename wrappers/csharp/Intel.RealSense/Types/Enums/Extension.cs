@@ -47,5 +47,12 @@ namespace Intel.RealSense
         GlobalTimer = 36,
         Updatable = 37,
         UpdateDevice = 38,
+        L500DepthSensor = 39,
+        TM2Sensor = 40,
+        AutoCalibratedDevice = 41,
+        ColorSensor = 42,
+        MotionSensor = 43,
+        FisheyeSensor = 44,
+        DepthHuffmanDecoder = 45
     }
 }

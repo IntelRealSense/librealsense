@@ -40,7 +40,7 @@ namespace librealsense
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 
-    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface
+    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface, public color_sensor
         {
         public:
             explicit l500_color_sensor(l500_color* owner,
@@ -127,8 +127,22 @@ namespace librealsense
                 return get_color_recommended_proccesing_blocks();
             }
 
+            void start(frame_callback_ptr callback) override
+            {
+                _action_delayer.do_after_delay([&]() {
+                        synthetic_sensor::start(callback);
+                });
+            }
+
+            void stop() override
+            {
+                _action_delayer.do_after_delay([&]() {
+                    synthetic_sensor::stop();
+                });
+            }
         private:
             const l500_color* _owner;
+            action_delayer _action_delayer;
         };
 
 }

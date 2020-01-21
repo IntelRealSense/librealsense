@@ -20,19 +20,21 @@ import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Extension;
+import com.intel.realsense.librealsense.FwLogger;
 import com.intel.realsense.librealsense.ProductLine;
 import com.intel.realsense.librealsense.RsContext;
 
+import java.io.File;
+import java.security.Permission;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DetachedActivity extends AppCompatActivity {
     private static final String TAG = "librs camera detached";
-    private static final int PERMISSIONS_REQUEST_CAMERA = 0;
     private static final int PLAYBACK_REQUEST_CODE = 1;
     private static final String MINIMAL_D400_FW_VERSION = "5.10.0.0";
 
-    private boolean mPermissionsGrunted = false;
     private Button mPlaybackButton;
 
     private Context mAppContext;
@@ -49,6 +51,8 @@ public class DetachedActivity extends AppCompatActivity {
 
         mAppContext = getApplicationContext();
 
+        requestPermissionsIfNeeded();
+
         mPlaybackButton = findViewById(R.id.playbackButton);
         mPlaybackButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -59,12 +63,6 @@ public class DetachedActivity extends AppCompatActivity {
                 startActivityForResult(intent, PLAYBACK_REQUEST_CODE);
             }
         });
-
-        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-            return;
-        }
 
         runOnUiThread(new Runnable() {
             @Override
@@ -77,29 +75,38 @@ public class DetachedActivity extends AppCompatActivity {
         });
 
         mMinimalFirmwares.put(ProductLine.D400, MINIMAL_D400_FW_VERSION);
-
-        mPermissionsGrunted = true;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
-            return;
+    private void requestPermissionsIfNeeded() {
+        ArrayList<String> permissions = new ArrayList<>();
+        if (!isCameraPermissionGranted()) {
+            permissions.add(Manifest.permission.CAMERA);
         }
 
-        mPermissionsGrunted = true;
+        if (!isWritePermissionGranted()) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (!permissions.isEmpty())
+            ActivityCompat.requestPermissions(this, permissions.toArray(new String[permissions.size()]), PermissionsUtils.PERMISSIONS_REQUEST_ALL);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mDetached = true;
-        if(mPermissionsGrunted) {
+        if (isCameraPermissionGranted()) {
             RsContext.init(getApplicationContext());
             mRsContext.setDevicesChangedCallback(mListener);
             validatedDevice();
         }
+    }
+
+    private boolean isCameraPermissionGranted() {
+        return android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isWritePermissionGranted() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     private synchronized void validatedDevice(){
@@ -121,6 +128,12 @@ public class DetachedActivity extends AppCompatActivity {
                     if (!validateFwVersion(d))
                         return;
                     mDetached = false;
+                    SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
+                    boolean fw_logging_enabled = sharedPref.getBoolean(getString(R.string.fw_logging), false);
+                    String fw_logging_file_path = sharedPref.getString(getString(R.string.fw_logging_file_path), "");
+                    if(fw_logging_enabled && !fw_logging_file_path.equals("")){
+                        FwLogger.startFwLogging(fw_logging_file_path);
+                    }
                     finish();
                     Intent intent = new Intent(this, PreviewActivity.class);
                     startActivity(intent);

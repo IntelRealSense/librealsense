@@ -148,7 +148,11 @@ other_profile = rs.video_stream_profile(profile.get_stream(other_stream))
 image_data = pyglet.image.ImageData(w, h, convert_fmt(
     other_profile.format()), (gl.GLubyte * (w * h * 3))())
 
-fps_display = pyglet.clock.ClockDisplay()
+if (pyglet.version.startswith('1.') and not pyglet.version.startswith('1.4')):
+    # pyglet.clock.ClockDisplay has be removed in 1.4
+    fps_display = pyglet.clock.ClockDisplay()
+else:
+    fps_display = pyglet.window.FPSDisplay(window)
 
 
 @window.event
@@ -294,8 +298,9 @@ def on_draw():
     gl.glLoadIdentity()
     # texcoords are [0..1] and relative to top-left pixel corner, add 0.5 to center
     gl.glTranslatef(0.5 / image_data.width, 0.5 / image_data.height, 0)
+    image_texture = image_data.get_texture()
     # texture size may be increased by pyglet to a power of 2
-    tw, th = image_data.texture.owner.width, image_data.texture.owner.height
+    tw, th = image_texture.owner.width, image_texture.owner.height
     gl.glScalef(image_data.width / float(tw),
                 image_data.height / float(th), 1)
 
@@ -387,8 +392,8 @@ def run(dt):
     if not success:
         return
 
-    depth_frame = frames.get_depth_frame()
-    other_frame = frames.first(other_stream)
+    depth_frame = frames.get_depth_frame().as_video_frame()
+    other_frame = frames.first(other_stream).as_video_frame()
 
     depth_frame = decimate.process(depth_frame)
 

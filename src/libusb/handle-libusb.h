@@ -52,9 +52,10 @@ namespace librealsense
                     throw std::runtime_error(msg.str());
                 }
 
-                claim_interface(interface->get_number());
+                claim_interface_or_throw(interface->get_number());
                 for(auto&& i : interface->get_associated_interfaces())
-                    claim_interface(i->get_number());
+                    claim_interface_or_throw(i->get_number());
+
                 _context->start_event_handler();
             }
 
@@ -72,6 +73,13 @@ namespace librealsense
             }
 
         private:
+            void claim_interface_or_throw(uint8_t interface)
+            {
+                auto rs_sts = claim_interface(interface);
+                if(rs_sts != RS2_USB_STATUS_SUCCESS)
+                    throw std::runtime_error(to_string() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+            }
+
             usb_status claim_interface(uint8_t interface)
             {
                 //libusb_set_auto_detach_kernel_driver(h, true);

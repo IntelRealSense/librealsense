@@ -36,6 +36,7 @@
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
+#include "proc/depth-decompress.h"
 #include "software-device.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "global_timestamp_reader.h"
@@ -1131,7 +1132,10 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_SOFTWARE_SENSOR     : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor)        != nullptr;
     case RS2_EXTENSION_POSE_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::pose_sensor_interface)  != nullptr;
     case RS2_EXTENSION_WHEEL_ODOMETER      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::wheel_odometry_interface)!= nullptr;
-    case RS2_EXTENSION_TM2_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::tm2_sensor_interface) != nullptr;
+    case RS2_EXTENSION_TM2_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::tm2_sensor_interface)   != nullptr;
+    case RS2_EXTENSION_COLOR_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
+    case RS2_EXTENSION_MOTION_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
+    case RS2_EXTENSION_FISHEYE_SENSOR      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
 
     default:
         return false;
@@ -1201,6 +1205,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
     case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
+    case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::depth_decompression_huffman) != nullptr;
   
     default:
         return false;
@@ -1931,8 +1936,6 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 
     auto res = new rs2_processing_block{ block };
 
-    auto res2 = (rs2_options*)res;
-
     return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
@@ -1989,6 +1992,14 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::zero_order>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::depth_decompression_huffman>();
 
     return new rs2_processing_block{ block };
 }
@@ -2373,10 +2384,7 @@ int rs2_import_localization_map(const rs2_sensor* sensor, const unsigned char* l
     auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
 
     std::vector<uint8_t> buffer_to_send(lmap_blob, lmap_blob + blob_size);
-    int ret = pose_snr->import_relocalization_map(buffer_to_send);
-    if (!ret)
-        throw librealsense::invalid_value_exception(librealsense::to_string() << "import localization failed, map size " << blob_size);
-    return ret;
+    return (int)pose_snr->import_relocalization_map(buffer_to_send);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, lmap_blob, blob_size)
 

@@ -90,6 +90,9 @@ namespace Intel.RealSense
         Invi = 26,
 
         /// <summary>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes.</summary>
-        W10 = 27
+        W10 = 27,
+
+        /// <summary>Variable-length Huffman-compressed 16-bit depth values.</summary>
+        Z16H = 28
     }
 }

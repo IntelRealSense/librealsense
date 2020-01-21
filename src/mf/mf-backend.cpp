@@ -16,6 +16,8 @@
 #include <dbt.h>
 #include <cctype> // std::tolower
 
+#include "../tm2/tm-boot.h"
+
 namespace librealsense
 {
     namespace platform
@@ -75,7 +77,14 @@ namespace librealsense
 
         std::vector<usb_device_info> wmf_backend::query_usb_devices() const
         {
-            return usb_enumerator::query_devices_info();
+            auto device_infos = usb_enumerator::query_devices_info();
+            // Give the device a chance to restart, if we don't catch
+            // it, the watcher will find it later.
+            if(tm_boot(device_infos)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                device_infos = usb_enumerator::query_devices_info();
+            }
+            return device_infos;
         }
 
         wmf_hid_device::wmf_hid_device(const hid_device_info& info)
