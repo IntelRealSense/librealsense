@@ -370,6 +370,7 @@ namespace librealsense
             return res;
         }
 
+
         bool get_id( DEVINST devinst, std::string* p_out_str )
         {
             ULONG cch_required = 0;
@@ -386,16 +387,22 @@ namespace librealsense
 
             return true;
         }
+        
+        
         std::string get_id( DEVINST devinst )
         {
             std::string id;
             get_id( devinst, &id );
             return id;
         }
+        
+        
         std::string cm_node::get_id() const
         {
             return librealsense::platform::get_id( get() );
         }
+        
+        
         std::string cm_node::get_uid() const
         {
             uint16_t vid, pid, mi;
@@ -405,127 +412,11 @@ namespace librealsense
             return uid;
         }
 
-        class a_usb_device
-        {
-            // A device belongs to a device information set that we queried, and within
-            // which the data is valid
-            HDEVINFO _set = INVALID_HANDLE_VALUE;
-
-            // The data contains the GUID of the class that the device belongs to
-            // and a device instance handle that points to the devnode for the device
-            SP_DEVINFO_DATA _data = { sizeof( SP_DEVINFO_DATA ) };
-
-            // The data does not contain the linked list of interfaces associated with
-            // the device...
-            SP_DEVICE_INTERFACE_DATA _interfaces = { sizeof( SP_DEVICE_INTERFACE_DATA ) };
-            
-        public:
-            a_usb_device( HDEVINFO device_set, DWORD index )
-            {
-                if( SetupDiEnumDeviceInfo( device_set, index, &_data ) /*
-                &&  SetupDiEnumDeviceInterfaces( device_set, nullptr, &GUID_DEVINTERFACE_USB_DEVICE, index, &_interfaces ) */ )
-                {
-                    _set = device_set;
-                }
-            }
-            a_usb_device( a_usb_device const& ) = default;
-
-            HDEVINFO get() const { return _set; }
-            bool valid() const { return get() != INVALID_HANDLE_VALUE; }
-            SP_DEVINFO_DATA const & data() const { return _data; }
-
-            operator bool() const { return valid(); }
-
-            bool get_property( DWORD property, std::string * p_out_str ) const
-            {
-                DWORD requiredLength = 0;
-                bool bResult = SetupDiGetDeviceRegistryProperty( get(),
-                    const_cast<PSP_DEVINFO_DATA>( &_data ),
-                    property,
-                    nullptr,
-                    nullptr,
-                    0,
-                    &requiredLength
-                );
-                DWORD lastError = GetLastError();
-                if( requiredLength == 0
-                    || bResult && lastError != ERROR_INSUFFICIENT_BUFFER )
-                {
-                    return false;
-                }
-
-                if( p_out_str )
-                {
-                    std::vector<BYTE> buf( requiredLength );
-                    bResult = SetupDiGetDeviceRegistryProperty( get(),
-                        const_cast<PSP_DEVINFO_DATA>( &_data ),
-                        property,
-                        nullptr,
-                        buf.data(),
-                        requiredLength,
-                        &requiredLength );
-                    if( ! bResult )
-                        return false;
-                    *p_out_str = win_to_utf( reinterpret_cast< const wchar_t * >( buf.data() ));
-                }
-
-                return true;
-            }
-            std::string get_property( DWORD property ) const
-            {
-                std::string value;
-                if( !get_property( property, &value ) )
-                    value = "<N/A>";
-                return value;
-            }
-
-            bool get_id( std::string * p_out_str ) const
-            {
-                return librealsense::platform::get_id( _data.DevInst, p_out_str );
-            }
-            std::string get_id() const
-            {
-                return librealsense::platform::get_id( _data.DevInst );
-            }
-        };
-
-
-        template< class F >
-        void foreach_usb_device_in( GUID const & guid, F fn )
-        {
-            // Create a device information set composed of all devices associated with the GUID
-            HDEVINFO device_set = SetupDiGetClassDevs( &guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE );
-            if( device_set == INVALID_HANDLE_VALUE )
-                return;
-
-            ULONG index = 0;
-            DWORD error = 0;
-            while( error != ERROR_NO_MORE_ITEMS )
-            {
-                a_usb_device node( device_set, index++ );
-                if( ! node )
-                {
-                    error = GetLastError();
-                    if( error != ERROR_NO_MORE_ITEMS )
-                        LOG_ERROR( error );
-                    continue;
-                }
-
-                if( ! fn( node ))
-                    break;
-            }
-        }
-
-        template< class F >
-        void foreach_usb_hub( F fn )
-        {
-            foreach_usb_device_in( GUID_DEVINTERFACE_USB_HUB, fn );
-        }
 
         /*
             Convert a device path:
                 \\?\HID#VID_8086&PID_0B4D&MI_05#7&24fd3503&0&0000#{c317c286-c468-4288-9975-d4c4587c442c}\{560421A4-2F8D-47A0-A6D8-4110C6B2A202}
-            to the instance ID:
+            to an instance ID:
                 HID\VID_8086&PID_0B4D&MI_05\7&217e81dc&0&0000
             which can then be used to get a DEVINST from the config manager.
 
@@ -551,34 +442,7 @@ namespace librealsense
             return inst_id;
         }
 
-        /* static */ cm_node cm_node::from_instance_id( std::wstring const & inst_id )
-        {
-            DEVINST devinst;
-            if( CM_Locate_DevNode( &devinst, const_cast< DEVINSTID >( inst_id.data() ), CM_LOCATE_DEVNODE_PHANTOM ) != CR_SUCCESS )
-                return cm_node();
-            return cm_node( devinst );
-        }
-        cm_node cm_node::get_parent() const
-        {
-            DEVINST parent;
-            if( CM_Get_Parent( &parent, get(), 0 ) != CR_SUCCESS )
-                return cm_node();
-            return cm_node( parent );
-        }
-        cm_node cm_node::get_child() const
-        {
-            DEVINST child;
-            if( CM_Get_Child( &child, get(), 0 ) != CR_SUCCESS )
-                return cm_node();
-            return cm_node( child );
-        }
-        cm_node cm_node::get_sibling() const
-        {
-            DEVINST sibling;
-            if( CM_Get_Sibling( &sibling, get(), 0 ) != CR_SUCCESS )
-                return cm_node();
-            return cm_node( sibling );
-        }
+
         /* static */ cm_node cm_node::root()
         {
             DEVINST devinst;
@@ -586,6 +450,44 @@ namespace librealsense
                 return cm_node();
             return cm_node( devinst );
         }
+        
+        
+        /* static */ cm_node cm_node::from_instance_id( std::wstring const & inst_id )
+        {
+            DEVINST devinst;
+            if( CM_Locate_DevNode( &devinst, const_cast< DEVINSTID >( inst_id.data() ), CM_LOCATE_DEVNODE_PHANTOM ) != CR_SUCCESS )
+                return cm_node();
+            return cm_node( devinst );
+        }
+        
+        
+        cm_node cm_node::get_parent() const
+        {
+            DEVINST parent;
+            if( CM_Get_Parent( &parent, get(), 0 ) != CR_SUCCESS )
+                return cm_node();
+            return cm_node( parent );
+        }
+        
+        
+        cm_node cm_node::get_child() const
+        {
+            DEVINST child;
+            if( CM_Get_Child( &child, get(), 0 ) != CR_SUCCESS )
+                return cm_node();
+            return cm_node( child );
+        }
+        
+        
+        cm_node cm_node::get_sibling() const
+        {
+            DEVINST sibling;
+            if( CM_Get_Sibling( &sibling, get(), 0 ) != CR_SUCCESS )
+                return cm_node();
+            return cm_node( sibling );
+        }
+        
+        
         std::string cm_node::get_property( DEVPROPKEY const & property ) const
         {
             DEVPROPTYPE type;
@@ -602,132 +504,10 @@ namespace librealsense
             return win_to_utf( str.data() );
         }
 
-        template< class F >
-        void foreach_cm_node( cm_node parent, F fn, size_t depth = 1 )
-        {
-            auto node = parent.get_child();
-            while( node.valid() )
-            {
-                if( !fn( node, depth ) )
-                    break;
-                foreach_cm_node( node, fn, depth + 1 );
-                node = node.get_sibling();
-            }
-        }
-
-        class usb_snapshot
-        {
-            std::map< std::string, std::vector< DEVINST >> uid_to_devices;
-
-        public:
-            void update_if_needed()
-            {
-                if( uid_to_devices.empty() )
-                    force_update();
-            }
-            void force_update()
-            {
-                LOG_DEBUG( "Enumerating USB tree ..." );
-                uid_to_devices.clear();
-#if 0
-                // This will give us EVERYTHING
-                foreach_cm_node( cm_node::root(),
-                    [&]( cm_node device, size_t depth ) -> bool
-                    {
-                        std::string device_id = device.get_id();
-                        LOG_DEBUG( std::string( depth * 4, ' ' ) << device << ' ' << device_id /*<< " \"" << device.get_property( SPDRP_DEVICEDESC ) << "\""*/ );
-                        uint16_t vid, pid, mi;
-                        std::string uid;
-                        if( !parse_usb_path_from_device_id( vid, pid, mi, uid, device_id ) )
-                        {
-                            // Likely not our device, but can be a composite device
-                            // (e.g., without the MI: "USB\VID_8086&PID_0B4D\012345678901")
-                        }
-                        else if( vid == 0x8086 )  // Intel
-                        {
-                            uid_to_devices[uid].push_back( device );
-                        }
-                        return true;
-                    } );
-#else
-                cm_node root = cm_node::root();
-                foreach_usb_device_in( GUID_DEVINTERFACE_USB_HUB,
-                    [&]( a_usb_device const& hub ) -> bool
-                    {
-                        LOG_DEBUG( hub.get_property( SPDRP_DEVICEDESC ) << "  " << hub.data().DevInst << " [" << hub.get_id() << "]" );
-                        foreach_cm_node( hub.data().DevInst,
-                            [&]( cm_node device, size_t depth ) -> bool
-                            {
-                                std::string device_id = device.get_id();
-                                LOG_DEBUG( std::string( depth * 4, ' ' ) << device << ' ' << device_id << " \"" << device.get_property( DEVPKEY_NAME ) << "\"" );
-                                uint16_t vid, pid, mi;
-                                std::string uid;
-                                if( !parse_usb_path_from_device_id( vid, pid, mi, uid, device_id ) )
-                                {
-                                    // Likely not our device, but can be a composite device
-                                    // (e.g., without the MI: "USB\VID_8086&PID_0B4D\012345678901")
-                                }
-                                else if( vid == 0x8086 )  // Intel
-                                {
-                                    uid_to_devices[uid].push_back( device );
-                                }
-                                return true;
-                            } );
-                        return true;
-                    } );
-#endif
-                LOG_DEBUG( "... done" );
-            }
-
-            std::vector< DEVINST > const * find( std::string const& device_uid ) const
-            {
-                auto it = uid_to_devices.find( device_uid );
-                if( it == uid_to_devices.end() )
-                    return nullptr;
-                return &it->second;
-            }
-        };
-
-        usb_snapshot last_usb_snapshot;
-
-        std::string get_usb_parent_uid( const std::string& device_uid )
-        {
-            last_usb_snapshot.update_if_needed();
-            auto p_devinsts = last_usb_snapshot.find( device_uid );
-            if( !p_devinsts )
-                return std::string();
-
-            // We only need the first
-            DEVINST device = p_devinsts->front();
-            DEVINST parent;
-            if( CM_Get_Parent( &parent, device, 0 ) != CR_SUCCESS )
-            {
-                LOG_ERROR( "CM_Get_Parent failed" );
-                return std::string();
-            }
-            std::string parent_id, parent_uid;
-            if( get_id( parent, &parent_id ) )
-            {
-                uint16_t parent_vid, parent_pid, parent_mi;
-                parse_usb_path_from_device_id( parent_vid, parent_pid, parent_mi, parent_uid, parent_id );  // may fail -- but we try to get the parent_uid
-            }
-            return parent_uid;   // empty if we failed
-        }
-
 
         // Provides Port Id and the USB Specification (USB type)
-        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial, std::string& parent_uid )
+        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial)
         {
-            //last_usb_snapshot.update_if_needed();
-            auto p_devinsts = last_usb_snapshot.find( device_uid );
-            if( p_devinsts )
-            {
-                // We only need the first
-                DEVINST device = p_devinsts->front();
-                if( get_usb_device_descriptors( device, device_vid, device_pid, device_uid, location, spec, serial, parent_uid ) )
-                    return true;
-            }
-
             SP_DEVINFO_DATA devInfo = { sizeof(SP_DEVINFO_DATA) };
             std::vector<GUID> guids = {
                 GUID_DEVINTERFACE_IMAGE_WIN7,
@@ -736,30 +516,31 @@ namespace librealsense
                 GUID_DEVINTERFACE_CAMERA_WIN10
             };
 
-            for( auto guid : guids )
+            for (auto guid : guids)
             {
                 // Build a device info represent all imaging devices
-                HDEVINFO device_info = SetupDiGetClassDevsEx( static_cast<const GUID*>(&guid), nullptr, nullptr, DIGCF_PRESENT, nullptr, nullptr, nullptr );
+                HDEVINFO device_info = SetupDiGetClassDevsEx(static_cast<const GUID *>(&guid), nullptr, nullptr, DIGCF_PRESENT, nullptr, nullptr, nullptr);
 
                 // Add automatic destructor to the device info
-                auto di = std::shared_ptr<void>( device_info, SetupDiDestroyDeviceInfoList );
+                auto di = std::shared_ptr<void>(device_info, SetupDiDestroyDeviceInfoList);
 
-                if( device_info == INVALID_HANDLE_VALUE )
+                if (device_info == INVALID_HANDLE_VALUE)
                 {
                     return false;
                 }
 
                 // Enumerate all imaging devices
-                for( int member_index = 0; ; ++member_index )
+                for (int member_index = 0; ; ++member_index)
                 {
                     // Get device information element from the device information set
-                    if( SetupDiEnumDeviceInfo( device_info, member_index, &devInfo ) == FALSE )
+                    if (SetupDiEnumDeviceInfo(device_info, member_index, &devInfo) == FALSE)
                     {
                         if( GetLastError() == ERROR_NO_MORE_ITEMS )
                             break; // stop when none left
                         continue; // silently ignore other errors
                     }
 
+                    std::string parent_uid;
                     if( get_usb_device_descriptors( devInfo.DevInst, device_vid, device_pid, device_uid, location, spec, serial, parent_uid ) )
                         return true;
                 }
@@ -861,7 +642,6 @@ namespace librealsense
             std::string guid;
             std::wstring ws(detail_data->DevicePath);
             std::string path( win_to_utf( detail_data->DevicePath ));
-            //LOG_DEBUG( "     path " << path );
 
             /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
             parse_usb_path_multiple_interface(vid, pid, mi, parent_uid, path, guid);

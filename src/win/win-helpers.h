@@ -32,10 +32,15 @@ namespace librealsense
         std::wstring instance_id_from_device_path( LPCWSTR path );
         bool parse_usb_path_multiple_interface(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path, std::string & device_guid);
         bool parse_usb_path_single_interface(uint16_t & vid, uint16_t & pid, std::string & serial, const std::string & path);
-        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial, std::string& composite_id);
+        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial);
         bool get_usb_device_descriptors( DEVINST devinst, uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial, std::string& composite_uid );
-        std::string get_usb_parent_uid( const std::string& device_uid );
 
+        /*
+            Configuration Management (CM) tree node.
+            See https://docs.microsoft.com/en-gb/windows/win32/api/cfgmgr32/
+
+            A basic wrapper around DEVINST and the functionality we need around it, for ease of use.
+        */
         class cm_node
         {
             DEVINST _devinst;
@@ -68,6 +73,34 @@ namespace librealsense
             cm_node get_child() const;
 
             std::string get_property( DEVPROPKEY const& property ) const;
+
+            /*
+                Iterate through all nodes (children, grandchildren, etc.) under this one.
+                A parent is visited before any children.
+                An action (function) is run for each, which can return false to stop iteration:
+
+                    foreach_cm_node( cm_node::root(),
+                        [&]( cm_node device, size_t depth ) -> bool
+                        {
+                            ...
+                        } );
+
+                Returns whether iteration was stopped. False if the whole tree was finished.
+            */
+            template< class F >
+            bool foreach( F fn, size_t depth = 1 )
+            {
+                auto node = get_child();
+                while( node.valid() )
+                {
+                    if( ! fn( node, depth ))
+                        return true;
+                    if( node.foreach( fn, depth + 1 ))
+                        return true;
+                    node = node.get_sibling();
+                }
+                return false;
+            }
         };
 
         class event_base

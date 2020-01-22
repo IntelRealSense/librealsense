@@ -772,8 +772,7 @@ namespace librealsense
             }
             try
             {
-				std::string parent_id;
-                if (!get_usb_descriptors(info.vid, info.pid, info.unique_id, _location, _device_usb_spec, _device_serial, parent_id ))
+                if (!get_usb_descriptors(info.vid, info.pid, info.unique_id, _location, _device_usb_spec, _device_serial))
                 {
                     LOG_WARNING("Could not retrieve USB descriptor for device " << std::hex << info.vid << ":"
                         << info.pid << " , id:" << info.unique_id << std::dec);
@@ -792,7 +791,6 @@ namespace librealsense
                     CHECK_HR(device->GetString(did_guid, const_cast<LPWSTR>(_device_id.c_str()), UINT32(_device_id.size()), nullptr));
                 }
             });
-            LOG_DEBUG( "UVC dev: [id " << _device_id << "  vid " << _info.vid << "  pid " << _info.pid << "  mi " << _info.mi << "  uid " << _info.unique_id << "]" );
         }
 
         wmf_uvc_device::~wmf_uvc_device()

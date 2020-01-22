@@ -428,17 +428,33 @@ namespace librealsense
                                                 info.device_path = win_to_utf( propertyValue.pwszVal );
                                                 info.id = win_to_utf( fName );
 
-                                                auto node = cm_node::from_device_path( propertyValue.pwszVal );
-                                                if( node.valid() )
-                                                    LOG_DEBUG( "        " << node.get() << " " << info.id /*node.get_id()*/
-                                                        << "  parent " << node.get_parent().get()
-                                                        << " uid " << node.get_parent().get_uid() );
-
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
                                                 if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path, guid))
                                                 {
-                                                    info.unique_id = get_usb_parent_uid( uid );
+                                                    auto node = cm_node::from_device_path( propertyValue.pwszVal );
+                                                    if( node.valid() )
+                                                    {
+                                                        // We take the "unique id" (really, the composite ID used to associate all the devices belonging to
+                                                        // a single composite device) of the PARENT of the HID device:
+                                                        //     17 USB\VID_8086&PID_0B4D\012345678901 "USB Composite Device"
+                                                        //         18 USB\VID_8086&PID_0B4D&MI_00\6&CB1C340&0&0000 "Intel(R) RealSense(TM) Depth Camera 465  Depth"
+                                                        //         19 USB\VID_8086&PID_0B4D&MI_03\6&CB1C340&0&0003 "Intel(R) RealSense(TM) Depth Camera 465  RGB"
+                                                        //         20 USB\VID_8086&PID_0B4D&MI_05\6&CB1C340&0&0005 "USB Input Device"
+                                                        //             21 HID\VID_8086&PID_0B4D&MI_05\7&24FD3503&0&0000 "HID Sensor Collection V2"
+                                                        //         22 USB\VID_8086&PID_0B4D&MI_06\6&CB1C340&0&0006 "Intel(R) RealSense(TM) Depth Camera 465 "
+                                                        // (the first number is the CM DEVINST handle for each node)
+                                                        // Note that all the USB devices have the same "CB1C340" ID, while the HID device is "24FD3503".
+                                                        // Because the HID devices are "inside" a USB device parent in the OS's CM tree, we can try to get the
+                                                        // parent UID:
+                                                        info.unique_id = node.get_parent().get_uid();
+                                                    }
+                                                    else
+                                                    {
+                                                        LOG_WARNING( "Parent for HID device not available: " << info.device_path );
+                                                        // Leave it empty: it won't be matched against anything
+                                                    }
+
                                                     info.pid = to_string() << std::hex << pid;
                                                     info.vid = to_string() << std::hex << vid;
                                                 }
