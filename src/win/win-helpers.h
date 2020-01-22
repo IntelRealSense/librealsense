@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <windows.h>
+#include <cfgmgr32.h>
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 
@@ -28,9 +29,46 @@ namespace librealsense
 
         std::vector<std::string> tokenize(std::string string, char separator);
 
+        std::wstring instance_id_from_device_path( LPCWSTR path );
         bool parse_usb_path_multiple_interface(uint16_t & vid, uint16_t & pid, uint16_t & mi, std::string & unique_id, const std::string & path, std::string & device_guid);
         bool parse_usb_path_single_interface(uint16_t & vid, uint16_t & pid, std::string & serial, const std::string & path);
-        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial);
+        bool get_usb_descriptors(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial, std::string& composite_id);
+        bool get_usb_device_descriptors( DEVINST devinst, uint16_t device_vid, uint16_t device_pid, const std::string& device_uid, std::string& location, usb_spec& spec, std::string& serial, std::string& composite_uid );
+        std::string get_usb_parent_uid( const std::string& device_uid );
+
+        class cm_node
+        {
+            DEVINST _devinst;
+
+        public:
+            cm_node() : _devinst( 0 ) {}
+            cm_node( DEVINST devinst ) : _devinst( devinst ) {}
+
+            static cm_node from_instance_id( std::wstring const& instance_id );
+            static cm_node from_device_path( LPCWSTR device_path )
+            {
+                std::wstring instance_id = instance_id_from_device_path( device_path );
+                return from_instance_id( instance_id );
+            }
+            static cm_node root();
+
+            DEVINST get() const { return _devinst; }
+            bool valid() const { return get() != 0; }
+
+            operator DEVINST() const { return _devinst; }
+
+            operator DEVINST* () { return &_devinst; }
+            operator DEVINST const* () const { return &_devinst; }
+
+            std::string get_id() const;
+            std::string get_uid() const;
+
+            cm_node get_parent() const;
+            cm_node get_sibling() const;
+            cm_node get_child() const;
+
+            std::string get_property( DEVPROPKEY const& property ) const;
+        };
 
         class event_base
         {

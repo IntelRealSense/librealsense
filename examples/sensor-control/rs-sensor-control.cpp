@@ -24,6 +24,8 @@ int main(int argc, char * argv[]) try
 
     //We will use the "how_to" class to make the code clear, expressive and encapsulate common actions inside a function
 
+    rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+
     std::vector<sensor_action> sensor_actions = create_sensor_actions();
 
     bool choose_a_device = true;

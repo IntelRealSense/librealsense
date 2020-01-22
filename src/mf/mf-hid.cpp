@@ -390,7 +390,8 @@ namespace librealsense
                             /* Retrieve SENSOR_PROPERTY_FRIENDLY_NAME which is the sensor name that is intended to be seen by the user */
                             BSTR fName{};
                             LOG_HR(res = pSensor->GetFriendlyName(&fName));
-                            if (FAILED(res)) fName= L"Unidentified HID sensor";
+                            if (FAILED(res))
+                                fName= L"Unidentified HID sensor";
 
                             /* Retrieve SENSOR_PROPERTY_PERSISTENT_UNIQUE_ID which is a GUID that uniquely identifies the sensor on the current computer */
                             SENSOR_ID id{};
@@ -424,21 +425,27 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
-                                                info.id = std::string(fName, fName + wcslen(fName));
+                                                info.device_path = win_to_utf( propertyValue.pwszVal );
+                                                info.id = win_to_utf( fName );
+
+                                                auto node = cm_node::from_device_path( propertyValue.pwszVal );
+                                                if( node.valid() )
+                                                    LOG_DEBUG( "        " << node.get() << " " << info.id /*node.get_id()*/
+                                                        << "  parent " << node.get_parent().get()
+                                                        << " uid " << node.get_parent().get_uid() );
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
                                                 if (parse_usb_path_multiple_interface(vid, pid, mi, uid, info.device_path, guid))
                                                 {
-                                                    info.unique_id = "*";
+                                                    info.unique_id = get_usb_parent_uid( uid );
                                                     info.pid = to_string() << std::hex << pid;
                                                     info.vid = to_string() << std::hex << vid;
                                                 }
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                auto str = std::string(propertyValue.pwszVal, propertyValue.pwszVal + wcslen(propertyValue.pwszVal));
+                                                auto str = win_to_utf( propertyValue.pwszVal );
                                                 std::transform(begin(str), end(str), begin(str), ::tolower);
                                                 info.serial_number = str;
                                             }

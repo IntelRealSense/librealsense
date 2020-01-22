@@ -54,15 +54,18 @@ namespace librealsense
         std::vector<uvc_device_info> wmf_backend::query_uvc_devices() const
         {
             std::vector<uvc_device_info> devices;
+            LOG_DEBUG( "Looking for UVC devices ..." );
 
             auto action = [&devices, this](const uvc_device_info& info, IMFActivate*)
             {
+                LOG_DEBUG( "... found uid= " << info.unique_id << "  " << info.device_path );
                 uvc_device_info device_info = info;
                 device_info.serial = this->get_device_serial(info.vid, info.pid, info.unique_id);
                 devices.push_back(device_info);
             };
 
             wmf_uvc_device::foreach_uvc_device(action);
+            LOG_DEBUG( "... done" );
 
             return devices;
         }
@@ -90,10 +93,12 @@ namespace librealsense
         wmf_hid_device::wmf_hid_device(const hid_device_info& info)
         {
             bool found = false;
+            LOG_DEBUG( "Looking for HID device, uid= " << info.unique_id );
 
             wmf_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, CComPtr<ISensor> sensor) {
                 if (hid_dev_info.unique_id == info.unique_id)
                 {
+                    LOG_DEBUG( "... found uid= " << hid_dev_info.unique_id << "  " << hid_dev_info.device_path );
                     _connected_sensors.push_back(std::make_shared<wmf_hid_sensor>(hid_dev_info, sensor));
                     found = true;
                 }
@@ -116,10 +121,13 @@ namespace librealsense
 
             auto action = [&devices](const hid_device_info& info, CComPtr<ISensor>)
             {
+                LOG_DEBUG( "... found uid= " << info.unique_id << "  " << info.device_path );
                 devices.push_back(info);
             };
 
+            LOG_DEBUG( "Gathering HID devices..." );
             wmf_hid_device::foreach_hid_device(action);
+            LOG_DEBUG( "... done" );
 
             return devices;
         }
@@ -380,9 +388,10 @@ namespace librealsense
         {
             std::string device_serial = "";
             std::string location = "";
+            std::string composite_id;
             usb_spec spec = usb_undefined;
 
-            platform::get_usb_descriptors(device_vid, device_pid, device_uid, location, spec, device_serial);
+            platform::get_usb_descriptors(device_vid, device_pid, device_uid, location, spec, device_serial, composite_id );
 
             return device_serial;
         }
