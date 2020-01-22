@@ -22,21 +22,22 @@ namespace librealsense {
                     LOG_INFO("Found a T265 to boot");
                     found = true;
                     auto dev = usb_enumerator::create_usb_device(device_info);
-                    const auto& m = dev->open(0);
+                     if (const auto& m = dev->open(0))
+                     {
+                        // transfer the firmware data
+                        int size{};
+                        auto target_hex = fw_get_target(size);
 
-                    // transfer the firmware data
-                    int size;
-                    auto target_hex = fw_get_target(size);
+                        if(!target_hex)
+                            LOG_ERROR("librealsense failed to get T265 FW resource");
 
-                    if(!target_hex)
-                        LOG_ERROR("librealsense failed to get T265 FW resource");
-
-                    auto iface = dev->get_interface(0);
-                    auto endpoint = iface->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE);
-                    uint32_t transfered = 0;
-                    auto status = m->bulk_transfer(endpoint, const_cast<uint8_t*>(target_hex), static_cast<uint32_t>(size), transfered, 1000);
-                    if(status != RS2_USB_STATUS_SUCCESS)
-                        LOG_ERROR("Error booting T265");
+                        auto iface = dev->get_interface(0);
+                        auto endpoint = iface->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE);
+                        uint32_t transfered = 0;
+                        auto status = m->bulk_transfer(endpoint, const_cast<uint8_t*>(target_hex), static_cast<uint32_t>(size), transfered, 1000);
+                        if(status != RS2_USB_STATUS_SUCCESS)
+                            LOG_ERROR("Error booting T265");
+                     }
                 }
             }
             return found;
