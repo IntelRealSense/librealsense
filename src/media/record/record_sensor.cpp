@@ -95,7 +95,7 @@ void librealsense::record_sensor::register_notifications_callback(notifications_
 {
     if (m_register_notification_to_base)
     {
-        m_sensor.register_notifications_callback(std::move(callback));
+        m_sensor.register_notifications_callback(std::move(callback)); //route to base sensor
         return;
     }
 
