@@ -195,6 +195,7 @@ namespace librealsense
             std::chrono::duration<double, std::milli> global_ts;
             std::chrono::duration<double, std::milli> arrival_ts;
         };
+        coordinated_ts last_ts;
 
         coordinated_ts get_coordinated_timestamp(uint64_t device_nanoseconds);
 

@@ -360,8 +360,8 @@ namespace librealsense
         : sensor_base("Tracking Module", owner, this), _device(owner)
     {
         LOG_DEBUG("Making a sensor " << this);
-        _source.set_max_publish_list_size(64); //increase frame source queue size for TM2
-        _data_dispatcher = std::make_shared<dispatcher>(64); // make a queue of the same size to dispatch data messages
+        _source.set_max_publish_list_size(256); //increase frame source queue size for TM2
+        _data_dispatcher = std::make_shared<dispatcher>(256); // make a queue of the same size to dispatch data messages
         _data_dispatcher->start();
         register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_ACTUAL_EXPOSURE));
         register_metadata(RS2_FRAME_METADATA_TEMPERATURE    , std::make_shared<md_tm2_parser>(RS2_FRAME_METADATA_TEMPERATURE));
@@ -381,6 +381,8 @@ namespace librealsense
         _log_poll_thread = std::thread(&tm2_sensor::log_poll, this);
 
         // start time sync thread
+        last_ts = { std::chrono::duration<double, std::milli>(0) };
+        device_to_host_ns = 0;
         _time_sync_thread_stop = false;
         _time_sync_thread = std::thread(&tm2_sensor::time_sync, this);
     }
@@ -1207,6 +1209,18 @@ namespace librealsense
             LOG_WARNING("Dropped frame. No valid profile");
             return;
         }
+
+        //Global base time sync may happen between two frames
+        //Make sure 2nd frame global timestamp is not impacted.
+        auto delta_dev_ts = ts.device_ts - last_ts.device_ts;
+        if (delta_dev_ts < delta_dev_ts.zero())
+            delta_dev_ts = -delta_dev_ts;
+
+        if (delta_dev_ts < std::chrono::microseconds(1000))
+            ts.global_ts = last_ts.global_ts + delta_dev_ts; // keep stereo pairs times in sync
+
+        last_ts = ts;
+
         //TODO - extension_type param assumes not depth
         frame_holder frame = _source.alloc_frame(RS2_EXTENSION_VIDEO_FRAME, height * stride, additional_data, true);
         if (frame.frame)
@@ -1428,6 +1442,7 @@ namespace librealsense
 
     void tm2_sensor::time_sync()
     {
+        int tried_count = 0;
         while(!_time_sync_thread_stop) {
             bulk_message_request_get_time request = {{ sizeof(request), DEV_GET_TIME }};
             bulk_message_response_get_time response = {};
@@ -1439,13 +1454,23 @@ namespace librealsense
                 break;
             }
             auto finish = duration<double, std::milli>(environment::get_instance().get_time_service()->get_time());
+            auto usb_delay = (finish - start) / 2;
 
-            double device_ms = (double)response.llNanoseconds*1e-6;
-            auto device = duration<double, std::milli>(device_ms);
-            auto diff = duration<double, std::nano>(start + (finish - start)/2 - device);
-            device_to_host_ns = diff.count();
+            //If usb response takes too long, skip update. 0.25ms is 5% of 200Hz
+            if (!device_to_host_ns && usb_delay >= duration<double, std::milli>(0.25))
+            {
+                //In case of slower USB, not to skip after a few tries.
+                if (tried_count++ < 3) continue;
+            }
 
-            LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns.load());
+            if (usb_delay < duration<double, std::milli>(0.25) || !device_to_host_ns)
+            {
+                double device_ms = (double)response.llNanoseconds*1e-6;
+                auto device = duration<double, std::milli>(device_ms);
+                auto diff = duration<double, std::nano>(start + usb_delay - device);
+                device_to_host_ns = diff.count();
+            }
+            LOG_DEBUG("T265 time synced, host_ns: " << device_to_host_ns);
 
             // Only trigger this approximately every 500ms, but don't
             // wait 500ms to stop if we are requested to stop
