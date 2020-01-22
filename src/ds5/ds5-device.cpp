@@ -190,7 +190,7 @@ namespace librealsense
 
         sector_count += first_sector;
 
-        for (size_t sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
             cmdFES.require_response = false;
@@ -222,7 +222,7 @@ namespace librealsense
         update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
-        float total_size = fs.app_size + tables_size;
+        float total_size = float(fs.app_size + tables_size);
 
         float app_ratio = fs.app_size / total_size * ratio;
         float tables_ratio = tables_size / total_size * ratio;
@@ -240,7 +240,7 @@ namespace librealsense
         // update read-write section
         auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
         auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
-        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5 : 1.0);
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f);
 
         if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
         {
