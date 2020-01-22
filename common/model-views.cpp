@@ -998,8 +998,8 @@ namespace rs2
         {
             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
             std::string id = dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
-            bool has_metadata = rs2::metadata_helper::instance().is_enabled(id) ||
-                !(product == "D400" || product == "SR300" || product == "L500");
+            bool has_metadata = !rs2::metadata_helper::instance().can_support_metadata(product)
+                || rs2::metadata_helper::instance().is_enabled(id);
             static bool showed_metadata_prompt = false;
 
             if (!has_metadata && !showed_metadata_prompt)

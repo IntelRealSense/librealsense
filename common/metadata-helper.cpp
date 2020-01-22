@@ -20,6 +20,11 @@
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
 
+#ifdef _MSC_VER 
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 #endif
 
 namespace rs2
@@ -30,32 +35,29 @@ namespace rs2
         std::string pid, mi, guid, sn;
     };
 
-    inline std::string to_lower(std::string x)
+    inline bool equal(const std::string& a, const std::string& b)
     {
-        transform(x.begin(), x.end(), x.begin(), tolower);
-        return x;
+        return strcasecmp(a.c_str(), b.c_str()) == 0;
     }
 
-    bool operator==(const device_id& a, const device_id& b)
+    inline bool operator==(const device_id& a, const device_id& b)
     {
-        return (to_lower(a.pid) == to_lower(b.pid) &&
-            to_lower(a.mi) == to_lower(b.mi) &&
-            to_lower(a.guid) == to_lower(b.guid) &&
-            to_lower(a.sn) == to_lower(b.sn));
+        return equal(a.pid, b.pid) &&
+               equal(a.guid, b.guid) &&
+               equal(a.mi, b.mi) &&
+               equal(a.sn, b.sn);
     }
 
     class windows_metadata_helper : public metadata_helper
     {
     public:
-        static bool parse_device_id(std::string id, device_id* res)
+        static bool parse_device_id(const std::string& id, device_id* res)
         {
-            static const std::regex regex("[\\s\\S]*pid_([0-9a-fA-F]+)&mi_([0-9]+)#[0-9]&([0-9a-fA-F]+)&[\\s\\S]*\\{([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\\}[\\s\\S]*");
-
-            id = to_lower(id); // ignore case
+            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9]+)#[0-9]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
 
             std::match_results<std::string::const_iterator> match;
 
-            if (std::regex_match(id, match, regex) && match.size() > 4)
+            if (std::regex_search(id, match, regex) && match.size() > 4)
             {
                 res->pid = match[1];
                 res->mi = match[2];
@@ -66,8 +68,9 @@ namespace rs2
             return false;
         }
 
-        static void do_foreach_device(std::vector<device_id> devices, 
-            std::function<void(device_id&, std::wstring)> action)
+        static void foreach_device_path(const std::vector<device_id>& devices,
+            std::function<void(device_id&,  /* matched device */
+                               std::wstring /* registry key of Device Parameters for that device */)> action)
         {
             std::map<std::string, std::vector<device_id>> guid_to_devices;
             for (auto&& d : devices)
@@ -82,13 +85,13 @@ namespace rs2
                 std::stringstream ss;
                 ss << "SYSTEM\\CurrentControlSet\\Control\\DeviceClasses\\{" << guid << "}";
                 auto s = ss.str();
-                std::wstring ws(s.begin(), s.end());
+                std::wstring prefix(s.begin(), s.end());
 
-                HKEY hKey;
-                if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ws.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &hKey) == ERROR_SUCCESS)
+                HKEY key;
+                if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, prefix.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
                 {
                     // Don't forget to release in the end:
-                    std::shared_ptr<void> raii(hKey, RegCloseKey);
+                    std::shared_ptr<void> raii(key, RegCloseKey);
 
                     TCHAR    achClass[MAX_PATH] = TEXT("");  // buffer for class name 
                     DWORD    cchClassName = MAX_PATH;  // size of class string 
@@ -102,7 +105,7 @@ namespace rs2
                     FILETIME ftLastWriteTime;      // last write time 
 
                     DWORD retCode = RegQueryInfoKey(
-                        hKey,                    // key handle 
+                        key,                    // key handle 
                         achClass,                // buffer for class name 
                         &cchClassName,           // size of class string 
                         NULL,                    // reserved 
@@ -119,7 +122,7 @@ namespace rs2
                     {
                         TCHAR achKey[MAX_KEY_LENGTH];
                         DWORD cbName = MAX_KEY_LENGTH;
-                        retCode = RegEnumKeyEx(hKey, i,
+                        retCode = RegEnumKeyEx(key, i,
                             achKey,
                             &cbName,
                             NULL,
@@ -128,20 +131,18 @@ namespace rs2
                             &ftLastWriteTime);
                         if (retCode == ERROR_SUCCESS)
                         {
-                            std::wstring ke = achKey;
+                            std::wstring suffix = achKey;
                             device_id rdid;
-                            if (parse_device_id(std::string(ke.begin(), ke.end()), &rdid))
+                            if (parse_device_id(std::string(suffix.begin(), suffix.end()), &rdid))
                             {
                                 for (auto&& did : kvp.second)
                                 {
                                     if (rdid == did)
                                     {
                                         std::wstringstream ss;
-                                        ss << ws << "\\" << ke << "\\#GLOBAL\\Device Parameters";
-                                        auto s = ss.str();
-                                        std::wstring ws(s.begin(), s.end());
-
-                                        action(rdid, ws);
+                                        ss << prefix << "\\" << suffix << "\\#GLOBAL\\Device Parameters";
+                                        auto path = ss.str();
+                                        action(rdid, path);
                                     }
                                 }
                             }
@@ -152,12 +153,12 @@ namespace rs2
         }
 
         // Heuristic that determines how many media-pins UVC device is expected to have
-        static int number_of_mediapins(std::string pid, std::string mi)
+        static int number_of_mediapins(const std::string& pid, const std::string& mi)
         {
             if (mi == "00")
             {
                 // L500 has 3 media-pins
-                if (to_lower(pid) == "0b0d" || to_lower(pid) == "0b3d") return 3;
+                if (equal(pid, "0b0d") || equal(pid, "0b3d")) return 3;
                 else return 2; // D400 has two
             }
             return 1; // RGB has one
@@ -175,14 +176,16 @@ namespace rs2
                 SECURITY_BUILTIN_DOMAIN_RID,
                 DOMAIN_ALIAS_RID_ADMINS,
                 0, 0, 0, 0, 0, 0,
-                &admin_group))
+                &admin_group)) 
             {
+                rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to query permissions - AllocateAndInitializeSid failed");
                 return false;
             }
+            std::shared_ptr<void> raii(admin_group, FreeSid);
 
             if (!CheckTokenMembership(NULL, admin_group, &result))
             {
-                FreeSid(admin_group);
+                rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to query permissions - CheckTokenMembership failed");
                 return false;
             }
 
@@ -199,6 +202,7 @@ namespace rs2
                     SHELLEXECUTEINFO sei = { sizeof(sei) };
 
                     sei.lpVerb = L"runas";
+                    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
                     sei.lpFile = szPath;
                     sei.hwnd = NULL;
                     sei.nShow = SW_NORMAL;
@@ -206,10 +210,26 @@ namespace rs2
                     std::wstring wcmd(cmd_line.begin(), cmd_line.end());
                     sei.lpParameters = wcmd.c_str();
 
-                    ShellExecuteEx(&sei); // not checking return code - what you are going to do? retry? why?
+                    if (ShellExecuteEx(&sei) != ERROR_SUCCESS)
+                    {
+                        rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to elevate to admin privilege to enable metadata!");
+                        return false;
+                    }
+                    else
+                    {
+                        WaitForSingleObject(sei.hProcess, INFINITE);
+                        DWORD exitCode = 0;
+                        GetExitCodeProcess(sei.hProcess, &exitCode);
+                        CloseHandle(sei.hProcess);
+                        if (exitCode)
+                            throw std::runtime_error("Failed to set metadata registry keys!");
+                    }
                 }
-
-                return false;
+                else
+                {
+                    rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
+                    return false;
+                }
             }
             else
             {
@@ -223,7 +243,7 @@ namespace rs2
 
             device_id did;
             if (parse_device_id(id, &did))
-                do_foreach_device({ did }, [&res, did](device_id&, std::wstring path) {
+                foreach_device_path({ did }, [&res, did](device_id&, std::wstring path) {
 
                 HKEY key;
                 if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
@@ -240,13 +260,14 @@ namespace rs2
                         std::wstring metadatakey = ss.str();
 
                         DWORD MetadataBufferSizeInKB = 0;
-                        RegQueryValueEx(
+                        if (RegQueryValueEx(
                             key,
                             metadatakey.c_str(),
                             NULL,
                             NULL,
                             (LPBYTE)(&MetadataBufferSizeInKB),
-                            &len);
+                            &len) != ERROR_SUCCESS)
+                            rs2::log(RS2_LOG_SEVERITY_DEBUG, "Unable to read metadata registry key!");
 
                         found = found && MetadataBufferSizeInKB;
                     }
@@ -274,7 +295,7 @@ namespace rs2
                         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && dev.supports(RS2_CAMERA_INFO_PHYSICAL_PORT))
                         {
                             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                            if (product == "D400" || product == "SR300" || product == "L500")
+                            if (can_support_metadata(product))
                             {
                                 std::string port = dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
                                 device_id did;
@@ -285,7 +306,8 @@ namespace rs2
                     catch (...) {}
                 }
 
-                do_foreach_device(dids, [](device_id& did, std::wstring path) {
+                bool failure = false;
+                foreach_device_path(dids, [&failure](device_id& did, std::wstring path) {
                     HKEY key;
                     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_WRITE | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
                     {
@@ -301,12 +323,16 @@ namespace rs2
                             std::wstring metadatakey = ss.str();
 
                             DWORD MetadataBufferSizeInKB = 5;
-                            RegSetValueEx(key, metadatakey.c_str(), 0, REG_DWORD,
-                                (const BYTE*)&MetadataBufferSizeInKB, sizeof(DWORD));
-                            // What to do if failed???
+                            if (RegSetValueEx(key, metadatakey.c_str(), 0, REG_DWORD,
+                                (const BYTE*)&MetadataBufferSizeInKB, sizeof(DWORD)) != ERROR_SUCCESS)
+                            {
+                                rs2::log(RS2_LOG_SEVERITY_DEBUG, "Unable to write metadata registry key!");
+                                failure = true;
+                            }
                         }
                     }
                 });
+                if (failure) throw std::runtime_error("Unable to write to metadata registry key!");
             }
         }
     };

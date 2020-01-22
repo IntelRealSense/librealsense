@@ -56,7 +56,6 @@ namespace rs2
         return _timestamp;
     }
 
-
     rs2_log_severity notification_data::get_severity() const
     {
         return _severity;
@@ -665,8 +664,6 @@ namespace rs2
 
             ImGui::PopStyleVar(2);
             ImGui::PopStyleColor(3);
-            //selected.unset_color_scheme();
-            //ImGui::End();
 
             ImGui::PopStyleColor();
         }
@@ -984,17 +981,15 @@ namespace rs2
     }
 
     metadata_warning_model::metadata_warning_model()
-        : process_notification_model(nullptr)
+        : notification_model()
     {
         enable_expand = false;
         enable_dismiss = true;
-        update_state = 0;
         pinned = true;
-        message = "Frame Metadata is device feature allowing\n"
+        message = "Frame Metadata is a device feature allowing\n"
                   "software synchronization between different\n"
                   "camera streams.\n"
                   "It must be explicitly enabled on Windows OS\n";
-        last_progress_time = system_clock::now();
     }
 
     void metadata_warning_model::set_color_scheme(float t) const
@@ -1033,7 +1028,6 @@ namespace rs2
         {
             metadata_helper::instance().enable_metadata();
             dismiss(false);
-            last_progress_time = system_clock::now();
         }
         ImGui::PopStyleColor(2);
 

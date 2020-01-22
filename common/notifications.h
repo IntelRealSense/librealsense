@@ -160,7 +160,7 @@ namespace rs2
         bool _first = true;
     };
 
-    struct metadata_warning_model : public process_notification_model
+    struct metadata_warning_model : public notification_model
     {
         metadata_warning_model();
 

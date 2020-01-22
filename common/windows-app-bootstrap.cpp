@@ -35,8 +35,13 @@ int CALLBACK WinMain(
 
         if (s == rs2::metadata_helper::get_command_line_param())
         {
-            rs2::metadata_helper::instance().enable_metadata();
-            exit(0);
+            try
+            {
+                DebugBreak();
+                rs2::metadata_helper::instance().enable_metadata();
+                exit(0);
+            }
+            catch (...) { exit(-1); }
         }
 
         args.push_back(s);
