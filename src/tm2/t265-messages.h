@@ -161,6 +161,7 @@ namespace t265
         SLAM_APPEND_CALIBRATION = 0x100C,
         SLAM_CALIBRATION = 0x100D,
         SLAM_RELOCALIZATION_EVENT = 0x100E,
+        SLAM_REMOVE_STATIC_NODE = 0x100F,
 
         /* Error messages */
         DEV_ERROR = 0x8000,
@@ -1040,6 +1041,16 @@ namespace t265
     typedef struct {
         bulk_message_response_header header; /**< Message response header: wMessageID = SLAM_SET_STATIC_NODE */
     } bulk_message_response_set_static_node;
+
+    typedef struct {
+        bulk_message_request_header header; /**< Message request header: dwLength = 164 bytes, wMessageID = SLAM_REMOVE_STATIC_NODE                      */
+        uint16_t wReserved;                 /**< Reserved = 0                                                                                         */
+        uint8_t bGuid[MAX_GUID_LENGTH];     /**< Null-terminated C-string, with max length 127 bytes plus one byte for the terminating null character */
+    } bulk_message_request_remove_static_node;
+
+    typedef struct {
+        bulk_message_response_header header; /**< Message response header: wMessageID = SLAM_REMOVE_STATIC_NODE */
+    } bulk_message_response_remove_static_node;
 
     /**
     * @brief Bulk Get Static Node Message

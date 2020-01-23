@@ -923,7 +923,7 @@ TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
             REQUIRE_NOTHROW(presets_sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_COUNT - 1));
             REQUIRE_NOTHROW(advanced.load_json(json1));
             REQUIRE_NOTHROW(json2 = advanced.serialize_json());
-            REQUIRE_NOTHROW(json1 == json2);
+            REQUIRE(json1 == json2);
 
             dev = do_with_waiting_for_camera_connection(ctx, dev, serial, [&]()
             {
@@ -5670,6 +5670,9 @@ TEST_CASE("Positional_Sensors_API", "[live]")
                     REQUIRE(test_or.y == Approx(vnv_or.y));
                     REQUIRE(test_or.z == Approx(vnv_or.z));
                     REQUIRE(test_or.w == Approx(vnv_or.w));
+
+                    REQUIRE_NOTHROW(res = pose_snr.remove_static_node("wp1"));
+                    REQUIRE_NOTHROW(!(res = pose_snr.remove_static_node("wp1")));
 
                     REQUIRE_NOTHROW(pipe.stop());
                 }

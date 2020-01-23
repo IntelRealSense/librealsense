@@ -784,7 +784,7 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
         {
             width = video.width();
             height = video.height();
-            if (res = get_res_type(width, height))
+            if ((res = get_res_type(width, height)))
                 return p;
         }
     }
