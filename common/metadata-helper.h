@@ -13,9 +13,11 @@ namespace rs2
 
         // Check if metadata is enabled using Physical Port ID
         // (can be retrieved with device::get_info(RS2_CAMERA_INFO_PHYSICAL_PORT))
+        // throws runtime_error in case of errors
         virtual bool is_enabled(std::string id) const { return true; }
 
         // Enable metadata for all connected devices
+        // throws runtime_error in case of errors
         virtual void enable_metadata() { }
 
         static bool can_support_metadata(const std::string& product)

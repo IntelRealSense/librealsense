@@ -1033,7 +1033,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", "You will be prompted to enabled metadata on the device");
+            ImGui::SetTooltip("%s", "Enables metadata on connected devices (you may be prompted for administrator privileges)");
         }
     }
 }

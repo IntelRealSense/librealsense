@@ -69,7 +69,7 @@ namespace rs2
         }
 
         static void foreach_device_path(const std::vector<device_id>& devices,
-            std::function<void(device_id&,  /* matched device */
+            std::function<void(const device_id&,  /* matched device */
                                std::wstring /* registry key of Device Parameters for that device */)> action)
         {
             std::map<std::string, std::vector<device_id>> guid_to_devices;
@@ -243,7 +243,7 @@ namespace rs2
 
             device_id did;
             if (parse_device_id(id, &did))
-                foreach_device_path({ did }, [&res, did](device_id&, std::wstring path) {
+                foreach_device_path({ did }, [&res, did](const device_id&, std::wstring path) {
 
                 HKEY key;
                 if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_READ | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
@@ -307,7 +307,7 @@ namespace rs2
                 }
 
                 bool failure = false;
-                foreach_device_path(dids, [&failure](device_id& did, std::wstring path) {
+                foreach_device_path(dids, [&failure](const device_id& did, std::wstring path) {
                     HKEY key;
                     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, path.c_str(), 0, KEY_WRITE | KEY_WOW64_64KEY, &key) == ERROR_SUCCESS)
                     {

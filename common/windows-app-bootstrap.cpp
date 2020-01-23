@@ -37,7 +37,6 @@ int CALLBACK WinMain(
         {
             try
             {
-                DebugBreak();
                 rs2::metadata_helper::instance().enable_metadata();
                 exit(0);
             }
