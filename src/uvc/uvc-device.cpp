@@ -14,6 +14,18 @@ const int CONTROL_TRANSFER_TIMEOUT = 100;
 const int INTERRUPT_BUFFER_SIZE = 1024;
 const int FIRST_FRAME_MILLISECONDS_TIMEOUT = 2000;
 
+class lock_singleton
+{
+public:
+    static lock_singleton& instance()
+    {
+        static lock_singleton inst;
+        return inst;
+    }
+
+    std::recursive_mutex m;
+};
+
 namespace librealsense
 {
     namespace platform
@@ -301,14 +313,15 @@ namespace librealsense
             return results;
         }
 
+
         void rs_uvc_device::lock() const
         {
-
+            lock_singleton::instance().m.lock();
         }
 
         void rs_uvc_device::unlock() const
         {
-
+            lock_singleton::instance().m.unlock();
         }
 
         std::string rs_uvc_device::get_device_location() const
