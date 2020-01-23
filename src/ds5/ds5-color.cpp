@@ -84,12 +84,12 @@ namespace librealsense
         color_ep->register_pu(RS2_OPTION_GAIN);
         color_ep->register_pu(RS2_OPTION_GAMMA);
         color_ep->register_pu(RS2_OPTION_SHARPNESS);
+        color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
 
         // Currently disabled for certain sensors
         if (!val_in_range(color_devices_info.front().pid, { ds::RS465_PID }))
         {
             color_ep->register_pu(RS2_OPTION_HUE);
-            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
             color_ep->register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
         }
         // From 5.11.15 auto-exposure priority is supported on the D465

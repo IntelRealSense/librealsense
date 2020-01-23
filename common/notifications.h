@@ -160,6 +160,17 @@ namespace rs2
         bool _first = true;
     };
 
+    struct metadata_warning_model : public notification_model
+    {
+        metadata_warning_model();
+
+        void set_color_scheme(float t) const override;
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 130; }
+        const int get_max_lifetime_ms() const override { return 40000; }
+    };
+
+
     struct notifications_model
     {
         std::shared_ptr<notification_model> add_notification(const notification_data& n);
