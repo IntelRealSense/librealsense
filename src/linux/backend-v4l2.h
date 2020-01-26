@@ -190,13 +190,13 @@ namespace librealsense
                 {
                     if (_data_buf && (!_managed))
                     {
-                        //LOG_DEBUG("Enqueue buf " << _dq_buf.index << " for fd " << _file_desc);
                         if ((_file_desc > 0) && (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0))
                         {
-                            LOG_INFO("xioctl(VIDIOC_QBUF) guard failed");
+                            LOG_WARNING("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
                         }
                     }
                 }
+
                 std::shared_ptr<platform::buffer>   _data_buf=nullptr;
                 v4l2_buffer                         _dq_buf{};
                 int                                 _file_desc=-1;
