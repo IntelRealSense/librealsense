@@ -24,7 +24,7 @@ namespace librealsense
 
     // l515
     class rs515_device : public l500_depth,
-        public virtual l500_controls,
+        public l500_controls,
         public l500_color,
         public l500_motion,
         public l500_serializable_base

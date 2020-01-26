@@ -53,7 +53,9 @@ namespace librealsense
         return val;
     }
 
-    l500_controls::l500_controls(std::shared_ptr<context> ctx, const platform::backend_device_group & group) :l500_device(ctx, group)
+    l500_controls::l500_controls(std::shared_ptr<context> ctx, const platform::backend_device_group & group) :
+        device(ctx, group),
+        l500_device(ctx, group)
     {
         auto& raw_depth_sensor = get_raw_depth_sensor();
         auto& depth_sensor = get_depth_sensor();
@@ -139,13 +141,11 @@ namespace librealsense
             break;
         case low_ambient:
             _sensitivity->set_with_no_signal(sensetivity_short);
-            auto range = _hw_options[RS2_OPTION_LASER_POWER]->get_range();
-            _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
+            set_max_laser();
             break;
         case max_range:
             _sensitivity->set_with_no_signal(sensetivity_long);
-            range = _hw_options[RS2_OPTION_LASER_POWER]->get_range();
-            _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
+            set_max_laser();
             break;
         case short_range:
             _sensitivity->set_with_no_signal(sensetivity_short);
@@ -171,5 +171,11 @@ namespace librealsense
     {
         for (auto o : _hw_options)
             o.second->set_with_no_signal(-1);
+    }
+
+    void l500_controls::set_max_laser()
+    {
+        auto range = _hw_options[RS2_OPTION_LASER_POWER]->get_range();
+        _hw_options[RS2_OPTION_LASER_POWER]->set_with_no_signal(range.max);
     }
 }

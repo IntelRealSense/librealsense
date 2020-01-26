@@ -113,6 +113,7 @@ namespace librealsense
         void change_preset(preset_values preset);
         void move_to_custom ();
         void reset_hw_controls();
+        void set_max_laser();
 
         std::map<rs2_option, std::shared_ptr<signaled_option<l500_hw_controls>>> _hw_options;
         std::shared_ptr< signaled_option<uvc_xu_option<int>>> _sensitivity;
