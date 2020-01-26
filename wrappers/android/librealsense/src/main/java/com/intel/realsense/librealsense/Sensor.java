@@ -21,8 +21,14 @@ public class Sensor extends Options {
     public <T extends Sensor> T as(Extension extension) {
         switch (extension){
             case ROI: return (T) new RoiSensor(mHandle);
+            case DEPTH_SENSOR: return (T) new DepthSensor(mHandle);
+            case COLOR_SENSOR: return (T) new ColorSensor(mHandle);
         }
         throw new RuntimeException("this sensor is not extendable to " + extension.name());
+    }
+
+    public boolean is(Extension extension) {
+        return nIsSensorExtendableTo(mHandle, extension.value());
     }
 
     @Override
@@ -33,4 +39,5 @@ public class Sensor extends Options {
 
     private static native long[] nGetStreamProfiles(long handle);
     private static native void nRelease(long handle);
+    private static native boolean nIsSensorExtendableTo(long handle, int extension);
 }

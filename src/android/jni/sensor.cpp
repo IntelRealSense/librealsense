@@ -42,6 +42,18 @@ Java_com_intel_realsense_librealsense_Sensor_nGetStreamProfiles(JNIEnv *env, jcl
 }
 
 extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nIsSensorExtendableTo(JNIEnv *env, jclass type,
+                                                                   jlong handle, jint extension) {
+    rs2_error *e = NULL;
+    int rv = rs2_is_sensor_extendable_to(reinterpret_cast<const rs2_sensor *>(handle),
+                                         static_cast<rs2_extension>(extension), &e);
+    handle_error(env, e);
+    return rv > 0;
+}
+
+
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_RoiSensor_nSetRegionOfInterest(JNIEnv *env, jclass clazz,
                                                                      jlong handle, jint min_x,
@@ -75,4 +87,14 @@ Java_com_intel_realsense_librealsense_RoiSensor_nGetRegionOfInterest(JNIEnv *env
     env->SetIntField(roi, min_y_field, min_y);
     env->SetIntField(roi, max_x_field, max_x);
     env->SetIntField(roi, max_y_field, max_y);
+}
+
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_com_intel_realsense_librealsense_DepthSensor_nGetDepthScale(JNIEnv *env, jclass clazz,
+                                                                     jlong handle) {
+    rs2_error* e = nullptr;
+    float depthScale = rs2_get_depth_scale(reinterpret_cast<rs2_sensor *>(handle), &e);
+    handle_error(env, e);
+    return depthScale;
 }

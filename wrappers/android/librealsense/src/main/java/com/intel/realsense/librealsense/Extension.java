@@ -39,7 +39,14 @@ public enum Extension {
     WHEEL_ODOMETER(35),
     GLOBAL_TIMER(36),
     UPDATABLE(37),
-    UPDATE_DEVICE(38);
+    UPDATE_DEVICE(38),
+    L500_DEPTH_SENSOR(39),
+    TM2_SENSOR(40),
+    AUTO_CALIBRATED_DEVICE(41),
+    COLOR_SENSOR(42),
+    MOTION_SENSOR(43),
+    FISHEYE_SENSOR(44),
+    DEPTH_HUFFMAN_DECODER(45);
 
     private final int mValue;
 
