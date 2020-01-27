@@ -128,9 +128,14 @@ else
 	patch -p1 < ../scripts/realsense-powerlinefrequency-control-fix.patch
 	# Applying 3rd-party patch that affects USB2 behavior
 	# See reference https://patchwork.kernel.org/patch/9907707/
-	if [ ${k_maj_min} -lt 418 ]; then
-		echo -e "\e[32mRetrofit uvc bug fix enabled with 4.18+\e[0m"
-		patch -N -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
+	if [ ${k_maj_min} -lt 418 ];
+	then
+		echo -e "\e[32mRetrofit UVC bug fix rectified in 4.18+\e[0m"
+		if patch -N --dry-run -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch; then
+			patch -N -p1 < ../scripts/v1-media-uvcvideo-mark-buffer-error-where-overflow.patch
+		else
+			echo -e "\e[36m  Skip the patch - it is already found in the source tree\e[0m"
+		fi
 	fi
 	if [ $xhci_patch -eq 1 ]; then
 		echo -e "\e[32mApplying streamoff hotfix patch in videobuf2-core\e[0m"
