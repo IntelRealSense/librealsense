@@ -103,7 +103,7 @@ namespace librealsense
             return val == 0;
         }), values_ir.end());
 
-        if (values_rtd.size() == 0 || values_rtd.size() == 0)
+        if ((values_rtd.size() == 0) || (values_ir.size() == 0))
             return false;
 
         *rtd_zo_value = get_zo_point_value(values_rtd);
@@ -125,11 +125,13 @@ namespace librealsense
         auto i_threshold_relative = (double)options.ir_threshold / res;
         for (auto i = 0; i < intrinsics.height*intrinsics.width; i++)
         {
-            auto rtd_val = rtd[i];
-            auto ir_val = ir_data[i];
+            double rtd_val = rtd[i];
+            uint8_t ir_val = ir_data[i];
 
-            auto zero = (depth_data_in[i] > 0) && (ir_val < i_threshold_relative) &&
-                (rtd_val > (zo_value - options.rtd_low_threshold)) && (rtd_val < (zo_value + options.rtd_high_threshold));
+            bool zero = (depth_data_in[i] > 0) && 
+                        (ir_val < i_threshold_relative) &&
+                        (rtd_val > double(zo_value - float(options.rtd_low_threshold))) && 
+                        (rtd_val < double(zo_value + float(options.rtd_high_threshold)));
 
             zero_pixel(i, zero);
         }
@@ -142,15 +144,15 @@ namespace librealsense
         const zero_order_options& options, int zo_point_x, int zo_point_y)
     {
         std::vector<double> rtd(intrinsics.height*intrinsics.width);
-        z2rtd(vertices, rtd.data(), intrinsics, options.baseline);
-        double rtd_zo_value;
+        z2rtd(vertices, rtd.data(), intrinsics, int(options.baseline));
+        double rtd_zo_value; // \\todo Not sure why try_get_zo_rtd_ir_point_values() returns a double and detect_zero_order() uses a float. Which is best representation?
         uint8_t ir_zo_value;
 
         if (try_get_zo_rtd_ir_point_values(rtd.data(), depth_data_in, ir_data, intrinsics, 
             options,zo_point_x, zo_point_y, &rtd_zo_value, &ir_zo_value))
         {
             detect_zero_order(rtd.data(), depth_data_in, ir_data, zero_pixel, intrinsics,
-                options, rtd_zo_value, ir_zo_value);
+                options, float(rtd_zo_value), ir_zo_value);
             return true;
         }
         return false;
