@@ -49,14 +49,14 @@ namespace librealsense
             GVD                         = 0x10, //"Get Version and Date"
             DFU                         = 0x1E, //"Go to DFU"
             HW_RESET                    = 0x20, //"HW Reset"
+            AMCSET                      = 0x2B, // Set options (L515)
+            AMCGET                      = 0x2C, // Get options (L515)
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
-            AMCSET                      = 0x2B,
-            AMCGET                      = 0x2C
         };
 
         enum gvd_fields

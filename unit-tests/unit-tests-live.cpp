@@ -5837,73 +5837,69 @@ TEST_CASE("l500_presets_set_preset", "[live]")
         {
             REQUIRE(ds.supports(option));
         }
-        REQUIRE(ds.supports(RS2_OPTION_CAMERA_MODE));
+        REQUIRE(ds.supports(RS2_OPTION_SENSOR_MODE));
 
         auto presets = ds.get_option_range(RS2_OPTION_VISUAL_PRESET);
-        REQUIRE(presets.min == 0);
-        REQUIRE(presets.max == 4);
+        REQUIRE(presets.min == RS2_L500_VISUAL_PRESET_CUSTOM);
+        REQUIRE(presets.max == RS2_L500_VISUAL_PRESET_SHORT_RANGE);
         REQUIRE(presets.step == 1);
-        REQUIRE(presets.def == 1);
+        REQUIRE(presets.def == RS2_L500_VISUAL_PRESET_DEFAULT);
 
-        std::map< rs2_option, option_range> _options_range;
+        std::map< rs2_option, option_range> options_range;
 
         for (auto&& option : _hw_controls)
         {
             if (option != RS2_OPTION_VISUAL_PRESET)
             {
-                _options_range[option] = ds.get_option_range(option);
+                options_range[option] = ds.get_option_range(option);
             }
         }
 
-        std::vector<int> resolutions{ 1,2 }; //XGA, VGA
-
-        std::map<int, int> expected_sensetivity_per_preset =
+        std::map<int, int> expected_ambient_per_preset =
         {
-            {1, 1},
-            {2, 2},
-            {3, 1},
-            {4, 2}
+            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, 1},
+            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, 2},
+            {RS2_L500_VISUAL_PRESET_MAX_RANGE, 1},
+            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, 2}
         };
 
         std::map<int, int> expected_laser_power_per_preset =
         {
-            {2, 100},
-            {3, 100}
+            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, 100},
+            {RS2_L500_VISUAL_PRESET_MAX_RANGE, 100}
         };
 
-        for (auto i = presets.min + 1; i < presets.max; i++)
+        std::map< float, float> apd_per_ambient;
+        for (auto i : expected_ambient_per_preset)
         {
-            for (auto&& opt : _options_range)
-            {
-                ds.set_option(opt.first, -1);
-            }
-            CAPTURE(ds.get_option(RS2_OPTION_VISUAL_PRESET));
-            REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == 0);   //custom
-
-
+            std::vector<int> resolutions{ RS2_SENSOR_MODE_XGA, RS2_SENSOR_MODE_VGA }; //XGA, VGA
             for (auto res : resolutions)
             {
-                ds.set_option(RS2_OPTION_CAMERA_MODE, res);
-                ds.set_option(RS2_OPTION_VISUAL_PRESET, i);
-                CAPTURE(ds.get_option(RS2_OPTION_SENSETIVITY));
-                REQUIRE(ds.get_option(RS2_OPTION_SENSETIVITY) == expected_sensetivity_per_preset[i]);
-
-                auto expected_laser_power = expected_laser_power_per_preset.find(i);
+                ds.set_option(RS2_OPTION_SENSOR_MODE, res);
+                ds.set_option(RS2_OPTION_VISUAL_PRESET, i.first);
+                CAPTURE(ds.get_option(RS2_OPTION_AMBIENT_LIGHT));
+                REQUIRE(ds.get_option(RS2_OPTION_AMBIENT_LIGHT) == i.second);
+                apd_per_ambient[ds.get_option(RS2_OPTION_AMBIENT_LIGHT)] = ds.get_option(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
+                auto expected_laser_power = expected_laser_power_per_preset.find(i.first);
                 if (expected_laser_power != expected_laser_power_per_preset.end())
                 {
                     CAPTURE(ds.get_option(RS2_OPTION_LASER_POWER));
-                    REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == expected_laser_power->second);
+                    REQUIRE(ds.get_option(RS2_OPTION_LASER_POWER) == expected_laser_power->second);
                 }
 
-                for (auto &&control : _hw_controls)
-                {
-                    CAPTURE(ds.get_option(control));
-                    //REQUIRE(ds.get_option(control) != _options_range[control].min));
-                }
             }
-           
+        }
+
+        CAPTURE(apd_per_ambient[RS2_SENSOR_MODE_XGA]);
+        CAPTURE(apd_per_ambient[RS2_SENSOR_MODE_VGA]);
+        REQUIRE(apd_per_ambient[RS2_SENSOR_MODE_XGA] != apd_per_ambient[RS2_SENSOR_MODE_VGA]);
+        for (auto&& opt : options_range)
+        {
+            ds.set_option(opt.first, opt.second.min);
+            CAPTURE(ds.get_option(RS2_OPTION_VISUAL_PRESET));
+            REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == RS2_L500_VISUAL_PRESET_CUSTOM);   //custom
+            ds.set_option(RS2_OPTION_VISUAL_PRESET, RS2_L500_VISUAL_PRESET_LOW_AMBIENT);
         }
        
-
     }
 }

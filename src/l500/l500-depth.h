@@ -17,7 +17,7 @@
 #include "l500-private.h"
 #include "error-handling.h"
 #include "frame-validator.h"
-#include "l500-controls.h"
+#include "l500-options.h"
 
 namespace librealsense
 {
@@ -266,6 +266,5 @@ namespace librealsense
         stream_profiles _validator_requests;
         bool _depth_invalidation_enabled;
         std::shared_ptr<depth_invalidation_option> _depth_invalidation_option;
-        std::function<void(uint32_t w, uint32_t h)> _on_open_callback;
     };
 }

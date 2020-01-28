@@ -100,31 +100,49 @@ namespace librealsense
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
 
+    template<class T>
     class option_with_description : public virtual option
     {
     public:
-        option_with_description(std::string description, const std::map<float, std::string> description_per_value)
-        :
-        _description_per_value(description_per_value),
-          _desciption(description){}
-    
+        option_with_description(std::string description)
+        :_description(description){}
+
         const char* get_value_description(float val) const override
         {
-            if (_description_per_value.find(val) != _description_per_value.end())
-                return _description_per_value.at(val).c_str();
-            return nullptr;
+            return get_string((T)((int)val));
         }
 
         const char* get_description() const override
         {
-            return _desciption.c_str();
+            return _description.c_str();
         }
 
     protected:
-        const std::map<float, std::string> _description_per_value;
-        std::string _desciption;
+        std::string _description;
     };
 
+    template<class T>
+    class cascade_option : public T, public observable_option
+    {
+    public:
+        template <class... Args>
+        cascade_option(rs2_option opt, Args&&... args) :
+            T(std::forward<Args>(args)...), _opt(opt) {}
+
+        void set(float value) override
+        {
+            notify(value);
+            T::set(value);
+        }
+
+        void set_with_no_signal(float value)
+        {
+            T::set(value);
+        }
+    private:
+        std::function<void(rs2_option, float)> _callback;
+        rs2_option _opt;
+    };
 
     template<class T>
     class LRS_EXTENSION_API ptr_option : public option_base
@@ -199,14 +217,14 @@ namespace librealsense
         float _value;
     };
 
-    class float_option_with_description : public float_option, public option_with_description
+    template<class T>
+    class float_option_with_description : public float_option, public option_with_description<T>
     {
     public:
-        float_option_with_description(option_range range, std::string description, const std::map<float, std::string> description_per_value)
-            :float_option(range),
-            option_with_description(description, description_per_value){}
+        float_option_with_description(option_range range, std::string description)
+            :float_option(range), option_with_description<T>(description) {}
 
-        const char* get_description() const override { return option_with_description::get_description(); }
+        const char* get_description() const override { return option_with_description<T>::get_description(); }
     };
 
     class LRS_EXTENSION_API bool_option : public float_option

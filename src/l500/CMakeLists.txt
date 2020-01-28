@@ -10,7 +10,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-fw-update-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/l500-controls.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-options.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/l500-depth.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-color.h"
@@ -19,5 +19,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-fw-update-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/l500-serializable.h"
-        "${CMAKE_CURRENT_LIST_DIR}/l500-controls.h"
+        "${CMAKE_CURRENT_LIST_DIR}/l500-options.h"
 )

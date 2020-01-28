@@ -84,13 +84,13 @@ extern "C" {
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
         RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
-        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the Avalanche Photo Diode in the reciever */
+        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the reciever */
         RS2_OPTION_POST_PROCESSING_SHARPENING,  /**< Changes the amount of sharpening in the post-processed image */
         RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
         RS2_OPTION_NOISE_FILTERING, /**< Control edges and background noise */
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
-        RS2_OPTION_SENSETIVITY, /**< Canges the depth sensetivity to ambient: 1 for no ambient and 2 for low ambient*/
-        RS2_OPTION_CAMERA_MODE, /**< Device specific for L515: 0 for XGA and 1 for VGA */
+        RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient */
+        RS2_OPTION_SENSOR_MODE, /**< Device specific for L515: 0 for XGA and 1 for VGA */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -128,6 +128,28 @@ extern "C" {
         RS2_RS400_VISUAL_PRESET_COUNT
     } rs2_rs400_visual_preset;
     const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);
+
+    /** \brief For L500 devices: provides optimized settings (presets) for specific types of usage. */
+    typedef enum rs2_l500_visual_preset
+    {
+        RS2_L500_VISUAL_PRESET_CUSTOM,
+        RS2_L500_VISUAL_PRESET_DEFAULT,
+        RS2_L500_VISUAL_PRESET_NO_AMBIENT,
+        RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
+        RS2_L500_VISUAL_PRESET_MAX_RANGE,
+        RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+        RS2_L500_VISUAL_PRESET_COUNT
+    }rs2_l500_visual_preset;
+    const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
+
+    /** \brief For setting the camera_mode option */
+    typedef enum rs2_sensor_mode
+    {
+        RS2_SENSOR_MODE_XGA,
+        RS2_SENSOR_MODE_VGA,
+        RS2_SENSOR_MODE_COUNT
+    } rs2_sensor_mode;
+    const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);
 
     /**
     * check if an option is read-only

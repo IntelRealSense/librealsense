@@ -529,6 +529,10 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_notification_category, NOTIFICATION_CATEGORY)
     RS2_ENUM_HELPERS(rs2_playback_status, PLAYBACK_STATUS)
     RS2_ENUM_HELPERS(rs2_matchers, MATCHER)
+    RS2_ENUM_HELPERS(rs2_sensor_mode, SENSOR_MODE)
+    RS2_ENUM_HELPERS(rs2_l500_visual_preset, L500_VISUAL_PRESET)
+
+
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////

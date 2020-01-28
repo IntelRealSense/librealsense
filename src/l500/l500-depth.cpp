@@ -15,7 +15,7 @@
 #include "proc/zero-order.h"
 #include <cstddef>
 #include "metadata-parser.h"
-#include "l500-controls.h"
+#include "l500-options.h"
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -73,33 +73,6 @@ namespace librealsense
 
         depth_sensor.register_option(RS2_OPTION_APD_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
-
-        //depth_sensor.register_option(RS2_OPTION_CONFIDENCE_THRESHOLD,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), confidence));
-
-        //depth_sensor.register_option(RS2_OPTION_SHARPNESS,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), sharpness));
-
-        //depth_sensor.register_option(RS2_OPTION_RAST_BILT,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), rast_bilt));
-
-        //depth_sensor.register_option(RS2_OPTION_EDGE,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), edge));
-
-        //depth_sensor.register_option(RS2_OPTION_APD,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), apd));
-
-        //depth_sensor.register_option(RS2_OPTION_LASER_POWER,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), laser_gain));
-
-        ///*depth_sensor.register_option(RS2_OPTION_MIN_DISTANCE,
-        //    std::make_shared <l500_controls>(_hw_monitor.get(), min_distance));*/
-
-        //depth_sensor.register_option(RS2_OPTION_MIN_DISTANCE,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), min_distance));
-
-        //depth_sensor.register_option(RS2_OPTION_INVALIDATION_BYPASS,
-        //    std::make_shared <l500_hw_controls>(_hw_monitor.get(), min_distance));
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -297,6 +270,16 @@ namespace librealsense
         });
     }
 
+    rs2_sensor_mode get_resolution_from_width_height(int width, int height)
+    {
+        if ((width == 640 && height == 480) || (height == 640 && width == 480))
+            return RS2_SENSOR_MODE_VGA;
+        else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
+            return RS2_SENSOR_MODE_XGA;
+        else
+            throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
+    }
+
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
         try
@@ -344,14 +327,21 @@ namespace librealsense
             auto dp = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
             {return sp->get_stream_type() == RS2_STREAM_DEPTH;});
 
-            const int XGA = 0;
-            const int VGA = 1;
-
-            if (dp != requests.end() && supports_option(RS2_OPTION_CAMERA_MODE))
+            if (dp != requests.end() && supports_option(RS2_OPTION_SENSOR_MODE))
             {
-                auto&& camera_mode_option = get_option(RS2_OPTION_CAMERA_MODE);
+                auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);
                 auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
-                camera_mode_option.set(vs->get_width() == 640 || vs->get_height() == 640 ? VGA : XGA);
+                if (supports_option(RS2_OPTION_VISUAL_PRESET))
+                {
+                    auto&& preset_option = get_option(RS2_OPTION_VISUAL_PRESET);
+                    if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
+                    {
+                        if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
+                            throw  std::runtime_error(to_string() << "sensor mode option is incompatible with requsted resolution");
+                    }
+                }
+                
+                sensor_mode_option.set(get_resolution_from_width_height(vs->get_width(), vs->get_height()));
             }
 
 
