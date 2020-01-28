@@ -21,7 +21,7 @@ In addition, please run `pr_check.sh` and `api_check.sh` under `scripts` directo
 
 Most common issues can be automatically resolved by running `./pr_check.sh --fix`
 
-Please familirize yourself with the [Apache License 2.0](https://github.com/IntelRealSense/librealsense/blob/master/LICENSE) before contributing. 
+Please familiarize yourself with the [Apache License 2.0](https://github.com/IntelRealSense/librealsense/blob/master/LICENSE) before contributing. 
 
 ## Step-by-Step
 
