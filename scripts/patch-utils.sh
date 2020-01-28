@@ -80,10 +80,10 @@ function choose_kernel_branch {
 			echo Ubuntu-hwe-4.18.0-25.26_18.04.1
 			;;
 		"5.0")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
-			echo 5.0
+			echo 5
 			;;
 		"5.3")									# kernel 5.3
-			echo hwe
+			echo 5
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
