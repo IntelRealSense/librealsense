@@ -374,7 +374,7 @@ namespace librealsense
                         {
                             for (auto i = 0; i < _fps_values.size() - 1; i++)
                             {
-                                if (fps < _fps_values[i + 1])
+                                if (fps < _fps_values[size_t(i) + 1])
                                 {
                                     fps = static_cast<float>(_fps_values[i]);
                                     break;

@@ -44,7 +44,7 @@ namespace librealsense
     std::vector <T> get_zo_point_values(const T* frame_data_in, const rs2_intrinsics& intrinsics, int zo_point_x, int zo_point_y, int patch_r)
     {
         std::vector<T> values;
-        values.reserve((patch_r + 2) *(patch_r + 2));
+        values.reserve((patch_r + 2UL) *(patch_r + 2UL));
 
         for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < intrinsics.height; i++)
         {

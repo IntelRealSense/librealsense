@@ -194,8 +194,8 @@ namespace rs2
     inline std::vector<plane_3d> subdivide(const plane_3d& rect, int parts = 4)
     {
         std::vector<plane_3d> res;
-        res.reserve(parts*parts);
-        for (float i = 0.f; i < parts; i++)
+        res.reserve(size_t(parts)*parts);
+        for (float i = 0.f; i < parts; i++)  
         {
             for (float j = 0.f; j < parts; j++)
             {
@@ -792,7 +792,7 @@ namespace rs2
             _min = _map.begin()->first;
             _max = _map.rbegin()->first;
 
-            _cache.resize(steps + 1);
+            _cache.resize(size_t(steps) + 1);
             for (int i = 0; i <= steps; i++)
             {
                 auto t = (float)i/steps;
@@ -1278,7 +1278,10 @@ namespace rs2
                 //break;
                 default:
                 {
-                    memset((void*)data, 0, height*width);
+                    if (data)
+                    {
+                        memset((void*)data, 0, size_t(height) * width);
+                    }
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
                 }
                 }
