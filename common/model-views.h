@@ -54,16 +54,17 @@ static const ImVec4 device_info_color = from_rgba(33, 40, 46, 255);
 static const ImVec4 yellow = from_rgba(229, 195, 101, 255, true);
 static const ImVec4 yellowish = from_rgba(255, 253, 191, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
-static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
+static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170, true);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
-static const ImVec4 greenish = from_rgba(33, 104, 0, 255, 0xff);
+static const ImVec4 greenish = from_rgba(33, 104, 0, 255, true);
 
 // Helper class that lets smoothly animate between its values
 template<class T>
 class animated
 {
 private:
-    T _old, _new;
+    T _old = { 0 };
+    T _new = { 0 };
     std::chrono::system_clock::time_point _last_update;
     std::chrono::system_clock::duration _duration;
 public:
@@ -322,8 +323,9 @@ namespace rs2
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
-        rs2_option opt;
-        option_range range;
+        rs2_option opt = RS2_OPTION_BACKLIGHT_COMPENSATION; // Initialize to first in list.
+        option_range range = { 0.0F }; // Initialize everything in structure to 0.0F.
+
         std::shared_ptr<options> endpoint;
         bool* invalidate_flag = nullptr;
         bool supported = false;
@@ -331,7 +333,7 @@ namespace rs2
         float value = 0.0f;
         std::string label = "";
         std::string id = "";
-        subdevice_model* dev;
+        subdevice_model* dev = nullptr;
         std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
         bool edit_mode = false;
         std::string edit_value = "";

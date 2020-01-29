@@ -219,7 +219,7 @@ namespace rs2
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();
 
-                    for (int j = 0; j < devs.size(); j++)
+                    for (auto j = 0U; j < devs.size(); j++)
                     {
                         try
                         {
@@ -280,7 +280,7 @@ namespace rs2
         if (!check_for([this, serial, &dfu]() {
             auto devs = _ctx.query_devices();
 
-            for (int j = 0; j < devs.size(); j++)
+            for (auto j = 0U; j < devs.size(); j++)
             {
                 try
                 {

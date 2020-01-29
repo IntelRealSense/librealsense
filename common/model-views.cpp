@@ -310,7 +310,7 @@ namespace rs2
         if (image)
         {
             std::ofstream outfile(filename.data(), std::ofstream::binary);
-            outfile.write(static_cast<const char*>(image.get_data()), image.get_height()*image.get_stride_in_bytes());
+            outfile.write(static_cast<const char*>(image.get_data()), image.get_height()*std::streamsize(image.get_stride_in_bytes()));
 
             outfile.close();
             ret = true;
@@ -398,7 +398,7 @@ namespace rs2
         std::regex mac_addr_regex(R"REGX("MAC" : \[(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\])REGX");
         std::smatch match;
 
-        std::array<uint8_t, 6> mac_addr;
+        std::array<uint8_t, 6> mac_addr = { 0 };
         if (std::regex_search(data, match, mac_addr_regex))
         {
             for (size_t i = 1; i < match.size(); i++)
@@ -1476,7 +1476,7 @@ namespace rs2
                             results.push_back(it.second);
                         found = true;
                     }
-                    else if (results.empty() && num_streams > 1 && profiles_map[key].size() == num_streams-1)
+                    else if (results.empty() && (num_streams > 1) && (profiles_map[key].size() == size_t(num_streams)-1))
                     {
                         for (auto& it : profiles_map[key])
                             results.push_back(it.second);
@@ -3044,7 +3044,7 @@ namespace rs2
             stream_desc = rs2_stream_to_string(colorized_frame.get_profile().stream_type());
             auto filename_png = filename_base + "_" + stream_desc + ".png";
             save_to_png(filename_png.data(), colorized_frame.get_width(), colorized_frame.get_height(), colorized_frame.get_bytes_per_pixel(),
-                colorized_frame.get_data(), colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel());
+                colorized_frame.get_data(), size_t(colorized_frame.get_width() * colorized_frame.get_bytes_per_pixel()));
 
             ss << "PNG snapshot was saved to " << filename_png << std::endl;
         }
@@ -3740,7 +3740,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = 1000.0 / (float)fps * 1e6;
+            uint64_t step = uint64_t(1000.0F / (float)fps * 1e6);
             p.seek(std::chrono::nanoseconds(curr_frame - step));
         }
         if (ImGui::IsItemHovered())
@@ -3840,7 +3840,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = 1000.0 / (float)fps * 1e6;
+            uint64_t step = uint64_t(1000.0F / (float)fps * 1.0e6);
             p.seek(std::chrono::nanoseconds(curr_frame + step));
         }
         if (ImGui::IsItemHovered())
@@ -5079,7 +5079,7 @@ namespace rs2
                                     else
                                     {
                                         //File was chosen
-                                        auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
+                                        auto f = full_files_names[(size_t)selected - (size_t)labels.size() + (size_t)files_labels.size()];
                                         error_message = safe_call([&]() { load_json(f); });
                                         selected_file_preset = f;
                                     }

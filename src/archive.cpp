@@ -76,8 +76,8 @@ namespace librealsense
         const auto threshold = 0.05f;
         auto width = video_stream_profile->get_width();
         std::vector<std::tuple<int, int, int>> faces;
-        for (int x = 0; x < width - 1; ++x) {
-            for (int y = 0; y < video_stream_profile->get_height() - 1; ++y) {
+        for (auto x = 0U; x < width - 1; ++x) {
+            for (auto y = 0U; y < video_stream_profile->get_height() - 1; ++y) {
                 auto a = y * width + x, b = y * width + x + 1, c = (y + 1)*width + x, d = (y + 1)*width + x + 1;
                 if (vertices[a].z && vertices[b].z && vertices[c].z && vertices[d].z
                     && abs(vertices[a].z - vertices[b].z) < threshold && abs(vertices[a].z - vertices[c].z) < threshold

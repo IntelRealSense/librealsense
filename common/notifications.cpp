@@ -166,9 +166,9 @@ namespace rs2
     {
         ImVec4 c;
 
-        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5));
+        ImGui::PushStyleColor(ImGuiCol_Button, saturate(c, 1.3F));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, saturate(c, 0.9F));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(c, 1.5F));
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
         c = alpha(white, 1 - t);
         ImGui::PushStyleColor(ImGuiCol_Text, c);

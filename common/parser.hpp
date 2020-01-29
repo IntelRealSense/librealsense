@@ -431,8 +431,8 @@ inline void update_format_type_to_lambda(std::map<std::string, xml_parser_functi
     format_type_to_lambda.insert(std::make_pair("Ascii", [&](const uint8_t* data_offset, const section& sec, std::stringstream& tempStr) {
         check_section_size(sec.size, sizeof(Ascii), sec.name.c_str(), "Ascii");
         auto ascii = reinterpret_cast<const Ascii*>(data_offset + sec.offset);
-        auto temp = new char[sec.size + 1];
-        memcpy(temp, ascii->value, sec.size);
+        auto temp = new char[size_t(sec.size) + 1];
+        memcpy(temp, ascii->value, size_t(sec.size));
         temp[sec.size] = '\0';
         tempStr << temp;
         delete[] temp;
@@ -663,7 +663,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
     {
         auto sections = command.read_data.sections;
         update_sections_data(data_offset, sections, custom_formatters, format_type_to_lambda);
-        unsigned max_line_len = 0;
+        size_t max_line_len = 0U;
         for (auto& elem : sections)
             max_line_len = ((elem.name.size() > max_line_len) ? unsigned(elem.name.size()) : max_line_len);
 

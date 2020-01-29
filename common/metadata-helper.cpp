@@ -118,7 +118,7 @@ namespace rs2
                         &cbSecurityDescriptor,   // security descriptor 
                         &ftLastWriteTime);       // last write time 
 
-                    for (int i = 0; i<cSubKeys; i++)
+                    for (auto i = 0U; i<cSubKeys; i++)
                     {
                         TCHAR achKey[MAX_KEY_LENGTH];
                         DWORD cbName = MAX_KEY_LENGTH;
@@ -217,12 +217,24 @@ namespace rs2
                     }
                     else
                     {
-                        WaitForSingleObject(sei.hProcess, INFINITE);
-                        DWORD exitCode = 0;
-                        GetExitCodeProcess(sei.hProcess, &exitCode);
-                        CloseHandle(sei.hProcess);
-                        if (exitCode)
-                            throw std::runtime_error("Failed to set metadata registry keys!");
+                        if (sei.hProcess) {
+                            WaitForSingleObject(sei.hProcess, INFINITE);
+                            DWORD exitCode = 0;
+                            GetExitCodeProcess(sei.hProcess, &exitCode);
+                            CloseHandle(sei.hProcess);
+                            if (exitCode)
+                            {
+                                throw std::runtime_error("Failed to set metadata registry keys!");
+                            }
+                            else
+                            {
+                                return true;
+                            }
+                        }
+                        else
+                        {
+                            throw std::runtime_error("Handle zero!");
+                        }
                     }
                 }
                 else
@@ -287,7 +299,7 @@ namespace rs2
 
                 rs2::context ctx;
                 auto list = ctx.query_devices();
-                for (int i = 0; i < list.size(); i++)
+                for (auto i = 0U; i < list.size(); i++)
                 {
                     try
                     {
