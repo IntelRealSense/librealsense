@@ -1,3 +1,8 @@
+/**
+    \file ux-alignment.cpp
+
+    \brief Implements ???
+*/
 #include "ux-alignment.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>

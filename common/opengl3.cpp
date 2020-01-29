@@ -1,3 +1,8 @@
+/**
+    \file opengl3.cpp
+
+    \brief Implements the opengl 
+*/
 #include "opengl3.h"
 
 #include <glad/glad.h>

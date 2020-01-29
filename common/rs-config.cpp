@@ -1,3 +1,8 @@
+/**
+    \file rs-config.cpp
+
+    \brief Implements ???
+*/
 #include "rs-config.h"
 
 #include "../third-party/json.hpp"

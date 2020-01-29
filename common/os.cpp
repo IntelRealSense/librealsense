@@ -1,3 +1,8 @@
+/**
+    \file os.cpp
+
+    \brief Implements ???
+*/
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #ifdef _MSC_VER

@@ -1,3 +1,8 @@
+/**
+    \file ux-window.cpp
+
+    \brief Implements ???
+*/
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
