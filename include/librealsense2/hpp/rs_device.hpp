@@ -202,6 +202,7 @@ namespace rs2
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -361,6 +362,7 @@ return results;
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -395,10 +397,12 @@ return results;
                 rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
+
             auto size = rs2_get_raw_data_size(list.get(), &e);
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -442,6 +446,7 @@ return results;
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -483,6 +488,7 @@ return results;
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -507,6 +513,7 @@ return results;
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 
@@ -555,6 +562,7 @@ return results;
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 

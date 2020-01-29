@@ -192,13 +192,15 @@ namespace librealsense
                 {
                     std::sort(begin(profs.second), end(profs.second), sort_best_quality);
                     auto p = profs.second.front().get();
-                    auto vp = dynamic_cast<video_stream_profile*>(p);
-                    if (vp)
-                    {
-                        enable_stream(vp->get_stream_type(), vp->get_stream_index(), vp->get_width(), vp->get_height(), vp->get_format(), vp->get_framerate());
-                        continue;
+                    if (p) {
+                        auto vp = dynamic_cast<video_stream_profile*>(p);
+                        if (vp)
+                        {
+                            enable_stream(vp->get_stream_type(), vp->get_stream_index(), vp->get_width(), vp->get_height(), vp->get_format(), vp->get_framerate());
+                            continue;
+                        }
+                        enable_stream(p->get_stream_type(), p->get_stream_index(), 0, 0, p->get_format(), p->get_framerate());
                     }
-                    enable_stream(p->get_stream_type(), p->get_stream_index(), 0, 0, p->get_format(), p->get_framerate());
                 }
             }
 

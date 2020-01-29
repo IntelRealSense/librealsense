@@ -8,6 +8,7 @@
 #include "context.h"
 #include "image.h"
 #include "environment.h"
+#include "api.h"
 
 namespace librealsense
 {
@@ -182,6 +183,8 @@ namespace librealsense
 
     inline stream_profile to_profile(const stream_profile_interface* sp)
     {
+        VALIDATE_NOT_NULL(sp);
+
         auto fps = static_cast<uint32_t>(sp->get_framerate());
         if (auto vid = dynamic_cast<const video_stream_profile*>(sp))
         {
