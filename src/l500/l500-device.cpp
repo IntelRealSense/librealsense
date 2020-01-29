@@ -353,7 +353,7 @@ namespace librealsense
         {
             command cmdFES(ivcam2::FES);
             cmdFES.require_response = false;
-            cmdFES.param1 = sector_index;
+            cmdFES.param1 = static_cast<int>(sector_index);
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
 

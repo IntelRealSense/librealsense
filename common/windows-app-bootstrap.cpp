@@ -1,9 +1,14 @@
+/**
+    \file rs-config.cpp
+
+    \brief Cross platform main().
+
+    This file converts the call to WinMain to a call to cross-platform main.
+    We need WinMain on Windows to offer proper Windows application and not console application.
+    Should not be used in CMake on Linux
+*/
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
-
-// This file converts the call to WinMain to a call to cross-platform main
-// We need WinMain on Windows to offer proper Windows application and not console application
-// Should not be used in CMake on Linux
 
 #include <Windows.h>
 #include <memory>
@@ -15,9 +20,9 @@
 
 int main(int argv, const char** argc);
 
-int CALLBACK WinMain(
+int WINAPI CALLBACK WinMain(
     _In_ HINSTANCE hInstance,
-    _In_ HINSTANCE hPrevInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
     _In_ LPSTR     lpCmdLine,
     _In_ int       nCmdShow
 )

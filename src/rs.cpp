@@ -460,10 +460,10 @@ const unsigned char* rs2_get_raw_data(const rs2_raw_data_buffer* buffer, rs2_err
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
 
-int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error) BEGIN_API_CALL
+size_t rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(buffer);
-    return static_cast<int>(buffer->buffer.size());
+    return buffer->buffer.size();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
 

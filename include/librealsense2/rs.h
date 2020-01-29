@@ -48,7 +48,7 @@ extern "C" {
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return size of rs2_raw_data_buffer
 */
-int rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error);
+size_t rs2_get_raw_data_size(const rs2_raw_data_buffer* buffer, rs2_error** error);
 
 /**
 * Delete rs2_raw_data_buffer

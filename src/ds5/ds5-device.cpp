@@ -190,7 +190,7 @@ namespace librealsense
 
         sector_count += first_sector;
 
-        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (auto sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
             cmdFES.require_response = false;
