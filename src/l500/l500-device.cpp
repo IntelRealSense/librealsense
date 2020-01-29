@@ -90,7 +90,7 @@ namespace librealsense
         auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         _fw_version = firmware_version(fwv);
 
-        _is_locked = _hw_monitor->get_gvd_field<bool>(gvd_buff, is_camera_locked_offset);
+        _is_locked = _hw_monitor->get_gvd_field(gvd_buff, is_camera_locked_offset);
 
         // TODO: flash lock is not suuported yet.
         // reporting lock to the application blocks flash FW update.
@@ -360,7 +360,7 @@ namespace librealsense
             for (int i = 0; i < ivcam2::FLASH_SECTOR_SIZE; )
             {
                 auto index = sector_index * ivcam2::FLASH_SECTOR_SIZE + i;
-                if (index >= offset + size)
+                if (index >= size_t(offset) + size)
                     break;
                 int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ivcam2::FLASH_SECTOR_SIZE - i));
                 command cmdFWB(ivcam2::FWB);

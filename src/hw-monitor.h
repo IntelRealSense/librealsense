@@ -275,10 +275,13 @@ namespace librealsense
                   param2(0),
                   param3(0),
                   param4(0),
-                  sizeOfSendCommandData(0),
-                  timeOut(5000),
-                  oneDirection(false),
-                  receivedCommandDataLength(0)
+                data{ 0 },
+                sizeOfSendCommandData(0),
+                timeOut(5000L),
+                oneDirection(false),
+                receivedCommandData{ 0 },
+                receivedCommandDataLength(0),
+                receivedOpcode{ 0 }
             {}
 
 
@@ -291,7 +294,9 @@ namespace librealsense
                   sizeOfSendCommandData(std::min((uint16_t)cmd.data.size(), HW_MONITOR_BUFFER_SIZE)),
                   timeOut(cmd.timeout_ms),
                   oneDirection(!cmd.require_response),
-                  receivedCommandDataLength(0)
+                receivedCommandData{ 0 },
+                receivedOpcode{ 0 },
+                receivedCommandDataLength(0U)
             {
                 librealsense::copy(data, cmd.data.data(), sizeOfSendCommandData);
             }
@@ -326,16 +331,37 @@ namespace librealsense
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);
         bool is_camera_locked(uint8_t gvd_cmd, uint32_t offset) const;
 
-        template <typename T>
-        T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
-        {
-            T rv = 0;
-            if (index + sizeof(T) >= data.size())
-                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
-                    std::to_string(data.size()) + ", index: " + std::to_string(index));
-            for (int i = 0; i < sizeof(T); i++)
-                rv += data[index + i] << (i * 8);
-            return rv;
-        }
+
+        /*
+            This function is currently only used with bools.
+            Wrong implementation for bools as += is an unsafe operation for a bool.
+            Could use a conditional template, but since the only use is as a bool, I used simplified function just for bools.
+
+            Notice the original implementation appears to have a boundary problem. It will throw one byte too soon.
+            i.e. if data.size()=2, T is uint16_t, it should work for index 0, but it would throw a runtime_error.
+            Should be a simple > in the if conditional.
+        */
+#if (0)
+            template <typename T>
+            T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
+            {
+                T rv = 0;
+                if (index + sizeof(T) >= data.size())
+                    throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                        std::to_string(data.size()) + ", index: " + std::to_string(index));
+                for (int i = 0; i < sizeof(T); i++)
+                    rv += data[index + i] << (i * 8);
+                return rv;
+            }
+#else
+            bool get_gvd_field(const std::vector<uint8_t>& data, size_t index)
+            {
+
+                if (index >= data.size())
+                    throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
+                        std::to_string(data.size()) + ", index: " + std::to_string(index));
+                return data[index];
+            }
+#endif
     };
 }
