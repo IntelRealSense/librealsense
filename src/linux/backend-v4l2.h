@@ -177,6 +177,7 @@ namespace librealsense
             void    set_md_attributes(uint8_t md_size, void* md_start)
                     { _md_start = md_start; _md_size = md_size; }
             void    set_md_from_video_node(bool compressed);
+            bool    verify_vd_md_sync() const;
 
         private:
             void*                               _md_start;  // marks the address of metadata blob
@@ -192,7 +193,17 @@ namespace librealsense
                     {
                         if ((_file_desc > 0) && (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0))
                         {
-                            LOG_WARNING("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
+                            LOG_ERROR("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
+                            if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
+                            {
+                                LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
+                                if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                                    LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
+                                else
+                                    LOG_WARNING("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
+                            }
+                            else
+                                LOG_WARNING("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
                         }
                     }
                 }
