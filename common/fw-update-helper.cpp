@@ -1,3 +1,8 @@
+/**
+    \file fw-update-helper.cpp
+
+    \brief Implements the camera firmware update.
+*/
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include <glad/glad.h>
@@ -21,9 +26,9 @@
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_D4XX_RC_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
-const char* fw_get_D4XX_FW_Image(int) { return NULL; }
-const char* fw_get_D4XX_RC_Image(int) { return NULL; }
-const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
+const char* fw_get_D4XX_FW_Image(int) { return nullptr; }
+const char* fw_get_D4XX_RC_Image(int) { return nullptr; }
+const char* fw_get_SR3XX_FW_Image(int) { return nullptr; }
 #endif // INTERNAL_FW
 
 constexpr const char* recommended_fw_url = "https://dev.intelrealsense.com/docs/firmware-releases";
@@ -70,7 +75,7 @@ namespace rs2
 
         if (strlen(FW_D4XX_FW_IMAGE_VERSION) && !allow_rc_firmware)
         {
-            int size = 0;
+            int size = 0U;
             auto hex = fw_get_D4XX_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_D400] = vec;
@@ -78,7 +83,7 @@ namespace rs2
 
         if (strlen(FW_D4XX_RC_IMAGE_VERSION) && allow_rc_firmware)
         {
-            int size = 0;
+            int size = 0U;
             auto hex = fw_get_D4XX_RC_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_D400] = vec;
@@ -86,7 +91,7 @@ namespace rs2
 
         if (strlen(FW_SR3XX_FW_IMAGE_VERSION))
         {
-            int size = 0;
+            int size = 0U;
             auto hex = fw_get_SR3XX_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_SR300] = vec;

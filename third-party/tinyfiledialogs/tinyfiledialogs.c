@@ -732,7 +732,7 @@ static int dirExists(char const * const aDirPath)
         struct _stat lInfo;
         wchar_t * lTmpWChar;
         int lStatRet;
-		int lDirLen;
+		size_t lDirLen;
 
 		if (!aDirPath)
 			return 0;

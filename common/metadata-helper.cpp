@@ -1,3 +1,8 @@
+/**
+    \file metadata-helper.cpp
+
+    \brief Implements 
+*/
 #include "metadata-helper.h"
 
 #ifdef WIN32
@@ -228,7 +233,7 @@ namespace rs2
                             }
                             else
                             {
-                                return true;
+                                return true; // This function has promoted to admin priv.
                             }
                         }
                         else
@@ -245,7 +250,7 @@ namespace rs2
             }
             else
             {
-                return true;
+                return true; // Already at admin priv.
             }
         }
 
