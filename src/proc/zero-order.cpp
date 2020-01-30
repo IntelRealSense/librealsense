@@ -44,7 +44,7 @@ namespace librealsense
     std::vector <T> get_zo_point_values(const T* frame_data_in, const rs2_intrinsics& intrinsics, int zo_point_x, int zo_point_y, int patch_r)
     {
         std::vector<T> values;
-        values.reserve((patch_r + 2UL) *(patch_r + 2UL));
+        values.reserve((patch_r + 2ULL) *(patch_r + 2ULL));
 
         for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < intrinsics.height; i++)
         {
@@ -145,14 +145,14 @@ namespace librealsense
     {
         std::vector<double> rtd(size_t(intrinsics.height)*intrinsics.width);
         z2rtd(vertices, rtd.data(), intrinsics, int(options.baseline));
-        double rtd_zo_value; // \\todo Not sure why try_get_zo_rtd_ir_point_values() returns a double and detect_zero_order() uses a float. Which is best representation?
+        double rtd_zo_value; 
         uint8_t ir_zo_value;
 
         if (try_get_zo_rtd_ir_point_values(rtd.data(), depth_data_in, ir_data, intrinsics, 
             options,zo_point_x, zo_point_y, &rtd_zo_value, &ir_zo_value))
         {
             detect_zero_order(rtd.data(), depth_data_in, ir_data, zero_pixel, intrinsics,
-                options, float(rtd_zo_value), ir_zo_value);
+                options, rtd_zo_value, ir_zo_value);
             return true;
         }
         return false;
