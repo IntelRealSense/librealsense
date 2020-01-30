@@ -50,7 +50,7 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 #include "../tm2/tm-boot.h"
 
-#define DEBUG_V4L
+//#define DEBUG_V4L
 #ifdef DEBUG_V4L
 #define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #else
@@ -348,7 +348,6 @@ namespace librealsense
                     md_start = buffer->get_frame_start() + dq.bytesused - md_appendix_sz;
                     md_size = (*(static_cast<uint8_t*>(md_start)));
                     int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
-                    std::cout << "Metadata size =" << std::dec << (int)md_size << ", md appendix: " << md_appendix_sz  << std::endl;
                     // Use heuristics for metadata validation
                     if ((md_appendix_sz != md_size) || (!val_in_range(md_flags, {0x8e, 0x8f})))
                     {
@@ -356,7 +355,6 @@ namespace librealsense
                         md_start=nullptr;
                     }
                 }
-                std::cout << "Final Metadata size = " << (int)md_size << std::endl;
             }
 
             set_md_attributes(static_cast<uint8_t>(md_size),md_start);
@@ -928,7 +926,7 @@ namespace librealsense
                             {
                                 if(buf.bytesused == 0)
                                 {
-                                    LOG_INFO("Empty video frame arrived, try to get md");
+                                    LOG_INFO("Empty video frame arrived");
                                     return;
                                 }
 
@@ -1451,7 +1449,7 @@ namespace librealsense
                 throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
             }
             else
-                LOG_INFO("Streaming node was successfully configured to " << fourcc_to_string(fmt.fmt.pix.pixelformat) << " format" <<", descriptor " << std::dec << _fd);
+                LOG_INFO("Video node was successfully configured to " << fourcc_to_string(fmt.fmt.pix.pixelformat) << " format" <<", fd " << std::dec << _fd);
 
             LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
         }
@@ -1582,7 +1580,7 @@ namespace librealsense
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
-                    LOG_DEBUG("Metadata node was successfully configured to " << fourcc_to_string(request) << " format" <<", descriptor " << std::dec <<_md_fd);
+                    LOG_INFO("Metadata node was successfully configured to " << fourcc_to_string(request) << " format" <<", fd " << std::dec <<_md_fd);
                     success  =true;
                     break;
                 }
