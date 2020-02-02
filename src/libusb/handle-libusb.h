@@ -8,7 +8,10 @@
 
 #include <chrono>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <libusb.h>
+#pragma GCC diagnostic pop
 
 namespace librealsense
 {
