@@ -4965,9 +4965,9 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::PushFont(window.get_font());
-        auto serializable = dev.as<serializable_device>();
+        auto serializable_device = dev.as<serializable>();
 
-        const auto load_json = [&, serializable](const std::string f) {
+        const auto load_json = [&, serializable_device](const std::string f) {
             std::ifstream file(f);
             if (!file.good())
             {
@@ -4978,9 +4978,9 @@ namespace rs2
             }
             std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-            if (serializable)
+            if (serializable_device)
             {
-                serializable.load_json(str);
+                serializable_device.load_json(str);
                 for (auto&& sub : subdevices)
                 {
                     //If json was loaded correctly, we want the presets combo box to show the name of the configuration file
@@ -5003,14 +5003,14 @@ namespace rs2
             viewer.not_model.add_log(to_string() << "Loaded settings from \"" << f << "\"...");
         };
 
-        const auto save_to_json = [&, serializable](std::string full_filename)
+        const auto save_to_json = [&, serializable_device](std::string full_filename)
         {
             if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
             std::ofstream outfile(full_filename);
             json saved_configuraion;
-            if (serializable)
+            if (serializable_device)
             {
-                saved_configuraion = json::parse(serializable.serialize_json());
+                saved_configuraion = json::parse(serializable_device.serialize_json());
             }
             save_viewer_configurations(outfile, saved_configuraion);
             outfile << saved_configuraion.dump(4);
@@ -5144,7 +5144,7 @@ namespace rs2
         const ImVec2 icons_size{ 20, 20 };
         //TODO: Change this once we have support for loading jsons with more data than only advanced controls
         bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming; });
-        const int buttons_flags = serializable ? 0 : ImGuiButtonFlags_Disabled;
+        const int buttons_flags = serializable_device ? 0 : ImGuiButtonFlags_Disabled;
         static bool require_advanced_mode_enable_prompt = false;
         auto advanced_dev = dev.as<advanced_mode>();
         auto is_advanced_device = false;
@@ -5166,7 +5166,7 @@ namespace rs2
 
         if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiButtonFlags_Disabled : buttons_flags))
         {
-            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
+            if (serializable_device && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 json_loading([&]()
                 {
@@ -5198,7 +5198,7 @@ namespace rs2
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1); //Align the two icons to buttom
         if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
         {
-            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
+            if (serializable_device && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                 if (ret)
@@ -5421,8 +5421,8 @@ namespace rs2
         ////////////////////////////////////////
         // draw advanced mode panel
         ////////////////////////////////////////
-        auto serializable = dev.is<serializable_device>();
-        if (serializable)
+        auto serialize = dev.is<serializable>();
+        if (serialize)
         {
             pos = ImGui::GetCursorPos();
             const float vertical_space_before_advanced_mode_control = 10.0f;
@@ -5684,7 +5684,7 @@ namespace rs2
                 if (show_stream_selection)
                     sub->draw_stream_selection();
 
-                static const std::vector<rs2_option> drawing_order = serializable ?
+                static const std::vector<rs2_option> drawing_order = serialize ?
                     std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
                   : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 
@@ -5708,7 +5708,7 @@ namespace rs2
                             if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
-                                if (serializable && opt == RS2_OPTION_VISUAL_PRESET)
+                                if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {

@@ -9,7 +9,7 @@
 #define RS400_ADVANCED_MODE_HPP
 #include "ds5/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
-#include "serializable.h"
+#include "serializable-interface.h"
 
 #undef RS400_ADVANCED_MODE_HPP
 

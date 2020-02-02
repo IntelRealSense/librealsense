@@ -203,7 +203,7 @@ namespace librealsense
             CASE(MOTION_SENSOR)
             CASE(FISHEYE_SENSOR)
             CASE(DEPTH_HUFFMAN_DECODER)
-            CASE(SERIALIZABLE_DEVICE)
+            CASE(SERIALIZABLE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -139,7 +139,7 @@ extern "C" {
         RS2_L500_VISUAL_PRESET_MAX_RANGE,
         RS2_L500_VISUAL_PRESET_SHORT_RANGE,
         RS2_L500_VISUAL_PRESET_COUNT
-    }rs2_l500_visual_preset;
+    } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
 
     /** \brief For setting the camera_mode option */

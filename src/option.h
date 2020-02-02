@@ -126,8 +126,8 @@ namespace librealsense
     {
     public:
         template <class... Args>
-        cascade_option(rs2_option opt, Args&&... args) :
-            T(std::forward<Args>(args)...), _opt(opt) {}
+        cascade_option(Args&&... args) :
+            T(std::forward<Args>(args)...){}
 
         void set(float value) override
         {
@@ -139,9 +139,6 @@ namespace librealsense
         {
             T::set(value);
         }
-    private:
-        std::function<void(rs2_option, float)> _callback;
-        rs2_option _opt;
     };
 
     template<class T>

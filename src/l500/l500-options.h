@@ -85,7 +85,7 @@ namespace librealsense
         {
             auto& depth_sensor = get_depth_sensor();
 
-            auto signaled_opt = std::make_shared <cascade_option<T>>(opt, std::forward<Args>(args)...);
+            auto signaled_opt = std::make_shared <cascade_option<T>>(std::forward<Args>(args)...);
             signaled_opt->add_observer([opt, this](float val) {on_set_option(opt, val);});
             depth_sensor.register_option(opt, std::dynamic_pointer_cast<option>(signaled_opt));
 

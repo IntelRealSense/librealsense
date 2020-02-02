@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
-#include "serializable.h"
+#include "serializable-interface.h"
 #include "hw-monitor.h"
 #include "sensor.h"
 

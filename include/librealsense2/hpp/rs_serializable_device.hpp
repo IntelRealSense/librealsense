@@ -9,14 +9,14 @@
 
 namespace rs2
 {
-    class serializable_device : public rs2::device
+    class serializable : public rs2::device
     {
     public:
-        serializable_device(rs2::device d)
+        serializable(rs2::device d)
             : rs2::device(d.get())
         {
             rs2_error* e = nullptr;
-            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_SERIALIZABLE_DEVICE, &e) == 0 && !e)
+            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_SERIALIZABLE, &e) == 0 && !e)
             {
                 _dev = nullptr;
             }
