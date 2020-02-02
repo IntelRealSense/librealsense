@@ -94,7 +94,7 @@ namespace librealsense
                 (RS2_OPTION_VISUAL_PRESET, option_range{ RS2_L500_VISUAL_PRESET_CUSTOM , RS2_L500_VISUAL_PRESET_SHORT_RANGE, 1, RS2_L500_VISUAL_PRESET_DEFAULT },
                     "Preset to calibrate the camera to environment ambient, no ambient or low ambient. 1 is no ambient and 2 is low ambient");
 
-            _advanced_option = get_advanced_controls();
+            _advanced_options = get_advanced_controls();
         }
     }
 

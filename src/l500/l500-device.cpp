@@ -135,7 +135,7 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
         raw_depth_ep->register_xu(depth_xu);
 
-        auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream, _advanced_option);
+        auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream);
         
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
