@@ -42,6 +42,9 @@ namespace rs2
         // Ask the firmware to use one of the before/after calibration tables
         void apply_calib(bool old);
 
+        // Get depth metrics for before/after calibration tables
+        std::pair<float, float> get_metric(bool use_new);
+
         void update_last_used();
 
         uint32_t ground_truth = 2500;
@@ -58,6 +61,10 @@ namespace rs2
 
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
 
+        rs2::depth_frame fetch_depth_frame(invoker invoke);
+
+        std::pair<float, float> get_depth_metrics(invoker invoke);
+
         void process_flow(std::function<void()> cleanup, invoker invoke) override;
 
         float _health = -1.0f;
@@ -73,6 +80,7 @@ namespace rs2
         std::shared_ptr<subdevice_model> _sub;
 
         std::vector<uint8_t> _old_calib, _new_calib;
+        std::vector<std::pair<float, float>> _metrics;
         device_model& _model;
 
         bool _restored = true;
