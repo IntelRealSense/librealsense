@@ -30,3 +30,4 @@ option(FORCE_RSUSB_BACKEND "Use RS USB backend, mandatory for Win7/MacOS/Android
 option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(FORCE_WINUSB_UVC "Explicitly turn-on winusb_uvc (for win7) backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 option(ANDROID_USB_HOST_UVC "Build UVC backend for Android - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
+option(NO_LDCONFIG "Disable running ldconfig at install" OFF)

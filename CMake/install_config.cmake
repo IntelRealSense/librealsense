@@ -48,4 +48,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/config/realsense2.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
-install(CODE "execute_process(COMMAND ldconfig)")
+if(NOT NO_LDCONFIG)
+  install(CODE "execute_process(COMMAND ldconfig)")
+endif(NOT NO_LDCONFIG)
