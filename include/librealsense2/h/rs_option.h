@@ -39,7 +39,7 @@ extern "C" {
         RS2_OPTION_MOTION_RANGE, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
         RS2_OPTION_FILTER_OPTION, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
         RS2_OPTION_CONFIDENCE_THRESHOLD, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/
+        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 â€“ disable all emitters. 1 â€“ enable laser. 2 â€“ enable auto laser. 3 â€“ enable LED.*/
         RS2_OPTION_FRAMES_QUEUE_SIZE, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         RS2_OPTION_TOTAL_FRAME_DROPS, /**< Total number of detected frame drops from all streams */
         RS2_OPTION_AUTO_EXPOSURE_MODE, /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
@@ -124,7 +124,7 @@ extern "C" {
 
     /**
     * check if an option is read-only
-    * \param[in] sensor   the RealSense sensor
+    * \param[in] options  the options container
     * \param[in] option   option id to be checked
     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return true if option is read-only
@@ -133,7 +133,7 @@ extern "C" {
 
     /**
     * read option value from the sensor
-    * \param[in] sensor   the RealSense sensor
+    * \param[in] options  the options container
     * \param[in] option   option id to be queried
     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return value of the option
@@ -142,7 +142,7 @@ extern "C" {
 
     /**
     * write new value to sensor option
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be queried
     * \param[in] value      new value for the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -165,8 +165,8 @@ extern "C" {
 
     /**
     * get option name
-    * \param[in] options     options object
-    * \param[in] option      option id to be checked
+    * \param[in] options    the options container
+    * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return human-readable option name
     */
@@ -187,7 +187,7 @@ extern "C" {
 
     /**
     * check if particular option is supported by a subdevice
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return true if option is supported
@@ -208,7 +208,7 @@ extern "C" {
 
     /**
     * get option description
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return human-readable option description
@@ -217,7 +217,7 @@ extern "C" {
 
     /**
     * get option value description (in case specific option value hold special meaning)
-    * \param[in] device     the RealSense device
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[in] value      value of the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
