@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wplacement-new="
+
 #include "rosbag/bag_player.h"
 
 #define foreach BOOST_FOREACH

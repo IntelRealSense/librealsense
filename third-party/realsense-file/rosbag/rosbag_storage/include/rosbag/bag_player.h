@@ -35,6 +35,8 @@
 #ifndef ROSBAG_BAG_PLAYER_H
 #define ROSBAG_BAG_PLAYER_H
 
+#pragma GCC diagnostic ignored "-Wdeprecated"
+
 #include <boost/foreach.hpp>
 
 #include "rosbag/bag.h"

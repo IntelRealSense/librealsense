@@ -50,6 +50,8 @@
 #include <boost/io/ios_state.hpp>
 //#include <boost/date_time/posix_time/ptime.hpp>
 
+#pragma GCC diagnostic ignored "-Wdeprecated"
+
 /*********************************************************************
  ** Preprocessor
  *********************************************************************/
