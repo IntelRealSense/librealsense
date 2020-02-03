@@ -85,14 +85,16 @@ bool contains(const std::shared_ptr<librealsense::device_info>& first,
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> platform_color_fourcc_to_rs2_format = {
+    const std::map<uint32_t, rs2_format> platform_color_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
     };
-    std::map<uint32_t, rs2_stream> platform_color_fourcc_to_rs2_stream = {
+    const std::map<uint32_t, rs2_stream> platform_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
     };
+
+    bool context::one_time_msg = false;
 
     context::context(backend_type type,
                      const char* filename,
@@ -101,7 +103,11 @@ namespace librealsense
                      std::string min_api_version)
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
-        LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
+        if (!one_time_msg)
+        {
+            one_time_msg = true;
+            LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
+        }
 
         switch(type)
         {
