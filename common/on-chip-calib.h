@@ -54,6 +54,7 @@ namespace rs2
         int speed = 3;
         bool tare = false;
         bool intrinsic_scan = true;
+        bool apply_preset = true;
 
         void calibrate();
 

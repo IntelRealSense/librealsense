@@ -100,27 +100,29 @@ namespace librealsense
         return values;
     }
 
+    void try_fetch(std::map<std::string, int> jsn, std::string key, int* value)
+    {
+        std::replace(key.begin(), key.end(), '_', ' '); // Treat _ as space
+        if (jsn.find(key) != jsn.end())
+        {
+            *value = jsn[key];
+        }
+    }
+
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int speed = DEFAULT_SPEED;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
+        int apply_preset = 1;
 
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
-            if (jsn.find("speed") != jsn.end())
-            {
-                speed = jsn["speed"];
-            }
-            if (jsn.find("scan parameter") != jsn.end())
-            {
-                scan_parameter = jsn["scan parameter"];
-            }
-            if (jsn.find("data sampling") != jsn.end())
-            {
-                data_sampling = jsn["data sampling"];
-            }
+            try_fetch(jsn, "speed", &speed);
+            try_fetch(jsn, "scan parameter", &scan_parameter);
+            try_fetch(jsn, "data sampling", &data_sampling);
+            try_fetch(jsn, "apply preset", &apply_preset);
         }
 
         LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
@@ -130,7 +132,7 @@ namespace librealsense
         param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-        if (speed == speed_white_wall)
+        if (speed == speed_white_wall && apply_preset)
             preset_recover = change_preset();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -203,40 +205,26 @@ namespace librealsense
         int speed = DEFAULT_SPEED;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
+        int apply_preset = 1;
 
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
-            if (jsn.find("speed") != jsn.end())
-            {
-                speed = jsn["speed"];
-            }
-            if (jsn.find("average step count") != jsn.end())
-            {
-                average_step_count = jsn["average step count"];
-            }
-            if (jsn.find("step count") != jsn.end())
-            {
-                step_count = jsn["step count"];
-            }
-            if (jsn.find("accuracy") != jsn.end())
-            {
-                accuracy = jsn["accuracy"];
-            }
-            if (jsn.find("scan parameter") != jsn.end())
-            {
-                scan_parameter = jsn["scan parameter"];
-            }
-            if (jsn.find("data sampling") != jsn.end())
-            {
-                data_sampling = jsn["data sampling"];
-            }
+            try_fetch(jsn, "speed", &speed);
+            try_fetch(jsn, "average step count", &average_step_count);
+            try_fetch(jsn, "step count", &step_count);
+            try_fetch(jsn, "accuracy", &accuracy);
+            try_fetch(jsn, "scan parameter", &scan_parameter);
+            try_fetch(jsn, "data sampling", &data_sampling);
+            try_fetch(jsn, "apply preset", &apply_preset);
         }
 
         LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
         check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-        auto preset_recover = change_preset();
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+        if (apply_preset)
+            preset_recover = change_preset();
 
         auto param2 = (int)ground_truth_mm * 100;
 

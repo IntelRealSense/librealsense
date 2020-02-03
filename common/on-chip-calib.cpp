@@ -311,9 +311,10 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
-               ",\n \"average_step_count\":" << average_step_count <<
+               ",\n \"average step count\":" << average_step_count <<
                ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
-               ",\n \"step_count\":" << step_count <<
+               ",\n \"step count\":" << step_count <<
+               ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                ",\n \"accuracy\":" << accuracy <<"}";
 
         std::string json = ss.str();
@@ -608,13 +609,17 @@ namespace rs2
                     ImGui::PopItemWidth();
 
                     draw_intrinsic_extrinsic(x, y + 3 * ImGui::GetTextLineHeightWithSpacing() - 10);
+
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                    id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
+                    ImGui::Checkbox(id.c_str(), &get_manager().apply_preset);
                 }
 
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
                     ImGui::Text("%s", "Ground Truth(mm):");
-                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 50 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 58 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
                 }
                 else
                 {
@@ -1126,7 +1131,7 @@ namespace rs2
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 110;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 185;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
         else return 100;
     }
 
