@@ -1842,8 +1842,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, composite)
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(source)
-        VALIDATE_NOT_NULL(frames)
-        VALIDATE_RANGE(count, 1, 128);
+    VALIDATE_NOT_NULL(frames)
+    VALIDATE_RANGE(count, 1, 128);
 
     std::vector<frame_holder> holders(count);
     for (int i = 0; i < count; i++)

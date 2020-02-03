@@ -50,6 +50,14 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 #include "../tm2/tm-boot.h"
 
+//#define DEBUG_V4L
+#ifdef DEBUG_V4L
+#define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_V4L(...)
+#endif //DEBUG_V4L
+
+
 #ifdef ANDROID
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/bits/lockf.h
@@ -231,6 +239,8 @@ namespace librealsense
             }
             if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
+            else
+                LOG_DEBUG_V4L("prepare_for_streaming fd " << std::dec << fd);
         }
 
         buffer::~buffer()
@@ -271,7 +281,7 @@ namespace librealsense
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
-                //LOG_DEBUG("Enqueue buf " << _buf.index << " for fd " << fd);
+                LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
                 {
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
@@ -322,37 +332,43 @@ namespace librealsense
             {
                 static const int d4xx_md_size = 248;
                 auto buffer = buffers.at(e_video_buf)._data_buf;
+                auto dq  = buffers.at(e_video_buf)._dq_buf;
                 auto fr_payload_size = buffer->get_length_frame_only();
 
-                md_start = buffer->get_frame_start() + fr_payload_size;
-                md_size = (*(static_cast<uint8_t*>(md_start)));
+                // For compressed data assume D4XX metadata struct
+                // TODO - devise SKU-agnostic heuristics
+                auto md_appendix_sz = 0L;
+                if (compressed && (dq.bytesused < fr_payload_size))
+                    md_appendix_sz = d4xx_md_size;
+                else
+                    md_appendix_sz = dq.bytesused - fr_payload_size;
 
-                // For compressed data assume D4XX metadata struct. TODO - make provisions for L500
-                if (compressed)
+                if (md_appendix_sz >0 )
                 {
-                    auto md_payload_size = 0L;
-                    auto dq  = buffers.at(e_video_buf)._dq_buf;
-
-                    if (dq.bytesused < fr_payload_size)
-                        md_payload_size = d4xx_md_size; // The stream appendix is a fixed size
-                    else
-                        md_payload_size = dq.bytesused - fr_payload_size;
-
-                    md_start = buffer->get_frame_start() + dq.bytesused - md_payload_size;
+                    md_start = buffer->get_frame_start() + dq.bytesused - md_appendix_sz;
                     md_size = (*(static_cast<uint8_t*>(md_start)));
-
-                }
-
-                // Use heuristics to validate metadata buffer. Strict to D4XX
-                int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
-                if ((md_size !=d4xx_md_size) || (!val_in_range(md_flags, {0x8e, 0x8f}) ))
-                {
-                    md_size = 0;
-                    md_start=nullptr;
+                    int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
+                    // Use heuristics for metadata validation
+                    if ((md_appendix_sz != md_size) || (!val_in_range(md_flags, {0x8e, 0x8f})))
+                    {
+                        md_size = 0;
+                        md_start=nullptr;
+                    }
                 }
             }
 
             set_md_attributes(static_cast<uint8_t>(md_size),md_start);
+        }
+
+        bool buffers_mgr::verify_vd_md_sync() const
+        {
+            if ((buffers[e_video_buf]._file_desc > 0) && (buffers[e_metadata_buf]._file_desc > 0))
+                if (buffers[e_video_buf]._dq_buf.sequence != buffers[e_metadata_buf]._dq_buf.sequence)
+                {
+                    LOG_ERROR("Non-sequential Video and Metadata v4l buffers");
+                    return false;
+                }
+            return true;
         }
 
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
@@ -564,10 +580,17 @@ namespace librealsense
             }
             closedir(dir);
 
-            // Differenciate and merge video and metadata nodes
+            // Matching video and metadata nodes
             // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
-            std::sort(begin(uvc_nodes),end(uvc_nodes),
-                      [](const node_info& lhs, const node_info& rhs){ return lhs.first.id < rhs.first.id; });
+            // Replace lexicographic with numeric sort to ensure "video2" is listed before "video11"
+            std::sort(begin(uvc_nodes),end(uvc_nodes),[](const node_info& lhs, const node_info& rhs)
+                        {
+                            std::stringstream index_l(lhs.first.id.substr(lhs.first.id.find_first_of("0123456789")));
+                            std::stringstream index_r(rhs.first.id.substr(rhs.first.id.find_first_of("0123456789")));
+                            int left_id = 0;  index_l >> left_id;
+                            int right_id = 0;  index_r >> right_id;
+                            return left_id < right_id;
+                        });
 
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
             for (auto&& cur_node : uvc_nodes)
@@ -595,7 +618,7 @@ namespace librealsense
 
                         if (uvc_node.first.has_metadata_node)
                         {
-                            LOG_ERROR( "Metadata node for uvc device: " << std::string(uvc_node.first) << " was already been assigned ");
+                            LOG_ERROR( "Metadata node for uvc device: " << std::string(uvc_node.first) << " was previously assigned ");
                             continue;
                         }
 
@@ -863,7 +886,7 @@ namespace librealsense
                     {
                         if(!_is_capturing)
                         {
-                            LOG_INFO("Stream finished");
+                            LOG_INFO("V4L stream is closed");
                             return;
                         }
                         else
@@ -874,9 +897,11 @@ namespace librealsense
                     }
                     else // Check and acquire data buffers from kernel
                     {
+                        bool md_extracted = false;
                         buffers_mgr buf_mgr(_use_memory_map);
-                        // Read metadata from a node
-                        acquire_metadata(buf_mgr,fds);
+                        // RAII to handle exceptions
+                        std::unique_ptr<int, std::function<void(int*)> > md_poller(new int(0),
+                            [this,&buf_mgr,&md_extracted,&fds](int* d){ if (!md_extracted) acquire_metadata(buf_mgr,fds);});
 
                         if(FD_ISSET(_fd, &fds))
                         {
@@ -886,13 +911,13 @@ namespace librealsense
                             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                             if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                             {
-                                LOG_DEBUG("Dequeued empty buf for fd " << _fd);
+                                LOG_DEBUG_V4L("Dequeued empty buf for fd " << std::dec << _fd);
                                 if(errno == EAGAIN)
                                     return;
 
                                 throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for fd: " << _fd);
                             }
-                            //LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _fd);
+                            LOG_DEBUG_V4L("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
 
                             auto buffer = _buffers[buf.index];
                             buf_mgr.handle_buffer(e_video_buf,_fd, buf,buffer);
@@ -939,22 +964,29 @@ namespace librealsense
                                     auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
                                     timestamp = monotonic_to_realtime(timestamp);
 
-                                    // read metadata from the frame appendix
+                                    // Read metadata. For metadata note performs a blocking call to ensure video and metadata sync
                                     acquire_metadata(buf_mgr,fds,compressed_format);
+                                    md_extracted = true;
 
-                                    if (val > 1)
-                                        LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
+                                    //if (val > 1)
+                                    //    LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
                                     frame_object fo{ std::min(buf.bytesused - buf_mgr.metadata_size(), buffer->get_length_frame_only()), buf_mgr.metadata_size(),
                                         buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
-                                     buffer->attach_buffer(buf);
-                                     buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
+                                    buffer->attach_buffer(buf);
+                                    buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
 
-                                     //Invoke user callback and enqueue next frame
-                                     _callback(_profile, fo,
-                                               [buf_mgr]() mutable {
-                                         buf_mgr.request_next_frame();
-                                     });
+                                    if (buf_mgr.verify_vd_md_sync())
+                                    {
+                                        //Invoke user callback and enqueue next frame
+                                        _callback(_profile, fo, [buf_mgr]() mutable {
+                                            buf_mgr.request_next_frame();
+                                        });
+                                    }
+                                    else
+                                    {
+                                        LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                    }
                                 }
                             }
                             else
@@ -964,16 +996,16 @@ namespace librealsense
                         }
                         else
                         {
-                            LOG_INFO("FD_ISSET returned false - video node is not signalled (md only)");
+                            LOG_WARNING("FD_ISSET signal false - no data on video node sink");
                         }
                     }
                 }
                 else // (val==0)
                 {
                     LOG_WARNING("Frames didn't arrived within 5 seconds");
-                        librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+                    librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
 
-                        _error_handler(n);
+                    _error_handler(n);
                 }
             }
         }
@@ -1416,6 +1448,8 @@ namespace librealsense
             {
                 throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
             }
+            else
+                LOG_INFO("Video node was successfully configured to " << fourcc_to_string(fmt.fmt.pix.pixelformat) << " format" <<", fd " << std::dec << _fd);
 
             LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
         }
@@ -1489,7 +1523,11 @@ namespace librealsense
             if(_md_fd < 0)
                 throw linux_backend_exception(to_string() << "Cannot open '" << _md_name);
 
-            _fds.push_back(_md_fd);
+            //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
+            // 1. Obtain video node data.
+            // 2. Obtain metadata
+            //     To revert to multiplexing mode uncomment the next line
+            // _fds.push_back(_md_fd);
             _max_fd = *std::max_element(_fds.begin(),_fds.end());
 
             v4l2_capability cap = {};
@@ -1542,13 +1580,13 @@ namespace librealsense
 
                 if(xioctl(_md_fd, VIDIOC_S_FMT, &fmt) >= 0)
                 {
-                    LOG_DEBUG("Metadata node was successfully configured to " << fourcc_to_string(request) << " format");
+                    LOG_INFO("Metadata node was successfully configured to " << fourcc_to_string(request) << " format" <<", fd " << std::dec <<_md_fd);
                     success  =true;
                     break;
                 }
                 else
                 {
-                    LOG_INFO("Metadata configuration failed for " << fourcc_to_string(request));
+                    LOG_WARNING("Metadata node configuration failed for " << fourcc_to_string(request));
                 }
             }
 
@@ -1566,28 +1604,30 @@ namespace librealsense
             v4l_uvc_device::prepare_capture_buffers();
         }
 
-        // retrieve metadata from a dedicated UVC node
+        // Retrieve metadata from a dedicated UVC node. For kernels 4.16+
         void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool)
         {
             // Metadata is calculated once per frame
             if (buf_mgr.metadata_size())
                 return;
 
-            if(FD_ISSET(_md_fd, &fds))
+            //Use blocking metadata node polling. Uncomment the next lines to revert to multiplexing I/O mode
+            //if(FD_ISSET(_md_fd, &fds))
             {
-                FD_CLR(_md_fd,&fds);
+                //FD_CLR(_md_fd,&fds);
                 v4l2_buffer buf{};
                 buf.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
                 buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
 
+                // W/O multiplexing this will create a blocking call for metadata node
                 if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
                 {
-                    if(errno == EAGAIN)
-                        return;
+                    LOG_DEBUG_V4L("Dequeued empty buf for md fd " << std::dec << _md_fd);
+                    return;
 
-                    throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for metadata fd: " << _md_fd);
+                    //throw linux_backend_exception(to_string() << "xioctl(VIDIOC_DQBUF) failed for metadata fd: " << _md_fd);
                 }
-                //LOG_DEBUG("Dequeued buf " << buf.index << " for fd " << _md_fd);
+                LOG_DEBUG_V4L("Dequeued md buf " << std::dec << buf.index << " for fd " << _md_fd << " seq " << buf.sequence);
 
                 auto buffer = _md_buffers[buf.index];
                 buf_mgr.handle_buffer(e_metadata_buf,_md_fd, buf,buffer);
@@ -1596,7 +1636,7 @@ namespace librealsense
                 {
                     static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
 
-                    if(buf.bytesused > uvc_md_start_offset )
+                    if (buf.bytesused > uvc_md_start_offset )
                     {
                         // The first uvc_md_start_offset bytes of metadata buffer are generated by host driver
                         buf_mgr.set_md_attributes(buf.bytesused - uvc_md_start_offset,
@@ -1612,14 +1652,14 @@ namespace librealsense
                         {
                             std::stringstream s;
                             s << "Invalid metadata payload, size " << buf.bytesused;
-                            LOG_INFO(s.str());
+                            LOG_WARNING(s.str());
                             _error_handler({ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()});
                         }
                     }
                 }
                 else
                 {
-                    LOG_WARNING("Metadata frame arrived in idle mode.");
+                    LOG_INFO("Metadata frame arrived in idle mode.");
                 }
             }
         }
