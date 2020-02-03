@@ -488,13 +488,12 @@ namespace librealsense
 
             for (auto&& hid : hids)
             {
-                if (hid.unique_id != "")
+                if( ! hid.unique_id.empty() )
                 {
                     std::stringstream(hid.vid) >> std::hex >> vid;
                     std::stringstream(hid.pid) >> std::hex >> pid;
 
-                    if ((hid.unique_id == unique_id) || // Linux check
-                        ((hid.unique_id == "*") && (hid.serial_number == device_serial))) // Windows check
+                    if (hid.unique_id == unique_id)
                     {
                         hid_group.push_back(hid);
                     }
