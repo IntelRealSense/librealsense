@@ -341,7 +341,7 @@ namespace librealsense
                 if (compressed && (dq.bytesused < fr_payload_size))
                     md_appendix_sz = d4xx_md_size;
                 else
-                    md_appendix_sz = dq.bytesused - fr_payload_size;
+                    md_appendix_sz = long(dq.bytesused) - fr_payload_size;
 
                 if (md_appendix_sz >0 )
                 {
