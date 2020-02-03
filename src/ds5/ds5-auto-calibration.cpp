@@ -268,7 +268,7 @@ namespace librealsense
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                     throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-                auto result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
                 done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
             }
 
