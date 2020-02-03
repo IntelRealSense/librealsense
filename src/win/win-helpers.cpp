@@ -224,10 +224,12 @@ namespace librealsense
                 return false;
 
             // Expecting VID, PID, and MI
-            auto ids = tokenize(tokens[1], '&');
-            if (ids.size() < 3)
+            auto ids = tokenize( tokens[1], '&' );
+            if( ids.size() < 3 )
             {
                 // MI may be missing, especially when we look at composite devices
+                if( ids.size() < 2 )
+                    LOG_ERROR( "incomplete device id: " << device_id );
                 return false;
             }
 

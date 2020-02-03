@@ -79,7 +79,7 @@ namespace librealsense
                 A parent is visited before any children.
                 An action (function) is run for each, which can return false to stop iteration:
 
-                    foreach_cm_node( cm_node::root(),
+                cm_node::root().foreach_node(
                         [&]( cm_node device, size_t depth ) -> bool
                         {
                             ...
@@ -88,14 +88,14 @@ namespace librealsense
                 Returns whether iteration was stopped. False if the whole tree was finished.
             */
             template< class F >
-            bool foreach( F fn, size_t depth = 1 )
+            bool foreach_node( F fn, size_t depth = 1 )
             {
                 auto node = get_child();
                 while( node.valid() )
                 {
                     if( ! fn( node, depth ))
                         return true;
-                    if( node.foreach( fn, depth + 1 ))
+                    if( node.foreach_node( fn, depth + 1 ))
                         return true;
                     node = node.get_sibling();
                 }
