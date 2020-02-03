@@ -920,7 +920,7 @@ namespace librealsense
             // Assuming that hids amount of 2 and above guarantee that gyro and accelerometer are present
             if (is_device_hid_sensor)
             {
-                all_sensors_present &= (hids.capacity() >= 2);
+                all_sensors_present &= (hids.size() >= 2);
             }
 #endif
 

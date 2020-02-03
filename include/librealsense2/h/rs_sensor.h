@@ -85,6 +85,7 @@ typedef enum rs2_format
     RS2_FORMAT_INZI            , /**< multi-planar Depth 16bit + IR 10bit.  */
     RS2_FORMAT_INVI            , /**< 8-bit IR stream.  */
     RS2_FORMAT_W10             , /**< Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */
+    RS2_FORMAT_Z16H            , /**< Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
@@ -526,7 +527,7 @@ const rs2_raw_data_buffer* rs2_export_localization_map(const rs2_sensor* sensor,
 int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_vector pos, const rs2_quaternion orient, rs2_error** error);
 
 /**
-* Create a named location tag
+* Retrieve a named location tag
 * \param[in]  sensor    T2xx position-tracking sensor
 * \param[in]  guid      Null-terminated string of up to 127 characters
 * \param[out] pos       Position in meters of the tagged (stored) location
@@ -535,6 +536,15 @@ int rs2_set_static_node(const rs2_sensor* sensor, const char* guid, const rs2_ve
 * \return               Non-zero if succeeded, otherwise 0
 */
 int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *pos, rs2_quaternion *orient, rs2_error** error);
+
+/**
+* Remove a named location tag
+* \param[in]  sensor    T2xx position-tracking sensor
+* \param[in]  guid      Null-terminated string of up to 127 characters
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Non-zero if succeeded, otherwise 0
+*/
+int rs2_remove_static_node(const rs2_sensor* sensor, const char* guid, rs2_error** error);
 
 /** Load Wheel odometer settings from host to device
 * \param[in] odometry_config_buf   odometer configuration/calibration blob serialized from jsom file

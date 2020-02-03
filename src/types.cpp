@@ -181,15 +181,16 @@ namespace librealsense
             CASE(POSE)
             CASE(POSE_SENSOR)
             CASE(WHEEL_ODOMETER)
+            CASE(GLOBAL_TIMER)
             CASE(UPDATABLE)
             CASE(UPDATE_DEVICE)
-            CASE(GLOBAL_TIMER)
             CASE(L500_DEPTH_SENSOR)
             CASE(TM2_SENSOR)
             CASE(AUTO_CALIBRATED_DEVICE)
             CASE(COLOR_SENSOR)
             CASE(MOTION_SENSOR)
             CASE(FISHEYE_SENSOR)
+            CASE(DEPTH_HUFFMAN_DECODER)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -331,6 +332,7 @@ namespace librealsense
             CASE(INZI)
             CASE(INVI)
             CASE(W10)
+            CASE(Z16H)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -411,7 +413,7 @@ namespace librealsense
             CASE(LOW_LIGHT_COMPENSATION)
             CASE(FRAME_EMITTER_MODE)
             CASE(FRAME_LED_POWER)
-
+            CASE(RAW_FRAME_SIZE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -637,5 +639,10 @@ namespace librealsense
     {
         auto from = reinterpret_cast<uint8_t const*>(src);
         std::copy(from, from + size, reinterpret_cast<uint8_t*>(dst));
+    }
+
+    void color_sensor::create_snapshot(std::shared_ptr<color_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<color_sensor_snapshot>();
     }
 }

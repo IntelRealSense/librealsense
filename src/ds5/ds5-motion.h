@@ -239,8 +239,8 @@ namespace librealsense
         optional_value<uint8_t> _motion_module_device_idx;
 
         std::shared_ptr<mm_calib_handler>        _mm_calib;
-        lazy<ds::imu_intrinsic>                 _accel_intrinsic;
-        lazy<ds::imu_intrinsic>                 _gyro_intrinsic;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 

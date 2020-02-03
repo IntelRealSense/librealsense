@@ -13,6 +13,7 @@
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
+#include "proc/depth-decompress.h"
 #include "std_msgs/Float32MultiArray.h"
 
 namespace librealsense
@@ -778,6 +779,7 @@ namespace librealsense
             }
         }
     }
+
     void ros_reader::update_proccesing_blocks(const rosbag::Bag& file, uint32_t sensor_index, const nanoseconds& time, uint32_t file_version, snapshot_collection& sensor_extensions, uint32_t version, std::string pid, std::string sensor_name)
     {
         if (version == legacy_file_format::file_version())
@@ -820,6 +822,22 @@ namespace librealsense
         return res;
     }
 
+    void ros_reader::add_sensor_extension(snapshot_collection & sensor_extensions, std::string sensor_name)
+    {
+        if (is_color_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_COLOR_SENSOR] = std::make_shared<color_sensor_snapshot>();
+        }
+        if (is_motion_module_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_MOTION_SENSOR] = std::make_shared<motion_sensor_snapshot>();
+        }
+        if (is_fisheye_module_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_FISHEYE_SENSOR] = std::make_shared<fisheye_sensor_snapshot>();
+        }
+    }
+
     void ros_reader::update_l500_depth_sensor(const rosbag::Bag & file, uint32_t sensor_index, const nanoseconds & time, uint32_t file_version, snapshot_collection & sensor_extensions, uint32_t version, std::string pid, std::string sensor_name)
     {
         //Taking all messages from the beginning of the bag until the time point requested
@@ -858,6 +876,13 @@ namespace librealsense
     bool ros_reader::is_motion_module_sensor(std::string sensor_name)
     {
         if (sensor_name.compare("Motion Module") == 0)
+            return true;
+        return false;
+    }
+
+    bool ros_reader::is_fisheye_module_sensor(std::string sensor_name)
+    {
+        if (sensor_name.compare("Wide FOV Camera") == 0)
             return true;
         return false;
     }
@@ -1031,6 +1056,7 @@ namespace librealsense
                     if (sensor_info->supports_info(RS2_CAMERA_INFO_NAME))
                         sensor_name = sensor_info->get_info(RS2_CAMERA_INFO_NAME);
 
+                    add_sensor_extension(sensor_extensions, sensor_name);
                     update_proccesing_blocks(m_file, sensor_index, time, m_version, sensor_extensions, m_version, pid, sensor_name);
                     update_l500_depth_sensor(m_file, sensor_index, time, m_version, sensor_extensions, m_version, pid, sensor_name);
 
@@ -1396,6 +1422,8 @@ namespace librealsense
             return std::make_shared<ExtensionToType<RS2_EXTENSION_HOLE_FILLING_FILTER>::type>();
         case RS2_EXTENSION_ZERO_ORDER_FILTER:
             return std::make_shared<ExtensionToType<RS2_EXTENSION_ZERO_ORDER_FILTER>::type>();
+        case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER:
+            return std::make_shared<ExtensionToType<RS2_EXTENSION_DEPTH_HUFFMAN_DECODER>::type>();
         default:
             return nullptr;
         }

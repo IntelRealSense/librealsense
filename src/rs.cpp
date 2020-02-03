@@ -37,6 +37,7 @@
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
+#include "proc/depth-decompress.h"
 #include "software-device.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "global_timestamp_reader.h"
@@ -1244,6 +1245,9 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_ROI                   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)        != nullptr;
         case RS2_EXTENSION_DEPTH_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                != nullptr;
         case RS2_EXTENSION_DEPTH_STEREO_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_stereo_sensor)         != nullptr;
+        case RS2_EXTENSION_COLOR_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::color_sensor) != nullptr;
+        case RS2_EXTENSION_MOTION_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor) != nullptr;
+        case RS2_EXTENSION_FISHEYE_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::fisheye_sensor) != nullptr;
         case RS2_EXTENSION_ADVANCED_MODE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
         case RS2_EXTENSION_RECORD                : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK              : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
@@ -1293,6 +1297,7 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
     case RS2_EXTENSION_TEMPORAL_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::temporal_filter) != nullptr;
     case RS2_EXTENSION_HOLE_FILLING_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::hole_filling_filter) != nullptr;
     case RS2_EXTENSION_ZERO_ORDER_FILTER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::zero_order) != nullptr;
+    case RS2_EXTENSION_DEPTH_HUFFMAN_DECODER: return VALIDATE_INTERFACE_NO_THROW((processing_block_interface*)(f->block.get()), librealsense::depth_decompression_huffman) != nullptr;
   
     default:
         return false;
@@ -2023,8 +2028,6 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
 
     auto res = new rs2_processing_block{ block };
 
-    auto res2 = (rs2_options*)res;
-
     return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
@@ -2081,6 +2084,14 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error) BEGIN_API_CALL
 {
     auto block = std::make_shared<librealsense::zero_order>();
+
+    return new rs2_processing_block{ block };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error) BEGIN_API_CALL
+{
+    auto block = std::make_shared<librealsense::depth_decompression_huffman>();
 
     return new rs2_processing_block{ block };
 }
@@ -2519,6 +2530,18 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
     return ret;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
+
+int rs2_remove_static_node(const rs2_sensor* sensor, const char* guid, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(guid);
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    std::string s_guid(guid);
+    VALIDATE_RANGE(s_guid.size(), 1, 127);      // T2xx spec
+
+    return int(pose_snr->remove_static_node(s_guid));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid)
 
 int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
 {

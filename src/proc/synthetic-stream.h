@@ -148,7 +148,7 @@ namespace librealsense
         virtual void init_profiles_info(const rs2::frame* f);
         rs2::frame process_frame(const rs2::frame_source & source, const rs2::frame & f) override;
         virtual rs2::frame prepare_frame(const rs2::frame_source& source, const rs2::frame& f);
-        virtual void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) = 0;
+        virtual void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) = 0;
 
         rs2::stream_profile _target_stream_profile;
         rs2::stream_profile _source_stream_profile;
@@ -174,7 +174,7 @@ namespace librealsense
             int right_idx);
 
     protected:
-        virtual void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size) = 0;
+        virtual void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) = 0;
         void configure_processing_callback();
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;

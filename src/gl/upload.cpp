@@ -91,7 +91,7 @@ namespace librealsense
                     });
                 }
 
-                if (f.is<rs2::depth_frame>())
+                if (f.is<rs2::depth_frame>() && (RS2_FORMAT_Z16 == f.get_profile().format()))
                 {
                     auto vf = f.as<rs2::depth_frame>();
                     auto width = vf.get_width();

@@ -39,8 +39,9 @@ namespace librealsense
         bool                is_blocking = false; // when running from recording, this bit indicates 
                                                  // if the recorder was configured to realtime mode or not
                                                  // if true, this will force any queue receiving this frame not to drop it
+        uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
 
-        frame_additional_data() {};
+        frame_additional_data() {}
 
         frame_additional_data(double in_timestamp,
             unsigned long long in_frame_number,
@@ -50,7 +51,8 @@ namespace librealsense
             double backend_time,
             rs2_time_t last_timestamp,
             unsigned long long last_frame_number,
-            bool in_is_blocking)
+            bool in_is_blocking,
+            uint32_t transmitted_size = 0)
             : timestamp(in_timestamp),
             frame_number(in_frame_number),
             system_time(in_system_time),
@@ -58,7 +60,8 @@ namespace librealsense
             backend_timestamp(backend_time),
             last_timestamp(last_timestamp),
             last_frame_number(last_frame_number),
-            is_blocking(in_is_blocking)
+            is_blocking(in_is_blocking),
+            raw_size(transmitted_size)
         {
             // Copy up to 255 bytes to preserve metadata as raw data
             if (metadata_size)

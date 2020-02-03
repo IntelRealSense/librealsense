@@ -113,7 +113,7 @@ namespace librealsense
         }
     }
 
-    void rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         int rotated_width = height;
         int rotated_height = width;
@@ -138,7 +138,7 @@ namespace librealsense
         : rotation_transform(name, RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, RS2_EXTENSION_VIDEO_FRAME)
     {}
 
-    void confidence_rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    void confidence_rotation_transform::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         int rotated_width = height;
         int rotated_height = width;

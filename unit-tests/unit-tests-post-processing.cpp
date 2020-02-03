@@ -53,7 +53,7 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
     dec_pb = (filters_cfg.downsample_scale != 1);
     dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, (float)filters_cfg.downsample_scale);
 
-    if (spat_pb = filters_cfg.spatial_filter)
+    if ((spat_pb = filters_cfg.spatial_filter))
     {
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.spatial_alpha);
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.spatial_delta);
@@ -61,14 +61,14 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
         //spat_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.holes_filling_mode);      // Currently disabled
     }
 
-    if (temp_pb = filters_cfg.temporal_filter)
+    if ((temp_pb = filters_cfg.temporal_filter))
     {
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.temporal_alpha);
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.temporal_delta);
         temp_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.temporal_persistence);
     }
 
-    if (holes_pb = filters_cfg.holes_filter)
+    if ((holes_pb = filters_cfg.holes_filter))
     {
         hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, float(filters_cfg.holes_filling_mode));
     }

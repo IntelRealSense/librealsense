@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <iterator>
 
+#include "metadata-helper.h"
+
 int main(int argv, const char** argc);
 
 int CALLBACK WinMain(
@@ -30,6 +32,17 @@ int CALLBACK WinMain(
     {
         std::wstring ws = szArgList.get()[i];
         std::string s(ws.begin(), ws.end());
+
+        if (s == rs2::metadata_helper::get_command_line_param())
+        {
+            try
+            {
+                rs2::metadata_helper::instance().enable_metadata();
+                exit(0);
+            }
+            catch (...) { exit(-1); }
+        }
+
         args.push_back(s);
     }
 

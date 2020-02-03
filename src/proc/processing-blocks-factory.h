@@ -17,7 +17,7 @@ namespace librealsense
     class processing_block_factory
     {
     public:
-        processing_block_factory() {};
+        processing_block_factory() {}
 
         processing_block_factory(const std::vector<stream_profile>& from,
             const std::vector<stream_profile>& to,

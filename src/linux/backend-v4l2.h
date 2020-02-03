@@ -176,20 +176,7 @@ namespace librealsense
 
             void    set_md_attributes(uint8_t md_size, void* md_start)
                     { _md_start = md_start; _md_size = md_size; }
-
-            void    set_md_from_video_node()
-                    {
-                        void* start = nullptr;
-                        auto size = 0;
-
-                        if (buffers.at(e_video_buf)._file_desc >=0)
-                        {
-                            auto buffer = buffers.at(e_video_buf)._data_buf;
-                            start = buffer->get_frame_start() + buffer->get_length_frame_only();
-                            size = (*(uint8_t*)start);
-                        }
-                        set_md_attributes(size,start);
-                    }
+            void    set_md_from_video_node(bool compressed);
 
         private:
             void*                               _md_start;  // marks the address of metadata blob
@@ -210,11 +197,10 @@ namespace librealsense
                         }
                     }
                 }
-
-                int                                 _file_desc=-1;
-                bool                                _managed=false;
                 std::shared_ptr<platform::buffer>   _data_buf=nullptr;
                 v4l2_buffer                         _dq_buf{};
+                int                                 _file_desc=-1;
+                bool                                _managed=false;
             };
 
             std::array<kernel_buf_guard, e_max_kernel_buf_type> buffers;
@@ -236,7 +222,7 @@ namespace librealsense
             virtual void set_format(stream_profile profile) = 0;
             virtual void prepare_capture_buffers() = 0;
             virtual void stop_data_capture() = 0;
-            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds) = 0;
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format) = 0;
         };
 
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
@@ -305,7 +291,7 @@ namespace librealsense
             virtual void set_format(stream_profile profile) override;
             virtual void prepare_capture_buffers() override;
             virtual void stop_data_capture() override;
-            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds) override;
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format = false) override;
 
             power_state _state = D3;
             std::string _name = "";
@@ -349,7 +335,7 @@ namespace librealsense
             void unmap_device_descriptor();
             void set_format(stream_profile profile);
             void prepare_capture_buffers();
-            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds);
+            virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format=false);
 
             int _md_fd = -1;
             std::string _md_name = "";

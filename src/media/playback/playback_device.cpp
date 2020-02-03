@@ -698,6 +698,9 @@ bool playback_device::try_extend_snapshot(std::shared_ptr<extension_snapshot>& e
     case RS2_EXTENSION_DEPTH_SENSOR: return try_extend<depth_sensor>(e, ext);
     case RS2_EXTENSION_L500_DEPTH_SENSOR: return try_extend<l500_depth_sensor_interface>(e, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return try_extend<depth_stereo_sensor>(e, ext);
+    case RS2_EXTENSION_COLOR_SENSOR: return try_extend<color_sensor>(e, ext);
+    case RS2_EXTENSION_MOTION_SENSOR: return try_extend<motion_sensor>(e, ext);
+    case RS2_EXTENSION_FISHEYE_SENSOR: return try_extend<fisheye_sensor>(e, ext);
     case RS2_EXTENSION_UNKNOWN: //[[fallthrough]]
     case RS2_EXTENSION_COUNT:   //[[fallthrough]]
     default:

@@ -90,10 +90,10 @@ namespace rs2
     private:
         static const int _numerator = 1000;
         static const int _skip_frames = 5;
-        unsigned long long _num_of_frames;
         int _counter;
         double _delta;
         double _last_timestamp;
+        unsigned long long _num_of_frames;
         unsigned long long _last_frame_counter;
         mutable std::mutex _mtx;
     };
@@ -1013,6 +1013,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
+        std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
         rect curr_preview_rect{};
         int texture_id = 0;
@@ -1064,8 +1065,6 @@ namespace rs2
 
         void upload(rs2::frame frame, rs2_format prefered_format = RS2_FORMAT_ANY)
         {
-            last_queue[0].enqueue(frame);
-
             if (!texture)
                 glGenTextures(1, &texture);
 
@@ -1073,6 +1072,16 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
+
+            // Decode compressed data required for mouse pointer depth calculations
+            if (RS2_FORMAT_Z16H==format)
+            {
+                frame = depth_decode->process(frame);
+                format = frame.get_profile().format();
+            }
+
+            last_queue[0].enqueue(frame);
+
             // When frame is a GPU frame
             // we don't need to access pixels, keep data NULL
             auto data = !frame.is<gl::gpu_frame>() ? frame.get_data() : nullptr;
@@ -1134,6 +1143,8 @@ namespace rs2
                 {
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
+                case RS2_FORMAT_Z16H:
+                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:

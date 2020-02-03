@@ -313,6 +313,48 @@ namespace librealsense
             };
         }
 
+        void buffers_mgr::set_md_from_video_node(bool compressed)
+        {
+            void* md_start = nullptr;
+            auto md_size = 0;
+
+            if (buffers.at(e_video_buf)._file_desc >=0)
+            {
+                static const int d4xx_md_size = 248;
+                auto buffer = buffers.at(e_video_buf)._data_buf;
+                auto fr_payload_size = buffer->get_length_frame_only();
+
+                md_start = buffer->get_frame_start() + fr_payload_size;
+                md_size = (*(static_cast<uint8_t*>(md_start)));
+
+                // For compressed data assume D4XX metadata struct. TODO - make provisions for L500
+                if (compressed)
+                {
+                    auto md_payload_size = 0L;
+                    auto dq  = buffers.at(e_video_buf)._dq_buf;
+
+                    if (dq.bytesused < fr_payload_size)
+                        md_payload_size = d4xx_md_size; // The stream appendix is a fixed size
+                    else
+                        md_payload_size = dq.bytesused - fr_payload_size;
+
+                    md_start = buffer->get_frame_start() + dq.bytesused - md_payload_size;
+                    md_size = (*(static_cast<uint8_t*>(md_start)));
+
+                }
+
+                // Use heuristics to validate metadata buffer. Strict to D4XX
+                int md_flags = (*(static_cast<uint8_t*>(md_start)+1));
+                if ((md_size !=d4xx_md_size) || (!val_in_range(md_flags, {0x8e, 0x8f}) ))
+                {
+                    md_size = 0;
+                    md_start=nullptr;
+                }
+            }
+
+            set_md_attributes(static_cast<uint8_t>(md_size),md_start);
+        }
+
         static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
@@ -662,8 +704,7 @@ namespace librealsense
                                 if (fourcc == profile.format)
                                 {
                                     throw linux_backend_exception(to_string() << "The requested pixel format '"  << fourcc_to_string(id)
-                                                                  << "' is not natively supported by the Linux kernel and likely requires a patch"
-                                                                  <<  "!\nAlternatively please upgrade to kernel 4.12 or later.");
+                                                                  << "' is not natively supported by the running Linux kernel and likely requires a patch");
                                 }
                             }
                         }
@@ -864,13 +905,31 @@ namespace librealsense
                                     return;
                                 }
 
-                                if(_profile.format != 1296715847 && // allow JPEG frames size to be smaller than the uncompressed frame
-                                        (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE))
+                                // Relax the required frame size for compressed formats, i.e. MJPG, Z16H
+                                // Drop partial and overflow frames (assumes D4XX metadata only)
+                                bool compressed_format = val_in_range(_profile.format, { 0x4d4a5047U , 0x5a313648U});
+                                bool partial_frame = (!compressed_format && (buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE));
+                                bool overflow_frame = (buf.bytesused ==  buffer->get_length_frame_only() + MAX_META_DATA_SIZE);
+                                if (partial_frame || overflow_frame)
                                 {
                                     auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
                                     std::stringstream s;
-                                    s << "Incomplete video frame detected!\nSize " << buf.bytesused
-                                      << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                    if (partial_frame)
+                                    {
+                                        s << "Incomplete video frame detected!\nSize " << buf.bytesused
+                                            << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                                        if (overflow_frame)
+                                        {
+                                            s << ". Overflow detected: payload size " << buffer->get_length_frame_only();
+                                            LOG_ERROR("Corrupted UVC frame data, underflow and overflow reported:\n" << s.str().c_str());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (overflow_frame)
+                                            s << "overflow video frame detected!\nSize " << buf.bytesused
+                                                << ", payload size " << buffer->get_length_frame_only();
+                                    }
                                     librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
 
                                     _error_handler(n);
@@ -881,11 +940,11 @@ namespace librealsense
                                     timestamp = monotonic_to_realtime(timestamp);
 
                                     // read metadata from the frame appendix
-                                    acquire_metadata(buf_mgr,fds);
+                                    acquire_metadata(buf_mgr,fds,compressed_format);
 
                                     if (val > 1)
                                         LOG_INFO("Frame buf ready, md size: " << std::dec << (int)buf_mgr.metadata_size() << " seq. id: " << buf.sequence);
-                                    frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
+                                    frame_object fo{ std::min(buf.bytesused - buf_mgr.metadata_size(), buffer->get_length_frame_only()), buf_mgr.metadata_size(),
                                         buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                      buffer->attach_buffer(buf);
@@ -919,10 +978,10 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &)
+        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &, bool compressed_format)
         {
             if (has_metadata())
-                buf_mgr.set_md_from_video_node();
+                buf_mgr.set_md_from_video_node(compressed_format);
             else
                 buf_mgr.set_md_attributes(0, nullptr);
         }
@@ -1508,7 +1567,7 @@ namespace librealsense
         }
 
         // retrieve metadata from a dedicated UVC node
-        void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds)
+        void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool)
         {
             // Metadata is calculated once per frame
             if (buf_mgr.metadata_size())

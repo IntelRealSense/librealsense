@@ -57,7 +57,7 @@ namespace librealsense
                 cr = CM_Get_Device_Interface_List((LPGUID)&guid, NULL, device_list.data(), length,
                     CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
 
-                int offset = 0;
+                size_t offset = 0;
                 while (offset < length)
                 {
                     auto str = std::wstring((device_list.data() + offset));
