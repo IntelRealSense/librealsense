@@ -8,6 +8,50 @@
 
 namespace librealsense
 {
+
+#pragma pack(push, 1)
+#pragma pack(1)
+    struct DirectSearchCalibrationResult
+    {
+        uint16_t status;      // DscStatus
+        uint16_t stepCount;
+        uint16_t stepSize; // 1/1000 of a pixel
+        uint32_t pixelCountThreshold; // minimum number of pixels in
+                                      // selected bin
+        uint16_t minDepth;  // Depth range for FWHM
+        uint16_t maxDepth;
+        uint32_t rightPy;   // 1/1000000 of normalized unit
+        float healthCheck;
+        float rightRotation[9]; // Right rotation
+    };
+
+    struct DscResultParams
+    {
+        uint16_t m_status;
+        float    m_healthCheck;
+    };
+
+    struct DscResultBuffer
+    {
+        uint16_t m_paramSize;
+        DscResultParams m_dscResultParams;
+        uint16_t m_tableSize;
+    };
+
+    enum rs2_dsc_status : uint16_t
+    {
+        RS2_DSC_STATUS_SUCCESS = 0, /**< Self calibration succeeded*/
+        RS2_DSC_STATUS_RESULT_NOT_READY = 1, /**< Self calibration result is not ready yet*/
+        RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW = 2, /**< There are too little textures in the scene*/
+        RS2_DSC_STATUS_EDGE_TOO_CLOSE = 3, /**< Self calibration range is too small*/
+        RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
+        RS2_DSC_STATUS_BURN_SUCCESS = 5,
+        RS2_DSC_STATUS_BURN_ERROR = 6,
+        RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
+    };
+
+#pragma pack(pop)
+
     enum auto_calib_sub_cmd : uint8_t
     {
         auto_calib_begin = 0x08,
@@ -82,7 +126,7 @@ namespace librealsense
     const int DEFAULT_SAMPLING = data_sampling::polling;
 
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
-        :_hw_monitor(hwm){}
+        : _hw_monitor(hwm){}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
     {
@@ -341,7 +385,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy << " is out of range (0 - 3).");
     }
 
-    void auto_calibrated::handle_calibration_error(rs2_dsc_status status) const
+    void auto_calibrated::handle_calibration_error(int status) const
     {
         if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
         {

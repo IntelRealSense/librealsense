@@ -568,11 +568,11 @@ namespace librealsense
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
-        auto_calibrated(_hw_monitor),
-        _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-        _depth_stream(new stream(RS2_STREAM_DEPTH)),
-        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
+          auto_calibrated(_hw_monitor),
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
+          _depth_stream(new stream(RS2_STREAM_DEPTH)),
+          _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
+          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
