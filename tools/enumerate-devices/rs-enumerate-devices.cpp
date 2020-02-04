@@ -207,6 +207,17 @@ int main(int argc, char** argv) try
     bool show_modes = !(compact_view || short_view);
     auto playback_dev_file = show_playback_device_arg.getValue();
 
+    if ((short_view || compact_view) && (show_options || show_calibration_data))
+    {
+        std::stringstream s;
+        s << "rs-enumerate-devices ";
+        for (int i = 1; i < argc; ++i)
+            s << argv[i] << ' ';
+        std::cout << "Warning: The command line \"" << s.str().c_str()
+            <<"\" has conflicting requests.\n The flags \"-s\" / \"-S\" are compatible with \"-p\" only,"
+            << " other options will be ignored.\nRefer to the tool's documentation for details\n" << std::endl;
+    }
+
     // Obtain a list of devices currently present on the system
     context ctx;
     rs2::device d;
@@ -224,7 +235,7 @@ int main(int argc, char** argv) try
     // Retrieve the viable devices
     std::vector<rs2::device> devices;
 
-    for ( size_t i = 0u; i < device_count; i++)
+    for ( auto i = 0u; i < device_count; i++)
     {
         try
         {
@@ -257,10 +268,6 @@ int main(int argc, char** argv) try
                 << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
-
-        if (show_options || show_calibration_data || show_modes)
-            cout << "\n\nNote:  \"-s\"\\\"-S\" option is not compatible with the other flags specified,"
-            << " the additional options are skipped" << endl;
 
         show_options = show_calibration_data = show_modes = false;
     }
