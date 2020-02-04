@@ -212,7 +212,7 @@ namespace librealsense
         public:
             float query() const override;
 
-            option_range get_range() const override { return option_range{ 0, 100, 0, 0 }; };
+            option_range get_range() const override { return option_range{ 0, 100, 0, 0 }; }
 
             bool is_enabled() const override { return true; }
 
@@ -228,7 +228,7 @@ namespace librealsense
         class l500_timestamp_reader : public frame_timestamp_reader
         {
             static const int pins = 3;
-            mutable std::vector<int64_t> counter;
+            mutable std::vector<size_t> counter;
             std::shared_ptr<platform::time_service> _ts;
             mutable std::recursive_mutex _mtx;
         public:
@@ -241,13 +241,13 @@ namespace librealsense
             void reset() override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
-                for (auto i = 0; i < pins; ++i)
+                for (size_t i = 0; i < pins; ++i)
                 {
                     counter[i] = 0;
                 }
             }
 
-            rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override
+            rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>&) override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
                 return _ts->get_time();
@@ -256,7 +256,7 @@ namespace librealsense
             unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
-                auto pin_index = 0;
+                size_t pin_index = 0;
                 if (frame->get_stream()->get_format() == RS2_FORMAT_Z16)
                     pin_index = 1;
                 else if (frame->get_stream()->get_stream_type() == RS2_STREAM_CONFIDENCE)
@@ -265,7 +265,7 @@ namespace librealsense
                 return ++counter[pin_index];
             }
 
-            rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override
+            rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>&) const override
             {
                 return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
             }

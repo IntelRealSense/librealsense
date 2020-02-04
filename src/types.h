@@ -584,13 +584,13 @@ namespace librealsense
     }
     inline bool operator==(const rs2_extrinsics& a, const rs2_extrinsics& b)
     {
-        for (int i = 0; i < 3; i++) 
-            if (a.translation[i] != b.translation[i]) 
+        for (int i = 0; i < 3; i++)
+            if (a.translation[i] != b.translation[i])
                 return false;
         for (int j = 0; j < 3; j++)
             for (int i = 0; i < 3; i++)
-                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i]) 
-                     > std::numeric_limits<float>::epsilon()) 
+                if (std::fabs(a.rotation[j * 3 + i] - b.rotation[j * 3 + i])
+                     > std::numeric_limits<float>::epsilon())
                     return false;
         return true;
     }
