@@ -70,7 +70,7 @@ namespace librealsense
                 _handles[desc.bInterfaceNumber] = ah;
                 _descriptors[desc.bInterfaceNumber] = desc;
 
-                for (UCHAR interface_number = 0; interface_number < 256; interface_number++) {
+                for (UCHAR interface_number = 0; true; interface_number++) {
                     WINUSB_INTERFACE_HANDLE h;
                     USB_INTERFACE_DESCRIPTOR descriptor;
 
