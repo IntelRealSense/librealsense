@@ -241,7 +241,7 @@ namespace librealsense
             void reset() override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
-                for (auto i = 0UL; i < pins; ++i)
+                for (size_t i = 0; i < pins; ++i)
                 {
                     counter[i] = 0;
                 }
@@ -256,7 +256,7 @@ namespace librealsense
             unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override
             {
                 std::lock_guard<std::recursive_mutex> lock(_mtx);
-                auto pin_index = 0UL;
+                size_t pin_index = 0;
                 if (frame->get_stream()->get_format() == RS2_FORMAT_Z16)
                     pin_index = 1;
                 else if (frame->get_stream()->get_stream_type() == RS2_STREAM_CONFIDENCE)

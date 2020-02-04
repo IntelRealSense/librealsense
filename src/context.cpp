@@ -94,8 +94,6 @@ namespace librealsense
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
     };
 
-    bool context::one_time_msg = false;
-
     context::context(backend_type type,
                      const char* filename,
                      const char* section,
@@ -103,9 +101,10 @@ namespace librealsense
                      std::string min_api_version)
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
-        if (!one_time_msg)
+        static bool version_logged=false;
+        if (!version_logged)
         {
-            one_time_msg = true;
+            version_logged = true;
             LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
         }
 

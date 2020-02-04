@@ -1688,14 +1688,14 @@ namespace rs2
             glPopAttrib();
         }
 
-        static auto x = -M_PI_2;
+        static const double x = -M_PI_2;
         static float _rx[4][4] = {
             { 1, 0, 0, 0 },
             { 0, float(cos(x)), float(-sin(x)), 0 },
             { 0, float(sin(x)), float(cos(x)), 0 },
             { 0, 0, 0, 1 }
         };
-        static auto z = M_PI;
+        static const double z = M_PI;
         static float _rz[4][4] = {
             { float(cos(z)), float(-sin(z)),0, 0 },
             { float(sin(z)), float(cos(z)), 0, 0 },

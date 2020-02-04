@@ -151,7 +151,6 @@ namespace librealsense
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
         std::map<int, std::map<int, std::weak_ptr<lazy<rs2_extrinsics>>>> _extrinsics;
         std::mutex _streams_mutex, _devices_changed_callbacks_mtx;
-        static bool one_time_msg;
     };
 
     class readonly_device_info : public device_info
