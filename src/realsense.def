@@ -132,6 +132,13 @@ EXPORTS
 
     rs2_log_to_console
     rs2_log_to_file
+    rs2_log_to_callback
+    rs2_log_to_callback_cpp
+    
+    rs2_get_log_message_line_number
+    rs2_get_log_message_filename
+    rs2_get_raw_log_message
+    rs2_get_full_log_message
 
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp

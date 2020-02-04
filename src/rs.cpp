@@ -4,6 +4,7 @@
 #include <functional>   // For function
 
 #include "api.h"
+#include "log.h"
 #include "context.h"
 #include "device.h"
 #include "algo.h"
@@ -1115,6 +1116,94 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char* file_path, rs2_e
     librealsense::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
+
+void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error** error ) BEGIN_API_CALL
+{
+    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
+    librealsense::log_to_callback( min_severity,
+        { callback, []( rs2_log_callback * p ) { p->release(); } }
+    );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
+
+// librealsense wrapper around a C function
+class on_log_callback : public rs2_log_callback
+{
+    rs2_log_callback_ptr _on_log;
+    void* _user_arg;
+
+public:
+    on_log_callback( rs2_log_callback_ptr on_log, void * user_arg ) : _on_log( on_log ), _user_arg( user_arg ) {}
+
+    void on_log( rs2_log_severity severity, rs2_log_message const& msg ) noexcept override
+    {
+        if( _on_log )
+        {
+            try
+            {
+                _on_log( severity, &msg, _user_arg );
+            }
+            catch( ... )
+            {
+                std::cerr << "Received an execption from log callback!" << std::endl;
+            }
+        }
+    }
+    void release() override
+    {
+        // Shouldn't get called...
+        throw std::runtime_error( "on_log_callback::release() ?!?!?!" );
+        delete this;
+    }
+};
+
+void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr on_log, void * arg, rs2_error** error ) BEGIN_API_CALL
+{
+    // Wrap the C function with a callback interface that will get deleted when done
+    librealsense::log_to_callback( min_severity,
+        librealsense::log_callback_ptr{ new on_log_callback( on_log, arg ) }
+    );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log, arg )
+
+
+unsigned rs2_get_log_message_line_number( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.line();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, msg )
+
+const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.file().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
+const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const & wrapper = *( log_message const * )( msg );
+    return wrapper.el_msg.message().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
+const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message & wrapper = *( log_message * )( msg );
+    if( wrapper.built_msg.empty() )
+    {
+        bool const append_new_line = false;
+        wrapper.built_msg = wrapper.el_msg.logger()->logBuilder()->build( &wrapper.el_msg, append_new_line );
+    }
+    return wrapper.built_msg.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
 
 int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {

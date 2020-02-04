@@ -75,6 +75,16 @@ void rs2_log_to_console(rs2_log_severity min_severity, rs2_error ** error);
 
 void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_error ** error);
 
+void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error ** error );
+
+void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr callback, void * arg, rs2_error** error );
+
+
+unsigned rs2_get_log_message_line_number( rs2_log_message const * msg, rs2_error** error );
+const char * rs2_get_log_message_filename( rs2_log_message const * msg, rs2_error** error );
+const char * rs2_get_raw_log_message( rs2_log_message const * msg, rs2_error** error );
+const char * rs2_get_full_log_message( rs2_log_message const * msg, rs2_error** error );
+
 /**
  * Add custom message into librealsense log
  * \param[in] severity  The log level for the message to be written under
