@@ -11,11 +11,11 @@
 
 namespace rs400
 {
-    class advanced_mode : public rs2::serializable
+    class advanced_mode : public rs2::serializable_device
     {
     public:
         advanced_mode(rs2::device d)
-                : rs2::serializable(d)
+                : rs2::serializable_device(d)
         {
             rs2_error* e = nullptr;
             if(_dev && rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_ADVANCED_MODE, &e) == 0 && !e)

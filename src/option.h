@@ -101,16 +101,20 @@ namespace librealsense
     };
 
     template<class T>
-    class option_with_description : public virtual option
+    class enum_option : public virtual option
     {
     public:
-        option_with_description(std::string description)
-        :_description(description){}
-
         const char* get_value_description(float val) const override
         {
             return get_string((T)((int)val));
         }
+    };
+
+    class option_description : public virtual option
+    {
+    public:
+        option_description(std::string description)
+            :_description(description) {}
 
         const char* get_description() const override
         {
@@ -215,13 +219,13 @@ namespace librealsense
     };
 
     template<class T>
-    class float_option_with_description : public float_option, public option_with_description<T>
+    class float_option_with_description : public float_option, public option_description, public enum_option<T>
     {
     public:
         float_option_with_description(option_range range, std::string description)
-            :float_option(range), option_with_description<T>(description) {}
+            :float_option(range), option_description(description) {}
 
-        const char* get_description() const override { return option_with_description<T>::get_description(); }
+        const char* get_description() const override { return option_description::get_description(); }
     };
 
     class LRS_EXTENSION_API bool_option : public float_option

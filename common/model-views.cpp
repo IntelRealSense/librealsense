@@ -1234,7 +1234,7 @@ namespace rs2
                         auto width = res_values[ui.selected_res_id].first;
                         auto height = res_values[ui.selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
-                        if (res >= RS2_SENSOR_MODE_XGA && res <= RS2_SENSOR_MODE_VGA)
+                        if (res >= RS2_SENSOR_MODE_XGA && res < RS2_SENSOR_MODE_COUNT)
                             s->set_option(RS2_OPTION_SENSOR_MODE, res);
                     }
                 }
@@ -4965,9 +4965,9 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::PushFont(window.get_font());
-        auto serializable_device = dev.as<serializable>();
+        auto serializable = dev.as<serializable_device>();
 
-        const auto load_json = [&, serializable_device](const std::string f) {
+        const auto load_json = [&, serializable](const std::string f) {
             std::ifstream file(f);
             if (!file.good())
             {
@@ -4978,9 +4978,9 @@ namespace rs2
             }
             std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-            if (serializable_device)
+            if (serializable)
             {
-                serializable_device.load_json(str);
+                serializable.load_json(str);
                 for (auto&& sub : subdevices)
                 {
                     //If json was loaded correctly, we want the presets combo box to show the name of the configuration file
@@ -5003,14 +5003,14 @@ namespace rs2
             viewer.not_model.add_log(to_string() << "Loaded settings from \"" << f << "\"...");
         };
 
-        const auto save_to_json = [&, serializable_device](std::string full_filename)
+        const auto save_to_json = [&, serializable](std::string full_filename)
         {
             if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
             std::ofstream outfile(full_filename);
             json saved_configuraion;
-            if (serializable_device)
+            if (serializable)
             {
-                saved_configuraion = json::parse(serializable_device.serialize_json());
+                saved_configuraion = json::parse(serializable.serialize_json());
             }
             save_viewer_configurations(outfile, saved_configuraion);
             outfile << saved_configuraion.dump(4);
@@ -5111,7 +5111,7 @@ namespace rs2
                                 {
                                     //File was chosen
                                     auto file = selected - static_cast<int>(labels.size() - files_labels.size());
-                                    if(file < 0 || file > full_files_names.size())
+                                    if(file < 0 || file >= full_files_names.size())
                                         throw std::runtime_error("not a valid format");
                                     auto f = full_files_names[file];
                                     error_message = safe_call([&]() { load_json(f); });
@@ -5144,7 +5144,7 @@ namespace rs2
         const ImVec2 icons_size{ 20, 20 };
         //TODO: Change this once we have support for loading jsons with more data than only advanced controls
         bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming; });
-        const int buttons_flags = serializable_device ? 0 : ImGuiButtonFlags_Disabled;
+        const int buttons_flags = serializable ? 0 : ImGuiButtonFlags_Disabled;
         static bool require_advanced_mode_enable_prompt = false;
         auto advanced_dev = dev.as<advanced_mode>();
         auto is_advanced_device = false;
@@ -5166,7 +5166,7 @@ namespace rs2
 
         if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiButtonFlags_Disabled : buttons_flags))
         {
-            if (serializable_device && (!is_advanced_device || is_advanced_mode_enabled))
+            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 json_loading([&]()
                 {
@@ -5198,7 +5198,7 @@ namespace rs2
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1); //Align the two icons to buttom
         if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
         {
-            if (serializable_device && (!is_advanced_device || is_advanced_mode_enabled))
+            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                 if (ret)
@@ -5421,7 +5421,7 @@ namespace rs2
         ////////////////////////////////////////
         // draw advanced mode panel
         ////////////////////////////////////////
-        auto serialize = dev.is<serializable>();
+        auto serialize = dev.is<serializable_device>();
         if (serialize)
         {
             pos = ImGui::GetCursorPos();

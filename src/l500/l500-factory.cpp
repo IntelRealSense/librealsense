@@ -39,7 +39,7 @@ namespace librealsense
             l500_options(ctx, group),
             l500_color(ctx, group),
             l500_motion(ctx, group),
-            l500_serializable_base(l500_device::_hw_monitor, get_depth_sensor())
+            l500_serializable_base(_hw_monitor, get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

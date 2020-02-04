@@ -9,7 +9,7 @@ namespace librealsense
     using json = nlohmann::json;
 
     l500_serializable_base::l500_serializable_base(std::shared_ptr<hw_monitor> hw_monitor, synthetic_sensor & depth_sensor)
-        :_hw_monitor(hw_monitor),
+        :_hw_monitor_ptr(hw_monitor),
          _depth_sensor(depth_sensor)
     {
     }
@@ -23,8 +23,6 @@ namespace librealsense
         {
             auto&& opt = _depth_sensor.get_option(o);
             auto val = opt.query();
-            std::stringstream ss;
-            ss << val;
             j[get_string(o)] = val;
         }
 

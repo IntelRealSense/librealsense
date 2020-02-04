@@ -27,12 +27,6 @@ namespace librealsense
         get_step = 3
     };
 
-    enum rs2_ambient_light
-    {
-        no_ambient = 1,
-        low_ambient = 2
-    };
-
     class l500_hw_options : public option
     {
     public:

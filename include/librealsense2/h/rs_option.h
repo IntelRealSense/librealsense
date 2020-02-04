@@ -84,13 +84,13 @@ extern "C" {
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
         RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
-        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the reciever */
+        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
         RS2_OPTION_POST_PROCESSING_SHARPENING,  /**< Changes the amount of sharpening in the post-processed image */
         RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
         RS2_OPTION_NOISE_FILTERING, /**< Control edges and background noise */
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
-        RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light to ambient: 1 for no ambient and 2 for low ambient */
-        RS2_OPTION_SENSOR_MODE, /**< Device specific for L515: 0 for XGA and 1 for VGA */
+        RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
+        RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -125,7 +125,7 @@ extern "C" {
         RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
         RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
         RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
-        RS2_RS400_VISUAL_PRESET_COUNT
+        RS2_RS400_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_rs400_visual_preset;
     const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);
 
@@ -138,7 +138,7 @@ extern "C" {
         RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
         RS2_L500_VISUAL_PRESET_MAX_RANGE,
         RS2_L500_VISUAL_PRESET_SHORT_RANGE,
-        RS2_L500_VISUAL_PRESET_COUNT
+        RS2_L500_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_l500_visual_preset;
     const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
 
@@ -147,9 +147,17 @@ extern "C" {
     {
         RS2_SENSOR_MODE_XGA,
         RS2_SENSOR_MODE_VGA,
-        RS2_SENSOR_MODE_COUNT
+        RS2_SENSOR_MODE_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_sensor_mode;
     const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);
+
+    /** \brief ambient light for RS2_OPTION_AMBIENT_LIGHT option. */
+    typedef enum rs2_ambient_light
+    {
+        RS2_AMBIENT_LIGHT_NO_AMBIENT = 1,
+        RS2_AMBIENT_LIGHT_LOW_AMBIENT = 2,
+    } rs2_ambient_light;
+    const char* rs2_ambient_light_to_string(rs2_ambient_light preset);
 
     /**
     * check if an option is read-only

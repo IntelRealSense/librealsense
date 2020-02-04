@@ -1104,7 +1104,8 @@ const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)     
 const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
 const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
-const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return librealsense::get_string(mode); }
+const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
+const char* rs2_ambient_light_to_string(rs2_ambient_light ambient)                        { return get_string(ambient); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {

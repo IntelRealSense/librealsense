@@ -5841,7 +5841,7 @@ TEST_CASE("l500_presets_set_preset", "[live]")
 
         auto presets = ds.get_option_range(RS2_OPTION_VISUAL_PRESET);
         REQUIRE(presets.min == RS2_L500_VISUAL_PRESET_CUSTOM);
-        REQUIRE(presets.max == RS2_L500_VISUAL_PRESET_SHORT_RANGE);
+        REQUIRE(presets.max == RS2_L500_VISUAL_PRESET_COUNT - 1);
         REQUIRE(presets.step == 1);
         REQUIRE(presets.def == RS2_L500_VISUAL_PRESET_DEFAULT);
 
@@ -5857,10 +5857,10 @@ TEST_CASE("l500_presets_set_preset", "[live]")
 
         std::map<int, int> expected_ambient_per_preset =
         {
-            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, 1},
-            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, 2},
-            {RS2_L500_VISUAL_PRESET_MAX_RANGE, 1},
-            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, 2}
+            {RS2_L500_VISUAL_PRESET_NO_AMBIENT, RS2_AMBIENT_LIGHT_NO_AMBIENT},
+            {RS2_L500_VISUAL_PRESET_LOW_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT},
+            {RS2_L500_VISUAL_PRESET_MAX_RANGE, RS2_AMBIENT_LIGHT_NO_AMBIENT},
+            {RS2_L500_VISUAL_PRESET_SHORT_RANGE, RS2_AMBIENT_LIGHT_LOW_AMBIENT}
         };
 
         std::map<int, int> expected_laser_power_per_preset =
@@ -5872,7 +5872,7 @@ TEST_CASE("l500_presets_set_preset", "[live]")
         std::map< float, float> apd_per_ambient;
         for (auto i : expected_ambient_per_preset)
         {
-            std::vector<int> resolutions{ RS2_SENSOR_MODE_XGA, RS2_SENSOR_MODE_VGA }; //XGA, VGA
+            std::vector<int> resolutions{ RS2_SENSOR_MODE_XGA, RS2_SENSOR_MODE_VGA };
             for (auto res : resolutions)
             {
                 ds.set_option(RS2_OPTION_SENSOR_MODE, res);
@@ -5897,7 +5897,7 @@ TEST_CASE("l500_presets_set_preset", "[live]")
         {
             ds.set_option(opt.first, opt.second.min);
             CAPTURE(ds.get_option(RS2_OPTION_VISUAL_PRESET));
-            REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == RS2_L500_VISUAL_PRESET_CUSTOM);   //custom
+            REQUIRE(ds.get_option(RS2_OPTION_VISUAL_PRESET) == RS2_L500_VISUAL_PRESET_CUSTOM);
             ds.set_option(RS2_OPTION_VISUAL_PRESET, RS2_L500_VISUAL_PRESET_LOW_AMBIENT);
         }
        

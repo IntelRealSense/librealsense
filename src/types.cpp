@@ -152,6 +152,18 @@ namespace librealsense
 #undef CASE
     }
     
+    const char* get_string(rs2_ambient_light value)
+    {
+#define CASE(X) STRCASE(AMBIENT_LIGHT, X)
+        switch (value)
+        {
+            CASE(NO_AMBIENT)
+            CASE(LOW_AMBIENT)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_extension value)
     {
 #define CASE(X) STRCASE(EXTENSION, X)
@@ -495,7 +507,6 @@ namespace librealsense
             CASE(LOW_AMBIENT)
             CASE(MAX_RANGE)
             CASE(SHORT_RANGE)
-            CASE(COUNT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

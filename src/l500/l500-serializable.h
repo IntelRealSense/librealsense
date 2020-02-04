@@ -17,7 +17,7 @@ namespace librealsense
         void load_json(const std::string& json_content) override;
 
     private:
-        std::shared_ptr<hw_monitor> _hw_monitor;
+        std::shared_ptr<hw_monitor> _hw_monitor_ptr;
         synthetic_sensor& _depth_sensor;
     };
 } // namespace librealsense
