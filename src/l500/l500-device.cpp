@@ -118,6 +118,14 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        if( _fw_version >= firmware_version( "1.3.5.0" ) )
+        {
+            depth_sensor.register_option(
+                RS2_OPTION_FREEFALL_ENABLED,
+                std::make_shared< freefall_option >( *_hw_monitor )
+            );
+        }
     }
 
     std::shared_ptr<synthetic_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
