@@ -1810,6 +1810,9 @@ std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<
 
     inline res_type get_res_type(uint32_t width, uint32_t height)
     {
+        if (width == 256) // Crop resolution
+            return res_type::high_resolution;
+
         if (width == 640)
             return res_type::medium_resolution;
         else if (width < 640)
