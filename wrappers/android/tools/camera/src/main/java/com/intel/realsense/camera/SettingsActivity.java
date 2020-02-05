@@ -223,9 +223,10 @@ public class SettingsActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            final Updatable upd = mDevice.as(Extension.UPDATABLE);
-            FileUtilities.saveFileToExternalDir(mBackupFileName, upd.createFlashBackup());
-            return null;
+            try(final Updatable upd = mDevice.as(Extension.UPDATABLE)){
+                FileUtilities.saveFileToExternalDir(mBackupFileName, upd.createFlashBackup());
+                return null;
+            }
         }
 
         @Override
