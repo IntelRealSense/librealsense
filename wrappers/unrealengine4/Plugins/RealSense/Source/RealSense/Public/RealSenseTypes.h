@@ -116,7 +116,7 @@ enum class ERealSenseOptionType : uint8
     LED_POWER                                  , /**< Power of the LED (light emitting diode), with 0 meaning LED off */
     ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
     ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
-    FREEFALL_ENABLED                           , /**< Enable/disable sensor shutdown when a free-fall is detected (off by default) */
+    FREEFALL_DETECTION_ENABLED                 , /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
 };
 
 UENUM(Blueprintable)

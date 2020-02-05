@@ -258,7 +258,6 @@ namespace librealsense
             CASE(ERROR_POLLING_ENABLED)
             CASE(PROJECTOR_TEMPERATURE)
             CASE(OUTPUT_TRIGGER_ENABLED)
-            CASE(FREEFALL_ENABLED)
             CASE(MOTION_MODULE_TEMPERATURE)
             CASE(DEPTH_UNITS)
             CASE(ENABLE_MOTION_CORRECTION)
@@ -295,6 +294,7 @@ namespace librealsense
             CASE(LED_POWER)
             CASE(ZERO_ORDER_ENABLED)
             CASE(ENABLE_MAP_PRESERVATION)
+            CASE(FREEFALL_DETECTION_ENABLED)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

@@ -159,7 +159,7 @@ namespace librealsense
         {
             bool_option::set( value );
 
-            command cmd{ FALL_DETECT_ENABLE, value != 0.f };
+            command cmd{ FALL_DETECT_ENABLE, is_true() };
             auto res = _hwm.send( cmd );
             _record_action( *this );
         }

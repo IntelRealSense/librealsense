@@ -122,7 +122,7 @@ namespace librealsense
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
         {
             depth_sensor.register_option(
-                RS2_OPTION_FREEFALL_ENABLED,
+                RS2_OPTION_FREEFALL_DETECTION_ENABLED,
                 std::make_shared< freefall_option >( *_hw_monitor )
             );
         }

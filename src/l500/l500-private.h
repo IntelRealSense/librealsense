@@ -319,7 +319,7 @@ namespace librealsense
             rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         };
 
-        /* For RS2_OPTION_FREEFALL_ENABLED */
+        /* For RS2_OPTION_FREEFALL_DETECTION_ENABLED */
         class freefall_option : public bool_option
         {
         public:
