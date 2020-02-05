@@ -230,12 +230,7 @@ public class PreviewActivity extends AppCompatActivity {
 
         try {
             mGLSurfaceView.clear();
-
-            TimingLogger timingLogger = new TimingLogger("remi", "mStreamer.start()");
             mStreamer.start();
-            timingLogger.addSplit("end of mStreamer.start()");
-            timingLogger.dumpToLog();
-
         }
         catch (Exception e){
             if(mStreamer != null)
