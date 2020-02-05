@@ -242,13 +242,7 @@ namespace librealsense
     processing_blocks l500_depth_sensor::get_l500_recommended_proccesing_blocks()
     {
         processing_blocks res;
-        res.push_back(std::make_shared<zero_order>());
-        auto depth_standart = get_depth_recommended_proccesing_blocks();
-        res.insert(res.end(), depth_standart.begin(), depth_standart.end());
-        res.push_back(std::make_shared<threshold>());
-        res.push_back(std::make_shared<spatial_filter>());
         res.push_back(std::make_shared<temporal_filter>());
-        res.push_back(std::make_shared<hole_filling_filter>());
         return res;
     }
 
