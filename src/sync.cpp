@@ -598,4 +598,13 @@ namespace librealsense
         auto gap = 1000.f / (float)fps;
         return abs(a - b) < ((float)gap / (float)2) ;
     }
+
+    by_pass_composite_matcher::by_pass_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers) :composite_matcher(matchers, "BP: ")
+    {}
+
+    void by_pass_composite_matcher::sync(frame_holder f, syncronization_environment env)
+    {
+        LOG_DEBUG("by_pass_composite_matcher: " << _name << " " << frame_to_string(f));
+        _callback(std::move(f), env);
+    }
 }

@@ -115,11 +115,11 @@ namespace librealsense
         composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name);
 
 
-        virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
-        virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing)  = 0;
-        virtual void clean_inactive_streams(frame_holder& f) = 0;
-        virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
+        virtual bool are_equivalent(frame_holder& a, frame_holder& b) {return false;}
+        virtual bool is_smaller_than(frame_holder& a, frame_holder& b)  {return false;}
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) {return false;}
+        virtual void clean_inactive_streams(frame_holder& f) {}
+        virtual void update_last_arrived(frame_holder& f, matcher* m) {}
 
         void dispatch(frame_holder f, syncronization_environment env) override;
         std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
@@ -127,12 +127,20 @@ namespace librealsense
         std::shared_ptr<matcher> find_matcher(const frame_holder& f);
 
     protected:
-        virtual void update_next_expected(const frame_holder& f) = 0;
+        virtual void update_next_expected(const frame_holder& f) {}
 
         std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+    };
+
+    class by_pass_composite_matcher : public composite_matcher
+    {
+    public:
+        by_pass_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+
+        void sync(frame_holder f, syncronization_environment env) override;
     };
 
     class frame_number_composite_matcher : public composite_matcher
