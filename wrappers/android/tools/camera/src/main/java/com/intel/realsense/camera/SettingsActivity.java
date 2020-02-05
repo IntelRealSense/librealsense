@@ -130,9 +130,10 @@ public class SettingsActivity extends AppCompatActivity {
         settingsMap.put(INDEX_ADVANCE_MODE,"Enable advanced mode");
         if(device.is(Extension.UPDATABLE)){
             settingsMap.put(INDEX_UPDATE,"Firmware update");
-            Updatable fwud = device.as(Extension.UPDATABLE);
-            if(fwud != null && fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
-                settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
+            try(Updatable fwud = device.as(Extension.UPDATABLE)){
+                if(fwud != null && fwud.supportsInfo(CameraInfo.CAMERA_LOCKED) && fwud.getInfo(CameraInfo.CAMERA_LOCKED).equals("NO"))
+                    settingsMap.put(INDEX_UPDATE_UNSIGNED,"Firmware update (unsigned)");
+            }
         }
 
         if(device.supportsInfo(CameraInfo.ADVANCED_MODE) && device.isInAdvancedMode()){
