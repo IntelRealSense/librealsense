@@ -16,6 +16,7 @@
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
+#include "l500-serializable.h"
 
 namespace librealsense
 {
@@ -23,8 +24,10 @@ namespace librealsense
 
     // l515
     class rs515_device : public l500_depth,
+        public l500_options,
         public l500_color,
-        public l500_motion
+        public l500_motion,
+        public l500_serializable
     {
     public:
         rs515_device(std::shared_ptr<context> ctx,
@@ -33,8 +36,10 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
             l500_depth(ctx, group),
+            l500_options(ctx, group),
             l500_color(ctx, group),
-            l500_motion(ctx, group)
+            l500_motion(ctx, group),
+            l500_serializable(_hw_monitor, get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -62,7 +67,8 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
-            l500_depth(ctx, group) {}
+            l500_depth(ctx, group)
+        {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 

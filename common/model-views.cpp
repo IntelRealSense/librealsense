@@ -32,6 +32,17 @@
 using namespace rs400;
 using namespace nlohmann;
 
+
+static rs2_sensor_mode resolution_from_width_height(int width, int height)
+{
+    if ((width == 640 && height == 480) || (height == 640 && width == 480))
+        return RS2_SENSOR_MODE_VGA;
+    else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
+        return RS2_SENSOR_MODE_XGA;
+    else
+        return RS2_SENSOR_MODE_COUNT;
+}
+
 ImVec4 flip(const ImVec4& c)
 {
     return{ c.y, c.x, c.z, c.w };
@@ -822,8 +833,7 @@ namespace rs2
         bool* options_invalidated,
         std::string& error_message)
     {
-
-        for (auto&& i:options->get_supported_options())
+        for (auto&& i: options->get_supported_options())
         {
             auto opt = static_cast<rs2_option>(i);
 
@@ -900,6 +910,7 @@ namespace rs2
         depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer)
     {
+        supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
 
@@ -992,7 +1003,6 @@ namespace rs2
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
-        populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
 
         if (dev.supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
@@ -1119,6 +1129,9 @@ namespace rs2
             get_default_selection_index(res_values, resolution_constrain, &selection_index);
             ui.selected_res_id = selection_index;
 
+            if (s->supports(RS2_OPTION_SENSOR_MODE))
+                s->set_option(RS2_OPTION_SENSOR_MODE, resolution_from_width_height(res_values[ui.selected_res_id].first, res_values[ui.selected_res_id].second));
+
             while (ui.selected_res_id >= 0 && !is_selected_combination_supported()) ui.selected_res_id--;
             last_valid_ui = ui;
         }
@@ -1126,6 +1139,8 @@ namespace rs2
         {
             error_message = error_to_string(e);
         }
+        populate_options(options_metadata, ss.str().c_str(), this, s, &_options_invalidated, error_message);
+
     }
 
     subdevice_model::~subdevice_model()
@@ -1212,6 +1227,16 @@ namespace rs2
                     static_cast<int>(res_chars.size())))
                 {
                     res = true;
+                    _options_invalidated = true;
+
+                    if (s->supports(RS2_OPTION_SENSOR_MODE))
+                    {
+                        auto width = res_values[ui.selected_res_id].first;
+                        auto height = res_values[ui.selected_res_id].second;
+                        auto res = resolution_from_width_height(width, height);
+                        if (res >= RS2_SENSOR_MODE_XGA && res < RS2_SENSOR_MODE_COUNT)
+                            s->set_option(RS2_OPTION_SENSOR_MODE, res);
+                    }
                 }
                 ImGui::PopStyleColor();
                 ImGui::PopItemWidth();
@@ -1848,11 +1873,13 @@ namespace rs2
 
             for (auto&& pbm : post_processing) pbm->save_to_config_file();
         }
-        if (next_option < s->get_supported_options().size())
+
+        if (next_option < supported_options.size())
         {
-            if (options_metadata.find(static_cast<rs2_option>(next_option)) != options_metadata.end())
+            auto next = supported_options[next_option];
+            if (options_metadata.find(static_cast<rs2_option>(next)) != options_metadata.end())
             {
-                auto& opt_md = options_metadata[static_cast<rs2_option>(next_option)];
+                auto& opt_md = options_metadata[static_cast<rs2_option>(next)];
                 opt_md.update_all_fields(error_message, notifications);
 
                 if (next_option == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
@@ -4938,8 +4965,9 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::PushFont(window.get_font());
+        auto serializable = dev.as<serializable_device>();
 
-        const auto load_json = [&](const std::string f) {
+        const auto load_json = [&, serializable](const std::string f) {
             std::ifstream file(f);
             if (!file.good())
             {
@@ -4949,9 +4977,10 @@ namespace rs2
                 throw std::runtime_error(to_string() << "Failed to read configuration file:\n\"" << f << "\"\nRemoving it from presets.");
             }
             std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            if (auto advanced = dev.as<advanced_mode>())
+
+            if (serializable)
             {
-                advanced.load_json(str);
+                serializable.load_json(str);
                 for (auto&& sub : subdevices)
                 {
                     //If json was loaded correctly, we want the presets combo box to show the name of the configuration file
@@ -4974,15 +5003,14 @@ namespace rs2
             viewer.not_model.add_log(to_string() << "Loaded settings from \"" << f << "\"...");
         };
 
-        const auto save_to_json = [&](std::string full_filename)
+        const auto save_to_json = [&, serializable](std::string full_filename)
         {
-            auto advanced = dev.as<advanced_mode>();
             if (!ends_with(to_lower(full_filename), ".json")) full_filename += ".json";
             std::ofstream outfile(full_filename);
             json saved_configuraion;
-            if (auto advanced = dev.as<advanced_mode>())
+            if (serializable)
             {
-                saved_configuraion = json::parse(advanced.serialize_json());
+                saved_configuraion = json::parse(serializable.serialize_json());
             }
             save_viewer_configurations(outfile, saved_configuraion);
             outfile << saved_configuraion.dump(4);
@@ -5057,38 +5085,38 @@ namespace rs2
                         if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
+                            *opt_model.invalidate_flag = true;
+
                             auto advanced = dev.as<advanced_mode>();
                             if (advanced)
-                            {
-                                if (advanced.is_enabled())
+                                if (!advanced.is_enabled())
+                                    keep_showing_popup = true;
+
+                            if(!keep_showing_popup)
+                                if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                 {
-                                    if (selected < static_cast<int>(labels.size() - files_labels.size()))
-                                    {
-                                        //Known preset was chosen
-                                        auto new_val = opt_model.range.min + opt_model.range.step * selected;
-                                        model.add_log(to_string() << "Setting " << opt_model.opt << " to "
-                                            << opt_model.value << " (" << labels[selected] << ")");
+                                    //Known preset was chosen
+                                    auto new_val = opt_model.range.min + opt_model.range.step * selected;
+                                    model.add_log(to_string() << "Setting " << opt_model.opt << " to "
+                                        << opt_model.value << " (" << labels[selected] << ")");
 
-                                        opt_model.endpoint->set_option(opt_model.opt, new_val);
+                                    opt_model.endpoint->set_option(opt_model.opt, new_val);
 
-                                        // Only apply preset to GUI if set_option was succesful
-                                        selected_file_preset = "";
-                                        opt_model.value = new_val;
-                                        is_clicked = true;
-                                    }
-                                    else
-                                    {
-                                        //File was chosen
-                                        auto f = full_files_names[selected - static_cast<int>(labels.size() - files_labels.size())];
-                                        error_message = safe_call([&]() { load_json(f); });
-                                        selected_file_preset = f;
-                                    }
+                                    // Only apply preset to GUI if set_option was succesful
+                                    selected_file_preset = "";
+                                    opt_model.value = new_val;
+                                    is_clicked = true;
                                 }
                                 else
                                 {
-                                    keep_showing_popup = true;
+                                    //File was chosen
+                                    auto file = selected - static_cast<int>(labels.size() - files_labels.size());
+                                    if(file < 0 || file >= full_files_names.size())
+                                        throw std::runtime_error("not a valid format");
+                                    auto f = full_files_names[file];
+                                    error_message = safe_call([&]() { load_json(f); });
+                                    selected_file_preset = f;
                                 }
-                            }
                         }
                         if (keep_showing_popup)
                         {
@@ -5116,14 +5144,17 @@ namespace rs2
         const ImVec2 icons_size{ 20, 20 };
         //TODO: Change this once we have support for loading jsons with more data than only advanced controls
         bool is_streaming = std::any_of(subdevices.begin(), subdevices.end(), [](const std::shared_ptr<subdevice_model>& sm) { return sm->streaming; });
-        const int buttons_flags = dev.is<advanced_mode>() ? 0 : ImGuiButtonFlags_Disabled;
+        const int buttons_flags = serializable ? 0 : ImGuiButtonFlags_Disabled;
         static bool require_advanced_mode_enable_prompt = false;
         auto advanced_dev = dev.as<advanced_mode>();
-        bool is_advanced_mode_enabled = false;
+        auto is_advanced_device = false;
+        auto is_advanced_mode_enabled = false;
         if (advanced_dev)
         {
+            is_advanced_device = true;
             is_advanced_mode_enabled = advanced_dev.is_enabled();
         }
+
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 3);
 
         ////////////////////////////////////////
@@ -5135,7 +5166,7 @@ namespace rs2
 
         if (ImGui::ButtonEx(upload_button_name.c_str(), icons_size, (is_streaming && !load_json_if_streaming) ? ImGuiButtonFlags_Disabled : buttons_flags))
         {
-            if (is_advanced_mode_enabled)
+            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 json_loading([&]()
                 {
@@ -5167,7 +5198,7 @@ namespace rs2
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1); //Align the two icons to buttom
         if (ImGui::ButtonEx(save_button_name.c_str(), icons_size, buttons_flags))
         {
-            if (is_advanced_mode_enabled)
+            if (serializable && (!is_advanced_device || is_advanced_mode_enabled))
             {
                 auto ret = file_dialog_open(save_file, "JavaScript Object Notation (JSON)\0*.json\0", NULL, NULL);
                 if (ret)
@@ -5390,7 +5421,8 @@ namespace rs2
         ////////////////////////////////////////
         // draw advanced mode panel
         ////////////////////////////////////////
-        if (dev.is<advanced_mode>())
+        auto serialize = dev.is<serializable_device>();
+        if (serialize)
         {
             pos = ImGui::GetCursorPos();
             const float vertical_space_before_advanced_mode_control = 10.0f;
@@ -5652,7 +5684,7 @@ namespace rs2
                 if (show_stream_selection)
                     sub->draw_stream_selection();
 
-                static const std::vector<rs2_option> drawing_order = dev.is<advanced_mode>() ?
+                static const std::vector<rs2_option> drawing_order = serialize ?
                     std::vector<rs2_option>{                           RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE }
                   : std::vector<rs2_option>{ RS2_OPTION_VISUAL_PRESET, RS2_OPTION_EMITTER_ENABLED, RS2_OPTION_ENABLE_AUTO_EXPOSURE };
 
@@ -5676,7 +5708,7 @@ namespace rs2
                             if (skip_option(opt)) continue;
                             if (std::find(drawing_order.begin(), drawing_order.end(), opt) == drawing_order.end())
                             {
-                                if (dev.is<advanced_mode>() && opt == RS2_OPTION_VISUAL_PRESET)
+                                if (serialize && opt == RS2_OPTION_VISUAL_PRESET)
                                     continue;
                                 if (sub->draw_option(opt, dev.is<playback>() || update_read_only_options, error_message, viewer.not_model))
                                 {

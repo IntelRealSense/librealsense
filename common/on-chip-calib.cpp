@@ -58,10 +58,8 @@ namespace rs2
         {
             for (auto&& stream : _viewer.streams)
             {
-                if (std::find_if(profiles.begin(), profiles.end(),
-                    [&stream](rs2::stream_profile p) {
-                        return stream.second.original_profile.unique_id() == p.unique_id();
-                    }) != profiles.end())
+                if (std::find(profiles.begin(), profiles.end(),
+                    stream.second.original_profile) != profiles.end())
                 {
                     auto now = std::chrono::high_resolution_clock::now();
                     if (now - stream.second.last_frame < std::chrono::milliseconds(100))
@@ -312,7 +310,6 @@ namespace rs2
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
                ",\n \"average step count\":" << average_step_count <<
-               ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                ",\n \"step count\":" << step_count <<
                ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                ",\n \"accuracy\":" << accuracy <<"}";

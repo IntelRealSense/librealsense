@@ -1103,7 +1103,9 @@ const char* rs2_extension_type_to_string(rs2_extension type)                    
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
 const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
-
+const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
+const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
+const char* rs2_ambient_light_to_string(rs2_ambient_light ambient)                        { return get_string(ambient); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
@@ -1256,6 +1258,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
         case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface) != nullptr;
+        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface) != nullptr;
 
         default:
             return false;
@@ -2822,3 +2825,20 @@ void rs2_set_calibration_table(const rs2_device* device, const void* calibration
     auto_calib->set_calibration_table(buffer);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(,calibration, device)
+
+rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
+    return new rs2_raw_data_buffer{ serializable->serialize_json() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+void rs2_load_json(rs2_device* dev, const char* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(json_content);
+    auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
+    serializable->load_json(json_content);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)

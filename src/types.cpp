@@ -140,6 +140,30 @@ namespace librealsense
 #undef CASE
     }
 
+    const char* get_string(rs2_sensor_mode value)
+    {
+#define CASE(X) STRCASE(SENSOR_MODE, X)
+        switch (value)
+        {
+            CASE(XGA)
+            CASE(VGA)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+    
+    const char* get_string(rs2_ambient_light value)
+    {
+#define CASE(X) STRCASE(AMBIENT_LIGHT, X)
+        switch (value)
+        {
+            CASE(NO_AMBIENT)
+            CASE(LOW_AMBIENT)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_extension value)
     {
 #define CASE(X) STRCASE(EXTENSION, X)
@@ -191,6 +215,7 @@ namespace librealsense
             CASE(MOTION_SENSOR)
             CASE(FISHEYE_SENSOR)
             CASE(DEPTH_HUFFMAN_DECODER)
+            CASE(SERIALIZABLE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -295,11 +320,18 @@ namespace librealsense
             CASE(ZERO_ORDER_ENABLED)
             CASE(ENABLE_MAP_PRESERVATION)
             CASE(FREEFALL_DETECTION_ENABLED)
+            CASE(AVALANCHE_PHOTO_DIODE)
+            CASE(POST_PROCESSING_SHARPENING)
+            CASE(PRE_PROCESSING_SHARPENING)
+            CASE(NOISE_FILTERING)
+            CASE(INVALIDATION_BYPASS)
+            CASE(AMBIENT_LIGHT)
+            CASE(SENSOR_MODE)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
     }
-
+   
     const char* get_string(rs2_format value)
     {
 #define CASE(X) case RS2_FORMAT_##X: return #X;
@@ -462,6 +494,22 @@ namespace librealsense
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 
+#undef CASE
+    }
+
+    const char* get_string(rs2_l500_visual_preset value)
+    {
+#define CASE(X) STRCASE(L500_VISUAL_PRESET, X)
+        switch (value)
+        {
+            CASE(CUSTOM)
+            CASE(DEFAULT)
+            CASE(NO_AMBIENT)
+            CASE(LOW_AMBIENT)
+            CASE(MAX_RANGE)
+            CASE(SHORT_RANGE)
+        default: assert(!is_valid(value)); return UNKNOWN_VALUE;
+        }
 #undef CASE
     }
     std::string firmware_version::to_string() const

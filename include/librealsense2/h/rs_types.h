@@ -179,6 +179,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_MOTION_SENSOR,
     RS2_EXTENSION_FISHEYE_SENSOR,
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
+    RS2_EXTENSION_SERIALIZABLE,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

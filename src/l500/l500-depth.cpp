@@ -15,6 +15,7 @@
 #include "proc/zero-order.h"
 #include <cstddef>
 #include "metadata-parser.h"
+#include "l500-options.h"
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -72,7 +73,6 @@ namespace librealsense
 
         depth_sensor.register_option(RS2_OPTION_APD_TEMPERATURE,
             std::make_shared <l500_temperature_options>(_hw_monitor.get(), RS2_OPTION_APD_TEMPERATURE));
-
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_confidence_stream);
@@ -135,7 +135,7 @@ namespace librealsense
         }
         else
         {
-            matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
+            matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
         }
 
         return std::make_shared<timestamp_composite_matcher>(matchers);
@@ -264,6 +264,16 @@ namespace librealsense
         });
     }
 
+    rs2_sensor_mode get_resolution_from_width_height(int width, int height)
+    {
+        if ((width == 640 && height == 480) || (height == 640 && width == 480))
+            return RS2_SENSOR_MODE_VGA;
+        else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
+            return RS2_SENSOR_MODE_XGA;
+        else
+            throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
+    }
+
     void l500_depth_sensor::open(const stream_profiles& requests)
     {
         try
@@ -307,6 +317,28 @@ namespace librealsense
             {
                 _validator_requests = requests;
             }
+
+            auto dp = std::find_if(requests.begin(), requests.end(), [](std::shared_ptr<stream_profile_interface> sp)
+            {return sp->get_stream_type() == RS2_STREAM_DEPTH;});
+
+            if (dp != requests.end() && supports_option(RS2_OPTION_SENSOR_MODE))
+            {
+                auto&& sensor_mode_option = get_option(RS2_OPTION_SENSOR_MODE);
+                auto vs = dynamic_cast<video_stream_profile*>((*dp).get());
+                if (supports_option(RS2_OPTION_VISUAL_PRESET))
+                {
+                    auto&& preset_option = get_option(RS2_OPTION_VISUAL_PRESET);
+                    if (preset_option.query() == RS2_L500_VISUAL_PRESET_CUSTOM)
+                    {
+                        if(sensor_mode_option.query() != get_resolution_from_width_height(vs->get_width(), vs->get_height()))
+                            throw  std::runtime_error(to_string() << "sensor mode option ("<< sensor_mode_option.query()<<") is incompatible with requested resolution ("
+                                << get_resolution_from_width_height(vs->get_width(), vs->get_height())<<")");
+                    }
+                }
+                
+                sensor_mode_option.set(get_resolution_from_width_height(vs->get_width(), vs->get_height()));
+            }
+
 
             synthetic_sensor::open(_validator_requests);
         }
