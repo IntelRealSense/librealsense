@@ -22,9 +22,16 @@ public:
         static lock_singleton inst;
         return inst;
     }
+    static void lock();
+    static void unlock();
 
-    std::recursive_mutex m;
+private:
+    static std::recursive_mutex m;
 };
+std::recursive_mutex lock_singleton::m;
+void lock_singleton::lock() { m.lock(); }
+void lock_singleton::unlock() { m.unlock(); }
+
 
 namespace librealsense
 {
@@ -316,12 +323,12 @@ namespace librealsense
 
         void rs_uvc_device::lock() const
         {
-            lock_singleton::instance().m.lock();
+            lock_singleton::instance().lock();
         }
 
         void rs_uvc_device::unlock() const
         {
-            lock_singleton::instance().m.unlock();
+            lock_singleton::instance().unlock();
         }
 
         std::string rs_uvc_device::get_device_location() const

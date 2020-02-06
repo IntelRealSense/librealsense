@@ -19,12 +19,16 @@ public class Sensor extends Options {
     }
 
     public <T extends Sensor> T as(Extension extension) {
-        switch (extension){
-            case ROI: return (T) new RoiSensor(mHandle);
-            case DEPTH_SENSOR: return (T) new DepthSensor(mHandle);
-            case COLOR_SENSOR: return (T) new ColorSensor(mHandle);
+        if (this.is(extension)) {
+            switch (extension){
+                case ROI: return (T) new RoiSensor(mHandle);
+                case DEPTH_SENSOR: return (T) new DepthSensor(mHandle);
+                case COLOR_SENSOR: return (T) new ColorSensor(mHandle);
+                default: throw new RuntimeException("this API version does not support " + extension.name());
+            }
+        } else{
+            throw new RuntimeException("this sensor is not extendable to " + extension.name());
         }
-        throw new RuntimeException("this sensor is not extendable to " + extension.name());
     }
 
     public boolean is(Extension extension) {
