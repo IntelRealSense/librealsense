@@ -127,21 +127,32 @@ namespace fw_logger
                         if (attr.compare("Name") == 0)
                         {
                             string name_attr_str(attribute->value(), attribute->value() + attribute->value_size());
-                            vector<string> values;
+                            vector<std::pair<int,string>> values;
 
                             for (xml_node<>* enum_value_node = enum_node->first_node(); enum_value_node; enum_value_node = enum_value_node->next_sibling())
                             {
+                                int key = 0;
+                                string value_str;
                                 for (xml_attribute<>* attribute = enum_value_node->first_attribute(); attribute; attribute = attribute->next_attribute())
                                 {
                                     string attr(attribute->name(), attribute->name() + attribute->name_size());
                                     if (attr.compare("Value") == 0)
                                     {
-                                        string value_str(attribute->value(), attribute->value() + attribute->value_size());
-                                        values.push_back(value_str);
+                                        value_str = std::string(attribute->value(), attribute->value() + attribute->value_size());
+                                    }
+                                    if (attr.compare("Key") == 0)
+                                    {
+                                        try
+                                        {
+                                            auto key_str = std::string(attribute->value());
+                                            key = std::stoi(key_str, nullptr);
+                                        }
+                                        catch (...) {}
                                     }
                                 }
+                                values.push_back(std::make_pair(key, value_str));
                             }
-                            logs_formating_options->_fw_logs_enum_names_list.insert(pair<string, vector<string>>(name_attr_str, values));
+                            logs_formating_options->_fw_logs_enum_names_list.insert(pair<string, vector<std::pair<int, std::string>>>(name_attr_str, values));
                         }
                     }
                 }
