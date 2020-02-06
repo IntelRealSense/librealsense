@@ -4,6 +4,7 @@
 #include <regex>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 using namespace std;
 
@@ -99,7 +100,14 @@ namespace fw_logger
                     {
                         auto vec = _enums[enum_name];
                         regex e3 = e;
-                        auto res1 = regex_replace(back_inserter(destTemp), source_temp.begin(), source_temp.end(), e3, vec[exp_replace_it->second]);
+                        // Validate user's input is within the enumerated values
+                        if (exp_replace_it->second >=0 && exp_replace_it->second <vec.size())
+                            auto res1 = regex_replace(back_inserter(destTemp), source_temp.begin(), source_temp.end(), e3, vec[exp_replace_it->second]);
+                        else
+                        {
+                            std::cout << "Protocol Error recognized!\nImproper log message received: " << source_temp
+                                << ", invalid parameter: " << exp_replace_it->second << std::endl;
+                        }
                         source_temp = destTemp;
                     }
                 }
