@@ -6,6 +6,10 @@ public class Pipeline extends LrsClass{
         mHandle = nCreate(ctx.getHandle());
     }
 
+    public Pipeline(RsContext ctx){
+        mHandle = nCreate(ctx.getHandle());
+    }
+
     public PipelineProfile start() throws Exception{
         return new PipelineProfile(nStart(mHandle));
     }
