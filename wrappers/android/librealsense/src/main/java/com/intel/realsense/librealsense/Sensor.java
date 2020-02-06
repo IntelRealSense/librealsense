@@ -18,7 +18,7 @@ public class Sensor extends Options {
         return rv;
     }
 
-    public <T extends Sensor> T as(Extension extension) {
+    public <T extends Sensor> T as(Extension extension) throws RuntimeException {
         if (this.is(extension)) {
             switch (extension){
                 case ROI: return (T) new RoiSensor(mHandle);
