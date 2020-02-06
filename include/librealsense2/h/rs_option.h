@@ -146,8 +146,8 @@ extern "C" {
     /** \brief For setting the camera_mode option */
     typedef enum rs2_sensor_mode
     {
-        RS2_SENSOR_MODE_XGA,
         RS2_SENSOR_MODE_VGA,
+        RS2_SENSOR_MODE_XGA,
         RS2_SENSOR_MODE_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_sensor_mode;
     const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);

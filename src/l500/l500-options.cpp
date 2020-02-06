@@ -85,7 +85,7 @@ namespace librealsense
         }
         else
         {
-            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_XGA,RS2_SENSOR_MODE_VGA,1, RS2_SENSOR_MODE_XGA }, "Notify the sensor about the intended streaming mode. Required for preset ");
+            auto resolution_option = std::make_shared<float_option_with_description<rs2_sensor_mode>>(option_range{ RS2_SENSOR_MODE_VGA,RS2_SENSOR_MODE_XGA,1, RS2_SENSOR_MODE_XGA }, "Notify the sensor about the intended streaming mode. Required for preset ");
 
             depth_sensor.register_option(RS2_OPTION_SENSOR_MODE, resolution_option);
 
