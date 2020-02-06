@@ -206,6 +206,7 @@ public class PreviewActivity extends AppCompatActivity {
 
             }
 
+
             @Override
             public void onFrameset(final FrameSet frameSet) {
                 mStreamingStats.onFrameset(frameSet);
