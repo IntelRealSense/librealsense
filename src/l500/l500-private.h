@@ -21,7 +21,7 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_DEPTH_VISUAL_PRESET = 2;
+        const uint8_t L500_AMBIENT = 2;
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const uint32_t FLASH_SIZE = 0x00200000;
@@ -49,6 +49,8 @@ namespace librealsense
             GVD                         = 0x10, //"Get Version and Date"
             DFU                         = 0x1E, //"Go to DFU"
             HW_RESET                    = 0x20, //"HW Reset"
+            AMCSET                      = 0x2B, // Set options (L515)
+            AMCGET                      = 0x2C, // Get options (L515)
             PFD                         = 0x3B, // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
             DPT_INTRINSICS_GET          = 0x5A,
             TEMPERATURES_GET            = 0x6A,

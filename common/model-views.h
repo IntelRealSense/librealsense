@@ -269,7 +269,8 @@ namespace rs2
         if (opt == RS2_OPTION_STREAM_FILTER ||
             opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
             opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
+            opt == RS2_OPTION_SENSOR_MODE)
             return true;
         return false;
     }
@@ -688,7 +689,8 @@ namespace rs2
         frame_queues queues;
         std::mutex _queue_lock;
         bool _options_invalidated = false;
-        int next_option = RS2_OPTION_COUNT;
+        int next_option = 0;
+        std::vector<rs2_option> supported_options;
         bool streaming = false;
 
         rect normalized_zoom{0, 0, 1, 1};

@@ -20,6 +20,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_types.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_context.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_device.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_serializable_device.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_export.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_frame.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/hpp/rs_processing.hpp"

@@ -146,5 +146,7 @@ inline std::ostream & operator << (std::ostream & o, rs2_notification_category n
 inline std::ostream & operator << (std::ostream & o, rs2_sr300_visual_preset preset) { return o << rs2_sr300_visual_preset_to_string(preset); }
 inline std::ostream & operator << (std::ostream & o, rs2_exception_type exception_type) { return o << rs2_exception_type_to_string(exception_type); }
 inline std::ostream & operator << (std::ostream & o, rs2_playback_status status) { return o << rs2_playback_status_to_string(status); }
+inline std::ostream & operator << (std::ostream & o, rs2_l500_visual_preset preset) {return o << rs2_l500_visual_preset_to_string(preset);}
+inline std::ostream & operator << (std::ostream & o, rs2_sensor_mode mode) { return o << rs2_sensor_mode_to_string(mode); }
 
 #endif // LIBREALSENSE_RS2_HPP

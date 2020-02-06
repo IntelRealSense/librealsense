@@ -78,6 +78,8 @@ namespace librealsense
 
         void force_hardware_reset() const;
         bool _is_locked = true;
+
+        std::vector<rs2_option> _advanced_options;
     };
 
     class l500_notification_decoder : public notification_decoder

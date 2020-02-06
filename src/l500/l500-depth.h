@@ -17,6 +17,7 @@
 #include "l500-private.h"
 #include "error-handling.h"
 #include "frame-validator.h"
+#include "l500-options.h"
 
 namespace librealsense
 {
@@ -111,7 +112,23 @@ namespace librealsense
             });
 
             register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
+        }
 
+        std::vector<rs2_option> get_supported_options() const override
+        {
+            std::vector<rs2_option> options;
+            for (auto opt : _options)
+            {
+                if (std::find_if(_owner->_advanced_options.begin(), _owner->_advanced_options.end(), [opt](rs2_option o) { return o == opt.first;}) != _owner->_advanced_options.end())
+                    continue;
+
+                 options.push_back(opt.first);
+            }
+
+            for (auto option : _owner->_advanced_options)
+                options.push_back(option);
+
+            return options;
         }
 
         virtual const char* get_option_name(rs2_option option) const override
@@ -249,6 +266,5 @@ namespace librealsense
         stream_profiles _validator_requests;
         bool _depth_invalidation_enabled;
         std::shared_ptr<depth_invalidation_option> _depth_invalidation_option;
-
     };
 }
