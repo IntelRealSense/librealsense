@@ -50,6 +50,9 @@ const size_t MAX_DEV_PARENT_DIR = 10;
 
 #include "../tm2/tm-boot.h"
 
+#include <sys/syscall.h> //Used for priniting debug messages.
+#define COUT1(msg) // std::cout << msg
+
 //#define DEBUG_V4L
 #ifdef DEBUG_V4L
 #define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
@@ -116,8 +119,17 @@ namespace librealsense
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
-              _fildes(-1)
+              _fildes(-1),
+              _object_lock_counter(0)
         {
+            _init_mutex.lock();
+            _dev_mutex[_device_path];   // insert a mutex for _device_path
+            if (_dev_mutex_cnt.find(_device_path) == _dev_mutex_cnt.end())
+            {
+                _dev_mutex_cnt[_device_path] = 0;
+            }
+            COUT1(syscall(SYS_gettid) << ":named_mutex _dev_mutex_cnt[" << _device_path << "]=" << _dev_mutex_cnt[_device_path] << std::endl);
+            _init_mutex.unlock();
         }
 
         named_mutex::~named_mutex()
@@ -156,32 +168,71 @@ namespace librealsense
 
         void named_mutex::acquire()
         {
-            if (-1 == _fildes)
+            COUT1(syscall(SYS_gettid) << ":acquire 1" << " " << _device_path << " " << this << std::endl);
+            _dev_mutex[_device_path].lock();
+            _dev_mutex_cnt[_device_path] += 1;
+            _object_lock_counter += 1;
+            COUT1(syscall(SYS_gettid) << ":acquire _dev_mutex_cnt[" << _device_path << "]=" << _dev_mutex_cnt[_device_path] << std::endl);
+            if (_dev_mutex_cnt[_device_path] == 1)
             {
-                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
-                if(0 > _fildes)
-                    throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
-            }
+                COUT1(syscall(SYS_gettid) << ":acquire 2" << std::endl);
+                if (-1 == _fildes)
+                {
+                    _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                    if(0 > _fildes)
+                        throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
+                }
 
-            auto ret = lockf(_fildes, F_LOCK, 0);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "Acquire failed");
+                auto ret = lockf(_fildes, F_LOCK, 0);
+                if (0 != ret)
+                    throw linux_backend_exception(to_string() << "Acquire failed");
+            }
+            COUT1(syscall(SYS_gettid) << ":acquire 6" << std::endl);
         }
 
         void named_mutex::release()
         {
-            if (-1 == _fildes)
+            COUT1(syscall(SYS_gettid) << ":release 1" << " " << _device_path << " " << this << std::endl);
+            _object_lock_counter -= 1;
+            if (_object_lock_counter < 0)
+            {
+                COUT1(syscall(SYS_gettid) << ":release (not obj locked) _object_lock_counter=" << _object_lock_counter << std::endl);
+                _object_lock_counter = 0;
                 return;
+            }
+            _dev_mutex_cnt[_device_path] -= 1;
+            COUT1(syscall(SYS_gettid) << ":release _dev_mutex_cnt[" << _device_path << "]=" << _dev_mutex_cnt[_device_path] << std::endl);
+            std::string err_msg;
+            if (_dev_mutex_cnt[_device_path] < 0)
+            {
+                _dev_mutex_cnt[_device_path] = 0;
+                COUT1(syscall(SYS_gettid) << ":release (not dev locked) _dev_mutex_cnt[" << _device_path << "]=" << _dev_mutex_cnt[_device_path] << std::endl);
+                throw linux_backend_exception("HOW DID WE GET HERE??");
+            }
 
-            auto ret = lockf(_fildes, F_ULOCK, 0);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "lockf(...) failed");
+            if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))
+            {
+                COUT1(syscall(SYS_gettid) << ":release 2" << std::endl);
+                auto ret = lockf(_fildes, F_ULOCK, 0);
+                if (0 != ret)
+                    err_msg = to_string() << "lockf(...) failed";
+                else
+                {
+                    ret = close(_fildes);
+                    if (0 != ret)
+                        err_msg = to_string() << "close(...) failed";
+                    else
+                        _fildes = -1;
+                }
+                COUT1(syscall(SYS_gettid) << ":release 3" << std::endl);
+            }
+            COUT1(syscall(SYS_gettid) << ":release 4" << std::endl);
+            _dev_mutex[_device_path].unlock();
 
-            ret = close(_fildes);
-            if (0 != ret)
-                throw linux_backend_exception(to_string() << "close(...) failed");
-
-            _fildes = -1;
+            if (!err_msg.empty())
+                throw linux_backend_exception(err_msg);
+            
+            COUT1(syscall(SYS_gettid) << ":release 5" << std::endl);
         }
 
         static int xioctl(int fh, unsigned long request, void *arg)
