@@ -9,10 +9,10 @@
 
 namespace librealsense
 {
-    class l500_serializable_base : public serializable_interface
+    class l500_serializable : public serializable_interface
     {
     public:
-        l500_serializable_base(std::shared_ptr<hw_monitor> hw_monitor, synthetic_sensor& depth_sensor);
+        l500_serializable(std::shared_ptr<hw_monitor> hw_monitor, synthetic_sensor& depth_sensor);
         std::vector<uint8_t> serialize_json() const override;
         void load_json(const std::string& json_content) override;
 

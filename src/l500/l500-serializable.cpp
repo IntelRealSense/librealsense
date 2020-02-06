@@ -8,13 +8,13 @@ namespace librealsense
 {
     using json = nlohmann::json;
 
-    l500_serializable_base::l500_serializable_base(std::shared_ptr<hw_monitor> hw_monitor, synthetic_sensor & depth_sensor)
+    l500_serializable::l500_serializable(std::shared_ptr<hw_monitor> hw_monitor, synthetic_sensor & depth_sensor)
         :_hw_monitor_ptr(hw_monitor),
          _depth_sensor(depth_sensor)
     {
     }
 
-    std::vector<uint8_t> l500_serializable_base::serialize_json() const
+    std::vector<uint8_t> l500_serializable::serialize_json() const
     {
         json j;
         auto options = _depth_sensor.get_supported_options();
@@ -30,7 +30,7 @@ namespace librealsense
         return std::vector<uint8_t>(str.begin(), str.end());
     }
 
-    void l500_serializable_base::load_json(const std::string& json_content)
+    void l500_serializable::load_json(const std::string& json_content)
     {
         json j = json::parse(json_content);
 

@@ -33,7 +33,7 @@ using namespace rs400;
 using namespace nlohmann;
 
 
-rs2_sensor_mode resolution_from_width_height(int width, int height)
+static rs2_sensor_mode resolution_from_width_height(int width, int height)
 {
     if ((width == 640 && height == 480) || (height == 640 && width == 480))
         return RS2_SENSOR_MODE_VGA;

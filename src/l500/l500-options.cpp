@@ -37,9 +37,16 @@ namespace librealsense
 
         auto def = query(_resolution->query());
 
-        _range = option_range{ float(*(reinterpret_cast<int*>(min.data()))),
-            float(*(reinterpret_cast<int*>(max.data()))),
-            float(*(reinterpret_cast<int*>(step.data()))),
+        if (min.size() < sizeof(int32_t) || max.size() < sizeof(int32_t) || step.size() < sizeof(int32_t))
+        {
+            std::stringstream s;
+            s << "Size of data returned is not valid min size = " << min.size() << ", max size = " << max.size() << ", step size = " << step.size();
+            throw std::runtime_error(s.str());
+        }
+
+        _range = option_range{ float(*(reinterpret_cast<int32_t*>(min.data()))),
+            float(*(reinterpret_cast<int32_t*>(max.data()))),
+            float(*(reinterpret_cast<int32_t*>(step.data()))),
             def };
     }
 
@@ -49,7 +56,15 @@ namespace librealsense
     float l500_hw_options::query(int mode) const
     {
         auto res = _hw_monitor->send(command{ AMCGET, _type, get_current, mode });
-        auto val = *(reinterpret_cast<int*>((void*)res.data()));
+
+        if (res.size() < sizeof(int32_t))
+        {
+            std::stringstream s;
+            s << "Size of data returned is not valid min size = " << res.size();
+            throw std::runtime_error(s.str());
+        }
+
+        auto val = *(reinterpret_cast<int32_t*>((void*)res.data()));
         return val;
     }
 
