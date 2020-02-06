@@ -136,7 +136,7 @@ namespace librealsense
             if (std::find(advanced_controls.begin(), advanced_controls.end(), opt) != advanced_controls.end())
                 move_to_custom ();
             else
-                throw  wrong_api_call_sequence_exception(to_string() << "on_set_option support advanced controlls only "<< opt<<" injected");
+                throw  wrong_api_call_sequence_exception(to_string() << "on_set_option support advanced controls only "<< opt<<" injected");
         }
     }
 
