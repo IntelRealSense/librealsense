@@ -54,7 +54,8 @@ namespace librealsense
             TEMPERATURES_GET            = 0x6A,
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
-            RGB_EXTRINSIC_GET           = 0x82
+            RGB_EXTRINSIC_GET           = 0x82,
+            FALL_DETECT_ENABLE          = 0x9D  // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
         };
 
         enum gvd_fields
@@ -317,6 +318,25 @@ namespace librealsense
 
             rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
         };
+
+        /* For RS2_OPTION_FREEFALL_DETECTION_ENABLED */
+        class freefall_option : public bool_option
+        {
+        public:
+            freefall_option( hw_monitor & hwm );
+
+            virtual void set( float value ) override;
+            virtual const char * get_description() const override
+            {
+                return "When enabled (default), the sensor will turn off if a free-fall is detected";
+            }
+            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+        private:
+            std::function<void( const option& )> _record_action = []( const option& ) {};
+            hw_monitor & _hwm;
+        };
+
 
     } // librealsense::ivcam2
 } // namespace librealsense

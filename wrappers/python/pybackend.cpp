@@ -162,6 +162,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("enable_led_power", RS2_OPTION_LED_POWER)
         .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
+        .value("enable_freefall_detection", RS2_OPTION_FREEFALL_DETECTION_ENABLED)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
