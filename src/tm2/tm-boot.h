@@ -37,7 +37,9 @@ namespace librealsense {
                         auto status = m->bulk_transfer(endpoint, const_cast<uint8_t*>(target_hex), static_cast<uint32_t>(size), transfered, 1000);
                         if(status != RS2_USB_STATUS_SUCCESS)
                             LOG_ERROR("Error booting T265");
-                     }
+                    }
+                    else
+                        LOG_ERROR("Failed to open T265 zero interface");
                 }
             }
             return found;
