@@ -2834,11 +2834,11 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGI
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
 
-void rs2_load_json(rs2_device* dev, const char* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(json_content);
     auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
-    serializable->load_json(json_content);
+    serializable->load_json(std::string(static_cast<const char*>(json_content), content_size));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)

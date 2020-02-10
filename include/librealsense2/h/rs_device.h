@@ -351,7 +351,7 @@ void rs2_set_calibration_table(const rs2_device* device, const void* calibration
 rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 
 /* Load JSON and apply advanced-mode controls */
-void rs2_load_json(rs2_device* dev, const char* json_content, unsigned content_size, rs2_error** error);
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
 #ifdef __cplusplus
 }
