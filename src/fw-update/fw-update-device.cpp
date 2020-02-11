@@ -125,8 +125,8 @@ namespace librealsense
             std::stringstream s;
             s << "access failed for " << std::hex <<  _usb_device->get_info().vid << ":"
               <<_usb_device->get_info().pid << " uid: " <<  _usb_device->get_info().id << std::dec;
-            throw std::runtime_error(s.str().c_str());
             LOG_ERROR(s.str().c_str());
+            throw std::runtime_error(s.str().c_str());
         }
     }
 
