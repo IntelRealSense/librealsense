@@ -237,8 +237,9 @@ namespace rs2
                             }
                         }
                         catch (std::exception &e) {
-                            LOG_ERROR("Exception caught in process-flow: " << e.what() << "!!!!");
+                            LOG_ERROR("Exception caught in FW Update process-flow: " << e.what());
                         }
+                        catch (...) {}
                     }
 
                     return false;
