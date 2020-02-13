@@ -28,12 +28,12 @@ namespace librealsense
         {
         public:
             command_transfer_usb(const rs_usb_device& device) : _device(device) {}
-            ~command_transfer_usb() {};
+            ~command_transfer_usb(){}
 
             std::vector<uint8_t> send_receive(
                 const std::vector<uint8_t>& data,
                 int timeout_ms,
-                bool require_response = true) override
+                bool) override
             { 
                 auto intfs = _device->get_interfaces();
                 auto it = std::find_if(intfs.begin(), intfs.end(),
@@ -60,6 +60,14 @@ namespace librealsense
 
                     output.resize(transfered_count);
                 }
+                else
+                {
+                    std::stringstream s;
+                    s << "access failed for " << std::hex <<  _device->get_info().vid << ":"
+                        <<_device->get_info().pid << " uid: " <<  _device->get_info().id << std::dec;
+                    throw std::runtime_error(s.str().c_str());
+                }
+
                 return output;
             }
 
