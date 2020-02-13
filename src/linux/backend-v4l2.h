@@ -109,10 +109,6 @@ namespace librealsense
             int _object_lock_counter;
             std::mutex _mutex;
         };
-        std::recursive_mutex named_mutex::_init_mutex;
-        std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
-        std::map<std::string, int> named_mutex::_dev_mutex_cnt;
-
         static int xioctl(int fh, unsigned long request, void *arg);
 
         class buffer

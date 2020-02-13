@@ -113,6 +113,10 @@ namespace librealsense
 {
     namespace platform
     {
+        std::recursive_mutex named_mutex::_init_mutex;
+        std::map<std::string, std::recursive_mutex> named_mutex::_dev_mutex;
+        std::map<std::string, int> named_mutex::_dev_mutex_cnt;
+
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
               _timeout(timeout), // TODO: try to lock with timeout
