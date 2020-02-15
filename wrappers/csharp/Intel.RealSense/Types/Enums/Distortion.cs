@@ -22,5 +22,9 @@ namespace Intel.RealSense
 
         /// <summary> Unmodified Brown-Conrady distortion model</summary>
         BrownConrady = 4,
+
+        /// <summary Four parameter Kannala Brandt distortion model</summary>
+        KannalaBrandt4 = 5,
+
     }
 }
