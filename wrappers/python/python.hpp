@@ -148,10 +148,10 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
 
 template <rs2_format FMT> struct itemsize {
-    static constexpr size_t func() { return sizeof(FmtToType<FMT>::type); }
+    static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };
 template <rs2_format FMT> struct fmtstring {
-    static constexpr std::string func() { return py::format_descriptor<FmtToType<FMT>::type>::format(); }
+    static constexpr std::string func() { return py::format_descriptor<typename FmtToType<FMT>::type>::format(); }
 };
 
 template<template<rs2_format> class F>
