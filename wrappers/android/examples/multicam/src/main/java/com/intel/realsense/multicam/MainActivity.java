@@ -20,6 +20,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -141,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
             try (Config config = new Config()) {
                 config.enableDevice(deviceList.createDevice(i).getInfo(CameraInfo.SERIAL_NUMBER));
                 config.enableStream(StreamType.DEPTH, 640, 480);
-                mPipelines.get(i).start(config);
+                Pipeline pipe = mPipelines.get(i);
+                try (PipelineProfile pp = pipe.start(config)) {}
             }
         }
     }

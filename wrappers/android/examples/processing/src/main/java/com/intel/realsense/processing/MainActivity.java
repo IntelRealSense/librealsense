@@ -26,6 +26,7 @@ import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.HoleFillingFilter;
 import com.intel.realsense.librealsense.Option;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.Pointcloud;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.SpatialFilter;
@@ -213,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
         {
             config.enableStream(StreamType.DEPTH, 640, 480);
             config.enableStream(StreamType.COLOR, 640, 480);
-            mPipeline.start(config);
+            try(PipelineProfile pp = mPipeline.start(config)){}
         }
     }
 

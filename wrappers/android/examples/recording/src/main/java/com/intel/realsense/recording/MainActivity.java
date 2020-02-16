@@ -20,10 +20,12 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
 import java.io.File;
+import java.nio.channels.Pipe;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -209,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 cfg.enableStream(StreamType.COLOR, 640, 480);
                 if (record)
                     cfg.enableRecordToFile(getFilePath());
-                mPipeline.start(cfg);
+                try(PipelineProfile pp = mPipeline.start(cfg)){}
             }
             mIsStreaming = true;
             mHandler.post(mStreaming);
