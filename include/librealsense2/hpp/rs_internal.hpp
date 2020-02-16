@@ -263,6 +263,12 @@ namespace rs2
             : device(create_device_ptr())
         {}
 
+        software_device(std::string name)
+            : device(create_device_ptr())
+        {
+            update_info(RS2_CAMERA_INFO_NAME, name);
+        }
+
         /**
         * Add software sensor with given name to the software device.
         *
