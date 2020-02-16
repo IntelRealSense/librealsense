@@ -133,6 +133,13 @@ EXPORTS
 
     rs2_log_to_console
     rs2_log_to_file
+    rs2_log_to_callback
+    rs2_log_to_callback_cpp
+    
+    rs2_get_log_message_line_number
+    rs2_get_log_message_filename
+    rs2_get_raw_log_message
+    rs2_get_full_log_message
 
     rs2_get_api_version
     rs2_set_devices_changed_callback_cpp
@@ -217,6 +224,8 @@ EXPORTS
     rs2_get_amp_factor
     rs2_set_amp_factor
     rs2_rs400_visual_preset_to_string
+    rs2_l500_visual_preset_to_string
+    rs2_sensor_mode_to_string
     rs2_is_enabled
     rs2_toggle_advanced_mode
     rs2_load_json
@@ -320,6 +329,7 @@ EXPORTS
     rs2_export_localization_map
     rs2_set_static_node
     rs2_get_static_node
+    rs2_remove_static_node
     rs2_load_wheel_odometry_config
     rs2_send_wheel_odometry
     rs2_get_processing_block

@@ -21,6 +21,8 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/os.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/metadata-helper.h"
+        "${CMAKE_CURRENT_LIST_DIR}/metadata-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.h"
         "${CMAKE_CURRENT_LIST_DIR}/on-chip-calib.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/decompress-huffman.h"

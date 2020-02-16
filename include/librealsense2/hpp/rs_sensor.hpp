@@ -605,6 +605,18 @@ namespace rs2
             return !!res;
         }
 
+        /**
+         * Removes a static node from the current map.
+         * \param[in] guid unique name of the static node (limited to 127 chars).
+         */
+        bool remove_static_node(const std::string& guid) const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_remove_static_node(_sensor.get(), guid.c_str(), &e);
+            error::handle(e);
+            return !!res;
+        }
+
         operator bool() const { return _sensor.get() != nullptr; }
         explicit pose_sensor(std::shared_ptr<rs2_sensor> dev) : pose_sensor(sensor(dev)) {}
     };

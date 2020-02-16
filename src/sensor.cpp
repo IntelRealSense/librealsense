@@ -561,11 +561,11 @@ namespace librealsense
     {
         if (info_container::supports_info(info) && (info_container::get_info(info) != val)) // Append existing infos
         {
-            _camera_info[info] += "\n" + std::move(val);
+            _camera_info[info] += "\n" + val;
         }
         else
         {
-            _camera_info[info] = std::move(val);
+            _camera_info[info] = val;
         }
     }
 
@@ -573,7 +573,7 @@ namespace librealsense
     {
         if (info_container::supports_info(info))
         {
-            _camera_info[info] = std::move(val);
+            _camera_info[info] = val;
         }
     }
     const std::string& info_container::get_info(rs2_camera_info info) const
@@ -1496,7 +1496,7 @@ namespace librealsense
 
     void synthetic_sensor::register_processing_block(const processing_block_factory& pbf)
     {
-        _pb_factories.push_back(std::make_shared<processing_block_factory>(std::move(pbf)));
+        _pb_factories.push_back(std::make_shared<processing_block_factory>(pbf));
     }
 
     void synthetic_sensor::register_processing_block(const std::vector<processing_block_factory>& pbfs)
@@ -1547,5 +1547,15 @@ namespace librealsense
     bool synthetic_sensor::is_opened() const
     {
         return _raw_sensor->is_opened();
+    }
+
+    void motion_sensor::create_snapshot(std::shared_ptr<motion_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<motion_sensor_snapshot>();
+    }
+
+    void fisheye_sensor::create_snapshot(std::shared_ptr<fisheye_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
 }

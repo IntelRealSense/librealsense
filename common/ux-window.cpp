@@ -354,11 +354,11 @@ namespace rs2
         stbi_image_free(r);
     }
 
-    ux_window::ux_window(const char* title) :
+    ux_window::ux_window(const char* title, context &ctx) :
         _win(nullptr), _width(0), _height(0), _output_height(0),
         _font_14(nullptr), _font_18(nullptr), _app_ready(false),
         _first_frame(true), _query_devices(true), _missing_device(false),
-        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title)
+        _hourglass_index(0), _dev_stat_message{}, _keep_alive(true), _title(title), _ctx(ctx)
     {
         open_window();
 
@@ -419,7 +419,7 @@ namespace rs2
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
-            _missing_device = rs2::context().query_devices(RS2_PRODUCT_LINE_ANY).size() == 0;
+            _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY).size() == 0;
             _hourglass_index = (_hourglass_index + 1) % 5;
 
             if (!_missing_device)

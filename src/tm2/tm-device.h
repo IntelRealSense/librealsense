@@ -114,6 +114,7 @@ namespace librealsense
         bool import_relocalization_map(const std::vector<uint8_t>& lmap_buf) const override;
         bool set_static_node(const std::string& guid, const float3& pos, const float4& orient_quat) const override;
         bool get_static_node(const std::string& guid, float3& pos, float4& orient_quat) const override;
+        bool remove_static_node(const std::string& guid) const override;
 
         // Wheel odometer
         bool load_wheel_odometery_config(const std::vector<uint8_t>& odometry_config_buf) const override;
@@ -195,6 +196,7 @@ namespace librealsense
             std::chrono::duration<double, std::milli> global_ts;
             std::chrono::duration<double, std::milli> arrival_ts;
         };
+        coordinated_ts last_ts;
 
         coordinated_ts get_coordinated_timestamp(uint64_t device_nanoseconds);
 

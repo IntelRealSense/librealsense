@@ -16,6 +16,7 @@
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
+#include "l500-serializable.h"
 
 namespace librealsense
 {
@@ -23,8 +24,10 @@ namespace librealsense
 
     // l515
     class rs515_device : public l500_depth,
+        public l500_options,
         public l500_color,
-        public l500_motion
+        public l500_motion,
+        public l500_serializable
     {
     public:
         rs515_device(std::shared_ptr<context> ctx,
@@ -33,8 +36,10 @@ namespace librealsense
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
             l500_depth(ctx, group),
+            l500_options(ctx, group),
             l500_color(ctx, group),
-            l500_motion(ctx, group)
+            l500_motion(ctx, group),
+            l500_serializable(_hw_monitor, get_depth_sensor())
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -62,7 +67,8 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             l500_device(ctx, group),
-            l500_depth(ctx, group) {}
+            l500_depth(ctx, group)
+        {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
@@ -142,13 +148,15 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs515_device::create_matcher(const frame_holder & frame) const
     {
-        std::vector<stream_interface*> mm_streams = { _accel_stream.get(), _gyro_stream.get() };
+        std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
+            std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type())};
 
-        std::vector<std::shared_ptr<matcher>> matchers = { l500_depth::create_matcher(frame),
-            std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type()), 
-            matcher_factory::create(RS2_MATCHER_DEFAULT, mm_streams) };
+        auto ts_depth_rgb = std::make_shared<timestamp_composite_matcher>(depth_rgb_matchers);
 
-        return std::make_shared<timestamp_composite_matcher>(matchers);
+        auto identity_gyro = std::make_shared<identity_matcher>(_gyro_stream->get_unique_id(), _gyro_stream->get_stream_type());
+        auto identity_accel = std::make_shared<identity_matcher>(_accel_stream->get_unique_id(), _accel_stream->get_stream_type());
 
+        std::vector<std::shared_ptr<matcher>> depth_rgb_imu_matchers = {ts_depth_rgb, identity_gyro, identity_accel};
+        return std::make_shared<composite_identity_matcher>(depth_rgb_imu_matchers);
     }
 }

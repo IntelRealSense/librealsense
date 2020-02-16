@@ -274,7 +274,7 @@ namespace rs2
         float& operator()(int i, int j) { return mat[i][j]; }
 
         //init rotation matrix from quaternion
-        matrix4(rs2_quaternion q)
+        matrix4(const rs2_quaternion& q)
         {
             mat[0][0] = 1 - 2*q.y*q.y - 2*q.z*q.z; mat[0][1] = 2*q.x*q.y - 2*q.z*q.w;     mat[0][2] = 2*q.x*q.z + 2*q.y*q.w;     mat[0][3] = 0.0f;
             mat[1][0] = 2*q.x*q.y + 2*q.z*q.w;     mat[1][1] = 1 - 2*q.x*q.x - 2*q.z*q.z; mat[1][2] = 2*q.y*q.z - 2*q.x*q.w;     mat[1][3] = 0.0f;
@@ -283,7 +283,7 @@ namespace rs2
         }
 
         //init translation matrix from vector
-        matrix4(rs2_vector t)
+        matrix4(const rs2_vector& t)
         {
             mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
             mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;
@@ -1065,8 +1065,6 @@ namespace rs2
 
         void upload(rs2::frame frame, rs2_format prefered_format = RS2_FORMAT_ANY)
         {
-            last_queue[0].enqueue(frame);
-
             if (!texture)
                 glGenTextures(1, &texture);
 
@@ -1074,6 +1072,16 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
+
+            // Decode compressed data required for mouse pointer depth calculations
+            if (RS2_FORMAT_Z16H==format)
+            {
+                frame = depth_decode->process(frame);
+                format = frame.get_profile().format();
+            }
+
+            last_queue[0].enqueue(frame);
+
             // When frame is a GPU frame
             // we don't need to access pixels, keep data NULL
             auto data = !frame.is<gl::gpu_frame>() ? frame.get_data() : nullptr;
@@ -1135,9 +1143,8 @@ namespace rs2
                 {
                 case RS2_FORMAT_ANY:
                     throw std::runtime_error("not a valid format");
-                case RS2_FORMAT_Z16H: // Fallthrough case
-                    if (frame.is<depth_frame>())
-                        frame = depth_decode->process(frame);
+                case RS2_FORMAT_Z16H:
+                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
                 case RS2_FORMAT_Z16:
                 case RS2_FORMAT_DISPARITY16:
                 case RS2_FORMAT_DISPARITY32:

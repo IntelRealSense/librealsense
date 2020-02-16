@@ -10,4 +10,8 @@
     <string name="browse_folder">browse_folder</string>
     <string name="realsense_folder">realsense</string>
     <string name="show_3d">show_3d</string>
+    <string name="terminal_commands_file">terminal_commands_file</string>
+    <string name="terminal_auto_complete">terminal_auto_complete</string>
+    <string name="fw_logging">fw_logging</string>
+    <string name="fw_logging_file_path">fw_logging_file_path</string>
 </resources>

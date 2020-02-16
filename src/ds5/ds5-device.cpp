@@ -190,7 +190,7 @@ namespace librealsense
 
         sector_count += first_sector;
 
-        for (size_t sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
             cmdFES.require_response = false;
@@ -222,7 +222,7 @@ namespace librealsense
         update_progress_callback_ptr callback, float continue_from, float ratio)
     {
         auto first_table_offset = fs.tables.front().offset;
-        float total_size = fs.app_size + tables_size;
+        float total_size = float(fs.app_size + tables_size);
 
         float app_ratio = fs.app_size / total_size * ratio;
         float tables_ratio = tables_size / total_size * ratio;
@@ -240,7 +240,7 @@ namespace librealsense
         // update read-write section
         auto first_table_offset = flash_image_info.read_write_section.tables.front().offset;
         auto tables_size = flash_image_info.header.read_write_start_address + flash_image_info.header.read_write_size - first_table_offset;
-        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5 : 1.0);
+        update_section(hwm, merged_image, flash_image_info.read_write_section, tables_size, callback, 0, update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY ? 0.5f : 1.0f);
 
         if (update_mode == RS2_UNSIGNED_UPDATE_MODE_READ_ONLY)
         {
@@ -568,11 +568,11 @@ namespace librealsense
     ds5_device::ds5_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
-        auto_calibrated(_hw_monitor),
-        _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
-        _depth_stream(new stream(RS2_STREAM_DEPTH)),
-        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
+          auto_calibrated(_hw_monitor),
+          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
+          _depth_stream(new stream(RS2_STREAM_DEPTH)),
+          _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
+          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);

@@ -4,6 +4,7 @@
 #include <functional>   // For function
 
 #include "api.h"
+#include "log.h"
 #include "context.h"
 #include "device.h"
 #include "algo.h"
@@ -1130,7 +1131,9 @@ const char* rs2_extension_type_to_string(rs2_extension type)                    
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
 const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
-
+const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
+const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
+const char* rs2_ambient_light_to_string(rs2_ambient_light ambient)                        { return get_string(ambient); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
@@ -1143,6 +1146,94 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char* file_path, rs2_e
     librealsense::log_to_file(min_severity, file_path);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
+
+void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error** error ) BEGIN_API_CALL
+{
+    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
+    librealsense::log_to_callback( min_severity,
+        { callback, []( rs2_log_callback * p ) { p->release(); } }
+    );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
+
+// librealsense wrapper around a C function
+class on_log_callback : public rs2_log_callback
+{
+    rs2_log_callback_ptr _on_log;
+    void* _user_arg;
+
+public:
+    on_log_callback( rs2_log_callback_ptr on_log, void * user_arg ) : _on_log( on_log ), _user_arg( user_arg ) {}
+
+    void on_log( rs2_log_severity severity, rs2_log_message const& msg ) noexcept override
+    {
+        if( _on_log )
+        {
+            try
+            {
+                _on_log( severity, &msg, _user_arg );
+            }
+            catch( ... )
+            {
+                std::cerr << "Received an execption from log callback!" << std::endl;
+            }
+        }
+    }
+    void release() override
+    {
+        // Shouldn't get called...
+        throw std::runtime_error( "on_log_callback::release() ?!?!?!" );
+        delete this;
+    }
+};
+
+void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr on_log, void * arg, rs2_error** error ) BEGIN_API_CALL
+{
+    // Wrap the C function with a callback interface that will get deleted when done
+    librealsense::log_to_callback( min_severity,
+        librealsense::log_callback_ptr{ new on_log_callback( on_log, arg ) }
+    );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log, arg )
+
+
+unsigned rs2_get_log_message_line_number( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.line();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, msg )
+
+const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const& wrapper = *(log_message const*) (msg);
+    return wrapper.el_msg.file().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
+const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message const & wrapper = *( log_message const * )( msg );
+    return wrapper.el_msg.message().c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
+const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( msg );
+    log_message & wrapper = *( log_message * )( msg );
+    if( wrapper.built_msg.empty() )
+    {
+        bool const append_new_line = false;
+        wrapper.built_msg = wrapper.el_msg.logger()->logBuilder()->build( &wrapper.el_msg, append_new_line );
+    }
+    return wrapper.built_msg.c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
+
 
 int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {
@@ -1184,6 +1275,9 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_ROI                   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::roi_sensor_interface)        != nullptr;
         case RS2_EXTENSION_DEPTH_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_sensor)                != nullptr;
         case RS2_EXTENSION_DEPTH_STEREO_SENSOR   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_stereo_sensor)         != nullptr;
+        case RS2_EXTENSION_COLOR_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::color_sensor) != nullptr;
+        case RS2_EXTENSION_MOTION_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::motion_sensor) != nullptr;
+        case RS2_EXTENSION_FISHEYE_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::fisheye_sensor) != nullptr;
         case RS2_EXTENSION_ADVANCED_MODE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds5_advanced_mode_interface) != nullptr;
         case RS2_EXTENSION_RECORD                : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK              : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
@@ -1192,6 +1286,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
         case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface) != nullptr;
+        case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface) != nullptr;
 
         default:
             return false;
@@ -1867,8 +1962,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, composite)
 rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(source)
-        VALIDATE_NOT_NULL(frames)
-        VALIDATE_RANGE(count, 1, 128);
+    VALIDATE_NOT_NULL(frames)
+    VALIDATE_RANGE(count, 1, 128);
 
     std::vector<frame_holder> holders(count);
     for (int i = 0; i < count; i++)
@@ -1963,8 +2058,6 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
     auto block = std::make_shared<librealsense::colorizer>();
 
     auto res = new rs2_processing_block{ block };
-
-    auto res2 = (rs2_options*)res;
 
     return res;
 }
@@ -2522,6 +2615,18 @@ int rs2_get_static_node(const rs2_sensor* sensor, const char* guid, rs2_vector *
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid, pos, orient)
 
+int rs2_remove_static_node(const rs2_sensor* sensor, const char* guid, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(guid);
+    auto pose_snr = VALIDATE_INTERFACE(sensor->sensor, librealsense::pose_sensor_interface);
+    std::string s_guid(guid);
+    VALIDATE_RANGE(s_guid.size(), 1, 127);      // T2xx spec
+
+    return int(pose_snr->remove_static_node(s_guid));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, guid)
+
 int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_blob, unsigned int blob_size, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
@@ -2801,3 +2906,20 @@ void rs2_set_calibration_table(const rs2_device* device, const void* calibration
     auto_calib->set_calibration_table(buffer);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(,calibration, device)
+
+rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
+    return new rs2_raw_data_buffer{ serializable->serialize_json() };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+
+void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(json_content);
+    auto serializable = VALIDATE_INTERFACE(dev->device, librealsense::serializable_interface);
+    serializable->load_json(std::string(static_cast<const char*>(json_content), content_size));
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)

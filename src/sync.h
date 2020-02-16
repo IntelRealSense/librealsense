@@ -117,7 +117,7 @@ namespace librealsense
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing)  = 0;
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
 
@@ -133,6 +133,23 @@ namespace librealsense
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+    };
+
+    // composite matcher that does not synchronize between any frames, and instead just passes them on to callback
+    class composite_identity_matcher : public composite_matcher
+    {
+    public:
+        composite_identity_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+
+        void sync(frame_holder f, syncronization_environment env) override;
+        virtual bool are_equivalent(frame_holder& a, frame_holder& b) { return false; }
+        virtual bool is_smaller_than(frame_holder& a, frame_holder& b) { return false; }
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) { return false; }
+        virtual void clean_inactive_streams(frame_holder& f) {}
+        virtual void update_last_arrived(frame_holder& f, matcher* m) {}
+
+    protected:
+        virtual void update_next_expected(const frame_holder& f) {}
     };
 
     class frame_number_composite_matcher : public composite_matcher

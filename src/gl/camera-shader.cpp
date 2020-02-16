@@ -15,6 +15,7 @@ struct short3
 #include <res/d415.h>
 #include <res/sr300.h>
 #include <res/t265.h>
+#include <res/l500.h>
 
 static const char* vertex_shader_text =
 "#version 110\n"
@@ -116,8 +117,9 @@ namespace librealsense
         {
             camera_mesh.push_back(load_model(uncompress_d415_obj));
             camera_mesh.push_back(load_model(uncompress_d435_obj));
-            camera_mesh.push_back(load_model(uncompress_sr300_obj));
+            camera_mesh.push_back(load_model(uncompress_sr305_obj));
             camera_mesh.push_back(load_model(uncompress_t265_obj));
+            camera_mesh.push_back(load_model(uncompress_L515_obj));
 
             for (auto&& mesh : camera_mesh)
             {
@@ -154,8 +156,9 @@ namespace librealsense
                 auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
                 if (starts_with(dev_name, "Intel RealSense D415")) index = 0;
                 if (starts_with(dev_name, "Intel RealSense D435")) index = 1;
-                if (starts_with(dev_name, "Intel RealSense SR300")) index = 2;
+                if (starts_with(dev_name, "Intel RealSense SR30")) index = 2;
                 if (starts_with(dev_name, "Intel RealSense T26")) index = 3;
+                if (starts_with(dev_name, "Intel RealSense L5")) index = 4;
             };
 
             if (index >= 0)

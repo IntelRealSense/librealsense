@@ -32,7 +32,7 @@ rs2_software_video_frame create_sw_frame(const rs2::video_frame& f, rs2::stream_
     std::memcpy(data, f.get_data(), data_size);
     rs2_software_video_frame new_frame = {
         (void*)data,
-        [](void* data) { delete[] data; },
+        [](void* data) { delete[] (uint8_t*)data; },
         f.get_width() * f.get_bytes_per_pixel(),
         f.get_bytes_per_pixel(),
         f.get_timestamp(),
@@ -86,7 +86,7 @@ public:
         std::memcpy(data, frame.get_data(), data_size);
         rs2_software_video_frame points_frame = {
             (void*)data,
-            [](void* data) { delete[] data; },
+            [](void* data) { delete[] (uint8_t*)data; },
             profile.width() * points_bpp,
             points_bpp,
             frame.get_timestamp(),

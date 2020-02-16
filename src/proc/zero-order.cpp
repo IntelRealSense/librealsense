@@ -44,7 +44,7 @@ namespace librealsense
     std::vector <T> get_zo_point_values(const T* frame_data_in, const rs2_intrinsics& intrinsics, int zo_point_x, int zo_point_y, int patch_r)
     {
         std::vector<T> values;
-        values.reserve((patch_r + 2) *(patch_r + 2));
+        values.reserve((patch_r + 2ULL) *(patch_r + 2ULL));
 
         for (auto i = zo_point_y - 1 - patch_r; i <= (zo_point_y + patch_r) && i < intrinsics.height; i++)
         {
@@ -103,7 +103,7 @@ namespace librealsense
             return val == 0;
         }), values_ir.end());
 
-        if (values_rtd.size() == 0 || values_rtd.size() == 0)
+        if (values_rtd.empty() || values_ir.empty())
             return false;
 
         *rtd_zo_value = get_zo_point_value(values_rtd);
@@ -115,21 +115,23 @@ namespace librealsense
     template<class T>
     void detect_zero_order(const double * rtd, const uint16_t* depth_data_in, const uint8_t* ir_data, T zero_pixel,
        const rs2_intrinsics& intrinsics, const zero_order_options& options,
-       float zo_value, uint8_t iro_value)
+       double zo_value, uint8_t iro_value)
     {
-        const int ir_dynamic_range = 256;
+        const double ir_dynamic_range = 256.0;
 
-        auto r = (double)std::exp((ir_dynamic_range / 2.0 + options.threshold_offset - iro_value) / (double)options.threshold_scale);
+        double r = std::exp((ir_dynamic_range / 2.0 + options.threshold_offset - iro_value) / (double)options.threshold_scale);
 
-        auto res = (1 + r);
-        auto i_threshold_relative = (double)options.ir_threshold / res;
+        double res = (1.0 + r);
+        double i_threshold_relative = options.ir_threshold / res;
         for (auto i = 0; i < intrinsics.height*intrinsics.width; i++)
         {
-            auto rtd_val = rtd[i];
-            auto ir_val = ir_data[i];
+            double rtd_val = rtd[i];
+            uint8_t ir_val = ir_data[i];
 
-            auto zero = (depth_data_in[i] > 0) && (ir_val < i_threshold_relative) &&
-                (rtd_val > (zo_value - options.rtd_low_threshold)) && (rtd_val < (zo_value + options.rtd_high_threshold));
+            bool zero = (depth_data_in[i] > 0) && 
+                        (ir_val < i_threshold_relative) &&
+                        (rtd_val > (zo_value - options.rtd_low_threshold)) && 
+                        (rtd_val < (zo_value + options.rtd_high_threshold));
 
             zero_pixel(i, zero);
         }
@@ -141,9 +143,9 @@ namespace librealsense
         rs2_intrinsics intrinsics,
         const zero_order_options& options, int zo_point_x, int zo_point_y)
     {
-        std::vector<double> rtd(intrinsics.height*intrinsics.width);
-        z2rtd(vertices, rtd.data(), intrinsics, options.baseline);
-        double rtd_zo_value;
+        std::vector<double> rtd(size_t(intrinsics.height)*intrinsics.width);
+        z2rtd(vertices, rtd.data(), intrinsics, int(options.baseline));
+        double rtd_zo_value; 
         uint8_t ir_zo_value;
 
         if (try_get_zo_rtd_ir_point_values(rtd.data(), depth_data_in, ir_data, intrinsics, 
@@ -157,7 +159,8 @@ namespace librealsense
     }
 
     zero_order::zero_order(std::shared_ptr<bool_option> is_enabled_opt)
-       : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt)
+       : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt),
+        _resolutions_depth { 0 }
     {
         auto ir_threshold = std::make_shared<ptr_option<uint8_t>>(
             0,
@@ -382,6 +385,7 @@ namespace librealsense
         // return the frame as is.
         if (auto is_enabled = _is_enabled_opt.lock())
             if (!is_enabled->is_true())
+                // zero order is disabled, passthrough the frame
                 return f;
 
         std::vector<rs2::frame> result;
@@ -457,14 +461,12 @@ namespace librealsense
             _options, zo.first, zo.second))
         {
             result.push_back(depth_out);
-            result.push_back(ir_frame);
             if (confidence_frame)
                 result.push_back(confidence_out);
         }
         else
         {
             result.push_back(depth_frame);
-            result.push_back(ir_frame);
             if (confidence_frame)
                 result.push_back(confidence_frame);
         }
@@ -473,11 +475,9 @@ namespace librealsense
 
     bool zero_order::should_process(const rs2::frame& frame)
     {
-        // If is_enabled_opt is false, meaning this processing block is not active,
-        // return true in order to passthrough the frame.
-        if (auto is_enabled = _is_enabled_opt.lock())
-            if (!is_enabled->is_true())
-                return true;
+        // Zero order might get frames to process even if it is disabled by option.
+        // In such case, it should passthrough all of the frames it receives, except for IR frames,
+        // which are handled by processing blocks and must me droped.
 
         if (auto set = frame.as<rs2::frameset>())
         {
@@ -497,7 +497,11 @@ namespace librealsense
             return true;
 
         }
-        return false;
+        else if (frame.get_profile().stream_type() == RS2_STREAM_INFRARED)
+            // a single IR frame received, drop it.
+            return false;
+
+        return true;
     }
 
     rs2::frame zero_order::prepare_output(const rs2::frame_source & source, rs2::frame input, std::vector<rs2::frame> results)

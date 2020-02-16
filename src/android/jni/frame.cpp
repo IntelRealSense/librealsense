@@ -176,3 +176,13 @@ Java_com_intel_realsense_librealsense_Frame_nGetMetadata(JNIEnv *env, jclass typ
     handle_error(env, e);
     return rv;
 }
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Frame_nSupportsMetadata(JNIEnv *env, jclass type, jlong handle,
+                                                         jint metadata_type) {
+    rs2_error *e = NULL;
+    int rv = rs2_supports_frame_metadata(reinterpret_cast<const rs2_frame *>(handle),
+                                     static_cast<rs2_frame_metadata_value>(metadata_type), &e);
+    handle_error(env, e);
+    return rv > 0;
+}

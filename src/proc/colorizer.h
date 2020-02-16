@@ -107,7 +107,7 @@ namespace librealsense {
             for (auto i = 0; i < w*h; ++i)
             {
                 T depth_val = depth_data[i];
-                int index = depth_val;
+                int index = static_cast< int >( depth_val );
                 hist[index] += 1;
             }
 

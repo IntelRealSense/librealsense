@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "librs process example";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
-    private boolean mPermissionsGrunted = false;
+    private boolean mPermissionsGranted = false;
 
     private Context mAppContext;
     private TextView mBackGroundText;
@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
@@ -102,13 +102,13 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
             return;
         }
-        mPermissionsGrunted = true;
+        mPermissionsGranted = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(mPermissionsGrunted)
+        if(mPermissionsGranted)
             init();
         else
             Log.e(TAG, "missing permissions");

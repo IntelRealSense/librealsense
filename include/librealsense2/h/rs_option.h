@@ -39,7 +39,7 @@ extern "C" {
         RS2_OPTION_MOTION_RANGE, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
         RS2_OPTION_FILTER_OPTION, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
         RS2_OPTION_CONFIDENCE_THRESHOLD, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/
+        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 â€“ disable all emitters. 1 â€“ enable laser. 2 â€“ enable auto laser. 3 â€“ enable LED.*/
         RS2_OPTION_FRAMES_QUEUE_SIZE, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         RS2_OPTION_TOTAL_FRAME_DROPS, /**< Total number of detected frame drops from all streams */
         RS2_OPTION_AUTO_EXPOSURE_MODE, /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
@@ -84,6 +84,14 @@ extern "C" {
         RS2_OPTION_LED_POWER, /**< Power of the LED (light emitting diode), with 0 meaning LED off*/
         RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
+        RS2_OPTION_FREEFALL_DETECTION_ENABLED, /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
+        RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
+        RS2_OPTION_POST_PROCESSING_SHARPENING,  /**< Changes the amount of sharpening in the post-processed image */
+        RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
+        RS2_OPTION_NOISE_FILTERING, /**< Control edges and background noise */
+        RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
+        RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
+        RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -118,13 +126,43 @@ extern "C" {
         RS2_RS400_VISUAL_PRESET_HIGH_DENSITY,
         RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY,
         RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN,
-        RS2_RS400_VISUAL_PRESET_COUNT
+        RS2_RS400_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_rs400_visual_preset;
     const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset);
 
+    /** \brief For L500 devices: provides optimized settings (presets) for specific types of usage. */
+    typedef enum rs2_l500_visual_preset
+    {
+        RS2_L500_VISUAL_PRESET_CUSTOM,
+        RS2_L500_VISUAL_PRESET_DEFAULT,
+        RS2_L500_VISUAL_PRESET_NO_AMBIENT,
+        RS2_L500_VISUAL_PRESET_LOW_AMBIENT,
+        RS2_L500_VISUAL_PRESET_MAX_RANGE,
+        RS2_L500_VISUAL_PRESET_SHORT_RANGE,
+        RS2_L500_VISUAL_PRESET_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_l500_visual_preset;
+    const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset);
+
+    /** \brief For setting the camera_mode option */
+    typedef enum rs2_sensor_mode
+    {
+        RS2_SENSOR_MODE_VGA,
+        RS2_SENSOR_MODE_XGA,
+        RS2_SENSOR_MODE_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_sensor_mode;
+    const char* rs2_sensor_mode_to_string(rs2_sensor_mode preset);
+
+    /** \brief ambient light for RS2_OPTION_AMBIENT_LIGHT option. */
+    typedef enum rs2_ambient_light
+    {
+        RS2_AMBIENT_LIGHT_NO_AMBIENT = 1,
+        RS2_AMBIENT_LIGHT_LOW_AMBIENT = 2,
+    } rs2_ambient_light;
+    const char* rs2_ambient_light_to_string(rs2_ambient_light preset);
+
     /**
     * check if an option is read-only
-    * \param[in] sensor   the RealSense sensor
+    * \param[in] options  the options container
     * \param[in] option   option id to be checked
     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return true if option is read-only
@@ -133,7 +171,7 @@ extern "C" {
 
     /**
     * read option value from the sensor
-    * \param[in] sensor   the RealSense sensor
+    * \param[in] options  the options container
     * \param[in] option   option id to be queried
     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return value of the option
@@ -142,7 +180,7 @@ extern "C" {
 
     /**
     * write new value to sensor option
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be queried
     * \param[in] value      new value for the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -165,8 +203,8 @@ extern "C" {
 
     /**
     * get option name
-    * \param[in] options     options object
-    * \param[in] option      option id to be checked
+    * \param[in] options    the options container
+    * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return human-readable option name
     */
@@ -187,7 +225,7 @@ extern "C" {
 
     /**
     * check if particular option is supported by a subdevice
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return true if option is supported
@@ -208,7 +246,7 @@ extern "C" {
 
     /**
     * get option description
-    * \param[in] sensor     the RealSense sensor
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return human-readable option description
@@ -217,7 +255,7 @@ extern "C" {
 
     /**
     * get option value description (in case specific option value hold special meaning)
-    * \param[in] device     the RealSense device
+    * \param[in] options    the options container
     * \param[in] option     option id to be checked
     * \param[in] value      value of the option
     * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored

@@ -28,12 +28,12 @@ namespace librealsense
         {
         public:
             command_transfer_usb(const rs_usb_device& device) : _device(device) {}
-            ~command_transfer_usb() {};
+            ~command_transfer_usb(){}
 
             std::vector<uint8_t> send_receive(
                 const std::vector<uint8_t>& data,
                 int timeout_ms,
-                bool require_response = true) override
+                bool) override
             { 
                 auto intfs = _device->get_interfaces();
                 auto it = std::find_if(intfs.begin(), intfs.end(),
@@ -42,21 +42,32 @@ namespace librealsense
                     throw std::runtime_error("can't find VENDOR_SPECIFIC interface of device: " + _device->get_info().id);
 
                 auto hwm = *it;
-                const auto& m = _device->open(hwm->get_number());
 
-                uint32_t transfered_count = 0;
-                auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), static_cast<uint32_t>(data.size()), transfered_count, timeout_ms);
+                std::vector<uint8_t> output;
+                if (const auto& m = _device->open(hwm->get_number()))
+                {
+                    uint32_t transfered_count = 0;
+                    auto sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_WRITE), const_cast<uint8_t*>(data.data()), static_cast<uint32_t>(data.size()), transfered_count, timeout_ms);
 
-                if (sts != RS2_USB_STATUS_SUCCESS)
-                    throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
+                    if (sts != RS2_USB_STATUS_SUCCESS)
+                        throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
 
-                std::vector<uint8_t> output(DEFAULT_BUFFER_SIZE);
-                sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ), output.data(), static_cast<uint32_t>(output.size()), transfered_count, timeout_ms);
+                    output.resize(DEFAULT_BUFFER_SIZE);
+                    sts = m->bulk_transfer(hwm->first_endpoint(RS2_USB_ENDPOINT_DIRECTION_READ), output.data(), static_cast<uint32_t>(output.size()), transfered_count, timeout_ms);
 
-                if (sts != RS2_USB_STATUS_SUCCESS)
-                    throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
+                    if (sts != RS2_USB_STATUS_SUCCESS)
+                        throw std::runtime_error("command transfer failed to execute bulk transfer, error: " + usb_status_to_string.at(sts));
 
-                output.resize(transfered_count);
+                    output.resize(transfered_count);
+                }
+                else
+                {
+                    std::stringstream s;
+                    s << "access failed for " << std::hex <<  _device->get_info().vid << ":"
+                        <<_device->get_info().pid << " uid: " <<  _device->get_info().id << std::dec;
+                    throw std::runtime_error(s.str().c_str());
+                }
+
                 return output;
             }
 

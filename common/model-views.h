@@ -56,7 +56,7 @@ static const ImVec4 yellowish = from_rgba(255, 253, 191, 255, true);
 static const ImVec4 green = from_rgba(0x20, 0xe0, 0x20, 0xff, true);
 static const ImVec4 dark_sensor_bg = from_rgba(0x1b, 0x21, 0x25, 170);
 static const ImVec4 red = from_rgba(233, 0, 0, 255, true);
-static const ImVec4 greenish = from_rgba(33, 104, 0, 255, 0xff);
+static const ImVec4 greenish = from_rgba(33, 104, 0, 255);
 
 // Helper class that lets smoothly animate between its values
 template<class T>
@@ -269,7 +269,8 @@ namespace rs2
         if (opt == RS2_OPTION_STREAM_FILTER ||
             opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
             opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE)
+            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
+            opt == RS2_OPTION_SENSOR_MODE)
             return true;
         return false;
     }
@@ -688,7 +689,8 @@ namespace rs2
         frame_queues queues;
         std::mutex _queue_lock;
         bool _options_invalidated = false;
-        int next_option = RS2_OPTION_COUNT;
+        int next_option = 0;
+        std::vector<rs2_option> supported_options;
         bool streaming = false;
 
         rect normalized_zoom{0, 0, 1, 1};
