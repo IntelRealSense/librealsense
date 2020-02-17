@@ -1,21 +1,5 @@
-﻿;*******************************************************************************
-;*                                                                            **
-;*                     I N T E L   P R O P R I E T A R Y                      **
-;*                                                                            **
-;*   COPYRIGHT (c) 2003-2019 BY INTEL CORPORATION. ALL RIGHTS RESERVED.  NO   **
-;*   PART  OF  THIS  PROGRAM OR PUBLICATION MAY BE REPRODUCED, TRANSMITTED,   **
-;*   TRANSCRIBED, STORED IN A RETRIEVAL  SYSTEM,  OR  TRANSLATED  INTO  ANY   **
-;*   LANGUAGE OR COMPUTER LANGUAGE IN ANY FORM OR BY ANY MEANS, ELECTRONIC,   **
-;*   MECHANICAL, MAGNETIC, OPTICAL, CHEMICAL, MANUAL, OR OTHERWISE, WITHOUT   **
-;*   THE PRIOR WRITTEN PERMISSION OF :                                        **
-;*                                                                            **
-;*                             INTEL CORPORATION                              **
-;*                                                                            **
-;*                          2200 MISSION COLLEGE BLVD                         **
-;*                                                                            **
-;*                     SANTA CLARA, CALIFORNIA 95052-8119                     **
-;*                                                                            **
-;*******************************************************************************
+﻿; License: Apache 2.0. See LICENSE file in root directory.
+; Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 ;
 
 [Version]
