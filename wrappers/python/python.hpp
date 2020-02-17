@@ -155,7 +155,7 @@ template <rs2_format FMT> struct fmtstring {
 };
 
 template<template<rs2_format> class F>
-constexpr auto fmt_to_value(rs2_format fmt) -> typename std::result_of<decltype(&F<RS2_FORMAT_ANY>::func)()>::type {
+/*constexpr*/ auto fmt_to_value(rs2_format fmt) -> typename std::result_of<decltype(&F<RS2_FORMAT_ANY>::func)()>::type {
     switch (fmt) {
     case RS2_FORMAT_Z16: return F<RS2_FORMAT_Z16>::func();
     case RS2_FORMAT_DISPARITY16: return F<RS2_FORMAT_DISPARITY16>::func();
