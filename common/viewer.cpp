@@ -689,17 +689,30 @@ namespace rs2
                     udev_fname = udev_rules_deb;
                 }
 
-                std::string str((std::istreambuf_iterator<char>(f)),
+                const std::string str((std::istreambuf_iterator<char>(f)),
                                  std::istreambuf_iterator<char>());
 
-                std::string udev = realsense_udev_rules;
-                udev.erase(udev.find_last_of("\n") + 1);
+                std::string tmp = realsense_udev_rules;
+                tmp.erase(tmp.find_last_of("\n") + 1);
+                const std::string udev = tmp;
+                float udev_file_ver{}, built_in_file_ver{};
 
-                if (udev != str)
+                // The udev-rules file shall start with version token expressed as ##Version=xx.yy##
+                std::regex udev_ver_regex("^##Version=(\\d+\\.\\d+)##");
+                std::smatch match;
+
+                if (std::regex_search(udev.begin(), udev.end(), match, udev_ver_regex))
+                    built_in_file_ver = std::stof(std::string(match[1]));
+
+                if (std::regex_search(str.begin(), str.end(), match, udev_ver_regex))
+                    udev_file_ver = std::stof(std::string(match[1]));
+
+                if (built_in_file_ver > udev_file_ver)
                 {
-                    message = "RealSense UDEV-Rules file:\n " + udev_fname +"\n is not up-to date!\n" + message;
+                    std::stringstream s;
+                    s << "RealSense UDEV-Rules file:\n " << udev_fname <<"\n is not up-to date! Version " << built_in_file_ver << " can be applied\n";
                     not_model.add_notification({ 
-                        message,
+                        s.str() + message,
                         RS2_LOG_SEVERITY_WARN,
                         RS2_NOTIFICATION_CATEGORY_COUNT });
                 }
