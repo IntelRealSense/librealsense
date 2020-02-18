@@ -211,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 cfg.enableStream(StreamType.COLOR, 640, 480);
                 if (record)
                     cfg.enableRecordToFile(getFilePath());
+                // try statement needed here to release resources allocated by the Pipeline:start() method
                 try(PipelineProfile pp = mPipeline.start(cfg)){}
             }
             mIsStreaming = true;

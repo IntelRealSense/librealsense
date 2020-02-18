@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                     config.enableDeviceFromFile(filePath);
                     try (Pipeline pipeline = new Pipeline()) {
                         try {
+                            // try statement needed here to release resources allocated by the Pipeline:start() method
                             try (PipelineProfile pp = pipeline.start(config)) {}
                             while (!mStreaming.isInterrupted()) {
                                 try (FrameSet frames = pipeline.waitForFrames(1000)) {

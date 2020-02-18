@@ -143,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 config.enableDevice(deviceList.createDevice(i).getInfo(CameraInfo.SERIAL_NUMBER));
                 config.enableStream(StreamType.DEPTH, 640, 480);
                 Pipeline pipe = mPipelines.get(i);
+                // try statement needed here to release resources allocated by the Pipeline:start() method
                 try (PipelineProfile pp = pipe.start(config)) {}
             }
         }
