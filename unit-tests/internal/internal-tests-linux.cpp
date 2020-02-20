@@ -8,9 +8,125 @@
 
 using namespace librealsense::platform;
 
-TEST_CASE("named_mutex", "[code]")
+TEST_CASE("named_mutex_threads", "[code]")
 {
-    std::string device_path("./doron1");
+    class locker_test
+    {
+        std::mutex _m0, _m1;
+        bool _go_0, _go_1;
+        std::condition_variable _cv0, _cv1;
+        bool _actual_test;
+
+        std::string _device_path;
+        public:
+            locker_test(const std::string& device_path, bool actual_test):
+            _go_0(false),
+            _go_1(false),
+            _actual_test(actual_test),
+            _device_path(device_path)
+            {
+            };
+
+            void func_0()
+            {
+                {
+                    std::unique_lock<std::mutex> lk(_m0);
+                    _cv0.wait(lk, [this]{return _go_0;});
+                }
+                named_mutex mutex0(_device_path, 0);
+                if (_actual_test)
+                {
+                    mutex0.lock();
+                }
+                {
+                    std::unique_lock<std::mutex> lk(_m0);
+                    _go_0 = false;
+                }
+            }
+            void func_1()
+            {
+                {
+                    std::unique_lock<std::mutex> lk(_m1);
+                    _cv1.wait(lk, [this]{return _go_1;});
+                }
+                named_mutex mutex1(_device_path, 0);
+                mutex1.lock();
+                {
+                    std::lock_guard<std::mutex> lk_gm(_m1);
+                    _go_1 = false;
+                }
+                _cv1.notify_all();
+                {
+                    std::unique_lock<std::mutex> lk(_m1);
+                    _cv1.wait(lk, [this]{return _go_1;});
+                }
+            }
+
+            void run_test()
+            {
+                bool test_ok(false);
+
+                std::thread t0 = std::thread([this](){func_0();});                
+                std::thread t1 = std::thread([this](){func_1();}); 
+                // Tell Thread 1 to lock named_mutex.
+                {
+                    std::lock_guard<std::mutex> lk_gm(_m1);
+                    _go_1 = true;
+                }
+                _cv1.notify_all();
+                // Wait for Thread 1 to acknowledge lock.
+                {
+                    std::unique_lock<std::mutex> lk(_m1);
+                    _cv1.wait(lk, [this]{return !_go_1;});
+                }
+                // Tell Thread 0 to lock named_mutex.
+                {
+                    std::lock_guard<std::mutex> lk_gm(_m0);
+                    _go_0 = true;
+                }
+                _cv0.notify_all();
+                // Give Thread 2 seconds opportunity to lock.
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                {
+                    std::lock_guard<std::mutex> lk_gm(_m0);
+                    // test_ok if thread 0 didn't manage to change value of _go_0.
+                    test_ok = (_go_0 == _actual_test);
+                }
+                // Tell thread 1 to finish and release named_mutex.
+                {
+                    std::lock_guard<std::mutex> lk_gm(_m1);
+                    _go_1 = true;
+                }
+                _cv1.notify_all();
+                t1.join();
+                t0.join();
+                REQUIRE(test_ok);
+            }
+    };
+    std::string device_path("./named_mutex_test");
+    int fid(-1);
+    if( access( device_path.c_str(), F_OK ) == -1 ) 
+    {
+        fid = open(device_path.c_str(), O_CREAT | O_RDWR, 0666);
+        close(fid);
+    }
+    bool actual_test;
+    SECTION("self-validation")
+    {
+        actual_test = false;
+    }
+    SECTION("actual-test")
+    {
+        actual_test = true;
+    }
+
+    locker_test _test(device_path, actual_test);
+    _test.run_test();
+}
+
+TEST_CASE("named_mutex_processes", "[code]")
+{
+    std::string device_path("./named_mutex_test");
     int fid(-1);
     if( access( device_path.c_str(), F_OK ) == -1 ) 
     {
