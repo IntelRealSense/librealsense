@@ -900,7 +900,7 @@ namespace librealsense
                         bool md_extracted = false;
                         buffers_mgr buf_mgr(_use_memory_map);
                         // RAII to handle exceptions
-                        std::unique_ptr<int, std::function<void(int*)> > md_poller(new int(0),
+                        std::unique_ptr<int, std::function<void(int*)> > md_poller(nullptr,
                             [this,&buf_mgr,&md_extracted,&fds](int* d){ if (!md_extracted) acquire_metadata(buf_mgr,fds);});
 
                         if(FD_ISSET(_fd, &fds))
