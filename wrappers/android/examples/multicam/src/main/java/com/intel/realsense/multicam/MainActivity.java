@@ -49,11 +49,11 @@ public class MainActivity extends AppCompatActivity {
         mAppContext = getApplicationContext();
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
         mGLSurfaceView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         // Android 9 also requires camera permissions
         if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        //Release Context
         if(mRsContext != null)
             mRsContext.close();
         stop();
@@ -184,6 +185,15 @@ public class MainActivity extends AppCompatActivity {
 
             for(Pipeline pipe : mPipelines)
                 pipe.stop();
+
+            //Release pipelines
+            for (Pipeline pipeline : mPipelines) {
+                pipeline.close();
+            }
+            //Release colorizers
+            for (Colorizer colorizer : mColorizers) {
+                colorizer.close();
+            }
 
             mPipelines.clear();
             mColorizers.clear();
