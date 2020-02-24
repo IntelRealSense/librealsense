@@ -54,8 +54,8 @@ public class StreamingStats {
         public void onFrame(Frame f) {
             try(StreamProfile profile = f.getProfile()) {
                 int fn = f.getNumber();
-                int uid = f.getProfile().getUniqueId();
-                if (!mLastFrames.containsKey(f.getProfile().getUniqueId()))
+                int uid = profile.getUniqueId();
+                if (!mLastFrames.containsKey(profile.getUniqueId()))
                     initStream(profile);
                 if (mLastFrames.get(uid).mFrameNumber != fn) {
                     if(f.supportsMetadata(FrameMetadata.FRAME_EMITTER_MODE))
@@ -190,9 +190,11 @@ public class StreamingStats {
             }
             mFrameLoss = mFrameNumber - mTotalFrameCount;
 
-            Statistics mLastFrame = mLastFrames.get(f.getProfile().getUniqueId());
-            mHWTimestampDiff = mHWTimestamp - mLastFrame.mHWTimestamp;
-            mSWTimestampDiff = mSWTimestamp - mLastFrame.mSWTimestamp;
+            try(StreamProfile streamProfile = f.getProfile()){
+                Statistics mLastFrame = mLastFrames.get(streamProfile.getUniqueId());
+                mHWTimestampDiff = mHWTimestamp - mLastFrame.mHWTimestamp;
+                mSWTimestampDiff = mSWTimestamp - mLastFrame.mSWTimestamp;
+            }
         }
 
         private void logFrameData() {

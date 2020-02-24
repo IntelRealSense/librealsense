@@ -203,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
 
             mPipelines.clear();
             mColorizers.clear();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
 
             deviceList.close();

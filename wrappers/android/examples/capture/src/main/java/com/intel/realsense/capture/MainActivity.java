@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
+        mColorizer.close();
         mPipeline.close();
     }
 
@@ -189,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

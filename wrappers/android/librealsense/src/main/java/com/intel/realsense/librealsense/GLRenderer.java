@@ -105,10 +105,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     }
 
     private void addFrame(Frame f){
-        if(!isFormatSupported(f.getProfile().getFormat()))
-            return;
-
         try(StreamProfile sp = f.getProfile()){
+            if(!isFormatSupported(sp.getFormat()))
+                return;
             int uid = sp.getUniqueId();
             if(!mFrames.containsKey(uid)){
                 synchronized (mFrames) {

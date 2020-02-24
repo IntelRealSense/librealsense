@@ -203,10 +203,12 @@ public class MainActivity extends AppCompatActivity {
                             applyFilter(mThresholdFilter).releaseWith(fr).
                             applyFilter(mColorizerProcessed).releaseWith(fr).
                             applyFilter(mAlign).releaseWith(fr);
-                    Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    mGLSurfaceViewOrg.upload(org);
-                    mGLSurfaceViewProcessed.upload(processed);
+                    try(Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                        try(Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                            mGLSurfaceViewOrg.upload(org);
+                            mGLSurfaceViewProcessed.upload(processed);
+                        }
+                    }
                 }
                 mHandler.post(mStreaming);
             }
@@ -251,9 +253,13 @@ public class MainActivity extends AppCompatActivity {
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
             Log.d(TAG, "streaming stopped successfully");
+            mGLSurfaceViewOrg.clear();
+            mGLSurfaceViewProcessed.clear();
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");
             mPipeline = null;
+            mColorizerOrg.close();
+            mColorizerProcessed.close();
         }
     }
 }

@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         if(mStreaming.isAlive()) {
             try {
                 mStreaming.join(1000);
+                mGLSurfaceView.clear();
             } catch (InterruptedException e) {
                 Log.e(TAG, e.getMessage());
             }
