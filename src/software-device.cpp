@@ -91,14 +91,6 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream, bool is_default)
     {
-
-        auto currProfile = find_profile_by_uid(video_stream.uid);
-        if (currProfile)
-        {
-            LOG_WARNING("Video stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
-        }
-
         auto profile = std::make_shared<video_stream_profile>(
             platform::stream_profile{ (uint32_t)video_stream.width, (uint32_t)video_stream.height, (uint32_t)video_stream.fps, 0 });
         profile->set_dims(video_stream.width, video_stream.height);
@@ -116,13 +108,6 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream, bool is_default)
     {
-        auto currProfile = find_profile_by_uid(motion_stream.uid);
-        if (currProfile)
-        {
-            LOG_WARNING("Motion stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
-        }
-
         auto profile = std::make_shared<motion_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 });
         profile->set_format(motion_stream.fmt);
@@ -139,13 +124,6 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream, bool is_default)
     {
-        auto currProfile = find_profile_by_uid(pose_stream.uid);
-        if (currProfile)
-        {
-            LOG_WARNING("Pose stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
-        }
-
         auto profile = std::make_shared<pose_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 });
         profile->set_format(pose_stream.fmt);
@@ -157,21 +135,6 @@ namespace librealsense
         _profiles.push_back(profile);
 
         return std::move(profile);
-    }
-
-    std::shared_ptr<stream_profile_interface> software_sensor::find_profile_by_uid(int uid)
-    {
-        auto filtFunc = [&](std::shared_ptr<stream_profile_interface> profile)
-        {
-            return profile->get_unique_id() == uid;
-        };
-
-        auto profile = std::find_if(_profiles.begin(), _profiles.end(), filtFunc);
-        if ( profile != _profiles.end() ) {
-            return *profile;
-        } else {
-            return std::shared_ptr<stream_profile_interface>();
-        }
     }
 
     bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
