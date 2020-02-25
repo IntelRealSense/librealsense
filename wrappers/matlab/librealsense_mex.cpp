@@ -932,6 +932,10 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(rs2::frame_queue(capacity, keep_frames));
             }
         });
+        frame_queue_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::frame_queue>(inv[0]);
+        });
         // rs2::frame_queue::enqueue(frame)                             [?]
         frame_queue_factory.record("wait_for_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -1429,6 +1433,18 @@ void make_factory(){
             else if (inc == 2) {
                 auto config = MatlabParamParser::parse<rs2::config>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(thiz.start(config));
+            }
+        });
+        pipeline_factory.record("start#fq", 1, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
+            if (inc == 2)
+                auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.start(fq));
+            else if (inc == 3) {
+                auto config = MatlabParamParser::parse<rs2::config>(inv[1]);
+                auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[2]);
+                outv[0] = MatlabParamParser::wrap(thiz.start(config, fq));
             }
         });
         pipeline_factory.record("stop", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
