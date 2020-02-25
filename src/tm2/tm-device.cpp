@@ -616,8 +616,7 @@ namespace librealsense
                     if(tm_sensor_type != SensorType::Fisheye ||
                         (tm_profile.wWidth == sp.width && tm_profile.wHeight == sp.height &&
                          rs2_format_from_tm2(tm_profile.bPixelFormat) == sp.format)) {
-                        if(_device->usb_info.conn_spec < platform::usb3_type)
-                            LOG_ERROR("Streaming T265 video over USB " << platform::usb_spec_names.at(_device->usb_info.conn_spec) << " is unreliable, please use USB 3 or only stream poses");
+                             LOG_IF(tm_sensor_type == SensorType::Fisheye &&_device->usb_info.conn_spec < platform::usb3_type, ERROR) << "Streaming T265 video over USB " << platform::usb_spec_names.at(_device->usb_info.conn_spec) << " is unreliable, please use USB 3 or only stream poses";
 
                         found = true;
                         tm_profile.bOutputMode = 1;
