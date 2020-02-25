@@ -255,5 +255,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     @Override
     public void close() {
         clear();
+        mColorizer.close();
     }
 }
