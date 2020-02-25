@@ -137,6 +137,11 @@ namespace librealsense
         return std::move(profile);
     }
 
+    void software_sensor::add_processing_block(std::shared_ptr<processing_block_interface> block)
+    {
+        _pbs.add(block);
+    }
+
     bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
     {
         if (extension_type == RS2_EXTENSION_DEPTH_SENSOR)

@@ -2365,6 +2365,15 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
 
+void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs2_processing_block* block, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    VALIDATE_NOT_NULL(block);
+    return bs->add_processing_block(block->block);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, block)
+
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_ENUM(severity);

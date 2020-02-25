@@ -338,6 +338,14 @@ void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option 
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float min, float max, float step, float def, int is_writable, rs2_error** error);
+
+/**
+* Add a processing block to the list that the sensor recommends for use
+* \param[in] sensor         the software sensor
+* \param[in] block          the processing block to recommend
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs2_processing_block* block, rs2_error** error);
 #ifdef __cplusplus
 }
 #endif

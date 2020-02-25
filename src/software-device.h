@@ -82,6 +82,8 @@ namespace librealsense
         }
         ~software_recommended_proccesing_blocks() override {}
 
+        void add(std::shared_ptr<processing_block_interface> pb) { _blocks.push_back(pb); }
+
     private:
         processing_blocks _blocks;
     };
@@ -94,6 +96,8 @@ namespace librealsense
         std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default=false);
         std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
         std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
+
+        void add_processing_block(std::shared_ptr<processing_block_interface> block);
 
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
@@ -113,6 +117,11 @@ namespace librealsense
         void update_read_only_option(rs2_option option, float val);
         void add_option(rs2_option option, option_range range, bool is_writable);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
+
+        processing_blocks get_recommended_processing_blocks() const override
+        {
+            return _pbs.get_recommended_processing_blocks();
+        }
     private:
         friend class software_device;
         stream_profiles _profiles;

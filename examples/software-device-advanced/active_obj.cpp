@@ -186,6 +186,23 @@ void legacy_active_obj::map_profiles(rs2::software_device dev) {
             auto sensor = dev.add_sensor(rs2_stream_to_string(stream) + std::string(" Sensor"));
             sensors.emplace(stream, sensor);
 
+            // Register recommended processing blocks
+            switch (stream) {
+            case RS2_STREAM_DEPTH:
+                sensor.add_recommended_processing(rs2::decimation_filter());
+                sensor.add_recommended_processing(rs2::threshold_filter());
+                sensor.add_recommended_processing(rs2::disparity_transform(true));
+                sensor.add_recommended_processing(rs2::spatial_filter());
+                sensor.add_recommended_processing(rs2::temporal_filter());
+                sensor.add_recommended_processing(rs2::hole_filling_filter());
+                sensor.add_recommended_processing(rs2::disparity_transform(false));
+                break;
+            case RS2_STREAM_COLOR:
+                sensor.add_recommended_processing(rs2::decimation_filter());
+                break;
+            default: break;
+            }
+
             // Register all stream profiles
             for (int i = 0; i < n_modes; ++i) {
                 // uid uniquely identifies each stream on the device. That is, at most one stream_profile

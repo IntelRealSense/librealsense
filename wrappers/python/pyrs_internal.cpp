@@ -134,6 +134,8 @@ void init_internal(py::module &m) {
              "read-only option", "option"_a, "val"_a)
         .def("add_option", &rs2::software_sensor::add_option, "Register option that will be supported by the sensor",
              "option"_a, "range"_a, "is_writable"_a=true)
+        .def("add_recommended_processing", &rs2::software_sensor::add_recommended_processing, "Register processing block that "
+             "the sensor will recommend for use.", "block"_a)
         .def("on_notification", &rs2::software_sensor::on_notification, "notif"_a);
 
     // rs2::software_device
