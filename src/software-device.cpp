@@ -148,7 +148,7 @@ namespace librealsense
         {
             if (supports_option(RS2_OPTION_DEPTH_UNITS))
             {
-                *ptr = &(*_stereo_extension);
+                *reinterpret_cast<depth_sensor**>(ptr) = &(*_stereo_extension);
                 return true;
             }
         }
@@ -157,7 +157,7 @@ namespace librealsense
             if (supports_option(RS2_OPTION_DEPTH_UNITS) && 
                 supports_option(RS2_OPTION_STEREO_BASELINE))
             {
-                *ptr = &(*_stereo_extension);
+                *reinterpret_cast<depth_stereo_sensor**>(ptr) = &(*_stereo_extension);
                 return true;
             }
         }
