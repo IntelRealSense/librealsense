@@ -948,7 +948,48 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame(timeout_ms));
             }
         });
-        // rs2::frame_queue::poll_for_frame(T*)                         [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
+        frame_queue_factory.record("poll_for_frame", 2, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "frame") {
+                auto f = rs2::frame();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "video_frame") {
+                auto f = rs2::video_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "points"){
+                auto f = rs2::points();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "depth_frame"){
+                auto f = rs2::depth_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "disparity_frame"){
+                auto f = rs2::disparity_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "motion_frame"){
+                auto f = rs2::motion_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "pose_frame"){
+                auto f = rs2::pose_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "frameset"){
+                auto f = rs2::frameset();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else {
+                mexWarnMsgTxt("rs2::frame_queue::poll_for_frame: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+                outv[1] = MatlabParamParser::wrap(rs2::frame());
+            }
+        });
         frame_queue_factory.record("capacity", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
@@ -1036,7 +1077,13 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
             }
         });
-        // rs2::syncer::poll_for_frames(frameset*)                      [?]
+        syncer_factory.record("poll_for_frames", 2, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::syncer>(inv[0]);
+            rs2::frameset fs;
+            outv[0] = MatlabParamParser::wrap(thiz.poll_for_frames(&fs));
+            outv[1] = MatlabParamParser::wrap(std::move(fs));
+        });
         factory->record(syncer_factory);
     }
     {
@@ -1438,10 +1485,10 @@ void make_factory(){
         pipeline_factory.record("start#fq", 1, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
-            if (inc == 2)
+            if (inc == 2) {
                 auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[1]);
                 outv[0] = MatlabParamParser::wrap(thiz.start(fq));
-            else if (inc == 3) {
+            } else if (inc == 3) {
                 auto config = MatlabParamParser::parse<rs2::config>(inv[1]);
                 auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[2]);
                 outv[0] = MatlabParamParser::wrap(thiz.start(config, fq));
@@ -1462,7 +1509,13 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
             }
         });
-        // rs2::pipeline::poll_for_frames                               [TODO/HOW] [multi-output?]
+        pipeline_factory.record("poll_for_frames", 2, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
+            rs2::frameset fs;
+            outv[0] = MatlabParamParser::wrap(thiz.poll_for_frames(&fs));
+            outv[1] = MatlabParamParser::wrap(std::move(fs));
+        });
         pipeline_factory.record("get_active_profile", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
