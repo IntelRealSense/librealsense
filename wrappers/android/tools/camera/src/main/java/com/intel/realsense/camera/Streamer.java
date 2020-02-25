@@ -126,6 +126,7 @@ public class Streamer {
                 configStream(config);
             if(mListener != null)
                 mListener.config(config);
+            // try statement needed here to release resources allocated by the Pipeline:start() method
             try (PipelineProfile pp = mPipeline.start(config)){}
         }
     }
