@@ -39,7 +39,7 @@ namespace librealsense
             if(sts < 0)
             {
                 std::string strerr = strerror(errno);
-                LOG_WARNING("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << int(errno));
+                LOG_DEBUG("control_transfer returned error, index: " << index << ", error: " << strerr << ", number: " << int(errno));
                 return libusb_status_to_rs(sts);
             }
             transferred = uint32_t(sts);
