@@ -310,6 +310,7 @@ namespace rs2
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
                ",\n \"average step count\":" << average_step_count <<
+               ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                ",\n \"step count\":" << step_count <<
                ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                ",\n \"accuracy\":" << accuracy <<"}";
