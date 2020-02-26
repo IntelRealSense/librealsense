@@ -1691,8 +1691,8 @@ namespace rs2
         auto x = static_cast<float>(-M_PI / 2);
         float _rx[4][4] = {
             { 1 , 0, 0, 0 },
-            { 0, cos(x), -sin(x), 0 },
-            { 0, sin(x), cos(x), 0 },
+            { 0, static_cast<float>(cos(x)), static_cast<float>(-sin(x)), 0 },
+            { 0, static_cast<float>(sin(x)), static_cast<float>(cos(x)), 0 },
             { 0, 0, 0, 1 }
         };
         auto z = static_cast<float>(M_PI);
