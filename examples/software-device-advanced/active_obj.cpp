@@ -242,7 +242,14 @@ void legacy_active_obj::map_profiles(rs2::software_device dev) {
             }
 
             // Register extrinsics from depth sensor to other sensors
-            if (stream == RS2_STREAM_DEPTH) has_depth = true;
+            if (stream == RS2_STREAM_DEPTH) {
+                has_depth = true;
+                // Also register stereo baseline if present
+                if (legacy_dev->supports(rs::camera_info::lens_nominal_baseline)) {
+                    auto base = float(std::atof(legacy_dev->get_info(rs::camera_info::lens_nominal_baseline)));
+                    sensor.add_option(RS2_OPTION_STEREO_BASELINE, { base, base, base, 0 }, false);
+                }
+            }
             else if (has_depth) {
                 try {
                     rs::extrinsics legacy_extrin = legacy_dev->get_extrinsics(rs::stream::depth, legacy_stream);
