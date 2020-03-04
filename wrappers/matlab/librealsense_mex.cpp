@@ -1,6 +1,7 @@
 #include "MatlabParamParser.h"
 #include "Factory.h"
 #include "librealsense2/rs.hpp"
+#include "librealsense2/rs_advanced_mode.hpp"
 #include "librealsense2/hpp/rs_export.hpp"
 
 #pragma comment(lib, "libmx.lib")
@@ -779,10 +780,8 @@ void make_factory(){
                 mexWarnMsgTxt("rs2::device::is: Debug Protocol not supported in MATLAB");
                 outv[0] = MatlabParamParser::wrap(false);
             }
-            else if (type == "advanced_mode") {
-                mexWarnMsgTxt("rs2::device::is: Advanced Mode not supported in MATLAB");
-                outv[0] = MatlabParamParser::wrap(false);
-            }
+            else if (type == "advanced_mode")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs400::advanced_mode>());
             else if (type == "recorder")
                 outv[0] = MatlabParamParser::wrap(thiz.is<rs2::recorder>());
             else if (type == "playback")
@@ -803,10 +802,8 @@ void make_factory(){
                 mexErrMsgTxt("rs2::device::as: Debug Protocol not supported in MATLAB");
 //                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::debug_protocol>());
             }
-            else if (type == "advanced_mode") {
-                mexErrMsgTxt("rs2::device::as: Advanced Mode not supported in MATLAB");
-//                outv[0] = MatlabParamParser::wrap(false);
-            }
+            else if (type == "advanced_mode")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs400::advanced_mode>());
             else if (type == "recorder")
                 outv[0] = MatlabParamParser::wrap(thiz.as<rs2::recorder>());
             else if (type == "playback")
@@ -1545,6 +1542,31 @@ void make_factory(){
             auto message = MatlabParamParser::parse<const char *>(inv[1]);
             rs2::log(severity, message);
         });
+        factory->record(free_funcs_factory);
+    }
+
+    // rs_advanced_mode.hpp
+    {
+        ClassFactory advanced_mode_factory("rs400::advanced_mode");
+        advanced_mode_factory.record("is_enabled", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.is_enabled());
+        });
+        advanced_mode_factory.record("toggle_advanced_mode", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            auto enable = MatlabParamParser::parse<bool>(inv[1]);
+            thiz.toggle_advanced_mode(enable);
+        });
+        advanced_mode_factory.record("serialize_json", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.serialize_json());
+        });
+        advanced_mode_factory.record("load_json", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            auto json_content = MatlabParamParser::parse<std::string>(inv[1]);
+            thiz.load_json(json_content);
+        });
+        factory->record(advanced_mode_factory);
     }
 
     mexAtExit([]() { delete factory; });
