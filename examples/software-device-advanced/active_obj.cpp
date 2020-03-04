@@ -1,6 +1,5 @@
 #include "active_obj.hpp"
 #include "conversions.hpp"
-#include <iostream>
 
 // Called when Legacy device produces a frame
 void legacy_active_obj::on_frame(rs::frame f) {
@@ -16,8 +15,6 @@ void legacy_active_obj::on_frame(rs::frame f) {
         // Make sure this is the correct profile
         if (fmt_conv(f.get_format()) != vp.format() || f.get_framerate() != vp.fps()
             || f.get_width() != vp.width() || f.get_height() != vp.height()) continue;
-
-        std::cout << "[legacy_active_obj::on_frame] " << vp.stream_name() << " " << f.get_frame_number() << " " << f.get_timestamp() << std::endl;
 
         // Copy data from legacy buffer to heap so we can use it with modern API.
         int frame_size = f.get_stride() * f.get_height();
@@ -159,7 +156,7 @@ void legacy_active_obj::map_infos(rs2::software_device dev) {
     }
     // Device name is automatically initialized to "Software Device", so we update to overwrite that.
     if (legacy_dev->supports(rs::camera_info::device_name)) {
-        dev.update_info(RS2_CAMERA_INFO_NAME, std::string("[Legacy Adaptor] ") + legacy_dev->get_info(rs::camera_info::device_name));
+        dev.update_info(RS2_CAMERA_INFO_NAME, std::string("[Legacy] ") + legacy_dev->get_info(rs::camera_info::device_name));
     }
     // Set a couple other infos just for completion's sake
     dev.register_info(RS2_CAMERA_INFO_ADVANCED_MODE, "NO");
