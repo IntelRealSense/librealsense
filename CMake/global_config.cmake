@@ -69,6 +69,10 @@ macro(global_set_flags)
         include(libusb_config)
     endif()
 
+    if(BUILD_LRS1_DEVICE_ADAPTOR)
+        add_definitions(-DRS2_USE_LEGACY_ADAPTOR)
+    endif()
+
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 

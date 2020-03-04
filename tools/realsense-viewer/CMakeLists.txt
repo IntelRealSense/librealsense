@@ -78,6 +78,11 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES}
                                         Threads::Threads
                                         realsense2-gl
                                         )
+
+if (BUILD_LRS1_DEVICE_ADAPTOR)
+    target_link_libraries(realsense-viewer legacy-adaptor)
+endif()
+
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(realsense-viewer uvc_fw)

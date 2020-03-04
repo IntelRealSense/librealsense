@@ -28,6 +28,8 @@
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
+#include "../examples/software-device-advanced/legacy_adaptor.hpp"
+
 using namespace rs2;
 using namespace rs400;
 
@@ -352,7 +354,11 @@ int main(int argc, const char** argv) try
 
 
         ImGui::PushFont(window.get_font());
+#ifdef RS2_USE_LEGACY_ADAPTOR
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 + 20 });
+#else
         ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 });
+#endif
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -407,6 +413,13 @@ int main(int argc, const char** argv) try
                     add_playback_device(ctx, *device_models, error_message, viewer_model, ret);
                 }
             }
+#ifdef RS2_USE_LEGACY_ADAPTOR
+            if (ImGui::Selectable("Load Legacy Device", false, ImGuiSelectableFlags_SpanAllColumns))
+            {
+                rs2::legacy::legacy_device dev("0");
+                dev.add_to(ctx);
+            }
+#endif
             ImGui::NextColumn();
             ImGui::Text("%s", "");
             ImGui::NextColumn();
