@@ -116,6 +116,7 @@ std::string matrix_to_string(const T(&arr)[N][M])
 #define BIND_RAW_ARRAY_PROPERTY(T, member, valueT, SIZE) #member, BIND_RAW_ARRAY_GETTER(T, member, valueT, SIZE), BIND_RAW_ARRAY_SETTER(T, member, valueT, SIZE)
 #define BIND_RAW_2D_ARRAY_PROPERTY(T, member, valueT, NROWS, NCOLS) #member, BIND_RAW_2D_ARRAY_GETTER(T, member, valueT, NROWS, NCOLS), BIND_RAW_2D_ARRAY_SETTER(T, member, valueT, NROWS, NCOLS)
 
+// TODO: Fill in missing formats
 // Map format->data type for various things
 template <rs2_format> struct FmtToType { using type = uint8_t; }; // Default to uint8_t
 #define MAP_FMT_TO_TYPE(F, T) template <> struct FmtToType<F> { using type = T; }
@@ -138,7 +139,7 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_MOTION_XYZ32F, float);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_GPIO_RAW, );
 //MAP_FMT_TO_TYPE(RS2_FORMAT_6DOF, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_DISPARITY32, float);
-MAP_FMT_TO_TYPE(RS2_FORMAT_Y10BPACK, uint16_t);
+MAP_FMT_TO_TYPE(RS2_FORMAT_Y10BPACK, uint8_t);
 MAP_FMT_TO_TYPE(RS2_FORMAT_DISTANCE, float);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_MJPEG, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
@@ -184,6 +185,7 @@ template<template<rs2_format> class F>
     case RS2_FORMAT_INZI: return F<RS2_FORMAT_INZI>::func();
     case RS2_FORMAT_INVI: return F<RS2_FORMAT_INVI>::func();
     case RS2_FORMAT_W10: return F<RS2_FORMAT_W10>::func();
+    // c++11 standard doesn't allow throw in constexpr function switch case
     case RS2_FORMAT_COUNT: throw std::runtime_error("format.count is not a valid value for arguments of type format!");
     default: return F<RS2_FORMAT_ANY>::func();
     }

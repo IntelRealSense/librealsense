@@ -384,7 +384,7 @@ namespace librealsense
         if (auto opt = dynamic_cast<readonly_float_option*>(&get_option(option)))
             opt->update(val);
         else
-            throw invalid_value_exception("This option is not read-only or is deprecated type");
+            throw invalid_value_exception(to_string() << "option " << get_string(option) << " is not read-only or is deprecated type");
     }
 
     void software_sensor::add_option(rs2_option option, option_range range, bool is_writable)

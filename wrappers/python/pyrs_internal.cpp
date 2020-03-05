@@ -43,6 +43,7 @@ void init_internal(py::module &m) {
                                                               "required to define a video frame.");
     software_video_frame.def(py::init([]() { rs2_software_video_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
         .def_property("pixels", [](const rs2_software_video_frame& self) {
+            // TODO: Not all formats (e.g. RAW10) are properly handled (see struct FmtToType in python.hpp)
             auto vp = rs2::stream_profile(self.profile).as<rs2::video_stream_profile>();
             size_t size = fmt_to_value<itemsize>(vp.format());
             size_t upp = self.bpp / size;

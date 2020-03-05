@@ -215,7 +215,7 @@ namespace rs2
         * \param[in] option  the option
         * \param[in] range  range data for the option. range.def will be used as the initial value
         */
-        void add_option(rs2_option option, option_range range, bool is_writable=true)
+        void add_option(rs2_option option, const option_range& range, bool is_writable=true)
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_add_option(_sensor.get(), option, range.min,

@@ -900,7 +900,7 @@ namespace librealsense
             {
                 try { fptr(frame, user); } catch (...)
                 {
-                    LOG_ERROR("Received an execption from frame callback!");
+                    LOG_ERROR("Received an exception from frame callback!");
                 }
             }
         }
@@ -923,7 +923,7 @@ namespace librealsense
                 try { fptr(frame, source, user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from frame callback!");
+                    LOG_ERROR("Received an exception from frame callback!");
                 }
             }
         }
@@ -963,7 +963,7 @@ namespace librealsense
                 try { nptr(notification, user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from notification callback!");
+                    LOG_ERROR("Received an exception from notification callback!");
                 }
             }
         }
@@ -988,7 +988,7 @@ namespace librealsense
                 try { nptr(user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from software device destruction callback!");
+                    LOG_ERROR("Received an exception from software device destruction callback!");
                 }
             }
         }
@@ -1012,7 +1012,7 @@ namespace librealsense
                 try { nptr(removed, added, user); }
                 catch (...)
                 {
-                    LOG_ERROR("Received an execption from devices_changed callback!");
+                    LOG_ERROR("Received an exception from devices_changed callback!");
                 }
             }
         }

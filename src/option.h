@@ -213,7 +213,7 @@ namespace librealsense
         float query() const override { return _value; }
         bool is_enabled() const override { return true; }
         // TODO: expose this outwards
-        const char* get_description() const override { return "A simple custom option for a processing block"; }
+        const char* get_description() const override { return "A simple custom option for a processing block or software device"; }
     protected:
         float _value;
     };
@@ -235,9 +235,10 @@ namespace librealsense
             : float_option(range) {}
 
         bool is_read_only() const override { return true; }
-
+        const char* get_description() const override { return "A simple read-only custom option for a software device"; }
         void set(float) override
         {
+            // TODO: Use get_description() to give a more useful error message when user-supplied descriptions are implemented
             throw not_implemented_exception("This option is read-only!");
         }
 
