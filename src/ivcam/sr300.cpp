@@ -102,6 +102,8 @@ namespace librealsense
             sr300_color_fourcc_to_rs2_format,
             sr300_color_fourcc_to_rs2_stream);
 
+        color_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, color.device_path);
+
         // register processing blocks
         color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
         color_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
@@ -165,6 +167,8 @@ namespace librealsense
             sr300_depth_fourcc_to_rs2_format,
             sr300_depth_fourcc_to_rs2_stream);
         raw_depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+
+        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, depth.device_path);
 
         // register processing blocks factories
         depth_ep->register_processing_block(
