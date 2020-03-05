@@ -9,6 +9,8 @@
 #define RS400_ADVANCED_MODE_HPP
 #include "ds5/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
+#include "serializable-interface.h"
+
 #undef RS400_ADVANCED_MODE_HPP
 
 
@@ -55,7 +57,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STAFactor, etAFactor);
 
 
-    class ds5_advanced_mode_interface : public recordable<ds5_advanced_mode_interface>
+    class ds5_advanced_mode_interface : public serializable_interface, public recordable<ds5_advanced_mode_interface>
     {
     public:
         virtual bool is_enabled() const = 0;
@@ -93,9 +95,6 @@ namespace librealsense
         virtual void set_ae_control(const STAEControl& val) = 0;
         virtual void set_census_radius(const STCensusRadius& val) = 0;
         virtual void set_amp_factor(const STAFactor& val) = 0;
-
-        virtual std::vector<uint8_t> serialize_json() const = 0;
-        virtual void load_json(const std::string& json_content) = 0;
 
         virtual ~ds5_advanced_mode_interface() = default;
     };

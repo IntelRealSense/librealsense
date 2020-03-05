@@ -53,6 +53,10 @@ macro(global_set_flags)
         add_definitions(-DRS2_USE_CUDA)
     endif()
 
+    if (BUILD_SHARED_LIBS)
+        add_definitions(-DBUILD_SHARED_LIBS)
+    endif()
+
     if (BUILD_INTERNAL_UNIT_TESTS)
         add_definitions(-DBUILD_INTERNAL_UNIT_TESTS)
     endif()

@@ -103,7 +103,7 @@ public:
         int size() const { return pose_in_camera.size(); }
     };
     
-    static void apriltag_pose_destory(apriltag_pose_t* p){ matd_destroy(p->R); matd_destroy(p->t); delete p;}
+    static void apriltag_pose_destroy(apriltag_pose_t* p){ matd_destroy(p->R); matd_destroy(p->t); delete p;}
     
     apriltag_array_t detect(unsigned char* gray, const rs2_pose* camera_pose) const {
         image_u8_t img{ intr.width, intr.height, intr.width, gray};
@@ -116,7 +116,7 @@ public:
         auto info_ = info;
         for(int t=0, num_of_tags=(int)tags.size(); t<num_of_tags; ++t)
         {
-            tags.pose_raw[t] = std::shared_ptr<apriltag_pose_t>(new apriltag_pose_t(), apriltag_pose_destory);
+            tags.pose_raw[t] = std::shared_ptr<apriltag_pose_t>(new apriltag_pose_t(), apriltag_pose_destroy);
 
             undistort(*(info_.det = tags.get(t)), intr);                      //recompute tag corners on an undistorted image focal length = 1
             //estimate_tag_pose(&info_, tags.pose_raw[t].get());              //(alternative) estimate tag pose in camera coordinate

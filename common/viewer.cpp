@@ -766,8 +766,9 @@ namespace rs2
         }
     }
 
-    viewer_model::viewer_model()
-            : ppf(*this), 
+    viewer_model::viewer_model(context &ctx_)
+            : ppf(*this),
+              ctx(ctx_),
               synchronization_enable(true),
               zo_sensors(0),
               frameset_alloc(this)
@@ -1695,10 +1696,10 @@ namespace rs2
             { 0, static_cast<float>(sin(x)), static_cast<float>(cos(x)), 0 },
             { 0, 0, 0, 1 }
         };
-        auto z = static_cast<float>(M_PI);
-        float _rz[4][4] = {
-            { cos(z), -sin(z),0, 0 },
-            { sin(z), cos(z), 0, 0 },
+        static const double z = M_PI;
+        static float _rz[4][4] = {
+            { float(cos(z)), float(-sin(z)),0, 0 },
+            { float(sin(z)), float(cos(z)), 0, 0 },
             { 0 , 0, 1, 0 },
             { 0, 0, 0, 1 }
         };

@@ -43,9 +43,11 @@ struct rs2_notifications_callback
     virtual                                 ~rs2_notifications_callback() {}
 };
 
+typedef void ( *log_callback_function_ptr )(rs2_log_severity severity, rs2_log_message const * msg );
+
 struct rs2_log_callback
 {
-    virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;
+    virtual void                            on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_log_callback() {}
 };

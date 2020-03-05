@@ -16,6 +16,8 @@ matrix:
         - ./live-test.exe -d yes -i [software-device]
         - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam] from "$i"; done
         - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam] from "$i"; done
+        - unset LRS_LOG_LEVEL
+        - C:/Python38/python.exe ../../unit-tests/run-unit-tests.py --verbose .
         
     - name: "Windows - cpp"
       os: windows
@@ -48,16 +50,16 @@ matrix:
         - for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
         - for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
 
-    - name: "Linux - cpp"
+    - name: "Linux - cpp - static"
       os: linux
       language: cpp
       sudo: required
       dist: xenial
       script:
         - cd ../scripts && ./pr_check.sh && cd ../build
-        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true
+        - cmake .. -DBUILD_UNIT_TESTS=true -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        - ls
+        - python3 ../unit-tests/run-unit-tests.py --verbose .
 
     - name: "Linux - python & nodejs"
       os: linux
@@ -137,9 +139,10 @@ install:
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install -y python3 --version 3.8.1;
       if [[ "$VS15" == "true" ]]; then
         choco install -y vcbuildtools --version 2015.4 --force;
-      fi
+      fi;
     fi
 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then

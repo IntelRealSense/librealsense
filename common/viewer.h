@@ -65,7 +65,7 @@ namespace rs2
 
         rs2::frame handle_ready_frames(const rect& viewer_rect, ux_window& window, int devices, std::string& error_message);
 
-        viewer_model();
+        viewer_model(context &ctx_);
 
         ~viewer_model()
         {
@@ -128,7 +128,7 @@ namespace rs2
         std::shared_ptr<syncer_model> syncer;
         post_processing_filters ppf;
 
-        context ctx;
+        context &ctx;
         notifications_model not_model;
         bool is_output_collapsed = false;
         bool is_3d_view = false;

@@ -309,8 +309,10 @@ namespace rs2
     {
         std::stringstream ss;
         ss << "{\n \"speed\":" << speed <<
-               ",\n \"average_step_count\":" << average_step_count <<
-               ",\n \"step_count\":" << step_count <<
+               ",\n \"average step count\":" << average_step_count <<
+               ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
+               ",\n \"step count\":" << step_count <<
+               ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                ",\n \"accuracy\":" << accuracy <<"}";
 
         std::string json = ss.str();
@@ -443,6 +445,38 @@ namespace rs2
             notification_model::draw_dismiss(win, x, y);
     }
 
+    void autocalib_notification_model::draw_intrinsic_extrinsic(int x, int y)
+    {
+        bool intrinsic = get_manager().intrinsic_scan;
+        bool extrinsic = !intrinsic;
+
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
+
+        std::string id = to_string() << "##Intrinsic_" << index;
+        if (ImGui::Checkbox("Intrinsic", &intrinsic))
+        {
+            extrinsic = !intrinsic;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Calibrate intrinsic parameters of the camera");
+        }
+        ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
+
+        id = to_string() << "##Intrinsic_" << index;
+
+        if (ImGui::Checkbox("Extrinsic", &extrinsic))
+        {
+            intrinsic = !extrinsic;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", "Calibrate extrinsic parameters between left and right cameras");
+        }
+
+        get_manager().intrinsic_scan = intrinsic;
+    }
+
     void autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
     {
         using namespace std;
@@ -571,19 +605,25 @@ namespace rs2
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
                     ImGui::PopItemWidth();
+
+                    draw_intrinsic_extrinsic(x, y + 3 * ImGui::GetTextLineHeightWithSpacing() - 10);
+
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                    id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
+                    ImGui::Checkbox(id.c_str(), &get_manager().apply_preset);
                 }
 
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 48 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
                     ImGui::Text("%s", "Ground Truth(mm):");
-                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 58 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
                 }
                 else
                 {
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
                     ImGui::Text("%s", "Ground Truth(mm):");
-                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
                 }
 
                 if (ImGui::IsItemHovered())
@@ -651,6 +691,8 @@ namespace rs2
                 ImGui::PushItemWidth(width - 145);
                 ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), vals.size());
                 ImGui::PopItemWidth();
+
+                draw_intrinsic_extrinsic(x, y);
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
@@ -1085,9 +1127,9 @@ namespace rs2
             if (get_manager().allow_calib_keep()) return 170;
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 85;
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 110;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 160;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
         else return 100;
     }
 

@@ -95,8 +95,8 @@ namespace fw_logger
     bool fw_logs_xml_helper::build_meta_data_structure(xml_node<> *xml_node_list_of_events, fw_logs_formating_options* logs_formating_options)
     {
         node_type res = none;
-        int id;
-        int num_of_params;
+        int id{};
+        int num_of_params{};
         string line;
 
         // loop through all elements in the Format.
@@ -111,11 +111,11 @@ namespace fw_logger
             }
             else if (res == file)
             {
-                logs_formating_options->_fw_logs_file_names_list.insert(pair<int, string>(id, line));
+                logs_formating_options->_fw_logs_file_names_list.insert(kvp(id, line));
             }
             else if (res == thread)
             {
-                logs_formating_options->_fw_logs_thread_names_list.insert(pair<int, string>(id, line));
+                logs_formating_options->_fw_logs_thread_names_list.insert(kvp(id, line));
             }
             else if (res == enums)
             {
@@ -127,21 +127,32 @@ namespace fw_logger
                         if (attr.compare("Name") == 0)
                         {
                             string name_attr_str(attribute->value(), attribute->value() + attribute->value_size());
-                            vector<string> values;
+                            vector<kvp> xml_kvp;
 
                             for (xml_node<>* enum_value_node = enum_node->first_node(); enum_value_node; enum_value_node = enum_value_node->next_sibling())
                             {
+                                int key = 0;
+                                string value_str;
                                 for (xml_attribute<>* attribute = enum_value_node->first_attribute(); attribute; attribute = attribute->next_attribute())
                                 {
                                     string attr(attribute->name(), attribute->name() + attribute->name_size());
                                     if (attr.compare("Value") == 0)
                                     {
-                                        string value_str(attribute->value(), attribute->value() + attribute->value_size());
-                                        values.push_back(value_str);
+                                        value_str = std::string(attribute->value(), attribute->value() + attribute->value_size());
+                                    }
+                                    if (attr.compare("Key") == 0)
+                                    {
+                                        try
+                                        {
+                                            auto key_str = std::string(attribute->value());
+                                            key = std::stoi(key_str, nullptr);
+                                        }
+                                        catch (...) {}
                                     }
                                 }
+                                xml_kvp.push_back(std::make_pair(key, value_str));
                             }
-                            logs_formating_options->_fw_logs_enum_names_list.insert(pair<string, vector<string>>(name_attr_str, values));
+                            logs_formating_options->_fw_logs_enum_names_list.insert(pair<string, vector<kvp>>(name_attr_str, xml_kvp));
                         }
                     }
                 }

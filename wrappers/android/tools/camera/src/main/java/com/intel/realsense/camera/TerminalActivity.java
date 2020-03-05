@@ -145,11 +145,12 @@ public class TerminalActivity extends AppCompatActivity {
                 return;
             }
             try(Device device = devices.createDevice(0)){
-                DebugProtocol dp = device.as(Extension.DEBUG);
-                String content = mInputText.getText().toString();
-                String res = dp.SendAndReceiveRawData(mFilePath, content);
-                mOutputText.setText("command: " + mInputText.getText() + "\n\n" + res);
-                mInputText.setText("");
+                try(DebugProtocol dp = device.as(Extension.DEBUG)){
+                    String content = mInputText.getText().toString();
+                    String res = dp.SendAndReceiveRawData(mFilePath, content);
+                    mOutputText.setText("command: " + mInputText.getText() + "\n\n" + res);
+                    mInputText.setText("");
+                }
             }
             catch(Exception e){
                 mOutputText.setText("Error: " + e.getMessage());

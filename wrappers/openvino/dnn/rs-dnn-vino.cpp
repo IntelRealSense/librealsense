@@ -11,7 +11,12 @@ namespace fs = cv::utils::fs;
 #include <rs-vino/detected-object.h>
 
 #include <easylogging++.h>
+#ifdef BUILD_SHARED_LIBS
+// With static linkage, ELPP is initialized by librealsense, so doing it here will
+// create errors. When we're using the shared .so/.dll, the two are separate and we have
+// to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
+#endif
 
 #include <rs-vino/openvino-helpers.h>
 namespace openvino = InferenceEngine;

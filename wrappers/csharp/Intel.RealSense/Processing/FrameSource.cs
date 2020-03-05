@@ -25,6 +25,14 @@ namespace Intel.RealSense
             return Frame.Create<T>(fref);
         }
 
+        public T AllocateMotionFrame<T>(StreamProfile profile, Frame original, Extension extension = Extension.VideoFrame)
+           where T : Frame
+        {
+            object error;
+            var fref = NativeMethods.rs2_allocate_synthetic_motion_frame(m_instance.Handle, profile.Handle, original.Handle, extension, out error);
+            return Frame.Create<T>(fref);
+        }
+
         [Obsolete("This method is obsolete. Use AllocateCompositeFrame with DisposeWith method instead")]
         public FrameSet AllocateCompositeFrame(FramesReleaser releaser, params Frame[] frames)
         {

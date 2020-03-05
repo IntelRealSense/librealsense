@@ -118,6 +118,14 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        if( _fw_version >= firmware_version( "1.3.5.0" ) )
+        {
+            depth_sensor.register_option(
+                RS2_OPTION_FREEFALL_DETECTION_ENABLED,
+                std::make_shared< freefall_option >( *_hw_monitor )
+            );
+        }
     }
 
     std::shared_ptr<synthetic_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
@@ -139,14 +147,9 @@ namespace librealsense
         
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
-        depth_ep->register_option(RS2_OPTION_VISUAL_PRESET,
-            std::make_shared<uvc_xu_option<int>>(
-                *raw_depth_ep,
-                ivcam2::depth_xu,
-                ivcam2::L500_DEPTH_VISUAL_PRESET, "Preset to calibrate the camera to short or long range. 1 is long range and 2 is short range",
-                std::map<float, std::string>{ { 1, "Long range"},
-                { 2, "Short range" }}));
 
+
+       
         auto is_zo_enabled_opt = std::make_shared<bool_option>();
         auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
         is_zo_enabled_opt->set(false);

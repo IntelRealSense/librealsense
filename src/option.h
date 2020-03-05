@@ -83,7 +83,7 @@ namespace librealsense
         std::string _desc;
     };
 
-    class LRS_EXTENSION_API option_base : public option
+    class LRS_EXTENSION_API option_base : public virtual option
     {
     public:
         option_base(const option_range& opt_range)
@@ -98,7 +98,51 @@ namespace librealsense
      protected:
         const option_range _opt_range;
         std::function<void(const option&)> _recording_function = [](const option&) {};
+    };
 
+    template<class T>
+    class enum_option : public virtual option
+    {
+    public:
+        const char* get_value_description(float val) const override
+        {
+            return get_string((T)((int)val));
+        }
+    };
+
+    class option_description : public virtual option
+    {
+    public:
+        option_description(std::string description)
+            :_description(description) {}
+
+        const char* get_description() const override
+        {
+            return _description.c_str();
+        }
+
+    protected:
+        std::string _description;
+    };
+
+    template<class T>
+    class cascade_option : public T, public observable_option
+    {
+    public:
+        template <class... Args>
+        cascade_option(Args&&... args) :
+            T(std::forward<Args>(args)...){}
+
+        void set(float value) override
+        {
+            notify(value);
+            T::set(value);
+        }
+
+        void set_with_no_signal(float value)
+        {
+            T::set(value);
+        }
     };
 
     template<class T>
@@ -172,6 +216,16 @@ namespace librealsense
         const char* get_description() const override { return "A simple custom option for a processing block"; }
     protected:
         float _value;
+    };
+
+    template<class T>
+    class float_option_with_description : public float_option, public option_description, public enum_option<T>
+    {
+    public:
+        float_option_with_description(option_range range, std::string description)
+            :float_option(range), option_description(description) {}
+
+        const char* get_description() const override { return option_description::get_description(); }
     };
 
     class LRS_EXTENSION_API bool_option : public float_option

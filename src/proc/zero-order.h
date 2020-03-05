@@ -30,7 +30,8 @@ namespace librealsense
             z_max(Z_MAX_VALUE),
             ir_min(IR_MIN_VALUE),
             threshold_offset(THRESHOLD_OFFSET),
-            threshold_scale(THRESHOLD_SCALE)
+            threshold_scale(THRESHOLD_SCALE),
+            read_baseline(false)
         {}
 
         uint8_t                 ir_threshold;

@@ -147,5 +147,21 @@ namespace librealsense
 
             return rv;
         }
+
+        freefall_option::freefall_option( hw_monitor & hwm )
+            : _hwm( hwm )
+        {
+            // bool_option initializes with def=true, which is what we want
+            assert( is_true() );
+        }
+
+        void freefall_option::set( float value )
+        {
+            bool_option::set( value );
+
+            command cmd{ FALL_DETECT_ENABLE, is_true() };
+            auto res = _hwm.send( cmd );
+            _record_action( *this );
+        }
     } // librealsense::ivcam2
 } // namespace librealsense

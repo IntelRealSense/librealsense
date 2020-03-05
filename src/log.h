@@ -8,17 +8,24 @@
 namespace librealsense
 {
 #if BUILD_EASYLOGGINGPP
+    struct log_message
+    {
+        el::LogMessage const& el_msg;
+        std::string built_msg;
+
+        log_message( el::LogMessage const& el_msg ) : el_msg( el_msg ) {}
+    };
+
     template<char const * NAME>
     class logger_type
     {
         rs2_log_severity minimum_log_severity = RS2_LOG_SEVERITY_NONE;
         rs2_log_severity minimum_console_severity = RS2_LOG_SEVERITY_NONE;
         rs2_log_severity minimum_file_severity = RS2_LOG_SEVERITY_NONE;
-        rs2_log_severity minimum_callback_severity = RS2_LOG_SEVERITY_NONE;
 
         std::mutex log_mutex;
         std::ofstream log_file;
-        log_callback_ptr callback;
+        std::vector< std::string > callback_dispatchers;
 
         std::string filename;
         const std::string log_id = NAME;
@@ -34,6 +41,24 @@ namespace librealsense
             case RS2_LOG_SEVERITY_ERROR: return el::Level::Error;
             case RS2_LOG_SEVERITY_FATAL: return el::Level::Fatal;
             default: return el::Level::Unknown;
+            }
+        }
+
+        static rs2_log_severity level_to_severity( el::Level level )
+        {
+            switch( level )
+            {
+            case el::Level::Debug:   return RS2_LOG_SEVERITY_DEBUG;  // LOG(DEBUG)    - useful for developers to debug application
+            case el::Level::Trace:   return RS2_LOG_SEVERITY_DEBUG;  // LOG(TRACE)    - useful to back-trace certain events
+            case el::Level::Info:    return RS2_LOG_SEVERITY_INFO;   // LOG(INFO)     - show current progress of application
+            case el::Level::Verbose: return RS2_LOG_SEVERITY_INFO;   // LOG(VERBOSE)  - can be highly useful but varies with verbose logging level
+            case el::Level::Warning: return RS2_LOG_SEVERITY_WARN;   // LOG(WARNING)  - potentially harmful situtaions
+            case el::Level::Error:   return RS2_LOG_SEVERITY_ERROR;  // LOG(ERROR)    - errors in application but application will keep running
+            case el::Level::Fatal:   return RS2_LOG_SEVERITY_FATAL;  // LOG(FATAL)    - severe errors that will presumably abort application
+            default: 
+                // Unknown/Global, or otherwise
+                // Global should never occur (no CGLOBAL macro); same for Unknown...
+                return RS2_LOG_SEVERITY_ERROR;  // treat as error, since we don't know what it is...
             }
         }
 
@@ -54,9 +79,11 @@ namespace librealsense
                     el::ConfigurationType::ToStandardOutput, "true");
             }
 
+            // NOTE: you can only log to one file, so successive calls to log_to_file
+            // will override one another!
+            defaultConf.setGlobally( el::ConfigurationType::Filename, filename );
             for (int i = minimum_file_severity; i < RS2_LOG_SEVERITY_NONE; i++)
             {
-                defaultConf.setGlobally(el::ConfigurationType::Filename, filename);
                 defaultConf.set(severity_to_level(static_cast<rs2_log_severity>(i)),
                     el::ConfigurationType::ToFile, "true");
             }
@@ -78,8 +105,7 @@ namespace librealsense
 
 
         logger_type()
-            : callback(nullptr, [](rs2_log_callback*) {}),
-              filename(to_string() << datetime_string() << ".log")
+            : filename(to_string() << datetime_string() << ".log")
         {
             rs2_log_severity severity;
             if (try_get_log_severity(severity))
@@ -133,6 +159,63 @@ namespace librealsense
                 filename = file_path;
 
             open();
+        }
+
+    protected:
+        // Create a dispatch sink which will get any messages logged to EasyLogging, which will then
+        // post the messages on the viewer's notification window.
+        class elpp_dispatcher : public el::LogDispatchCallback
+        {
+        public:
+            log_callback_ptr callback;
+            rs2_log_severity min_severity = RS2_LOG_SEVERITY_NONE;
+
+        protected:
+            void handle( el::LogDispatchData const* data ) noexcept override
+            {
+                // NOTE: once a callback is set, it gets ALL messages -- even from other (non-"librealsense") loggers!
+                el::LogMessage const& msg = *data->logMessage();
+                auto severity = level_to_severity( msg.level() );
+                if( callback && severity >= min_severity )
+                {
+                    log_message msg_wrapper( msg );
+                    callback->on_log( severity, reinterpret_cast<rs2_log_message const&>(msg_wrapper) );  // noexcept!
+                }
+            }
+        };
+
+    public:
+        void remove_callbacks()
+        {
+            for( auto const& dispatch : callback_dispatchers )
+                el::Helpers::uninstallLogDispatchCallback< elpp_dispatcher >( dispatch );
+            callback_dispatchers.clear();
+        }
+
+        void log_to_callback( rs2_log_severity min_severity, log_callback_ptr callback )
+        {
+            open();
+            
+            try_get_log_severity( min_severity );
+            if( callback  &&  min_severity != RS2_LOG_SEVERITY_NONE )
+            {
+                // Each callback we install must have a unique name
+                std::ostringstream ss;
+                ss << "elpp_dispatcher_" << callback_dispatchers.size();
+                std::string dispatch_name = ss.str();
+
+                // Record all the dispatchers we have so we can erase them
+                callback_dispatchers.push_back( dispatch_name );
+
+                // The only way to install the callback in ELPP is with a default ctor...
+                el::Helpers::installLogDispatchCallback< elpp_dispatcher >( dispatch_name );
+                auto dispatcher = el::Helpers::logDispatchCallback< elpp_dispatcher >( dispatch_name );
+                dispatcher->callback = callback;
+                dispatcher->min_severity = min_severity;
+                
+                // Remove the default logger (which will log to standard out/err) or it'll still be active
+                //el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
+            }
         }
     };
 #endif //BUILD_EASYLOGGINGPP

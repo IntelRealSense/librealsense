@@ -30,13 +30,12 @@ function require_package {
 #	master		UBUNTU: Ubuntu-4.4.0-128.154				Stefan Bader					4 weeks
 #	master-next	UBUNTU: SAUCE: Redpine: fix soft-ap invisible issue	Sanjay Kumar Konduri	2 days
 
-# As of Aug  5th, 2019
+# As of Jan  21, 2020
 #Ubuntu bionic repo : http://kernel.ubuntu.com/git/ubuntu/ubuntu-bionic.git/
-#	hwe			UBUNTU: Ubuntu-hwe-5.0.0-24.25~18.04.1	Stefan Bader	6 days
-#	hwe-edge	UBUNTU: [Packaging] Support building libperf-jvmti.so	Thadeu Lima de Souza Cascardo	2 weeks
-#	master		UBUNTU: Ubuntu-4.15.0-55.60	Kleber Sacilotto de Souza	5 weeks
-#	4.18 		TAG:	Ubuntu-hwe-4.18.0-25.26_18.04.1	
-
+#	hwe	UBUNTU: Ubuntu-hwe-5.3.0-28.30~18.04.1	Sultan Alsawaf	6 days
+#	hwe-edge	UBUNTU: Ubuntu-hwe-edge-5.3.0-24.26~18.04.2	Kleber Sacilotto de Souza	8 weeks
+#	master	UBUNTU: Ubuntu-4.15.0-74.84	Khalid Elmously	5 weeks
+#	master-current	UBUNTU: Ubuntu-4.15.0-66.75	Khalid Elmously	4 months
 
 function choose_kernel_branch {
 
@@ -81,14 +80,14 @@ function choose_kernel_branch {
 			echo Ubuntu-hwe-4.18.0-25.26_18.04.1
 			;;
 		"5.0")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
-			echo hwe
+			echo 5
 			;;
-		"5.2")									# kernel 5.0 for Ubuntu 18/Bionic Beaver
-			echo Ubuntu-hwe-edge-5.2.0-9.10_18.04.1
+		"5.3")									# kernel 5.3
+			echo 5
 			;;
 		*)
 			#error message shall be redirected to stderr to be printed properly
-			echo -e "\e[31mUnsupported kernel version $1 . The Bionic patches are maintained for Ubuntu LTS with kernels 4.15, 4.18 and 5.0 only\e[0m" >&2
+			echo -e "\e[31mUnsupported kernel version $1 . The Bionic patches are maintained for Ubuntu LTS with kernels 4.15, 4.18, 5.0 and 5.3\e[0m" >&2
 			exit 1
 			;;
 		esac

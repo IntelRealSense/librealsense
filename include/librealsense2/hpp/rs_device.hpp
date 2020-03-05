@@ -392,7 +392,7 @@ return results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), json_content.size(), health, nullptr, timeout_ms, &e),
+                rs2_run_on_chip_calibration_cpp(_dev.get(), json_content.data(), static_cast< int >( json_content.size() ), health, nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
             auto size = rs2_get_raw_data_size(list.get(), &e);
@@ -475,7 +475,7 @@ return results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), json_content.size(), nullptr, timeout_ms, &e),
+                rs2_run_tare_calibration_cpp(_dev.get(), ground_truth_mm, json_content.data(), static_cast< int >( json_content.size() ), nullptr, timeout_ms, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -520,7 +520,7 @@ return results;
         void set_calibration_table(const calibration_table& calibration)
         {
             rs2_error* e = nullptr;
-            rs2_set_calibration_table(_dev.get(), calibration.data(), calibration.size(), &e);
+            rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
         }
 

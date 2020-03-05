@@ -236,6 +236,11 @@ namespace rs2
                                 }
                             }
                         }
+                        catch (std::exception &e) {
+                            std::stringstream s;
+                            s << "Exception caught in FW Update process-flow: " << e.what();
+                            log(s.str().c_str());
+                        }
                         catch (...) {}
                     }
 

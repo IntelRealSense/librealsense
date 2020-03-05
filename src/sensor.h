@@ -195,7 +195,7 @@ namespace librealsense
             const std::map<uint32_t, rs2_stream>& fourcc_to_rs2_stream_map = std::map<uint32_t, rs2_stream>());
         ~synthetic_sensor() override;
 
-        void register_option(rs2_option id, std::shared_ptr<option> option);
+        virtual void register_option(rs2_option id, std::shared_ptr<option> option);
         void unregister_option(rs2_option id);
         void register_pu(rs2_option id);
 

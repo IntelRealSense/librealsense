@@ -212,5 +212,4 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         }
     }
 }
-
 #endif

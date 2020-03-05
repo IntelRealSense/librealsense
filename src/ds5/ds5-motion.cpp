@@ -458,9 +458,9 @@ namespace librealsense
                 calib_id = *reinterpret_cast<uint16_t*>(raw.data());
                 valid = true;
             }
-            catch(const std::exception& exc)
+            catch(const std::exception&)
             {
-                LOG_INFO("IMU EEPROM Read error: " << exc.what());
+                LOG_WARNING("IMU Calibration is not available, see the previous message");
             }
 
             std::shared_ptr<mm_calib_parser> prs = nullptr;

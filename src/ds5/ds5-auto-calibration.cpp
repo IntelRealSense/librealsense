@@ -8,6 +8,50 @@
 
 namespace librealsense
 {
+
+#pragma pack(push, 1)
+#pragma pack(1)
+    struct DirectSearchCalibrationResult
+    {
+        uint16_t status;      // DscStatus
+        uint16_t stepCount;
+        uint16_t stepSize; // 1/1000 of a pixel
+        uint32_t pixelCountThreshold; // minimum number of pixels in
+                                      // selected bin
+        uint16_t minDepth;  // Depth range for FWHM
+        uint16_t maxDepth;
+        uint32_t rightPy;   // 1/1000000 of normalized unit
+        float healthCheck;
+        float rightRotation[9]; // Right rotation
+    };
+
+    struct DscResultParams
+    {
+        uint16_t m_status;
+        float    m_healthCheck;
+    };
+
+    struct DscResultBuffer
+    {
+        uint16_t m_paramSize;
+        DscResultParams m_dscResultParams;
+        uint16_t m_tableSize;
+    };
+
+    enum rs2_dsc_status : uint16_t
+    {
+        RS2_DSC_STATUS_SUCCESS = 0, /**< Self calibration succeeded*/
+        RS2_DSC_STATUS_RESULT_NOT_READY = 1, /**< Self calibration result is not ready yet*/
+        RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW = 2, /**< There are too little textures in the scene*/
+        RS2_DSC_STATUS_EDGE_TOO_CLOSE = 3, /**< Self calibration range is too small*/
+        RS2_DSC_STATUS_NOT_CONVERGE = 4, /**< For tare calibration only*/
+        RS2_DSC_STATUS_BURN_SUCCESS = 5,
+        RS2_DSC_STATUS_BURN_ERROR = 6,
+        RS2_DSC_STATUS_NO_DEPTH_AVERAGE = 7
+    };
+
+#pragma pack(pop)
+
     enum auto_calib_sub_cmd : uint8_t
     {
         auto_calib_begin = 0x08,
@@ -82,7 +126,7 @@ namespace librealsense
     const int DEFAULT_SAMPLING = data_sampling::polling;
 
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
-        :_hw_monitor(hwm){}
+        : _hw_monitor(hwm){}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
     {
@@ -100,27 +144,29 @@ namespace librealsense
         return values;
     }
 
+    void try_fetch(std::map<std::string, int> jsn, std::string key, int* value)
+    {
+        std::replace(key.begin(), key.end(), '_', ' '); // Treat _ as space
+        if (jsn.find(key) != jsn.end())
+        {
+            *value = jsn[key];
+        }
+    }
+
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int speed = DEFAULT_SPEED;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
+        int apply_preset = 1;
 
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
-            if (jsn.find("speed") != jsn.end())
-            {
-                speed = jsn["speed"];
-            }
-            if (jsn.find("scan parameter") != jsn.end())
-            {
-                scan_parameter = jsn["scan parameter"];
-            }
-            if (jsn.find("data sampling") != jsn.end())
-            {
-                data_sampling = jsn["data sampling"];
-            }
+            try_fetch(jsn, "speed", &speed);
+            try_fetch(jsn, "scan parameter", &scan_parameter);
+            try_fetch(jsn, "data sampling", &data_sampling);
+            try_fetch(jsn, "apply preset", &apply_preset);
         }
 
         LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
@@ -130,7 +176,7 @@ namespace librealsense
         param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
-        if (speed == speed_white_wall)
+        if (speed == speed_white_wall && apply_preset)
             preset_recover = change_preset();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -203,40 +249,26 @@ namespace librealsense
         int speed = DEFAULT_SPEED;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
+        int apply_preset = 1;
 
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
-            if (jsn.find("speed") != jsn.end())
-            {
-                speed = jsn["speed"];
-            }
-            if (jsn.find("average step count") != jsn.end())
-            {
-                average_step_count = jsn["average step count"];
-            }
-            if (jsn.find("step count") != jsn.end())
-            {
-                step_count = jsn["step count"];
-            }
-            if (jsn.find("accuracy") != jsn.end())
-            {
-                accuracy = jsn["accuracy"];
-            }
-            if (jsn.find("scan parameter") != jsn.end())
-            {
-                scan_parameter = jsn["scan parameter"];
-            }
-            if (jsn.find("data sampling") != jsn.end())
-            {
-                data_sampling = jsn["data sampling"];
-            }
+            try_fetch(jsn, "speed", &speed);
+            try_fetch(jsn, "average step count", &average_step_count);
+            try_fetch(jsn, "step count", &step_count);
+            try_fetch(jsn, "accuracy", &accuracy);
+            try_fetch(jsn, "scan parameter", &scan_parameter);
+            try_fetch(jsn, "data sampling", &data_sampling);
+            try_fetch(jsn, "apply preset", &apply_preset);
         }
 
         LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
         check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-        auto preset_recover = change_preset();
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+        if (apply_preset)
+            preset_recover = change_preset();
 
         auto param2 = (int)ground_truth_mm * 100;
 
@@ -268,7 +300,7 @@ namespace librealsense
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                     throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-                auto result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
                 done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
             }
 
@@ -353,7 +385,7 @@ namespace librealsense
             throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy << " is out of range (0 - 3).");
     }
 
-    void auto_calibrated::handle_calibration_error(rs2_dsc_status status) const
+    void auto_calibrated::handle_calibration_error(int status) const
     {
         if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
         {

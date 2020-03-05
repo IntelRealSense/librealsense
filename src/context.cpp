@@ -85,11 +85,11 @@ bool contains(const std::shared_ptr<librealsense::device_info>& first,
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> platform_color_fourcc_to_rs2_format = {
+    const std::map<uint32_t, rs2_format> platform_color_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
     };
-    std::map<uint32_t, rs2_stream> platform_color_fourcc_to_rs2_stream = {
+    const std::map<uint32_t, rs2_stream> platform_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
     };
@@ -101,7 +101,12 @@ namespace librealsense
                      std::string min_api_version)
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
-        LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
+        static bool version_logged=false;
+        if (!version_logged)
+        {
+            version_logged = true;
+            LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
+        }
 
         switch(type)
         {
@@ -488,13 +493,12 @@ namespace librealsense
 
             for (auto&& hid : hids)
             {
-                if (hid.unique_id != "")
+                if( ! hid.unique_id.empty() )
                 {
                     std::stringstream(hid.vid) >> std::hex >> vid;
                     std::stringstream(hid.pid) >> std::hex >> pid;
 
-                    if ((hid.unique_id == unique_id) || // Linux check
-                        ((hid.unique_id == "*") && (hid.serial_number == device_serial))) // Windows check
+                    if (hid.unique_id == unique_id)
                     {
                         hid_group.push_back(hid);
                     }

@@ -1963,7 +1963,7 @@ namespace librealsense
         if(info_response.message.bStatus == 0x1 || info_response.message.dwStatusCode == FW_STATUS_CODE_NO_CALIBRATION_DATA)
             throw io_exception("T265 device is uncalibrated");
 
-        std::string serial = to_string() << hexify(bytesSwap(info_response.message.llSerialNumber) >> 16);
+        std::string serial = to_string() << std::uppercase << std::hex << (bytesSwap(info_response.message.llSerialNumber) >> 16);
         LOG_INFO("Serial: " << serial);
 
         LOG_INFO("Connection type: " << platform::usb_spec_names.at(usb_info.conn_spec));

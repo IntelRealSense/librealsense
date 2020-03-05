@@ -274,7 +274,7 @@ namespace rs2
         float& operator()(int i, int j) { return mat[i][j]; }
 
         //init rotation matrix from quaternion
-        matrix4(rs2_quaternion q)
+        matrix4(const rs2_quaternion& q)
         {
             mat[0][0] = 1 - 2*q.y*q.y - 2*q.z*q.z; mat[0][1] = 2*q.x*q.y - 2*q.z*q.w;     mat[0][2] = 2*q.x*q.z + 2*q.y*q.w;     mat[0][3] = 0.0f;
             mat[1][0] = 2*q.x*q.y + 2*q.z*q.w;     mat[1][1] = 1 - 2*q.x*q.x - 2*q.z*q.z; mat[1][2] = 2*q.y*q.z - 2*q.x*q.w;     mat[1][3] = 0.0f;
@@ -283,7 +283,7 @@ namespace rs2
         }
 
         //init translation matrix from vector
-        matrix4(rs2_vector t)
+        matrix4(const rs2_vector& t)
         {
             mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
             mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;

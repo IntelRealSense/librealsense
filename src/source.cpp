@@ -125,6 +125,10 @@ namespace librealsense
                     _callback->on_frame((rs2_frame*)ref);
                 }
             }
+            catch( const std::exception & e )
+            {
+                LOG_ERROR( "Exception was thrown during user callback: " + std::string( e.what() ));
+            }
             catch(...)
             {
                 LOG_ERROR("Exception was thrown during user callback!");

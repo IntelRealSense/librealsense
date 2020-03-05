@@ -16,6 +16,7 @@ import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
+import com.intel.realsense.librealsense.PipelineProfile;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -94,7 +95,8 @@ public class MainActivity extends AppCompatActivity {
                     config.enableDeviceFromFile(filePath);
                     try (Pipeline pipeline = new Pipeline()) {
                         try {
-                            pipeline.start(config);
+                            // try statement needed here to release resources allocated by the Pipeline:start() method
+                            try (PipelineProfile pp = pipeline.start(config)) {}
                             while (!mStreaming.isInterrupted()) {
                                 try (FrameSet frames = pipeline.waitForFrames(1000)) {
                                     try (FrameSet processed = frames.applyFilter(colorizer)) {

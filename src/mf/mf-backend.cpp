@@ -258,7 +258,7 @@ namespace librealsense
                             auto sub = info.device_path.substr(0, info.device_path.find_first_of("{"));
                             std::transform(sub.begin(), sub.end(), sub.begin(), ::tolower);
                             return sub == path;
-                            
+
                         }), next.hid_devices.end());
 
                         /*if (data->_last != next)*/ data->_callback(data->_last, next);

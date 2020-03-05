@@ -11,8 +11,11 @@ namespace rs2
 {
     namespace depth_quality
     {
-        tool_model::tool_model()
-            : _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
+        tool_model::tool_model(rs2::context &ctx)
+            : _ctx(ctx),
+              _pipe(ctx),
+              _viewer_model(ctx),
+              _update_readonly_options_timer(std::chrono::seconds(6)), _roi_percent(0.4f),
               _roi_located(std::chrono::seconds(4)),
               _too_close(std::chrono::seconds(4)),
               _too_far(std::chrono::seconds(4)),
