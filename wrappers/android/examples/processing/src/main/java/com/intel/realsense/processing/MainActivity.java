@@ -98,6 +98,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceViewOrg.close();
+        mGLSurfaceViewProcessed.close();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
@@ -196,10 +203,12 @@ public class MainActivity extends AppCompatActivity {
                             applyFilter(mThresholdFilter).releaseWith(fr).
                             applyFilter(mColorizerProcessed).releaseWith(fr).
                             applyFilter(mAlign).releaseWith(fr);
-                    Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr);
-                    mGLSurfaceViewOrg.upload(org);
-                    mGLSurfaceViewProcessed.upload(processed);
+                    try(Frame org = orgSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                        try(Frame processed = processedSet.first(StreamType.DEPTH, StreamFormat.RGB8).releaseWith(fr)){
+                            mGLSurfaceViewOrg.upload(org);
+                            mGLSurfaceViewProcessed.upload(processed);
+                        }
+                    }
                 }
                 mHandler.post(mStreaming);
             }
@@ -244,9 +253,13 @@ public class MainActivity extends AppCompatActivity {
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
             Log.d(TAG, "streaming stopped successfully");
+            mGLSurfaceViewOrg.clear();
+            mGLSurfaceViewProcessed.clear();
         }  catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");
             mPipeline = null;
+            mColorizerOrg.close();
+            mColorizerProcessed.close();
         }
     }
 }
