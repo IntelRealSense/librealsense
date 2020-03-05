@@ -39,7 +39,6 @@
 #include "proc/temporal-filter.h"
 #include "proc/depth-decompress.h"
 #include "software-device.h"
-#include "fw-update/fw-update-device-interface.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 ////////////////////////
@@ -2236,7 +2235,7 @@ void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, cons
     {
         df->update_info(info, val);
     }
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+    else throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, info, val)
 
