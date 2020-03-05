@@ -661,7 +661,7 @@ namespace librealsense
                              std::string buff = "";
                              for (int i = 0; i < response->get_actual_length(); i++)
                                  buff += std::to_string(response->get_buffer()[i]) + ", ";
-                             LOG_WARNING("interrupt event received: " << buff.c_str());
+                             LOG_DEBUG("interrupt event received: " << buff.c_str());
                          }
 
                          _action_dispatcher.invoke([this](dispatcher::cancellable_timer c)
