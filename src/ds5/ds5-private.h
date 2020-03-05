@@ -31,12 +31,14 @@ namespace librealsense
         const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
         const uint16_t RS460_PID            = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
-        const uint16_t RS405_PID            = 0x0b0c; // DS5U
+        const uint16_t RS405U_PID           = 0x0b0c; // DS5U
         const uint16_t RS435I_PID           = 0x0b3a; // D435i
         const uint16_t RS416_PID            = 0x0b49; // F416
         const uint16_t RS430I_PID           = 0x0b4b; // D430i
         const uint16_t RS465_PID            = 0x0b4d; // D465
         const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
+        const uint16_t RS405_PID            = 0x0B5B; // D405
+        const uint16_t RS455_PID            = 0x0B5C; // D455
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -56,10 +58,7 @@ namespace librealsense
             ds::RS400_PID,
             ds::RS410_PID,
             ds::RS415_PID,
-            ds::RS416_PID,
-            ds::RS416_RGB_PID,
             ds::RS430_PID,
-            ds::RS430I_PID,
             ds::RS430_MM_PID,
             ds::RS_USB2_PID,
             ds::RS400_IMU_PID,
@@ -70,9 +69,14 @@ namespace librealsense
             ds::RS430_MM_RGB_PID,
             ds::RS460_PID,
             ds::RS435_RGB_PID,
-            ds::RS405_PID,
+            ds::RS405U_PID,
             ds::RS435I_PID,
+            ds::RS416_RGB_PID,
+            ds::RS430I_PID,
             ds::RS465_PID,
+            ds::RS416_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -85,17 +89,23 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS465_PID
+            ds::RS465_PID,
+            ds::RS405_PID,
+            ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
-            ds::RS430I_PID
+            ds::RS430I_PID,
+            ds::RS405_PID,
+            ds::RS455_PID
         };
 
         static const std::set<std::uint16_t> hid_bmi_085_pid = {
@@ -111,28 +121,30 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs400_sku_names = {
+            { RS400_PID,            "Intel RealSense D400"},
+            { RS410_PID,            "Intel RealSense D410"},
+            { RS415_PID,            "Intel RealSense D415"},
+            { RS430_PID,            "Intel RealSense D430"},
+            { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
+            { RS_USB2_PID,          "Intel RealSense USB2" },
             { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
             { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
-            { RS400_PID,            "Intel RealSense D400"},
-            { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
-            { RS410_PID,            "Intel RealSense D410"},
-            { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
-            { RS415_PID,            "Intel RealSense D415"},
-            { RS416_PID,            "Intel RealSense F416"},
-            { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
+            { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
-            { RS430_PID,            "Intel RealSense D430"},
-            { RS430I_PID,           "Intel RealSense D430I"},
-            { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
+            { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
+            { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
-            { RS435_RGB_PID,        "Intel RealSense D435"},
             { RS460_PID,            "Intel RealSense D460" },
-            { RS405_PID,            "Intel RealSense D405" },
+            { RS435_RGB_PID,        "Intel RealSense D435"},
+            { RS405U_PID,           "Intel RealSense DS5U" },
             { RS435I_PID,           "Intel RealSense D435I" },
+            { RS416_PID,            "Intel RealSense F416"},
+            { RS430I_PID,           "Intel RealSense D430I"},
             { RS465_PID,            "Intel RealSense D465" },
-            { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS400_IMU_PID,        "Intel RealSense IMU" }
+            { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
+            { RS405_PID,            "Intel RealSense D405" },
+            { RS455_PID,            "Intel RealSense D455" },
         };
 
         // DS5 fisheye XU identifiers
