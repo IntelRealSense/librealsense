@@ -5,6 +5,7 @@
 
 #include "sensor.h"
 #include <mutex>
+#include <cstring>
 #include "command_transfer.h"
 
 namespace librealsense
@@ -344,29 +345,12 @@ namespace librealsense
         T get_gvd_field(const std::vector<uint8_t>& data, size_t index)
         {
             T rv = 0;
-            if (index + sizeof(T) >= data.size())
+            if (index + sizeof(T) >= data.size()) {
                 throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
                     std::to_string(data.size()) + ", index: " + std::to_string(index));
-            for (int i = 0; i < sizeof(T); i++)
-                rv += data[index + i] << (i * CHAR_BITS);
+            }
+            (void)std::memcpy(&rv, &data[index], sizeof(T));
             return rv;
-        }
-        /*
-            \brief Specific specialization which returns a bool field.
-
-            This specialization is required as bool is implementation specific and '+=' operation used in default template is not safe for bool.
-
-            \param [in] data Pointer to the data buffer in which the field is stored.
-            \param [in] index Number of bytes into the buffer where the field starts.
-            \returns bool field value.
-        */
-        template <> 
-        bool get_gvd_field(const std::vector<uint8_t>& data, size_t index)
-        {
-            if (index >= data.size())
-                throw new std::runtime_error("get_gvd_field - index out of bounds, buffer size: " +
-                    std::to_string(data.size()) + ", index: " + std::to_string(index));
-            return data[index];
         }
     };
 }
