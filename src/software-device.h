@@ -15,6 +15,7 @@ namespace librealsense
     {
     public:
         software_device();
+        virtual ~software_device();
 
         software_sensor& add_software_sensor(const std::string& name);
 
@@ -33,8 +34,11 @@ namespace librealsense
         };
         void register_extrinsic(const stream_interface& stream);
 
+        void register_destruction_callback(software_device_destruction_callback_ptr);
+
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
+        librealsense::software_device_destruction_callback_ptr _user_destruction_callback;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
         std::shared_ptr<software_device_info> _info;
     };
@@ -77,7 +81,7 @@ namespace librealsense
             return _blocks;
         }
         ~software_recommended_proccesing_blocks() override {}
-       
+
     private:
         processing_blocks _blocks;
     };
@@ -87,9 +91,9 @@ namespace librealsense
     public:
         software_sensor(std::string name, software_device* owner);
 
-        std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream);
-        std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream);
-        std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream);
+        std::shared_ptr<stream_profile_interface> add_video_stream(rs2_video_stream video_stream, bool is_default=false);
+        std::shared_ptr<stream_profile_interface> add_motion_stream(rs2_motion_stream motion_stream, bool is_default = false);
+        std::shared_ptr<stream_profile_interface> add_pose_stream(rs2_pose_stream pose_stream, bool is_default = false);
 
         bool extend_to(rs2_extension extension_type, void** ptr) override;
 
@@ -104,8 +108,10 @@ namespace librealsense
         void on_video_frame(rs2_software_video_frame frame);
         void on_motion_frame(rs2_software_motion_frame frame);
         void on_pose_frame(rs2_software_pose_frame frame);
+        void on_notification(rs2_software_notification notif);
         void add_read_only_option(rs2_option option, float val);
         void update_read_only_option(rs2_option option, float val);
+        void add_option(rs2_option option, option_range range, bool is_writable);
         void set_metadata(rs2_frame_metadata_value key, rs2_metadata_type value);
     private:
         friend class software_device;
@@ -138,6 +144,8 @@ namespace librealsense
         lazy<stereo_extension> _stereo_extension;
 
         software_recommended_proccesing_blocks _pbs;
+
+        std::shared_ptr<stream_profile_interface> find_profile_by_uid(int uid);
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_DEVICE, software_device);

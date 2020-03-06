@@ -9,7 +9,8 @@ void init_types(py::module &m) {
     // error+subclasses
 
     py::class_<rs2::option_range> option_range(m, "option_range"); // No docstring in C++
-    option_range.def_readwrite("min", &rs2::option_range::min)
+    option_range.def(py::init<>())
+        .def_readwrite("min", &rs2::option_range::min)
         .def_readwrite("max", &rs2::option_range::max)
         .def_readwrite("default", &rs2::option_range::def)
         .def_readwrite("step", &rs2::option_range::step)

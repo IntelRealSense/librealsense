@@ -90,7 +90,7 @@ void playback_sensor::open(const stream_profiles& requests)
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
-    m_active_streams = requests;
+    set_active_streams(requests);
     opened(opened_streams);
 }
 
@@ -110,7 +110,7 @@ void playback_sensor::close()
         }
     }
     m_dispatchers.clear();
-    m_active_streams.clear();
+    set_active_streams({});
     closed(closed_streams);
 }
 
@@ -271,8 +271,15 @@ void playback_sensor::set_frames_callback(frame_callback_ptr callback)
 }
 stream_profiles playback_sensor::get_active_streams() const
 {
+    std::lock_guard<std::mutex> lock(m_active_profile_mutex);
     return m_active_streams;
 }
+void playback_sensor::set_active_streams(const stream_profiles& requests)
+{
+    std::lock_guard<std::mutex> lock(m_active_profile_mutex);
+    m_active_streams = requests;
+}
+
 
 int playback_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
 {

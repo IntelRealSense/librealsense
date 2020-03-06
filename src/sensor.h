@@ -117,6 +117,7 @@ namespace librealsense
     private:
         lazy<stream_profiles> _profiles;
         stream_profiles _active_profiles;
+        mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
     };
 

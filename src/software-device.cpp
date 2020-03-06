@@ -7,9 +7,16 @@
 namespace librealsense
 {
     software_device::software_device()
-        : device(std::make_shared<context>(backend_type::standard), {})
+        : device(std::make_shared<context>(backend_type::standard), {}),
+        _user_destruction_callback()
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
+    }
+
+    librealsense::software_device::~software_device()
+    {
+        if (_user_destruction_callback)
+            _user_destruction_callback->on_destruction();
     }
 
     software_sensor& software_device::add_software_sensor(const std::string& name)
@@ -35,6 +42,11 @@ namespace librealsense
             }
         }
         register_stream_to_extrinsic_group(stream, max_idx+1);
+    }
+
+    void software_device::register_destruction_callback(software_device_destruction_callback_ptr callback)
+    {
+        _user_destruction_callback = std::move(callback);
     }
 
     software_sensor& software_device::get_software_sensor(int index)
@@ -77,14 +89,11 @@ namespace librealsense
         return matcher_factory::create(_matcher, profiles);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream, bool is_default)
     {
-        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
-        {
-            return profile->get_unique_id() == video_stream.uid;
-        } ) != _profiles.end());
 
-        if (exist)
+        auto currProfile = find_profile_by_uid(video_stream.uid);
+        if (currProfile)
         {
             LOG_WARNING("Video stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
@@ -99,19 +108,16 @@ namespace librealsense
         profile->set_stream_type(video_stream.type);
         profile->set_unique_id(video_stream.uid);
         profile->set_intrinsics([=]() {return video_stream.intrinsics; });
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream, bool is_default)
     {
-        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
-        {
-            return profile->get_unique_id() == motion_stream.uid;
-        }) != _profiles.end());
-
-        if (exist)
+        auto currProfile = find_profile_by_uid(motion_stream.uid);
+        if (currProfile)
         {
             LOG_WARNING("Motion stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
@@ -125,19 +131,16 @@ namespace librealsense
         profile->set_stream_type(motion_stream.type);
         profile->set_unique_id(motion_stream.uid);
         profile->set_intrinsics([=]() {return motion_stream.intrinsics; });
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return std::move(profile);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream, bool is_default)
     {
-        auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
-        {
-            return profile->get_unique_id() == pose_stream.uid;
-        }) != _profiles.end());
-
-        if (exist)
+        auto currProfile = find_profile_by_uid(pose_stream.uid);
+        if (currProfile)
         {
             LOG_WARNING("Pose stream unique ID already exist!");
             throw rs2::error("Stream unique ID already exist!");
@@ -150,9 +153,25 @@ namespace librealsense
         profile->set_stream_index(pose_stream.index);
         profile->set_stream_type(pose_stream.type);
         profile->set_unique_id(pose_stream.uid);
+        if (is_default) profile->tag_profile(profile_tag::PROFILE_TAG_DEFAULT);
         _profiles.push_back(profile);
 
         return std::move(profile);
+    }
+
+    std::shared_ptr<stream_profile_interface> software_sensor::find_profile_by_uid(int uid)
+    {
+        auto filtFunc = [&](std::shared_ptr<stream_profile_interface> profile)
+        {
+            return profile->get_unique_id() == uid;
+        };
+
+        auto profile = std::find_if(_profiles.begin(), _profiles.end(), filtFunc);
+        if ( profile != _profiles.end() ) {
+            return *profile;
+        } else {
+            return std::shared_ptr<stream_profile_interface>();
+        }
     }
 
     bool software_sensor::extend_to(rs2_extension extension_type, void ** ptr)
@@ -346,6 +365,14 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
+    void software_sensor::on_notification(rs2_software_notification notif)
+    {
+        notification n{ notif.category, notif.type, notif.severity, notif.description };
+        n.serialized_data = notif.serialized_data;
+        _notifications_processor->raise_notification(n);
+
+    }
+
     void software_sensor::add_read_only_option(rs2_option option, float val)
     {
         register_option(option, std::make_shared<const_value_option>("bypass sensor read only option",
@@ -354,7 +381,16 @@ namespace librealsense
 
     void software_sensor::update_read_only_option(rs2_option option, float val)
     {
-        get_option(option).set(val);
+        if (auto opt = dynamic_cast<readonly_float_option*>(&get_option(option)))
+            opt->update(val);
+        else
+            throw invalid_value_exception(to_string() << "option " << get_string(option) << " is not read-only or is deprecated type");
+    }
+
+    void software_sensor::add_option(rs2_option option, option_range range, bool is_writable)
+    {
+        register_option(option, (is_writable? std::make_shared<float_option>(range) :
+                                              std::make_shared<readonly_float_option>(range)));
     }
 }
 

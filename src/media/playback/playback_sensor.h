@@ -64,10 +64,15 @@ namespace librealsense
             }
             return processing_blocks_api->get_recommended_processing_blocks();
         }
+    protected:
+        void set_active_streams(const stream_profiles& requests);
+
     private:
         void register_sensor_streams(const stream_profiles& vector);
         void register_sensor_infos(const device_serializer::sensor_snapshot& sensor_snapshot);
         void register_sensor_options(const device_serializer::sensor_snapshot& sensor_snapshot);
+        
+
 
         frame_callback_ptr m_user_callback;
         notifications_processor _notifications_processor;
@@ -81,6 +86,7 @@ namespace librealsense
         device_interface& m_parent_device;
         stream_profiles m_available_profiles;
         stream_profiles m_active_streams;
+        mutable std::mutex m_active_profile_mutex;
         const unsigned int _default_queue_size;
 
     public:

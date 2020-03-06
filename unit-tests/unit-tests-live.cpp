@@ -1347,6 +1347,68 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
     }
 }
 
+std::vector<rs2::stream_profile> get_supported_streams(rs2::sensor sensor, std::vector<rs2::stream_profile> profiles) {
+    std::set<std::pair<rs2_stream, int>> supported_streams;
+    auto hint = supported_streams.begin();
+    // get the set of supported stream+index pairs
+    for (auto& profile : sensor.get_stream_profiles()) {
+        hint = supported_streams.emplace_hint(hint, profile.stream_type(), profile.stream_index());
+    }
+
+    // all profiles
+    std::map<std::pair<rs2_stream, int>, rs2::stream_profile> all_profiles;
+    for (auto& profile : profiles) {
+        all_profiles.emplace(std::make_pair(profile.stream_type(), profile.stream_index()), profile);
+    }
+
+    std::vector<rs2::stream_profile> output;
+    for (auto pair : supported_streams) {
+        auto it = all_profiles.find(pair);
+        if (it != all_profiles.end()) output.push_back(it->second);
+    }
+    return output;
+}
+
+TEST_CASE("get_active_streams sanity check", "[live]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    {
+        // Require at least one device to be plugged in
+        REQUIRE_NOTHROW(ctx.query_devices().size() > 0);
+        
+        // Get device and a stream profile for each stream type it supports
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile pipe_profile;
+        cfg.enable_all_streams();
+        REQUIRE_NOTHROW(pipe_profile = cfg.resolve(pipe));
+
+        rs2::device dev = pipe_profile.get_device();
+        std::vector<rs2::stream_profile> streams = pipe_profile.get_streams();
+
+        for (auto&& sensor : dev.query_sensors())
+        {
+            // find which streams are supported by this specific sensor
+            auto profiles = get_supported_streams(sensor, streams);
+            auto n_streams = profiles.size();
+            // iterate over all possible sets of streams supported by the sensor
+            for (size_t bits=(1 << n_streams)-1; bits>0; --bits) {
+                std::vector<rs2::stream_profile> opened_profiles;
+                for (int i = 0; i < n_streams; ++i) {
+                    if (bits&(1 << i)) opened_profiles.push_back(profiles[i]);
+                }
+                REQUIRE_NOTHROW(sensor.open(opened_profiles));
+                std::vector<rs2::stream_profile> reported_profiles;
+                REQUIRE_NOTHROW(reported_profiles = sensor.get_active_streams());
+                
+                REQUIRE(reported_profiles == opened_profiles);
+                sensor.close();
+            }
+        }
+    }
+}
+
 TEST_CASE("Check option API", "[live][options]")
 {
     // Require at least one device to be plugged in
