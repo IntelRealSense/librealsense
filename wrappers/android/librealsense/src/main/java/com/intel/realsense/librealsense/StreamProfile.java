@@ -1,6 +1,5 @@
 package com.intel.realsense.librealsense;
 
-import android.util.Log;
 
 public class StreamProfile extends LrsClass {
     private StreamType mType;
