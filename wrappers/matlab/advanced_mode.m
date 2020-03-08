@@ -15,9 +15,9 @@ classdef advanced_mode < realsense.device
         end
         function toggle_advanced_mode(this, enable)
             narginchk(2, 2);
-            validateattributes(real_time, {'logical', 'numeric'}, {'scalar', 'real'}, '', 'enable', 2);
+            validateattributes(enable, {'logical', 'numeric'}, {'scalar', 'real'}, '', 'enable', 2);
             this.do_init();
-            realsense.librealsense_mex('rs400::advanced_mode', 'toggle_advanced_mode', this.objetHandle, logical(enable));
+            realsense.librealsense_mex('rs400::advanced_mode', 'toggle_advanced_mode', this.objectHandle, logical(enable));
         end
         function json_content = serialize_json(this)
             this.do_init();
