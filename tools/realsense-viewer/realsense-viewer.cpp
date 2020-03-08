@@ -384,6 +384,16 @@ int main(int argc, const char** argv) try
     };
 
 
+    bool alive = true;
+    rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+        [&]( rs2_log_severity severity, rs2::log_message const& msg )
+        {
+            if( alive )
+                viewer_model.not_model.add_log( msg.raw() );
+        }
+    );
+
+
     // Closing the window
     while (window)
     {
@@ -758,6 +768,7 @@ int main(int argc, const char** argv) try
                 sub->stop(viewer_model);
         }
 
+    alive = false;
     return EXIT_SUCCESS;
 }
 catch (const error & e)

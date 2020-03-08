@@ -119,6 +119,141 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
+        configure_depth_options();
+    }
+
+
+    std::shared_ptr<synthetic_sensor> l500_device::create_depth_device( std::shared_ptr<context> ctx,
+        const std::vector<platform::uvc_device_info>& all_device_infos )
+    {
+        auto&& backend = ctx->get_backend();
+
+        std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
+        for( auto&& info : filter_by_mi( all_device_infos, 0 ) ) // Filter just mi=0, DEPTH
+            depth_devices.push_back( backend.create_uvc_device( info ) );
+
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata( new l500_timestamp_reader_from_metadata( backend.create_time_service() ) );
+        auto enable_global_time_option = std::shared_ptr<global_time_option>( new global_time_option() );
+        auto raw_depth_ep = std::make_shared<uvc_sensor>( "Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>( depth_devices ),
+            std::unique_ptr<frame_timestamp_reader>( new global_timestamp_reader( std::move( timestamp_reader_metadata ), _tf_keeper, enable_global_time_option ) ), this );
+        raw_depth_ep->register_xu( depth_xu );
+
+        auto depth_ep = std::make_shared<l500_depth_sensor>( this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream );
+
+        depth_ep->register_option( RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option );
+        depth_ep->get_option( RS2_OPTION_GLOBAL_TIME_ENABLED ).set( 0 );
+
+        // NOTE: _fw_version is not yet initialized! Any additional options should get added from configure_depth_options()!
+        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
+        return depth_ep;
+    }
+
+
+    void l500_device::configure_depth_options()
+    {
+        synthetic_sensor & depth_sensor = get_depth_sensor();
+
+        auto is_zo_enabled_opt = std::make_shared<bool_option>();
+        auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
+        is_zo_enabled_opt->set(false);
+        depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
+
+        std::shared_ptr< autocal_option > autocal_enabled_opt;
+        if( _fw_version >= firmware_version( "1.3.12.0" ) )
+        {
+            autocal_enabled_opt = std::make_shared< autocal_option >( *_hw_monitor );
+            depth_sensor.register_option(
+                RS2_OPTION_AUTO_CALIBRATION_ENABLED,
+                autocal_enabled_opt
+            );
+
+            _autocal = std::make_shared< auto_calibration >( autocal_enabled_opt );
+        }
+
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
+            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
+            [=]() {
+                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
+                auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
+                auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+
+                auto cpb = std::make_shared<composite_processing_block>();
+                cpb->add(z16rot);
+                cpb->add(y8rot);
+                cpb->add(sync);
+                cpb->add(zo);
+                if( _autocal )
+                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ));
+                return cpb;
+            }
+        );
+
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
+            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH} },
+            [=]() {
+                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
+                auto z16rot = std::make_shared<identity_processing_block>();
+                auto y8rot = std::make_shared<identity_processing_block>();
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+
+                auto cpb = std::make_shared<composite_processing_block>();
+                cpb->add(z16rot);
+                cpb->add(y8rot);
+                cpb->add(sync);
+                cpb->add(zo);
+                if( _autocal )
+                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
+                return cpb;
+            }
+        );
+
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8}, {RS2_FORMAT_RAW8} },
+            {
+                {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution},
+                {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
+            },
+            [=]() {
+                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
+                auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
+                auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
+                auto conf = std::make_shared<confidence_rotation_transform>();
+                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
+
+                auto cpb = std::make_shared<composite_processing_block>();
+                cpb->add(z16rot);
+                cpb->add(y8rot);
+                cpb->add(conf);
+                cpb->add(sync);
+                cpb->add(zo);
+                if( _autocal )
+                    cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
+                return cpb;
+            }
+        );
+
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_Y8} },
+            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0, 0, 0, 0, &rotate_resolution} },
+            []() { return std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME); }
+        );
+
+        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED));
+
+        depth_sensor.register_processing_block(
+            { {RS2_FORMAT_RAW8} },
+            { {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution} },
+            []() { return std::make_shared<confidence_rotation_transform>(); }
+        );
+
+        depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE));
+
         std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
         {
@@ -142,117 +277,6 @@ namespace librealsense
         {
             LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
-    }
-
-    std::shared_ptr<synthetic_sensor> l500_device::create_depth_device(std::shared_ptr<context> ctx,
-        const std::vector<platform::uvc_device_info>& all_device_infos)
-    {
-        auto&& backend = ctx->get_backend();
-
-        std::vector<std::shared_ptr<platform::uvc_device>> depth_devices;
-        for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
-            depth_devices.push_back(backend.create_uvc_device(info));
-
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new l500_timestamp_reader_from_metadata(backend.create_time_service()));
-        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
-        raw_depth_ep->register_xu(depth_xu);
-
-        auto depth_ep = std::make_shared<l500_depth_sensor>(this, raw_depth_ep, l500_depth_fourcc_to_rs2_format, l500_depth_fourcc_to_rs2_stream);
-        
-        depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-        depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
-
-        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
-       
-        auto is_zo_enabled_opt = std::make_shared<bool_option>();
-        auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
-        is_zo_enabled_opt->set(false);
-        depth_ep->register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
-
-        depth_ep->register_processing_block(
-            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
-            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
-            [weak_is_zo_enabled_opt]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
-                auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
-                auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
-
-                auto cpb = std::make_shared<composite_processing_block>();
-                cpb->add(z16rot);
-                cpb->add(y8rot);
-                cpb->add(sync);
-                cpb->add(zo);
-
-                return cpb;
-            }
-        );
-
-        depth_ep->register_processing_block(
-            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
-            { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH} },
-            [weak_is_zo_enabled_opt]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
-                auto z16rot = std::make_shared<identity_processing_block>();
-                auto y8rot = std::make_shared<identity_processing_block>();
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
-
-                auto cpb = std::make_shared<composite_processing_block>();
-                cpb->add(z16rot);
-                cpb->add(y8rot);
-                cpb->add(sync);
-                cpb->add(zo);
-
-                return cpb;
-            }
-        );
-
-        depth_ep->register_processing_block(
-            { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8}, {RS2_FORMAT_RAW8} },
-            {
-                {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution},
-                {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution}
-            },
-            [weak_is_zo_enabled_opt]() {
-                auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
-                auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
-                auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
-                auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
-
-                auto cpb = std::make_shared<composite_processing_block>();
-                cpb->add(z16rot);
-                cpb->add(y8rot);
-                cpb->add(conf);
-                cpb->add(sync);
-                cpb->add(zo);
-
-                return cpb;
-            }
-        );
-
-        depth_ep->register_processing_block(
-            { {RS2_FORMAT_Y8} },
-            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 0, 0, 0, 0, &rotate_resolution} },
-            []() { return std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME); }
-        );
-
-        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED));
-
-        depth_ep->register_processing_block(
-            { {RS2_FORMAT_RAW8} },
-            { {RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE, 0, 0, 0, 0, &l500_confidence_resolution} },
-            []() { return std::make_shared<confidence_rotation_transform>(); }
-        );
-
-        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_CONFIDENCE));
-
-        return depth_ep;
     }
 
     void l500_device::force_hardware_reset() const

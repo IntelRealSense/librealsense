@@ -73,7 +73,7 @@ public enum Option {
     AMBIENT_LIGHT(69),
     SENSOR_MODE(70),
     EMITTER_ALWAYS_ON(71);
-
+    AUTO_CALIBRATION_ENABLED(71);
     private final int mValue;
 
     private Option(int value) { mValue = value; }

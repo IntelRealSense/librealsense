@@ -194,5 +194,185 @@ namespace librealsense
             auto res = _hwm.send( cmd );
             _record_action( *this );
         }
+
+        autocal_option::autocal_option( hw_monitor& hwm )
+            : bool_option( false )
+            , _hwm( hwm )
+        {
+            // bool_option initializes with def=true, which is what we want
+//            assert( is_true() );
+        }
+
+        void autocal_option::set( float value )
+        {
+            bool_option::set( value );
+            if( is_true() )
+            {
+                // We've turned it on -- try to immediately get a special frame
+                command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
+                auto res = _hwm.send( cmd );
+            }
+            _record_action( *this );
+        }
+
+
+        auto_calibration::auto_calibration( std::shared_ptr< autocal_option > enabler_opt )
+            : _is_processing{ false }
+            , _enabler_opt( enabler_opt )
+        {
+        }
+
+        auto_calibration::~auto_calibration()
+        {
+            if( _worker.joinable() )
+            {
+                _is_processing = false;  // Signal the thread that we want to stop!
+                _worker.join();
+            }
+        }
+
+        void auto_calibration::set_special_frame( rs2::frame const& f )
+        {
+            if( _is_processing )
+                return;
+
+            _sf = f;
+            if( check_color_depth_sync() )
+                start();
+        }
+
+        void auto_calibration::set_color_frame( rs2::frame const& f )
+        {
+            if( _is_processing )
+                return;
+
+            _pcf = _cf;
+            _cf = f;
+            if( check_color_depth_sync() )
+                start();
+        }
+
+        bool auto_calibration::check_color_depth_sync()
+        {
+            if( !_sf )
+                return false;
+            if( !_cf )
+                return false;
+            return true;
+        }
+
+        void auto_calibration::start()
+        {
+            _is_processing = true;
+            if( _worker.joinable() )
+                _worker.join();
+            _worker = std::thread( [&]()
+                {
+                    LOG_INFO( "Auto calibration has started ..." );
+                    
+                    // TODO this is where we do the work...
+                    
+                    _sf = rs2::frame{};
+                    _is_processing = false;
+                    LOG_INFO( "Auto calibration has finished ..." );
+                } );
+        }
+
+        autocal_depth_processing_block::autocal_depth_processing_block(
+            std::shared_ptr< auto_calibration > autocal
+        )
+            : generic_processing_block( "Auto Calibration (depth)" )
+            , _autocal{ autocal }
+            , _is_enabled_opt( autocal->get_enabler_opt() )
+        {
+        }
+
+        static bool is_special_frame( rs2::frame const& f )
+        {
+            return(f
+                && f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE )
+                && 0x5F == f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ));
+        }
+
+        rs2::frame autocal_depth_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
+        {
+            // If is_enabled_opt is false, meaning this processing block is not active,
+            // return the frame as is.
+            if( auto is_enabled = _is_enabled_opt.lock() )
+                if( !is_enabled->is_true() )
+                    return f;
+
+            // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
+            if( f.is< rs2::frameset >() )
+                return rs2::frame{};
+
+            if( !is_special_frame( f.as< rs2::depth_frame >() ) )
+                return f;
+
+            LOG_INFO( "Auto calibration SF received" );
+            _autocal->set_special_frame( f );
+
+            // We don't want the user getting this frame!
+            return rs2::frame{};
+        }
+
+        bool autocal_depth_processing_block::should_process( const rs2::frame & frame )
+        {
+            return true;
+        }
+
+        rs2::frame autocal_depth_processing_block::prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results )
+        {
+            // The default prepare_output() will send the input back as the frame if the results are empty
+            if( results.empty() )
+                return rs2::frame{};
+
+            return source.allocate_composite_frame( results );
+
+            //return generic_processing_block::prepare_output( source, input, results );
+        }
+
+        autocal_color_processing_block::autocal_color_processing_block(
+            std::shared_ptr< auto_calibration > autocal
+        )
+            : generic_processing_block( "Auto Calibration (color)" )
+            , _autocal{ autocal }
+            , _is_enabled_opt( autocal->get_enabler_opt() )
+        {
+        }
+
+        rs2::frame autocal_color_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
+        {
+            // If is_enabled_opt is false, meaning this processing block is not active,
+            // return the frame as is.
+            if( auto is_enabled = _is_enabled_opt.lock() )
+                if( !is_enabled->is_true() )
+                    return f;
+
+            // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
+            if( f.is< rs2::frameset >() )
+                return rs2::frame{};
+            
+            // We record each and every color frame
+            _autocal->set_color_frame( f );
+
+            // Return the frame as is!
+            return f;
+        }
+
+        bool autocal_color_processing_block::should_process( const rs2::frame& frame )
+        {
+            return true;
+        }
+#if 0
+        rs2::frame autocal_color_processing_block::prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results )
+        {
+            // The default prepare_output() will send the input back as the frame if the results are empty
+            if( results.empty() )
+                return rs2::frame{};
+
+            return generic_processing_block::prepare_output( source, input, results );
+        }
+#endif
     } // librealsense::ivcam2
 } // namespace librealsense

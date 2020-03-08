@@ -6,6 +6,7 @@
 #include "backend.h"
 #include "types.h"
 #include "option.h"
+#include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
@@ -59,6 +60,7 @@ namespace librealsense
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
         };
 
         enum gvd_fields
@@ -364,6 +366,84 @@ namespace librealsense
             std::function<void( const option& )> _record_action = []( const option& ) {};
             hw_monitor& _hwm;
             std::shared_ptr< freefall_option > _freefall_opt;
+        };
+
+        /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+        class autocal_option : public bool_option
+        {
+        public:
+            autocal_option( hw_monitor& hwm );
+
+            virtual void set( float value ) override;
+            virtual const char* get_description() const override
+            {
+                return "Enable to ask FW for a special frame for auto calibration";
+            }
+            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+        private:
+            std::function<void( const option& )> _record_action = []( const option& ) {};
+            hw_monitor& _hwm;
+        };
+
+        /*
+        */
+        class auto_calibration
+        {
+            std::weak_ptr< autocal_option > _enabler_opt;
+
+            rs2::frame _sf;
+            rs2::frame _cf, _pcf;  // Keep the last and previous frame!
+
+            std::atomic_bool _is_processing;
+            std::thread _worker;
+
+        public:
+            auto_calibration( std::shared_ptr< autocal_option > enabler_opt );
+            ~auto_calibration();
+
+            std::shared_ptr< autocal_option > get_enabler_opt() const { return _enabler_opt.lock(); }
+
+            void set_special_frame( rs2::frame const& );
+            void set_color_frame( rs2::frame const& );
+
+        private:
+            bool check_color_depth_sync();
+            void start();
+        };
+
+        /* Depth frame processing for Auto Calibration: detect special frames
+        */
+        class autocal_depth_processing_block : public generic_processing_block
+        {
+            std::shared_ptr< auto_calibration > _autocal;
+            std::weak_ptr< autocal_option > _is_enabled_opt;
+
+        public:
+            autocal_depth_processing_block( std::shared_ptr< auto_calibration > autocal );
+
+            rs2::frame process_frame( const rs2::frame_source& source, const rs2::frame& f ) override;
+
+        private:
+            bool should_process( const rs2::frame& frame ) override;
+            rs2::frame prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results ) override;
+        };
+
+        /* Depth frame processing for Auto Calibration: detect special frames
+        */
+        class autocal_color_processing_block : public generic_processing_block
+        {
+            std::shared_ptr< auto_calibration > _autocal;
+            std::weak_ptr< autocal_option > _is_enabled_opt;
+
+        public:
+            autocal_color_processing_block( std::shared_ptr< auto_calibration > autocal );
+
+            rs2::frame process_frame( const rs2::frame_source& source, const rs2::frame& f ) override;
+
+        private:
+            bool should_process( const rs2::frame& frame ) override;
+            //rs2::frame prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results ) override;
         };
 
 
