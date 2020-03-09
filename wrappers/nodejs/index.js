@@ -4925,6 +4925,13 @@ const option = {
   OPTION_LED_POWER: RS2.RS2_OPTION_LED_POWER,
   OPTION_ZERO_ORDER_ENABLED: RS2.RS2_OPTION_ZERO_ORDER_ENABLED,
   OPTION_ENABLE_MAP_PRESERVATION: RS2.RS2_OPTION_ENABLE_MAP_PRESERVATION,
+  OPTION_FREEFALL_DETECTION_ENABLED: RS2.RS2_OPTION_FREEFALL_DETECTION_ENABLED,
+  /**
+   * Enable Laser On constantly (GS SKU Only)
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  OPTION_EMITTER_ALWAYS_ON: RS2.RS2_OPTION_EMITTER_ALWAYS_ON,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5067,6 +5074,10 @@ const option = {
         return this.option_zero_order_enabled;
       case this.OPTION_ENABLE_MAP_PRESERVATION:
         return this.option_enable_map_preservation;
+      case this.OPTION_FREEFALL_DETECTION_ENABLED:
+        return this.option_freefall_detection_enabled;
+      case this.OPTION_EMITTER_ALWAYS_ON:
+        return this.option_emitter_always_on;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');

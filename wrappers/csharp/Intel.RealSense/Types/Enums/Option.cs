@@ -199,5 +199,11 @@ namespace Intel.RealSense
 
         /// <summary>Preserve previous map when starting</summary>
         EnableMapPreservation = 62,
+
+        /// <summary>Enable/disable sensor shutdown when a free-fall is detected (on by default)</summary>
+        FreeFallDetectionEnabled = 63,
+
+        /// <summary>Enable Laser On constantly (GS SKU Only)</summary>
+        EmitterAlwaysOn = 64,
     }
 }
