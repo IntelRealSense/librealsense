@@ -43,9 +43,22 @@ namespace librealsense
     std::shared_ptr<device_interface> sr300_info::create(std::shared_ptr<context> ctx,
                                                          bool register_device_notifications) const
     {
-        return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm,
-                                              this->get_device_data(),
-                                              register_device_notifications);
+		auto pid = _depth.pid;
+		switch (pid)
+		{
+		case SR300_PID:
+			return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm,
+				this->get_device_data(),
+				register_device_notifications);
+		case SR300v2_PID:  
+			return std::make_shared<sr305_camera>(ctx, _color, _depth, _hwm,
+				this->get_device_data(),
+				register_device_notifications);
+		default:
+			throw std::runtime_error(to_string() << "Unsupported SR300 model! 0x"
+				<< std::hex << std::setw(4) << std::setfill('0') << (int)pid);
+		}
+ 
     }
 
     std::vector<std::shared_ptr<device_info>> sr300_info::pick_sr300_devices(
@@ -57,7 +70,8 @@ namespace librealsense
         std::vector<std::shared_ptr<device_info>> results;
 
         auto correct_pid = filter_by_product(uvc, { SR300_PID, SR300v2_PID });
-        auto group_devices = group_devices_by_unique_id(correct_pid);
+     
+		auto group_devices = group_devices_by_unique_id(correct_pid);
         for (auto& group : group_devices)
         {
             if (group.size() == 2 &&
@@ -468,14 +482,26 @@ namespace librealsense
                                                 return (c.Rmax / 1000 / 0xFFFF);
                                             })));
 
-        if (firmware_version(fw_version) >= firmware_version("3.26.2.0"))
-        {
-            roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
-                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor,
-                (ds::fw_cmd)ivcam::fw_cmd::SetRgbAeRoi));
-        }
     }
+
+	sr305_camera::sr305_camera(std::shared_ptr<context> ctx, const platform::uvc_device_info &color,
+		const platform::uvc_device_info &depth,
+		const platform::usb_device_info &hwm_device,
+		const platform::backend_device_group& group,
+		bool register_device_notifications)
+		: sr300_camera (ctx, color, depth, hwm_device, group, register_device_notifications) {
+		
+			static auto device_name = "Intel RealSense SR305";
+			register_info(RS2_CAMERA_INFO_NAME, device_name);
+
+			roi_sensor_interface* roi_sensor;
+			if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
+				roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor,
+				(ds::fw_cmd)ivcam::fw_cmd::SetRgbAeRoi));
+			
+		}
+	
+
     void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         //TODO: implement

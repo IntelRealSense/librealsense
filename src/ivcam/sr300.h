@@ -185,7 +185,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public virtual device, public debug_interface, public updatable
+    class sr300_camera  : public  device, public debug_interface, public updatable
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -394,7 +394,8 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        sr300_camera(std::shared_ptr<context> ctx,
+      
+		sr300_camera(std::shared_ptr<context> ctx,
                      const platform::uvc_device_info& color,
                      const platform::uvc_device_info& depth,
                      const platform::usb_device_info& hwm_device,
@@ -476,6 +477,7 @@ namespace librealsense
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
+
     private:
         const uint8_t _depth_device_idx;
         const uint8_t _color_device_idx;
@@ -528,5 +530,18 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
 
         lazy<ivcam::camera_calib_params> _camer_calib_params;
+
+		friend class sr305_camera;
     };
+
+	class sr305_camera final : public sr300_camera {
+	public: 
+		sr305_camera(std::shared_ptr<context> ctx,
+			const platform::uvc_device_info& color,
+			const platform::uvc_device_info& depth,
+			const platform::usb_device_info& hwm_device,
+			const platform::backend_device_group& group,
+			bool register_device_notifications);
+	};
+
 }
