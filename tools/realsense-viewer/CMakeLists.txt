@@ -76,8 +76,12 @@ set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 target_link_libraries(realsense-viewer ${DEPENDENCIES}
                                         ${GTK3_LIBRARIES}
                                         Threads::Threads
-                                        realsense2-gl
-                                        )
+                                        realsense2-gl)
+
+if(BUILD_IPDEV)
+        target_link_libraries(realsense-viewer realsense2-ethernet)
+endif()
+
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(realsense-viewer uvc_fw)

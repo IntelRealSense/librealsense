@@ -23,6 +23,10 @@ if(IMPORT_DEPTH_CAM_FW AND NOT INTERNET_CONNECTION)
     set(IMPORT_DEPTH_CAM_FW OFF)
 endif()
 
+set(BUILD_IPDEV           ON CACHE BOOL "Enable IP device support")
+set(BUILD_IPDEV_UNITTESTS ON CACHE BOOL "Enable unittests for IP device")
+set(BUILD_IPDEV_STATS     ON CACHE BOOL "Enable statistics for IP device")
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
 # include librealsense general configuration
@@ -82,6 +86,12 @@ if(BUILD_EXAMPLES)
     add_subdirectory(examples)
     add_subdirectory(tools)
 endif()
+
+if(BUILD_IPDEV)
+    add_subdirectory(src/ethernet)
+endif()
+
+add_subdirectory(src/compression)
 
 if(BUILD_UNIT_TESTS)
     add_subdirectory(unit-tests)

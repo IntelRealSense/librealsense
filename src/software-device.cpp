@@ -95,8 +95,8 @@ namespace librealsense
         auto currProfile = find_profile_by_uid(video_stream.uid);
         if (currProfile)
         {
-            LOG_WARNING("Video stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
+            //LOG_WARNING("Video stream unique ID already exist!");
+            //throw rs2::error("Stream unique ID already exist!");
         }
 
         auto profile = std::make_shared<video_stream_profile>(

@@ -1,0 +1,87 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
+#ifndef _CAM_OE_RTSP_CLIENT_H
+#define _CAM_OE_RTSP_CLIENT_H
+
+#include "liveMedia.hh"
+#include "BasicUsageEnvironment.hh"
+#include "StreamClientState.h"
+#include "IRsRtsp.h"
+
+#include <librealsense2/hpp/rs_internal.hpp>
+
+#include <vector>
+#include <map>
+#include <condition_variable>
+#include <ipDeviceCommon/MemoryPool.h>
+#include <ipDeviceCommon/RsCommon.h>
+#include "common/RsRtspCommon.h"
+
+//TODO: check if this timeout is reasonable for all commands 
+#define RTSP_CLIENT_COMMANDS_TIMEOUT_SEC 3
+
+class RsRTSPClient : public RTSPClient, IRsRtsp
+{
+public:
+  static IRsRtsp *getRtspClient(char const *t_rtspURL,
+                                char const *t_applicationName = NULL,
+                                portNumBits t_tunnelOverHTTPPortNum = 0);
+  void describe();
+  void setup(rs2_video_stream t_stream);
+  void initFunc(MemoryPool *t_pool);
+
+  static long long int getStreamProfileUniqueKey(rs2_video_stream t_profile);
+  void setDeviceData(DeviceData t_data);
+
+  // IcamOERtsp functions
+  virtual std::vector<rs2_video_stream> getStreams();
+  virtual int addStream(rs2_video_stream t_stream, rtp_callback *t_frameCallBack);
+  virtual int start();
+  virtual int stop();
+  virtual int close();
+  virtual int getOption(rs2_option t_opt, float &t_val);
+  virtual int setOption(rs2_option t_opt, float t_val);
+  void setGetParamResponse(float t_res);
+  virtual DeviceData getDeviceData() { return m_deviceData; }
+  virtual std::vector<IpDeviceControlData> getControls();
+
+  static void continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterSETUP(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterPLAY(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString);
+  static void subsessionAfterPlaying(void *clientData); // called when a stream's subsession (e.g., audio or video substream) ends
+  static void subsessionByeHandler(void *clientData, char const *reason);
+  char& getEventLoopWatchVariable() {return m_eventLoopWatchVariable;};
+  std::mutex& getTaskSchedulerMutex() {return m_taskSchedulerMutex;};
+
+private:
+  RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL,
+               int t_verbosityLevel, char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum);
+
+  // called only by createNew();
+  virtual ~RsRTSPClient();
+
+  StreamClientState m_scs;
+  std::vector<rs2_video_stream> m_supportedProfiles;
+  std::map<long long int, RsMediaSubsession *> m_subsessionMap;
+  RsRtspReturnValue m_lastReturnValue;
+  static int m_streamCounter;
+  // TODO: should we have seperate mutex for each command?
+  std::condition_variable m_cv;
+  std::mutex m_commandMtx;
+  bool m_commandDone = false;
+  DeviceData m_deviceData;
+  MemoryPool *m_memPool;
+  float m_getParamRes;
+  TaskScheduler *m_scheduler;
+  UsageEnvironment *m_env;
+  char m_eventLoopWatchVariable = 0;
+  std::mutex m_taskSchedulerMutex;
+  
+};
+#endif // _CAM_OE_RTSP_CLIENT_H

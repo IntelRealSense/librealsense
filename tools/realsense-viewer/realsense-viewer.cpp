@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include "ethernet/ip_device.hh"
+
 #include <librealsense2/rs.hpp>
 #include "viewer.h"
 #include "os.h"
@@ -30,6 +32,14 @@
 
 using namespace rs2;
 using namespace rs400;
+
+#define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
+
+void add_remote_device(context& ctx, std::string address) 
+{
+    software_device sw_dev = ip_device::create_ip_device(address.c_str());
+    sw_dev.add_to(ctx);
+}
 
 void add_playback_device(context& ctx, device_models_list& device_models, 
     std::string& error_message, viewer_model& viewer_model, const std::string& file)
@@ -177,7 +187,7 @@ bool refresh_devices(std::mutex& m,
 
             bool added = false;
             if (device_models.size() == 0 &&
-                dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera")
+                dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
             {
                 device_models.emplace_back(new device_model(dev, error_message, viewer_model));
                 viewer_model.not_model.add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
@@ -258,15 +268,31 @@ int main(int argc, const char** argv) try
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
     device_model* device_to_remove = nullptr;
+    bool is_ip_device_connected = false;
+    std::string ip_address;
+    bool close_ip_popup = false;
 
     viewer_model viewer_model(ctx);
 
     std::vector<device> connected_devs;
     std::mutex m;
 
+    if (argc == 2)
+    {
+        try
+        {
+        add_remote_device(ctx, argv[1]);
+        is_ip_device_connected = true;
+        }
+        catch (std::runtime_error e)
+        {
+            error_message = e.what();
+        }
+    }
+
     window.on_file_drop = [&](std::string filename)
     {
-        std::string error_message{};
+        
         add_playback_device(ctx, *device_models, error_message, viewer_model, filename);
         if (!error_message.empty())
         {
@@ -352,7 +378,29 @@ int main(int argc, const char** argv) try
 
 
         ImGui::PushFont(window.get_font());
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * new_devices_count + 8 });
+
+        int multiline_devices_names = 0;
+        for (size_t i = 0; i < device_names.size(); i++)
+        {
+            if(device_names[i].first.find("\n") != std::string::npos)
+            {
+                bool show_device_in_list = true;
+                for (auto&& dev_model : *device_models)
+                {
+                    if (get_device_name(dev_model->dev) == device_names[i])
+                    {
+                        show_device_in_list = false;
+                        break;
+                    }
+                }
+                if(show_device_in_list)
+                {
+                    multiline_devices_names++;
+                }
+            }
+        }
+
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 24)});
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -411,6 +459,90 @@ int main(int argc, const char** argv) try
             ImGui::Text("%s", "");
             ImGui::NextColumn();
 
+            if (!is_ip_device_connected)
+            {
+                ImGui::Separator();
+                if (ImGui::Selectable("Add IP Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
+                {
+                    ImGui::OpenPopup("Enter Device IP");
+                }
+
+                float width = 280;
+                float height = 125;
+                float posx = window.width() * 0.5f - width * 0.5f;
+                float posy = window.height() * 0.5f - height * 0.5f;
+                ImGui::SetNextWindowPos({ posx, posy });
+                ImGui::SetNextWindowSize({ width, height });
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+
+                if (ImGui::BeginPopupModal("Enter Device IP", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))    
+                {
+                    static char ip_input[256];
+                    std::copy(ip_address.begin(), ip_address.end(), ip_input);
+                    ip_input[ip_address.size()] = '\0';
+                    ImGui::NewLine();
+                    ImGui::SetCursorPosX(width * 0.15f);
+                    ImGui::PushItemWidth(width * 0.7f);
+                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive()) 
+                        ImGui::SetKeyboardFocusHere();
+                    if (ImGui::InputText("", ip_input, 255, ImGuiInputTextFlags_CharsDecimal)) //TODO: Ester - enable letters when host name is supported
+                    {
+                        ip_address = ip_input;
+                    }
+                    ImGui::PopItemWidth();
+                    ImGui::NewLine();
+                    ImGui::SetCursorPosX(width * 0.5f - 105);
+                    if (ip_address.size() < MIN_IP_SIZE)
+                    {
+                        ImGui::ButtonEx("ok",{100.f, 25.f}, ImGuiButtonFlags_Disabled);
+                    }
+                    else
+                    {
+                        if (ImGui::ButtonEx("ok",{100.f, 25.f}))
+                        {
+                            try
+                            {
+                            add_remote_device(ctx, ip_address);
+                            is_ip_device_connected = true;
+                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
+                            auto dev = connected_devs[connected_devs.size()-1];
+                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                            }
+                            catch (std::runtime_error e)
+                            {
+                                error_message = e.what();
+                            }
+                            ip_address = "";
+                            close_ip_popup = true;
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                    ImGui::SameLine();
+                    ImGui::SetCursorPosX(width * 0.5f + 5);
+                    if(ImGui::Button("cancel",{100.f, 25.f}))
+                    {
+                        ip_address = "";
+                        close_ip_popup = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar(1);
+        
+                ImGui::NextColumn();
+                ImGui::Text("%s", "");
+                ImGui::NextColumn();
+            }
+
+            if (close_ip_popup)
+            {
+                ImGui::CloseCurrentPopup();
+                close_ip_popup = false;
+            }
             ImGui::PopStyleColor();
             ImGui::EndPopup();
         }

@@ -5294,8 +5294,9 @@ namespace rs2
         // draw device header
         ////////////////////////////////////////
         const bool is_playback_device = dev.is<playback>();
+        bool is_ip_device = dev.supports(RS2_CAMERA_INFO_IP_ADDRESS);
         auto header_h = panel_height;
-        if (is_playback_device) header_h += 15;
+        if (is_playback_device || is_ip_device) header_h += 15;
 
         ImColor device_header_background_color = title_color;
         const float left_space = 3.f;
@@ -5327,7 +5328,14 @@ namespace rs2
         std::stringstream ss;
         if(dev.supports(RS2_CAMERA_INFO_NAME))
             ss << dev.get_info(RS2_CAMERA_INFO_NAME);
-        ImGui::Text(" %s", ss.str().c_str());
+        if(is_ip_device)
+        {
+            ImGui::Text(" %s", ss.str().substr(0, ss.str().find("\n IP Device")).c_str());
+        }
+        else
+        {
+            ImGui::Text(" %s", ss.str().c_str());
+        }
         if (dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
         {
             std::string desc = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
@@ -5345,6 +5353,14 @@ namespace rs2
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip(" %s", ss.str().c_str());
             ImGui::PopStyleColor();
+            ImGui::PopFont();
+        }
+        if(is_ip_device)
+        {
+            ImGui::PushFont(window.get_font());
+            ss.str("");
+            ss << dev.get_info(RS2_CAMERA_INFO_IP_ADDRESS);
+            ImGui::Text("\tIP device\t%s", ss.str().c_str());
             ImGui::PopFont();
         }
 
