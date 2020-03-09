@@ -57,7 +57,8 @@ namespace librealsense
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
-            FALL_DETECT_ENABLE          = 0x9D  // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            HW_SYNC_EX_TRIGGER          = 0x19, // Enable (not default) HW sync; will disable freefall
         };
 
         enum gvd_fields
@@ -337,6 +338,28 @@ namespace librealsense
         private:
             std::function<void( const option& )> _record_action = []( const option& ) {};
             hw_monitor & _hwm;
+        };
+
+        /*  For RS2_OPTION_HARDWARE_SYNC_ENABLED
+            Not an advanced control: always off after camera startup (reset).
+            When enabled, the freefall control should turn off.
+        */
+        class hw_sync_option : public bool_option
+        {
+        public:
+            hw_sync_option( hw_monitor& hwm, std::shared_ptr< freefall_option > freefall_opt );
+
+            virtual void set( float value ) override;
+            virtual const char* get_description() const override
+            {
+                return "When enabled (disabled on startup), interrupts are handled according to GPIO10 level; shuts off the fall detect mechanism";
+            }
+            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+        private:
+            std::function<void( const option& )> _record_action = []( const option& ) {};
+            hw_monitor& _hwm;
+            std::shared_ptr< freefall_option > _freefall_opt;
         };
 
 

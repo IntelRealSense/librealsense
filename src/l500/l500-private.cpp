@@ -163,5 +163,28 @@ namespace librealsense
             auto res = _hwm.send( cmd );
             _record_action( *this );
         }
+
+        hw_sync_option::hw_sync_option( hw_monitor& hwm, std::shared_ptr< freefall_option > freefall_opt )
+            : bool_option( false )
+            , _hwm( hwm )
+            , _freefall_opt( freefall_opt )
+        {
+        }
+
+        void hw_sync_option::set( float value )
+        {
+            bool_option::set( value );
+
+            if( is_true() )
+            {
+                // Disable the free-fall option!
+                if( _freefall_opt  && _freefall_opt->is_true() )
+                    _freefall_opt->set( 0 );
+            }
+
+            command cmd{ HW_SYNC_EX_TRIGGER, is_true() };
+            auto res = _hwm.send( cmd );
+            _record_action( *this );
+        }
     } // librealsense::ivcam2
 } // namespace librealsense
