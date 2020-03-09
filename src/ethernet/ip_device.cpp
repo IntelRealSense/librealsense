@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "ip_device.hh"
+#include "api.h"
+#include <librealsense2-net/rs_net.h>
 
 #include <ipDeviceCommon/Statistic.h>
 #include <list>
@@ -302,3 +304,29 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
     rtp_stream.get()->reset_queue();
     std::cout << "polling data at stream index " << rtp_stream.get()->m_rs_stream.uid << " is done\n";
 }
+
+rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_error** error) BEGIN_API_CALL
+{
+    verify_version_compatibility(api_version);
+    VALIDATE_NOT_NULL(address);
+
+    std::string addr(address);
+
+    // create sw device
+    rs2::software_device sw_dev = rs2::software_device([](rs2_device*) {});
+    // create IP instance
+    ip_device *ip_dev = new ip_device(addr, sw_dev);
+    // set client destruction functioun
+    ip_dev->sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
+    // register device info to sw device
+    DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
+    ip_dev->sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + "\n IP Device");
+    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
+    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
+    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
+    // return sw device
+    //return sw_dev;
+
+    return sw_dev.get().get();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)

@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
 #include "option.h"
 
 #include "RsRtspClient.h"
@@ -40,7 +41,13 @@ public:
 #endif
         static rs2::software_device create_ip_device(const char *ip_address);
 
+    ip_device(std::string ip_address, rs2::software_device sw_device);
+
     ~ip_device();
+
+    rs2::software_device sw_dev;
+
+    ip_sensor *remote_sensors[NUM_OF_SENSORS];
 
 private:
     bool is_device_alive;
@@ -50,8 +57,6 @@ private:
 
     std::string ip_address;
 
-    ip_sensor *remote_sensors[NUM_OF_SENSORS];
-
     //todo: consider wrapp all maps to single container
     std::map<long long int, std::shared_ptr<rs_rtp_stream>> streams_collection;
 
@@ -59,11 +64,7 @@ private:
 
     std::map<long long int, rs_rtp_callback *> rtp_callbacks;
 
-    rs2::software_device sw_dev;
-
     std::thread sw_device_status_check;
-
-    ip_device(std::string ip_address, rs2::software_device sw_device);
 
     bool init_device_data();
 
