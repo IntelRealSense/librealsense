@@ -46,43 +46,19 @@ int RsSensor::open(std::unordered_map<long long int, rs2::frame_queue> &t_stream
                         printf("compression is disabled or configured unsupported format to zip, run without compression\n");
                 }
         }
-        try
-        {
-                m_sensor.open(requestedStreamProfiles);
-        }
-        catch (const std::exception &e)
-        {
-                std::cerr << e.what() << std::endl;
-                return EXIT_FAILURE;
-        }
+        m_sensor.open(requestedStreamProfiles);
         return EXIT_SUCCESS;
 }
 
 int RsSensor::close()
 {
-        try
-        {
-                m_sensor.close();
-        }
-        catch (const std::exception &e)
-        {
-                std::cerr << e.what() << std::endl;
-                return EXIT_FAILURE;
-        }
+        m_sensor.close();
         return EXIT_SUCCESS;
 }
 
 int RsSensor::stop()
 {
-        try
-        {
-                m_sensor.stop();
-        }
-        catch (const std::exception &e)
-        {
-                std::cerr << e.what() << std::endl;
-                return EXIT_FAILURE;
-        }
+        m_sensor.stop();
         return EXIT_SUCCESS;
 }
 
