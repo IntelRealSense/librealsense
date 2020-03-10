@@ -93,8 +93,17 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_TEARDOWN(RTSPClientConnection 
                                                            ServerMediaSubsession *t_subsession)
 {
   envir() << "TEARDOWN \n";
-
-  closeRsCamera();
+  try
+  {
+    closeRsCamera();
+  }
+  catch(const std::exception& e)
+  {
+    std::string error("500 " + std::string(e.what()));
+    setRTSPResponse(t_ourClientConnection, error.c_str());
+    return;
+  }
+    
   RTSPServer::RTSPClientSession::handleCmd_TEARDOWN(t_ourClientConnection, t_subsession);
 }
 
@@ -102,7 +111,17 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_PLAY(RTSPClientConnection *t_o
                                                        ServerMediaSubsession *t_subsession, char const *t_fullRequestStr)
 {
   envir() << "PLAY \n";
-  openRsCamera();
+  try
+  {
+    openRsCamera();
+  }
+  catch(const std::exception& e)
+  {
+    std::string error("500 " + std::string(e.what()));
+    setRTSPResponse(t_ourClientConnection, error.c_str());
+    return;
+  }
+  
   RTSPServer::RTSPClientSession::handleCmd_PLAY(t_ourClientConnection, t_subsession, t_fullRequestStr);
 }
 
@@ -111,7 +130,16 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_PAUSE(RTSPClientConnection *t_
 {
   envir() << "PAUSE \n";
   RTSPServer::RTSPClientSession::handleCmd_PAUSE(t_ourClientConnection, t_subsession);
-  closeRsCamera();
+  try
+  {
+    closeRsCamera();
+  }
+  catch(const std::exception& e)
+  {
+    std::string error("500 " + std::string(e.what()));
+    setRTSPResponse(t_ourClientConnection, error.c_str());
+    return;
+  }
 }
 
 void RsRTSPServer::RsRTSPClientSession::handleCmd_GET_PARAMETER(RTSPClientConnection *t_ourClientConnection,
@@ -138,7 +166,8 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_GET_PARAMETER(RTSPClientConnec
   }
   catch(const std::exception& e)
   {
-    setRTSPResponse(t_ourClientConnection, "461 Invalid Option");
+    std::string error("500 " + std::string(e.what()));
+    setRTSPResponse(t_ourClientConnection, error.c_str());
   }
 }
 
@@ -169,7 +198,8 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_SET_PARAMETER(RTSPClientConnec
   }
   catch(const std::exception& e)
   {
-    setRTSPResponse(t_ourClientConnection, "461 Invalid Option");//TODO:: to check the correct error value
+    std::string error("500 " + std::string(e.what()));
+    setRTSPResponse(t_ourClientConnection, error.c_str());
   }
   
   

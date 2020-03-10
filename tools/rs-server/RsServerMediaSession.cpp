@@ -33,38 +33,19 @@ RsServerMediaSession::~RsServerMediaSession()
 
 int RsServerMediaSession::openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles)
 {
-  if (m_isActive)
-  {
-    envir()<< "sensor is already open, closing sensor and than open again...\n";
-    closeRsCamera();
-  }
-  int status = m_rsSensor.open(t_streamProfiles);
-  if (status == EXIT_SUCCESS)
-  {
-    status = m_rsSensor.start(t_streamProfiles);
-    if (status == EXIT_SUCCESS)
-    {
-      m_isActive = true;
-    }
-  }
-  return status;
+  m_rsSensor.open(t_streamProfiles);
+  m_rsSensor.start(t_streamProfiles);
+  m_isActive = true;
+  return EXIT_SUCCESS;
 }
 
 int RsServerMediaSession::closeRsCamera()
 {
-  if (m_isActive)
+  if(m_isActive)
   {
-    m_isActive = false;
-    try
-    {
-      m_rsSensor.stop();
-      m_rsSensor.close();
-    }
-    catch (const std::exception &e)
-    {
-      envir() << e.what() << '\n';
-      return EXIT_FAILURE;
-    }
+  m_rsSensor.getRsSensor().stop();
+  m_rsSensor.getRsSensor().close();
+  m_isActive = false;
   }
   return EXIT_SUCCESS;
 }
