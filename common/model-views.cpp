@@ -1004,10 +1004,11 @@ namespace rs2
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
 
-        if (dev.supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        if (s->supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-            std::string id = dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+            std::string id = s->get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+
             bool has_metadata = !rs2::metadata_helper::instance().can_support_metadata(product)
                 || rs2::metadata_helper::instance().is_enabled(id);
             static bool showed_metadata_prompt = false;

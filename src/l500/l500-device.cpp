@@ -148,7 +148,7 @@ namespace librealsense
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
 
-
+        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
        
         auto is_zo_enabled_opt = std::make_shared<bool_option>();
         auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);
