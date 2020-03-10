@@ -48,6 +48,7 @@ namespace librealsense
             GLD                         = 0x0F, //"LoggerCoreGetDataParams"
             GVD                         = 0x10, //"Get Version and Date"
             DFU                         = 0x1E, //"Go to DFU"
+            HW_SYNC_EX_TRIGGER          = 0x19, // Enable (not default) HW sync; will disable freefall
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
@@ -58,7 +59,6 @@ namespace librealsense
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
-            HW_SYNC_EX_TRIGGER          = 0x19, // Enable (not default) HW sync; will disable freefall
         };
 
         enum gvd_fields
@@ -352,7 +352,7 @@ namespace librealsense
             virtual void set( float value ) override;
             virtual const char* get_description() const override
             {
-                return "When enabled (disabled on startup), interrupts are handled according to GPIO10 level; shuts off the fall detect mechanism";
+                return "Enable multi-camera hardware synchronization mode (disabled on startup); not compatible with free-fall detection";
             }
             virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
 

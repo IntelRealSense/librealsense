@@ -129,7 +129,7 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG( "Not adding control for freefall: requires FW 1.3.5" );
+            LOG_DEBUG( "Skipping Freefall control: requires FW 1.3.5" );
         }
         if( _fw_version >= firmware_version( "1.3.12.9" ) )
         {
@@ -140,7 +140,7 @@ namespace librealsense
         }
         else
         {
-            LOG_DEBUG( "Not adding control for HW Sync: requires FW 1.3.12.9" );
+            LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
     }
 
