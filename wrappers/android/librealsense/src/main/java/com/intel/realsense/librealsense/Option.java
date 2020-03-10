@@ -65,7 +65,7 @@ public enum Option {
     ZERO_ORDER_ENABLED(61),
     ENABLE_MAP_PRESERVATION(62),
     FREEFALL_DETECTION_ENABLED(63);
-	EMITTER_ALWAYS_ON(64);
+    EMITTER_ALWAYS_ON(64);
 
     private final int mValue;
 
