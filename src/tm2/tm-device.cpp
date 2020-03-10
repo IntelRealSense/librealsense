@@ -8,6 +8,9 @@
 #include <memory>
 #include <thread>
 #include <inttypes.h> // PRIu64
+#ifdef __ANDROID__
+    #include <sys/endian.h>
+#endif
 #include "tm-device.h"
 #include "stream.h"
 #include "media/playback/playback_device.h"

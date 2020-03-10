@@ -7,7 +7,7 @@ set_target_properties(
     realsense2
     PROPERTIES
     IMPORTED_LOCATION
-    ${CMAKE_CURRENT_SOURCE_DIR}/build/jni/${ANDROID_ABI}/librealsense2.so
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../build/jniLibs/${ANDROID_ABI}/librealsense2.so
 )
 ####################  librealsense dependencies end  ####################
 

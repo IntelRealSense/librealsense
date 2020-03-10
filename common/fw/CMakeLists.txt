@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1.3)
 
 project(uvc_fw)
 
-file(READ "firmware-version.h" ver)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/firmware-version.h" ver)
 
 message(STATUS "Fetching recommended firmwares:")
 
@@ -61,9 +61,9 @@ function(target_binary url version sha1 symbol ext)
   string(TOUPPER ${symbol} SYMBOL)
   string(REPLACE "." "," version_commas ${version})
   string(REPLACE "\\" "\\\\" binary_escaped "${binary}")
-  configure_file(fw.c.in  "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.c" @ONLY)
-  configure_file(fw.h.in  "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.h" @ONLY)
-  configure_file(fw.rc.in "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.rc" @ONLY)
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/fw.c.in"  "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.c" @ONLY)
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/fw.h.in"  "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.h" @ONLY)
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/fw.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.rc" @ONLY)
   if (MSVC)
     enable_language(RC)
     set_source_files_properties("${PROJECT_NAME}.rc" OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${symbol}.rc")

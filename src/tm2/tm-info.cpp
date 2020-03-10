@@ -10,8 +10,13 @@
 
 #include "tm-info.h"
 #include "tm-device.h"
-#include "libusb.h"
-#include "common/fw/target.h"
+#ifndef __ANDROID__
+    #include "libusb.h"
+    #include "common/fw/target.h"
+#else
+    // TODO: Figure out if directory name can be configured in CMake script or passed via compiler reference
+    #include "../wrappers/android/build/common/fw/target.h"
+#endif
 
 namespace librealsense
 {

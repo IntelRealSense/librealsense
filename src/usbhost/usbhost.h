@@ -31,6 +31,11 @@ extern "C" {
 #include <linux/usb_ch9.h>
 #endif
 
+// https://android.googlesource.com/platform/system/core/+/android-4.4_r1/libusbhost/usbhost.c
+#if defined(__ANDROID__) && (__ANDROID_API__ < __ANDROID_API_P__)
+#define MAX_USBFS_BUFFER_SIZE   16384
+#endif
+
 struct usb_host_context;
 struct usb_endpoint_descriptor;
 
