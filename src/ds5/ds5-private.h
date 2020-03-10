@@ -206,6 +206,7 @@ namespace librealsense
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETNAME= 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
+            LASERONCONST    = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB      = 0x80      // auto calibration commands
         };
 
