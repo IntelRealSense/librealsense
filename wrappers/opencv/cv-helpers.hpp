@@ -45,18 +45,11 @@ cv::Mat frame_to_mat(const rs2::frame& f)
 }
 
 // Converts depth frame to a matrix of doubles with distances in meters
-cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f)
+cv::Mat depth_frame_to_meters( const rs2::depth_frame & f )
 {
-    using namespace cv;
-    using namespace rs2;
-
-    Mat dm = frame_to_mat(f);
-    dm.convertTo(dm, CV_64F);
-    auto depth_scale = pipe.get_active_profile()
-        .get_device()
-        .first<depth_sensor>()
-        .get_depth_scale();
-    dm = dm * depth_scale;
+    cv::Mat dm = frame_to_mat(f);
+    dm.convertTo( dm, CV_64F );
+    dm = dm * f.get_units();
     return dm;
 }
 

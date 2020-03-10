@@ -151,6 +151,12 @@ int rs2_get_frame_width(const rs2_frame* frame, rs2_error** error);
 int rs2_get_frame_height(const rs2_frame* frame, rs2_error** error);
 
 /**
+* retrieve the scaling factor to use when converting a depth frame's get_data() units to meters
+* \return float - depth, in meters, per 1 unit stored in the frame data
+*/
+float rs2_depth_frame_get_units( const rs2_frame* frame, rs2_error** error );
+
+/**
 * retrieve frame stride in bytes (number of bytes from start of line N to start of line N+1)
 * \param[in] frame      handle returned from a callback
 * \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored

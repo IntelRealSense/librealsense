@@ -71,7 +71,7 @@ int main(int argc, char** argv) try
 
         // Convert RealSense frame to OpenCV matrix:
         auto color_mat = frame_to_mat(color_frame);
-        auto depth_mat = depth_frame_to_meters(pipe, depth_frame);
+        auto depth_mat = depth_frame_to_meters(depth_frame);
 
         Mat inputBlob = blobFromImage(color_mat, inScaleFactor,
                                       Size(inWidth, inHeight), meanVal, false); //Convert Mat to batch of images
