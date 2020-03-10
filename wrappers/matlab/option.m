@@ -63,8 +63,8 @@ classdef option < int64
         led_power                       (60)
         zero_order_enabled              (61)
         enable_map_preservation         (62)
-        FreeFallDetectionEnabled        (63)
-		emitter_always_on               (64)
+        freefall_detection_enabled      (63)
+        emitter_always_on               (64)
         count                           (65)
     end
 end
