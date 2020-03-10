@@ -201,8 +201,6 @@ namespace librealsense
             : bool_option( false )
             , _hwm( hwm )
         {
-            // bool_option initializes with def=true, which is what we want
-//            assert( is_true() );
         }
 
         void autocal_option::set( float value )
@@ -233,14 +231,24 @@ namespace librealsense
             }
         }
 
-        void auto_calibration::set_special_frame( rs2::frameset const& f )
+        void auto_calibration::set_special_frame( rs2::frameset const& fs )
         {
             if( _is_processing )
                 return;
+            auto irf = fs.get_infrared_frame();
+            if( ! irf )
+            {
+                LOG_DEBUG( "Ignoring special frame: no IR frame found!" );
+                return;
+            }
+            auto df = fs.get_depth_frame();
+            if( !df )
+            {
+                LOG_DEBUG( "Ignoring special frame: no depth frame found!" );
+                return;
+            }
 
-
-              _df = f.get_depth_frame();
-              _irf = f.get_infrared_frame();
+            _sf = fs;
 
             if( check_color_depth_sync() )
                 start();
@@ -264,9 +272,9 @@ namespace librealsense
 
         bool auto_calibration::check_color_depth_sync()
         {
-            if( !_df || !_irf)
+            if (!_sf)
                 return false;
-            if( !_cf || !_pcf)
+            if (!_cf)
                 return false;
             return true;
         }
@@ -283,9 +291,11 @@ namespace librealsense
                     LOG_INFO("Auto calibration has started ...");
 
                     // TODO this is where we do the work...
-                    calibration curr_calib = { _df.get_profile().get_extrinsics_to(_cf.get_profile()), _cf.get_profile().as<rs2::video_stream_profile>().get_intrinsics(), _df.get_profile().get()->profile, _cf.get_profile().get()->profile };
-                    calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, _df.get_profile().get()->profile, _cf.get_profile().get()->profile };
-                    if (_auto_cal_algo.optimaize(_df, _irf, _cf, _pcf, curr_calib, &new_calib))
+                    auto df = _sf.get_depth_frame();
+                    auto irf = _sf.get_infrared_frame();
+                    calibration curr_calib = { df.get_profile().get_extrinsics_to(_cf.get_profile()), _cf.get_profile().as<rs2::video_stream_profile>().get_intrinsics(), df.get_profile().get()->profile, _cf.get_profile().get()->profile };
+                    calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, df.get_profile().get()->profile, _cf.get_profile().get()->profile };
+                    if (_auto_cal_algo.optimaize(df, irf, _cf, _pcf, curr_calib, &new_calib))
                     {
                       /*  auto prof = _cf.get_profile().get()->profile;
                         auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
@@ -296,24 +306,23 @@ namespace librealsense
                             cb(new_calib);
                     }
 
-                    _df = rs2::frame{};
-                    _irf = rs2::frame{};
-                    _cf = rs2::frame{};;
-                    _pcf = rs2::frame{};
-
-                    _is_processing = false;
+                    reset();
                     LOG_INFO("Auto calibration has finished ...");
                 }
                 catch (...)
                 {
-                    _df = rs2::frame{};
-                    _irf = rs2::frame{};
-                    _cf = rs2::frame{};;
-                    _pcf = rs2::frame{};
-
-                    _is_processing = false;
+                    reset();
                     LOG_ERROR("Auto calibration has finished ...");
                 }});
+        }
+
+        void auto_calibration::reset()
+        {
+            _sf = rs2::frame{};
+            _cf = rs2::frame{};;
+            _pcf = rs2::frame{};
+
+            _is_processing = false;
         }
 
         autocal_depth_processing_block::autocal_depth_processing_block(
@@ -340,25 +349,24 @@ namespace librealsense
                 if( !is_enabled->is_true() )
                     return f;
 
-            // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
-            if (f.is< rs2::frameset >())
+            auto fs = f.as< rs2::frameset >();
+            if( fs )
             {
-                auto fset = f.as< rs2::frameset>();
-                auto depth = fset.get_depth_frame();
-                if (is_special_frame(depth))
+                auto df = fs.get_depth_frame();
+                if( is_special_frame( df ))
                 {
-                    LOG_INFO("Auto calibration SF received "<< depth.get_profile().stream_type()<<" "<< depth.get_frame_number());
-
-                    _autocal->set_special_frame(f);
+                    LOG_INFO( "Auto calibration SF received" );
+                    _autocal->set_special_frame( f );
                 }
+                // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
                 return rs2::frame{};
             }
 
-            if( !is_special_frame( f.as< rs2::depth_frame >() ) )
-                return f;
-
-            // We don't want the user getting this frame!
-            return rs2::frame{};
+            if( is_special_frame( f.as< rs2::depth_frame >() ) )
+                // We don't want the user getting this frame!
+                return rs2::frame{};
+            
+            return f;
         }
 
         bool autocal_depth_processing_block::should_process( const rs2::frame & frame )

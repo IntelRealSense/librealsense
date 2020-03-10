@@ -10,8 +10,9 @@
 
 namespace librealsense
 {
-    syncer_process_unit::syncer_process_unit(std::shared_ptr<bool_option> is_enabled_opt)
-        : processing_block("syncer"), _matcher((new timestamp_composite_matcher({}))), _is_enabled_opt(is_enabled_opt)
+    syncer_process_unit::syncer_process_unit( std::initializer_list< bool_option::ptr > enable_opts )
+        : processing_block("syncer"), _matcher((new timestamp_composite_matcher({})))
+        , _enable_opts( enable_opts.begin(), enable_opts.end() )
     {
         _matcher->set_callback([this](frame_holder f, syncronization_environment env)
         {
@@ -31,13 +32,25 @@ namespace librealsense
         auto f = [&](frame_holder frame, synthetic_source_interface* source)
         {
             // if the syncer is disabled passthrough the frame
-            if (auto is_enabled = _is_enabled_opt.lock())
+            bool enabled = false;
+            size_t n_opts = 0;
+            for( auto& wopt : _enable_opts )
             {
-                if (!is_enabled->is_true())
+                auto opt = wopt.lock();
+                if( opt )
                 {
-                    get_source().frame_ready(std::move(frame));
-                    return;
+                    ++n_opts;
+                    if( opt->is_true() )
+                    {
+                        enabled = true;
+                        break;
+                    }
                 }
+            }
+            if( n_opts  &&  ! enabled )
+            {
+                get_source().frame_ready( std::move( frame ) );
+                return;
             }
 
             single_consumer_frame_queue<frame_holder> matches;
