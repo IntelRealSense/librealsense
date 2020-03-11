@@ -39,13 +39,11 @@ public:
 #ifdef _WIN32
     __declspec(dllexport)
 #endif
-        static rs2::software_device create_ip_device(const char *ip_address);
+    static rs2::software_device create_ip_device(const char *ip_address);
 
     ip_device(std::string ip_address, rs2::software_device sw_device);
 
     ~ip_device();
-
-    rs2::software_device sw_dev;
 
     ip_sensor *remote_sensors[NUM_OF_SENSORS];
 
@@ -66,7 +64,7 @@ private:
 
     std::thread sw_device_status_check;
 
-    bool init_device_data();
+    bool init_device_data(rs2::software_device sw_device);
 
     void polling_state_loop();
 

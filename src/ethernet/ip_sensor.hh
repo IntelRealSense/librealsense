@@ -16,6 +16,7 @@ private:
     
 public:
 
+    //todo: remove smart ptr here
     std::shared_ptr<rs2::software_sensor> sw_sensor;
 
     std::list<long long int> active_streams_keys;
