@@ -11,6 +11,30 @@ macro(infoValue variableName)
     info("${variableName}=\${${variableName}}")
 endmacro()
 
+macro(configure_msvc_runtime)
+  if(MSVC)
+    # Set compiler options.
+    set(variables
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    )
+    message(STATUS
+      "MSVC -> forcing use of statically-linked runtime."
+    )
+    foreach(variable ${variables})
+      if(${variable} MATCHES "/MD")
+        string(REGEX REPLACE "/MD" "/MT" ${variable} "${${variable}}")
+      endif()
+    endforeach()
+  endif()
+endmacro()
+
 ##################################################################
 # Parse librealsense version and assign it to CMake variables    #
 # This function parses librealsense public API header file, rs.h #
@@ -137,6 +161,7 @@ set(REALSENSE_HPP
 )
 
 if(WIN32)
+    configure_msvc_runtime()
     set(BACKEND RS_USE_WMF_BACKEND)
     set(REALSENSE_DEF CMake/realsense.def)
     # Makes VS15 find the DLL when trying to run examples/tests
