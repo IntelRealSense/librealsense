@@ -228,26 +228,6 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
     std::cout << "stream started for sensor index: " << sensor_index << "  \n";
 }
 
-rs2::software_device ip_device::create_ip_device(const char *ip_address)
-{
-    std::string addr(ip_address);
-
-    // create sw device
-    rs2::software_device sw_dev = rs2::software_device();
-    // create IP instance
-    ip_device *ip_dev = new ip_device(addr, sw_dev);
-    // set client destruction functioun
-    sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
-    // register device info to sw device
-    DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
-    sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + "\n IP Device");
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
-    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
-    // return sw device
-    return sw_dev;
-}
-
 int stream_type_to_sensor_id(rs2_stream type)
 {
     if (type == RS2_STREAM_INFRARED || type == RS2_STREAM_DEPTH)

@@ -39,8 +39,7 @@ public:
 #ifdef _WIN32
     __declspec(dllexport)
 #endif
-    static rs2::software_device create_ip_device(const char *ip_address);
-
+    
     ip_device(std::string ip_address, rs2::software_device sw_device);
 
     ~ip_device();
