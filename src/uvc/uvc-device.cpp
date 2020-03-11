@@ -178,7 +178,7 @@ namespace librealsense
                             {
                                 try{
                                     listen_to_interrupts();
-                                } catch(std::exception exception) {
+                                } catch(const std::exception& exception) {
                                     // this exception catching avoids crash when disconnecting 2 devices at once - bug seen in android os
                                     LOG_WARNING("rs_uvc_device exception in listen_to_interrupts method: " << exception.what());
                                 }
