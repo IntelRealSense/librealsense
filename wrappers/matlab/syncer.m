@@ -35,3 +35,9 @@ classdef syncer < handle
             end
             frames = realsense.frameset(out);
         end
+        function [res, frames] = poll_for_frames(this)
+            res, out = realsense.librealsense_mex('rs2::syncer', 'poll_for_frames', this.objectHandle);
+            frames = realsense.frameset(out);
+        end
+    end
+end
