@@ -2,4 +2,3 @@ LIBRARY
 
 EXPORTS
     rs2_create_legacy_adaptor_device
-    rs2_legacy_adaptor_get_json_format

@@ -18,7 +18,7 @@ rs2_device * rs2_create_legacy_adaptor_device(int idx, rs2_error** error) BEGIN_
     // Create software device such that it doesn't delete the 
     // underlying C pointer so we can pass it upward to the application
     rs2::software_device sd([](rs2_device*) {});
-    auto ao = std::make_shared<legacy_active_obj>(idx, sd);
+    auto ao = std::make_shared<legacy_active_obj>(legacy_ctx, idx, sd);
     ao->finalize_binding(sd);
 
     // extract the raw pointer to rs2_device from the software_device

@@ -416,7 +416,7 @@ int main(int argc, const char** argv) try
 #ifdef RS2_USE_LEGACY_ADAPTOR
             if (ImGui::Selectable("Load Legacy Device", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-                rs2::legacy::legacy_device dev("0");
+                rs2::legacy::legacy_device dev(0);
                 dev.add_to(ctx);
             }
 #endif

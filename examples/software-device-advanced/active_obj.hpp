@@ -39,7 +39,7 @@ private:
     void map_options();
 
 public:
-    legacy_active_obj(rs::context legacy_ctx, int legacy_dev_idx, rs2::software_device dev);
+    legacy_active_obj(rs::context& legacy_ctx, int legacy_dev_idx, rs2::software_device dev);
     ~legacy_active_obj();
 
     // needs to be a separate function so that enable_shared is properly bound
