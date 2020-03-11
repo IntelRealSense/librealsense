@@ -3,6 +3,7 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 include(${_rel_path}/core/CMakeLists.txt)
 include(${_rel_path}/ds5/CMakeLists.txt)
+include(${_rel_path}/fa/CMakeLists.txt)
 include(${_rel_path}/ivcam/CMakeLists.txt)
 include(${_rel_path}/l500/CMakeLists.txt)
 include(${_rel_path}/media/CMakeLists.txt)
