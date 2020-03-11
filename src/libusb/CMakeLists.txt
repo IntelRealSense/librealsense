@@ -20,4 +20,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/request-libusb.cpp"
         
         "${CMAKE_CURRENT_LIST_DIR}/enumerator-libusb.cpp"
+
+        "${CMAKE_CURRENT_LIST_DIR}/device-watcher-libusb.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/device-watcher-libusb.h"
 )

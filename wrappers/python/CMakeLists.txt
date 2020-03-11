@@ -60,6 +60,7 @@ if(UNIX)
         ../../src/libusb/messenger-libusb.cpp
         ../../src/libusb/enumerator-libusb.cpp
         ../../src/libusb/request-libusb.cpp
+        ../../src/libusb/device-watcher-libusb.cpp
     )
 endif()
 

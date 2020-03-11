@@ -63,7 +63,7 @@ namespace librealsense
             {
                 std::string strerr = strerror(errno);
                 LOG_WARNING("bulk_transfer returned error, endpoint: 0x" << std::hex << int(endpoint->get_address()) << std::dec
-                    << ", error: " << strerr << ", err. num: " << int(errno));
+                    << ", error: " << strerr << ", err. num: " << int(errno) << " libusb " << libusb_error_name(sts));
                 return libusb_status_to_rs(sts);
             }
             transferred = actual_length;
