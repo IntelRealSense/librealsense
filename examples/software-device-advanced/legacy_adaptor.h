@@ -8,9 +8,7 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 #include "librealsense2/h/rs_types.h"
 
 extern "C" {
-    rs2_device * rs2_create_legacy_adaptor_device(const char * json, rs2_error** error);
-
-    const char * rs2_legacy_adaptor_get_json_format();
+    rs2_device * rs2_create_legacy_adaptor_device(int idx, rs2_error** error);
 }
 
 #endif

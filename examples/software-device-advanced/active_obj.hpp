@@ -17,7 +17,6 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 class legacy_active_obj : public std::enable_shared_from_this<legacy_active_obj> {
 private:
     std::atomic<bool> alive; // In charge of signaling destruction from rs2::software_device
-    rs::context legacy_ctx; // Legacy device handle lifetime is tied to the context, so we need to store that too
     rs::device * legacy_dev; // Legacy realsense device handle
     std::thread heart; // Thread in charge of polling loop
 
@@ -40,7 +39,7 @@ private:
     void map_options();
 
 public:
-    legacy_active_obj(int legacy_dev_idx, rs2::software_device dev);
+    legacy_active_obj(rs::context legacy_ctx, int legacy_dev_idx, rs2::software_device dev);
     ~legacy_active_obj();
 
     // needs to be a separate function so that enable_shared is properly bound

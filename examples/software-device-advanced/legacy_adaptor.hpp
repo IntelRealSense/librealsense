@@ -10,23 +10,19 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 namespace rs2 {
     namespace legacy {
         class legacy_device : public rs2::software_device {
-            std::shared_ptr<rs2_device> create_device_ptr(std::string json)
+            std::shared_ptr<rs2_device> create_device_ptr(int idx)
             {
                 rs2_error* e = nullptr;
                 std::shared_ptr<rs2_device> dev(
-                    rs2_create_legacy_adaptor_device(json.c_str(), &e),
+                    rs2_create_legacy_adaptor_device(idx, &e),
                     rs2_delete_device);
                 rs2::error::handle(e);
                 return dev;
             }
         public:
-            legacy_device(std::string json)
-                : rs2::software_device(create_device_ptr(json))
+            legacy_device(int idx)
+                : rs2::software_device(create_device_ptr(idx))
             {}
-
-            static std::string get_json_format() {
-                return rs2_legacy_adaptor_get_json_format();
-            }
         };
     }
 }

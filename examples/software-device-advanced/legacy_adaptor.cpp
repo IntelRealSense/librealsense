@@ -8,16 +8,13 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 #include "legacy_adaptor.h"
 #include "active_obj.hpp"
 
-// TODO: actual JSON parsing
-int parse_json(std::string str) {
-    return std::stoi(str);
-}
+// legacy API needs singleton context, this is the best way to accomplish that.
+static rs::context& get_context() { static rs::context ctx; return ctx; }
 
-rs2_device * rs2_create_legacy_adaptor_device(const char * str, rs2_error** error) BEGIN_API_CALL {
-    VALIDATE_NOT_NULL(str);
+rs2_device * rs2_create_legacy_adaptor_device(int idx, rs2_error** error) BEGIN_API_CALL {
+    auto& legacy_ctx = get_context();
+    VALIDATE_RANGE(idx, 0, legacy_ctx.get_device_count());
 
-    int idx = parse_json(std::string(str));
-    
     // Create software device such that it doesn't delete the 
     // underlying C pointer so we can pass it upward to the application
     rs2::software_device sd([](rs2_device*) {});
@@ -26,8 +23,4 @@ rs2_device * rs2_create_legacy_adaptor_device(const char * str, rs2_error** erro
 
     // extract the raw pointer to rs2_device from the software_device
     return sd.get().get();
-} HANDLE_EXCEPTIONS_AND_RETURN(nullptr, str)
-
-const char * rs2_legacy_adaptor_get_json_format() BEGIN_API_CALL {
-    return "int";
-} catch (...) { return nullptr; }
+} HANDLE_EXCEPTIONS_AND_RETURN(nullptr, idx)

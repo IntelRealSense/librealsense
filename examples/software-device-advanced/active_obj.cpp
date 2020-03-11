@@ -126,8 +126,8 @@ void legacy_active_obj::heartbeat() {
     }
 }
 
-legacy_active_obj::legacy_active_obj(int legacy_dev_idx, rs2::software_device dev)
-    try : alive(true), legacy_ctx(), legacy_dev(legacy_ctx.get_device(legacy_dev_idx))
+legacy_active_obj::legacy_active_obj(rs::context& legacy_ctx, int legacy_dev_idx, rs2::software_device dev)
+    try : alive(true), legacy_dev(legacy_ctx.get_device(legacy_dev_idx))
 {
     map_infos(dev);
     map_profiles(dev);
