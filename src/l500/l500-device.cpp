@@ -134,7 +134,7 @@ namespace librealsense
         if( _fw_version >= firmware_version( "1.3.12.9" ) )
         {
             depth_sensor.register_option(
-                RS2_OPTION_HARDWARE_SYNC_ENABLED,
+                RS2_OPTION_INTER_CAM_SYNC_MODE,
                 std::make_shared< hw_sync_option >( *_hw_monitor, freefall_opt )
             );
         }

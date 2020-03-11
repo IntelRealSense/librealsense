@@ -340,7 +340,7 @@ namespace librealsense
             hw_monitor & _hwm;
         };
 
-        /*  For RS2_OPTION_HARDWARE_SYNC_ENABLED
+        /*  For RS2_OPTION_INTER_CAM_SYNC_MODE
             Not an advanced control: always off after camera startup (reset).
             When enabled, the freefall control should turn off.
         */
