@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) try
     rs2::rates_printer printer;
     
     // Get software device from legacy adaptor for use with modern RealSense SDK2.0
-    rs2::software_device dev = rs2_ext::legacy_adaptor("0");
+    rs2::software_device dev = rs2::legacy::legacy_device("0");
 
     // Declare RealSense context to bind the software device to.
     rs2::context ctx;

@@ -143,7 +143,7 @@ void legacy_active_obj::finalize_binding(rs2::software_device dev) try {
 
     heart = std::thread([this]() { heartbeat(); });
 } catch (std::exception &e) {
-    rs2::log(RS2_LOG_SEVERITY_ERROR, "Derp");
+    rs2::log(RS2_LOG_SEVERITY_ERROR, "Failed to register destruction callback to clean up legacy device's active object!");
 }
 
 void legacy_active_obj::map_infos(rs2::software_device dev) {
