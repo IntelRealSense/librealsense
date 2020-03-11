@@ -236,6 +236,9 @@ void legacy_active_obj::map_profiles(rs2::software_device dev) {
                 if (i == 0) profiles[stream] = profile;
                 else {
                     // Register identity extrinsics to first profile on sensor.
+                    // LRS uses tree traversal to provide extrinsics between aribtrary stream profiles,
+                    // so we just need to make sure we provide a spanning tree. These lines make sure all
+                    // stream profiles with the same stream are connected in a star tree.
                     rs2_extrinsics extrin = { {1,0,0, 0,1,0, 0,0,1}, {0,0,0} };
                     profiles[stream].register_extrinsics_to(profile, extrin);
                 }
@@ -252,6 +255,8 @@ void legacy_active_obj::map_profiles(rs2::software_device dev) {
             }
             else if (has_depth) {
                 try {
+                    // Attempts to link all of the stream profiles by connecting a stream profile
+                    // of each stream type together in another star tree. This completes the requisite spanning tree
                     rs::extrinsics legacy_extrin = legacy_dev->get_extrinsics(rs::stream::depth, legacy_stream);
                     rs2_extrinsics extrin;
                     for (int i = 0; i < 9; ++i) extrin.rotation[i] = legacy_extrin.rotation[i];

@@ -8,6 +8,12 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 #include "librealsense2/h/rs_types.h"
 
 extern "C" {
+    /**
+     * Create a librealsense2 software device that wraps a legacy librealsense1 device
+     * \param[in]  idx    which legacy device to create, 0-indexed
+     * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+     * \return            software device object, should be released by rs2_delete_device
+     */
     rs2_device * rs2_create_legacy_adaptor_device(int idx, rs2_error** error);
 }
 

@@ -20,6 +20,10 @@ namespace rs2 {
                 return dev;
             }
         public:
+            /**
+             * Create a librealsense2 software device that wraps a legacy librealsense1 device
+             * \param[in]  idx    which legacy device to create, 0-indexed
+             */
             legacy_device(int idx)
                 : rs2::software_device(create_device_ptr(idx))
             {}
