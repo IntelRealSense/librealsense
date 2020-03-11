@@ -23,7 +23,7 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
                 -DANDROID_ABI=${ANDROID_ABI}
                 -DANDROID_STL=${ANDROID_STL}
                 -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/lrs_install
-                -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+                -DBUILD_SHARED_LIBS=FALSE
                 -DBUILD_EXAMPLES=FALSE
                 -DBUILD_UNIT_TESTS=FALSE
         
@@ -31,7 +31,6 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lrs_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}realsense${CMAKE_STATIC_LIBRARY_SUFFIX}
     )
     set_property(TARGET realsense1 PROPERTY FOLDER "Examples/Software Device")
-
     add_library(rs1 INTERFACE)
     target_include_directories(rs1 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third-party/realsense1/include>)
     target_link_libraries(rs1 INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/lrs_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}realsense${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -48,6 +47,7 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
         legacy_adaptor.hpp
         legacy_adaptor.cpp
         conversions.hpp
+        legacy-adaptor.def
     )
     set_property(TARGET legacy-adaptor PROPERTY CXX_STANDARD 11)
     target_link_libraries(legacy-adaptor PRIVATE ${DEPENDENCIES} rs1)
@@ -55,6 +55,7 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
     set_target_properties(legacy-adaptor PROPERTIES FOLDER "Examples/Software Device")
     if(BUILD_GRAPHICAL_EXAMPLES)
         add_executable(rs-software-device-advanced rs-software-device-advanced.cpp ../example.hpp)
+        include_directories(rs-software-device-advanced ../ ../../third-party/tclap/include)
         set_property(TARGET rs-software-device-advanced PROPERTY CXX_STANDARD 11)
         target_link_libraries(rs-software-device-advanced ${DEPENDENCIES} legacy-adaptor)
         set_target_properties (rs-software-device-advanced PROPERTIES FOLDER "Examples/Software Device")
