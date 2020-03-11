@@ -14,7 +14,7 @@ namespace rs2 {
             {
                 rs2_error* e = nullptr;
                 std::shared_ptr<rs2_device> dev(
-                    rs2_create_legacy_adaptor_device(idx, &e),
+                    rs2_create_legacy_adaptor_device(RS2_API_VERSION, idx, &e),
                     rs2_delete_device);
                 rs2::error::handle(e);
                 return dev;

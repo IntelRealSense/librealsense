@@ -11,7 +11,8 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 // legacy API needs singleton context, this is the best way to accomplish that.
 static rs::context& get_context() { static rs::context ctx; return ctx; }
 
-rs2_device * rs2_create_legacy_adaptor_device(int idx, rs2_error** error) BEGIN_API_CALL {
+rs2_device * rs2_create_legacy_adaptor_device(int runtime_api_version, int idx, rs2_error** error) BEGIN_API_CALL {
+    verify_version_compatibility(runtime_api_version);
     auto& legacy_ctx = get_context();
     VALIDATE_RANGE(idx, 0, legacy_ctx.get_device_count());
 
