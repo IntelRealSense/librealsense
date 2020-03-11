@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include "RsSensor.hh"
+#include <map>
 
 class RsDevice
 {
@@ -10,9 +11,12 @@ public:
 	RsDevice();
 	~RsDevice();
 	std::vector<RsSensor> &getSensors() { return m_sensors; }
+	
+
 private:
 	rs2::device m_device;
 	std::vector<RsSensor> m_sensors;
+	
 };
 
 #endif

@@ -15,12 +15,19 @@
 
 UsageEnvironment *env;
 rs2::device selected_device;
+
+//map contain extrinsics between all streams
+//for each couple stream (define by thier uniqe key) the is rs2_extrinsics
+std::map<std::pair<long long int,long long int>,rs2_extrinsics> extrinsics_map;
+
 RsRTSPServer *rtspServer;
 RsDevice device;
 std::vector<RsSensor> sensors;
 TaskScheduler *scheduler;
 
 void sigint_handler(int sig);
+
+int bobo=2;
 
 int main(int argc, char **argv)
 {
@@ -37,6 +44,9 @@ int main(int argc, char **argv)
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
     exit(1);
   }
+
+  std::vector<rs2::video_stream_profile> supported_stream_profiles;
+  
 
   sensors = device.getSensors();
   int sensorIndex = 0; //TODO::to remove
@@ -72,6 +82,8 @@ int main(int argc, char **argv)
           if ((stream.width() == 1280 && stream.height() == 720) ||(stream.width() == 640 && stream.height() == 480)||(stream.width() == 480 && stream.height() == 270) ||(stream.width() == 424 && stream.height() == 240))
           {
           sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          // streams for extrinsics map creation
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
@@ -80,6 +92,7 @@ int main(int argc, char **argv)
           if ((stream.width() == 640 && stream.height() == 480)||(stream.width() == 480 && stream.height() == 270)||(stream.width() == 424 && stream.height() == 240) )
           {
           sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
@@ -88,12 +101,25 @@ int main(int argc, char **argv)
           if ((stream.width() == 480 && stream.height() == 270)||(stream.width() == 424 && stream.height() == 240))
           {
           sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
       }
       *env<<"Ignoring stream: format: "<<stream.format()<<" width: "<<stream.width()<<" height: "<<stream.height()<<" fps: "<<stream.fps()<<"\n";
     }
+
+    for (auto stream_profile_from : supported_stream_profiles)
+    {
+      
+      for (auto stream_profile_to : supported_stream_profiles)
+      {
+        extrinsics_map[std::make_pair(RsSensor::getStreamProfileKey(stream_profile_from),
+                                            RsSensor::getStreamProfileKey(stream_profile_to))] = stream_profile_from.get_extrinsics_to(stream_profile_to);
+      }
+      
+    }
+    //TODO: serialization of extrinsics
 
     rtspServer->addServerMediaSession(sms);
     char *url = rtspServer->rtspURL(sms);
@@ -105,6 +131,9 @@ int main(int argc, char **argv)
     delete[] url;
     sensorIndex++;
   }
+
+
+
 
   env->taskScheduler().doEventLoop(); // does not return
 

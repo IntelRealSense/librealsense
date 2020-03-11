@@ -59,6 +59,8 @@ private:
 
     std::map<long long int, rs_rtp_callback *> rtp_callbacks;
 
+    //std::map<std::pair>
+
     rs2::software_device sw_dev;
 
     std::thread sw_device_status_check;

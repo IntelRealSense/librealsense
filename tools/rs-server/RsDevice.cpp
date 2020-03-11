@@ -21,7 +21,7 @@ RsDevice::RsDevice()
         {
                 m_device = devices[0]; // Only one device is supported
         }
-
+        
         //get RS sensors
         for (auto &sensor : m_device.query_sensors())
         {

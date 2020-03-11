@@ -84,6 +84,7 @@ std::vector<IpDeviceControlData> ip_device::get_controls(int sensor_id)
 
 bool ip_device::init_device_data()
 {
+    std::vector<rs2::stream_profile> device_streams;
     std::string url, sensor_name = "";
     for (int sensor_id = 0; sensor_id < NUM_OF_SENSORS; sensor_id++)
     {
@@ -120,14 +121,24 @@ bool ip_device::init_device_data()
             // just for readable code
             rs2_video_stream st = streams[stream_index];
 
-            //todo: remove
-            st.intrinsics = st.intrinsics;
-            //nhershko: check why profile with type 0
+
             long long int stream_key = RsRTSPClient::getStreamProfileUniqueKey(st);
-            streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0));
+            auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0);
+            device_streams.push_back(stream_profile);
+            //stream_profile.register_extrinsics_to()
+            streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
             memory_pool = &rs_rtp_stream::get_memory_pool();
         }
         std::cout << "\t@@@ done adding streams for sensor ID: " << sensor_id << std::endl;
+    }
+
+    for (auto stream_profile_from : streams_collection)
+    {
+      for (auto relation : stream_profile_from.second.get()->extrinsics_map)
+      {
+        stream_profile_from.second.get()->get_stream_profile().register_extrinsics_to(
+            streams_collection[relation.first].get()->get_stream_profile(),relation.second);
+      }
     }
 
     //poll sw device streaming state

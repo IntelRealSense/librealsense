@@ -2,11 +2,15 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "RsSimpleRTPSink.h"
+#include "RsDevice.hh"
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <compression/CompressionFactory.h>
+
+extern int bobo;
+extern std::map<std::pair<long long int,long long int>,rs2_extrinsics> extrinsics_map;
 
 RsSimpleRTPSink *
 RsSimpleRTPSink::createNew(UsageEnvironment &t_env, Groupsock *t_RTPgs,
@@ -41,6 +45,50 @@ std::string getSdpLineForField(const char* t_name, const char* t_val)
   return oss.str();
 }
 
+std::string extrinsics_to_string(rs2_extrinsics extrinsics)
+{
+  std::string str;
+  str.append("rotation:");
+  for (float r : extrinsics.rotation)
+  {
+    str.append(std::to_string(r));
+    str.append(",");
+  }
+  str.pop_back();
+  str.append("translation:");
+  for (float r : extrinsics.rotation)
+  {
+    str.append(std::to_string(r));
+    str.append(",");
+  }
+  str.pop_back();
+
+  return str;
+}
+
+std::string get_extrinsics_string_per_stream(rs2::video_stream_profile stream)
+{
+  std::string str;
+
+  str.append("<extrinsics>");
+  
+  for (auto relation : extrinsics_map)
+  {
+    //check at map for this stream relations
+    if (relation.first.first==RsSensor::getStreamProfileKey(stream))
+    {
+      //write the 'to' stream key
+      str.append(std::to_string(relation.first.second));
+      str.append("->");
+      str.append(extrinsics_to_string(relation.second));
+      str.append("\n");
+    }
+  }
+
+  str.append("</extrinsics>");
+  return str;
+}
+
 std::string getSdpLineForVideoStream(rs2::video_stream_profile &t_videoStream, rs2::device &t_device)
 {
   std::string str;
@@ -69,12 +117,15 @@ std::string getSdpLineForVideoStream(rs2::video_stream_profile &t_videoStream, r
     str.append(getSdpLineForField("coeff_"+i, t_videoStream.get_intrinsics().coeffs[i]));
   }
 
+  str.append(getSdpLineForField("extrinsics",get_extrinsics_string_per_stream(t_videoStream).c_str()));
+
   std::string name = t_device.get_info(RS2_CAMERA_INFO_NAME);
   // We don't want to sent spaces over SDP
   // TODO Michal: Decide what character to use for replacing spaces
   std::replace(name.begin(), name.end(), ' ', '^');
   str.append(getSdpLineForField("cam_name", name.c_str()));
 
+  
   return str;
 }
 
@@ -94,7 +145,7 @@ RsSimpleRTPSink ::RsSimpleRTPSink(UsageEnvironment &t_env, Groupsock *t_RTPgs,
 {
   t_env << "RsSimpleVideoRTPSink constructor\n";
   // Then use this 'config' string to construct our "a=fmtp:" SDP line:
-  unsigned fmtpSDPLineMaxSize = 400; // 400 => extended for intrinsics
+  unsigned fmtpSDPLineMaxSize = 4000; // 400 => extended for intrinsics
   m_fFmtpSDPLine = new char[fmtpSDPLineMaxSize];
   std::string sdpStr =  getSdpLineForVideoStream(t_videoStream, t_device);
   sprintf(m_fFmtpSDPLine, "a=fmtp:%d;%s\r\n",
