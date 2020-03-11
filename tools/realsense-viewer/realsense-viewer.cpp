@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "ethernet/ip_device.hh"
 
 #include <librealsense2/rs.hpp>
+#include <librealsense2-net/rs_net.hpp>
 #include "viewer.h"
 #include "os.h"
 #include "ux-window.h"
@@ -37,8 +37,8 @@ using namespace rs400;
 
 void add_remote_device(context& ctx, std::string address) 
 {
-    software_device sw_dev = ip_device::create_ip_device(address.c_str());
-    sw_dev.add_to(ctx);
+    rs2::net_device dev(address);
+    dev.add_to(ctx);
 }
 
 void add_playback_device(context& ctx, device_models_list& device_models, 

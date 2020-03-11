@@ -246,25 +246,27 @@ namespace rs2
     };
 
 
-    class software_device : public device
+        class software_device : public device
     {
-        std::shared_ptr<rs2_device> create_device_ptr()
+        std::shared_ptr<rs2_device> create_device_ptr(std::function<void(rs2_device*)> deleter)
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device> dev(
                 rs2_create_software_device(&e),
-                rs2_delete_device);
+                deleter);
             error::handle(e);
             return dev;
         }
 
     public:
-        software_device()
-            : device(create_device_ptr())
-        {}
+        software_device(std::function<void(rs2_device*)> deleter = &rs2_delete_device)
+            : device(create_device_ptr(deleter))
+        {
+            this->set_destruction_callback([]{});
+        }
 
         software_device(std::string name)
-            : device(create_device_ptr())
+            : device(create_device_ptr(&rs2_delete_device))
         {
             update_info(RS2_CAMERA_INFO_NAME, name);
         }

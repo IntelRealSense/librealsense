@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "ip_device.hh"
+#include "api.h"
+#include <librealsense2-net/rs_net.h>
 
 #include <ipDeviceCommon/Statistic.h>
 #include <list>
@@ -51,11 +53,10 @@ void ip_device::stop_sensor_streams(int sensor_index)
 ip_device::ip_device(std::string ip_address, rs2::software_device sw_device)
 {
     this->ip_address = ip_address;
-    this->sw_dev = sw_device;
     this->is_device_alive = true;
 
     //init device data
-    init_device_data();
+    init_device_data(sw_device);
 }
 
 std::vector<rs2_video_stream> ip_device::query_streams(int sensor_id)
@@ -82,7 +83,7 @@ std::vector<IpDeviceControlData> ip_device::get_controls(int sensor_id)
     return controls;
 }
 
-bool ip_device::init_device_data()
+bool ip_device::init_device_data(rs2::software_device sw_device)
 {
     std::string url, sensor_name = "";
     for (int sensor_id = 0; sensor_id < NUM_OF_SENSORS; sensor_id++)
@@ -96,7 +97,7 @@ bool ip_device::init_device_data()
         remote_sensors[sensor_id]->rtsp_client = RsRTSPClient::getRtspClient(url.c_str(), "ip_device_device");
         ((RsRTSPClient *)remote_sensors[sensor_id]->rtsp_client)->initFunc(&rs_rtp_stream::get_memory_pool());
 
-        rs2::software_sensor tmp_sensor = sw_dev.add_sensor(sensor_name);
+        rs2::software_sensor tmp_sensor = sw_device.add_sensor(sensor_name);
 
         remote_sensors[sensor_id]->sw_sensor = std::make_shared<rs2::software_sensor>(tmp_sensor);
 
@@ -139,30 +140,29 @@ void ip_device::polling_state_loop()
 {
     while (this->is_device_alive)
     {
-        //TODO: consider using sensor id as vector id (indexer)
-        std::vector<rs2::sensor> sensors = this->sw_dev.query_sensors();
         bool enabled;
-        //for eahc sensor check the size of active streams
-        for (size_t i = 0; i < sensors.size(); i++)
+        for(int i=0 ; i < NUM_OF_SENSORS ; i++ )
         {
             //poll start/stop events
-            auto current_active_streams = sensors[i].get_active_streams();
-            if (current_active_streams.size() > 0)
+            auto sw_sensor = remote_sensors[i]->sw_sensor.get();
+            //auto current_active_streams = sw_sensor->get_active_streams();
+            
+            if (sw_sensor->get_active_streams().size() > 0)
                 enabled = true;
             else
                 enabled = false;
 
             if (remote_sensors[i]->is_enabled != enabled)
             {
-                update_sensor_state(i, current_active_streams);
+                update_sensor_state(i, sw_sensor->get_active_streams());
                 remote_sensors[i]->is_enabled = enabled;
             }
-            auto sensor_supported_option = sensors[i].get_supported_options();
+            auto sensor_supported_option = sw_sensor->get_supported_options();
             for (rs2_option opt : sensor_supported_option)
-                if (remote_sensors[i]->sensors_option[opt] != (float)sensors[i].get_option(opt))
+                if (remote_sensors[i]->sensors_option[opt] != (float)sw_sensor->get_option(opt))
                 {
                     //TODO: get from map once to reduce logarithmic complexity
-                    remote_sensors[i]->sensors_option[opt] = (float)sensors[i].get_option(opt);
+                    remote_sensors[i]->sensors_option[opt] = (float)sw_sensor->get_option(opt);
                     std::cout << "option: " << opt << " has changed to:  " << remote_sensors[i]->sensors_option[opt] << std::endl;
                     update_option_value(i, opt, remote_sensors[i]->sensors_option[opt]);
                 }
@@ -228,26 +228,6 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
     std::cout << "stream started for sensor index: " << sensor_index << "  \n";
 }
 
-rs2::software_device ip_device::create_ip_device(const char *ip_address)
-{
-    std::string addr(ip_address);
-
-    // create sw device
-    rs2::software_device sw_dev = rs2::software_device();
-    // create IP instance
-    ip_device *ip_dev = new ip_device(addr, sw_dev);
-    // set client destruction functioun
-    ip_dev->sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
-    // register device info to sw device
-    DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
-    ip_dev->sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + "\n IP Device");
-    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
-    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
-    ip_dev->sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
-    // return sw device
-    return sw_dev;
-}
-
 int stream_type_to_sensor_id(rs2_stream type)
 {
     if (type == RS2_STREAM_INFRARED || type == RS2_STREAM_DEPTH)
@@ -302,3 +282,29 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
     rtp_stream.get()->reset_queue();
     std::cout << "polling data at stream index " << rtp_stream.get()->m_rs_stream.uid << " is done\n";
 }
+
+rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_error** error) BEGIN_API_CALL
+{
+    verify_version_compatibility(api_version);
+    VALIDATE_NOT_NULL(address);
+
+    std::string addr(address);
+
+    // create sw device
+    rs2::software_device sw_dev = rs2::software_device([](rs2_device*) {});
+    // create IP instance
+    ip_device *ip_dev = new ip_device(addr, sw_dev);
+    // set client destruction functioun
+    sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
+    // register device info to sw device
+    DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
+    sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + "\n IP Device");
+    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
+    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
+    sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
+    // return sw device
+    //return sw_dev;
+
+    return sw_dev.get().get();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)
