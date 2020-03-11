@@ -1702,11 +1702,11 @@ namespace rs2
             glPopAttrib();
         }
 
-        static const double x = -M_PI_2;
-        static float _rx[4][4] = {
-            { 1, 0, 0, 0 },
-            { 0, float(cos(x)), float(-sin(x)), 0 },
-            { 0, float(sin(x)), float(cos(x)), 0 },
+        auto x = static_cast<float>(-M_PI / 2);
+        float _rx[4][4] = {
+            { 1 , 0, 0, 0 },
+            { 0, static_cast<float>(cos(x)), static_cast<float>(-sin(x)), 0 },
+            { 0, static_cast<float>(sin(x)), static_cast<float>(cos(x)), 0 },
             { 0, 0, 0, 1 }
         };
         static const double z = M_PI;
