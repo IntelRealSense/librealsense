@@ -11,11 +11,6 @@
 
 namespace rs2
 {
-    //namespace net
-    //{
-        /**
-        * TODO
-        */
         class net_device : public rs2::device
         {
         public:
@@ -48,6 +43,5 @@ namespace rs2
                 return dev;
             }
         };
-    //}
 }
-#endif // LIBREALSENSE_RS2_PROCESSING_GL_HPP
+#endif // LIBREALSENSE_RS2_NET_HPP

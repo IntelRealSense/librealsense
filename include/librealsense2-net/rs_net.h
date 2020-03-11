@@ -2,8 +2,8 @@
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 /** \file rs_net.h
-* \brief
-* TODO
+* \
+* Exposes RealSense network device functionality for C compilers
 */
 
 #ifndef LIBREALSENSE_RS2_NET_H
@@ -16,7 +16,7 @@ extern "C" {
 #include "librealsense2/rs.h"
 
 /**
-TODO
+* create RealSense net device by ip address
 */
 rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_error** error);
 
