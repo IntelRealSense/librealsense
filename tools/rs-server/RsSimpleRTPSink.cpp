@@ -71,7 +71,7 @@ std::string get_extrinsics_string_per_stream(rs2::video_stream_profile stream)
   std::string str;
 
   str.append("<extrinsics>");
-  
+  /*
   for (auto relation : extrinsics_map)
   {
     //check at map for this stream relations
@@ -84,7 +84,7 @@ std::string get_extrinsics_string_per_stream(rs2::video_stream_profile stream)
       str.append("\n");
     }
   }
-
+  */
   str.append("</extrinsics>");
   return str;
 }
