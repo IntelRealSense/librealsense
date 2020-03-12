@@ -4,20 +4,14 @@
 The tool is intended to calibrate the IMU built in D435i cameras
 
 ## Description
-D435i cameras arrive from the factory without IMU calibration. Hence the values may be slightly off.
-In order to improve accuracy, a calibration procedure should be done.
-The rs-imu-calibration tool walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
+D435i cameras arrive from the factory with a calibrated IMU device. However the calibration accuracy can be further imporved by a calibration procedure.
+
+The rs-imu-calibration tool is a code example that walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
 
 ## Limitations
-This tool is provided as a convenience as well as demonstrating the process to calibrate the IMU on the camera. While it achieves good overall results, factors below 
-may affect its performance:
-  a) it requires positioning the camera device in 6 designated orientations and alignment either horizontally or vertically depends on orientation. Better alignment 
-     minimizes error and improves accuracy.
-  b) the tool optimizes all directions as a whole, so while the average acceleration result is close to gravity acceleration (9.8 m/s2), sometimes acceleration in 
-     individual direction may be slightly under or over perfect gravity acceleration.
-
-In case calibration performance from the tool does not meet required accuracy for your use case, please try other more sophisticated tools or algorithm, for example, 
-vicalib (https://github.com/arpg/vicalib), to calibrate the device as an alternative, and results can be written to device following methods demonstrated in the tool.
+While the tool achieves good overall results, it has limitations that may impact accuracy. Please refer to following white paper for further information:
+Intel® RealSense™ Depth Camera D435i IMU Calibration
+https://dev.intelrealsense.com/docs/depth-camera-d435i-imu-calibration
 
 ## Command Line Parameters
 
