@@ -49,6 +49,11 @@ namespace librealsense
             force_hardware_reset();
         }
 
+        void register_update_calic_callback(update_calic_callback cb) override
+        {
+            _update_calic_callbacks.push_back(cb);
+        }
+
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
         double get_device_time_ms() override;
@@ -79,11 +84,12 @@ namespace librealsense
         std::shared_ptr<stream_interface> _confidence_stream;
         
         std::shared_ptr< ivcam2::auto_calibration > _autocal;
-
+        calibration _updated_calib;
         void force_hardware_reset() const;
         bool _is_locked = true;
 
         std::vector<rs2_option> _advanced_options;
+        std::vector<update_calic_callback> _update_calic_callbacks;
     };
 
     class l500_notification_decoder : public notification_decoder

@@ -11,7 +11,8 @@
 #include "option.h"
 #include "environment.h"
 #include "context.h"
-
+#include "../device.h"
+#include "../stream.h"
 #include <iostream>
 
 #ifdef RS2_USE_CUDA
@@ -110,6 +111,42 @@ namespace librealsense
         if (_stream_filter != _prev_stream_filter)
         {
             _prev_stream_filter = _stream_filter;
+
+            if (!_registered_auto_calib_cb)
+            {
+                auto sensor = ((frame_interface*)other.get())->get_sensor();
+
+                if (sensor)
+                {
+                    device_interface* dev = nullptr;
+                    try
+                    {
+                        dev = sensor->get_device().shared_from_this().get();
+
+                        if (dev)
+                        {
+                            auto dev_ = dynamic_cast<device*>(dev);
+                            if (dev_)
+                                dev_->register_update_calic_callback([&](calibration new_calib)
+                            {
+                                if (to_profile(new_calib.to) == to_profile(_other_stream.get_profile().get()->profile) &&
+                                    to_profile(new_calib.from) == to_profile(_depth_stream.get_profile().get()->profile))
+                                {
+                                    _extrinsics = new_calib.extrinsics;
+                                    _other_intrinsics = new_calib.intrinsics;
+                                }
+
+                            });
+                        }
+                        _registered_auto_calib_cb = true;
+
+                    }
+                    catch (const std::bad_weak_ptr&)
+                    {
+                        LOG_WARNING("Device destroyed");
+                    }
+                }
+            }
         }
 
         if (_extrinsics.has_value() && other.get_profile().get() == _other_stream.get_profile().get())

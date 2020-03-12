@@ -3,6 +3,8 @@
 
 #include "l500-private.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "context.h"
+#include "core/video.h"
 
 using namespace std;
 
@@ -231,12 +233,15 @@ namespace librealsense
             }
         }
 
-        void auto_calibration::set_special_frame( rs2::frame const& f )
+        void auto_calibration::set_special_frame( rs2::frameset const& f )
         {
             if( _is_processing )
                 return;
 
-            _sf = f;
+
+              _df = f.get_depth_frame();
+              _irf = f.get_infrared_frame();
+
             if( check_color_depth_sync() )
                 start();
         }
@@ -252,11 +257,16 @@ namespace librealsense
                 start();
         }
 
+        void auto_calibration::register_callback(update_calic_callback cb)
+        {
+            _callbacks.push_back(cb);
+        }
+
         bool auto_calibration::check_color_depth_sync()
         {
-            if( !_sf )
+            if( !_df || !_irf)
                 return false;
-            if( !_cf )
+            if( !_cf || !_pcf)
                 return false;
             return true;
         }
@@ -266,16 +276,44 @@ namespace librealsense
             _is_processing = true;
             if( _worker.joinable() )
                 _worker.join();
-            _worker = std::thread( [&]()
+            _worker = std::thread([&]()
+            {
+                try
                 {
-                    LOG_INFO( "Auto calibration has started ..." );
-                    
+                    LOG_INFO("Auto calibration has started ...");
+
                     // TODO this is where we do the work...
-                    
-                    _sf = rs2::frame{};
+                    calibration curr_calib = { _df.get_profile().get_extrinsics_to(_cf.get_profile()), _cf.get_profile().as<rs2::video_stream_profile>().get_intrinsics(), _df.get_profile().get()->profile, _cf.get_profile().get()->profile };
+                    calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, _df.get_profile().get()->profile, _cf.get_profile().get()->profile };
+                    if (_auto_cal_algo.optimaize(_df, _irf, _cf, _pcf, curr_calib, &new_calib))
+                    {
+                      /*  auto prof = _cf.get_profile().get()->profile;
+                        auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
+                        if (video)
+                            video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
+                        _df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
+                        for (auto cb : _callbacks)
+                            cb(new_calib);
+                    }
+
+                    _df = rs2::frame{};
+                    _irf = rs2::frame{};
+                    _cf = rs2::frame{};;
+                    _pcf = rs2::frame{};
+
                     _is_processing = false;
-                    LOG_INFO( "Auto calibration has finished ..." );
-                } );
+                    LOG_INFO("Auto calibration has finished ...");
+                }
+                catch (...)
+                {
+                    _df = rs2::frame{};
+                    _irf = rs2::frame{};
+                    _cf = rs2::frame{};;
+                    _pcf = rs2::frame{};
+
+                    _is_processing = false;
+                    LOG_ERROR("Auto calibration has finished ...");
+                }});
         }
 
         autocal_depth_processing_block::autocal_depth_processing_block(
@@ -303,14 +341,21 @@ namespace librealsense
                     return f;
 
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
-            if( f.is< rs2::frameset >() )
+            if (f.is< rs2::frameset >())
+            {
+                auto fset = f.as< rs2::frameset>();
+                auto depth = fset.get_depth_frame();
+                if (is_special_frame(depth))
+                {
+                    LOG_INFO("Auto calibration SF received "<< depth.get_profile().stream_type()<<" "<< depth.get_frame_number());
+
+                    _autocal->set_special_frame(f);
+                }
                 return rs2::frame{};
+            }
 
             if( !is_special_frame( f.as< rs2::depth_frame >() ) )
                 return f;
-
-            LOG_INFO( "Auto calibration SF received" );
-            _autocal->set_special_frame( f );
 
             // We don't want the user getting this frame!
             return rs2::frame{};

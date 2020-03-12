@@ -120,6 +120,13 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
         configure_depth_options();
+
+        _autocal->register_callback([&](calibration new_calib)
+        {
+            _updated_calib = new_calib;
+            for (auto&& cb : _update_calic_callbacks)
+                cb(new_calib);
+        });
     }
 
 

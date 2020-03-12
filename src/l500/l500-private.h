@@ -8,6 +8,7 @@
 #include "option.h"
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
+#include "auto-cal-algo.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
 static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
@@ -392,7 +393,8 @@ namespace librealsense
         {
             std::weak_ptr< autocal_option > _enabler_opt;
 
-            rs2::frame _sf;
+            rs2::frame _df;
+            rs2::frame _irf;
             rs2::frame _cf, _pcf;  // Keep the last and previous frame!
 
             std::atomic_bool _is_processing;
@@ -404,12 +406,16 @@ namespace librealsense
 
             std::shared_ptr< autocal_option > get_enabler_opt() const { return _enabler_opt.lock(); }
 
-            void set_special_frame( rs2::frame const& );
+            void set_special_frame(rs2::frameset const& );
             void set_color_frame( rs2::frame const& );
 
+            void register_callback(update_calic_callback cb);
         private:
             bool check_color_depth_sync();
             void start();
+            auto_cal_algo _auto_cal_algo;
+
+            std::vector< update_calic_callback> _callbacks;
         };
 
         /* Depth frame processing for Auto Calibration: detect special frames
