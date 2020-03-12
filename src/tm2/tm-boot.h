@@ -8,12 +8,7 @@
 #include "../types.h"
 
 #ifdef WITH_TRACKING
-    #ifdef __ANDROID__
-        // TODO: Figure out if directory name can be configured in CMake script or passed via compiler reference
-        #include "../wrappers/android/build/common/fw/target.h"
-    #else
-        #include "common/fw/target.h"
-    #endif
+#include "common/fw/target.h"
 #endif
 
 namespace librealsense {
