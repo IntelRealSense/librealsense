@@ -1,8 +1,6 @@
 #pragma once
 #include "librealsense2/rs.hpp"
-#include "librealsense2/rs_
-
-.hpp"
+#include "librealsense2/rs_advanced_mode.hpp"
 #include <type_traits>
 
 // extra checks to help specialization priority resoultion
