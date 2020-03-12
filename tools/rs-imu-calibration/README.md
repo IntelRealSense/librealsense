@@ -4,9 +4,9 @@
 The tool is intended to calibrate the IMU built in D435i cameras
 
 ## Description
-D435i cameras arrive from the factory without IMU calibration. Hence the values may be slightly off.
-In order to improve accuracy, a calibration procedure should be done.
-The rs-imu-calibration tool walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
+D435i cameras arrive from the factory with a calibrated IMU device. However the calibration accuracy can be further imporved by a calibration procedure.
+
+The rs-imu-calibration tool is a code example that walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
 
 ## Command Line Parameters
 
