@@ -26,50 +26,24 @@ include_directories(${PROJECT_NAME}
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
-if(WIN32)
-    add_dependencies(realsense2-compression 
-        lz4
-        libjpeg-turbo
-        zlib
-    )
+add_dependencies(realsense2-compression 
+    lz4
+    libjpeg-turbo
+    zlib
+)
 
-    include_directories(${PROJECT_NAME}
-        ${CMAKE_BINARY_DIR}/zlib/include
-        ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
-        ${CMAKE_BINARY_DIR}/lz4/include
-    )
+include_directories(${PROJECT_NAME}
+    ${CMAKE_BINARY_DIR}/zlib/include
+    ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
+    ${CMAKE_BINARY_DIR}/lz4/include
+)
 
-    target_link_libraries(${PROJECT_NAME}
-        PRIVATE ${DEPENDENCIES}
-        ${CMAKE_BINARY_DIR}/zlib/lib/zlibstaticd.lib
-        ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/jpeg-static.lib
-        ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
-    )
-else()
-    find_package(PkgConfig)
-    find_package(ZLIB REQUIRED)
-    find_package(JPEG REQUIRED)
-
-    pkg_check_modules(LZ4_PKGCONF liblz4)
-
-    find_path(LZ4_INCLUDE_DIRS
-        NAMES lz4frame.h
-        PATHS ${LZ4_PKGCONF_INCLUDE_DIRS}
-    )
-
-    find_library(LZ4_LIBRARIES
-        NAMES lz4
-        PATHS ${LZ4_PKGCONF_LIBRARY_DIRS}
-    )
-
-    target_link_libraries(${PROJECT_NAME}
-         PRIVATE ${DEPENDENCIES}
-#        realsense2
-         ${ZLIB_LIBRARIES}
-         ${JPEG_LIBRARIES}
-         ${LZ4_LIBRARIES}
-    )
-endif()
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE ${DEPENDENCIES}
+    ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
+    ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
+    ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
+)
 
 if(BUILD_IPDEV_STATS)
     add_definitions(-DSTATISTICS)
