@@ -21,11 +21,16 @@ void legacy_active_obj::on_frame(rs::frame f) {
 
         // Copy data from legacy buffer to heap so we can use it with modern API.
         int frame_size = f.get_stride() * f.get_height();
-        auto buf = new uint8_t[frame_size];
+        try {
+            auto buf = new uint8_t[frame_size];
 
-        sensor.on_video_frame({ std::memcpy(buf, f.get_data(), frame_size), [](void* ptr) { delete[] reinterpret_cast<uint8_t*>(ptr); },
-            f.get_stride(), f.get_bpp()/8, f.get_timestamp(), // Legacy API returns bits/pixel, Modern API wants bytes/pixel
-            RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, int(f.get_frame_number()), vp.get() });
+            sensor.on_video_frame({ std::memcpy(buf, f.get_data(), frame_size), [](void* ptr) { delete[] reinterpret_cast<uint8_t*>(ptr); },
+                f.get_stride(), f.get_bpp() / 8, f.get_timestamp(), // Legacy API returns bits/pixel, Modern API wants bytes/pixel
+                RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, int(f.get_frame_number()), vp.get() });
+        } catch (...) {
+            rs2_software_notification notif{ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS_LOG_SEVERITY_ERROR, "Failed to allocate buffer for incoming frame", ""};
+            sensor.on_notification(notif);
+        }
     }
 }
 
@@ -87,25 +92,41 @@ void legacy_active_obj::heartbeat() {
                         if (opt == RS2_OPTION_DEPTH_UNITS) new_val *= 1e6; // Legacy API uses micrometers, Modern API uses meters.
                         legacy_dev->set_option(kvp.first, new_val);
 
-                        // Setting these options causes the auto control to change.
-                        if (kvp.first == rs::option::color_exposure) {
-                            cur_options[rs::option::color_enable_auto_exposure] = 0;
-                            sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                        // Changing certain options has secondary side effects, we take care of that here
+                        switch (kvp.first) {
+                        case rs::option::color_exposure:
+                            if (cur_options[rs::option::color_enable_auto_exposure] != 0) {
+                                cur_options[rs::option::color_enable_auto_exposure] = 0;
+                                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                            }
+                            break;
+                        case rs::option::color_white_balance:
+                            if (cur_options[rs::option::color_enable_auto_white_balance] != 0) {
+                                cur_options[rs::option::color_enable_auto_white_balance] = 0;
+                                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                            }
+                            break;
+                        case rs::option::r200_lr_exposure:
+                            if (cur_options[rs::option::r200_lr_auto_exposure_enabled] != 0) {
+                                cur_options[rs::option::r200_lr_auto_exposure_enabled] = 0;
+                                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                            }
+                            break;
+                        case rs::option::fisheye_exposure:
+                            if (cur_options[rs::option::fisheye_color_auto_exposure] != 0) {
+                                cur_options[rs::option::fisheye_color_auto_exposure] = 0;
+                                sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
+                            }
+                            break;
+                        default: /* nop */; // Most options have no secondary effects.
                         }
-                        else if (kvp.first == rs::option::color_white_balance) {
-                            cur_options[rs::option::color_enable_auto_white_balance] = 0;
-                            sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-                        }
-                        else if (kvp.first == rs::option::r200_lr_exposure) {
-                            cur_options[rs::option::r200_lr_auto_exposure_enabled] = 0;
-                            sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-                        }
-                        else if (kvp.first == rs::option::fisheye_exposure) {
-                            cur_options[rs::option::fisheye_color_auto_exposure] = 0;
-                            sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0);
-                        }
+                    } else {
+                        // If user didn't request a new value, update from legacy device
+                        kvp.second = legacy_dev->get_option(kvp.first);
+                        sensor.set_option(opt, kvp.second);
                     }
                 }
+                // Update read-only options from legacy device
                 else sensor.set_read_only_option(opt, legacy_dev->get_option(kvp.first));
             }
 
