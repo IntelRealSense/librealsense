@@ -25,7 +25,7 @@ if [ "$install" = true ]; then
     echo "Setting-up permissions for RealSense devices"
     if [ "$auto_power_off" = true ]; then
         echo "Setting-up RealSense Device auto power off."
-        sudo apt install -q=3 at
+        sudo apt install -q=3 at || echo "Failed to install package 'at'. Remove flag --auto_power_off and run again." && exit 1
     fi
 else
     echo "Remove permissions for RealSense devices"
