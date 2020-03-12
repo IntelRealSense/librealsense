@@ -9,8 +9,7 @@
 #include <algorithm>
 #include <compression/CompressionFactory.h>
 
-extern int bobo;
-extern std::map<std::pair<long long int,long long int>,rs2_extrinsics> extrinsics_map;
+extern std::map<std::pair<int,int>,rs2_extrinsics> minimal_extrinsics_map;
 
 RsSimpleRTPSink *
 RsSimpleRTPSink::createNew(UsageEnvironment &t_env, Groupsock *t_RTPgs,
@@ -56,7 +55,7 @@ std::string extrinsics_to_string(rs2_extrinsics extrinsics)
   }
   str.pop_back();
   str.append("translation:");
-  for (float r : extrinsics.rotation)
+  for (float r : extrinsics.translation)
   {
     str.append(std::to_string(r));
     str.append(",");
@@ -70,22 +69,20 @@ std::string get_extrinsics_string_per_stream(rs2::video_stream_profile stream)
 {
   std::string str;
 
-  str.append("<extrinsics>");
-  /*
-  for (auto relation : extrinsics_map)
+  for (auto relation : minimal_extrinsics_map)
   {
     //check at map for this stream relations
-    if (relation.first.first==RsSensor::getStreamProfileKey(stream))
+    if (relation.first.first==(stream.stream_type()+stream.stream_index()))
     {
+      str.append("<to_sensor_");
       //write the 'to' stream key
       str.append(std::to_string(relation.first.second));
-      str.append("->");
+      str.append(">");
       str.append(extrinsics_to_string(relation.second));
-      str.append("\n");
+      str.append("&");
     }
   }
-  */
-  str.append("</extrinsics>");
+  
   return str;
 }
 

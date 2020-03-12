@@ -9,6 +9,8 @@
 #include <chrono>
 #include <thread>
 
+extern std::map<std::pair<int,int>,rs2_extrinsics> minimal_extrinsics_map;
+
 std::string sensors_str[] = {"depth", "color"};
 
 //WA for stop
@@ -132,13 +134,16 @@ bool ip_device::init_device_data()
         std::cout << "\t@@@ done adding streams for sensor ID: " << sensor_id << std::endl;
     }
 
-    for (auto stream_profile_from : streams_collection)
+    for (auto stream_profile_from : device_streams)
     {
-      for (auto relation : stream_profile_from.second.get()->extrinsics_map)
-      {
-        stream_profile_from.second.get()->get_stream_profile().register_extrinsics_to(
-            streams_collection[relation.first].get()->get_stream_profile(),relation.second);
-      }
+        for (auto stream_profile_to : device_streams)
+        {
+            int from_key = stream_profile_from.stream_type()+stream_profile_from.stream_index();
+            int to_key = stream_profile_from.stream_type()+stream_profile_from.stream_index();
+            rs2_extrinsics extrinisics = minimal_extrinsics_map[std::make_pair(from_key,to_key)];
+            
+            stream_profile_from.register_extrinsics_to(stream_profile_to,extrinisics);
+        }
     }
 
     //poll sw device streaming state
