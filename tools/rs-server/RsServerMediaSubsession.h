@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <liveMedia.hh>
+#include "RsDevice.hh"
 
 #ifndef _RS_SERVER_MEDIA_SUBSESSION_HH
 #define _RS_SERVER_MEDIA_SUBSESSION_HH
@@ -15,12 +16,12 @@
 class RsServerMediaSubsession : public OnDemandServerMediaSubsession
 {
 public:
-   static RsServerMediaSubsession *createNew(UsageEnvironment &t_env, rs2::video_stream_profile &t_video_stream_profile);
+   static RsServerMediaSubsession *createNew(UsageEnvironment &t_env, rs2::video_stream_profile &t_videoStreamProfile, std::shared_ptr<RsDevice> rsDevice);
    rs2::frame_queue &getFrameQueue();
    rs2::video_stream_profile getStreamProfile();
 
 protected:
-   RsServerMediaSubsession(UsageEnvironment &t_env, rs2::video_stream_profile &t_video_stream_profile); 
+   RsServerMediaSubsession(UsageEnvironment &t_env, rs2::video_stream_profile &t_video_stream_profile, std::shared_ptr<RsDevice> device); 
    virtual ~RsServerMediaSubsession();
    virtual FramedSource *createNewStreamSource(unsigned t_clientSessionId,
                                                unsigned &t_estBitrate);
@@ -31,6 +32,7 @@ protected:
 private:
    rs2::video_stream_profile m_videoStreamProfile;
    rs2::frame_queue m_frameQueue;
+   std::shared_ptr<RsDevice> m_rsDevice;
    int m_pixelSize;
 };
 #endif //_RS_SERVER_MEDIA_SUBSESSION_HH

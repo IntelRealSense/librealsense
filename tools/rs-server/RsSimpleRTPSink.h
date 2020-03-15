@@ -17,7 +17,7 @@ public:
                                                                           char const *sdpMediaTypeString,
                                                                           char const *rtpPayloadFormatName,
                                                                           rs2::video_stream_profile &video_stream,
-                                                                          rs2::device &device,
+                                                                          std::shared_ptr<RsDevice> device,
                                                                           unsigned numChannels = 1,
                                                                           Boolean allowMultipleFramesPerPacket = True,
                                                                           Boolean doNormalMBitRule = True);
@@ -29,7 +29,7 @@ protected:
                                         char const *sdpMediaTypeString,
                                         char const *rtpPayloadFormatName,
                                         rs2::video_stream_profile &video_stream,
-                                        rs2::device &device,
+                                        std::shared_ptr<RsDevice> device,
                                         unsigned numChannels = 1,
                                         Boolean allowMultipleFramesPerPacket = True,
                                         Boolean doNormalMBitRule = True);
