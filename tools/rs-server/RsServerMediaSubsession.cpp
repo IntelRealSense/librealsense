@@ -46,5 +46,5 @@ RTPSink *RsServerMediaSubsession ::createNewRTPSink(Groupsock *t_rtpGroupsock,
                                                     FramedSource * /*t_inputSource*/)
 {
   rs2::device device = ((RsServerMediaSession*)this->fParentSession)->getRsSensor().getDevice();
-  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, t_rtpPayloadTypeIfDynamic, 90000, "X" , "Y" , m_videoStreamProfile, device); //TODO: to rename X and Y
+  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96+m_videoStreamProfile.unique_id(), 90000, "X" , "Y" , m_videoStreamProfile, device); //TODO: to rename X and Y
 }
