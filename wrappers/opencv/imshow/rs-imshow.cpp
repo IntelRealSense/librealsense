@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
-
+#include <librealsense2/hpp/rs_internal.hpp>
 #include <iostream>
 //C:\Users\aangerma\source\repos\rgb2depth\rgb2depth\opencv - master\modules\gapi\include\opencv2\gapi\own
 #include <opencv2/core/core.hpp>
@@ -15,6 +15,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <map>
 #include <algorithm>
+#include <librealsense2/rsutil.h>
 
 float gamma = 0.98;
 float alpha = 0.333333333333333;
@@ -33,10 +34,10 @@ auto grad_z_min = 25.f; // Ignore pixels with Z grad of less than this
 auto grad_z_max = 1000.f;
 auto max_optimization_iters = 50;
 
-std::string z_file = "LongRange/13/Z_GrayScale_1024x768_0001.raw";//"LongRange/13/Z_GrayScale_1024x768_00.01.21.3573_F9440687_0001.raw";
-std::string i_file = "LongRange/13/I_GrayScale_1024x768_0001.raw";//"LongRange/13/I_GrayScale_1024x768_00.01.21.3573_F9440687_0000.raw";
-std::string yuy2_file = "LongRange/13/YUY2_YUY2_1920x1080_0000.raw";
-std::string yuy2_prev_file = "LongRange/13/YUY2_YUY2_1920x1080_0001.raw";
+std::string z_file = "LongRange/15/Z_GrayScale_1024x768_0001.raw";//"LongRange/13/Z_GrayScale_1024x768_00.01.21.3573_F9440687_0001.raw";
+std::string i_file = "LongRange/15/I_GrayScale_1024x768_0001.raw";//"LongRange/13/I_GrayScale_1024x768_00.01.21.3573_F9440687_0000.raw";
+std::string yuy2_file = "LongRange/15/YUY2_YUY2_1920x1080_0000.raw";
+std::string yuy2_prev_file = "LongRange/15/YUY2_YUY2_1920x1080_0001.raw";
 
 //std::string z_file = "F9440842_scene1/ZIRGB/Z_GrayScale_640x480_00.03.23.3354_F9440842_0000.bin";
 //std::string i_file = "F9440842_scene1/ZIRGB/I_GrayScale_640x480_00.03.23.3354_F9440842_0000.bin";
@@ -88,16 +89,23 @@ std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
                                                          {deg_90, {0, 1}},
                                                          {deg_135, {-1, 1}} };
 
+enum convolution_operation
+{
+    convolution_dot_product,
+    convolution_max_element
+};
 template<class T>
-int dot_product(std::vector<T> sub_image, std::vector<int8_t> mask)
+float dot_product(std::vector<T> sub_image, std::vector<float> mask, bool divide = false)
 {
     //check that sizes are equal
-    int res = 0;
+    float res = 0;
 
     for (auto i = 0; i < sub_image.size(); i++)
     {
         res += sub_image[i] * mask[i];
     }
+    if (divide)
+        res /= mask.size();
     return res;
 }
 
@@ -113,7 +121,7 @@ std::vector<float> calc_intensity(std::vector<float> image1, std::vector<float> 
 }
 
 template<class T>
-std::vector<float> convolution(std::vector<T> image, std::vector<int8_t> mask, uint image_widht, uint image_height, uint mask_widht, uint mask_height)
+std::vector<float> convolution(std::vector<T> image, std::vector<float> mask, uint image_widht, uint image_height, uint mask_widht, uint mask_height, convolution_operation op = convolution_dot_product, bool divide = false)
 {
     std::vector<float> res(image.size(), 0);
 
@@ -134,7 +142,18 @@ std::vector<float> convolution(std::vector<T> image, std::vector<int8_t> mask, u
                 }
             }
 
-            auto res1 = (float)(dot_product(sub_image, mask));
+            float res1 = 0;
+            if (op == convolution_dot_product)
+            {
+                res1 = dot_product(sub_image, mask);
+                if (divide)
+                    res1 /= mask.size();
+            }
+            else if (op == convolution_max_element)
+            {
+                auto max = *std::max_element(sub_image.begin(), sub_image.end());
+                res1 = (float)max;
+            }
             auto mid = (i + mask_height / 2) * image_widht + j + mask_widht / 2;
             res[mid] = res1;
         }
@@ -145,17 +164,18 @@ std::vector<float> convolution(std::vector<T> image, std::vector<int8_t> mask, u
 template<class T>
 std::vector<float> calc_vertical_gradient(std::vector<T> image, uint image_widht, uint image_height)
 {
-    std::vector<int8_t> vertical_gradients = { -1, 0, 1,
+    std::vector<float> vertical_gradients = { -1, 0, 1,
                                                -2, 0, 2,
                                                -1, 0, 1 };
 
     return convolution(image, vertical_gradients, image_widht, image_height, 3, 3);
 }
 
+
 template<class T>
 std::vector<float> calc_horizontal_gradient(std::vector<T> image, uint image_widht, uint image_height)
 {
-    std::vector<int8_t> horizontal_gradients = { -1, -2, -1,
+    std::vector<float> horizontal_gradients = { -1, -2, -1,
                                                   0,  0,  0,
                                                   1,  2,  1 };
 
@@ -313,7 +333,7 @@ std::vector< float> get_direction_deg(std::vector<float> gradient_x, std::vector
         angle = angle < 0 ? 180 + angle : angle;
         auto dir = fmod(angle, 180);
 
-        
+
         res[i] = dir;
     }
     return res;
@@ -361,29 +381,32 @@ void zero_invalid_edges(z_frame_data& z_data, ir_frame_data ir_data)
     }
 }
 
-std::vector< float> supressed_edges(std::vector< float> edges, std::vector<direction> directions, uint32_t width, uint32_t height)
+std::vector< float> supressed_edges(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
 {
-    std::vector< float> res(edges.begin(), edges.end());
+    std::vector< float> res(z_data.edges.begin(), z_data.edges.end());
     for (auto i = 0;i < height;i++)
     {
         for (auto j = 0;j < width;j++)
         {
             auto idx = i * width + j;
 
-            auto edge = edges[idx];
+            auto edge = z_data.edges[idx];
 
             if (edge == 0)  continue;
 
-            auto edge_prev_idx = get_prev_index(directions[idx], i, j, width, height);
+            auto edge_prev_idx = get_prev_index(z_data.directions[idx], i, j, width, height);
 
-            auto edge_next_idx = get_next_index(directions[idx], i, j, width, height);
+            auto edge_next_idx = get_next_index(z_data.directions[idx], i, j, width, height);
 
-            auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.second;
+            auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.first;
 
-            auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.second;
+            auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
 
+            auto z_edge_plus = z_data.edges[edge_plus_idx];
+            auto z_edge = z_data.edges[idx];
+            auto z_edge_ninus = z_data.edges[edge_minus_idx];
 
-            if (edges[edge_minus_idx] > edge || edges[edge_plus_idx] > edge)
+            if (z_edge_ninus > z_edge || z_edge_plus > z_edge || ir_data.ir_edges[idx] <= grad_ir_threshold || z_data.edges[idx] <= grad_z_threshold)
             {
                 res[idx] = 0;
             }
@@ -392,9 +415,9 @@ std::vector< float> supressed_edges(std::vector< float> edges, std::vector<direc
     return res;
 }
 
-std::vector<uint16_t > get_closest_edges(z_frame_data& z_data, uint32_t width, uint32_t height)
+std::vector<uint16_t > get_closest_edges(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
 {
-    std::vector< uint16_t> z_closest(z_data.frame.begin(), z_data.frame.end());
+    std::vector< uint16_t> z_closest;
 
     for (auto i = 0;i < height;i++)
     {
@@ -414,16 +437,26 @@ std::vector<uint16_t > get_closest_edges(z_frame_data& z_data, uint32_t width, u
 
             auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
 
-            z_closest[idx] = std::min(z_data.frame[edge_minus_idx], z_data.frame[edge_plus_idx]);
+            auto z_edge_plus = z_data.edges[edge_plus_idx];
+            auto z_edge = z_data.edges[idx];
+            auto z_edge_ninus = z_data.edges[edge_minus_idx];
+
+            if (z_edge >= z_edge_ninus && z_edge >= z_edge_plus)
+            {
+                if (ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold)
+                {
+                    z_closest.push_back(std::min(z_data.frame[edge_minus_idx], z_data.frame[edge_plus_idx]));
+                }
+            }
         }
     }
     return z_closest;
 }
 
-std::pair<std::vector< float>, std::vector< float>> calc_subpixels(std::vector<float> edges, std::vector< direction> directions, uint32_t width, uint32_t height)
+std::pair<std::vector< float>, std::vector< float>> calc_subpixels(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
 {
-    std::vector< float> subpixels_x(edges.size());
-    std::vector< float> subpixels_y(edges.size());
+    std::vector< float> subpixels_x;
+    std::vector< float> subpixels_y;
 
     for (auto i = 0;i < height;i++)
     {
@@ -431,37 +464,41 @@ std::pair<std::vector< float>, std::vector< float>> calc_subpixels(std::vector<f
         {
             auto idx = i * width + j;
 
-            auto edge = edges[idx];
+            auto edge = z_data.edges[idx];
 
             if (edge == 0)  continue;
 
-            auto edge_prev_idx = get_prev_index(directions[idx], i, j, width, height);
+            auto edge_prev_idx = get_prev_index(z_data.directions[idx], i, j, width, height);
 
-            auto edge_next_idx = get_next_index(directions[idx], i, j, width, height);
+            auto edge_next_idx = get_next_index(z_data.directions[idx], i, j, width, height);
 
             auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.first;
 
             auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
 
-            auto z_edge_plus = edges[edge_plus_idx];
-            auto z_edge = edges[idx];
-            auto z_edge_ninus = edges[edge_minus_idx];
+            auto z_edge_plus = z_data.edges[edge_plus_idx];
+            auto z_edge = z_data.edges[idx];
+            auto z_edge_ninus = z_data.edges[edge_minus_idx];
 
-            
+
             //subpixels_x[idx] = fraq_step;
-            auto dir = directions[idx];
+            auto dir = z_data.directions[idx];
             if (z_edge >= z_edge_ninus && z_edge >= z_edge_plus)
             {
-                auto fraq_step = float((-0.5f*float(z_edge_plus - z_edge_ninus)) / float(z_edge_plus + z_edge_ninus - 2 * z_edge));
-                subpixels_y[idx] = i + 1 + fraq_step * (float)dir_map[dir].second;
-                auto x = j + 1 + fraq_step * (float)dir_map[dir].first;
-                subpixels_x[idx] = j + 1 + fraq_step * (float)dir_map[dir].first;
+                if (ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold)
+                {
+                    auto fraq_step = float((-0.5f*float(z_edge_plus - z_edge_ninus)) / float(z_edge_plus + z_edge_ninus - 2 * z_edge));
+                    z_data.subpixels_y.push_back(i + 1 + fraq_step * (float)dir_map[dir].second - 1);
+                    z_data.subpixels_x.push_back(j + 1 + fraq_step * (float)dir_map[dir].first - 1);
+
+                }
             }
-           
+
         }
     }
     return { subpixels_x, subpixels_y };
 }
+
 
 
 yuy2_frame_data get_yuy2_data(uint32_t width, uint32_t height)
@@ -519,60 +556,142 @@ z_frame_data get_z_data(const ir_frame_data& ir_data, uint32_t width, uint32_t h
     res.direction_deg = get_direction_deg(res.gradient_x, res.gradient_y);
     cv::Mat z_directions_mat(height, width, CV_32S, res.directions.data());
 
-    auto subpixels = calc_subpixels(res.edges, res.directions, width, height);
+    res.supressed_edges = supressed_edges(res, ir_data, width, height);
 
-    res.subpixels_x = subpixels.first;
-    res.subpixels_y = subpixels.second;
-    res.supressed_edges  = supressed_edges(res.edges, res.directions,  width, height);
+    auto subpixels = calc_subpixels(res, ir_data, width, height);
 
-    res.closest = get_closest_edges(res, width, height);
-    zero_invalid_edges(res, ir_data);
+    /*res.subpixels_x = subpixels.first;
+    res.subpixels_y = subpixels.second;*/
+
+    res.closest = get_closest_edges(res, ir_data, width, height);
+    //zero_invalid_edges(res, ir_data);
 
     return res;
 }
 std::vector<uint8_t> get_logic_edges(std::vector<float> edges)
 {
     std::vector<uint8_t> logic_edges(edges.size(), 0);
+    cv::Mat edges_mat(height_yuy2, width_yuy2, CV_8U, edges.data());
     auto max = std::max_element(edges.begin(), edges.end());
     auto thresh = *max*edge_thresh4_logic_lum;
 
     for (auto i = 0;i < edges.size(); i++)
     {
-        logic_edges[i] = abs(edges[i]) > thresh ? 1 : 0;
+        if (abs(edges[i]) > thresh)
+        {
+            logic_edges[i] = 1;
+        }
+        //logic_edges[i] = abs(edges[i]) > thresh ? 1 : 0;
     }
+    cv::Mat ir_edges_mat(height_yuy2, width_yuy2, CV_8U, logic_edges.data());
     return logic_edges;
 }
 
+//TODO:handle the edges
+std::vector<float> imdilate(std::vector<uint8_t> edges)
+{
+    std::vector<float> vertical_gradients = { 1, 1, 1,
+                                                1, 1, 1,
+                                                1, 1, 1 };
+
+    return convolution(edges, vertical_gradients, width_yuy2, height_yuy2, 3, 3, convolution_max_element, true);
+}
+
+template<class T>
+std::vector<T> subtruct_images(std::vector<T> image1, std::vector<T> image2)
+{
+    std::vector<T> res(image1.size());
+    for (auto i = 0;i < image1.size();i++)
+    {
+        res[i] = image1[i] - image2[i];
+    }
+
+    return res;
+
+}
 bool is_movement_in_images(const yuy2_frame_data& yuy)
 {
-    auto logic_edges = get_logic_edges(yuy.edges);
+    auto prev_frame_edges = calc_gradients(yuy.yuy2_prev_frame, width_yuy2, height_yuy2);
+    cv::Mat prev_frame_edges_mat(height_yuy2, width_yuy2, CV_32F, prev_frame_edges.data());
+
+    auto logic_edges = get_logic_edges(prev_frame_edges);
     cv::Mat data_z_mat(height_yuy2, width_yuy2, CV_8U, logic_edges.data());
+
+    auto dilate = imdilate(logic_edges);
+    cv::Mat dilate_mat(height_yuy2, width_yuy2, CV_32F, dilate.data());
+
+    auto diff_img = subtruct_images(yuy.yuy2_prev_frame, yuy.yuy2_frame);
+
+    std::vector<float> gauss = { 0.00296901674395050,0.0133062098910137,0.0219382312797146,0.0133062098910137,0.00296901674395050,
+        0.0133062098910137,0.0596342954361801,0.0983203313488458,0.0596342954361801,0.0133062098910137,
+        0.0219382312797146,0.0983203313488458,0.162102821637127,0.0983203313488458,0.0219382312797146,
+        0.0133062098910137,0.0596342954361801,0.0983203313488458,0.0596342954361801,0.0133062098910137,
+        0.00296901674395050,0.0133062098910137,0.0219382312797146,0.0133062098910137,0.00296901674395050 };
+
+
+
+    auto res = convolution(diff_img, gauss, width_yuy2, height_yuy2, 5, 5, convolution_dot_product, true);
+    cv::Mat res_mat(height_yuy2, width_yuy2, CV_32F, res.data());
+
     return true;
 }
 
 bool is_scene_valid(yuy2_frame_data yuy)
 {
-    return true;
+    return !is_movement_in_images(yuy);
 }
 
-std::vector<float> calculate_weights(std::vector<float> edges)
+std::vector<float> calculate_weights(z_frame_data z_data)
 {
-    std::vector<float> res/*(edges.begin(), edges.end())*/;
-    for (auto i = 0;i < edges.size();i++)
+    std::vector<float> res;
+    for (auto i = 0;i < z_data.supressed_edges.size();i++)
     {
-        if(edges[i]>0)
-            res.push_back( std::min(std::max(edges[i], grad_z_min), grad_z_max));
+        if (z_data.supressed_edges[i])
+            res.push_back(std::min(std::max(z_data.supressed_edges[i] - grad_z_min, 0.f), grad_z_max - grad_z_min));
     }
-    
+
     return res;
+}
+
+std::vector<rs2_vertex> get_points(std::vector<rs2_vertex> points, rs2_intrinsics intrinsics, float depth_units)
+{
+    std::vector<rs2_vertex> vertices(points.size());
+
+    float* point = &points[0].xyz[0];
+    for (auto i = 0;i < points.size();i++)
+    {
+        const float pixel[] = { points[i].xyz[0],points[i].xyz[1] };
+
+        rs2_deproject_pixel_to_point(point, &intrinsics, pixel, points[i].xyz[2] * depth_units);
+        point += 3;
+    }
+    return points;
+}
+
+std::vector<rs2_vertex> get_points(std::vector<float> x, std::vector<float> y, std::vector<uint16_t> z, rs2_intrinsics intrinsics, float depth_units)
+{
+    std::vector<rs2_vertex> points(x.size());
+
+    float* point = &points[0].xyz[0];
+    for (auto i = 0;i < x.size();i++)
+    {
+        const float pixel[] = { x[i], y[i] };
+        point[0] = x[i];
+        point[1] = y[i];
+        point[2] = z[i];
+        //rs2_deproject_pixel_to_point(point, &intrinsics, pixel, z[i]*depth_units);
+        point += 3;
+    }
+    return points;
 }
 
 int main()
 {
-    std::string res_file("LongRange/13/binFiles/Z_edgeSubPixel_768x1024_single_01.bin");
+    std::string res_file("LongRange/15/binFiles/weights_1977x1_single_00.bin");
     auto res = get_image<float>(res_file, width_z, height_z);
 
-   // auto yuy2_data = get_yuy2_data(width_yuy2, height_yuy2);
+    auto yuy2_data = get_yuy2_data(width_yuy2, height_yuy2);
+    auto scene_valid = is_scene_valid(yuy2_data);
 
     auto ir_data = get_ir_data(width_z, height_z);
     cv::Mat ir_edges_mat(height_z, width_z, CV_32F, ir_data.ir_edges.data());
@@ -581,26 +700,49 @@ int main()
     auto z_data = get_z_data(ir_data, width_z, height_z);
     cv::Mat z_edges_mat(height_z, width_z, CV_32F, z_data.edges.data());
 
-    z_data.weights = calculate_weights(z_data.supressed_edges);
+    z_data.weights = calculate_weights(z_data);
     cv::Mat supressed_edges_mat(height_z, width_z, CV_32F, z_data.subpixels_x.data());
 
+    rs2_intrinsics depth_intrinsics = { width_yuy2, height_yuy2,
+        529.27344,402.32031,
+         731.27344,731.97656,
+         RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+
+    //std::sort(z_data.subpixels_x.begin(), z_data.subpixels_x.end());
+    auto points = get_points(z_data.subpixels_x, z_data.subpixels_y, z_data.closest, depth_intrinsics, 0.25f);
+    std::sort(points.begin(), points.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
+    points = get_points(points, depth_intrinsics, 0.25f);
     cv::Mat res_mat(height_z, width_z, CV_32F, res.data());
     //todo check y
-    for (auto i = 0;i < z_data.subpixels_x.size(); i++)
+    for (auto i = 0;i < z_data.weights.size(); i++)
     {
-        auto val = z_data.subpixels_x[i];
+        auto val = z_data.weights[i];
         auto val1 = res[i];
         if (abs(val - val1) > 0.01)
             std::cout << "err";
     }
 
-   
+
+
+    rs2_intrinsics color_intrinsics = { width_yuy2, height_yuy2,
+          1,1,
+          0,0,
+          RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+
+    /*1367.2693	13.029652	942.88477 - 5105.6787
+        - 21.656006	1345.2003	591.17822	14449.271
+        0.012339020 - 0.016606549	0.99978596 - 6.8803735*/
+        /* auto color_stream = color_sensor.add_video_stream({ RS2_STREAM_COLOR, 0, 1,
+             width_yuy2, height_yuy2, 60, 2,
+                                     RS2_FORMAT_UYVY, color_intrinsics });*/
+    rs2::pointcloud pc;
+
 
     //is_movement_in_images(yuy2_data);
 
-    
 
-    
+
+
 
     std::cout << "Hello World!\n";
 

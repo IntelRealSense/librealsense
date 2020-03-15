@@ -48,8 +48,8 @@ namespace librealsense
                     [=]( std::shared_ptr< generic_processing_block > pb )
                     {
                         auto cpb = std::make_shared< composite_processing_block >();
+                        cpb->add(std::make_shared< autocal_color_processing_block >(_autocal));
                         cpb->add( pb );
-                        cpb->add( std::make_shared< autocal_color_processing_block >( _autocal ) );
                         return cpb;
                     } ) );
         }
