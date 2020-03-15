@@ -341,10 +341,17 @@ void updateExtrinsicsMap(rs2_video_stream videoStream,std::string extrinsics_str
   {
     rs2_extrinsics extrinsics;
     int target_sensor;
-    int n = sscanf(s.c_str(), "<to_sensor_%d>rotation:%f,%f,%f,%f,%f,%f,%f,%f,%ftranslation:%f,%f,%f",
+    int params_count = sscanf(s.c_str(), "<to_sensor_%d>rotation:%f,%f,%f,%f,%f,%f,%f,%f,%ftranslation:%f,%f,%f",
     &target_sensor,
     &extrinsics.rotation[0],&extrinsics.rotation[1],&extrinsics.rotation[2],&extrinsics.rotation[3],&extrinsics.rotation[4],&extrinsics.rotation[5],&extrinsics.rotation[6],&extrinsics.rotation[7],&extrinsics.rotation[8],
     &extrinsics.translation[0],&extrinsics.translation[1],&extrinsics.translation[2]);
+    
+    // hanle NaN values
+    if (params_count != SDP_EXTRINSICS_ARGS)
+    {
+      extrinsics = {{NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN,NAN},{NAN,NAN,NAN}};
+    }
+    
     minimal_extrinsics_map[std::make_pair(RsRTSPClient::getPhysicalSensorUniqueKey(videoStream.type,videoStream.index),target_sensor)] = extrinsics;
   }
 }
