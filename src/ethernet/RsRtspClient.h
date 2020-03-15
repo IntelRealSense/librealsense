@@ -21,6 +21,8 @@
 //TODO: check if this timeout is reasonable for all commands 
 #define RTSP_CLIENT_COMMANDS_TIMEOUT_SEC 3
 
+#define SDP_EXTRINSICS_ARGS 13
+
 class RsRTSPClient : public RTSPClient, IRsRtsp
 {
 public:
@@ -32,6 +34,7 @@ public:
   void initFunc(MemoryPool *t_pool);
 
   static long long int getStreamProfileUniqueKey(rs2_video_stream t_profile);
+  static int getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index);
   void setDeviceData(DeviceData t_data);
 
   // IcamOERtsp functions

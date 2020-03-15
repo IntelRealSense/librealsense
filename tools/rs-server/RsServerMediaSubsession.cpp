@@ -7,16 +7,17 @@
 
 #define CAPACITY 100
 
-RsServerMediaSubsession *RsServerMediaSubsession::createNew(UsageEnvironment &t_env, rs2::video_stream_profile &t_videoStreamProfile)
+RsServerMediaSubsession *RsServerMediaSubsession::createNew(UsageEnvironment &t_env, rs2::video_stream_profile &t_videoStreamProfile, std::shared_ptr<RsDevice> rsDevice)
 {
-  return new RsServerMediaSubsession(t_env, t_videoStreamProfile /*, queue*/);
+  return new RsServerMediaSubsession(t_env, t_videoStreamProfile, rsDevice);
 }
 
-RsServerMediaSubsession ::RsServerMediaSubsession(UsageEnvironment &env, rs2::video_stream_profile &t_videoStreamProfile )
+RsServerMediaSubsession ::RsServerMediaSubsession(UsageEnvironment &env, rs2::video_stream_profile &t_videoStreamProfile, std::shared_ptr<RsDevice> device)
     : OnDemandServerMediaSubsession(env, false), m_videoStreamProfile(t_videoStreamProfile)
 {
   //envir() << "RsServerMediaSubsession constructor" <<this << "\n";
   m_frameQueue = rs2::frame_queue(CAPACITY, true);
+  m_rsDevice=device;
 }
 
 RsServerMediaSubsession::~RsServerMediaSubsession()
@@ -45,6 +46,5 @@ RTPSink *RsServerMediaSubsession ::createNewRTPSink(Groupsock *t_rtpGroupsock,
                                                     unsigned char t_rtpPayloadTypeIfDynamic,
                                                     FramedSource * /*t_inputSource*/)
 {
-  rs2::device device = ((RsServerMediaSession*)this->fParentSession)->getRsSensor().getDevice();
-  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96+m_videoStreamProfile.stream_type(), 90000, "X" , "Y" , m_videoStreamProfile, device); //TODO: to rename X and Y
+  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, t_rtpPayloadTypeIfDynamic, RTP_TIMESTAMP_FREQ, "X" , "Y" , m_videoStreamProfile, m_rsDevice); //TODO: to rename X and Y
 }

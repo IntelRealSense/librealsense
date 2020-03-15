@@ -11,6 +11,8 @@
 #include <chrono>
 #include <thread>
 
+extern std::map<std::pair<int,int>,rs2_extrinsics> minimal_extrinsics_map;
+
 std::string sensors_str[] = {"depth", "color"};
 
 //WA for stop
@@ -85,6 +87,7 @@ std::vector<IpDeviceControlData> ip_device::get_controls(int sensor_id)
 
 bool ip_device::init_device_data(rs2::software_device sw_device)
 {
+    std::vector<rs2::stream_profile> device_streams;
     std::string url, sensor_name = "";
     for (int sensor_id = 0; sensor_id < NUM_OF_SENSORS; sensor_id++)
     {
@@ -121,14 +124,32 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             // just for readable code
             rs2_video_stream st = streams[stream_index];
 
-            //todo: remove
-            st.intrinsics = st.intrinsics;
-            //nhershko: check why profile with type 0
+
             long long int stream_key = RsRTSPClient::getStreamProfileUniqueKey(st);
-            streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0));
+            auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0);
+            device_streams.push_back(stream_profile);
+            //stream_profile.register_extrinsics_to()
+            streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
             memory_pool = &rs_rtp_stream::get_memory_pool();
         }
         std::cout << "\t@@@ done adding streams for sensor ID: " << sensor_id << std::endl;
+    }
+
+    for (auto stream_profile_from : device_streams)
+    {
+        for (auto stream_profile_to : device_streams)
+        {
+            int from_key =  RsRTSPClient::getPhysicalSensorUniqueKey(stream_profile_from.stream_type(),stream_profile_from.stream_index());
+            int to_key = RsRTSPClient::getPhysicalSensorUniqueKey(stream_profile_from.stream_type(),stream_profile_from.stream_index());
+            
+            if ( minimal_extrinsics_map.find(std::make_pair(from_key,to_key)) == minimal_extrinsics_map.end() ) 
+            {
+                //throw std::runtime_error("extrinsics data is missing!");
+            } 
+            rs2_extrinsics extrinisics = minimal_extrinsics_map[std::make_pair(from_key,to_key)];
+            
+            stream_profile_from.register_extrinsics_to(stream_profile_to,extrinisics);
+        }
     }
 
     //poll sw device streaming state

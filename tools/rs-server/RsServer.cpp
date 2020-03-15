@@ -15,8 +15,9 @@
 
 UsageEnvironment *env;
 rs2::device selected_device;
+
 RsRTSPServer *rtspServer;
-RsDevice device;
+std::shared_ptr<RsDevice> rsDevice;
 std::vector<RsSensor> sensors;
 TaskScheduler *scheduler;
 
@@ -38,7 +39,10 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  sensors = device.getSensors();
+  std::vector<rs2::video_stream_profile> supported_stream_profiles;
+  
+  rsDevice = std::make_shared<RsDevice>();
+  sensors = rsDevice.get()->getSensors();
   int sensorIndex = 0; //TODO::to remove
   for (auto sensor : sensors)
   {
@@ -71,7 +75,9 @@ int main(int argc, char **argv)
         {
           if ((stream.width() == 1280 && stream.height() == 720) ||(stream.width() == 640 && stream.height() == 480)||(stream.width() == 480 && stream.height() == 270) ||(stream.width() == 424 && stream.height() == 240))
           {
-          sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+          // streams for extrinsics map creation
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
@@ -79,7 +85,8 @@ int main(int argc, char **argv)
         {
           if ((stream.width() == 640 && stream.height() == 480)||(stream.width() == 480 && stream.height() == 270)||(stream.width() == 424 && stream.height() == 240) )
           {
-          sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
@@ -87,7 +94,8 @@ int main(int argc, char **argv)
         {
           if ((stream.width() == 480 && stream.height() == 270)||(stream.width() == 424 && stream.height() == 240))
           {
-          sms->addSubsession(RsServerMediaSubsession::createNew(*env,  stream));
+          sms->addSubsession(RsServerMediaSubsession::createNew(*env, stream, rsDevice));
+          supported_stream_profiles.push_back(stream);
           continue;
           }
         }
@@ -95,6 +103,18 @@ int main(int argc, char **argv)
       *env<<"Ignoring stream: format: "<<stream.format()<<" width: "<<stream.width()<<" height: "<<stream.height()<<" fps: "<<stream.fps()<<"\n";
     }
 
+    //TODO: improve efficiency by go once per physical sensor
+    for (auto stream_profile_from : supported_stream_profiles)
+    {
+      for (auto stream_profile_to : supported_stream_profiles)
+      {
+        int from_sensor_key = RsDevice::getPhysicalSensorUniqueKey(stream_profile_from.stream_type(),stream_profile_from.stream_index());
+        int to_sensor_key = RsDevice::getPhysicalSensorUniqueKey(stream_profile_to.stream_type(),stream_profile_to.stream_index());
+        
+        rsDevice.get()->minimal_extrinsics_map[std::make_pair(from_sensor_key,to_sensor_key)] = stream_profile_from.get_extrinsics_to(stream_profile_to);
+      }
+    }
+    
     rtspServer->addServerMediaSession(sms);
     char *url = rtspServer->rtspURL(sms);
     *env << "Play this stream using the URL \"" << url << "\"\n";

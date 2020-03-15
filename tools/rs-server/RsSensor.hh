@@ -25,7 +25,7 @@ public:
 	int stop();
 	rs2::sensor &getRsSensor() { return m_sensor; }
 	std::unordered_map<long long int, rs2::video_stream_profile> getStreamProfiles() { return m_streamProfiles; }
-	long long int getStreamProfileKey(rs2::stream_profile t_profile);
+	static long long int getStreamProfileKey(rs2::stream_profile t_profile);
 	std::string getSensorName();
 	static int getStreamProfileBpp(rs2_format t_format);
 	rs2::device getDevice() { return m_device; }
