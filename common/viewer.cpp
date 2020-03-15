@@ -1597,13 +1597,15 @@ namespace rs2
                 typedef size_t ColorIdx;
                 static std::map< size_t, ColorIdx > id2color;
 
+                // Returns the color (from those pre-defined above) for the given object, based on its ID
                 auto get_color = [&]( object_in_frame const & object ) -> ImColor
                 {
-                    ColorIdx & color = id2color[object.id];
-                    if( color < int( colors.size() ) )
+                    ColorIdx & color = id2color[object.id];  // Creates it with 0 as default if not already there
+                    if( color < int( colors.size() ))
                     {
                         if( color > 0 )
-                            return colors[color].first;
+                            return colors[color].first;  // Return an already-assigned color
+                        // Find the next available color
                         size_t x = 0;
                         for( auto & p : colors )
                         {
@@ -1616,8 +1618,10 @@ namespace rs2
                             }
                             ++x;
                         }
+                        // No available color; use the default and mark the object so we don't do this again
                         color = 100;
                     }
+                    // If we're here it's because there're more objects than colors
                     return colors[0].first;
                 };
 

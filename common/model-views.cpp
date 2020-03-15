@@ -1897,7 +1897,7 @@ namespace rs2
 
         _options_invalidated = true;
         streaming = true;
-		if( s->is< color_sensor >() )
+        if( s->is< color_sensor >() )
         {
             std::lock_guard< std::mutex > lock( detected_objects->mutex );
             detected_objects->sensor_is_on = true;

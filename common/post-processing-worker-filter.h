@@ -23,7 +23,8 @@ protected:
     ~post_processing_worker_filter()
     {
         _alive = false;
-        _worker.join();
+        if( _worker.joinable() )
+            _worker.join();
     }
 
 public:

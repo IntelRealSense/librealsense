@@ -194,12 +194,12 @@ private:
         auto cf = fs.get_color_frame();
         if( !cf )
         {
-            LOG( ERROR ) << get_context( fs ) << "no cf";
+            LOG(ERROR) << get_context( fs ) << "no color frame";
             return;
         }
         if( cf.get_profile().format() != RS2_FORMAT_RGB8 )
         {
-            LOG(ERROR) << get_context(fs) << "color format is " << cf.get_profile().format();
+            LOG(ERROR) << get_context(fs) << "color format must be RGB8; it's " << cf.get_profile().format();
             return;
         }
         // A depth frame is optional: if not enabled, we won't get it, and we simply won't provide depth info...
@@ -208,7 +208,7 @@ private:
         {
             if( df  &&  df.get_profile().format() != RS2_FORMAT_Z16 )
             {
-                LOG(ERROR) << get_context(fs) << "depth format is " << df.get_profile().format();
+                LOG(ERROR) << get_context(fs) << "depth format must be Z16; it's " << df.get_profile().format();
                 return;
             }
         }
@@ -321,12 +321,9 @@ private:
             {
                 if( _objects->sensor_is_on )
                     _objects->swap( objects );
-                else
-                    LOG(DEBUG) << get_context(fs) << "sensor is off!";
             }
             else
             {
-                LOG(DEBUG) << get_context(fs) << "not enabled!";
                 _objects->clear();
             }
         }
