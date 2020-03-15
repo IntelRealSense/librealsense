@@ -32,6 +32,7 @@ public:
   void initFunc(MemoryPool *t_pool);
 
   static long long int getStreamProfileUniqueKey(rs2_video_stream t_profile);
+  static int getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index);
   void setDeviceData(DeviceData t_data);
 
   // IcamOERtsp functions

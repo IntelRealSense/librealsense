@@ -34,6 +34,11 @@ long long int RsRTSPClient::getStreamProfileUniqueKey(rs2_video_stream t_profile
   return key;
 }
 
+int RsRTSPClient::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index)
+{ 
+  return stream_type * 10 + sensors_index;
+}
+
 //TODO: change char* to std::string
 IRsRtsp *RsRTSPClient::getRtspClient(char const *t_rtspURL,
                                      char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
@@ -328,11 +333,9 @@ std::vector<IpDeviceControlData> RsRTSPClient::getControls()
   return controls;
 }
 
-void updateExtrinsicsMap(rs2_video_stream videoStream,std::string extrinsics)
+void updateExtrinsicsMap(rs2_video_stream videoStream,std::string extrinsics_str)
 {
-  std::cout << extrinsics << std::endl;
-  //std::vector<std::string> strings;
-  std::istringstream extrinsics_stream(extrinsics);
+  std::istringstream extrinsics_stream(extrinsics_str);
   std::string s;    
   while (std::getline(extrinsics_stream, s, '&')) 
   {
@@ -342,7 +345,7 @@ void updateExtrinsicsMap(rs2_video_stream videoStream,std::string extrinsics)
     &target_sensor,
     &extrinsics.rotation[0],&extrinsics.rotation[1],&extrinsics.rotation[2],&extrinsics.rotation[3],&extrinsics.rotation[4],&extrinsics.rotation[5],&extrinsics.rotation[6],&extrinsics.rotation[7],&extrinsics.rotation[8],
     &extrinsics.translation[0],&extrinsics.translation[1],&extrinsics.translation[2]);
-    minimal_extrinsics_map[std::make_pair(videoStream.type+videoStream.index,target_sensor)] = extrinsics;
+    minimal_extrinsics_map[std::make_pair(RsRTSPClient::getPhysicalSensorUniqueKey(videoStream.type,videoStream.index),target_sensor)] = extrinsics;
   }
 }
 

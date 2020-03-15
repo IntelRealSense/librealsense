@@ -66,12 +66,16 @@ std::string extrinsics_to_string(rs2_extrinsics extrinsics)
 
 std::string get_extrinsics_string_per_stream(std::shared_ptr<RsDevice> device,rs2::video_stream_profile stream)
 {
+
+  if (device==nullptr)
+    return "";
+
   std::string str;
 
   for (auto relation : device.get()->minimal_extrinsics_map)
   {
     //check at map for this stream relations
-    if (relation.first.first==(stream.stream_type()+stream.stream_index()))
+    if (relation.first.first==(RsDevice::getPhysicalSensorUniqueKey(stream.stream_type(),stream.stream_index())))
     {
       str.append("<to_sensor_");
       //write the 'to' stream key
@@ -141,7 +145,7 @@ RsSimpleRTPSink ::RsSimpleRTPSink(UsageEnvironment &t_env, Groupsock *t_RTPgs,
 {
   t_env << "RsSimpleVideoRTPSink constructor\n";
   // Then use this 'config' string to construct our "a=fmtp:" SDP line:
-  unsigned fmtpSDPLineMaxSize = 4000; // 400 => extended for intrinsics
+  unsigned fmtpSDPLineMaxSize = SDP_MAX_LINE_LENGHT;
   m_fFmtpSDPLine = new char[fmtpSDPLineMaxSize];
   std::string sdpStr =  getSdpLineForVideoStream(t_videoStream, device);
   sprintf(m_fFmtpSDPLine, "a=fmtp:%d;%s\r\n",

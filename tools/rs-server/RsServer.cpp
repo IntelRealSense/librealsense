@@ -103,13 +103,13 @@ int main(int argc, char **argv)
       *env<<"Ignoring stream: format: "<<stream.format()<<" width: "<<stream.width()<<" height: "<<stream.height()<<" fps: "<<stream.fps()<<"\n";
     }
 
-    //TODO: improve efficiency by go once per phisical sensor
+    //TODO: improve efficiency by go once per physical sensor
     for (auto stream_profile_from : supported_stream_profiles)
     {
       for (auto stream_profile_to : supported_stream_profiles)
       {
-        int from_sensor_key = stream_profile_from.stream_type()+stream_profile_from.stream_index();
-        int to_sensor_key = stream_profile_to.stream_type()+stream_profile_to.stream_index();
+        int from_sensor_key = RsDevice::getPhysicalSensorUniqueKey(stream_profile_from.stream_type(),stream_profile_from.stream_index());
+        int to_sensor_key = RsDevice::getPhysicalSensorUniqueKey(stream_profile_to.stream_type(),stream_profile_to.stream_index());
         
         rsDevice.get()->minimal_extrinsics_map[std::make_pair(from_sensor_key,to_sensor_key)] = stream_profile_from.get_extrinsics_to(stream_profile_to);
       }
