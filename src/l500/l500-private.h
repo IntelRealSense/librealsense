@@ -326,7 +326,10 @@ namespace librealsense
         class freefall_option : public bool_option
         {
         public:
-            freefall_option( hw_monitor & hwm );
+            freefall_option( hw_monitor & hwm, bool enabled = true );
+
+            bool is_enabled() const override { return _enabled; }
+            virtual void enable( bool = true );
 
             virtual void set( float value ) override;
             virtual const char * get_description() const override
@@ -338,6 +341,7 @@ namespace librealsense
         private:
             std::function<void( const option& )> _record_action = []( const option& ) {};
             hw_monitor & _hwm;
+            bool _enabled;
         };
 
         /*  For RS2_OPTION_INTER_CAM_SYNC_MODE
