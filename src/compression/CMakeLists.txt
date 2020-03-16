@@ -38,12 +38,21 @@ include_directories(${PROJECT_NAME}
     ${CMAKE_BINARY_DIR}/lz4/include
 )
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE ${DEPENDENCIES}
-    ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
-    ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
-    ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
-)
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE ${DEPENDENCIES}
+        PUBLIC ${CMAKE_BINARY_DIR}/zlib/lib/zlibstaticd.lib
+        PUBLIC ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
+        PUBLIC ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE ${DEPENDENCIES}
+        ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
+        ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
+        ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
+    )
+endif()    
 
 if(BUILD_IPDEV_STATS)
     add_definitions(-DSTATISTICS)

@@ -10,6 +10,10 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
+# to remove
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1")
+
+set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-pthread")
 
 include(../../common/CMakeLists.txt)
 
