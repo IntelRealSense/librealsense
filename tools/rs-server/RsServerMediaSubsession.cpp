@@ -46,5 +46,5 @@ RTPSink *RsServerMediaSubsession ::createNewRTPSink(Groupsock *t_rtpGroupsock,
                                                     unsigned char t_rtpPayloadTypeIfDynamic,
                                                     FramedSource * /*t_inputSource*/)
 {
-  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, t_rtpPayloadTypeIfDynamic, RTP_TIMESTAMP_FREQ, "X" , "Y" , m_videoStreamProfile, m_rsDevice); //TODO: to rename X and Y
+  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96+m_videoStreamProfile.stream_type(), RTP_TIMESTAMP_FREQ, "X" , "Y" , m_videoStreamProfile, m_rsDevice); //TODO: to rename X and Y
 }
