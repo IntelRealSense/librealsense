@@ -33,13 +33,13 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 class RsRTSPServer : public RTSPServer
 {
 public:
-  static RsRTSPServer *createNew(UsageEnvironment &t_env, Port t_ourPort = 554,
+  static RsRTSPServer *createNew(UsageEnvironment &t_env,std::shared_ptr<RsDevice> t_device, Port t_ourPort = 554,
                                  UserAuthenticationDatabase *t_authDatabase = NULL,
                                  unsigned t_reclamationSeconds = 0);
   void setSupportedOptions(std::string t_key, std::vector<RsOption> t_supportedOptions);
 
 protected:
-  RsRTSPServer(UsageEnvironment &t_env,
+  RsRTSPServer(UsageEnvironment &t_env, std::shared_ptr<RsDevice> t_device,
                int t_ourSocket, Port t_ourPort,
                UserAuthenticationDatabase *t_authDatabase,
                unsigned t_reclamationSeconds);
@@ -48,6 +48,7 @@ protected:
 
   std::map<std::string, std::vector<RsOption>> m_supportedOptions;
   std::string m_supportedOptionsStr;
+  std::shared_ptr<RsDevice> m_device;
 
 public:
   class RsRTSPClientSession; // forward
@@ -55,9 +56,12 @@ public:
   {
 
   protected:
-    RsRTSPClientConnection(RTSPServer &t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr);
+    RsRTSPClientConnection(RsRTSPServer &t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr);
     virtual ~RsRTSPClientConnection();
-
+    virtual void handleCmd_GET_PARAMETER(char const* fullRequestStr);
+    virtual void handleCmd_SET_PARAMETER(char const* fullRequestStr);
+    
+    RsRTSPServer& m_fOurRsRTSPServer;
     //unsigned char fResponseBuffer[30000];
 
     friend class RsRTSPServer;

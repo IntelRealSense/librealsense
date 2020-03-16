@@ -109,7 +109,7 @@ std::string RsSensor::getSensorName()
 {
         if (m_sensor.supports(RS2_CAMERA_INFO_NAME))
         {
-                return m_sensor.get_info(RS2_CAMERA_INFO_NAME);
+                return std::string(m_sensor.get_info(RS2_CAMERA_INFO_NAME));
         }
         else
         {

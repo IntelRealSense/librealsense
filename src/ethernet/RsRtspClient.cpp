@@ -236,12 +236,20 @@ int RsRTSPClient::close()
   return m_lastReturnValue.exit_code;
 }
 
-int RsRTSPClient::setOption(rs2_option t_opt, float t_val)
+int RsRTSPClient::setOption(const std::string& t_sensorName, rs2_option t_option, float t_value)
 {
-  std::string option = std::to_string(t_opt);
-  std::string value = std::to_string(t_val);
-  unsigned res = this->sendSetParameterCommand(*this->m_scs.m_session, this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
-  // wait for continueAfterPLAY to finish
+  unsigned res;//TODO: to handle res
+  std::string option = t_sensorName + "_" + std::to_string(t_option);
+  std::string value = std::to_string(t_value);
+  if (isActiveSession)
+  {
+    res = RTSPClient::sendSetParameterCommand(*this->m_scs.m_session, this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
+  }
+  else
+  {
+    res = sendSetParameterCommand( this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
+  } 
+
   std::unique_lock<std::mutex> lck(m_commandMtx);
   m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
   // for the next command
@@ -259,7 +267,6 @@ int RsRTSPClient::setOption(rs2_option t_opt, float t_val)
     throw std::runtime_error(format_error_msg(__FUNCTION__,m_lastReturnValue));
   }
   */
-  t_val = m_getParamRes;
   return m_lastReturnValue.exit_code;
 }
 
@@ -268,23 +275,37 @@ void RsRTSPClient::setGetParamResponse(float t_res)
   m_getParamRes = t_res;
 }
 
-int RsRTSPClient::getOption(rs2_option t_opt, float &t_val)
+int RsRTSPClient::getOption(const std::string& t_sensorName, rs2_option t_option, float& t_value)
 {
-  unsigned res = this->sendGetParameterCommand(*this->m_scs.m_session, this->continueAfterGETCOMMAND, (const char *)&t_opt);
+  unsigned res;
+  t_value = m_getParamRes = -1;
+  std::string option = t_sensorName + "_" + std::to_string(t_option);
+  if (isActiveSession)
+  {
+    res = RTSPClient::sendGetParameterCommand(*this->m_scs.m_session, this->continueAfterGETCOMMAND, option.c_str());
+  }
+  else
+  {
+    res = sendGetParameterCommand(this->continueAfterGETCOMMAND, option.c_str());
+  }
   // wait for continueAfterPLAY to finish
   std::unique_lock<std::mutex> lck(m_commandMtx);
   m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
-  // for the next command
   if(!m_commandDone)
   {
     RsRtspReturnValue err = 
       {RsRtspReturnCode::ERROR_TIME_OUT,"client time out"};
+
     throw std::runtime_error(format_error_msg(__FUNCTION__, err));
   }
   m_commandDone = false;
   if(m_lastReturnValue.exit_code!=RsRtspReturnCode::OK)
   {
     throw std::runtime_error(format_error_msg(__FUNCTION__,m_lastReturnValue));
+  }
+  else
+  {
+    t_value = m_getParamRes;
   }
   return m_lastReturnValue.exit_code;
 }
@@ -364,8 +385,9 @@ void updateExtrinsicsMap(rs2_video_stream videoStream,std::string extrinsics_str
 void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();                  // alias
-  StreamClientState &scs = ((RsRTSPClient *)rtspClient)->m_scs; // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient);    // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient);    // alias
+  StreamClientState &scs = rsRtspClient->m_scs; // alias
+  
   
   if (NULL!=resultString)
     rsRtspClient->m_lastReturnValue.msg = resultString;
@@ -487,8 +509,9 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();                  // alias
-  StreamClientState &scs = ((RsRTSPClient *)rtspClient)->m_scs; // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient);    // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient);    // alias
+  StreamClientState &scs = rsRtspClient->m_scs; // alias
+ 
   env << "continueAfterSETUP " << resultCode << " " << resultString << "\n";
 
   if (NULL!=resultString)
@@ -505,7 +528,7 @@ void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
   env << "continueAfterPLAY " << resultCode << " " << resultString << "\n";
   
   if (NULL!=resultString)
@@ -522,7 +545,7 @@ void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, cha
 void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
   env << "continueAfterTEARDOWN " << resultCode << " " << resultString << "\n";
 
   if (NULL!=resultString)
@@ -539,7 +562,7 @@ void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
   env << "continueAfterPAUSE " << resultCode << " " << resultString << "\n";
   
   if (NULL!=resultString)
@@ -556,7 +579,7 @@ void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
   env << "continueAfterOPTIONS " << resultCode << " " << resultString << "\n";
 
   if (NULL!=resultString)
@@ -591,7 +614,7 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
         pos1 = controlStr.find('}', pos2 + 1);
         controlData.range.step = stof(controlStr.substr(pos2 + 1, pos1 - (pos2 + 1)));
         controls.push_back(controlData);
-        //std::cout<< controlData.option <<std::endl;
+        //std::cout<< controlData.sensorId << ":"<<controlData.option <<std::endl;
         controlsPerSensor.erase(0, pos + 1);
       }
       counter++;
@@ -605,11 +628,13 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
 void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
-  env << "continueAfterSETCOMMAND " << resultCode << " " << resultString << "\n";
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
+  env << "continueAfterSETCOMMAND " << resultCode << "\n";
 
   if (NULL!=resultString)
+  {
     rsRtspClient->m_lastReturnValue.msg = resultString;
+  }
   rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
   
   {
@@ -622,13 +647,21 @@ void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCod
 void RsRTSPClient::continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
-  RsRTSPClient *rsRtspClient = ((RsRTSPClient *)rtspClient); // alias
-  float res = std::stof(resultString);
-  rsRtspClient->setGetParamResponse(res);
+  RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
+  printf("continueAfterGETCOMMAND: resultCode is %d, resultString is %s\n",resultCode,resultString);
+  
 
   if (NULL!=resultString)
+  {
     rsRtspClient->m_lastReturnValue.msg = resultString;
+  }
   rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
+  
+  if (resultCode == 0)
+  {
+    std::string str(resultString);
+    rsRtspClient->setGetParamResponse(std::stof(str));
+  }
 
   {
     std::lock_guard<std::mutex> lck(rsRtspClient->m_commandMtx);
@@ -644,6 +677,63 @@ void RsRTSPClient::subsessionAfterPlaying(void *clientData)
   RTSPClient *rtspClient = (RTSPClient *)(subsession->miscPtr);
   rtspClient->envir() << "subsessionAfterPlaying\n";
 }
+
 void RsRTSPClient::subsessionByeHandler(void *clientData, char const *reason)
 {
 }
+
+
+unsigned RsRTSPClient::sendSetParameterCommand(responseHandler* responseHandler,
+                                             char const* parameterName, char const* parameterValue,
+                                             Authenticator* authenticator) {
+  if (fCurrentAuthenticator < authenticator) fCurrentAuthenticator = *authenticator;
+  char* paramString = new char[strlen(parameterName) + strlen(parameterValue) + 10];
+  sprintf(paramString, "%s: %s\r\n", parameterName, parameterValue);
+  unsigned result = sendRequest(new RequestRecord(++fCSeq, "SET_PARAMETER", responseHandler, NULL, NULL, False, 0.0f, -1.0f,1.0f, paramString));
+  delete[] paramString;
+  return result;
+}
+
+unsigned RsRTSPClient::sendGetParameterCommand(responseHandler* responseHandler, char const* parameterName,
+                                             Authenticator* authenticator) {
+  if (fCurrentAuthenticator < authenticator) fCurrentAuthenticator = *authenticator;
+
+  // We assume that:
+  //    parameterName is NULL means: Send no body in the request.
+  //    parameterName is "" means: Send only \r\n in the request body.  
+  //    parameterName is non-empty means: Send "<parameterName>\r\n" as the request body.  
+  unsigned parameterNameLen = parameterName == NULL ? 0 : strlen(parameterName);
+  char* paramString = new char[parameterNameLen + 3]; // the 3 is for \r\n + the '\0' byte
+  if (parameterName == NULL) {
+    paramString[0] = '\0';
+  } else {
+    sprintf(paramString, "%s\r\n", parameterName);
+  }
+  unsigned result = sendRequest(new RequestRecord(++fCSeq, "GET_PARAMETER", responseHandler, NULL, NULL, False, 0.0f, -1.0f,1.0f, paramString));
+  delete[] paramString;
+  return result;
+}
+
+Boolean RsRTSPClient::setRequestFields(RequestRecord* request,
+                                     char*& cmdURL, Boolean& cmdURLWasAllocated,
+                                     char const*& protocolStr,
+                                     char*& extraHeaders, Boolean& extraHeadersWereAllocated
+                                     ) {
+  // Set various fields that will appear in our outgoing request, depending upon the particular command that we are sending.
+  if (request == nullptr)
+  {
+    return False;
+  }
+  if ((strcmp(request->commandName(), "SET_PARAMETER") == 0 || strcmp(request->commandName(), "GET_PARAMETER") == 0) && (request->session() == NULL)) {
+      cmdURL = new char[4];
+      
+      cmdURLWasAllocated = True; //use BaseUrl
+      sprintf(cmdURL, "%s", "*");
+  }
+  else {
+    return RTSPClient::setRequestFields(request,cmdURL,cmdURLWasAllocated, protocolStr,extraHeaders,extraHeadersWereAllocated);
+  }
+
+  return True;
+}
+

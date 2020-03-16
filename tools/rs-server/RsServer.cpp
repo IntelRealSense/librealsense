@@ -32,7 +32,9 @@ int main(int argc, char **argv)
   scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
-  rtspServer = RsRTSPServer::createNew(*env, 8554);
+  rsDevice = std::make_shared<RsDevice>();
+  
+  rtspServer = RsRTSPServer::createNew(*env,rsDevice, 8554);
   if (rtspServer == NULL)
   {
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
@@ -41,21 +43,14 @@ int main(int argc, char **argv)
 
   std::vector<rs2::video_stream_profile> supported_stream_profiles;
   
-  rsDevice = std::make_shared<RsDevice>();
   sensors = rsDevice.get()->getSensors();
   int sensorIndex = 0; //TODO::to remove
   for (auto sensor : sensors)
   {
     RsServerMediaSession *sms;
-    if (sensorIndex == 0) //TODO: to move to generic exposure when host is ready
+    if (sensorIndex == 0 || sensorIndex == 1) //TODO: to move to generic exposure when host is ready
     {
-      sms = RsServerMediaSession::createNew(*env, sensor, "depth" /*sensor.getSensorName().data()*/, "",
-                                            "Session streamed by \"realsense streamer\"",
-                                            True);
-    }
-    else if (sensorIndex == 1)
-    {
-      sms = RsServerMediaSession::createNew(*env, sensor, "color" /*sensor.getSensorName().data()*/, "",
+      sms = RsServerMediaSession::createNew(*env, sensor, sensor.getSensorName().data(), "",
                                             "Session streamed by \"realsense streamer\"",
                                             True);
     }

@@ -15,7 +15,7 @@
 ////////// RTSPServer implementation //////////
 
 RsRTSPServer *
-RsRTSPServer::createNew(UsageEnvironment &t_env, Port t_ourPort,
+RsRTSPServer::createNew(UsageEnvironment &t_env, std::shared_ptr<RsDevice> t_device, Port t_ourPort,
                         UserAuthenticationDatabase *t_authDatabase,
                         unsigned t_reclamationSeconds)
 {
@@ -23,14 +23,14 @@ RsRTSPServer::createNew(UsageEnvironment &t_env, Port t_ourPort,
   if (ourSocket == -1)
     return NULL;
 
-  return new RsRTSPServer(t_env, ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds);
+  return new RsRTSPServer(t_env, t_device, ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds);
 }
 
-RsRTSPServer::RsRTSPServer(UsageEnvironment &t_env,
+RsRTSPServer::RsRTSPServer(UsageEnvironment &t_env, std::shared_ptr<RsDevice> t_device,
                            int t_ourSocket, Port t_ourPort,
                            UserAuthenticationDatabase *t_authDatabase,
                            unsigned t_reclamationSeconds)
-    : RTSPServer(t_env, t_ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds)
+    : RTSPServer(t_env, t_ourSocket, t_ourPort, t_authDatabase, t_reclamationSeconds), m_device(t_device)
 {
 }
 
@@ -50,6 +50,7 @@ char const *RsRTSPServer::allowedCommandNames()
   //std::vector<rs2_option> options = opt.get_supported_options();
   //((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().
   //for (std::map<std::string, std::vector<rs2_option>::iterator iter = m_supportedOptions.begin(); iter!= m_supportedOptions.end(); ++iter)
+  m_supportedOptionsStr.clear();
   for (const auto &optionsPair : m_supportedOptions)
   {
     m_supportedOptionsStr.append(optionsPair.first);
@@ -71,14 +72,89 @@ void RsRTSPServer::setSupportedOptions(std::string t_key, std::vector<RsOption> 
 
 ////////// RTSPServer::RTSPClientConnection implementation //////////
 
-RsRTSPServer::RsRTSPClientConnection ::RsRTSPClientConnection(RTSPServer &t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr)
-    : RTSPClientConnection(t_ourServer, t_clientSocket, t_clientAddr)
+RsRTSPServer::RsRTSPClientConnection ::RsRTSPClientConnection(RsRTSPServer &t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr)
+    : RTSPClientConnection(t_ourServer, t_clientSocket, t_clientAddr), m_fOurRsRTSPServer(t_ourServer)
 {
 }
 
 RsRTSPServer::RsRTSPClientConnection::~RsRTSPClientConnection()
 {
 }
+
+void RsRTSPServer::RsRTSPClientConnection::handleCmd_GET_PARAMETER(char const *t_fullRequestStr)
+{
+  std::ostringstream oss;
+  std::vector<RsSensor> sensors;
+  std::string str(t_fullRequestStr);
+  std::string ContentLength("Content-Length:");
+  std::string afterSplit;//, opt, val;
+
+  afterSplit = str.substr(str.find(ContentLength) + ContentLength.size());
+  char* contLength = strtok((char*)afterSplit.c_str(),"\r\n: ");
+  char* sensorName = strtok(NULL,"_\r\n:");
+  char* option = strtok(NULL,"\r\n:");
+  sensors = m_fOurRsRTSPServer.m_device.get()->getSensors();
+  for (auto sensor : sensors)
+  {
+    if (sensor.getSensorName().compare(sensorName) == 0)
+    {
+      try
+      {
+        float value = sensor.getRsSensor().get_option((rs2_option)stoi(std::string(option)));
+        char* paramString = new char[strlen(sensorName) + 1 +strlen(option) + strlen(std::to_string(value).c_str()) + 10];
+        sprintf(paramString, "%s_%s: %s\r\n", sensorName, option, std::to_string(value).c_str());
+        printf( "GET_PARAMETER:sensor name is : %s, option is %s, value is %f\n",sensorName,option,value);
+        setRTSPResponse("200 OK",paramString);
+        return;
+      }
+      catch (const std::exception &e)
+      {
+        std::string error("500 " + std::string(e.what()));
+        setRTSPResponse(error.c_str());
+        return;
+      }
+    } 
+  }
+  setRTSPResponse("500 Invalid Option");
+}
+
+void RsRTSPServer::RsRTSPClientConnection::handleCmd_SET_PARAMETER(char const *t_fullRequestStr)
+{
+  std::ostringstream oss;
+  std::vector<RsSensor> sensors;
+  std::string str(t_fullRequestStr);
+  std::string ContentLength("Content-Length:");
+  std::string afterSplit;//, opt, val;
+
+  afterSplit = str.substr(str.find(ContentLength) + ContentLength.size());
+  char* contLength = strtok((char*)afterSplit.c_str(),"\r\n: ");
+  char* sensorName = strtok(NULL,"_\r\n:");
+  char* option = strtok(NULL,"\r\n:");
+  char* value = strtok(NULL,"\r\n:");
+
+  printf( "SET_PARAMETER:sensor name is : %s, option is %s, value is %s\n",sensorName,option,value);
+  sensors = m_fOurRsRTSPServer.m_device.get()->getSensors();
+  for (auto sensor : sensors)
+  {
+    if (sensor.getSensorName().compare(sensorName) == 0)
+    {
+      try
+      {
+        sensor.getRsSensor().set_option((rs2_option)stoi(std::string(option)), stof(std::string(value)));
+        setRTSPResponse( "200 OK");
+        return;
+      }
+      catch (const std::exception &e)
+      {
+        std::string error("500 " + std::string(e.what()));
+        setRTSPResponse(error.c_str());
+        return;
+      }
+    }
+  }
+  setRTSPResponse("500 Invalid Option");
+}
+
 
 ////////// RsRTSPServer::RsRTSPClientSession implementation //////////
 
@@ -141,71 +217,63 @@ void RsRTSPServer::RsRTSPClientSession::handleCmd_PAUSE(RTSPClientConnection *t_
     return;
   }
 }
+  void RsRTSPServer::RsRTSPClientSession::handleCmd_GET_PARAMETER(RTSPClientConnection * t_ourClientConnection,
+                                                                  ServerMediaSubsession * t_subsession, char const *t_fullRequestStr)
+  {
+    std::ostringstream oss;
+    std::vector<RsSensor> sensors;
+    std::string str(t_fullRequestStr);
+    std::string ContentLength("Content-Length:");
+    std::string afterSplit;//, opt, val;
 
-void RsRTSPServer::RsRTSPClientSession::handleCmd_GET_PARAMETER(RTSPClientConnection *t_ourClientConnection,
-                                                        ServerMediaSubsession *t_subsession, char const* t_fullRequestStr)
-{
+    envir() << "GET_PARAMETER\n";
+    afterSplit = str.substr(str.find(ContentLength) + ContentLength.size());
+    char* contLength = strtok((char*)afterSplit.c_str(),"\r\n: ");
+    char* sensorName = strtok(NULL,"_\r\n:");
+    char* option = strtok(NULL,"\r\n:");
+    try
+    {
+        float value = ((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().getRsSensor().get_option((rs2_option)stoi(std::string(option)));
+        char* paramString = new char[strlen(sensorName) + 1 +strlen(option) + strlen(std::to_string(value).c_str()) + 10];
+        sprintf(paramString, "%s_%s: %s\r\n", sensorName, option, std::to_string(value).c_str());
+        setRTSPResponse(t_ourClientConnection,"200 OK",paramString);
+    }
+    catch (const std::exception &e)
+    {
+      std::string error("500 " + std::string(e.what()));
+      setRTSPResponse(t_ourClientConnection, error.c_str());
+      return;
+    }
+  }
+
+  void RsRTSPServer::RsRTSPClientSession::handleCmd_SET_PARAMETER(RTSPClientConnection * t_ourClientConnection,
+                                                                  ServerMediaSubsession * t_subsession, char const *t_fullRequestStr)
+  {
   std::ostringstream oss;
-  std::string contentLength("Content-Length:");
-  std::string rnrnrn("\\r\\n\\r\\n\\r\\n");
-  std::string afterSplit;
-  std::size_t beforeLength;
-
-
-  envir() << "GET_PARAMETER \n";
-  std::string str(t_fullRequestStr); 
-  beforeLength = str.find(contentLength);
-  afterSplit = str.substr(beforeLength + contentLength.size());
-  std::string opt = afterSplit.substr(0,afterSplit.size()-6);
-  
-  try
-  {
-    float value = ((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().getRsSensor().get_option((rs2_option)stoi(opt));
-    oss << value;
-    setRTSPResponse(t_ourClientConnection, "200 OK",oss.str().c_str());
-  }
-  catch(const std::exception& e)
-  {
-    std::string error("500 " + std::string(e.what()));
-    setRTSPResponse(t_ourClientConnection, error.c_str());
-  }
-}
-
-void RsRTSPServer::RsRTSPClientSession::handleCmd_SET_PARAMETER(RTSPClientConnection *t_ourClientConnection,
-                                                        ServerMediaSubsession *t_subsession, char const* t_fullRequestStr)
-{
-  //TODO:: to rewrite this function using live555 api
-  std::string str(t_fullRequestStr); 
+  std::vector<RsSensor> sensors;
+  std::string str(t_fullRequestStr);
   std::string ContentLength("Content-Length:");
-  std::string Rnrn("\\r\\n\\r\\n");
-  std::size_t length;
-  std::string afterSplit,opt,val; 
+  std::string afterSplit;//, opt, val;
 
   envir() << "SET_PARAMETER \n";
-  length = str.find(ContentLength);
-  afterSplit = str.substr(length + ContentLength.size());
-  length = afterSplit.find(Rnrn);
-  std::string afterSecondSplit = afterSplit.substr(length + Rnrn.size());// opt: val\r\n
-  length = afterSecondSplit.find(":");
-  afterSecondSplit.substr(0,length);
-  opt = afterSecondSplit.substr(0,length);
-  val = afterSecondSplit.substr(length+2,afterSecondSplit.size()-5);
-  
-  try
-  {
-    ((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().getRsSensor().set_option((rs2_option)stoi(opt),stof(val));
-    setRTSPResponse(t_ourClientConnection, "200 OK");
-  }
-  catch(const std::exception& e)
-  {
-    std::string error("500 " + std::string(e.what()));
-    setRTSPResponse(t_ourClientConnection, error.c_str());
-  }
-  
-  
-  
-}
+  afterSplit = str.substr(str.find(ContentLength) + ContentLength.size());
+  char* contLength = strtok((char*)afterSplit.c_str(),"\r\n: ");
+  char* sensorName = strtok(NULL,"_\r\n:");
+  char* option = strtok(NULL,"\r\n:");
+  char* value = strtok(NULL,"\r\n:");
 
+    try
+    {
+      ((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().getRsSensor().set_option((rs2_option)stoi(std::string(option)), stof(std::string(value)));
+      setRTSPResponse(t_ourClientConnection, "200 OK");
+    }
+    catch (const std::exception &e)
+    {
+      std::string error("500 " + std::string(e.what()));
+      setRTSPResponse(t_ourClientConnection, error.c_str());
+      return;
+    }
+  }
 void RsRTSPServer::RsRTSPClientSession::handleCmd_SETUP(RTSPServer::RTSPClientConnection *t_ourClientConnection,
                                                         char const *t_urlPreSuffix, char const *t_urlSuffix, char const *t_fullRequestStr)
 {

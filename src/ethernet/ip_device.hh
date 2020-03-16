@@ -74,6 +74,9 @@ private:
     void update_sensor_state(int sensor_index, std::vector<rs2::stream_profile> updated_streams);
     void update_option_value(int sensor_index, rs2_option opt, float val);
 
+    void set_option_value(int sensor_index, rs2_option opt, float val);
+    void get_option_value(int sensor_index, rs2_option opt, float& val);
+
     std::vector<rs2_video_stream> query_streams(int sensor_id);
 
     std::vector<IpDeviceControlData> get_controls(int sensor_id);

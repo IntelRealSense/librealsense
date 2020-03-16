@@ -25,8 +25,8 @@ public:
     virtual int start() = 0;
     virtual int stop() = 0;
     virtual int close() = 0;
-    virtual int getOption(rs2_option t_opt, float &t_val) = 0;
-    virtual int setOption(rs2_option t_opt, float t_val) = 0;
+    virtual int getOption(const std::string& t_sensorName, rs2_option t_option, float &t_value) = 0;
+    virtual int setOption(const std::string& t_sensorName, rs2_option t_option, float t_value) = 0;
     virtual DeviceData getDeviceData() = 0;
     virtual std::vector<IpDeviceControlData> getControls() = 0;
 };

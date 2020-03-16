@@ -43,8 +43,8 @@ public:
   virtual int start();
   virtual int stop();
   virtual int close();
-  virtual int getOption(rs2_option t_opt, float &t_val);
-  virtual int setOption(rs2_option t_opt, float t_val);
+  virtual int getOption(const std::string& t_sensorName, rs2_option t_option, float& t_value);
+  virtual int setOption(const std::string& t_sensorName, rs2_option t_option, float t_value);
   void setGetParamResponse(float t_res);
   virtual DeviceData getDeviceData() { return m_deviceData; }
   virtual std::vector<IpDeviceControlData> getControls();
@@ -59,8 +59,18 @@ public:
   static void continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString);
   static void subsessionAfterPlaying(void *clientData); // called when a stream's subsession (e.g., audio or video substream) ends
   static void subsessionByeHandler(void *clientData, char const *reason);
-  char& getEventLoopWatchVariable() {return m_eventLoopWatchVariable;};
-  std::mutex& getTaskSchedulerMutex() {return m_taskSchedulerMutex;};
+  char &getEventLoopWatchVariable() { return m_eventLoopWatchVariable; };
+  std::mutex &getTaskSchedulerMutex() { return m_taskSchedulerMutex; };
+
+  unsigned sendSetParameterCommand(responseHandler *responseHandler,
+                                   char const *parameterName, char const *parameterValue,
+                                   Authenticator *authenticator = NULL);
+  unsigned sendGetParameterCommand(responseHandler *responseHandler, char const *parameterName,
+                                   Authenticator *authenticator = NULL);
+  Boolean setRequestFields(RequestRecord* request,
+                                   char*& cmdURL, Boolean& cmdURLWasAllocated,
+                                   char const*& protocolStr,
+                                   char*& extraHeaders, Boolean& extraHeadersWereAllocated);
 
 private:
   RsRTSPClient(TaskScheduler *t_scheduler, UsageEnvironment *t_env, char const *t_rtspURL,
@@ -70,6 +80,7 @@ private:
   virtual ~RsRTSPClient();
 
   StreamClientState m_scs;
+  bool isActiveSession = false;//this flag should affect the get/set param commands to run in context of specific session, currently value is always false 
   std::vector<rs2_video_stream> m_supportedProfiles;
   std::map<long long int, RsMediaSubsession *> m_subsessionMap;
   RsRtspReturnValue m_lastReturnValue;

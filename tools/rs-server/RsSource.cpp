@@ -20,7 +20,6 @@ RsDeviceSource *
 
 RsDeviceSource::RsDeviceSource(UsageEnvironment &t_env, rs2::video_stream_profile &t_videoStreamProfile, rs2::frame_queue &t_queue) : FramedSource(t_env)
 {
-  envir() << "RsDeviceSource constructor " << this << "\n";
   m_framesQueue = &t_queue;
   m_streamProfile = &t_videoStreamProfile;
 #ifdef STATISTICS
@@ -33,7 +32,6 @@ RsDeviceSource::RsDeviceSource(UsageEnvironment &t_env, rs2::video_stream_profil
 
 RsDeviceSource::~RsDeviceSource()
 {
-  envir() << "RsDeviceSource destructor " << this << "\n";
 }
 
 void RsDeviceSource::doGetNextFrame()
