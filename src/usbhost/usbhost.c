@@ -668,7 +668,7 @@ int usb_device_bulk_transfer(struct usb_device *device,
                              void* buffer,
                              unsigned int length,
                              unsigned int timeout)
-{   
+{
     struct usbdevfs_bulktransfer  ctrl;
 
     memset(&ctrl, 0, sizeof(ctrl));

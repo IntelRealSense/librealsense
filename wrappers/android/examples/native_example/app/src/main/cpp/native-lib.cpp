@@ -1,8 +1,4 @@
 #include <jni.h>
-#include <cmath>
-#include <mutex>
-#include <thread>
-#include <iomanip>
 #include <android/log.h>
 
 #include "librealsense2/rs.hpp"
