@@ -320,7 +320,6 @@ namespace librealsense
             CASE(ZERO_ORDER_ENABLED)
             CASE(ENABLE_MAP_PRESERVATION)
             CASE(FREEFALL_DETECTION_ENABLED)
-            CASE(EMITTER_ALWAYS_ON)
             CASE(AVALANCHE_PHOTO_DIODE)
             CASE(POST_PROCESSING_SHARPENING)
             CASE(PRE_PROCESSING_SHARPENING)
@@ -328,6 +327,7 @@ namespace librealsense
             CASE(INVALIDATION_BYPASS)
             CASE(AMBIENT_LIGHT)
             CASE(SENSOR_MODE)
+            CASE(EMITTER_ALWAYS_ON)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

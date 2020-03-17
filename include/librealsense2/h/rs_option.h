@@ -85,7 +85,6 @@ extern "C" {
         RS2_OPTION_ZERO_ORDER_ENABLED, /**< Toggle Zero-Order mode */
         RS2_OPTION_ENABLE_MAP_PRESERVATION, /**< Preserve previous map when starting */
         RS2_OPTION_FREEFALL_DETECTION_ENABLED, /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
-        RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_AVALANCHE_PHOTO_DIODE, /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
         RS2_OPTION_POST_PROCESSING_SHARPENING,  /**< Changes the amount of sharpening in the post-processed image */
         RS2_OPTION_PRE_PROCESSING_SHARPENING, /**< Changes the amount of sharpening in the pre-processed image */
@@ -93,6 +92,7 @@ extern "C" {
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
         RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
+        RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

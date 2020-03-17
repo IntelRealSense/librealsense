@@ -64,7 +64,14 @@ classdef option < int64
         zero_order_enabled              (61)
         enable_map_preservation         (62)
         freefall_detection_enabled      (63)
-        emitter_always_on               (64)
-        count                           (65)
+        apd_exposure_time               (64)
+        post_processing_sharpening      (65)
+        pre_processing_sharpening       (66)
+        noise_filter_level              (67)
+        invalidation_bypass             (68)
+        ambient_light_env_level         (69)
+        sensor_mode                     (70)
+        emitter_always_on               (71)
+        count                           (72)
     end
 end
