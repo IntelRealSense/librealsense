@@ -18,8 +18,8 @@ public:
                                          Boolean t_isSSM = False,
                                          char const *t_miscSDPLines = NULL);
   RsSensor &getRsSensor();
-  int openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles);
-  int closeRsCamera();
+  void openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles);
+  void closeRsCamera();
 
 protected:
   RsServerMediaSession(UsageEnvironment &t_env, RsSensor &t_sensor, char const *t_streamName,

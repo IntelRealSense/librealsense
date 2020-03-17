@@ -31,15 +31,14 @@ RsServerMediaSession::~RsServerMediaSession()
   //TODO:: to check if i need to delete rsSensor
 }
 
-int RsServerMediaSession::openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles)
+void RsServerMediaSession::openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles)
 {
   m_rsSensor.open(t_streamProfiles);
   m_rsSensor.start(t_streamProfiles);
   m_isActive = true;
-  return EXIT_SUCCESS;
 }
 
-int RsServerMediaSession::closeRsCamera()
+void RsServerMediaSession::closeRsCamera()
 {
   if(m_isActive)
   {
@@ -47,7 +46,6 @@ int RsServerMediaSession::closeRsCamera()
   m_rsSensor.getRsSensor().close();
   m_isActive = false;
   }
-  return EXIT_SUCCESS;
 }
 
 RsSensor &RsServerMediaSession::getRsSensor()

@@ -91,8 +91,8 @@ public:
     virtual void handleCmd_SETUP(RTSPServer::RTSPClientConnection *t_ourClientConnection,
                                  char const *t_urlPreSuffix, char const *t_urlSuffix, char const *t_fullRequestStr);
 
-    int openRsCamera();
-    int closeRsCamera();
+    void openRsCamera();
+    void closeRsCamera();
     void emptyStreamProfileQueue(long long int t_profile_key);
 
   private:
