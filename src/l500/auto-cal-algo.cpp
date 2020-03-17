@@ -3,6 +3,7 @@
 
 #include "auto-cal-algo.h"
 #include "../include/librealsense2/rsutil.h"
+#include "proc/pointcloud.h"
 
 namespace librealsense
 {
@@ -239,6 +240,7 @@ namespace librealsense
         res.subpixels_y = subpixels.second;*/
 
         res.closest = get_closest_edges(res, ir_data, width_z, height_z);
+        calculate_weights(res);
         //zero_invalid_edges(res, ir_data);
 
         return res;
@@ -343,13 +345,13 @@ namespace librealsense
         return true;
     }
 
-    std::vector<float> auto_cal_algo::calculate_weights(std::vector<float> edges)
+    std::vector<float> auto_cal_algo::calculate_weights(z_frame_data& z_data)
     {
-        std::vector<float> res/*(edges.begin(), edges.end())*/;
-        for (auto i = 0;i < edges.size();i++)
+        std::vector<float> res;
+        for (auto i = 0;i < z_data.supressed_edges.size();i++)
         {
-            if (edges[i] > 0)
-                res.push_back(std::min(std::max(edges[i], grad_z_min), grad_z_max));
+            if (z_data.supressed_edges[i])
+                z_data.weights.push_back(std::min(std::max(z_data.supressed_edges[i] - grad_z_min, 0.f), grad_z_max - grad_z_min));
         }
 
         return res;
@@ -373,25 +375,84 @@ namespace librealsense
         }
     }
 
-    bool auto_cal_algo::optimaize(rs2::frame depth, rs2::frame ir, rs2::frame yuy, rs2::frame prev_yuy, const calibration & old_calib, calibration * new_calib)
+    std::vector<float2> get_texture_map(
+        const std::vector<rs2_vertex> points,
+        const rs2_intrinsics &intrinsics,
+        const rs2_extrinsics& extr)
     {
-        auto ir_data = get_ir_data();
-        std::string res_file("LongRange/15/binFiles/I_edge_768x1024_single_00.bin");
-        auto res = get_image<float>(res_file, width_z, height_z);
-        for (auto i = 0;i < ir_data.ir_edges.size(); i++)
+        std::vector<float2> uv(points.size());
+
+        for (auto i = 0; i < points.size(); ++i)
         {
-            auto val = ir_data.ir_edges[i];
-            auto val1 = res[i];
-            if (abs(val - val1) > 0.01)
-                std::cout << "err";
+            float3 p = {}; 
+            rs2_transform_point_to_point(&p.x, &extr, &points[i].xyz[0]); 
+            
+                 //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+                 // Store intermediate results for poincloud filters
+            float2 pixel = {}; 
+            rs2_project_point_to_pixel(&pixel.x, &intrinsics, &p.x); 
+            uv[i] = pixel;
         }
 
-        auto z_data = preproccess_z(depth, ir_data);
-        //auto yuy_data = preprocess_yuy2_data(yuy);
+        return uv;
+    }
 
-        std::string res_file1("LongRange/15/binFiles/Z_edge_768x1024_single_00.bin");
+    std::vector<float> biliniar_interp(std::vector<float> vals, uint32_t width, uint32_t height, std::vector<float2> uv)
+    {
+        std::vector<float> res(uv.size());
+
+        for (auto i = 0;i < uv.size(); i++)
+        {
+            auto x = uv[i].x;
+            auto x1 = floor(x);
+            auto x2 = ceil(x);
+            auto y = uv[i].y;
+            auto y1 = floor(y);
+            auto y2 = ceil(y);
+
+            if (x1 < 0 || x1 > width || x2< 0 || x2 >= width ||
+                y1 < 0 || y1 > height || y2< 0 || y2 >= height)
+            {
+                res[i] = NAN;
+                continue;
+            }
+
+            // x1 y1    x2 y1
+            // x1 y2    x2 y2
+
+            // top_l    top_r
+            // bot_l    bot_r
+
+            auto top_l = vals[y1*width + x1];
+            auto top_r = vals[y1*width + x2];
+            auto bot_l = vals[y2*width + x1];
+            auto bot_r = vals[y2*width + x2];
+
+            auto interp_x_top = ((double)(x2 - x) / (double)(x2 - x1))*(double)top_l + ((double)(x - x1) / (double)(x2 - x1))*(double)top_r;
+            auto interp_x_bot = ((double)(x2 - x) / (double)(x2 - x1))*(double)bot_l + ((double)(x - x1) / (double)(x2 - x1))*(double)bot_r;
+
+            auto interp_y_x = ((double)(y2 - y) / (double)(y2 - y1))*(double)interp_x_top + ((double)(y - y1) / (double)(y2 - y1))*(double)interp_x_bot;
+
+            res[i] = interp_y_x;
+        }
+        return res;
+    }
+
+    bool auto_cal_algo::optimaize(rs2::frame depth, rs2::frame ir, rs2::frame yuy, rs2::frame prev_yuy, const calibration & old_calib, calibration * new_calib)
+    {
+        std::vector<float> arr = { 1,0,0,0 };
+        std::vector<float2> p = { { -0.5,-0.5} };
+        auto interp = biliniar_interp(arr, 2, 2, p);
+
+        auto ir_data = get_ir_data();
+
+        auto z_data = preproccess_z(depth, ir_data);
+        std::sort(z_data.weights.begin(), z_data.weights.end(), [](float v1, float v2) {return v1 < v2;});
+        auto yuy_data = preprocess_yuy2_data(yuy);
+
+        /*std::string res_file1("LongRange/15/binFiles/Z_edge_768x1024_single_00.bin");
         res = get_image<float>(res_file1, width_z, height_z);
-      /*  for (auto i = 0;i < z_data.edges.size(); i++)
+        for (auto i = 0;i < z_data.edges.size(); i++)
         {
             auto val = z_data.edges[i];
             auto val1 = res[i];
@@ -408,6 +469,35 @@ namespace librealsense
         auto vertices = subedges2vertices(z_data, depth_intrin, depth_units);
         std::sort(vertices.begin(), vertices.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
 
+        rs2_intrinsics rgb_intrinsics = { width_yuy2, height_yuy2,
+                                     959.33734, 568.44531,
+                                     1355.8387,1355.1364,
+                                     RS2_DISTORTION_NONE, {1,1,1,1,1},/* {0.14909270, -0.49516717, -0.00067913462, 0.0010808484, 0.42839915}*/ };
+
+
+       /* rs2_extrinsics extrinsics = { { 0.99970001, 0.021360161, -0.011983165,
+                                        -0.021156590, 0.99963391, 0.016865131,
+                                        0.012339020, -0.016606549, 0.99978596 },
+                                       -0.011983165, 13.260437, -6.7013960 };*/
+
+       
+        rs2_extrinsics extrinsics = { { 0.99970001, -0.021156590, 0.012339020,
+                                       0.021360161, 0.99963391, -0.016606549,
+                                      -0.011983165, 0.016865131, 0.99978596 },
+                                       1.1025798, 13.548738, -6.8803735 };
+        
+            
+            
+        /*vertices[0].xyz[0] = 1;
+        vertices[0].xyz[1] = 1;
+        vertices[0].xyz[2] = 1;*/
+
+        auto res = get_texture_map(vertices, rgb_intrinsics, extrinsics);
+        std::sort(res.begin(), res.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
+
+       
+        auto interp_IDT = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, res);
+        std::sort(interp_IDT.begin(), interp_IDT.end());
         return true;
     }
 } // namespace librealsense

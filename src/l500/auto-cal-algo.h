@@ -161,7 +161,7 @@ namespace librealsense
 
         bool is_scene_valid(yuy2_frame_data yuy);
 
-        std::vector<float> calculate_weights(std::vector<float> edges);
+        std::vector<float> calculate_weights(z_frame_data& z_data);
 
         std::vector <rs2_vertex> subedges2vertices(z_frame_data z_data, const rs2_intrinsics& intrin, float depth_units);
 
