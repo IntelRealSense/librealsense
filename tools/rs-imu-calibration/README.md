@@ -10,8 +10,7 @@ The rs-imu-calibration tool is a code example that walks you through the calibra
 
 ## Limitations
 While the tool achieves good overall results, it has limitations that may impact accuracy. Please refer to following white paper for further information:
-Intel® RealSense™ Depth Camera D435i IMU Calibration
-https://dev.intelrealsense.com/docs/depth-camera-d435i-imu-calibration
+Intel® RealSense™ Depth Camera D435i [IMU Calibration](https://dev.intelrealsense.com/docs/depth-camera-d435i-imu-calibration)
 
 ## Command Line Parameters
 
