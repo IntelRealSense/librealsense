@@ -19,6 +19,7 @@
 #include <array>
 #include <mutex>
 #include <set>
+#include <regex>
 
 #include <imgui_internal.h>
 
@@ -197,7 +198,10 @@ bool refresh_devices(std::mutex& m,
             if (!initial_refresh)
             {
                 if (added || dev.is<playback>())
-                viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
+                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
+                    viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
                         RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
                 else
                     viewer_model.not_model.add_notification({ dev_descriptor.first + " Connected\n",
@@ -270,7 +274,6 @@ int main(int argc, const char** argv) try
     device_model* device_to_remove = nullptr;
     bool is_ip_device_connected = false;
     std::string ip_address;
-    bool close_ip_popup = false;
 
     viewer_model viewer_model(ctx);
 
@@ -281,8 +284,8 @@ int main(int argc, const char** argv) try
     {
         try
         {
-        add_remote_device(ctx, argv[1]);
-        is_ip_device_connected = true;
+            add_remote_device(ctx, argv[1]);
+            is_ip_device_connected = true;
         }
         catch (std::runtime_error e)
         {
@@ -400,7 +403,7 @@ int main(int argc, const char** argv) try
             }
         }
 
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 24)});
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 18)});
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -459,15 +462,18 @@ int main(int argc, const char** argv) try
             ImGui::Text("%s", "");
             ImGui::NextColumn();
 
+            bool close_ip_popup = false;
+
             if (!is_ip_device_connected)
             {
-                ImGui::Separator();
-                if (ImGui::Selectable("Add IP Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
+                //ImGui::Separator();
+                if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
                 {
-                    ImGui::OpenPopup("Enter Device IP");
+                    ip_address = config_file::instance().get_or_default(configurations::viewer::last_ip, std::string{});
+                    ImGui::OpenPopup("Network Device");
                 }
 
-                float width = 280;
+                float width = 300;
                 float height = 125;
                 float posx = window.width() * 0.5f - width * 0.5f;
                 float posy = window.height() * 0.5f - height * 0.5f;
@@ -476,40 +482,66 @@ int main(int argc, const char** argv) try
                 ImGui::PushStyleColor(ImGuiCol_PopupBg, sensor_bg);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 1);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
-                if (ImGui::BeginPopupModal("Enter Device IP", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))    
+                if (ImGui::BeginPopupModal("Network Device", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))    
                 {
-                    static char ip_input[256];
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
+                    ImGui::SetCursorPosX(10);
+                    ImGui::Text("Connect to a Linux system running rs-server");
+
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    
+                    bool connect = false;
+                    static char ip_input[17];
                     std::copy(ip_address.begin(), ip_address.end(), ip_input);
                     ip_input[ip_address.size()] = '\0';
-                    ImGui::NewLine();
-                    ImGui::SetCursorPosX(width * 0.15f);
-                    ImGui::PushItemWidth(width * 0.7f);
-                    if (ImGui::GetWindowIsFocused() && !ImGui::IsAnyItemActive()) 
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+                    ImGui::SetCursorPosX(10);
+                    ImGui::Text("Device IP: ");
+                    ImGui::SameLine(); 
+                    //ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 1);
+                    ImGui::PushItemWidth(width - ImGui::GetCursorPosX() - 10);
+                    if (ImGui::GetWindowIsFocused() && 
+                        !ImGui::IsAnyItemActive() && ip_address == "") 
+                    {
                         ImGui::SetKeyboardFocusHere();
-                    if (ImGui::InputText("", ip_input, 255, ImGuiInputTextFlags_CharsDecimal)) //TODO: Ester - enable letters when host name is supported
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+
+
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
+                    if (ImGui::InputText("##ip", ip_input, 16, 
+                        ImGuiInputTextFlags_CharsDecimal || 
+                        ImGuiInputTextFlags_EnterReturnsTrue
+                        ))
                     {
                         ip_address = ip_input;
                     }
+                    ImGui::PopStyleColor();
+                    
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6);
+
                     ImGui::PopItemWidth();
-                    ImGui::NewLine();
-                    ImGui::SetCursorPosX(width * 0.5f - 105);
-                    if (ip_address.size() < MIN_IP_SIZE)
+                    ImGui::SetCursorPosX(width / 2 - 105);
+
+                    std::regex rgx("\\d{1,3}(\\.\\d{1,3}){3}");
+                    if (!std::regex_match(ip_address,rgx))
                     {
-                        ImGui::ButtonEx("ok",{100.f, 25.f}, ImGuiButtonFlags_Disabled);
+                        ImGui::ButtonEx("OK",{100.f, 25.f}, ImGuiButtonFlags_Disabled);
                     }
                     else
                     {
-                        if (ImGui::ButtonEx("ok",{100.f, 25.f}))
+                        if (ImGui::ButtonEx("OK",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ENTER) || ImGui::IsKeyDown(GLFW_KEY_KP_ENTER))
                         {
                             try
                             {
-                            add_remote_device(ctx, ip_address);
-                            is_ip_device_connected = true;
-                            refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                            auto dev = connected_devs[connected_devs.size()-1];
-                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                                add_remote_device(ctx, ip_address);
+                                is_ip_device_connected = true;
+                                refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
+                                auto dev = connected_devs[connected_devs.size()-1];
+                                device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                                config_file::instance().set(configurations::viewer::last_ip, ip_address);
                             }
                             catch (std::runtime_error e)
                             {
@@ -521,8 +553,8 @@ int main(int argc, const char** argv) try
                         }
                     }
                     ImGui::SameLine();
-                    ImGui::SetCursorPosX(width * 0.5f + 5);
-                    if(ImGui::Button("cancel",{100.f, 25.f}))
+                    ImGui::SetCursorPosX(width / 2 + 5);
+                    if(ImGui::Button("Cancel",{100.f, 25.f}) || ImGui::IsKeyDown(GLFW_KEY_ESCAPE))
                     {
                         ip_address = "";
                         close_ip_popup = true;

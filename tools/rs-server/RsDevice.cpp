@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
+#include <thread>
 #include "RsDevice.hh"
 
 int RsDevice::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_index)
@@ -11,27 +12,47 @@ int RsDevice::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors_ind
 
 RsDevice::RsDevice()
 {
-        //get LRS device
-        // The context represents the current platform with respect to connected devices
+    //get LRS device
+    // The context represents the current platform with respect to connected devices
+
+    bool found = false;
+    bool first = true;
+    do 
+    {
         rs2::context ctx;
         rs2::device_list devices = ctx.query_devices();
         rs2::device dev;
-        if (devices.size() == 0)
+        if (devices.size())
         {
-                std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-                rs2::device_hub device_hub(ctx);
-                m_device = device_hub.wait_for_device(); //todo: check wait_for_device
-        }
-        else
-        {
+            try
+            {
                 m_device = devices[0]; // Only one device is supported
+                std::cerr << "RealSense Device Connected" << std::endl;
+                
+                found = true;
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
         }
-        
-        //get RS sensors
-        for (auto &sensor : m_device.query_sensors())
+        if (!found) 
         {
-                m_sensors.push_back(RsSensor(sensor, m_device));
+            if (first) 
+            {
+                std::cerr << "Waiting for Device..." << std::endl;
+                first = false;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
+    }
+    while (!found);
+
+    //get RS sensors
+    for (auto &sensor : m_device.query_sensors())
+    {
+        m_sensors.push_back(RsSensor(sensor, m_device));
+    }
 }
 
 RsDevice::~RsDevice()

@@ -169,6 +169,8 @@ namespace rs2
             static const char* show_map_ruler      { "viewer_model.show_map_ruler" };
             static const char* show_stream_details { "viewer_model.show_stream_details" };
             static const char* metric_system       { "viewer_model.metric_system" };
+
+            static const char* last_ip             { "viewer_model.last_ip" };
         }
         namespace window
         {

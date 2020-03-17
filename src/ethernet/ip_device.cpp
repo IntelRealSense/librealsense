@@ -28,15 +28,16 @@ ip_device::~ip_device()
 {
     is_device_alive = false;
 
-    for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
-    {
-        stop_sensor_streams(remote_sensor_index);
-    }
-
     if (sw_device_status_check.joinable())
     {
         sw_device_status_check.join();
     }
+
+    for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
+    {
+        update_sensor_state(remote_sensor_index, {});
+    }
+
     std::cout << "destroy ip_device\n";
 }
 
@@ -93,7 +94,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
     {
 
         url = std::string("rtsp://" + ip_address + ":8554/" + sensors_str[sensor_id]);
-        sensor_name = sensors_str[sensor_id] + std::string(" (Remote)");
+        sensor_name = sensors_str[sensor_id];
 
         remote_sensors[sensor_id] = new ip_sensor();
 
@@ -175,6 +176,8 @@ void ip_device::polling_state_loop()
 {
     while (this->is_device_alive)
     {
+	try
+	{
         bool enabled;
         for(int i=0 ; i < NUM_OF_SENSORS ; i++ )
         {
@@ -201,6 +204,11 @@ void ip_device::polling_state_loop()
                     std::cout << "option: " << opt << " has changed to:  " << remote_sensors[i]->sensors_option[opt] << std::endl;
                     update_option_value(i, opt, remote_sensors[i]->sensors_option[opt]);
                 }
+        }
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(POLLING_SW_DEVICE_STATE_INTERVAL));
     }
@@ -292,6 +300,8 @@ int stream_type_to_sensor_id(rs2_stream type)
 
 void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
 {
+try
+{
     rtp_stream.get()->is_enabled = true;
 
     rtp_stream.get()->frame_data_buff.frame_number = 0;
@@ -336,6 +346,11 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
 
     rtp_stream.get()->reset_queue();
     std::cout << "polling data at stream index " << rtp_stream.get()->m_rs_stream.uid << " is done\n";
+}
+    catch(const std::exception& ex)
+    {
+        std::cerr << ex.what() << std::endl;
+    }
 }
 
 rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_error** error) BEGIN_API_CALL
