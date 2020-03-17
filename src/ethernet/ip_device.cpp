@@ -35,7 +35,7 @@ ip_device::~ip_device()
 
     for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
     {
-        update_sensor_state(remote_sensor_index, {});
+        update_sensor_state(remote_sensor_index, {}, false);
     }
 
     std::cout << "destroy ip_device\n";
@@ -192,7 +192,7 @@ void ip_device::polling_state_loop()
 
             if (remote_sensors[i]->is_enabled != enabled)
             {
-                update_sensor_state(i, sw_sensor->get_active_streams());
+                update_sensor_state(i, sw_sensor->get_active_streams(), true);
                 remote_sensors[i]->is_enabled = enabled;
             }
             auto sensor_supported_option = sw_sensor->get_supported_options();
@@ -256,7 +256,7 @@ rs2_video_stream convert_stream_object(rs2::video_stream_profile sp)
     return retVal;
 }
 
-void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_profile> updated_streams)
+void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_profile> updated_streams, bool recover)
 {
     //check if need to close all
     if (updated_streams.size() == 0)
@@ -265,7 +265,10 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
         remote_sensors[sensor_index]->rtsp_client->close();
         remote_sensors[sensor_index]->rtsp_client = nullptr;
         stop_sensor_streams(sensor_index);
-        recover_rtsp_client(sensor_index);
+        if (recover)
+        {
+            recover_rtsp_client(sensor_index);
+        }
         return;
     }
     for (size_t i = 0; i < updated_streams.size(); i++)
