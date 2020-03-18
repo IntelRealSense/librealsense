@@ -128,7 +128,7 @@ void RsDeviceSource::deliverRSFrame(rs2::frame *t_frame)
   fFrameSize += sizeof(RsNetworkHeader);
   if (t_frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
   {
-    header.metadataHeader.timestamp = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+    header.metadataHeader.timestamp = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP)/1000;
   }
   else
   {
