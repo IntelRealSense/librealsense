@@ -8,7 +8,7 @@
 #include <exception>
 
 // Convert rs2::frame to cv::Mat
-cv::Mat frame_to_mat(const rs2::frame& f)
+static cv::Mat frame_to_mat(const rs2::frame& f)
 {
     using namespace cv;
     using namespace rs2;
@@ -45,7 +45,7 @@ cv::Mat frame_to_mat(const rs2::frame& f)
 }
 
 // Converts depth frame to a matrix of doubles with distances in meters
-cv::Mat depth_frame_to_meters( const rs2::depth_frame & f )
+static cv::Mat depth_frame_to_meters( const rs2::depth_frame & f )
 {
     cv::Mat dm = frame_to_mat(f);
     dm.convertTo( dm, CV_64F );
