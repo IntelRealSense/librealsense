@@ -40,10 +40,6 @@
 #include <regex>
 #include <list>
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-#include <libusb.h>
-#pragma GCC diagnostic pop
-
 // Metadata streaming nodes are available with kernels 4.16+
 #ifdef V4L2_META_FMT_UVC
 constexpr bool metadata_node = true;
