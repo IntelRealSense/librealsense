@@ -19,7 +19,7 @@
 #include "common/RsRtspCommon.h"
 
 //TODO: check if this timeout is reasonable for all commands 
-#define RTSP_CLIENT_COMMANDS_TIMEOUT_SEC 3
+#define RTSP_CLIENT_COMMANDS_TIMEOUT_SEC 10
 
 #define SDP_EXTRINSICS_ARGS 13
 
