@@ -218,7 +218,7 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         {
                 m_dinfo.out_color_space = JCS_RGB;
         }
-        else if (m_format == RS2_FORMAT_YUYV)
+        else if (m_format == RS2_FORMAT_YUYV || m_format == RS2_FORMAT_UYVY)
         {
                 m_dinfo.out_color_space = JCS_YCbCr;
         }
