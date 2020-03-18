@@ -191,8 +191,16 @@ void ip_device::polling_state_loop()
 
                 if (remote_sensors[i]->is_enabled != enabled)
                 {
-                    update_sensor_state(i, sw_sensor->get_active_streams(), true);
-                    remote_sensors[i]->is_enabled = enabled;
+                    try
+                    {
+                        update_sensor_state(i, sw_sensor->get_active_streams(), true);
+                        remote_sensors[i]->is_enabled = enabled;
+                    }
+                    catch (const std::exception &e)
+                    {
+                        std::cerr << e.what() << '\n';
+                        update_sensor_state(i, {}, true);
+                    }
                 }
                 auto sensor_supported_option = sw_sensor->get_supported_options();
                 for (rs2_option opt : sensor_supported_option)
