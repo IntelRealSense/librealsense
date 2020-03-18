@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         mRsContext.setDevicesChangedCallback(new DeviceListener() {
             @Override
             public void onDeviceAttach() {
-                onRSDeviceAttach();;
+                onRSDeviceAttach();
                 printMessage();
             }
 

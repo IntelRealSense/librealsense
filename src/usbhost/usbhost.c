@@ -677,7 +677,7 @@ int usb_device_bulk_transfer(struct usb_device *device,
     ctrl.data = buffer;
     ctrl.timeout = timeout;
 
-    #if defined(__ANDROID__) && (__ANDROID_API__ < __ANDROID_API_P__)
+    #ifdef MAX_USBFS_BUFFER_SIZE
         unsigned char *data = (unsigned char*) buffer;
         unsigned count = 0;
         unsigned int startLength = length;

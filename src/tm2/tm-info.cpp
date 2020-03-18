@@ -10,9 +10,6 @@
 
 #include "tm-info.h"
 #include "tm-device.h"
-#ifndef __ANDROID__
-    #include "libusb.h"    
-#endif
 #include "common/fw/target.h"
 
 namespace librealsense
