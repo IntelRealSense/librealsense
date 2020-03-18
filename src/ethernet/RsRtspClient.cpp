@@ -288,7 +288,7 @@ int RsRTSPClient::getOption(const std::string& t_sensorName, rs2_option t_option
   {
     res = sendGetParameterCommand(this->continueAfterGETCOMMAND, option.c_str());
   }
-  // wait for continueAfterPLAY to finish
+  // wait for continueAfterGETCOMMAND to finish
   std::unique_lock<std::mutex> lck(m_commandMtx);
   m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
   if(!m_commandDone)
