@@ -10,7 +10,7 @@ namespace librealsense
     {       
         usb_context::usb_context() : _ctx(NULL), _list(NULL), _count(0)
         {
-            auto sts = libusb_init(NULL);
+            auto sts = libusb_init(&_ctx);
             if(sts != LIBUSB_SUCCESS)
             {
                 LOG_ERROR("libusb_init failed");
