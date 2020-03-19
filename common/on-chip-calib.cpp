@@ -439,7 +439,7 @@ namespace rs2
         using namespace chrono;
 
         auto health = get_manager().get_health();
-        auto recommend_keep = health > 0.25 || health < -0.25;  //TODO: check if need to add -025? 
+        auto recommend_keep = health > 0.25 || health < -0.25;  
         if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !get_manager().tare)
         {
             auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -703,8 +703,6 @@ namespace rs2
                 for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
                 ImGui::PushItemWidth(width - 145);
-
-				//get_manager().speed = 4;// TODO: ONLY IF D415
 
                 ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), vals.size());
                 ImGui::PopItemWidth();
