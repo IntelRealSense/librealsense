@@ -80,7 +80,7 @@ target_link_libraries(realsense-viewer ${DEPENDENCIES}
                                         )
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
-    target_link_libraries(realsense-viewer uvc_fw)
+    target_link_libraries(realsense-viewer fw)
 endif()
 
 set_target_properties (realsense-viewer PROPERTIES
