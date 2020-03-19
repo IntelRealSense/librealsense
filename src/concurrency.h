@@ -61,13 +61,17 @@ public:
     }
 
 
-    bool dequeue(T* item ,unsigned int timeout_ms)
+    bool dequeue(T* item , int timeout_ms)
     {
         std::unique_lock<std::mutex> lock(_mutex);
         _accepting = true;
         _was_flushed = false;
         const auto ready = [this]() { return (_queue.size() > 0) || _need_to_flush; };
-        if (!ready() && !_deq_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), ready))
+        if (timeout_ms < 0)
+        {
+            _deq_cv.wait(lock, ready);
+        }
+        else if (!_deq_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), ready))
         {
             return false;
         }
@@ -155,7 +159,7 @@ public:
             _queue.enqueue(std::move(item));
     }
 
-    bool dequeue(T* item, unsigned int timeout_ms)
+    bool dequeue(T* item, int timeout_ms)
     {
         return _queue.dequeue(item, timeout_ms);
     }
@@ -217,12 +221,11 @@ public:
     {
         _thread = std::thread([&]()
         {
-            int timeout_ms = 5000;
-            while (_is_alive)
+            while (_is_alive || _queue.size())
             {
                 std::function<void(cancellable_timer)> item;
 
-                if (_queue.dequeue(&item, timeout_ms))
+                while (_queue.dequeue(&item, -1/*no timeout*/))
                 {
                     cancellable_timer time(this);
 
@@ -308,8 +311,8 @@ public:
     ~dispatcher()
     {
         stop();
-        _queue.clear();
         _is_alive = false;
+        _queue.clear();
         _thread.join();
     }
 
