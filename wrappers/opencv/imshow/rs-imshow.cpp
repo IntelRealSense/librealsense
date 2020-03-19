@@ -79,6 +79,9 @@ auto max_optimization_iters = 50;
             std::vector< uint16_t> closest;
             std::vector<float> weights;
             std::vector<float> direction_deg;
+            std::vector<rs2_vertex> vertices;
+
+
         };
 
         struct yuy2_frame_data
@@ -91,11 +94,34 @@ auto max_optimization_iters = 50;
             std::vector<float> edges_IDTy;
         };
 
-       /* enum convolution_operation
+        struct translation_gradients
         {
-            convolution_dot_product,
-            convolution_max_element
-        };*/
+            float t1;
+            float t2;
+            float t3;
+        };
+
+        struct rotation_gradients
+        {
+            float alpha;
+            float beta;
+            float gamma;
+        };
+
+        struct k_gradients
+        {
+            float ppx;
+            float ppy;
+            float fx;
+            float fy;
+        };
+
+        struct calib_gradients
+        {
+            translation_gradients trans_grads;
+            rotation_gradients rot_grads;
+            k_gradients k_grads;
+        };
 
         std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
                                                              {deg_45, {1, 1}},
@@ -196,7 +222,13 @@ auto max_optimization_iters = 50;
 
         std::vector<float> calculate_weights(z_frame_data& z_data);
 
-        std::vector <rs2_vertex> subedges2vertices(z_frame_data z_data, const rs2_intrinsics& intrin, float depth_units);
+        std::vector <rs2_vertex> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, float depth_units);
+
+        calib_gradients get_calib_gradients(const z_frame_data& z_data);
+
+        std::pair< auto_cal_algo::calib_gradients, float> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+
+        float calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv);
 
         template<class T>
         std::vector<float> calc_gradients(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
@@ -548,6 +580,15 @@ auto max_optimization_iters = 50;
         calculate_weights(res);
         //zero_invalid_edges(res, ir_data);
 
+        rs2_intrinsics depth_intrin = { width_z, height_z,
+            529.27344, 402.32031,
+            731.27344,731.97656,
+           RS2_DISTORTION_INVERSE_BROWN_CONRADY, {0, 0, 0, 0, 0} };
+
+        float depth_units = 0.25f;
+        auto vertices = subedges2vertices(res, depth_intrin, depth_units);
+
+        //std::sort(vertices.begin(), vertices.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
         return res;
     }
 
@@ -667,12 +708,14 @@ auto max_optimization_iters = 50;
         return res;
     }
 
-    std::vector<rs2_vertex> auto_cal_algo::subedges2vertices(z_frame_data z_data, const rs2_intrinsics& intrin, float depth_units)
+    std::vector<rs2_vertex> auto_cal_algo::subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, float depth_units)
     {
         std::vector<rs2_vertex> res(z_data.subpixels_x.size());
         deproject_sub_pixel(res, intrin, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units);
+        z_data.vertices = res;
         return res;
     }
+
 
     void auto_cal_algo::deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics& intrin, const float* x, const float* y, const uint16_t* depth, float depth_units)
     {
@@ -686,18 +729,18 @@ auto max_optimization_iters = 50;
     }
 
     std::vector<float2> get_texture_map(
-        const std::vector<rs2_vertex> points,
+        /*const*/ std::vector<rs2_vertex> points,
         const rs2_intrinsics &intrinsics,
         const rs2_extrinsics& extr)
     {
         std::vector<float2> uv(points.size());
+        std::sort(points.begin(), points.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
 
         for (auto i = 0; i < points.size(); ++i)
         {
             rs2_vertex p = {};
             rs2_transform_point_to_point(&p.xyz[0], &extr, &points[i].xyz[0]);
-
-            //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
+             //auto tex_xy = project_to_texcoord(&mapped_intr, trans);
             // Store intermediate results for poincloud filters
             float2 pixel = {};
             rs2_project_point_to_pixel(&pixel.x, &intrinsics, &p.xyz[0]);
@@ -723,7 +766,7 @@ auto max_optimization_iters = 50;
             if (x1 < 0 || x1 > width || x2 < 0 || x2 >= width ||
                 y1 < 0 || y1 > height || y2 < 0 || y2 >= height)
             {
-                res[i] = NAN;
+                res[i] = 0;
                 continue;
             }
 
@@ -748,19 +791,46 @@ auto max_optimization_iters = 50;
         return res;
     }
 
+    
+
+    auto_cal_algo::calib_gradients auto_cal_algo::get_calib_gradients(const z_frame_data& z_data)
+    {
+
+        return calib_gradients();
+    }
+
+    
+    float auto_cal_algo::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv)
+    {
+        auto d_vals = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, uv);
+
+        auto cost = 0;
+        for (auto i = 0;i < d_vals.size(); i++)
+        {
+            cost += d_vals[i] * z_data.weights[i];
+        }
+        cost /= d_vals.size();
+        return cost;
+    }
+
+    std::pair<auto_cal_algo::calib_gradients, float> auto_cal_algo::calc_cost_and_grad(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto uvmap = get_texture_map(z_data.vertices, yuy_intrin, yuy_extrin);
+        //std::sort(uvmap.begin(), uvmap.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
+
+        auto cost = calc_cost(z_data, yuy_data, uvmap);
+        return std::pair<auto_cal_algo::calib_gradients, float>();
+    }
+
     bool auto_cal_algo::optimaize()
     {
         auto yuy_data = preprocess_yuy2_data();
-        cv::Mat res_mat(height_yuy2, width_yuy2, CV_32F, yuy_data.edges_IDT.data());
-
-        std::vector<float> arr = { 1,0,0,0 };
-        std::vector<float2> p = { { -0.5,-0.5} };
-        auto interp = biliniar_interp(arr, 2, 2, p);
+        //cv::Mat res_mat(height_yuy2, width_yuy2, CV_32F, yuy_data.edges_IDT.data());
 
         auto ir_data = get_ir_data();
 
         auto z_data = preproccess_z(ir_data);
-        std::sort(z_data.weights.begin(), z_data.weights.end(), [](float v1, float v2) {return v1 < v2;});
+        //std::sort(z_data.weights.begin(), z_data.weights.end(), [](float v1, float v2) {return v1 < v2;});
         
         /*std::string res_file1("LongRange/15/binFiles/Z_edge_768x1024_single_00.bin");
         res = get_image<float>(res_file1, width_z, height_z);
@@ -772,25 +842,12 @@ auto max_optimization_iters = 50;
                 std::cout << "err";
         }*/
 
-        rs2_intrinsics depth_intrin = { width_z, height_z,
-             529.27344, 402.32031,
-             731.27344,731.97656,
-            RS2_DISTORTION_INVERSE_BROWN_CONRADY, {0, 0, 0, 0, 0} };
-
-        float depth_units = 0.25f;
-        auto vertices = subedges2vertices(z_data, depth_intrin, depth_units);
-        std::sort(vertices.begin(), vertices.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
+       
 
         rs2_intrinsics rgb_intrinsics = { width_yuy2, height_yuy2,
                                      959.33734, 568.44531,
                                      1355.8387,1355.1364,
-                                     RS2_DISTORTION_BROWN_CONRADY, {1,1,1,1,1},/* {0.14909270, -0.49516717, -0.00067913462, 0.0010808484, 0.42839915}*/ };
-
-
-        /* rs2_extrinsics extrinsics = { { 0.99970001, 0.021360161, -0.011983165,
-                                         -0.021156590, 0.99963391, 0.016865131,
-                                         0.012339020, -0.016606549, 0.99978596 },
-                                        -0.011983165, 13.260437, -6.7013960 };*/
+                                     RS2_DISTORTION_BROWN_CONRADY,  {0.14909270, -0.49516717, -0.00067913462, 0.0010808484, 0.42839915}};
 
 
         rs2_extrinsics extrinsics = { { 0.99970001, -0.021156590, 0.012339020,
@@ -798,25 +855,26 @@ auto max_optimization_iters = 50;
                                       -0.011983165, 0.016865131, 0.99978596 },
                                        1.1025798, 13.548738, -6.8803735 };
 
+        /*rs2_extrinsics extrinsics = { {0.99970001, 0.021360161,  -0.011983165,
+            -0.021156590, 0.99963391, 0.016865131,
+            0.012339020, -0.016606549, 0.99978596},
+                                      1.1025798, 13.548738, -6.8803735 };*/
+       /* auto uvmap = get_texture_map(z_data.vertices, rgb_intrinsics, extrinsics);
+        std::sort(uvmap.begin(), uvmap.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});*/
+      
+        calc_cost_and_grad(z_data, yuy_data, rgb_intrinsics, extrinsics);
+        //auto res = get_texture_map(z_data.vertices, rgb_intrinsics, extrinsics);
+        //std::sort(res.begin(), res.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
 
+        //auto interp_IDT = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, res);
 
-        /*vertices[0].xyz[0] = 1;
-        vertices[0].xyz[1] = 1;
-        vertices[0].xyz[2] = 1;*/
+        ////std::sort(interp_IDT.begin(), interp_IDT.end());
 
-        auto res = get_texture_map(vertices, rgb_intrinsics, extrinsics);
-        std::sort(res.begin(), res.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
+        //auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, width_yuy2, height_yuy2, res);
+        //std::sort(interp_IDT_x.begin(), interp_IDT_x.end());
 
-
-        auto interp_IDT = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, res);
-
-        std::sort(interp_IDT.begin(), interp_IDT.end());
-
-        auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, width_yuy2, height_yuy2, res);
-        std::sort(interp_IDT_x.begin(), interp_IDT_x.end());
-
-        auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, width_yuy2, height_yuy2, res);
-        std::sort(interp_IDT_y.begin(), interp_IDT_y.end());
+        //auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, width_yuy2, height_yuy2, res);
+        //std::sort(interp_IDT_y.begin(), interp_IDT_y.end());
 
 
         return true;
