@@ -208,9 +208,8 @@ void ip_device::polling_state_loop()
                         update_sensor_state(i, {}, true);
                         rs2_software_notification notification;
                         notification.description = e.what();
-                        notification.serialized_data = e.what();
-                        notification.severity = RS2_LOG_SEVERITY_WARN;
-                        //TODO: set values for type 
+                        notification.severity = RS2_LOG_SEVERITY_ERROR;
+                        //TODO: set values for type, serialized_data 
                         remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
