@@ -197,15 +197,21 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        update_sensor_state(i, sw_sensor->get_active_streams(), true);
+                        //TODO: move this after the rtsp call. 
+                        //currently it is so as workaround to avoid re-try.
                         remote_sensors[i]->is_enabled = enabled;
+                        update_sensor_state(i, sw_sensor->get_active_streams(), true);
                     }
                     catch (const std::exception &e)
                     {
                         std::cerr << e.what() << '\n';
                         update_sensor_state(i, {}, true);
-                        throw std::runtime_error(e.what());
-
+                        rs2_software_notification notification;
+                        notification.description = e.what();
+                        notification.serialized_data = e.what();
+                        notification.severity = RS2_LOG_SEVERITY_WARN;
+                        //TODO: set values for type 
+                        remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
                 }
