@@ -44,13 +44,6 @@ public class MainActivity extends AppCompatActivity {
         //For multi activities applications use the application context instead of the activity context
         RsContext.init(getApplicationContext());
 
-        try {
-            // give T265 time to boot
-            sleep(1000);
-        } catch (InterruptedException e) {
-            Log.e(TAG, "onCreate: sleep interrupted");
-        }
-
         //Register to notifications regarding RealSense devices attach/detach events via the DeviceListener.
         mRsContext = new RsContext();
         mRsContext.setDevicesChangedCallback(new DeviceListener() {
