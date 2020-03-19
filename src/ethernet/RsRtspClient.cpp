@@ -602,19 +602,13 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
       while ((pos = controlsPerSensor.find(';')) != std::string::npos)
       {
         std::string controlStr = controlsPerSensor.substr(0, pos);
-        std::size_t pos1 = controlStr.find('{');
+        
         controlData.sensorId = counter == 0 ? 1 : 0;
-        controlData.option = (rs2_option)stoi(controlStr.substr(0, pos1));
-        std::size_t pos2 = controlStr.find(',', pos1 + 1);
-        controlData.range.min = stof(controlStr.substr(pos1 + 1, pos2 - (pos1 + 1)));
-        pos1 = controlStr.find(',', pos2 + 1);
-        controlData.range.max = stof(controlStr.substr(pos2 + 1, pos1 - (pos2 + 1)));
-        pos2 = controlStr.find(',', pos1 + 1);
-        controlData.range.def = stof(controlStr.substr(pos1 + 1, pos2 - (pos1 + 1)));
-        pos1 = controlStr.find('}', pos2 + 1);
-        controlData.range.step = stof(controlStr.substr(pos2 + 1, pos1 - (pos2 + 1)));
+
+        int params_count = sscanf(controlStr.c_str(), "%d{%f,%f,%f,%f}",
+            &controlData.option,&controlData.range.min,&controlData.range.max,&controlData.range.def,&controlData.range.step);
+
         controls.push_back(controlData);
-        //std::cout<< controlData.sensorId << ":"<<controlData.option <<std::endl;
         controlsPerSensor.erase(0, pos + 1);
       }
       counter++;
