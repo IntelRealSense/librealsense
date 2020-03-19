@@ -251,6 +251,7 @@ namespace librealsense
         int data_sampling = DEFAULT_SAMPLING;
         int apply_preset = 1;
 
+
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
@@ -310,7 +311,7 @@ namespace librealsense
             }
 
             if (progress_callback)
-                progress_callback->on_update_progress(count * (2 * speed)); //curently this number does not reflect the actual progress
+                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 

@@ -135,6 +135,8 @@ namespace rs2
         bool paused = false;
         bool metric_system = true;
 
+		uint32_t ground_truth_r = 2500;
+
         enum export_type
         {
             ply
