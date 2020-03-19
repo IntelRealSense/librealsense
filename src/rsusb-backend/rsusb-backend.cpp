@@ -56,7 +56,7 @@ namespace librealsense
             // Give the device a chance to restart, if we don't catch
             // it, the watcher will find it later.
             if(tm_boot(device_infos)) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                 device_infos = usb_enumerator::query_devices_info();
             }
             return device_infos;
