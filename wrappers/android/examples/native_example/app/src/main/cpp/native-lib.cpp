@@ -25,8 +25,8 @@ Java_com_example_realsense_1native_1example_MainActivity_nGetSensorsCountFromJNI
     return ctx.query_all_sensors().size();
 }
 
-rs2::pipeline pipe;
-rs2::config cfg;
+static rs2::pipeline pipe;
+static rs2::config cfg;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_realsense_1native_1example_MainActivity_nStreamPoseData(JNIEnv *env, jclass type) {
