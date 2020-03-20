@@ -13,8 +13,6 @@ import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.RsContext;
 
-import static java.lang.Thread.sleep;
-
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "librs native example";
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 0;
