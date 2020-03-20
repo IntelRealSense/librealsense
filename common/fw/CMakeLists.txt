@@ -8,7 +8,8 @@ file(READ "firmware-version.h" ver)
 
 message(STATUS "Fetching recommended firmwares:")
 
-set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE STRING)
+set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE STRING
+    "URL to download firmware binaries from")
 
 string(REGEX MATCH "D4XX_RC_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_RC_VERSION ${CMAKE_MATCH_1})
