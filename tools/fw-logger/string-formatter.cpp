@@ -54,7 +54,7 @@ namespace fw_logger
 
             st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
             regular_exp[2] = st_regular_exp[2].str();
-            st_replacement[2] << static_cast<float_t>(params[i]); 
+            st_replacement[2] << params[i]; 
             replacement[2] = st_replacement[2].str();
             exp_replace_map[regular_exp[2]] = replacement[2];
 
