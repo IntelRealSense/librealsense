@@ -176,7 +176,7 @@ int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         memcpy(t_compressedBuf + sizeof(int), data, compressedSize);
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish jpeg color compression, size: %lu, compressed size %u, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                printf("finish jpeg color compression, size: %d, compressed size %lu, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR];
@@ -273,7 +273,7 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         int uncompressedSize = m_dinfo.output_width * m_dinfo.output_height * m_bpp;
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish jpeg color decompression, size: %lu, compressed size %u, frameNum: %d \n", uncompressedSize, t_compressedSize, m_decompFrameCounter);
+                printf("finish jpeg color decompression, size: %d, compressed size %d, frameNum: %d \n", uncompressedSize, t_compressedSize, m_decompFrameCounter);
         }
 
 #ifdef STATISTICS

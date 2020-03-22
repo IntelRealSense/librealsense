@@ -95,7 +95,7 @@ int RvlCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish rvl depth compression, size: %d, compressed size %u, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                printf("finish rvl depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -144,7 +144,7 @@ int RvlCompression::decompressBuffer(unsigned char *t_buffer, int t_size, unsign
         int uncompressedSize = int((char *)currentPtr - (char *)t_uncompressedBuf);
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish rvl depth compression, size: %lu, compressed size %u, frameNum: %d \n", uncompressedSize, compressedSize, m_decompFrameCounter);
+                printf("finish rvl depth compression, size: %d, compressed size %d, frameNum: %d \n", uncompressedSize, compressedSize, m_decompFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];

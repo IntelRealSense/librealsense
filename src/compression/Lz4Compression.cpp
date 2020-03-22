@@ -34,7 +34,7 @@ int Lz4Compression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         }
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish lz depth compression, size: %lu, compressed size %u, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                printf("finish lz depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -68,7 +68,7 @@ int Lz4Compression::decompressBuffer(unsigned char *t_buffer, int t_compressedSi
         //      printf("Decompressed data is different from original!, decompressed_size: %d original size: %d \n",decompressed_size,  m_width* m_height * 2 );
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish lz depth decompression, size: %lu, compressed size %u, frameNum: %d \n", decompressed_size, t_compressedSize, m_decompFrameCounter);
+                printf("finish lz depth decompression, size: %d, compressed size %d, frameNum: %d \n", decompressed_size, t_compressedSize, m_decompFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
