@@ -33,6 +33,11 @@ RsServerMediaSession::~RsServerMediaSession()
 
 void RsServerMediaSession::openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles)
 {
+  if (m_isActive)
+  {
+    envir()<< "sensor is already open, closing sensor and than open again...\n";
+    closeRsCamera();
+  }
   m_rsSensor.open(t_streamProfiles);
   m_rsSensor.start(t_streamProfiles);
   m_isActive = true;
