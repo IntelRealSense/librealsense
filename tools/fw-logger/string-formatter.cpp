@@ -52,13 +52,12 @@ namespace fw_logger
 
             exp_replace_map[regular_exp[1]] = replacement[1];
 
-			
-			st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
-			regular_exp[2] = st_regular_exp[2].str();
-			st_replacement[2] << static_cast<float_t>(params[i]); 
-			replacement[2] = st_replacement[2].str();
-			exp_replace_map[regular_exp[2]] = replacement[2];
-			
+            st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
+            regular_exp[2] = st_regular_exp[2].str();
+            st_replacement[2] << static_cast<float_t>(params[i]); 
+            replacement[2] = st_replacement[2].str();
+            exp_replace_map[regular_exp[2]] = replacement[2];
+
 
             st_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
             regular_exp[3] = st_regular_exp[3].str();
