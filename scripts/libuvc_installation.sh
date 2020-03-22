@@ -31,7 +31,7 @@ then
 fi
 
 echo Installing Librealsense-required dev packages
-sudo apt-get install git cmake libssl-dev freeglut3-devcd libusb-1.0-0-dev pkg-config libgtk-3-dev unzip -y
+sudo apt-get install git cmake libssl-dev freeglut3-dev libusb-1.0-0-dev pkg-config libgtk-3-dev unzip -y
 rm -f ./master.zip
 
 wget https://github.com/IntelRealSense/librealsense/archive/master.zip
