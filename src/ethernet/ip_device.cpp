@@ -37,7 +37,7 @@ ip_device::~ip_device()
     for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
     {
         update_sensor_state(remote_sensor_index, {}, false);
-        delete (remote_sensors[remote_sensor_index]);//->sensors_option.clear();
+        delete (remote_sensors[remote_sensor_index]); //->sensors_option.clear();
     }
 
     std::cout << "destroy done\n";
@@ -112,11 +112,17 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             std::vector<IpDeviceControlData> controls = get_controls(sensor_id);
             for (auto &control : controls)
             {
-              
+
                 float val = NAN;
                 printf("sensor is %d, option is %d,value is %d\n", control.sensorId, control.option, control.range.def);
-
-                remote_sensors[control.sensorId]->sw_sensor->add_option(control.option, {control.range.min, control.range.max, control.range.def, control.range.step});
+                if (control.range.min == control.range.max)
+                {
+                    remote_sensors[control.sensorId]->sw_sensor->add_read_only_option(control.option, control.range.def);
+                }
+                else
+                {
+                    remote_sensors[control.sensorId]->sw_sensor->add_option(control.option, {control.range.min, control.range.max, control.range.def, control.range.step});
+                }
                 remote_sensors[control.sensorId]->sensors_option[control.option] = control.range.def;
                 try
                 {
@@ -128,7 +134,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
                 }
                 catch (const std::exception &e)
                 {
-                    //todo: do not catch at constructor 
+                    //todo: do not catch at constructor
                     std::cerr << e.what() << "\n'";
                 }
             }
@@ -197,7 +203,7 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        //TODO: move this after the rtsp call. 
+                        //TODO: move this after the rtsp call.
                         //currently it is so as workaround to avoid re-try.
                         remote_sensors[i]->is_enabled = enabled;
                         update_sensor_state(i, sw_sensor->get_active_streams(), true);
@@ -209,7 +215,7 @@ void ip_device::polling_state_loop()
                         rs2_software_notification notification;
                         notification.description = e.what();
                         notification.severity = RS2_LOG_SEVERITY_ERROR;
-                        //TODO: set values for type, serialized_data 
+                        //TODO: set values for type, serialized_data
                         remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
@@ -217,9 +223,6 @@ void ip_device::polling_state_loop()
                 auto sensor_supported_option = sw_sensor->get_supported_options();
                 for (rs2_option opt : sensor_supported_option)
                 {
-                    // catch cases like baseline who not defined as read only but cannot be modified
-                    if(sw_sensor->is_option_read_only(opt) || (float)sw_sensor->get_option_range(opt).max==(float)sw_sensor->get_option_range(opt).min)
-                        continue;
                     if (remote_sensors[i]->sensors_option[opt] != (float)sw_sensor->get_option(opt))
                     {
                         //TODO: get from map once to reduce logarithmic complexity
