@@ -266,9 +266,9 @@ namespace librealsense
 
     rs2_sensor_mode get_resolution_from_width_height(int width, int height)
     {
-        if ((width == 640 && height == 480) || (height == 640 && width == 480))
+        if ((width == 640 && height == 480) || (width == 480  && height == 640))
             return RS2_SENSOR_MODE_VGA;
-        else if ((width == 1024 && height == 768) || (height == 768 && width == 1024))
+        else if ((width == 1024 && height == 768) || (width == 768 && height == 1024))
             return RS2_SENSOR_MODE_XGA;
         else
             throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
