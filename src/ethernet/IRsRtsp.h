@@ -4,11 +4,13 @@
 #ifndef _I_RS_RTSP_H
 #define _I_RS_RTSP_H
 
-#include "RsSink.h"
-#include <librealsense2/hpp/rs_internal.hpp>
 #include "rtp_callback.hh"
-#include <vector>
+#include "RsSink.h"
 #include <ipDeviceCommon/RsCommon.h>
+
+#include <librealsense2/hpp/rs_internal.hpp>
+
+#include <vector>
 
 struct DeviceData
 {

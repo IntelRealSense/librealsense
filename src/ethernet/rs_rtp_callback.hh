@@ -3,19 +3,12 @@
 
 #pragma once
 
-#include <time.h>
-#include <queue>
-
-#include <memory>
-#include <mutex>
-
 #include "rs_rtp_stream.hh"
 
-#ifdef _WIN64
-#  define ssize_t __int64
-#else
-#  define ssize_t long
-#endif
+#include <time.h>
+#include <queue>
+#include <memory>
+#include <mutex>
 
 class rs_rtp_callback : public rtp_callback
 {
