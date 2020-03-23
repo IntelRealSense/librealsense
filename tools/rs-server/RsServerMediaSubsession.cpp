@@ -4,6 +4,7 @@
 #include "RsServerMediaSubsession.h"
 #include "RsServerMediaSession.h"
 #include "RsSimpleRTPSink.h"
+#include "RsCommon.h"
 
 #define CAPACITY 100
 
@@ -43,5 +44,5 @@ RTPSink *RsServerMediaSubsession ::createNewRTPSink(Groupsock *t_rtpGroupsock,
                                                     unsigned char t_rtpPayloadTypeIfDynamic,
                                                     FramedSource * /*t_inputSource*/)
 {
-  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96 + m_videoStreamProfile.stream_type(), RTP_TIMESTAMP_FREQ, "RS_VIDEO" , "RS_FORMAT", m_videoStreamProfile, m_rsDevice);
+  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96 + m_videoStreamProfile.stream_type(), RTP_TIMESTAMP_FREQ, RS_MEDIA_TYPE.c_str() , RS_PAYLOAD_FORMAT.c_str(), m_videoStreamProfile, m_rsDevice);
 }

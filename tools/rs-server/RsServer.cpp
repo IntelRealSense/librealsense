@@ -12,6 +12,7 @@
 #include "RsDevice.hh"
 #include "RsRTSPServer.hh"
 #include "RsServerMediaSession.h"
+#include "RsCommon.h"
 
 struct server
 {
@@ -23,11 +24,12 @@ struct server
   std::vector<RsSensor> sensors;
   TaskScheduler *scheduler;
 
+
   void main(int argc, char **argv)
   {
     START_EASYLOGGINGPP(argc, argv);
 
-    OutPacketBuffer::increaseMaxSizeTo(1280 * 720 * 3);
+    OutPacketBuffer::increaseMaxSizeTo(MAX_FRAME_SIZE);
 
     // Begin by setting up our usage environment:
     scheduler = BasicTaskScheduler::createNew();
@@ -46,7 +48,7 @@ struct server
     for (auto sensor : sensors)
     {
       RsServerMediaSession *sms;
-      if (sensor.getSensorName().compare("Stereo Module") == 0 || sensor.getSensorName().compare("RGB Camera") == 0)
+      if (sensor.getSensorName().compare(STEREO_SENSOR_NAME) == 0 || sensor.getSensorName().compare(RGB_SENSOR_NAME) == 0)
       {
         sms = RsServerMediaSession::createNew(*env, sensor, sensor.getSensorName().data(), "",
                                               "Session streamed by \"realsense streamer\"",
@@ -111,7 +113,6 @@ struct server
 
   void calculate_extrinsics()
   {
-    //TODO: improve efficiency by go once per physical sensor
     for (auto stream_profile_from : supported_stream_profiles)
     {
       for (auto stream_profile_to : supported_stream_profiles)

@@ -10,7 +10,6 @@
 #include <ipDeviceCommon/RsCommon.h>
 
 #define POOL_SIZE 100                 //TODO:: to define the right value
-#define MAX_FRAME_SIZE 1280 * 720 * 3 //TODO:: to define the right value
 class MemoryPool
 {
 

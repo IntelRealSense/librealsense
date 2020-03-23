@@ -5,6 +5,7 @@
 #include "Locale.hh"
 #include "GroupsockHelper.hh"
 #include "RsMediaSession.hh"
+#include "RsCommon.h"
 #include <ctype.h>
 
 ////////// RsMediaSession //////////
@@ -83,11 +84,12 @@ RsMediaSubsession::~RsMediaSubsession()
 
 Boolean RsMediaSubsession::createSourceObjects(int useSpecialRTPoffset)
 {
-  if (strcmp(fCodecName, "RS_FORMAT") == 0)
+  if (strcmp(fCodecName, RS_PAYLOAD_FORMAT.c_str()) == 0)
   {
     // This subsession uses our custom RTP payload format:
+    std::string mimeTypeString = RS_MEDIA_TYPE + "/" + RS_PAYLOAD_FORMAT;
     fReadSource = fRTPSource = SimpleRTPSource::createNew(env(), fRTPSocket, fRTPPayloadFormat,
-                                                          fRTPTimestampFrequency, "RS_VIDEO/RS_FORMAT");
+                                                          fRTPTimestampFrequency,mimeTypeString.c_str());
     return True;
   }
   else
