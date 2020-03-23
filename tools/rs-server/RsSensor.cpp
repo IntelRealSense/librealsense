@@ -134,12 +134,12 @@ int RsSensor::getStreamProfileBpp(rs2_format t_format)
         }
         case RS2_FORMAT_RGBA8:
         {
-                bpp = 3;
+                bpp = 3; //TODO: need to be 4 bpp, change it after add support for 4 bpp formats
                 break;
         }
         case RS2_FORMAT_BGRA8:
         {
-                bpp = 3;
+                bpp = 3; //TODO: need to be 4 bpp, change it after add support for 4 bpp formats
                 break;
         }
         case RS2_FORMAT_Z16:

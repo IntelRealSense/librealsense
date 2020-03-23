@@ -194,13 +194,9 @@ void ip_device::polling_state_loop()
             {
                 //poll start/stop events
                 auto sw_sensor = remote_sensors[i]->sw_sensor.get();
-                //auto current_active_streams = sw_sensor->get_active_streams();
-
-                if (sw_sensor->get_active_streams().size() > 0)
-                    enabled = true;
-                else
-                    enabled = false;
-
+   
+                enabled = sw_sensor->get_active_streams().size() > 0; 
+   
                 if (remote_sensors[i]->is_enabled != enabled)
                 {
                     try
@@ -408,3 +404,4 @@ rs2_device *rs2_create_net_device(int api_version, const char *address, rs2_erro
     return sw_dev.get().get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)
+

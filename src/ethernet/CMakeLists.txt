@@ -3,20 +3,19 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.9.0)
 
-project(realsense2-ethernet VERSION 1.0.0 LANGUAGES CXX C)
+project(realsense2-net VERSION 1.0.0 LANGUAGES CXX C)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-set(DEPENDENCIES ${DEPENDENCIES} realsense2)
-
-set(CMAKE_CXX_FLAGS "-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1")
+add_definitions(-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1)
 
 set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
 
-file(GLOB IPDEV_SOURCES LIST_DIRECTORIES false CONFIGURE_DEPENDS 
+file(GLOB REALSENSE_NET_CPP 
   "*.h*"
   "*.c*"
+  "realsense-net.def"
   "../ipDeviceCommon/*.h*"
   "../ipDeviceCommon/*.c*"
   "${LIVE}/*.c*"
@@ -26,7 +25,19 @@ file(GLOB IPDEV_SOURCES LIST_DIRECTORIES false CONFIGURE_DEPENDS
   "${LIVE}/liveMedia/*.c*"
   "${LIVE}/UsageEnvironment/*.c*"
 )
-add_library(${PROJECT_NAME} SHARED ${IPDEV_SOURCES})
+
+set(REALSENSE_NET_PUBLIC_HEADERS
+    ../../include/librealsense2-net/rs_net.h
+    ../../include/librealsense2-net/rs_net.hpp
+)
+
+set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
+    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
+endif()
+
+add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
 
 include_directories(${PROJECT_NAME}
   ../../common
@@ -63,24 +74,44 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 target_link_libraries(${PROJECT_NAME} 
-        PRIVATE ${DEPENDENCIES}
-        realsense2-compression
+    PRIVATE realsense2 realsense2-compression
 )
 
 if(IPDEV_STATS)
     add_definitions(-DSTATISTICS)
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Library")
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${REALSENSE_NET_PUBLIC_HEADERS}")
 
-if(WIN32)
-        install(TARGETS ${PROJECT_NAME}
-                RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-else()
-        install(TARGETS ${PROJECT_NAME}
-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
-endif()
+# set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
+# set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
+
+install(TARGETS ${PROJECT_NAME}
+    EXPORT realsense2-netTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/librealsense2-net"
+)
+
+install(EXPORT realsense2-netTargets
+    FILE realsense2-netTargets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfig.cmake"
+    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfigVersion.cmake"
+        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
+# Set library pkgconfig file for facilitating 3rd party integration
+install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
+
+install(CODE "execute_process(COMMAND ldconfig)")

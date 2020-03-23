@@ -10,7 +10,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
-set(DEPENDENCIES ${DEPENDENCIES} realsense2-ethernet)
 
 add_subdirectory(convert)
 add_subdirectory(enumerate-devices)
