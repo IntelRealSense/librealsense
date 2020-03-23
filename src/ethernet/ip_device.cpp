@@ -15,7 +15,7 @@
 
 extern std::map<std::pair<int, int>, rs2_extrinsics> minimal_extrinsics_map;
 
-std::string sensors_str[] = {"Stereo Module", "RGB Camera"};
+std::string sensors_str[] = {STEREO_SENSOR_NAME, RGB_SENSOR_NAME};
 
 //WA for stop
 void ip_device::recover_rtsp_client(int sensor_index)

@@ -10,7 +10,7 @@
 #include "compression/ICompression.h"
 #include <ipDeviceCommon/MemoryPool.h>
 
-typedef struct RsOption //todo use the client struct 
+typedef struct RsOption
 {
   rs2_option m_opt;
   rs2::option_range m_range;
@@ -31,7 +31,7 @@ public:
 	std::string getSensorName();
 	static int getStreamProfileBpp(rs2_format t_format);
 	rs2::device getDevice() { return m_device; }
-	std::vector<RsOption> gerSupportedOptions();
+	std::vector<RsOption> getSupportedOptions();
 
 private:
 	UsageEnvironment* env;
