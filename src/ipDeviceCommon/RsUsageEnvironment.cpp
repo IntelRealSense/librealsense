@@ -15,10 +15,6 @@ RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
 RSUsageEnvironment::~RSUsageEnvironment() {
   CLOG(INFO, "netdev") << "RealSense network logging closed";
 
-  if (buffer) {
-    free(buffer);
-  }
-
   el::Loggers::unregisterLogger("librealsense");
   el::Loggers::unregisterLogger("netdev");
 }
