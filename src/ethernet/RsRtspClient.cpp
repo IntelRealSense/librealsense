@@ -604,10 +604,12 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
         std::string controlStr = controlsPerSensor.substr(0, pos);
         
         controlData.sensorId = counter == 0 ? 1 : 0;
-
+        int option_code;
         int params_count = sscanf(controlStr.c_str(), "%d{%f,%f,%f,%f}",
-            &controlData.option,&controlData.range.min,&controlData.range.max,&controlData.range.def,&controlData.range.step);
-
+            &option_code,&controlData.range.min,&controlData.range.max,&controlData.range.def,&controlData.range.step);
+        
+        //to avoid sscanf warning
+        controlData.option = (rs2_option)option_code;
         controls.push_back(controlData);
         controlsPerSensor.erase(0, pos + 1);
       }
