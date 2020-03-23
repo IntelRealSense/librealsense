@@ -3,10 +3,6 @@
 
 #pragma once
 
-#define SDP_MAX_LINE_LENGHT 4000
-
-#define RTP_TIMESTAMP_FREQ 90000
-
 #include <librealsense2/hpp/rs_internal.hpp>
 #include "RsDevice.hh"
 #include "liveMedia.hh"

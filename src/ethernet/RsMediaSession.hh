@@ -21,8 +21,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 //  For media streamers, use "ServerMediaSession" instead.)
 // C++ header
 
-#ifndef _RS_MEDIA_SESSION_HH
-#define _RS_MEDIA_SESSION_HH
+#pragma once
 
 #include "MediaSession.hh"
 
@@ -69,4 +68,3 @@ protected:
   // create "fRTPSource" and "fReadSource" member objects, after we've been initialized via SDP
 };
 
-#endif
