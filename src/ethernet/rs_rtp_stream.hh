@@ -21,7 +21,6 @@ struct Raw_Frame
 	struct timeval m_timestamp;
 };
 
-// TODO: consider use and extend librs c+ stream object
 class rs_rtp_stream
 {
     public:
@@ -30,7 +29,6 @@ class rs_rtp_stream
         {
             frame_data_buff.bpp = rs_stream.bpp;
 		    
-            //todo: consider move to cpp api for using rs2::stream_profile
             frame_data_buff.profile = rs_profile;
             m_stream_profile = rs_profile;
 		    frame_data_buff.stride = rs_stream.bpp * rs_stream.width;
