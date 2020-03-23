@@ -191,13 +191,9 @@ void ip_device::polling_state_loop()
             {
                 //poll start/stop events
                 auto sw_sensor = remote_sensors[i]->sw_sensor.get();
-                //auto current_active_streams = sw_sensor->get_active_streams();
-
-                if (sw_sensor->get_active_streams().size() > 0)
-                    enabled = true;
-                else
-                    enabled = false;
-
+   
+                enabled = sw_sensor->get_active_streams().size() > 0; 
+   
                 if (remote_sensors[i]->is_enabled != enabled)
                 {
                     try
