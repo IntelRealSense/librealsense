@@ -1,11 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <liveMedia.hh>
 #include "RsDevice.hh"
 
-#ifndef _RS_SERVER_MEDIA_SUBSESSION_HH
-#define _RS_SERVER_MEDIA_SUBSESSION_HH
+#pragma once
 
 #ifndef _ON_DEMAND_SERVER_MEDIA_SUBSESSION_HH
 #include "OnDemandServerMediaSubsession.hh"
@@ -35,4 +34,3 @@ private:
    std::shared_ptr<RsDevice> m_rsDevice;
    int m_pixelSize;
 };
-#endif //_RS_SERVER_MEDIA_SUBSESSION_HH

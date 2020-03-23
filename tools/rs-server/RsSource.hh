@@ -1,28 +1,7 @@
-/**********
-This library is free software; you can redistribute it and/or modify it under
-the terms of the GNU Lesser General Public License as published by the
-Free Software Foundation; either version 3 of the License, or (at your
-option) any later version. (See <http://www.gnu.org/copyleft/lesser.html>.)
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-This library is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
-more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this library; if not, write to the Free Software Foundation, Inc.,
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-**********/
-// "liveMedia"
-// Copyright (c) 1996-2019 Live Networks, Inc.  All rights reserved.
-// A template for a MediaSource encapsulating an audio/video input device
-//
-// NOTE: Sections of this code labeled "%%% TO BE WRITTEN %%%" are incomplete, and needto be written by the programmer
-// (depending on the features of the particulardevice).
-// C++ header
-
-#ifndef _RS_DEVICE_SOURCE_HH
-#define _RS_DEVICE_SOURCE_HH
+#pragma once
 
 #ifndef _DEVICE_SOURCE_HH
 #include "DeviceSource.hh"
@@ -61,5 +40,3 @@ private:
 std::chrono::high_resolution_clock::time_point m_getFrame,m_gotFrame;
 std::chrono::duration<double> m_networkTimeSpan,m_waitingTimeSpan,m_processingTimeSpan;
 };
-
-#endif

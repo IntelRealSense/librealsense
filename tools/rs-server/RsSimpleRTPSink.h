@@ -1,9 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#ifndef _RS_SIMPLE_RTP_SINK_HH
-#define _RS_SIMPLE_RTP_SINK_HH
-
+#pragma once
 
 #define SDP_MAX_LINE_LENGHT 4000
 
@@ -43,5 +41,3 @@ private:
         char *m_fFmtpSDPLine;
         virtual char const *auxSDPLine(); // for the "a=fmtp:" SDP line
 };
-
-#endif //_RS_SIMPLE_RTP_SINK_HH

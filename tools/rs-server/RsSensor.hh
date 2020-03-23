@@ -1,5 +1,7 @@
-#ifndef _RS_SENSOR_HH
-#define _RS_SENSOR_HH
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#pragma once
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_types.hpp>
@@ -18,7 +20,7 @@ typedef struct RsOption
 class RsSensor
 {
 public:
-	RsSensor(rs2::sensor t_sensor, rs2::device t_device);
+	RsSensor(UsageEnvironment *t_env, rs2::sensor t_sensor, rs2::device t_device);
 	int open(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfilesQueues);
 	int start(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfilesQueues);
 	int close();
@@ -32,6 +34,7 @@ public:
 	std::vector<RsOption> getSupportedOptions();
 
 private:
+	UsageEnvironment* env;
 	rs2::sensor m_sensor;
 	std::unordered_map<long long int, rs2::video_stream_profile> m_streamProfiles;
 	std::unordered_map<long long int, std::shared_ptr<ICompression>> m_iCompress;
@@ -39,5 +42,3 @@ private:
 	MemoryPool *m_memPool;
 	std::unordered_map<long long int,std::chrono::high_resolution_clock::time_point> m_prevSample;
 };
-
-#endif

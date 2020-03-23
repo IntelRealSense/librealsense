@@ -1,8 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#ifndef _RS_SERVER_MEDIA_SESSION_HH
-#define _RS_SERVER_MEDIA_SESSION_HH
+#pragma once
 
 #include "ServerMediaSession.hh"
 #include "RsDevice.hh"
@@ -31,5 +30,3 @@ private:
   RsSensor m_rsSensor;
   bool m_isActive;
 };
-
-#endif

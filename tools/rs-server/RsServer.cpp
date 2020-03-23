@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
 
 #include <liveMedia.hh>
-#include <BasicUsageEnvironment.hh>
 #include <GroupsockHelper.hh>
 #include <signal.h>
+#include "RsUsageEnvironment.h"
 #include "RsSource.hh"
 #include "RsServerMediaSubsession.h"
 #include "RsDevice.hh"
@@ -15,9 +15,9 @@
 
 struct server
 {
-  UsageEnvironment *env;
   rs2::device selected_device;
   RsRTSPServer *rtspServer;
+  UsageEnvironment *env;
   std::shared_ptr<RsDevice> rsDevice;
   std::vector<rs2::video_stream_profile> supported_stream_profiles; // streams for extrinsics map creation
   std::vector<RsSensor> sensors;
@@ -25,14 +25,18 @@ struct server
 
   void main(int argc, char **argv)
   {
-    OutPacketBuffer::increaseMaxSizeTo(1280 * 720 * 3);
+    START_EASYLOGGINGPP(argc, argv);
+
+    OutPacketBuffer::increaseMaxSizeTo(1280*720*3);
 
     // Begin by setting up our usage environment:
     scheduler = BasicTaskScheduler::createNew();
-    env = BasicUsageEnvironment::createNew(*scheduler);
+    env = RSUsageEnvironment::createNew(*scheduler);
 
-    rsDevice = std::make_shared<RsDevice>();
-    rtspServer = RsRTSPServer::createNew(*env, rsDevice, 8554);
+
+    rsDevice = std::make_shared<RsDevice>(env);
+    rtspServer = RsRTSPServer::createNew(*env,rsDevice, 8554);
+
     if (rtspServer == NULL)
     {
       *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";

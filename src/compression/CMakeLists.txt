@@ -14,7 +14,6 @@ file(GLOB COMPRESSION_SOURCES
  "*.h"
  "*.cpp"
  "../ipDeviceCommon/*.h"
- "../ipDeviceCommon/*.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC ${COMPRESSION_SOURCES})
@@ -22,6 +21,7 @@ add_library(${PROJECT_NAME} STATIC ${COMPRESSION_SOURCES})
 include_directories(${PROJECT_NAME}
     ../../common
     ../ipDeviceCommon
+    ../../third-party/easyloggingpp/src    
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)

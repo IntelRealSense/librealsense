@@ -1,29 +1,7 @@
-/**********
-This library is free software; you can redistribute it and/or modify it under
-the terms of the GNU Lesser General Public License as published by the
-Free Software Foundation; either version 3 of the License, or (at your
-option) any later version. (See <http://www.gnu.org/copyleft/lesser.html>.)
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-This library is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
-more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this library; if not, write to the Free Software Foundation, Inc.,
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-**********/
-// "liveMedia"
-// Copyright (c) 1996-2019 Live Networks, Inc.  All rights reserved.
-// A RTSP server
-// C++ header
-
-#ifndef _RS_RTSP_SERVER_HH
-#define _RS_RTSP_SERVER_HH
-
-#ifndef _RTSP_SERVER_HH
-#include "RsRTSPServer.hh"
-#endif
+#pragma once
 
 #include "RsDevice.hh"
 #include <librealsense2/rs.hpp>
@@ -111,5 +89,3 @@ private:
   friend class RsRTSPClientConnection;
   friend class RsRTSPClientSession;
 };
-
-#endif //_RS_RTSP_SERVER_HH

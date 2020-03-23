@@ -37,7 +37,7 @@ JpegCompression::JpegCompression(int t_width, int t_height, rs2_format t_format,
         }
         else
         {
-                printf("unsupport format %d on jpeg compression\n", t_format);
+                ERR << "unsupported format " << t_format << " for JPEG compression";
         }
         m_rowBuffer = new unsigned char[m_cinfo.input_components * t_width];
         m_destBuffer = (*m_cinfo.mem->alloc_sarray)((j_common_ptr)&m_cinfo, JPOOL_IMAGE, m_cinfo.input_components * t_width, 1);
@@ -160,7 +160,7 @@ int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
                 }
                 else
                 {
-                        printf("unsupport format %d on jpeg compression\n", m_format);
+                        ERR << "unsupported format " << m_format << " for JPEG compression";
                         return -1;
                 }
                 jpeg_write_scanlines(&m_cinfo, m_row_pointer, 1);
@@ -169,14 +169,14 @@ int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         int compressWithHeaderSize = compressedSize + sizeof(int);
         if (compressWithHeaderSize > t_size)
         {
-                printf("error: compression overflow, destination buffer is smaller than the compressed size\n");
+                ERR << "compression overflow, destination buffer is smaller than the compressed size";
                 return -1;
         }
         memcpy(t_compressedBuf, &compressedSize, sizeof(int));
         memcpy(t_compressedBuf + sizeof(int), data, compressedSize);
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish jpeg color compression, size: %d, compressed size %lu, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                INF << "frame " << m_compFrameCounter << "\tcolor\tcompression\tJPEG\t" << t_size << "\t/\t" << compressedSize;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR];
@@ -205,13 +205,13 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         memcpy(&jpegHeader, t_buffer, sizeof(unsigned int));
         if (jpegHeader != 0xE0FFD8FF)
         { //check header integrity if = E0FF D8FF - the First 4 bytes jpeg standards.
-                printf("Error: not a jpeg frame, skip frame\n");
+                ERR << "Not a JPEG frame, skipping";
                 return -1;
         }
         res = jpeg_read_header(&m_dinfo, TRUE);
         if (!res)
         {
-                printf("Error: jpeg_read_header failed\n");
+                ERR << "Cannot read JPEG header";
                 return -1;
         }
         if (m_format == RS2_FORMAT_RGB8 || m_format == RS2_FORMAT_BGR8)
@@ -228,13 +228,13 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         }
         else
         {
-                printf("unsupport format %d on jpeg compression\n", m_format);
+                ERR << "Unsupported format " << m_format << " for the JPEG compression";
                 return -1;
         }
         res = jpeg_start_decompress(&m_dinfo);
         if (!res)
         {
-                printf("error: jpeg_start_decompress failed \n");
+                ERR << "jpeg_start_decompress failed";
                 return -1;
         }
         uint64_t row_stride = m_dinfo.output_width * m_dinfo.output_components;
@@ -243,7 +243,7 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
                 int numLines = jpeg_read_scanlines(&m_dinfo, m_destBuffer, 1);
                 if (numLines <= 0)
                 {
-                        printf("error: jpeg_read_scanlines failed, numline: %d\n", numLines);
+                        ERR << "jpeg_read_scanlines failed at " << numLines;
                         return -1;
                 }
                 if (m_format == RS2_FORMAT_RGB8 || m_format == RS2_FORMAT_Y8)
@@ -267,13 +267,13 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         res = jpeg_finish_decompress(&m_dinfo);
         if (!res)
         {
-                printf("error: jpeg_finish_decompress failed \n");
+                ERR << "jpeg_finish_decompress failed";
                 return -1;
         }
         int uncompressedSize = m_dinfo.output_width * m_dinfo.output_height * m_bpp;
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish jpeg color decompression, size: %d, compressed size %d, frameNum: %d \n", uncompressedSize, t_compressedSize, m_decompFrameCounter);
+                INF << "frame " << m_decompFrameCounter << "\tcolor\tdecompression\tJPEG\t" << t_compressedSize << "\t/\t" << uncompressedSize;
         }
 
 #ifdef STATISTICS

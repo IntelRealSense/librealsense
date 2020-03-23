@@ -1,15 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include <RsUsageEnvironment.h>
 #include "RsRtspClient.h"
 #include <ipDeviceCommon/RsCommon.h>
-
 #include "liveMedia.hh"
-#include "BasicUsageEnvironment.hh"
-
 #include <iostream>
 #include <thread>
-//#include <condition_variable>
 #include <vector>
 #include <string>
 #include <math.h>
@@ -44,7 +41,7 @@ IRsRtsp *RsRTSPClient::getRtspClient(char const *t_rtspURL,
                                      char const *t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
 {
   TaskScheduler *scheduler = BasicTaskScheduler::createNew();
-  UsageEnvironment *env = BasicUsageEnvironment::createNew(*scheduler);
+  UsageEnvironment *env = RSUsageEnvironment::createNew(*scheduler);
   
   RTSPClient::responseBufferSize = 100000;
   return (IRsRtsp *)new RsRTSPClient(scheduler,env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum);
@@ -644,8 +641,7 @@ void RsRTSPClient::continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCod
 {
   UsageEnvironment &env = rtspClient->envir();               // alias
   RsRTSPClient *rsRtspClient = dynamic_cast<RsRTSPClient *>(rtspClient); // alias
-  printf("continueAfterGETCOMMAND: resultCode is %d, resultString is %s\n",resultCode,resultString);
-  
+  DBG << "continueAfterGETCOMMAND: resultCode " << resultCode << ", resultString '" << resultString;  
 
   if (NULL!=resultString)
   {

@@ -2,6 +2,9 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+#include <NetdevLog.h>
+
 #include <librealsense2/rs.hpp>
 
 class ICompression

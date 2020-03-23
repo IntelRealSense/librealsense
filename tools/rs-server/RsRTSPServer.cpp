@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RTSPServer.hh"
 #include "RTSPCommon.hh"
@@ -11,6 +11,7 @@
 #include "RsServerMediaSubsession.h"
 #include "librealsense2/hpp/rs_options.hpp"
 #include <ipDeviceCommon/RsCommon.h>
+#include "RsUsageEnvironment.h"
 
 ////////// RTSPServer implementation //////////
 
@@ -82,7 +83,7 @@ void RsRTSPServer::RsRTSPClientConnection::handleCmd_GET_PARAMETER(char const *t
   std::vector<RsSensor> sensors;
   std::string str(t_fullRequestStr);
   std::string ContentLength("Content-Length:");
-  std::string afterSplit;//, opt, val;
+  std::string afterSplit;
 
   afterSplit = str.substr(str.find(ContentLength) + ContentLength.size());
   char* contLength = strtok((char*)afterSplit.c_str(),"\r\n: ");
@@ -98,7 +99,7 @@ void RsRTSPServer::RsRTSPClientConnection::handleCmd_GET_PARAMETER(char const *t
         float value = sensor.getRsSensor().get_option((rs2_option)stoi(std::string(option)));
         char* paramString = new char[strlen(sensorName) + 1 +strlen(option) + strlen(std::to_string(value).c_str()) + 10];
         sprintf(paramString, "%s_%s: %s\r\n", sensorName, option, std::to_string(value).c_str());
-        printf( "GET_PARAMETER:sensor name is : %s, option is %s, value is %f\n",sensorName,option,value);
+        envir() << "GET_PARAMETER: sensor '" << sensorName << "', option '" << option << "', value " << value << "\n";
         setRTSPResponse("200 OK",paramString);
         return;
       }
@@ -127,7 +128,7 @@ void RsRTSPServer::RsRTSPClientConnection::handleCmd_SET_PARAMETER(char const *t
   char* option = strtok(NULL,"\r\n:");
   char* value = strtok(NULL,"\r\n:");
 
-  printf( "SET_PARAMETER:sensor name is : %s, option is %s, value is %s\n",sensorName,option,value);
+  envir() << "SET_PARAMETER: sensor '" << sensorName << "', option '" << option << "', value " << value << "\n";
   sensors = m_fOurRsRTSPServer.m_device.get()->getSensors();
   for (auto sensor : sensors)
   {

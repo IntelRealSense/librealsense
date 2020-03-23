@@ -1,8 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#ifndef _RS_STATISTICS_HH
-#define _RS_STATISTICS_HH
+#pragma once
 
 #include <chrono>
  
@@ -39,7 +38,6 @@ public:
             double* prevDiff = &getPrevDiff();
             double diff = 1000*std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - RsStatistics::getSendPacketTp()).count();
             double diffOfDiff = diff - *prevDiff;
-           // printf("isJump from sendtime %f, diffOfDiff is %f\n", diff,diffOfDiff);
             if (diffOfDiff > 5)
             {
               *prevDiff = diff;
@@ -52,5 +50,3 @@ public:
             }
         }
 };
-
-#endif

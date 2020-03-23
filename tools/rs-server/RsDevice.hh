@@ -1,14 +1,17 @@
-#ifndef _RS_DEVICE_HH
-#define _RS_DEVICE_HH
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
+#pragma once
 
 #include <librealsense2/rs.hpp>
+#include "RsUsageEnvironment.h"
 #include "RsSensor.hh"
 #include <map>
 
 class RsDevice
 {
 public:
-	RsDevice();
+	RsDevice(UsageEnvironment *t_env);
 	~RsDevice();
 	std::vector<RsSensor> &getSensors() { return m_sensors; }
 
@@ -28,6 +31,6 @@ public:
 private:
 	rs2::device m_device;
 	std::vector<RsSensor> m_sensors;
-};
 
-#endif
+	UsageEnvironment* env; 
+};
