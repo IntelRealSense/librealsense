@@ -69,12 +69,16 @@ if(WIN32)
                 message(STATUS "Target is 32 bits")
                 add_definitions(-Dssize_t=long)
         endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+
+        add_definitions(-D_WINSOCKAPI_)
+
+        set(WINLIB Ws2_32.lib)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 target_link_libraries(${PROJECT_NAME} 
-    PRIVATE realsense2 realsense2-compression
+    PRIVATE ${WINLIB} realsense2 realsense2-compression
 )
 
 if(IPDEV_STATS)
