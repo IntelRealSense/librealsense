@@ -47,7 +47,7 @@ bool & CompressionFactory::getIsEnabled()
 {
         static bool m_isEnabled;
         return m_isEnabled;
-};
+}
 
 bool CompressionFactory::isCompressionSupported(rs2_format t_format, rs2_stream t_streamType)
 {

@@ -53,7 +53,7 @@ int GzipCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         deflateEnd(&m_strm);
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish gzip depth compression, size: %lu, compressed size %u, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                printf("finish gzip depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -92,7 +92,7 @@ int GzipCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         inflateEnd(&m_strm);
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish gzip depth decompression, size: %lu, compressed size %u, frameNum: %d \n", m_strm.total_out, t_compressedSize, m_decompFrameCounter);
+                printf("finish gzip depth decompression, size: %lu, compressed size %d, frameNum: %d \n", m_strm.total_out, t_compressedSize, m_decompFrameCounter);
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
