@@ -17,16 +17,6 @@ extern std::map<std::pair<int, int>, rs2_extrinsics> minimal_extrinsics_map;
 
 std::string sensors_str[] = {STEREO_SENSOR_NAME, RGB_SENSOR_NAME};
 
-// default device stream index per type + sensor_index
-// streams will be loaded at runtime so here the place holder  
-std::map<std::pair<rs2_stream,int>,int> default_streams = { 
-    { std::make_pair(rs2_stream::RS2_STREAM_COLOR,0),-1},
-    { std::make_pair(rs2_stream::RS2_STREAM_DEPTH,0),-1},
-    { std::make_pair(rs2_stream::RS2_STREAM_INFRARED,0),-1},
-    { std::make_pair(rs2_stream::RS2_STREAM_INFRARED,1),-1},
-    { std::make_pair(rs2_stream::RS2_STREAM_INFRARED,2),-1}  
-};
-
 //WA for stop
 void ip_device::recover_rtsp_client(int sensor_index)
 {
@@ -39,17 +29,25 @@ void ip_device::recover_rtsp_client(int sensor_index)
 ip_device::~ip_device()
 {
     DBG << "Destroying ip_device";
-    is_device_alive = false;
-
-    if (sw_device_status_check.joinable())
+    
+    try
     {
-        sw_device_status_check.join();
+        is_device_alive = false;
+
+        if (sw_device_status_check.joinable())
+        {
+            sw_device_status_check.join();
+        }
+
+        for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
+        {
+            update_sensor_state(remote_sensor_index, {}, false);
+            delete (remote_sensors[remote_sensor_index]); //->sensors_option.clear();
+        }
     }
-
-    for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
+    catch (const std::exception &e)
     {
-        update_sensor_state(remote_sensor_index, {}, false);
-        delete (remote_sensors[remote_sensor_index]); //->sensors_option.clear();
+        ERR << e.what();
     }
     DBG << "Destroying ip_device completed";
 }
@@ -167,7 +165,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             //check if default value per this stream type were picked
             if(default_streams[std::make_pair(st.type, st.index)] == -1)
             {
-                if (st.width==640 && st.height==480 && st.fps==15)
+                if (st.width==DEFAULT_PROFILE_WIDTH && st.height==DEFAULT_PROFILE_HIGHT && st.fps==DEFAULT_PROFILE_FPS)
                 {
                     default_streams[std::make_pair(st.type, st.index)] = stream_index;
                     is_default=true;
