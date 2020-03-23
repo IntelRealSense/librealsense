@@ -36,13 +36,8 @@ class ip_device
 {
 
 public:
-#ifdef _WIN32
-    __declspec(dllexport)
-#endif
-    
     ip_device(std::string ip_address, rs2::software_device sw_device);
-
-    ~ip_device();
+   ~ip_device();
 
     ip_sensor *remote_sensors[NUM_OF_SENSORS];
 

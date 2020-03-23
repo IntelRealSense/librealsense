@@ -23,18 +23,18 @@ int Lz4Compression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         const int compressedSize = LZ4_compress_default((const char *)t_buffer, (char *)t_compressedBuf + sizeof(int), t_size, maxDstSize);
         if (compressedSize <= 0)
         {
-                printf("error: 0 or negative result from LZ4_compress_default() indicates a failure trying to compress the data. ");
+                ERR << "Failure trying to compress the data.";
                 return -1;
         }
         int compressWithHeaderSize = compressedSize + sizeof(compressedSize);
         if (compressWithHeaderSize > t_size)
         {
-                printf("error: compression overflow, destination buffer is smaller than the compressed size\n");
+                ERR << "Compression overflow, destination buffer is smaller than the compressed size.";
                 return -1;
         }
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish lz depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tlz4\t" << t_size << "\t/\t" << compressedSize;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -60,15 +60,13 @@ int Lz4Compression::decompressBuffer(unsigned char *t_buffer, int t_compressedSi
         const int decompressed_size = LZ4_decompress_safe((const char *)t_buffer, (char *)t_uncompressedBuf, t_compressedSize, m_width * m_height * m_bpp);
         if (decompressed_size < 0)
         {
-                printf("error: negative result from LZ4_decompress_safe indicates a failure trying to decompress the data\n");
+                ERR << "Failure trying to decompress the frame.";
                 return -1;
         }
         int original_size = m_width * m_height * m_bpp;
-        // if (decompressed_size != original_size);
-        //      printf("Decompressed data is different from original!, decompressed_size: %d original size: %d \n",decompressed_size,  m_width* m_height * 2 );
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish lz depth decompression, size: %d, compressed size %d, frameNum: %d \n", decompressed_size, t_compressedSize, m_decompFrameCounter);
+                INF << "frame " << m_decompFrameCounter << "\tdepth\tdecompression\tlz4\t" << t_compressedSize << "\t/\t" << decompressed_size;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];

@@ -89,13 +89,13 @@ int RvlCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         int compressWithHeaderSize = compressedSize + sizeof(compressedSize);
         if (compressWithHeaderSize > t_size)
         {
-                printf("error: compression overflow, destination buffer is smaller than the compressed size\n");
+                ERR << "Compression overflow, destination buffer is smaller than the compressed size";
                 return -1;
         }
         memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish rvl depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tlz4\t" << t_size << "\t/\t" << compressedSize;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -144,7 +144,7 @@ int RvlCompression::decompressBuffer(unsigned char *t_buffer, int t_size, unsign
         int uncompressedSize = int((char *)currentPtr - (char *)t_uncompressedBuf);
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish rvl depth compression, size: %d, compressed size %d, frameNum: %d \n", uncompressedSize, compressedSize, m_decompFrameCounter);
+                INF << "frame " << m_decompFrameCounter << "\tdepth\tcompression\tlz4\t" << compressedSize << "\t/\t" << uncompressedSize;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];

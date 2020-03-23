@@ -33,27 +33,27 @@ int GzipCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         int z_result = deflateInit2(&m_strm, Z_BEST_SPEED /*Z_DEFAULT_COMPRESSION*/, Z_DEFLATED, m_windowsBits | m_gzipEncoding, 8, Z_DEFAULT_STRATEGY);
         if (z_result != Z_OK)
         {
-                printf("error: init frame compression with gzip failed\n");
+                ERR << "init frame compression with gzip failed";
                 return -1;
         }
         z_result = deflate(&m_strm, Z_FINISH);
         if (z_result != Z_STREAM_END)
         {
-                printf("error: compress frame with gzip failed\n");
+                ERR << "compress frame with gzip failed";
                 return -1;
         }
         compressedSize = m_strm.total_out;
         int compressWithHeaderSize = compressedSize + sizeof(compressedSize);
         if (compressWithHeaderSize > t_size)
         {
-                printf("error: compression overflow, destination buffer is smaller than the compressed size\n");
+                ERR << "compression overflow, destination buffer is smaller than the compressed size";
                 return -1;
         }
         memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
         deflateEnd(&m_strm);
         if (m_compFrameCounter++ % 50 == 0)
         {
-                printf("finish gzip depth compression, size: %d, compressed size %d, frameNum: %d \n", t_size, compressedSize, m_compFrameCounter);
+                INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tgzip\t" << t_size << "\t/\t" << compressedSize << "\n";
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
@@ -86,13 +86,13 @@ int GzipCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         z_result = inflate(&m_strm, Z_FINISH);
         if (z_result == Z_STREAM_ERROR || z_result == Z_BUF_ERROR)
         {
-                printf("error: decompress frame with gzip failed\n");
+                ERR << "decompress frame with gzip failed";
                 return -1;
         }
         inflateEnd(&m_strm);
         if (m_decompFrameCounter++ % 50 == 0)
         {
-                printf("finish gzip depth decompression, size: %lu, compressed size %d, frameNum: %d \n", m_strm.total_out, t_compressedSize, m_decompFrameCounter);
+                INF << "frame " << m_decompFrameCounter << "\tdepth\tdecompression\tgzip\t" << t_compressedSize << "\t/\t" << m_strm.total_out;
         }
 #ifdef STATISTICS
         StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];

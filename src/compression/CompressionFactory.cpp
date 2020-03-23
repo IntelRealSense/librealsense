@@ -38,7 +38,7 @@ std::shared_ptr<ICompression> CompressionFactory::getObject(int t_width, int t_h
                 return std::make_shared<Lz4Compression>(t_width, t_height, t_format, t_bpp);
                 break;
         default:
-                printf("error: unknown zip method\n");
+                ERR << "unknown zip method";
                 return nullptr;
         }
 }

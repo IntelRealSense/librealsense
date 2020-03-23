@@ -10,11 +10,6 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-# to remove
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1")
-
-set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-pthread")
-
 include(../../common/CMakeLists.txt)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
@@ -77,19 +72,18 @@ endif()
 
 set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
-target_link_libraries(realsense-viewer ${DEPENDENCIES}
-                                        ${GTK3_LIBRARIES}
-                                        Threads::Threads
-                                        realsense2-gl)
-
-if(BUILD_IPDEV)
-        target_link_libraries(realsense-viewer realsense2-ethernet)
-endif()
+set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
-    target_link_libraries(realsense-viewer uvc_fw)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} uvc_fw)
 endif()
+
+if(BUILD_IPDEV)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
+endif()
+
+target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
