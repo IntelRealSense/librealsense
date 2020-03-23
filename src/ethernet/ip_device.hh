@@ -1,17 +1,8 @@
 #pragma once
 
-//////////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
-
-#define _WINSOCKAPI_
-
 #include <windows.h>
-#pragma comment(lib, "Ws2_32.lib")
-
-#include <SIGNAL.H>
-
 #endif
-//////////////////////////////////////////////////////////////////////////
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
