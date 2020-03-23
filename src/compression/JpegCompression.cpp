@@ -109,9 +109,9 @@ void JpegCompression::convertBGRtoRGB(unsigned char **t_buffer)
 {
         for (int i = 0; i <  m_cinfo.image_width * m_bpp; i += 3)
         {
-                m_rowBuffer[i] = (*t_buffer)[i + 1];     // B
-                m_rowBuffer[i + 1] = (*t_buffer)[i];     // G
-                m_rowBuffer[i + 2] = (*t_buffer)[i + 2]; // R
+                m_rowBuffer[i] = (*t_buffer)[i + 2];     // R
+                m_rowBuffer[i + 1] = (*t_buffer)[i + 1]; // G
+                m_rowBuffer[i + 2] = (*t_buffer)[i];     // B
         }
         m_row_pointer[0] = m_rowBuffer;
         (*t_buffer) += m_cinfo.image_width * m_bpp;
@@ -121,9 +121,9 @@ void JpegCompression::convertRGBtoBGR(unsigned char **t_uncompressBuff)
 {
         for (int i = 0; i < m_dinfo.output_width * m_bpp; i += 3)
         {
-                (*t_uncompressBuff)[i] = m_destBuffer[0][i + 1];     //B
-                (*t_uncompressBuff)[i + 1] = m_destBuffer[0][i];     // G
-                (*t_uncompressBuff)[i + 2] = m_destBuffer[0][i + 2]; // R
+                (*t_uncompressBuff)[i] = m_destBuffer[0][i + 2];     // B
+                (*t_uncompressBuff)[i + 1] = m_destBuffer[0][i + 1]; // G
+                (*t_uncompressBuff)[i + 2] = m_destBuffer[0][i];     // R
         }
         (*t_uncompressBuff) += m_dinfo.output_width * m_bpp;
 }
@@ -131,7 +131,7 @@ void JpegCompression::convertRGBtoBGR(unsigned char **t_uncompressBuff)
 int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned char *t_compressedBuf)
 {
         long unsigned int compressedSize = 0;
-        unsigned char *data;
+        unsigned char *data = nullptr;
 #ifdef STATISTICS
         Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR]->m_compressionBegin = std::chrono::system_clock::now();
 #endif
@@ -202,7 +202,10 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR]->m_decompressionBegin = std::chrono::system_clock::now();
 #endif
         jpeg_mem_src(&m_dinfo, data, t_compressedSize);
-        memcpy(&jpegHeader, t_buffer, sizeof(unsigned int));
+        if(t_buffer != nullptr)
+        {
+            memcpy(&jpegHeader, t_buffer, sizeof(unsigned int));
+        }
         if (jpegHeader != 0xE0FFD8FF)
         { //check header integrity if = E0FF D8FF - the First 4 bytes jpeg standards.
                 ERR << "Not a JPEG frame, skipping";
