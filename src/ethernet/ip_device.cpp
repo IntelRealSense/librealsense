@@ -408,3 +408,4 @@ rs2_device *rs2_create_net_device(int api_version, const char *address, rs2_erro
     return sw_dev.get().get();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, address)
+
