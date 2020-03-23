@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RsSource.hh"
 #include <GroupsockHelper.hh>
@@ -10,7 +10,6 @@
 #include <ipDeviceCommon/Statistic.h>
 #include "RsStatistics.h"
 #include <compression/CompressionFactory.h>
-
 
 RsDeviceSource *
     RsDeviceSource::createNew(UsageEnvironment &t_env, rs2::video_stream_profile &t_videoStreamProfile, rs2::frame_queue &t_queue)
@@ -159,7 +158,6 @@ void RsDeviceSource::deliverRSFrame(rs2::frame *t_frame)
   m_waitingTimeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(m_gotFrame-m_getFrame);
   m_processingTimeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(curTime-m_gotFrame);
   *tp = curTime;
-  //printf ("stream %d:tranfer time is %f, waiting time was %f, processing time was %f, sum is %f\n",frame->get_profile().format(),networkTimeSpan*1000,waitingTimeSpan*1000,processingTimeSpan*1000,(networkTimeSpan+waitingTimeSpan+processingTimeSpan)*1000);
   // After delivering the data, inform the reader that it is now available:
   FramedSource::afterGetting(this);
 }

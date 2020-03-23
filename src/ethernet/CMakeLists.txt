@@ -17,9 +17,6 @@ set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
 file(GLOB IPDEV_SOURCES LIST_DIRECTORIES false CONFIGURE_DEPENDS 
   "*.h*"
   "*.c*"
-  "rtp_stream.cpp"
-  "rtp_callback.cpp"
-  "rtsp_client/*.cpp"
   "../ipDeviceCommon/*.h*"
   "../ipDeviceCommon/*.c*"
   "${LIVE}/*.c*"
@@ -34,6 +31,11 @@ add_library(${PROJECT_NAME} SHARED ${IPDEV_SOURCES})
 include_directories(${PROJECT_NAME}
   ../../common
   ../ipDeviceCommon
+  ../../third-party/easyloggingpp/src
+  ${LIVE}/groupsock/include 
+  ${LIVE}/liveMedia/include  
+  ${LIVE}/UsageEnvironment/include 
+  ${LIVE}/BasicUsageEnvironment/include 
 )
 
 if(WIN32)
@@ -68,16 +70,6 @@ target_link_libraries(${PROJECT_NAME}
 if(IPDEV_STATS)
     add_definitions(-DSTATISTICS)
 endif()
-
-target_include_directories(${PROJECT_NAME} PUBLIC "rtsp_client/*.h")
-
-target_include_directories(${PROJECT_NAME} PUBLIC 
-        ${LIVE}/groupsock/include 
-        ${LIVE}/liveMedia/include  
-        ${LIVE}/UsageEnvironment/include 
-        ${LIVE}/BasicUsageEnvironment/include 
-        inc
-)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Library")
 

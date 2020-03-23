@@ -1,5 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.9.0)
 
@@ -40,6 +41,11 @@ else()
     ../../common
     ../../src/ipDeviceCommon
     ../../include/librealsense2
+    ../../third-party/easyloggingpp/src
+    ${LIVE}/groupsock/include 
+    ${LIVE}/liveMedia/include  
+    ${LIVE}/UsageEnvironment/include 
+    ${LIVE}/BasicUsageEnvironment/include     
   )
 
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)

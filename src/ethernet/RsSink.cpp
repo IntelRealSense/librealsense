@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include <NetdevLog.h>
 #include "RsSink.h"
 #include "stdio.h"
 #include <string>
@@ -46,7 +47,7 @@ RsSink::RsSink(UsageEnvironment &t_env, MediaSubsession &t_subsession, rs2_video
   }
   else
   {
-    printf("compression is disabled or configured unsupported format to zip, run without compression\n");
+    INF << "compression is disabled or configured unsupported format to zip, run without compression";
   }
   
 #ifdef STATISTICS
@@ -102,24 +103,6 @@ void RsSink::afterGettingFrameUid3(void *t_clientData, unsigned t_frameSize, uns
 void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedBytes,
                                struct timeval t_presentationTime, unsigned /*t_durationInMicroseconds*/)
 {
-  // We've just received a frame of data.  (Optionally) print out information about it:
-  /*
-#ifdef DEBUG_PRINT_EACH_RECEIVED_FRAME
-  if (fStreamId != NULL) envir() << "Stream \"" << fStreamId << "\"; ";
-  envir() << fSubsession.mediumName() << "/" << fSubsession.codecName() << ":\tReceived " << frameSize << " bytes";
-  if (numTruncatedBytes > 0) envir() << " (with " << numTruncatedBytes << " bytes truncated)";
-  char uSecsStr[6+1]; // used to output the 'microseconds' part of the presentation time
-  sprintf(uSecsStr, "%06u", (unsigned)presentationTime.tv_usec);
-  envir() << ".\tPresentation time: " << (int)presentationTime.tv_sec << "." << uSecsStr;
-  if (fSubsession.rtpSource() != NULL && !fSubsession.rtpSource()->hasBeenSynchronizedUsingRTCP()) {
-    envir() << "!"; // mark the debugging output to indicate that this presentation time is not RTCP-synchronized
-  }
-#ifdef DEBUG_PRINT_NPT
-  envir() << "\tNPT: " << fSubsession.getNormalPlayTime(presentationTime);
-#endif
-  envir() << "\n";
-#endif
-*/
   RsNetworkHeader *header = (RsNetworkHeader *)m_receiveBuffer;
   if (header->frameSize == t_frameSize - sizeof(RsNetworkHeader))
   {
@@ -171,10 +154,9 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
   {
     m_memPool->returnMem(m_receiveBuffer);
     envir() << m_streamId << ":corrupted frame!!!: data size is " << header->frameSize << " frame size is " << t_frameSize << "\n";
-    //printf("%p:corrupted frame!!!: data size is %d frame size is %d \n",fStreamId,header->size,frameSize);
   }
   m_receiveBuffer = nullptr;
-  //fwrite(fReceiveBuffer, frameSize, 1, fp);
+
   // Then continue, to request the next frame of data
   continuePlaying();
 }

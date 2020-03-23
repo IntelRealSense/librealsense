@@ -1,5 +1,6 @@
 #pragma once
 
+#include <NetdevLog.h>
 #include <librealsense2/rs.hpp>
 #include "RsRtspClient.h"
 #include "software-device.h"
@@ -54,7 +55,7 @@ class rs_rtp_stream
         {
             if(queue_size()>RTP_QUEUE_MAX_SIZE)
             {
-                std::cout << "queue is full. dropping frame for stream id: " << this->m_rs_stream.uid << std::endl;
+                ERR << "Queue is full. Dropping frame for: " << this->m_rs_stream.uid;
             }
             else
             {
@@ -81,7 +82,7 @@ class rs_rtp_stream
             {
                 frames_queue.pop();
             }
-            std::cout << "done clean frames queue: " << m_rs_stream.uid << std::endl;
+            INF << "Frames queue cleaned for " << m_rs_stream.uid;
         }
 
         int queue_size()

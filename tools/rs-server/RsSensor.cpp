@@ -1,17 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
 #include <math.h>
 #include "RsDevice.hh"
+#include "RsUsageEnvironment.h"
 #include <thread>
 #include "compression/CompressionFactory.h"
 #include "string.h"
+#include <BasicUsageEnvironment.hh>
 
-RsSensor::RsSensor(rs2::sensor t_sensor, rs2::device t_device)
+RsSensor::RsSensor(UsageEnvironment *t_env, rs2::sensor t_sensor, rs2::device t_device) 
+: env(t_env), m_sensor(t_sensor), m_device(t_device)
 {
-        m_sensor = t_sensor;
-        m_device = t_device;
         for (rs2::stream_profile streamProfile : m_sensor.get_stream_profiles())
         {
                 if (streamProfile.is<rs2::video_stream_profile>())
@@ -43,7 +44,7 @@ int RsSensor::open(std::unordered_map<long long int, rs2::frame_queue> &t_stream
                 }
                 else
                 {
-                        printf("compression is disabled or configured unsupported format to zip, run without compression\n");
+                        *env << "unsupported compression format or compression is disabled, continue without compression\n";
                 }
         }
         m_sensor.open(requestedStreamProfiles);
@@ -71,7 +72,6 @@ int RsSensor::start(std::unordered_map<long long int, rs2::frame_queue> &t_strea
                 {
                         std::chrono::high_resolution_clock::time_point curSample = std::chrono::high_resolution_clock::now();
                         std::chrono::duration<double> timeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(curSample - m_prevSample[profileKey]);
-                        //printf("%d:diff time is %f\n",frame.get_profile().format(),timeSpan.count()*1000);
                         if (CompressionFactory::isCompressionSupported(frame.get_profile().format(), frame.get_profile().stream_type()))
                         {
                                 unsigned char *buff = m_memPool->getNextMem();
