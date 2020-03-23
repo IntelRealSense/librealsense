@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseExamplesAdvancedSoftwareDevice)
 
 if(BUILD_LRS1_DEVICE_ADAPTOR)
+    # Download Realsense1 from github and configure it with CMake
     include(ExternalProject)
     ExternalProject_Add(
         realsense1
@@ -35,6 +36,7 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
     target_include_directories(rs1 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third-party/realsense1/include>)
     target_link_libraries(rs1 INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/lrs_install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}realsense${CMAKE_STATIC_LIBRARY_SUFFIX})
 
+    # Configure extension library
     if(BUILD_SHARED_LIBS)
         add_library(legacy-adaptor SHARED)
     else()
@@ -53,6 +55,8 @@ if(BUILD_LRS1_DEVICE_ADAPTOR)
     target_link_libraries(legacy-adaptor PRIVATE ${DEPENDENCIES} rs1)
     add_dependencies(legacy-adaptor realsense1)
     set_target_properties(legacy-adaptor PROPERTIES FOLDER "Examples/Software Device")
+
+    # Configure capture-like example
     if(BUILD_GRAPHICAL_EXAMPLES)
         add_executable(rs-software-device-advanced rs-software-device-advanced.cpp ../example.hpp)
         include_directories(rs-software-device-advanced ../ ../../third-party/tclap/include)

@@ -5,6 +5,7 @@ Copyright(c) 2020 Intel Corporation. All Rights Reserved. */
 #define LIBREALSENSE_RS2_LEGACY_ADAPTOR_HPP
 
 #include "librealsense2/rs.hpp"
+#include "librealsense2/hpp/rs_internal.hpp"
 #include "legacy_adaptor.h"
 
 namespace rs2 {

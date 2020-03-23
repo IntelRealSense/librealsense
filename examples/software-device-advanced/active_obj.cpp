@@ -28,7 +28,7 @@ void legacy_active_obj::on_frame(rs::frame f) {
                 f.get_stride(), f.get_bpp() / 8, f.get_timestamp(), // Legacy API returns bits/pixel, Modern API wants bytes/pixel
                 RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, int(f.get_frame_number()), vp.get() });
         } catch (...) {
-            rs2_software_notification notif{ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS_LOG_SEVERITY_ERROR, "Failed to allocate buffer for incoming frame", ""};
+            rs2_software_notification notif{ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_ERROR, "Failed to allocate buffer for incoming frame", ""};
             sensor.on_notification(notif);
         }
     }
