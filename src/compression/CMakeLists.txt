@@ -39,9 +39,10 @@ include_directories(${PROJECT_NAME}
 )
 
 if(WIN32)
+    set(ZLIB_LIBRARY optimized ${CMAKE_BINARY_DIR}/zlib/lib/zlibstatic.lib debug ${CMAKE_BINARY_DIR}/zlib/lib/zlibstaticd.lib)
     target_link_libraries(${PROJECT_NAME}
         PRIVATE ${DEPENDENCIES}
-        PUBLIC ${CMAKE_BINARY_DIR}/zlib/lib/zlibstaticd.lib
+        PUBLIC ${ZLIB_LIBRARY}
         PUBLIC ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
         PUBLIC ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
     )

@@ -1,17 +1,17 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <NetdevLog.h>
-
 #include "ip_device.hh"
+#include <ipDeviceCommon/Statistic.h>
+
 #include "api.h"
 #include <librealsense2-net/rs_net.h>
 
-#include <ipDeviceCommon/Statistic.h>
 #include <list>
-
 #include <chrono>
 #include <thread>
+
+#include <NetdevLog.h>
 
 extern std::map<std::pair<int, int>, rs2_extrinsics> minimal_extrinsics_map;
 

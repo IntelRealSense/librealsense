@@ -32,5 +32,4 @@ private:
    rs2::video_stream_profile m_videoStreamProfile;
    rs2::frame_queue m_frameQueue;
    std::shared_ptr<RsDevice> m_rsDevice;
-   int m_pixelSize;
 };

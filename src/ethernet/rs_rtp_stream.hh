@@ -1,10 +1,12 @@
 #pragma once
 
-#include <NetdevLog.h>
-#include <librealsense2/rs.hpp>
 #include "RsRtspClient.h"
-#include "software-device.h"
 #include "RsSink.h"
+
+#include <librealsense2/rs.hpp>
+#include "software-device.h"
+
+#include <NetdevLog.h>
 
 const int RTP_QUEUE_MAX_SIZE = 30;
 
