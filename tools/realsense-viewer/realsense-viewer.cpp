@@ -118,6 +118,36 @@ void add_playback_device(context& ctx, device_models_list& device_models,
     }
 }
 
+#ifdef RS2_USE_LEGACY_ADAPTOR
+void add_legacy_device(context& ctx, device_models_list& device_models,
+    std::string& error_message, viewer_model& viewer_model, int idx)
+{
+    bool was_loaded = false;
+    bool failed = false;
+    try
+    {
+        auto dev = rs2::legacy::legacy_device(idx);
+        dev.add_to(ctx);
+        was_loaded = true;
+        device_models.emplace_back(new device_model(dev, error_message, viewer_model)); // Will cause the new device to appear in the left panel
+    }
+    catch (const error& e)
+    {
+        error_message = to_string() << "Failed to load device " << idx << ". Reason: " << error_to_string(e);
+        failed = true;
+    }
+    catch (const std::exception& e)
+    {
+        error_message = to_string() << "Failed to load file " << idx << ". Reason: " << e.what();
+        failed = true;
+    }
+    if (failed && was_loaded)
+    {
+        // TODO: What do?
+    }
+}
+#endif
+
 // This function is called every frame
 // If between the frames there was an asyncronous connect/disconnect event
 // the function will pick up on this and add the device to the viewer
@@ -455,8 +485,9 @@ int main(int argc, const char** argv) try
 #ifdef RS2_USE_LEGACY_ADAPTOR
             if (ImGui::Selectable("Load Legacy Device", false, ImGuiSelectableFlags_SpanAllColumns))
             {
-                rs2::legacy::legacy_device dev(0);
-                dev.add_to(ctx);
+                // TODO: Select index
+                int idx = 0;
+                add_legacy_device(ctx, *device_models, error_message, viewer_model, idx);
             }
 #endif
             ImGui::NextColumn();

@@ -289,6 +289,9 @@ void legacy_active_obj::map_profiles(rs2::software_device dev) {
                     rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
                 }
             }
+
+            // Detach the sensor from the device to break the circular dependency and allow the device to get properly destroyed
+            sensor.detach();
         }
 
         dev.create_matcher(RS2_MATCHER_DEFAULT);
