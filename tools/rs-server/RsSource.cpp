@@ -21,11 +21,6 @@ RsDeviceSource::RsDeviceSource(UsageEnvironment &t_env, rs2::video_stream_profil
 {
   m_framesQueue = &t_queue;
   m_streamProfile = &t_videoStreamProfile;
-#ifdef STATISTICS
-  if(Statistic::getStatisticStreams().find(t_videoStreamProfile.stream_type()) == Statistic::getStatisticStreams().end()) {
-      Statistic::getStatisticStreams().insert(std::pair<int,StreamStatistic *>(t_videoStreamProfile.stream_type(),new StreamStatistic()));
-  }
-#endif
 }
 
 RsDeviceSource::~RsDeviceSource()

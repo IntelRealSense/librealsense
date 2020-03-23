@@ -10,6 +10,9 @@ if(BUILD_EASYLOGGINGPP)
 endif()
 
 add_subdirectory(${_rel_path}/realsense-file)
+
+if(BUILD_NETWORK_DEVICE)
+
 add_subdirectory(${_rel_path}/live555)
 
 include(ExternalProject)
@@ -53,3 +56,4 @@ ExternalProject_Add(zlib
       "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
 )
 
+endif()

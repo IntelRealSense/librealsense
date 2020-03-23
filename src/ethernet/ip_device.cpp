@@ -380,14 +380,6 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
                 //nhershko todo: set it at actuqal arrivial time
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL,
                                                                    std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count());
-#ifdef STATISTICS
-                StreamStatistic *st = Statistic::getStatisticStreams()[rtp_stream.get()->stream_type()];
-                std::chrono::system_clock::time_point clockEnd = std::chrono::system_clock::now();
-                st->m_processingTime = clockEnd - st->m_clockBeginVec.front();
-                st->m_clockBeginVec.pop();
-                st->m_avgProcessingTime += st->m_processingTime.count();
-                printf("STATISTICS: streamType: %d, processing time: %0.2fm, average: %0.2fm, counter: %d\n", type, st->m_processingTime * 1000, (st->m_avgProcessingTime * 1000) / st->m_frameCounter, st->m_frameCounter);
-#endif
                 remote_sensors[sensor_id]->sw_sensor->on_video_frame(rtp_stream.get()->frame_data_buff);
             }
         }

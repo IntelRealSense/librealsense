@@ -3,7 +3,9 @@
 
 
 #include <librealsense2/rs.hpp>
+#ifdef NETWORK_DEVICE
 #include <librealsense2-net/rs_net.hpp>
+#endif
 #include "viewer.h"
 #include "os.h"
 #include "ux-window.h"
@@ -36,10 +38,15 @@ using namespace rs400;
 
 #define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
 
-void add_remote_device(context& ctx, std::string address) 
+bool add_remote_device(context& ctx, std::string address) 
 {
+#ifdef NETWORK_DEVICE
     rs2::net_device dev(address);
     dev.add_to(ctx);
+    return true; // NEtwork device exists
+#else
+    return false;
+#endif
 }
 
 void add_playback_device(context& ctx, device_models_list& device_models, 
@@ -284,8 +291,7 @@ int main(int argc, const char** argv) try
     {
         try
         {
-            add_remote_device(ctx, argv[1]);
-            is_ip_device_connected = true;
+            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
         }
         catch (std::runtime_error e)
         {
@@ -536,8 +542,7 @@ int main(int argc, const char** argv) try
                         {
                             try
                             {
-                                add_remote_device(ctx, ip_address);
-                                is_ip_device_connected = true;
+                                is_ip_device_connected = add_remote_device(ctx, ip_address);;
                                 refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
                                 auto dev = connected_devs[connected_devs.size()-1];
                                 device_models->emplace_back(new device_model(dev, error_message, viewer_model));

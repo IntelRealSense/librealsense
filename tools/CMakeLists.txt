@@ -19,7 +19,9 @@ add_subdirectory(recorder)
 add_subdirectory(fw-update)
 
 if(NOT WIN32)
-    add_subdirectory(rs-server)
+    if(BUILD_NETWORK_DEVICE)
+        add_subdirectory(rs-server)
+    endif()
 endif()
 
 if(BUILD_GRAPHICAL_EXAMPLES)
