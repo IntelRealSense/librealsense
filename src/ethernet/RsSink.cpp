@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <NetdevLog.h>
 #include "RsSink.h"
+#include <ipDeviceCommon/Statistic.h>
+
 #include "stdio.h"
 #include <string>
-#include <ipDeviceCommon/Statistic.h>
+
+#include <NetdevLog.h>
 
 #define WRITE_FRAMES_TO_FILE 0
 
@@ -50,9 +52,6 @@ RsSink::RsSink(UsageEnvironment &t_env, MediaSubsession &t_subsession, rs2_video
     INF << "compression is disabled or configured unsupported format to zip, run without compression";
   }
   
-#ifdef STATISTICS
-  Statistic::getStatisticStreams().insert(std::pair<int, StreamStatistic *>(m_stream.type, new StreamStatistic()));
-#endif
 }
 
 RsSink::~RsSink()
@@ -108,20 +107,6 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
   {
     if (this->m_rtpCallback != NULL)
     {
-#ifdef STATISTICS
-      StreamStatistic *st = Statistic::getStatisticStreams()[m_stream.type];
-      st->m_frameCounter++;
-      std::chrono::system_clock::time_point clockBegin = std::chrono::system_clock::now();
-      st->m_clockBeginVec.push(clockBegin);
-      if (st->m_frameCounter > 1)
-      {
-        st->m_getFrameDiffTime = clockBegin - st->m_prevClockBegin;
-        st->m_avgGettingTime += st->m_getFrameDiffTime.count();
-        printf("STATISTICS: streamType: %d, got frame: %0.2fm, average: %0.2fm, counter %d\n", m_stream.type, st->m_getFrameDiffTime.count() * 1000,
-               (st->m_avgGettingTime * 1000) / st->m_frameCounter, st->m_frameCounter);
-      }
-      st->m_prevClockBegin = clockBegin;
-#endif
     if (CompressionFactory::isCompressionSupported(m_stream.fmt,m_stream.type) && m_iCompress != nullptr) 
       {
         m_to = m_memPool->getNextMem();

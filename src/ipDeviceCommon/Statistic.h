@@ -23,7 +23,7 @@ public:
 class Statistic
 {
 public:
-    static std::map<int, StreamStatistic *> &getStatisticStreams()
+    static std::map<int, StreamStatistic *> &getStatisticStreams()  //todo:change to uid instead of type
     {
         static std::map<int, StreamStatistic *> m_streamStatistic;
         return m_streamStatistic;

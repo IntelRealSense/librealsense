@@ -48,9 +48,9 @@ else()
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
   set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
+  
   target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-  add_definitions(-DCOMPRESSION)
-
+  
   set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Tools")
 
   target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)

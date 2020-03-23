@@ -8,6 +8,7 @@ mainly:
 
 #include <librealsense2/rs.hpp>
 #include "software-device.h"
+
 #include <list>
 
 class ip_sensor

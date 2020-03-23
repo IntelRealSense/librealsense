@@ -21,12 +21,6 @@ RsDeviceSource::RsDeviceSource(UsageEnvironment &t_env, rs2::video_stream_profil
 {
   m_framesQueue = &t_queue;
   m_streamProfile = &t_videoStreamProfile;
-#ifdef STATISTICS
-  if(Statistic::getStatisticStreams().find(t_videoStreamProfile.stream_type()) == Statistic::getStatisticStreams().end()) {
-      Statistic::getStatisticStreams().insert(std::pair<int,StreamStatistic *>(t_videoStreamProfile.stream_type(),new StreamStatistic()));
-  } 
-  //todo:change to uid instead of type.
-#endif
 }
 
 RsDeviceSource::~RsDeviceSource()
@@ -36,18 +30,6 @@ RsDeviceSource::~RsDeviceSource()
 void RsDeviceSource::doGetNextFrame()
 {
   // This function is called (by our 'downstream' object) when it asks for new data.
-  m_getFrame = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> timeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(m_getFrame - RsStatistics::getResetPacketStartTp());
-  
-  std::chrono::high_resolution_clock::time_point* tp = &RsStatistics::getSendPacketTp();
-  m_networkTimeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(m_getFrame-*tp);
-  *tp = std::chrono::high_resolution_clock::now();
-
-  if (0) //TODO:: to check if needed
-  { // the source stops being readable
-    handleClosure();
-    return;
-  }
   
   rs2::frame frame;
   try
@@ -59,7 +41,6 @@ void RsDeviceSource::doGetNextFrame()
     else
     {
       frame.keep();
-      m_gotFrame = std::chrono::high_resolution_clock::now();
       deliverRSFrame(&frame);
     }
   }
@@ -82,7 +63,6 @@ void RsDeviceSource::handleWaitForFrame()
     else
     {
       frame.keep();
-      m_gotFrame = std::chrono::high_resolution_clock::now();
       deliverRSFrame(&frame);
     }
   }
@@ -151,13 +131,7 @@ void RsDeviceSource::deliverRSFrame(rs2::frame *t_frame)
   header.metadataHeader.timestampDomain = t_frame->get_frame_timestamp_domain();
 
   memmove(fTo, &header, sizeof(header));
-  assert(fMaxSize > fFrameSize); //TODO: to remove on release
 
-  std::chrono::high_resolution_clock::time_point* tp = &RsStatistics::getSendPacketTp();
-  std::chrono::high_resolution_clock::time_point curTime = std::chrono::high_resolution_clock::now();
-  m_waitingTimeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(m_gotFrame-m_getFrame);
-  m_processingTimeSpan = std::chrono::duration_cast<std::chrono::duration<double>>(curTime-m_gotFrame);
-  *tp = curTime;
   // After delivering the data, inform the reader that it is now available:
   FramedSource::afterGetting(this);
 }

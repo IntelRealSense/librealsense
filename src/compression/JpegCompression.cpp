@@ -132,9 +132,6 @@ int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
 {
         long unsigned int compressedSize = 0;
         unsigned char *data = nullptr;
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR]->m_compressionBegin = std::chrono::system_clock::now();
-#endif
         jpeg_mem_dest(&m_cinfo, &data, &compressedSize);
         m_cinfo.image_width = m_width;
         m_cinfo.image_height = m_height;
@@ -178,18 +175,6 @@ int JpegCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         {
                 INF << "frame " << m_compFrameCounter << "\tcolor\tcompression\tJPEG\t" << t_size << "\t/\t" << compressedSize;
         }
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR];
-        st->m_compressionFrameCounter++;
-        std::chrono::system_clock::time_point compressionEnd = std::chrono::system_clock::now();
-        st->m_compressionTime = compressionEnd - st->m_compressionBegin;
-        st->m_avgCompressionTime += st->m_compressionTime.count();
-        printf("STATISTICS: streamType: %d, jpeg compress time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_COLOR, st->m_compressionTime * 1000,
-               (st->m_avgCompressionTime * 1000) / st->m_compressionFrameCounter, st->m_compressionFrameCounter);
-        st->m_decompressedSizeSum = t_size;
-        st->m_compressedSizeSum = compressedSize;
-        printf("STATISTICS: streamType: %d, jpeg ratio: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_COLOR, st->m_decompressedSizeSum / (float)st->m_compressedSizeSum, st->m_compressionFrameCounter);
-#endif
         return compressWithHeaderSize;
 }
 
@@ -198,9 +183,6 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         unsigned char *ptr = t_uncompressedBuf;
         unsigned char *data = t_buffer;
         unsigned int jpegHeader, res;
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR]->m_decompressionBegin = std::chrono::system_clock::now();
-#endif
         jpeg_mem_src(&m_dinfo, data, t_compressedSize);
         if(t_buffer != nullptr)
         {
@@ -279,14 +261,5 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
                 INF << "frame " << m_decompFrameCounter << "\tcolor\tdecompression\tJPEG\t" << t_compressedSize << "\t/\t" << uncompressedSize;
         }
 
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_COLOR];
-        st->m_decompressionFrameCounter++;
-        std::chrono::system_clock::time_point decompressionEnd = std::chrono::system_clock::now();
-        st->m_decompressionTime = decompressionEnd - st->m_decompressionBegin;
-        st->m_avgDecompressionTime += st->m_decompressionTime.count();
-        printf("STATISTICS: streamType: %d, jpeg decompress time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_COLOR, st->m_decompressionTime * 1000,
-               (st->m_avgDecompressionTime * 1000) / st->m_decompressionFrameCounter, st->m_decompressionFrameCounter);
-#endif
         return uncompressedSize;
 }

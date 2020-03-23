@@ -62,9 +62,6 @@ int RvlCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         m_nibblesWritten = 0;
         short *end = buffer2 + t_size / m_bpp;
         short previous = 0;
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH]->m_compressionBegin = std::chrono::system_clock::now();
-#endif
         while (buffer2 != end)
         {
                 int zeros = 0, nonzeros = 0;
@@ -97,18 +94,6 @@ int RvlCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned
         {
                 INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tlz4\t" << t_size << "\t/\t" << compressedSize;
         }
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
-        st->m_compressionFrameCounter++;
-        std::chrono::system_clock::time_point compressionEnd = std::chrono::system_clock::now();
-        st->m_compressionTime = compressionEnd - st->m_compressionBegin;
-        st->m_avgCompressionTime += st->m_compressionTime.count();
-        printf("STATISTICS: streamType: %d, rvl compression time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_compressionTime * 1000,
-                   (st->m_avgCompressionTime * 1000) / st->m_compressionFrameCounter, st->m_compressionFrameCounter);
-        st->m_decompressedSizeSum = t_size;
-        st->m_compressedSizeSum = compressedSize;
-        printf("STATISTICS: streamType: %d, rvl ratio: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_decompressedSizeSum / (float)st->m_compressedSizeSum, st->m_compressionFrameCounter);
-#endif
         memcpy(t_compressedBuf, &compressedSize, sizeof(compressedSize));
         return compressWithHeaderSize;
 }
@@ -120,9 +105,6 @@ int RvlCompression::decompressBuffer(unsigned char *t_buffer, int t_size, unsign
         m_nibblesWritten = 0;
         short current, previous = 0;
         unsigned int compressedSize;
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH]->m_decompressionBegin = std::chrono::system_clock::now();
-#endif
         int numPixelsToDecode = t_size / 2;
         while (numPixelsToDecode)
         {
@@ -146,14 +128,5 @@ int RvlCompression::decompressBuffer(unsigned char *t_buffer, int t_size, unsign
         {
                 INF << "frame " << m_decompFrameCounter << "\tdepth\tcompression\tlz4\t" << compressedSize << "\t/\t" << uncompressedSize;
         }
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
-        st->m_decompressionFrameCounter++;
-        std::chrono::system_clock::time_point decompressionEnd = std::chrono::system_clock::now();
-        st->m_decompressionTime = decompressionEnd - st->m_decompressionBegin;
-        st->m_avgDecompressionTime += st->m_decompressionTime.count();
-        printf("STATISTICS: streamType: %d, rvl decompression time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_decompressionTime * 1000,
-                   (st->m_avgDecompressionTime * 1000) / st->m_decompressionFrameCounter, st->m_decompressionFrameCounter);
-#endif
         return uncompressedSize;
 }

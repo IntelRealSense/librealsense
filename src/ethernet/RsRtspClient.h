@@ -6,17 +6,18 @@
 
 #include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
+
 #include "StreamClientState.h"
 #include "IRsRtsp.h"
+#include <ipDeviceCommon/MemoryPool.h>
+#include <ipDeviceCommon/RsCommon.h>
+#include "common/RsRtspCommon.h"
 
 #include <librealsense2/hpp/rs_internal.hpp>
 
 #include <vector>
 #include <map>
 #include <condition_variable>
-#include <ipDeviceCommon/MemoryPool.h>
-#include <ipDeviceCommon/RsCommon.h>
-#include "common/RsRtspCommon.h"
 
 //TODO: check if this timeout is reasonable for all commands 
 #define RTSP_CLIENT_COMMANDS_TIMEOUT_SEC 10

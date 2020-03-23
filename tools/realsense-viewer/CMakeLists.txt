@@ -79,7 +79,8 @@ if (IMPORT_DEPTH_CAM_FW)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} uvc_fw)
 endif()
 
-if(BUILD_IPDEV)
+if(BUILD_NETWORK_DEVICE)
+    add_definitions(-DNETWORK_DEVICE)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
 endif()
 
