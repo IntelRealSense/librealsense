@@ -240,7 +240,7 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         uint64_t row_stride = m_dinfo.output_width * m_dinfo.output_components;
         while (m_dinfo.output_scanline < m_dinfo.output_height)
         {
-                int numLines = jpeg_read_scanlines(&m_dinfo, m_destBuffer, 1); //todo - check the error: JWRN_JPEG_EOF, Premature end of JPEG file
+                int numLines = jpeg_read_scanlines(&m_dinfo, m_destBuffer, 1);
                 if (numLines <= 0)
                 {
                         printf("error: jpeg_read_scanlines failed, numline: %d\n", numLines);
@@ -264,7 +264,7 @@ int JpegCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
                         convertRGBtoBGR(&ptr);
                 }
         }
-        res = jpeg_finish_decompress(&m_dinfo); //todo - check the error: m_jerr_UNKNOWN_MARKER, Unsupported marker type 0x%02x
+        res = jpeg_finish_decompress(&m_dinfo);
         if (!res)
         {
                 printf("error: jpeg_finish_decompress failed \n");
