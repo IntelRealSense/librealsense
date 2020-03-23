@@ -2,15 +2,8 @@
 
 #include <time.h>
 #include <queue>
-
 #include <memory>
 #include <mutex>
-
-#ifdef _WIN64
-#  define ssize_t __int64
-#else
-#  define ssize_t long
-#endif
 
 class rtp_callback
 {

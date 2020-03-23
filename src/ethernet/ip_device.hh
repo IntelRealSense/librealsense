@@ -1,21 +1,15 @@
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "RsRtspClient.h"
+#include "rs_rtp_callback.hh"
+#include "ip_sensor.hh"
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
 #include "option.h"
-
-#include "RsRtspClient.h"
 #include "software-device.h"
 
 #include <list>
-
-#include "rs_rtp_stream.hh"
-#include "rs_rtp_callback.hh"
-#include "ip_sensor.hh"
 
 #define MAX_ACTIVE_STREAMS 4
 

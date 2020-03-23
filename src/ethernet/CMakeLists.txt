@@ -18,8 +18,6 @@ file(GLOB REALSENSE_NET_CPP
   "realsense-net.def"
   "../ipDeviceCommon/*.h*"
   "../ipDeviceCommon/*.c*"
-  "${LIVE}/*.c*"
-  "${LIVE}/*.h*"
   "${LIVE}/groupsock/*.c*"
   "${LIVE}/BasicUsageEnvironment/*.c*"
   "${LIVE}/liveMedia/*.c*"
@@ -70,8 +68,8 @@ if(WIN32)
                 add_definitions(-Dssize_t=long)
         endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
 
-        add_definitions(-D_WINSOCKAPI_)
-
+        add_definitions(-DELPP_WINSOCK2)
+        
         set(WINLIB Ws2_32.lib)
 endif()
 

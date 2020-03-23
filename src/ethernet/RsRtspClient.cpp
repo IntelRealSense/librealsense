@@ -1,10 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <RsUsageEnvironment.h>
+#include "liveMedia.hh"
+
 #include "RsRtspClient.h"
 #include <ipDeviceCommon/RsCommon.h>
-#include "liveMedia.hh"
+#include <RsUsageEnvironment.h>
+
 #include <iostream>
 #include <thread>
 #include <vector>

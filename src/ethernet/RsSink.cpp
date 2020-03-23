@@ -1,11 +1,13 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include <NetdevLog.h>
 #include "RsSink.h"
+#include <ipDeviceCommon/Statistic.h>
+
 #include "stdio.h"
 #include <string>
-#include <ipDeviceCommon/Statistic.h>
+
+#include <NetdevLog.h>
 
 #define WRITE_FRAMES_TO_FILE 0
 

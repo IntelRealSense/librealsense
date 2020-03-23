@@ -6,10 +6,12 @@
 
 #include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
+
 #include "rtp_callback.hh"
-#include <librealsense2/hpp/rs_internal.hpp>
 #include <compression/CompressionFactory.h>
 #include <ipDeviceCommon/MemoryPool.h>
+
+#include <librealsense2/hpp/rs_internal.hpp>
 
 class RsSink : public MediaSink
 {
