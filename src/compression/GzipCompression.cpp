@@ -19,9 +19,6 @@ GzipCompression::GzipCompression(int t_width, int t_height, rs2_format t_format,
 
 int GzipCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigned char *t_compressedBuf)
 {
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH]->m_compressionBegin = std::chrono::system_clock::now();
-#endif
         int compressedSize = 0;
         m_strm.zalloc = Z_NULL;
         m_strm.zfree = Z_NULL;
@@ -55,26 +52,11 @@ int GzipCompression::compressBuffer(unsigned char *t_buffer, int t_size, unsigne
         {
                 INF << "frame " << m_compFrameCounter << "\tdepth\tcompression\tgzip\t" << t_size << "\t/\t" << compressedSize << "\n";
         }
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
-        st->m_compressionFrameCounter++;
-        std::chrono::system_clock::time_point compressionEnd = std::chrono::system_clock::now();
-        st->m_compressionTime = compressionEnd - st->m_compressionBegin;
-        st->m_avgCompressionTime += st->m_compressionTime.count();
-        printf("STATISTICS: streamType: %d, gzip compression time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_compressionTime * 1000,
-                   (st->m_avgCompressionTime * 1000) / st->m_compressionFrameCounter, st->m_compressionFrameCounter);
-        st->m_decompressedSizeSum = t_size;
-        st->m_compressedSizeSum = compressedSize;
-        printf("STATISTICS: streamType: %d, gzip ratio: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_decompressedSizeSum / (float)st->m_compressedSizeSum, st->m_compressionFrameCounter);
-#endif
         return compressWithHeaderSize;
 }
 
 int GzipCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedSize, unsigned char *t_uncompressedBuf)
 {
-#ifdef STATISTICS
-        Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH]->m_decompressionBegin = std::chrono::system_clock::now();
-#endif
         m_strm.zalloc = Z_NULL;
         m_strm.zfree = Z_NULL;
         m_strm.opaque = Z_NULL;
@@ -94,14 +76,5 @@ int GzipCompression::decompressBuffer(unsigned char *t_buffer, int t_compressedS
         {
                 INF << "frame " << m_decompFrameCounter << "\tdepth\tdecompression\tgzip\t" << t_compressedSize << "\t/\t" << m_strm.total_out;
         }
-#ifdef STATISTICS
-        StreamStatistic *st = Statistic::getStatisticStreams()[rs2_stream::RS2_STREAM_DEPTH];
-        st->m_decompressionFrameCounter++;
-        std::chrono::system_clock::time_point decompressionEnd = std::chrono::system_clock::now();
-        st->m_decompressionTime = decompressionEnd - st->m_decompressionBegin;
-        st->m_avgDecompressionTime += st->m_decompressionTime.count();
-        printf("STATISTICS: streamType: %d, gzip decompression time: %0.2fm, average: %0.2fm, counter: %d\n", rs2_stream::RS2_STREAM_DEPTH, st->m_decompressionTime * 1000,
-                   (st->m_avgDecompressionTime * 1000) / st->m_decompressionFrameCounter, st->m_decompressionFrameCounter);
-#endif
         return m_strm.total_out;
 }

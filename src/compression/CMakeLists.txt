@@ -55,10 +55,6 @@ else()
     )
 endif()    
 
-if(BUILD_IPDEV_STATS)
-    add_definitions(-DSTATISTICS)
-endif()
-
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Library")
 
 install(TARGETS ${PROJECT_NAME}

@@ -79,10 +79,6 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE ${WINLIB} realsense2 realsense2-compression
 )
 
-if(IPDEV_STATS)
-    add_definitions(-DSTATISTICS)
-endif()
-
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${REALSENSE_NET_PUBLIC_HEADERS}")
 
