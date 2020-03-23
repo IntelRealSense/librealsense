@@ -2146,6 +2146,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sensor->parent.device);
     return new rs2_device(sensor->parent);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
@@ -2365,6 +2366,17 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
 
+void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    // Are the first two necessary?
+    sensor->parent.ctx.reset();
+    sensor->parent.info.reset();
+    sensor->parent.device.reset();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
+
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_ENUM(severity);
@@ -2461,7 +2473,12 @@ void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile*
     VALIDATE_NOT_NULL(to_profile);
     VALIDATE_NOT_NULL(extrinsics);
     
-    if (from_sensor->parent.device != to_sensor->parent.device)
+    auto from_dev = from_sensor->parent.device;
+    if (!from_dev) from_dev = from_sensor->sensor->get_device().shared_from_this();
+    auto to_dev = to_sensor->parent.device;
+    if (!to_dev) to_dev = to_sensor->sensor->get_device().shared_from_this();
+    
+    if (from_dev != to_dev)
     {
         LOG_ERROR("Cannot set extrinsics of two different devices \n");
         return;
