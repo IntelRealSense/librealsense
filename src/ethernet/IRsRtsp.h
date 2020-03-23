@@ -10,12 +10,12 @@
 #include <vector>
 #include <ipDeviceCommon/RsCommon.h>
 
-typedef struct DeviceData
+struct DeviceData
 {
     std::string serialNum;
     std::string name;
     std::string usbType;
-} DeviceData;
+};
 
 class IRsRtsp
 {

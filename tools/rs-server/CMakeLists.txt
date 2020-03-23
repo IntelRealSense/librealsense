@@ -24,12 +24,9 @@ if(WIN32)
   message(SEND_ERROR "rs-server supports Linux only")
 else()
   file(GLOB RS_SERVER_SOURCES LIST_DIRECTORIES false CONFIGURE_DEPENDS
-    "*.h*"
     "*.c*"
-    "../ipDeviceCommon/*.h*"
-    "../ipDeviceCommon/*.c*"
+    "../../src/ipDeviceCommon/*.c*"
     "${LIVE}/*.c*"
-    "${LIVE}/*.h*"
     "${LIVE}/groupsock/*.c*"
     "${LIVE}/BasicUsageEnvironment/*.c*"
     "${LIVE}/liveMedia/*.c*"
@@ -50,16 +47,9 @@ else()
 
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
-  target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} realsense2)
-
-  if(BUILD_COMPRESSION)
-    target_link_libraries(${PROJECT_NAME} realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
-    add_definitions(-DCOMPRESSION)
-  endif()
-
-  if(BUILD_IPDEV_STATS)
-    add_definitions(-DSTATISTICS)
-  endif()
+  set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
+  add_definitions(-DCOMPRESSION)
 
   set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Tools")
 

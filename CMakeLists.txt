@@ -26,6 +26,7 @@ endif()
 set(BUILD_IPDEV           ON CACHE BOOL "Enable IP device support")
 set(BUILD_IPDEV_UNITTESTS ON CACHE BOOL "Enable unittests for IP device")
 set(BUILD_IPDEV_STATS     ON CACHE BOOL "Enable statistics for IP device")
+set(CMAKE_DEBUG_POSTFIX "")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 

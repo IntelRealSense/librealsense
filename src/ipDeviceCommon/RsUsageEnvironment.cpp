@@ -3,14 +3,17 @@
 
 #include "RsUsageEnvironment.h"
 
+// #ifdef BUILD_EASYLOGGINGCPP
+// #ifdef BUILD_SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
+// #endif
+// #endif
 
 RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
   : BasicUsageEnvironment(taskScheduler) {}
 
 RSUsageEnvironment::~RSUsageEnvironment() {
   CLOG(INFO, "netdev") << "RealSense network logging closed";
-
 
   el::Loggers::unregisterLogger("librealsense");
   el::Loggers::unregisterLogger("netdev");
