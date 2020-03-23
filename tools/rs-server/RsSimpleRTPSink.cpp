@@ -16,8 +16,6 @@ RsSimpleRTPSink::createNew(UsageEnvironment &t_env, Groupsock *t_RTPgs,
                            char const *t_sdpMediaTypeString,
                            char const *t_rtpPayloadFormatName,
                            rs2::video_stream_profile &t_videoStream,
-                           // TODO Michal: this is a W/A for passing the sensor's metadata
-                           //rs2::device &t_device,
                            std::shared_ptr<RsDevice> device,
                            unsigned t_numChannels,
                            Boolean t_allowMultipleFramesPerPacket,
@@ -28,7 +26,6 @@ RsSimpleRTPSink::createNew(UsageEnvironment &t_env, Groupsock *t_RTPgs,
                              t_videoStream, device, t_numChannels, t_allowMultipleFramesPerPacket, t_doNormalMBitRule);
 }
 
-// TODO Michal: oveload with other types if needed
 std::string getSdpLineForField(const char* t_name, int t_val)
 {
   std::ostringstream oss;
@@ -104,14 +101,12 @@ std::string getSdpLineForVideoStream(rs2::video_stream_profile &t_videoStream, s
   str.append(getSdpLineForField("usb_type", device.get()->getDevice().get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR)));
   str.append(getSdpLineForField("compression", CompressionFactory::getIsEnabled()));
 
-  // TODO: get all intrinsics as one data object
   str.append(getSdpLineForField("ppx", t_videoStream.get_intrinsics().ppx));
   str.append(getSdpLineForField("ppy", t_videoStream.get_intrinsics().ppy));
   str.append(getSdpLineForField("fx", t_videoStream.get_intrinsics().fx));
   str.append(getSdpLineForField("fy", t_videoStream.get_intrinsics().fy));
   str.append(getSdpLineForField("model", t_videoStream.get_intrinsics().model));
   
-  // TODO: adjust serialization to camera distortion model
   for (size_t i = 0; i < 5; i++)
   {
     str.append(getSdpLineForField("coeff_"+i, t_videoStream.get_intrinsics().coeffs[i]));
@@ -120,8 +115,7 @@ std::string getSdpLineForVideoStream(rs2::video_stream_profile &t_videoStream, s
   str.append(getSdpLineForField("extrinsics",get_extrinsics_string_per_stream(device,t_videoStream).c_str()));
 
   std::string name = device.get()->getDevice().get_info(RS2_CAMERA_INFO_NAME);
-  // We don't want to sent spaces over SDP
-  // TODO Michal: Decide what character to use for replacing spaces
+  // We don't want to sent spaces over SDP , replace all spaces with '^'
   std::replace(name.begin(), name.end(), ' ', '^');
   str.append(getSdpLineForField("cam_name", name.c_str()));
 
@@ -143,7 +137,6 @@ RsSimpleRTPSink ::RsSimpleRTPSink(UsageEnvironment &t_env, Groupsock *t_RTPgs,
     : SimpleRTPSink(t_env, t_RTPgs, t_rtpPayloadFormat, t_rtpTimestampFrequency, t_sdpMediaTypeString, t_rtpPayloadFormatName,
                     t_numChannels, t_allowMultipleFramesPerPacket, t_doNormalMBitRule)
 {
-  t_env << "RsSimpleVideoRTPSink constructor\n";
   // Then use this 'config' string to construct our "a=fmtp:" SDP line:
   unsigned fmtpSDPLineMaxSize = SDP_MAX_LINE_LENGHT;
   m_fFmtpSDPLine = new char[fmtpSDPLineMaxSize];

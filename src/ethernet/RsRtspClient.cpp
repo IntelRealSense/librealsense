@@ -388,7 +388,7 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
   StreamClientState &scs = rsRtspClient->m_scs; // alias
   
   
-  if (NULL!=resultString)
+  if (nullptr!=resultString)
     rsRtspClient->m_lastReturnValue.msg = resultString;
   rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
@@ -402,11 +402,9 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
       break;
     }
 
-    char *const sdpDescription = resultString;
-
-    // Create a media session object from this SDP description:
-    scs.m_session = RsMediaSession::createNew(env, sdpDescription);
-    delete[] sdpDescription; // because we don't need it anymore
+    // Create a media session object from this SDP description(resultString):
+    scs.m_session = RsMediaSession::createNew(env, resultString);
+    delete[] resultString; // because we don't need it anymore
     if (scs.m_session == NULL)
     {
       env << "Failed to create a RsMediaSession object from the SDP description: " << env.getResultMsg() << "\n";

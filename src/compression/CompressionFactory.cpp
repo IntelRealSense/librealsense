@@ -45,7 +45,7 @@ std::shared_ptr<ICompression> CompressionFactory::getObject(int t_width, int t_h
 
 bool & CompressionFactory::getIsEnabled()
 {
-        static bool m_isEnabled;
+        static bool m_isEnabled = true;
         return m_isEnabled;
 }
 
