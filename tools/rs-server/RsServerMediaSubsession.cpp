@@ -15,15 +15,12 @@ RsServerMediaSubsession *RsServerMediaSubsession::createNew(UsageEnvironment &t_
 RsServerMediaSubsession ::RsServerMediaSubsession(UsageEnvironment &env, rs2::video_stream_profile &t_videoStreamProfile, std::shared_ptr<RsDevice> device)
     : OnDemandServerMediaSubsession(env, false), m_videoStreamProfile(t_videoStreamProfile)
 {
-  //envir() << "RsServerMediaSubsession constructor" <<this << "\n";
   m_frameQueue = rs2::frame_queue(CAPACITY, true);
   m_rsDevice=device;
 }
 
 RsServerMediaSubsession::~RsServerMediaSubsession()
 {
-  //envir() << "RsServerMediaSubsession destructor" <<this << "\n";
-  //TODO:: free the queue
 }
 
 rs2::frame_queue &RsServerMediaSubsession::getFrameQueue()
@@ -46,5 +43,5 @@ RTPSink *RsServerMediaSubsession ::createNewRTPSink(Groupsock *t_rtpGroupsock,
                                                     unsigned char t_rtpPayloadTypeIfDynamic,
                                                     FramedSource * /*t_inputSource*/)
 {
-  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96+m_videoStreamProfile.stream_type(), RTP_TIMESTAMP_FREQ, "X" , "Y" , m_videoStreamProfile, m_rsDevice); //TODO: to rename X and Y
+  return RsSimpleRTPSink::createNew(envir(), t_rtpGroupsock, 96 + m_videoStreamProfile.stream_type(), RTP_TIMESTAMP_FREQ, "RS_VIDEO" , "RS_FORMAT", m_videoStreamProfile, m_rsDevice);
 }

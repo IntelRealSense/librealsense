@@ -8,7 +8,7 @@
 #include "compression/ICompression.h"
 #include <ipDeviceCommon/MemoryPool.h>
 
-typedef struct RsOption //todo use the client struct 
+typedef struct RsOption
 {
   rs2_option m_opt;
   rs2::option_range m_range;

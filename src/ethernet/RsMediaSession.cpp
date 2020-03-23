@@ -83,14 +83,11 @@ RsMediaSubsession::~RsMediaSubsession()
 
 Boolean RsMediaSubsession::createSourceObjects(int useSpecialRTPoffset)
 {
-  if (strcmp(fCodecName, "Y") == 0)
+  if (strcmp(fCodecName, "RS_FORMAT") == 0)
   {
     // This subsession uses our custom RTP payload format:
-    char *mimeType = new char[strlen(mediumName()) + strlen(codecName()) + 2];
-    sprintf(mimeType, "%s/%s", mediumName(), codecName());
     fReadSource = fRTPSource = SimpleRTPSource::createNew(env(), fRTPSocket, fRTPPayloadFormat,
-                                                          fRTPTimestampFrequency, mimeType);
-    delete[] mimeType;
+                                                          fRTPTimestampFrequency, "RS_VIDEO/RS_FORMAT");
     return True;
   }
   else

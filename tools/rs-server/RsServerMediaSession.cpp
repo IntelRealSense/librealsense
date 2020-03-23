@@ -13,9 +13,6 @@ RsServerMediaSession *RsServerMediaSession ::createNew(UsageEnvironment &t_env, 
                                   t_isSSM, t_miscSDPLines);
 }
 
-static char const *const libNameStr = "LIVE555 Streaming Media v";
-char const *const libVersionStr = LIVEMEDIA_LIBRARY_VERSION_STRING;
-
 RsServerMediaSession::RsServerMediaSession(UsageEnvironment &t_env,
                                            RsSensor &t_sensor,
                                            char const *t_streamName,
@@ -28,7 +25,6 @@ RsServerMediaSession::RsServerMediaSession(UsageEnvironment &t_env,
 
 RsServerMediaSession::~RsServerMediaSession()
 {
-  //TODO:: to check if i need to delete rsSensor
 }
 
 void RsServerMediaSession::openRsCamera(std::unordered_map<long long int, rs2::frame_queue> &t_streamProfiles)

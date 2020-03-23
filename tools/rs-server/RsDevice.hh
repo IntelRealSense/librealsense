@@ -28,7 +28,6 @@ public:
 private:
 	rs2::device m_device;
 	std::vector<RsSensor> m_sensors;
-	
 };
 
 #endif
