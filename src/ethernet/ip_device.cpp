@@ -114,7 +114,7 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             {
 
                 float val = NAN;
-                printf("sensor is %d, option is %d,value is %d\n", control.sensorId, control.option, control.range.def);
+                printf("sensor is %d, option is %d,value is %fl\n", control.sensorId, control.option, control.range.def);
                 if (control.range.min == control.range.max)
                 {
                     remote_sensors[control.sensorId]->sw_sensor->add_read_only_option(control.option, control.range.def);
@@ -148,7 +148,6 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
         {
             // just for readable code
             rs2_video_stream st = streams[stream_index];
-
             long long int stream_key = RsRTSPClient::getStreamProfileUniqueKey(st);
             auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0);
             device_streams.push_back(stream_profile);
