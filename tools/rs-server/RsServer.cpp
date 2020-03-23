@@ -112,7 +112,7 @@ rsDevice = std::make_shared<RsDevice>();
       *env << "Play this stream using the URL \"" << url << "\"\n";
 
       // controls
-      rtspServer->setSupportedOptions(sensor.getSensorName(), sensor.gerSupportedOptions());
+      rtspServer->setSupportedOptions(sensor.getSensorName(), sensor.getSupportedOptions());
 
       delete[] url;
       sensorIndex++;
