@@ -41,6 +41,7 @@ auto max_optimization_iters = 50;
 #pragma once
 
     struct float2 { float x, y; float & operator [] (int i) { return (&x)[i]; } };
+    struct float3 { float x, y, z; float & operator [] (int i) { return (&x)[i]; } };
 
     class auto_cal_algo
     {
@@ -80,8 +81,6 @@ auto max_optimization_iters = 50;
             std::vector<float> weights;
             std::vector<float> direction_deg;
             std::vector<rs2_vertex> vertices;
-
-
         };
 
         struct yuy2_frame_data
@@ -229,6 +228,12 @@ auto max_optimization_iters = 50;
         std::pair< auto_cal_algo::calib_gradients, float> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
 
         float calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv);
+
+        calib_gradients  calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
+
+        translation_gradients calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
+
+        std::vector<float3> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
 
         template<class T>
         std::vector<float> calc_gradients(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
@@ -734,7 +739,7 @@ auto max_optimization_iters = 50;
         const rs2_extrinsics& extr)
     {
         std::vector<float2> uv(points.size());
-        std::sort(points.begin(), points.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
+        //std::sort(points.begin(), points.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
 
         for (auto i = 0; i < points.size(); ++i)
         {
@@ -766,7 +771,7 @@ auto max_optimization_iters = 50;
             if (x1 < 0 || x1 > width || x2 < 0 || x2 >= width ||
                 y1 < 0 || y1 > height || y2 < 0 || y2 >= height)
             {
-                res[i] = 0;
+                res[i] = -1;
                 continue;
             }
 
@@ -803,14 +808,74 @@ auto max_optimization_iters = 50;
     float auto_cal_algo::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv)
     {
         auto d_vals = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, uv);
+        auto cost = 0.f;
 
-        auto cost = 0;
+        auto sum_of_elements = 0;
         for (auto i = 0;i < d_vals.size(); i++)
         {
-            cost += d_vals[i] * z_data.weights[i];
+            if (d_vals[i] != -1)
+            {
+                sum_of_elements++;
+                cost += d_vals[i] * z_data.weights[i];
+            }
         }
-        cost /= d_vals.size();
+
+        cost /= (float)sum_of_elements;
         return cost;
+    }
+
+    auto_cal_algo::calib_gradients auto_cal_algo::calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin)
+    {
+        auto c = uv;
+        std::sort(c.begin(), c.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
+        auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, width_yuy2, height_yuy2, uv);
+       //std::sort(interp_IDT_x.begin(), interp_IDT_x.end());
+
+        auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, width_yuy2, height_yuy2, uv);
+       //std::sort(interp_IDT_y.begin(), interp_IDT_y.end());
+
+        calc_translation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin);
+        return calib_gradients();
+    }
+
+    auto_cal_algo::translation_gradients auto_cal_algo::calc_translation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin)
+    {
+        calc_translation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin);
+        return translation_gradients();
+    }
+
+    std::vector<float3> auto_cal_algo::calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin)
+    {
+        std::vector<float3> res;
+
+        auto v = z_data.vertices;
+
+        //Krgb = params.Krgb;
+        //A = params.rgbPmat;
+        std::vector<float3> f1(z_data.vertices.size());
+        std::vector<float> r2(z_data.vertices.size());
+        std::sort(v.begin(), v.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0];});
+        for (auto i = 0; i < z_data.vertices.size(); ++i)
+        {
+            rs2_vertex p = {};
+            rs2_transform_point_to_point(&p.xyz[0], &yuy_extrin, &v[i].xyz[0]);
+            f1[i].x = p.xyz[0] * yuy_intrin.fx + yuy_intrin.ppx*p.xyz[2];
+            f1[i].x /= p.xyz[2];
+            f1[i].x = (f1[i].x - yuy_intrin.ppx) / yuy_intrin.fx;
+
+            f1[i].y = p.xyz[1] * yuy_intrin.fy + yuy_intrin.ppy*p.xyz[2];
+            f1[i].y /= p.xyz[2];
+            f1[i].y = (f1[i].y - yuy_intrin.ppy) / yuy_intrin.fy;
+
+            r2[i] = f1[i].x*f1[i].x + f1[i].y*f1[i].y;
+            f1[i].z = p.xyz[2];
+        }
+        std::sort(f1.begin(), f1.end(), [](float3 v1, float3 v2) {return v1.x < v2.x;});
+        std::sort(f1.begin(), f1.end(), [](float3 v1, float3 v2) {return v1.y < v2.y;});
+        std::sort(r2.begin(), r2.end());
+        //auto r2 = x1. ^ 2 + y1. ^ 2;
+        //Rc = 1 + params.rgbDistort(1, 1).*r2 + params.rgbDistort(1, 2).*r2. ^ 2 + params.rgbDistort(1, 5).*r2. ^ 3;*/
+        return std::vector<float3>();
     }
 
     std::pair<auto_cal_algo::calib_gradients, float> auto_cal_algo::calc_cost_and_grad(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
@@ -819,6 +884,7 @@ auto max_optimization_iters = 50;
         //std::sort(uvmap.begin(), uvmap.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
 
         auto cost = calc_cost(z_data, yuy_data, uvmap);
+        auto grad = calc_gradients(z_data, yuy_data, uvmap, yuy_intrin, yuy_extrin);
         return std::pair<auto_cal_algo::calib_gradients, float>();
     }
 
@@ -863,18 +929,8 @@ auto max_optimization_iters = 50;
         std::sort(uvmap.begin(), uvmap.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});*/
       
         calc_cost_and_grad(z_data, yuy_data, rgb_intrinsics, extrinsics);
-        //auto res = get_texture_map(z_data.vertices, rgb_intrinsics, extrinsics);
-        //std::sort(res.begin(), res.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
 
-        //auto interp_IDT = biliniar_interp(yuy_data.edges_IDT, width_yuy2, height_yuy2, res);
-
-        ////std::sort(interp_IDT.begin(), interp_IDT.end());
-
-        //auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, width_yuy2, height_yuy2, res);
-        //std::sort(interp_IDT_x.begin(), interp_IDT_x.end());
-
-        //auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, width_yuy2, height_yuy2, res);
-        //std::sort(interp_IDT_y.begin(), interp_IDT_y.end());
+       
 
 
         return true;
