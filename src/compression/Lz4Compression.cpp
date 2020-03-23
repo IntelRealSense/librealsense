@@ -64,8 +64,6 @@ int Lz4Compression::decompressBuffer(unsigned char *t_buffer, int t_compressedSi
                 return -1;
         }
         int original_size = m_width * m_height * m_bpp;
-        // if (decompressed_size != original_size);
-        //      printf("Decompressed data is different from original!, decompressed_size: %d original size: %d \n",decompressed_size,  m_width* m_height * 2 );
         if (m_decompFrameCounter++ % 50 == 0)
         {
                 printf("finish lz depth decompression, size: %d, compressed size %d, frameNum: %d \n", decompressed_size, t_compressedSize, m_decompFrameCounter);
