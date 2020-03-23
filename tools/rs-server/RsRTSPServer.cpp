@@ -46,10 +46,6 @@ std::string getOptionString(rs2_option t_opt, float t_min, float t_max, float t_
 
 char const *RsRTSPServer::allowedCommandNames()
 {
-  //rs2::options* opt = new rs2::options();
-  //std::vector<rs2_option> options = opt.get_supported_options();
-  //((RsServerMediaSession *)fOurServerMediaSession)->getRsSensor().
-  //for (std::map<std::string, std::vector<rs2_option>::iterator iter = m_supportedOptions.begin(); iter!= m_supportedOptions.end(); ++iter)
   m_supportedOptionsStr.clear();
   for (const auto &optionsPair : m_supportedOptions)
   {
@@ -57,7 +53,6 @@ char const *RsRTSPServer::allowedCommandNames()
     m_supportedOptionsStr.append("[");
     for (auto option : optionsPair.second)
     {
-      // TODO: get range
       m_supportedOptionsStr.append(getOptionString(option.m_opt, option.m_range.min, option.m_range.max, option.m_range.def, option.m_range.step));
     }
     m_supportedOptionsStr.append("]");
@@ -303,7 +298,7 @@ void RsRTSPServer::RsRTSPClientSession::openRsCamera()
 
 void RsRTSPServer::RsRTSPClientSession::closeRsCamera()
 {
-  ((RsServerMediaSession *)fOurServerMediaSession)->closeRsCamera(); //TODO:: to check if this is indeed RsServerMediaSession
+  ((RsServerMediaSession *)fOurServerMediaSession)->closeRsCamera();
   for (int i = 0; i < fNumStreamStates; ++i)
   {
     if (fStreamStates[i].subsession != NULL)

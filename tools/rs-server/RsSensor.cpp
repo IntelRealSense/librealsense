@@ -159,23 +159,27 @@ int RsSensor::getStreamProfileBpp(rs2_format t_format)
         return bpp;
 }
 
-std::vector<RsOption> RsSensor::gerSupportedOptions()
+std::vector<RsOption> RsSensor::getSupportedOptions()
 {
         std::vector<RsOption> returnedVector;
-        std::vector<rs2_option> options = m_sensor.get_supported_options();
-
-        for (auto opt : options)
+        try
         {
-                // W/A - thease options fail on get range
-                // TODO Michal: check why...
-                if (opt == RS2_OPTION_LASER_POWER || opt == RS2_OPTION_EMITTER_ENABLED)
-                        continue;
-                if (!m_sensor.supports(opt))
-                        continue;
-                RsOption option;
-                option.m_opt = opt;
-                option.m_range = m_sensor.get_option_range(opt);
-                returnedVector.push_back(option);
+
+                std::vector<rs2_option> options = m_sensor.get_supported_options();
+                for (auto opt : options)
+                {
+                        if (!m_sensor.supports(opt))
+                                continue;
+
+                        RsOption option;
+                        option.m_opt = opt;
+                        option.m_range = m_sensor.get_option_range(opt);
+                        returnedVector.push_back(option);
+                }
+        }
+        catch (const std::exception &e)
+        {
+                std::cerr << e.what() << "\n";
         }
         return returnedVector;
 }

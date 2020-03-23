@@ -62,7 +62,6 @@ public:
     virtual void handleCmd_SET_PARAMETER(char const* fullRequestStr);
     
     RsRTSPServer& m_fOurRsRTSPServer;
-    //unsigned char fResponseBuffer[30000];
 
     friend class RsRTSPServer;
     friend class RsRTSPClientSession;
