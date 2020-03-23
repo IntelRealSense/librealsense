@@ -27,15 +27,14 @@ struct server
   {
     START_EASYLOGGINGPP(argc, argv);
 
-    OutPacketBuffer::increaseMaxSizeTo(1280*720*3);
+    OutPacketBuffer::increaseMaxSizeTo(1280 * 720 * 3);
 
     // Begin by setting up our usage environment:
     scheduler = BasicTaskScheduler::createNew();
     env = RSUsageEnvironment::createNew(*scheduler);
 
-
     rsDevice = std::make_shared<RsDevice>(env);
-    rtspServer = RsRTSPServer::createNew(*env,rsDevice, 8554);
+    rtspServer = RsRTSPServer::createNew(*env, rsDevice, 8554);
 
     if (rtspServer == NULL)
     {
@@ -47,7 +46,7 @@ struct server
     for (auto sensor : sensors)
     {
       RsServerMediaSession *sms;
-      if (sensor.getSensorName().compare("Stereo Module") == 0|| sensor.getSensorName().compare("RGB Camera") == 0)
+      if (sensor.getSensorName().compare("Stereo Module") == 0 || sensor.getSensorName().compare("RGB Camera") == 0)
       {
         sms = RsServerMediaSession::createNew(*env, sensor, sensor.getSensorName().data(), "",
                                               "Session streamed by \"realsense streamer\"",

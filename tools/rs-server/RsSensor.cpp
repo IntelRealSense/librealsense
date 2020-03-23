@@ -10,8 +10,8 @@
 #include "string.h"
 #include <BasicUsageEnvironment.hh>
 
-RsSensor::RsSensor(UsageEnvironment *t_env, rs2::sensor t_sensor, rs2::device t_device) 
-: env(t_env), m_sensor(t_sensor), m_device(t_device)
+RsSensor::RsSensor(UsageEnvironment *t_env, rs2::sensor t_sensor, rs2::device t_device)
+    : env(t_env), m_sensor(t_sensor), m_device(t_device)
 {
         for (rs2::stream_profile streamProfile : m_sensor.get_stream_profiles())
         {
@@ -179,7 +179,7 @@ std::vector<RsOption> RsSensor::getSupportedOptions()
         }
         catch (const std::exception &e)
         {
-                std::cerr << e.what() << "\n";
+                *env << e.what() << "\n";
         }
         return returnedVector;
 }
