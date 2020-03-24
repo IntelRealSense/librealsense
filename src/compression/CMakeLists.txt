@@ -10,7 +10,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(DEPENDENCIES ${DEPENDENCIES} realsense2)
 
 file(GLOB COMPRESSION_SOURCES 
- "*.hh"
  "*.h"
  "*.cpp"
  "../ipDeviceCommon/*.h"
@@ -42,22 +41,22 @@ if(WIN32)
     set(ZLIB_LIBRARY optimized ${CMAKE_BINARY_DIR}/zlib/lib/zlibstatic.lib debug ${CMAKE_BINARY_DIR}/zlib/lib/zlibstaticd.lib)
     target_link_libraries(${PROJECT_NAME}
         PRIVATE ${DEPENDENCIES}
-        PUBLIC ${ZLIB_LIBRARY}
-        PUBLIC ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
-        PUBLIC ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
+        PRIVATE ${ZLIB_LIBRARY}
+        PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
+        PRIVATE ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
     )
 else()
     target_link_libraries(${PROJECT_NAME}
         PRIVATE ${DEPENDENCIES}
-        ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
-        ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
-        ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
+        PRIVATE ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
+        PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
+        PRIVATE ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
     )
 endif()    
 
-set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Library")
-
-install(TARGETS ${PROJECT_NAME}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+#set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Library")
+#
+#install(TARGETS ${PROJECT_NAME}
+#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#)

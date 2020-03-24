@@ -3,11 +3,11 @@
 
 #include "RsUsageEnvironment.h"
 
-// #ifdef BUILD_EASYLOGGINGCPP
-// #ifdef BUILD_SHARED_LIBS
+#ifdef BUILD_EASYLOGGINGCPP
+#ifdef BUILD_SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
-// #endif
-// #endif
+#endif
+#endif
 
 RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
     : BasicUsageEnvironment(taskScheduler)
