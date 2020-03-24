@@ -48,6 +48,7 @@ namespace librealsense
             GLD                         = 0x0F, //"LoggerCoreGetDataParams"
             GVD                         = 0x10, //"Get Version and Date"
             DFU                         = 0x1E, //"Go to DFU"
+            HW_SYNC_EX_TRIGGER          = 0x19, // Enable (not default) HW sync; will disable freefall
             HW_RESET                    = 0x20, //"HW Reset"
             AMCSET                      = 0x2B, // Set options (L515)
             AMCGET                      = 0x2C, // Get options (L515)
@@ -57,7 +58,7 @@ namespace librealsense
             DPT_INTRINSICS_FULL_GET     = 0x7F,
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
-            FALL_DETECT_ENABLE          = 0x9D  // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
+            FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
         };
 
         enum gvd_fields
@@ -325,7 +326,10 @@ namespace librealsense
         class freefall_option : public bool_option
         {
         public:
-            freefall_option( hw_monitor & hwm );
+            freefall_option( hw_monitor & hwm, bool enabled = true );
+
+            bool is_enabled() const override { return _enabled; }
+            virtual void enable( bool = true );
 
             virtual void set( float value ) override;
             virtual const char * get_description() const override
@@ -337,6 +341,29 @@ namespace librealsense
         private:
             std::function<void( const option& )> _record_action = []( const option& ) {};
             hw_monitor & _hwm;
+            bool _enabled;
+        };
+
+        /*  For RS2_OPTION_INTER_CAM_SYNC_MODE
+            Not an advanced control: always off after camera startup (reset).
+            When enabled, the freefall control should turn off.
+        */
+        class hw_sync_option : public bool_option
+        {
+        public:
+            hw_sync_option( hw_monitor& hwm, std::shared_ptr< freefall_option > freefall_opt );
+
+            virtual void set( float value ) override;
+            virtual const char* get_description() const override
+            {
+                return "Enable multi-camera hardware synchronization mode (disabled on startup); not compatible with free-fall detection";
+            }
+            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+        private:
+            std::function<void( const option& )> _record_action = []( const option& ) {};
+            hw_monitor& _hwm;
+            std::shared_ptr< freefall_option > _freefall_opt;
         };
 
 

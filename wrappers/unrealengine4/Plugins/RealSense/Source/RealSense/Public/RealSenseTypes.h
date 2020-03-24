@@ -95,7 +95,7 @@ enum class ERealSenseOptionType : uint8
     HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
-    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/Rolling Shutter SKUs */
+    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
     STREAM_FILTER                              , /**< Select a stream to process */
     STREAM_FORMAT_FILTER                       , /**< Select a stream format to process */
     STREAM_INDEX_FILTER                        , /**< Select a stream index to process */
