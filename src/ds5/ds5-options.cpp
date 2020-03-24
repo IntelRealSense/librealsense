@@ -473,4 +473,39 @@ namespace librealsense
         static std::vector<uint8_t> alt_emitter_name(ds::alternating_emitter_pattern.begin()+2,ds::alternating_emitter_pattern.begin()+22);
         return (alt_emitter_name == res);
     }
+
+    emitter_always_on_option::emitter_always_on_option(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
+    {
+        _range = [this]()
+        {
+            return option_range{ 0, 1, 1, 0 };
+        };
+    }
+
+    void emitter_always_on_option::set(float value)
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = static_cast<int>(value);
+
+        _hwm.send(cmd);
+        _record_action(*this);
+    }
+
+    float emitter_always_on_option::query() const
+    {
+        command cmd(ds::LASERONCONST);
+        cmd.param1 = 2;
+
+        auto res = _hwm.send(cmd);
+        if (res.empty())
+            throw invalid_value_exception("emitter_always_on_option::query result is empty!");
+
+        return (res.front());
+    }
+
+    option_range emitter_always_on_option::get_range() const
+    {
+        return *_range;
+    }
 }

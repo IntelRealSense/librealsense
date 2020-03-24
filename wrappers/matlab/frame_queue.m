@@ -35,13 +35,35 @@ classdef frame_queue < handle
             end
             frame = realsense.frame(out);
         end
-        % TODO: poll_for_frame [frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset]
+        function [res, frame] = poll_for_frame(this, type)
+            narginchk(2, 2);
+            % C++ function validates contents of type
+            validateattributes(type, {'char', 'string'}, {'scalartext'}, '', 'type', 2);
+            out = realsense.librealsense_mex('rs2::frame_queue', 'poll_for_frame', this.objectHandle, type)
+            switch type
+            case 'frame'
+                frame = realsense.frame(out);
+            case 'video_frame'
+                frame = realsense.video_frame(out);
+            case 'points'
+                frame = realsense.points(out);
+            case 'depth_frame'
+                frame = realsense.depth_frame(out);
+            case 'disparity_frame'
+                frame = realsense.disparity_frame(out);
+            case 'motion_frame'
+                frame = realsense.motion_frame(out);
+            case 'pose_frame'
+                frame = realsense.pose_frame(out);
+            case 'frameset'
+                frame = realsense.frameset(out);
+            end
+        end
         function cap = capacity(this)
             cap = realsense.librealsense_mex('rs2::frame_queue', 'capacity', this.objectHandle);
         end
 		function keep = keep_frames(this)
             cap = realsense.librealsense_mex('rs2::frame_queue', 'keep_frames', this.objectHandle);
         end
-    end
     end
 end

@@ -248,7 +248,7 @@ namespace librealsense
     class LRS_EXTENSION_API bool_option : public float_option
     {
     public:
-        bool_option() : float_option(option_range{ 0, 1, 1, 1 }) {}
+        bool_option( bool default_on = true ) : float_option(option_range{ 0, 1, 1, default_on ? 1.f : 0.f }) {}
         bool is_true() { return (_value > _opt_range.min); }
         // TODO: expose this outwards
         const char* get_description() const override { return "A simple custom option for a processing block"; }

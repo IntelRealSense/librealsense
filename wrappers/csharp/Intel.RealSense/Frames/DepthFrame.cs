@@ -21,5 +21,12 @@ namespace Intel.RealSense
             object error;
             return NativeMethods.rs2_depth_frame_get_distance(Handle, x, y, out error);
         }
+        /// <summary>Provide the scaling factor to use when converting from frame data units to meters</summary>
+        /// <returns>Depth, in meters, per 1 unit stored in the frame data</returns>
+        public float GetUnits()
+        {
+            object error;
+            return NativeMethods.rs2_depth_frame_get_units(Handle, out error);
+        }
     }
 }

@@ -163,6 +163,14 @@ PYBIND11_MODULE(NAME, m) {
         .value("zero_order_enabled", RS2_OPTION_ZERO_ORDER_ENABLED)
         .value("enable_map_preservation", RS2_OPTION_ENABLE_MAP_PRESERVATION)
         .value("enable_freefall_detection", RS2_OPTION_FREEFALL_DETECTION_ENABLED)
+        .value("exposure_time_receiver_APD", RS2_OPTION_AVALANCHE_PHOTO_DIODE)
+        .value("post_processing_sharpening_level", RS2_OPTION_POST_PROCESSING_SHARPENING)
+        .value("pre_processing_sharpening_level", RS2_OPTION_PRE_PROCESSING_SHARPENING)
+        .value("edge_background_noise_level", RS2_OPTION_NOISE_FILTERING)
+        .value("activate_pixel_invalidation", RS2_OPTION_INVALIDATION_BYPASS)
+        .value("ambient_light_environment_level", RS2_OPTION_AMBIENT_LIGHT)
+        .value("sensor_resolution_mode", RS2_OPTION_SENSOR_MODE)
+        .value("emitter_always_on", RS2_OPTION_EMITTER_ALWAYS_ON)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

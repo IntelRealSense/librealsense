@@ -63,7 +63,7 @@ extern "C" {
         RS2_OPTION_HOLES_FILL, /**< Enhance depth data post-processing with holes filling where appropriate*/
         RS2_OPTION_STEREO_BASELINE, /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
         RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
-        RS2_OPTION_INTER_CAM_SYNC_MODE, /**< Impose Inter-camera HW synchronization mode. Applicable for D400/Rolling Shutter SKUs */
+        RS2_OPTION_INTER_CAM_SYNC_MODE, /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
         RS2_OPTION_STREAM_INDEX_FILTER, /**< Select a stream index to process */
@@ -92,6 +92,7 @@ extern "C" {
         RS2_OPTION_INVALIDATION_BYPASS, /**< Enable\disable pixel invalidation */
         RS2_OPTION_AMBIENT_LIGHT, /**< Change the depth ambient light see rs2_ambient_light for values */
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
+        RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 

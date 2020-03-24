@@ -63,6 +63,15 @@ classdef option < int64
         led_power                       (60)
         zero_order_enabled              (61)
         enable_map_preservation         (62)
-        count                           (63)
+        freefall_detection_enabled      (63)
+        apd_exposure_time               (64)
+        post_processing_sharpening      (65)
+        pre_processing_sharpening       (66)
+        noise_filter_level              (67)
+        invalidation_bypass             (68)
+        ambient_light_env_level         (69)
+        sensor_mode                     (70)
+        emitter_always_on               (71)
+        count                           (72)
     end
 end

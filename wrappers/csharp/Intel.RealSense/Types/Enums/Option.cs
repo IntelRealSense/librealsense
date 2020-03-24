@@ -199,5 +199,32 @@ namespace Intel.RealSense
 
         /// <summary>Preserve previous map when starting</summary>
         EnableMapPreservation = 62,
+
+        /// <summary>Enable/disable sensor shutdown when a free-fall is detected (on by default)</summary>
+        FreeFallDetectionEnabled = 63,
+
+        /// <summary>Changes the exposure time of Avalanche Photo Diode in the receiver</summary>
+        APDExposureTime = 64,
+
+        /// <summary>Changes the amount of sharpening in the post-processed image</summary>
+        PostProcessingSharpening = 65,
+
+        /// <summary>Changes the amount of sharpening in the pre-processed image</summary>
+        PreProcessingSharpening = 66,
+
+        /// <summary>Control edges and background noise</summary>
+        NoiseFilterLevel = 67,
+
+        /// <summary>Enable\disable pixel invalidation</summary>
+        InvalidationBypass = 68,
+
+        /// <summary>Change the depth ambient light see rs2_ambient_light for values</summary>
+        AmbientLightEnvLevel = 69,
+
+        /// <summary>The resolution mode: see rs2_sensor_mode for values</summary>
+        SensorMode = 70,
+
+        /// <summary>Enable Laser On constantly (GS SKU Only)</summary>
+        EmitterAlwaysOn = 71
     }
 }

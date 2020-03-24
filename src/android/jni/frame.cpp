@@ -130,6 +130,14 @@ Java_com_intel_realsense_librealsense_DepthFrame_nGetDistance(JNIEnv *env, jclas
     return rv;
 }
 
+extern "C" JNIEXPORT jfloat JNICALL
+Java_com_intel_realsense_librealsense_DepthFrame_nGetUnits( JNIEnv *env, jclass type, jlong handle ) {
+    rs2_error *e = NULL;
+    float rv = rs2_depth_frame_get_units( reinterpret_cast<const rs2_frame *>(handle), &e );
+    handle_error( env, e );
+    return rv;
+}
+
 extern "C" JNIEXPORT jint JNICALL
 Java_com_intel_realsense_librealsense_Points_nGetCount(JNIEnv *env, jclass type, jlong handle) {
     rs2_error *e = NULL;

@@ -814,6 +814,18 @@ namespace rs2
             error::handle(e);
             return r;
         }
+
+        /**
+        * Provide the scaling factor to use when converting from get_data() units to meters
+        * \return float - depth, in meters, per 1 unit stored in the frame data
+        */
+        float get_units() const
+        {
+            rs2_error * e = nullptr;
+            auto r = rs2_depth_frame_get_units( get(), &e );
+            error::handle( e );
+            return r;
+        }
     };
 
     class disparity_frame : public depth_frame
