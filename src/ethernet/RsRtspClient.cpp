@@ -222,16 +222,15 @@ int RsRTSPClient::close()
 
 int RsRTSPClient::setOption(const std::string& t_sensorName, rs2_option t_option, float t_value)
 {
-    unsigned res; //TODO: to handle res
     std::string option = t_sensorName + "_" + std::to_string(t_option);
     std::string value = std::to_string(t_value);
     if(isActiveSession)
     {
-        res = RTSPClient::sendSetParameterCommand(*this->m_scs.m_session, this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
+        RTSPClient::sendSetParameterCommand(*this->m_scs.m_session, this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
     }
     else
     {
-        res = sendSetParameterCommand(this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
+        sendSetParameterCommand(this->continueAfterSETCOMMAND, option.c_str(), value.c_str());
     }
 
     std::unique_lock<std::mutex> lck(m_commandMtx);
@@ -243,13 +242,12 @@ int RsRTSPClient::setOption(const std::string& t_sensorName, rs2_option t_option
         throw std::runtime_error(format_error_msg(__FUNCTION__, err));
     }
     m_commandDone = false;
-    /*
-    TODO: enable after fixing the option flow
+
     if(m_lastReturnValue.exit_code!=RsRtspReturnCode::OK)
     {
         throw std::runtime_error(format_error_msg(__FUNCTION__,m_lastReturnValue));
     }
-    */
+
     return m_lastReturnValue.exit_code;
 }
 
