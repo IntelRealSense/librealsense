@@ -38,7 +38,6 @@ int RsRTSPClient::getPhysicalSensorUniqueKey(rs2_stream stream_type, int sensors
     return stream_type * 10 + sensors_index;
 }
 
-//TODO: change char* to std::string
 IRsRtsp* RsRTSPClient::getRtspClient(char const* t_rtspURL, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
 {
     TaskScheduler* scheduler = BasicTaskScheduler::createNew();
@@ -46,7 +45,6 @@ IRsRtsp* RsRTSPClient::getRtspClient(char const* t_rtspURL, char const* t_applic
 
     RTSPClient::responseBufferSize = 100000;
     return (IRsRtsp*)new RsRTSPClient(scheduler, env, t_rtspURL, RTSP_CLIENT_VERBOSITY_LEVEL, t_applicationName, t_tunnelOverHTTPPortNum);
-    //return rtspClient;
 }
 
 RsRTSPClient::RsRTSPClient(TaskScheduler* t_scheduler, UsageEnvironment* t_env, char const* t_rtspURL, int t_verbosityLevel, char const* t_applicationName, portNumBits t_tunnelOverHTTPPortNum)
@@ -61,7 +59,6 @@ RsRTSPClient::~RsRTSPClient() {}
 
 std::vector<rs2_video_stream> RsRTSPClient::getStreams()
 {
-    // TODO - handle in a function
     unsigned res = this->sendDescribeCommand(this->continueAfterDESCRIBE);
     if(res == 0)
     {
@@ -138,7 +135,6 @@ int RsRTSPClient::addStream(rs2_video_stream t_stream, rtp_callback* t_callbackO
                 this->envir() << "Failed to create a data sink for the subsession: " << this->envir().getResultMsg() << "\n";
                 RsRtspReturnValue err = {(RsRtspReturnCode)envir().getErrno(), std::string("Failed to create a data sink for the subsession: " + std::string(envir().getResultMsg()))};
                 throw std::runtime_error(format_error_msg(__FUNCTION__, err));
-                // TODO: define error
             }
 
             subsession->miscPtr = this; // a hack to let subsession handler functions get the "RTSPClient" from the subsession
@@ -335,7 +331,6 @@ std::vector<IpDeviceControlData> RsRTSPClient::getControls()
     {
         throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
     }
-    //TODO: return the controls at argument
     return controls;
 }
 
@@ -377,7 +372,6 @@ void updateExtrinsicsMap(rs2_video_stream videoStream, std::string extrinsics_st
  *          CALLBACKS            *
  *********************************/
 
-// TODO: Error handling
 void RsRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode, char* resultString)
 {
     UsageEnvironment& env = rtspClient->envir(); // alias
@@ -388,7 +382,6 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode,
         rsRtspClient->m_lastReturnValue.msg = resultString;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
-    //TODO: take logic out of the callback?
     do
     {
         if(resultCode != 0)
@@ -458,7 +451,6 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode,
             CompressionFactory::getIsEnabled() = subsession->attrVal_bool("compression");
             videoStream.intrinsics.model = (rs2_distortion)subsession->attrVal_int("model");
 
-            // TODO: adjust serialization to camera distortion model
             for(size_t i = 0; i < 5; i++)
             {
                 videoStream.intrinsics.coeffs[i] = subsession->attrVal_int("coeff_" + i);
@@ -479,7 +471,6 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode,
 
             // TODO: update width and height in subsession?
             long long int uniqueKey = getStreamProfileUniqueKey(videoStream);
-            // TODO Michal: should the map key be long long?
             rsRtspClient->m_subsessionMap.insert(std::pair<long long int, RsMediaSubsession*>(uniqueKey, subsession));
             rsRtspClient->m_supportedProfiles.push_back(videoStream);
             subsession = iter.next();
@@ -493,10 +484,6 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient* rtspClient, int resultCode,
         rsRtspClient->m_commandDone = true;
     }
     rsRtspClient->m_cv.notify_one();
-
-    // An unrecoverable error occurred with this stream.
-    // TODO:
-    //shutdownStream(rtspClient);
 }
 
 void RsRTSPClient::continueAfterSETUP(RTSPClient* rtspClient, int resultCode, char* resultString)
@@ -579,7 +566,6 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient* rtspClient, int resultCode, 
         rsRtspClient->m_lastReturnValue.msg = resultString;
     rsRtspClient->m_lastReturnValue.exit_code = (RsRtspReturnCode)resultCode;
 
-    //TODO:move logic from callback
     {
         std::lock_guard<std::mutex> lck(rsRtspClient->m_commandMtx);
         std::string s = (std::string)resultString;
