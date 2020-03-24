@@ -165,7 +165,8 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
             //check if default value per this stream type were picked
             if(default_streams[std::make_pair(st.type, st.index)] == -1)
             {
-                if (st.width==DEFAULT_PROFILE_WIDTH && st.height==DEFAULT_PROFILE_HIGHT && st.fps==DEFAULT_PROFILE_FPS)
+                if (st.width==DEFAULT_PROFILE_WIDTH && st.height==DEFAULT_PROFILE_HIGHT && st.fps==DEFAULT_PROFILE_FPS
+                    && (st.type != rs2_stream::RS2_STREAM_COLOR || st.fmt == DEFAULT_PROFILE_COLOR_FORMAT))
                 {
                     default_streams[std::make_pair(st.type, st.index)] = stream_index;
                     is_default=true;
@@ -324,7 +325,7 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
 
         if (streams_collection.find(requested_stream_key) == streams_collection.end())
         {
-            throw std::runtime_error("[update_sensor_state] selected stream is missing");
+            throw std::runtime_error("[update_sensor_state] stream key: " + std::to_string(requested_stream_key) + " is not found. closing device.");
         }
 
         rtp_callbacks[requested_stream_key] = new rs_rtp_callback(streams_collection[requested_stream_key]);

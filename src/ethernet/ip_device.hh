@@ -23,6 +23,8 @@
 
 #define DEFAULT_PROFILE_HIGHT 480
 
+#define DEFAULT_PROFILE_COLOR_FORMAT RS2_FORMAT_RGB8 
+
 class ip_device
 {
 
