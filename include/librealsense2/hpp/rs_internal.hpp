@@ -246,7 +246,7 @@ namespace rs2
     };
 
 
-        class software_device : public device
+    class software_device : public device
     {
         std::shared_ptr<rs2_device> create_device_ptr(std::function<void(rs2_device*)> deleter)
         {
