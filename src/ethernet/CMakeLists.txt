@@ -36,6 +36,7 @@ if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
 endif()
 
 add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 include_directories(${PROJECT_NAME}
   ../../common
@@ -86,30 +87,30 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${REALSENSE_NET_
 # set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 install(TARGETS ${PROJECT_NAME}
-    EXPORT realsense2-netTargets
+#    EXPORT realsense2-netTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/librealsense2-net"
 )
 
-install(EXPORT realsense2-netTargets
-    FILE realsense2-netTargets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-)
-
-install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfig.cmake"
-    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-)
-
-install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfigVersion.cmake"
-        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-)
-
+#install(EXPORT realsense2-netTargets
+#    FILE realsense2-netTargets.cmake
+#    NAMESPACE ${PROJECT_NAME}::
+#    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+#)
+#
+#install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfig.cmake"
+#    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+#)
+#
+#install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfigVersion.cmake"
+#        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+#)
+#
 # Set library pkgconfig file for facilitating 3rd party integration
-install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-)
-
-install(CODE "execute_process(COMMAND ldconfig)")
+#install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
+#        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+#)
+#
+#install(CODE "execute_process(COMMAND ldconfig)")

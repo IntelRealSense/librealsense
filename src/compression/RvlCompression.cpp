@@ -9,10 +9,8 @@
 #include <zlib.h>
 
 RvlCompression::RvlCompression(int t_width, int t_height, rs2_format t_format, int t_bpp)
+    :ICompression(t_width, t_height, t_format, t_bpp)
 {
-    m_format = t_format;
-    m_width = t_width;
-    m_height = t_height;
 }
 
 int RvlCompression::encodeVLE(int t_value)

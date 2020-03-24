@@ -20,6 +20,14 @@
 
 #define POLLING_SW_DEVICE_STATE_INTERVAL 100
 
+#define DEFAULT_PROFILE_FPS 15
+
+#define DEFAULT_PROFILE_WIDTH 640
+
+#define DEFAULT_PROFILE_HIGHT 480
+
+#define DEFAULT_PROFILE_COLOR_FORMAT RS2_FORMAT_RGB8 
+
 class ip_device
 {
 
@@ -65,4 +73,12 @@ private:
     std::vector<IpDeviceControlData> get_controls(int sensor_id);
 
     void recover_rtsp_client(int sensor_index);
+
+    // default device stream index per type + sensor_index
+    // streams will be loaded at runtime so here the place holder  
+    std::map<std::pair<rs2_stream,int>,int> default_streams = 
+    { 
+        { std::make_pair(rs2_stream::RS2_STREAM_COLOR,0),-1},
+        { std::make_pair(rs2_stream::RS2_STREAM_DEPTH,0),-1}
+    };
 };

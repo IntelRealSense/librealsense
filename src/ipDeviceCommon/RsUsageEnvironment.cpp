@@ -3,11 +3,11 @@
 
 #include "RsUsageEnvironment.h"
 
-// #ifdef BUILD_EASYLOGGINGCPP
-// #ifdef BUILD_SHARED_LIBS
+#ifdef BUILD_EASYLOGGINGCPP
+#ifdef BUILD_SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
-// #endif
-// #endif
+#endif
+#endif
 
 RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
     : BasicUsageEnvironment(taskScheduler)
@@ -33,6 +33,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
 
         el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
         el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
+        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToStandardOutput, "false");
 
         CLOG(INFO, "netdev") << "RealSense network logging initialized";
     }
