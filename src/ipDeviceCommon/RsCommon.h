@@ -32,15 +32,14 @@ struct IpDeviceControlData
     rs2::option_range range;
 };
 
-
-const std::string STEREO_SENSOR_NAME("Stereo Module"); 
-const std::string RGB_SENSOR_NAME("RGB Camera"); 
-const std::string RS_MEDIA_TYPE("RS_VIDEO"); 
+const std::string STEREO_SENSOR_NAME("Stereo Module");
+const std::string RGB_SENSOR_NAME("RGB Camera");
+const std::string RS_MEDIA_TYPE("RS_VIDEO");
 const std::string RS_PAYLOAD_FORMAT("RS_FORMAT");
 const int MAX_WIDTH = 1280;
 const int MAX_HEIGHT = 720;
-const int MAX_BPP = 3; 
-const int MAX_FRAME_SIZE = MAX_WIDTH * MAX_HEIGHT * MAX_BPP; 
+const int MAX_BPP = 3;
+const int MAX_FRAME_SIZE = MAX_WIDTH * MAX_HEIGHT * MAX_BPP;
 const unsigned int SDP_MAX_LINE_LENGHT = 4000;
 const unsigned int RTP_TIMESTAMP_FREQ = 90000;
 

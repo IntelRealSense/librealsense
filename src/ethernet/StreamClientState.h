@@ -11,17 +11,16 @@
 class StreamClientState
 {
 public:
-  StreamClientState()
-      : m_session(NULL)
-  {
-  }
-  virtual ~StreamClientState()
-  {
-    Medium::close(m_session);
-  }
+    StreamClientState()
+        : m_session(NULL)
+    {}
+    virtual ~StreamClientState()
+    {
+        Medium::close(m_session);
+    }
 
 public:
-  RsMediaSession *m_session;
+    RsMediaSession* m_session;
 };
 
 #endif // _STREAM_CLIENT_STATE_H

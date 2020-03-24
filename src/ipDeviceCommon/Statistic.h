@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#ifndef _CLIENT_COMMON_H
-#define _CLIENT_COMMON_H
 #pragma once
+
 #include "time.h"
 #include <chrono>
 #include <map>
@@ -23,10 +22,9 @@ public:
 class Statistic
 {
 public:
-    static std::map<int, StreamStatistic *> &getStatisticStreams()  //todo:change to uid instead of type
+    static std::map<int, StreamStatistic*>& getStatisticStreams() //todo:change to uid instead of type
     {
-        static std::map<int, StreamStatistic *> m_streamStatistic;
+        static std::map<int, StreamStatistic*> m_streamStatistic;
         return m_streamStatistic;
     };
 };
-#endif
