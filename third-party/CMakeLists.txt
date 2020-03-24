@@ -17,21 +17,6 @@ add_subdirectory(${_rel_path}/live555)
 
 include(ExternalProject)
 
-### lz4 #############################################################
-ExternalProject_Add (lz4
-    PREFIX lz4
-    GIT_REPOSITORY "https://github.com/lz4/lz4.git"
-    GIT_TAG "master"
-    SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/lz4"
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} "${CMAKE_BINARY_DIR}/third-party/lz4/contrib/cmake_unofficial/" 
-      "-DBUILD_STATIC_LIBS=ON" 
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/lz4/" 
-      "-DCMAKE_POSITION_INDEPENDENT_CODE=ON" 
-      "-DCMAKE_GENERATOR=${CMAKE_GENERATOR}" 
-      "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
-    BUILD_IN_SOURCE 1
-)
-
 ### libjpeg-turbo ###################################################
 ExternalProject_Add (libjpeg-turbo
     PREFIX libjpeg-turbo
