@@ -1,19 +1,16 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
-#include <time.h>
-#include <queue>
 #include <memory>
 #include <mutex>
+#include <queue>
+#include <time.h>
 
 class rtp_callback
 {
-    public:
-        
-        void virtual on_frame(unsigned char*buffer, ssize_t size, struct timeval presentationTime)=0;
-        
-        //void virtual on_error(int code, std::string message)=0;
-        
-        //void virtual on_messege(std::string message)=0;
+public:
+    void virtual on_frame(unsigned char* buffer, ssize_t size, struct timeval presentationTime) = 0;
+
 };
-
-

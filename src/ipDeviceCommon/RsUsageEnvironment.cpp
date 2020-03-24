@@ -10,82 +10,99 @@ INITIALIZE_EASYLOGGINGPP
 // #endif
 
 RSUsageEnvironment::RSUsageEnvironment(TaskScheduler& taskScheduler)
-  : BasicUsageEnvironment(taskScheduler) {}
+    : BasicUsageEnvironment(taskScheduler)
+{}
 
-RSUsageEnvironment::~RSUsageEnvironment() {
-  CLOG(INFO, "netdev") << "RealSense network logging closed";
+RSUsageEnvironment::~RSUsageEnvironment()
+{
+    CLOG(INFO, "netdev") << "RealSense network logging closed";
 
-  el::Loggers::unregisterLogger("librealsense");
-  el::Loggers::unregisterLogger("netdev");
+    el::Loggers::unregisterLogger("librealsense");
+    el::Loggers::unregisterLogger("netdev");
 }
 
-RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler) {
-  RSUsageEnvironment* env = new RSUsageEnvironment(taskScheduler);
+RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
+{
+    RSUsageEnvironment* env = new RSUsageEnvironment(taskScheduler);
 
-  if (env) {
-    env->ptr        = env->buffer;
-    env->netdev_log = el::Loggers::getLogger("netdev");
-    env->lrs_log    = el::Loggers::getLogger("librealsense");
+    if(env)
+    {
+        env->ptr = env->buffer;
+        env->netdev_log = el::Loggers::getLogger("netdev");
+        env->lrs_log = el::Loggers::getLogger("librealsense");
 
-    el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
-    el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
+        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
+        el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
 
-    CLOG(INFO, "netdev") << "RealSense network logging initialized";
-  }
-
-  return env;
-}
-
-void RSUsageEnvironment::flush() {
-  *ptr = '\0';
-  CLOG(INFO, "netdev") <<  buffer;
-  ptr = buffer;
-}
-
-void RSUsageEnvironment::check() {
-  if ((ptr - buffer) > (RS_MAX_LOG_MSG_SIZE - RS_MAX_LOG_MSG_THLD)) {
-    flush();
-  }
-}
-
-UsageEnvironment& RSUsageEnvironment::operator<<(char const* str) {
-  int num = 0;
-
-  if (str == NULL) str = "(NULL)"; // sanity check
-
-  while (str[num] != '\0') {
-    if (str[num] == '\n') {
-      flush();
-    } else {
-      *ptr++ = str[num];
-      check();
+        CLOG(INFO, "netdev") << "RealSense network logging initialized";
     }
-    num++;
-  }
 
-  return *this;
+    return env;
 }
 
-UsageEnvironment& RSUsageEnvironment::operator<<(int i) {
-  ptr += sprintf(ptr, "%d", i);
-  check();
-  return *this;
+void RSUsageEnvironment::flush()
+{
+    *ptr = '\0';
+    CLOG(INFO, "netdev") << buffer;
+    ptr = buffer;
 }
 
-UsageEnvironment& RSUsageEnvironment::operator<<(unsigned u) {
-  ptr += sprintf(ptr, "%u", u);
-  check();
-  return *this;
+void RSUsageEnvironment::check()
+{
+    if((ptr - buffer) > (RS_MAX_LOG_MSG_SIZE - RS_MAX_LOG_MSG_THLD))
+    {
+        flush();
+    }
 }
 
-UsageEnvironment& RSUsageEnvironment::operator<<(double d) {
-  ptr += sprintf(ptr, "%f", d);
-  check();
-  return *this;
+UsageEnvironment& RSUsageEnvironment::operator<<(char const* str)
+{
+    int num = 0;
+
+    if(str == NULL)
+        str = "(NULL)"; // sanity check
+
+    while(str[num] != '\0')
+    {
+        if(str[num] == '\n')
+        {
+            flush();
+        }
+        else
+        {
+            *ptr++ = str[num];
+            check();
+        }
+        num++;
+    }
+
+    return *this;
 }
 
-UsageEnvironment& RSUsageEnvironment::operator<<(void* p) {
-  ptr += sprintf(ptr, "%p", p);
-  check();
-  return *this;
+UsageEnvironment& RSUsageEnvironment::operator<<(int i)
+{
+    ptr += sprintf(ptr, "%d", i);
+    check();
+    return *this;
+}
+
+UsageEnvironment& RSUsageEnvironment::operator<<(unsigned u)
+{
+    ptr += sprintf(ptr, "%u", u);
+    check();
+    return *this;
+}
+
+UsageEnvironment& RSUsageEnvironment::operator<<(double d)
+{
+    ptr += sprintf(ptr, "%f", d);
+    check();
+    return *this;
+}
+
+UsageEnvironment& RSUsageEnvironment::operator<<(void* p)
+{
+    ptr += sprintf(ptr, "%p", p);
+    check();
+    return *this;
 }
