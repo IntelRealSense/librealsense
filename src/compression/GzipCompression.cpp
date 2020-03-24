@@ -8,13 +8,8 @@
 #include <zlib.h>
 
 GzipCompression::GzipCompression(int t_width, int t_height, rs2_format t_format, int t_bpp)
+        :ICompression(t_width, t_height, t_format, t_bpp), m_windowsBits(15), m_gzipEncoding(16)
 {
-    m_format = t_format;
-    m_width = t_width;
-    m_height = t_height;
-    m_bpp = t_bpp;
-    m_windowsBits = 15;
-    m_gzipEncoding = 16;
 }
 
 int GzipCompression::compressBuffer(unsigned char* t_buffer, int t_size, unsigned char* t_compressedBuf)
