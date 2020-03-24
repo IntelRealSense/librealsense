@@ -1,4 +1,4 @@
-# rs-imu-calibration Tool:
+﻿# rs-imu-calibration Tool:
 
 ## Goal
 The tool is intended to calibrate the IMU built in D435i cameras
@@ -7,6 +7,10 @@ The tool is intended to calibrate the IMU built in D435i cameras
 D435i cameras arrive from the factory with a calibrated IMU device. However the calibration accuracy can be further imporved by a calibration procedure.
 
 The rs-imu-calibration tool is a code example that walks you through the calibration steps and saves the calibration coefficients to the EEPROM, to be applied automatically by the driver.
+
+## Limitations
+While the tool achieves good overall results, it has limitations that may impact accuracy. Please refer to following white paper for further information:
+Intel® RealSense™ Depth Camera D435i [IMU Calibration](https://dev.intelrealsense.com/docs/depth-camera-d435i-imu-calibration)
 
 ## Command Line Parameters
 
