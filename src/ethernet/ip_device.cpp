@@ -29,17 +29,25 @@ void ip_device::recover_rtsp_client(int sensor_index)
 ip_device::~ip_device()
 {
     DBG << "Destroying ip_device";
-    is_device_alive = false;
-
-    if(sw_device_status_check.joinable())
+    
+    try
     {
-        sw_device_status_check.join();
+        is_device_alive = false;
+
+        if (sw_device_status_check.joinable())
+        {
+            sw_device_status_check.join();
+        }
+
+        for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
+        {
+            update_sensor_state(remote_sensor_index, {}, false);
+            delete (remote_sensors[remote_sensor_index]); //->sensors_option.clear();
+        }
     }
-
-    for(int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
+    catch (const std::exception &e)
     {
-        update_sensor_state(remote_sensor_index, {}, false);
-        delete(remote_sensors[remote_sensor_index]); //->sensors_option.clear();
+        ERR << e.what();
     }
     DBG << "Destroying ip_device completed";
 }
@@ -149,10 +157,23 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
 
         for(int stream_index = 0; stream_index < streams.size(); stream_index++)
         {
+            bool is_default=false;
             // just for readable code
             rs2_video_stream st = streams[stream_index];
             long long int stream_key = RsRTSPClient::getStreamProfileUniqueKey(st);
-            auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, stream_index == 0);
+
+            //check if default value per this stream type were picked
+            if(default_streams[std::make_pair(st.type, st.index)] == -1)
+            {
+                if (st.width==DEFAULT_PROFILE_WIDTH && st.height==DEFAULT_PROFILE_HIGHT && st.fps==DEFAULT_PROFILE_FPS
+                    && (st.type != rs2_stream::RS2_STREAM_COLOR || st.fmt == DEFAULT_PROFILE_COLOR_FORMAT))
+                {
+                    default_streams[std::make_pair(st.type, st.index)] = stream_index;
+                    is_default=true;
+                }
+            }
+
+            auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, is_default);
             device_streams.push_back(stream_profile);
             //stream_profile.register_extrinsics_to()
             streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
@@ -194,10 +215,10 @@ void ip_device::polling_state_loop()
             {
                 //poll start/stop events
                 auto sw_sensor = remote_sensors[i]->sw_sensor.get();
-
-                enabled = sw_sensor->get_active_streams().size() > 0;
-
-                if(remote_sensors[i]->is_enabled != enabled)
+   
+                enabled = (sw_sensor->get_active_streams().size() > 0); 
+   
+                if (remote_sensors[i]->is_enabled != enabled)
                 {
                     try
                     {
@@ -304,7 +325,7 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
 
         if(streams_collection.find(requested_stream_key) == streams_collection.end())
         {
-            exit(-1);
+            throw std::runtime_error("[update_sensor_state] stream key: " + std::to_string(requested_stream_key) + " is not found. closing device.");
         }
 
         rtp_callbacks[requested_stream_key] = new rs_rtp_callback(streams_collection[requested_stream_key]);
@@ -385,7 +406,7 @@ rs2_device* rs2_create_net_device(int api_version, const char* address, rs2_erro
     sw_dev.set_destruction_callback([ip_dev] { delete ip_dev; });
     // register device info to sw device
     DeviceData data = ip_dev->remote_sensors[0]->rtsp_client->getDeviceData();
-    sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + "\n IP Device");
+    sw_dev.update_info(RS2_CAMERA_INFO_NAME, data.name + " IP Device");
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_IP_ADDRESS, addr);
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_SERIAL_NUMBER, data.serialNum);
     sw_dev.register_info(rs2_camera_info::RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, data.usbType);
