@@ -11,15 +11,12 @@
 #include <time.h>
 
 JpegCompression::JpegCompression(int t_width, int t_height, rs2_format t_format, int t_bpp)
+    :ICompression(t_width, t_height, t_format, t_bpp)
 {
     m_cinfo.err = jpeg_std_error(&m_jerr);
     m_dinfo.err = jpeg_std_error(&m_jerr);
     jpeg_create_compress(&m_cinfo);
     jpeg_create_decompress(&m_dinfo);
-    m_format = t_format;
-    m_width = t_width;
-    m_height = t_height;
-    m_bpp = t_bpp;
     m_cinfo.input_components = m_bpp;
     if(m_format == RS2_FORMAT_YUYV || m_format == RS2_FORMAT_UYVY)
     {
@@ -41,7 +38,6 @@ JpegCompression::JpegCompression(int t_width, int t_height, rs2_format t_format,
     }
     m_rowBuffer = new unsigned char[m_cinfo.input_components * t_width];
     m_destBuffer = (*m_cinfo.mem->alloc_sarray)((j_common_ptr)&m_cinfo, JPOOL_IMAGE, m_cinfo.input_components * t_width, 1);
-
     jpeg_set_defaults(&m_cinfo);
 }
 
@@ -182,7 +178,7 @@ int JpegCompression::decompressBuffer(unsigned char* t_buffer, int t_compressedS
 {
     unsigned char* ptr = t_uncompressedBuf;
     unsigned char* data = t_buffer;
-    unsigned int jpegHeader, res;
+    unsigned int jpegHeader{}, res{};
     jpeg_mem_src(&m_dinfo, data, t_compressedSize);
     if(t_buffer != nullptr)
     {
