@@ -220,7 +220,7 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        // the order of the following code-lines are workaround for endless re-try. 
+                        //the ftate flag is togled before the actual updatee to avoid endless re-tries on case of failure.
                         remote_sensors[i]->is_enabled = enabled;
                         update_sensor_state(i, sw_sensor->get_active_streams(), true);
                     }
