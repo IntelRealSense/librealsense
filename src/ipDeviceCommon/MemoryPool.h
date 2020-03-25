@@ -23,47 +23,8 @@ public:
         std::unique_lock<std::mutex> lk(m_mutex);
         for(int i = 0; i < POOL_SIZE; i++)
         {
-            unsigned char* mem = new unsigned char[sizeof(RsFrameHeader) + MAX_FRAME_SIZE]; //TODO:to use OutPacketBuffer::maxSize;
+            unsigned char* mem = new unsigned char[MAX_MESSAGE_SIZE];
             m_pool.push(mem);
-            if (((std::intptr_t)mem & 0xF) == 0)
-                {
-                        std::cout<<"mem is 16 bit alliened\n";
-                        printf("mem is %p, after RsFrameHeader is %p\n",mem,mem +sizeof(RsFrameHeader));
-                }
-                else
-                {
-                    std::cout<<"mem is NOT 16 bit alliened\n";
-                }
-                if (((std::intptr_t)(mem +sizeof(RsFrameHeader)) & 0xF) == 0)
-                {
-                    std::cout<<sizeof(RsFrameHeader)<<"\n";
-                        std::cout<<"mem + RsFrameHeaderis 16 bit alliened\n";
-                }
-                else
-                {
-                    std::cout<<sizeof(RsFrameHeader)<<"\n";
-                    std::cout<<"mem + RsFrameHeaderis is NOT 16 bit alliened\n";
-                }
-                if (((std::intptr_t)(mem + sizeof(RsMetadataHeader)) & 0xF) == 0)
-                {
-                    std::cout<<sizeof(RsMetadataHeader)<<"\n";
-                        std::cout<<"mem + RsMetadataHeader is 16 bit alliened\n";
-                }
-                else
-                {
-                    std::cout<<sizeof(RsMetadataHeader)<<"\n";
-                    std::cout<<"mem + RsMetadataHeader is NOT 16 bit alliened\n";
-                }
-                 if (((std::intptr_t)(mem + sizeof(RsNetworkHeader)) & 0xF) == 0)
-                {
-                    std::cout<<sizeof(RsNetworkHeader)<<"\n";
-                        std::cout<<"mem + RsNetworkHeader is 16 bit alliened\n";
-                }
-                else
-                {
-                    std::cout<<sizeof(RsNetworkHeader)<<"\n";
-                    std::cout<<"mem + RsNetworkHeader is NOT 16 bit alliened\n";
-                }
         }
         lk.unlock();
     }

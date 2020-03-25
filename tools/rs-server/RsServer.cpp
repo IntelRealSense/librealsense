@@ -28,7 +28,7 @@ struct server
     {
         START_EASYLOGGINGPP(argc, argv);
 
-        OutPacketBuffer::increaseMaxSizeTo(MAX_FRAME_SIZE);
+        OutPacketBuffer::increaseMaxSizeTo(MAX_MESSAGE_SIZE);
 
         // Begin by setting up our usage environment:
         scheduler = BasicTaskScheduler::createNew();

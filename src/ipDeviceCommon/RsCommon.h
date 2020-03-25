@@ -43,6 +43,7 @@ const int MAX_WIDTH = 1280;
 const int MAX_HEIGHT = 720;
 const int MAX_BPP = 3;
 const int MAX_FRAME_SIZE = MAX_WIDTH * MAX_HEIGHT * MAX_BPP;
+const int MAX_MESSAGE_SIZE = MAX_FRAME_SIZE + sizeof(RsFrameHeader);
 const unsigned int SDP_MAX_LINE_LENGHT = 4000;
 const unsigned int RTP_TIMESTAMP_FREQ = 90000;
 
