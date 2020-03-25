@@ -59,13 +59,8 @@ RsRTSPClient::~RsRTSPClient() {}
 
 std::vector<rs2_video_stream> RsRTSPClient::getStreams()
 {
-    unsigned res = this->sendDescribeCommand(this->continueAfterDESCRIBE);
-    if (res == 0)
-    {
-        // An error occurred (continueAfterDESCRIBE was already called)
-        // TODO: return error code
-        return this->m_supportedProfiles;
-    }
+    this->sendDescribeCommand(this->continueAfterDESCRIBE);
+    
     // wait for continueAfterDESCRIBE to finish
     std::unique_lock<std::mutex> lck(m_commandMtx);
     m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
@@ -458,19 +453,16 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
             deviceData.serialNum = strSerialNumVal;
             deviceData.name = strCamNameVal;
             // Return spaces back to string after getting it from the SDP
-            // TODO Michal: Decide what character to use for replacing spaces
             std::replace(deviceData.name.begin(), deviceData.name.end(), '^', ' ');
             deviceData.usbType = strUsbTypeVal;
             rsRtspClient->setDeviceData(deviceData);
 
-            // TODO: update width and height in subsession?
             long long int uniqueKey = getStreamProfileUniqueKey(videoStream);
             rsRtspClient->m_subsessionMap.insert(std::pair<long long int, RsMediaSubsession *>(uniqueKey, subsession));
             rsRtspClient->m_supportedProfiles.push_back(videoStream);
             subsession = iter.next();
             // TODO: when to delete p?
         }
-        //TODO:remove this loop - once will be at API function?
     } while (0);
 
     {
