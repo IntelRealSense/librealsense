@@ -229,6 +229,17 @@ namespace rs2
             rs2_software_sensor_on_notification(_sensor.get(), notif, &e);
             error::handle(e);
         }
+        /**
+        * Sensors hold the parent device in scope via a shared_ptr. This function detaches that so that the 
+        * software sensor doesn't keep the software device alive. Note that this is dangerous as it opens the
+        * door to accessing freed memory if care isn't taken.
+        */
+        void detach()
+        {
+            rs2_error * e = nullptr;
+            rs2_software_sensor_detach(_sensor.get(), &e);
+            error::handle(e);
+        }
 
     private:
         friend class software_device;
