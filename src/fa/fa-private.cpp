@@ -28,16 +28,7 @@ namespace librealsense
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl
                 << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
-                << intrinsics_string(res_1920_1080)
-                << intrinsics_string(res_1280_720)
-                << intrinsics_string(res_640_480)
-                << intrinsics_string(res_848_480)
-                << intrinsics_string(res_424_240)
-                << intrinsics_string(res_640_360)
-                << intrinsics_string(res_320_240)
-                << intrinsics_string(res_480_270)
-                << intrinsics_string(res_1280_800)
-                << intrinsics_string(res_960_540));
+                << intrinsics_string(res_1920_1080));
 
             auto resolution = width_height_to_ds5_rect_resolutions(width, height);
 
@@ -162,26 +153,12 @@ namespace librealsense
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
             {
-                if (it->unique_id == info.unique_id)
+				// checking vid, pid instead of unique id - MAY LEAD TO BUGS WITH OTHER VID,PID!!!
+                if (it->pid == RS450_UART_PID && it->vid == RS450_UART_VID)
                 {
-                    bool found = false;
                     result = *it;
-                    switch (info.pid)
-                    {
-                    case RS450_PID:
-                        found = (result.mi == 3); //TODO - Remi - check mi to assign here
-                        break;
-                    default:
-                        throw not_implemented_exception(to_string() << "USB device "
-                            << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
-                        break;
-                    }
-
-                    if (found)
-                    {
-                        devices.erase(it);
-                        return true;
-                    }
+                    devices.erase(it);
+                    return true;
                 }
             }
             return false;
