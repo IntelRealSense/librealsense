@@ -359,13 +359,14 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
             {
                 Raw_Frame* frame = rtp_stream.get()->extract_frame();
                 rtp_stream.get()->frame_data_buff.pixels = frame->m_buffer;
-                rtp_stream.get()->frame_data_buff.timestamp = frame->m_metadata->timestamp;
+
+                rtp_stream.get()->frame_data_buff.timestamp = frame->m_metadata->data.timestamp;
 
                 rtp_stream.get()->frame_data_buff.frame_number++;
-                rtp_stream.get()->frame_data_buff.domain = frame->m_metadata->timestampDomain;
+                rtp_stream.get()->frame_data_buff.domain = frame->m_metadata->data.timestampDomain;
 
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, rtp_stream.get()->frame_data_buff.timestamp);
-                remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, frame->m_metadata->actualFps);
+                remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, frame->m_metadata->data.actualFps);
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, rtp_stream.get()->frame_data_buff.frame_number);
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, 1);
 
