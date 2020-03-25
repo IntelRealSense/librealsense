@@ -14,6 +14,7 @@ librealsense::record_sensor::record_sensor( device_interface& device,
     m_is_recording(false),
     m_parent_device(device),
     m_is_sensor_hooked(false),
+    m_register_notification_to_base(true),
     m_before_start_callback_token(-1)
 {
     LOG_DEBUG("Created record_sensor");
@@ -92,6 +93,12 @@ bool librealsense::record_sensor::supports_option(rs2_option id) const
 
 void librealsense::record_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
+    if (m_register_notification_to_base)
+    {
+        m_sensor.register_notifications_callback(std::move(callback)); //route to base sensor
+        return;
+    }
+
     m_user_notification_callback = std::move(callback);
     auto from_live_sensor = notifications_callback_ptr(new notification_callback([&](rs2_notification* n)
     {
@@ -265,9 +272,11 @@ void record_sensor::disable_sensor_hooks()
         return;
     unhook_sensor_callbacks();
     m_is_sensor_hooked = false;
+    m_register_notification_to_base = true;
 }
 void record_sensor::hook_sensor_callbacks()
 {
+    m_register_notification_to_base = false;
     m_user_notification_callback = m_sensor.get_notifications_callback();
     register_notifications_callback(m_user_notification_callback);
     m_original_callback = m_sensor.get_frames_callback();

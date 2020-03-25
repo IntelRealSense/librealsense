@@ -1,5 +1,6 @@
 package com.intel.realsense.librealsense;
 
+
 public class StreamProfile extends LrsClass {
     private StreamType mType;
     private StreamFormat mFormat;

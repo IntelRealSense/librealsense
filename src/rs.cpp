@@ -2146,6 +2146,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
 rs2_device* rs2_create_device_from_sensor(const rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(sensor);
+    VALIDATE_NOT_NULL(sensor->parent.device);
     return new rs2_device(sensor->parent);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
@@ -2159,6 +2160,14 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
     return df->get_distance(x, y);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
+
+float rs2_depth_frame_get_units( const rs2_frame* frame_ref, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( frame_ref );
+    auto df = VALIDATE_INTERFACE((( frame_interface * ) frame_ref ), librealsense::depth_frame );
+    return df->get_units();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, frame_ref )
 
 float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
@@ -2374,6 +2383,17 @@ void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, block)
 
+void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(sensor);
+    auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
+    // Are the first two necessary?
+    sensor->parent.ctx.reset();
+    sensor->parent.info.reset();
+    sensor->parent.device.reset();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
+
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_ENUM(severity);
@@ -2470,7 +2490,12 @@ void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile*
     VALIDATE_NOT_NULL(to_profile);
     VALIDATE_NOT_NULL(extrinsics);
     
-    if (from_sensor->parent.device != to_sensor->parent.device)
+    auto from_dev = from_sensor->parent.device;
+    if (!from_dev) from_dev = from_sensor->sensor->get_device().shared_from_this();
+    auto to_dev = to_sensor->parent.device;
+    if (!to_dev) to_dev = to_sensor->sensor->get_device().shared_from_this();
+    
+    if (from_dev != to_dev)
     {
         LOG_ERROR("Cannot set extrinsics of two different devices \n");
         return;

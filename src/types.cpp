@@ -327,6 +327,7 @@ namespace librealsense
             CASE(INVALIDATION_BYPASS)
             CASE(AMBIENT_LIGHT)
             CASE(SENSOR_MODE)
+            CASE(EMITTER_ALWAYS_ON)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

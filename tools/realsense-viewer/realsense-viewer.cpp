@@ -30,6 +30,14 @@
 
 #include "../examples/software-device-advanced/legacy_adaptor.hpp"
 
+#include <easylogging++.h>
+#ifdef BUILD_SHARED_LIBS
+// With static linkage, ELPP is initialized by librealsense, so doing it here will
+// create errors. When we're using the shared .so/.dll, the two are separate and we have
+// to initialize ours if we want to use the APIs!
+INITIALIZE_EASYLOGGINGPP
+#endif
+
 using namespace rs2;
 using namespace rs400;
 
@@ -244,6 +252,7 @@ bool refresh_devices(std::mutex& m,
     return true;
 }
 
+
 int main(int argc, const char** argv) try
 {
     rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
@@ -265,6 +274,36 @@ int main(int argc, const char** argv) try
 
     std::vector<device> connected_devs;
     std::mutex m;
+
+#if 1
+    // Configure the logger
+    el::Configurations conf;
+    conf.set( el::Level::Global, el::ConfigurationType::Format, "[%level] %msg" );
+    conf.set( el::Level::Info, el::ConfigurationType::Format, "%msg" );
+    conf.set( el::Level::Debug, el::ConfigurationType::Enabled, "false" );
+    el::Loggers::reconfigureLogger( "default", conf );
+    // Create a dispatch sink which will get any messages logged to EasyLogging, which will then
+    // post the messages on the viewer's notification window.
+    class viewer_model_dispatcher : public el::LogDispatchCallback
+    {
+    public:
+        rs2::viewer_model * vm = nullptr;  // only the default ctor is available to us...!
+    protected:
+        void handle( const el::LogDispatchData* data ) noexcept override
+        {
+            vm->not_model.add_log( 
+                data->logMessage()->logger()->logBuilder()->build(
+                    data->logMessage(),
+                    data->dispatchAction() == el::base::DispatchAction::NormalLog
+                ));
+        }
+    };
+    el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
+    auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
+    dispatcher->vm = &viewer_model;
+    // Remove the default logger (which will log to standard out/err) or it'll still be active
+    el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
+#endif
 
     window.on_file_drop = [&](std::string filename)
     {

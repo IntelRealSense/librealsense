@@ -12,11 +12,46 @@ namespace Intel.RealSense
     /// <summary>
     /// The device object represents a physical camera and provides the means to manipulate it.
     /// </summary>
-    public class Device : Base.PooledObject
+    public class Device : Base.RefCountedPooledObject
     {
+        protected static Hashtable refCountTable = new Hashtable();
+        protected static readonly object tableLock = new object();
+        
         internal override void Initialize()
         {
+            lock (tableLock)
+            {
+                if (refCountTable.Contains(Handle))
+                    refCount = refCountTable[Handle] as Base.RefCount;
+                else
+                {
+                    refCount = new Base.RefCount();
+                    refCountTable[Handle] = refCount;
+                }
+                Retain();
+            }
             Info = new InfoCollection(NativeMethods.rs2_supports_device_info, NativeMethods.rs2_get_device_info, Handle);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (m_instance.IsInvalid)
+            {
+                return;
+            }
+
+            lock (tableLock)
+            {
+                IntPtr localHandle = Handle;
+                System.Diagnostics.Debug.Assert(refCountTable.Contains(localHandle));
+
+                base.Dispose(disposing);
+
+                if (refCount.count == 0)
+                { 
+                    refCountTable.Remove(localHandle);
+                }
+            }
         }
 
         internal Device(IntPtr ptr)

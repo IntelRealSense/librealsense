@@ -10,6 +10,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/t265-messages.h"
 )
 
-target_link_libraries(${LRS_TARGET} PRIVATE uvc_fw) # for T265 FW
+target_link_libraries(${LRS_TARGET} PRIVATE fw) # for T265 FW
 target_include_directories(${LRS_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 set_target_properties (${LRS_TARGET} PROPERTIES FOLDER Resources)

@@ -339,13 +339,21 @@ void rs2_software_sensor_update_read_only_option(rs2_sensor* sensor, rs2_option 
  */
 void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float min, float max, float step, float def, int is_writable, rs2_error** error);
 
-/**
+/*
 * Add a processing block to the list that the sensor recommends for use
 * \param[in] sensor         the software sensor
 * \param[in] block          the processing block to recommend
 * \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs2_processing_block* block, rs2_error** error);
+
+* Sensors hold the parent device in scope via a shared_ptr. This function detaches that so that the software sensor doesn't keep the software device alive.
+* Note that this is dangerous as it opens the door to accessing freed memory if care isn't taken.
+* \param[in] sensor         the software sensor
+* \param[out] error         if non-null, recieves any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_software_sensor_detach(rs2_sensor* sensor, rs2_error** error);
+
 #ifdef __cplusplus
 }
 #endif

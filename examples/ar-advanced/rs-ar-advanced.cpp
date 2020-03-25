@@ -95,7 +95,7 @@ int main(int argc, char * argv[]) try
     const std::string virtual_object_guid = "node0";
 
     // This variable will hold the pose of the virtual object in world coordinates.
-    // We we initialize it once we get the first pose frame.
+    // We initialize it once we get the first pose frame.
     rs2_pose object_pose_in_world;
     bool object_pose_in_world_initialized = false;
 

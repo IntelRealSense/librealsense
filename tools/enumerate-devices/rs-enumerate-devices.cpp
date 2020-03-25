@@ -2,6 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
+#include <librealsense2/rsutil.h>
 #include <iostream>
 #include <iomanip>
 #include <map>
@@ -93,6 +94,10 @@ void print(const rs2_intrinsics& intrinsics)
 
     for (auto i = 0u; i < sizeof(intrinsics.coeffs) / sizeof(intrinsics.coeffs[0]); ++i)
         ss << "\t" << setprecision(15) << intrinsics.coeffs[i] << "  ";
+
+    float fov[2];
+    rs2_fov(&intrinsics, fov);
+    ss << endl << left << setw(14) << "  FOV (deg): " << "\t" << setprecision(4) << fov[0] << " x " << fov[1];
 
     cout << ss.str() << endl << endl;
 }

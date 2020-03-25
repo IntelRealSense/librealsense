@@ -140,6 +140,12 @@ public class PreviewActivity extends AppCompatActivity {
         m3dButton.setTextColor(mShow3D ? Color.YELLOW : Color.WHITE);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
+    }
+
     private synchronized Map<Integer, TextView> createLabels(Map<Integer, Pair<String, Rect>> rects){
         if(rects == null)
             return null;

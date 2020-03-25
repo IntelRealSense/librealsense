@@ -73,6 +73,7 @@ namespace librealsense
         int m_before_start_callback_token;
         device_interface& m_parent_device;
         bool m_is_sensor_hooked;
+        bool m_register_notification_to_base;
         std::mutex m_mutex;
     };
 

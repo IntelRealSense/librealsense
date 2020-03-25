@@ -288,6 +288,7 @@ public class SettingsActivity extends AppCompatActivity {
                 if(!rv.containsKey(pair.hashCode()))
                     rv.put(pair.hashCode(), new ArrayList<StreamProfile>());
                 rv.get(pair.hashCode()).add(p);
+                p.close();
             }
         }
         return rv;

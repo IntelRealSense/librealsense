@@ -30,10 +30,10 @@ namespace fw_logger
 
         for (size_t i = 0; i < num_of_params; i++)
         {
-            string regular_exp[3];
-            string replacement[3];
-            stringstream st_regular_exp[3];
-            stringstream st_replacement[3];
+            string regular_exp[4];
+            string replacement[4];
+            stringstream st_regular_exp[4];
+            stringstream st_replacement[4]; 
 
             st_regular_exp[0] << "\\{\\b(" << i << ")\\}";
             regular_exp[0] = st_regular_exp[0].str();
@@ -52,10 +52,17 @@ namespace fw_logger
 
             exp_replace_map[regular_exp[1]] = replacement[1];
 
-            st_regular_exp[2] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
+            st_regular_exp[2] << "\\{\\b(" << i << "):f\\}";
             regular_exp[2] = st_regular_exp[2].str();
+            st_replacement[2] << params[i]; 
+            replacement[2] = st_replacement[2].str();
+            exp_replace_map[regular_exp[2]] = replacement[2];
 
-            enum_replace_map[regular_exp[2]] = params[i];
+
+            st_regular_exp[3] << "\\{\\b(" << i << "),[a-zA-Z]+\\}";
+            regular_exp[3] = st_regular_exp[3].str();
+
+            enum_replace_map[regular_exp[3]] = params[i];
         }
 
         return replace_params(source, exp_replace_map, enum_replace_map, dest);

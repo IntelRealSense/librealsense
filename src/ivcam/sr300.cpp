@@ -41,11 +41,24 @@ namespace librealsense
     };
 
     std::shared_ptr<device_interface> sr300_info::create(std::shared_ptr<context> ctx,
-                                                         bool register_device_notifications) const
+        bool register_device_notifications) const
     {
-        return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm,
-                                              this->get_device_data(),
-                                              register_device_notifications);
+        auto pid = _depth.pid;
+        switch (pid)
+        {
+        case SR300_PID:
+            return std::make_shared<sr300_camera>(ctx, _color, _depth, _hwm,
+                this->get_device_data(),
+                register_device_notifications);
+        case SR300v2_PID:
+            return std::make_shared<sr305_camera>(ctx, _color, _depth, _hwm,
+                this->get_device_data(),
+                register_device_notifications);
+        default:
+            throw std::runtime_error(to_string() << "Unsupported SR300 model! 0x"
+                << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
+        }
+
     }
 
     std::vector<std::shared_ptr<device_info>> sr300_info::pick_sr300_devices(
@@ -101,6 +114,8 @@ namespace librealsense
             raw_color_ep,
             sr300_color_fourcc_to_rs2_format,
             sr300_color_fourcc_to_rs2_stream);
+
+        color_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, color.device_path);
 
         // register processing blocks
         color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
@@ -165,6 +180,8 @@ namespace librealsense
             sr300_depth_fourcc_to_rs2_format,
             sr300_depth_fourcc_to_rs2_stream);
         raw_depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
+
+        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, depth.device_path);
 
         // register processing blocks factories
         depth_ep->register_processing_block(
@@ -400,17 +417,17 @@ namespace librealsense
     }
 
     sr300_camera::sr300_camera(std::shared_ptr<context> ctx, const platform::uvc_device_info &color,
-                               const platform::uvc_device_info &depth,
-                               const platform::usb_device_info &hwm_device,
-                               const platform::backend_device_group& group,
-                               bool register_device_notifications)
+        const platform::uvc_device_info &depth,
+        const platform::usb_device_info &hwm_device,
+        const platform::backend_device_group& group,
+        bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-          _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
-          _color_device_idx(add_sensor(create_color_device(ctx, color))),
-          _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_raw_depth_sensor()))),
-          _depth_stream(new stream(RS2_STREAM_DEPTH)),
-          _ir_stream(new stream(RS2_STREAM_INFRARED)),
-          _color_stream(new stream(RS2_STREAM_COLOR))
+        _depth_device_idx(add_sensor(create_depth_device(ctx, depth))),
+        _depth_stream(new stream(RS2_STREAM_DEPTH)),
+        _ir_stream(new stream(RS2_STREAM_INFRARED)),
+        _color_stream(new stream(RS2_STREAM_COLOR)),
+        _color_device_idx(add_sensor(create_color_device(ctx, color))),
+        _hw_monitor(std::make_shared<hw_monitor>(std::make_shared<locked_transfer>(ctx->get_backend().create_usb_device(hwm_device), get_raw_depth_sensor())))
     {
         using namespace ivcam;
         static auto device_name = "Intel RealSense SR300";
@@ -429,16 +446,16 @@ namespace librealsense
         auto pid_hex_str = hexify(color.pid);
         //auto recommended_fw_version = firmware_version(SR3XX_RECOMMENDED_FIRMWARE_VERSION);
 
-        register_info(RS2_CAMERA_INFO_NAME,             device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER,    serial);
+        register_info(RS2_CAMERA_INFO_NAME, device_name);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, fw_version);
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT,    depth.device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE,    std::to_string(static_cast<int>(fw_cmd::GLD)));
-        register_info(RS2_CAMERA_INFO_PRODUCT_ID,       pid_hex_str);
-        register_info(RS2_CAMERA_INFO_PRODUCT_LINE,     "SR300");
-        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED,    _is_locked ? "YES" : "NO");
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, depth.device_path);
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "SR300");
+        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
         //register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 
         register_autorange_options();
@@ -462,20 +479,32 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
         get_depth_sensor().register_option(RS2_OPTION_DEPTH_UNITS,
-                                           std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                                            lazy<float>([this]() {
-                                                auto c = *_camer_calib_params;
-                                                return (c.Rmax / 1000 / 0xFFFF);
-                                            })));
+            std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                lazy<float>([this]() {
+            auto c = *_camer_calib_params;
+            return (c.Rmax / 1000 / 0xFFFF);
+        })));
 
-        if (firmware_version(fw_version) >= firmware_version("3.26.2.0"))
-        {
-            roi_sensor_interface* roi_sensor;
-            if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
-                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor,
-                (ds::fw_cmd)ivcam::fw_cmd::SetRgbAeRoi));
-        }
     }
+
+    sr305_camera::sr305_camera(std::shared_ptr<context> ctx, const platform::uvc_device_info &color,
+        const platform::uvc_device_info &depth,
+        const platform::usb_device_info &hwm_device,
+        const platform::backend_device_group& group,
+        bool register_device_notifications)
+        : sr300_camera(ctx, color, depth, hwm_device, group, register_device_notifications) {
+
+        static auto device_name = "Intel RealSense SR305";
+        update_info(RS2_CAMERA_INFO_NAME, device_name);
+
+        roi_sensor_interface* roi_sensor;
+        if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
+            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor,
+            (ds::fw_cmd)ivcam::fw_cmd::SetRgbAeRoi));
+
+    }
+
+
     void sr300_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         //TODO: implement
@@ -490,7 +519,7 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
-        if(has_metadata_ts(frame))
+        if (has_metadata_ts(frame))
         {
             auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
             if (!f)
@@ -551,18 +580,18 @@ namespace librealsense
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
-        return (has_metadata_ts(frame))? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(frame);
+        return (has_metadata_ts(frame)) ? RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK : _backup_timestamp_reader->get_frame_timestamp_domain(frame);
     }
 
     std::shared_ptr<matcher> sr300_camera::create_matcher(const frame_holder& frame) const
     {
         std::vector<std::shared_ptr<matcher>> depth_matchers;
 
-        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get()};
+        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get() };
 
         for (auto& s : streams)
         {
-            depth_matchers.push_back(std::make_shared<identity_matcher>( s->get_unique_id(), s->get_stream_type()));
+            depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
         }
         std::vector<std::shared_ptr<matcher>> matchers;
         if (!frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
@@ -574,7 +603,7 @@ namespace librealsense
             matchers.push_back(std::make_shared<frame_number_composite_matcher>(depth_matchers));
         }
 
-        auto color_matcher = std::make_shared<identity_matcher>( _color_stream->get_unique_id(), _color_stream->get_stream_type());
+        auto color_matcher = std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type());
         matchers.push_back(color_matcher);
 
         return std::make_shared<timestamp_composite_matcher>(matchers);

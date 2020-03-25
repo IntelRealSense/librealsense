@@ -176,7 +176,12 @@ namespace librealsense
                             _messenger = _usb_device->open(_info.mi);
                             if (_messenger)
                             {
-                                listen_to_interrupts();
+                                try{
+                                    listen_to_interrupts();
+                                } catch(const std::exception& exception) {
+                                    // this exception catching avoids crash when disconnecting 2 devices at once - bug seen in android os
+                                    LOG_WARNING("rs_uvc_device exception in listen_to_interrupts method: " << exception.what());
+                                }
                                 _power_state = D0;
                             }
                             break;
@@ -661,7 +666,7 @@ namespace librealsense
                              std::string buff = "";
                              for (int i = 0; i < response->get_actual_length(); i++)
                                  buff += std::to_string(response->get_buffer()[i]) + ", ";
-                             LOG_WARNING("interrupt event received: " << buff.c_str());
+                             LOG_DEBUG("interrupt event received: " << buff.c_str());
                          }
 
                          _action_dispatcher.invoke([this](dispatcher::cancellable_timer c)

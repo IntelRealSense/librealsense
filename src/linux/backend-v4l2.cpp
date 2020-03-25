@@ -371,27 +371,6 @@ namespace librealsense
             return true;
         }
 
-        static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
-        {
-            auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
-
-            // As per the USB 3.0 specs, the current maximum limit for the depth is 7.
-            const auto max_usb_depth = 8;
-            uint8_t usb_ports[max_usb_depth] = {};
-            std::stringstream port_path;
-            auto port_count = libusb_get_port_numbers(usb_device, usb_ports, max_usb_depth);
-            auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
-            libusb_device_descriptor dev_desc;
-            libusb_get_device_descriptor(usb_device,&dev_desc);
-
-            for (auto i = 0; i < port_count; ++i)
-            {
-                port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
-            }
-
-            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,dev_desc.bcdUSB);
-        }
-
         // retrieve the USB specification attributed to a specific USB device.
         // This functionality is required to find the USB connection type for UVC device
         // Note that the input parameter is passed by value
@@ -900,7 +879,7 @@ namespace librealsense
                         bool md_extracted = false;
                         buffers_mgr buf_mgr(_use_memory_map);
                         // RAII to handle exceptions
-                        std::unique_ptr<int, std::function<void(int*)> > md_poller(new int(0),
+                        std::unique_ptr<int, std::function<void(int*)> > md_poller(nullptr,
                             [this,&buf_mgr,&md_extracted,&fds](int* d){ if (!md_extracted) acquire_metadata(buf_mgr,fds);});
 
                         if(FD_ISSET(_fd, &fds))
@@ -1698,7 +1677,7 @@ namespace librealsense
             // Give the device a chance to restart, if we don't catch
             // it, the watcher will find it later.
             if(tm_boot(device_infos)) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                 device_infos = usb_enumerator::query_devices_info();
             }
             return device_infos;

@@ -12,6 +12,8 @@ void init_processing(py::module &m) {
     frame_source.def("allocate_video_frame", &rs2::frame_source::allocate_video_frame, "Allocate a new video frame with given params",
                      "profile"_a, "original"_a, "new_bpp"_a = 0, "new_width"_a = 0,
                      "new_height"_a = 0, "new_stride"_a = 0, "frame_type"_a = RS2_EXTENSION_VIDEO_FRAME)
+        .def("allocate_motion_frame", &rs2::frame_source::allocate_motion_frame, "Allocate a new motion frame with given params",
+            "profile"_a, "original"_a, "frame_type"_a = RS2_EXTENSION_MOTION_FRAME)
         .def("allocate_points", &rs2::frame_source::allocate_points, "profile"_a,
              "original"_a) // No docstring in C++
         .def("allocate_composite_frame", &rs2::frame_source::allocate_composite_frame,

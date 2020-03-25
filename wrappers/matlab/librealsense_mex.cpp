@@ -1,6 +1,7 @@
 #include "MatlabParamParser.h"
 #include "Factory.h"
 #include "librealsense2/rs.hpp"
+#include "librealsense2/rs_advanced_mode.hpp"
 #include "librealsense2/hpp/rs_export.hpp"
 
 #pragma comment(lib, "libmx.lib")
@@ -779,10 +780,8 @@ void make_factory(){
                 mexWarnMsgTxt("rs2::device::is: Debug Protocol not supported in MATLAB");
                 outv[0] = MatlabParamParser::wrap(false);
             }
-            else if (type == "advanced_mode") {
-                mexWarnMsgTxt("rs2::device::is: Advanced Mode not supported in MATLAB");
-                outv[0] = MatlabParamParser::wrap(false);
-            }
+            else if (type == "advanced_mode")
+                outv[0] = MatlabParamParser::wrap(thiz.is<rs400::advanced_mode>());
             else if (type == "recorder")
                 outv[0] = MatlabParamParser::wrap(thiz.is<rs2::recorder>());
             else if (type == "playback")
@@ -803,10 +802,8 @@ void make_factory(){
                 mexErrMsgTxt("rs2::device::as: Debug Protocol not supported in MATLAB");
 //                outv[0] = MatlabParamParser::wrap(thiz.as<rs2::debug_protocol>());
             }
-            else if (type == "advanced_mode") {
-                mexErrMsgTxt("rs2::device::as: Advanced Mode not supported in MATLAB");
-//                outv[0] = MatlabParamParser::wrap(false);
-            }
+            else if (type == "advanced_mode")
+                outv[0] = MatlabParamParser::wrap(thiz.as<rs400::advanced_mode>());
             else if (type == "recorder")
                 outv[0] = MatlabParamParser::wrap(thiz.as<rs2::recorder>());
             else if (type == "playback")
@@ -932,6 +929,10 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(rs2::frame_queue(capacity, keep_frames));
             }
         });
+        frame_queue_factory.record("delete", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            MatlabParamParser::destroy<rs2::frame_queue>(inv[0]);
+        });
         // rs2::frame_queue::enqueue(frame)                             [?]
         frame_queue_factory.record("wait_for_frame", 1, 1, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
@@ -944,7 +945,48 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frame(timeout_ms));
             }
         });
-        // rs2::frame_queue::poll_for_frame(T*)                         [TODO] [T = {frame, video_frame, points, depth_frame, disparity_frame, motion_frame, pose_frame, frameset}]
+        frame_queue_factory.record("poll_for_frame", 2, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
+            auto type = MatlabParamParser::parse<std::string>(inv[1]);
+            if (type == "frame") {
+                auto f = rs2::frame();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "video_frame") {
+                auto f = rs2::video_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "points"){
+                auto f = rs2::points();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "depth_frame"){
+                auto f = rs2::depth_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "disparity_frame"){
+                auto f = rs2::disparity_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "motion_frame"){
+                auto f = rs2::motion_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "pose_frame"){
+                auto f = rs2::pose_frame(rs2::frame());
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else if (type == "frameset"){
+                auto f = rs2::frameset();
+                outv[0] = MatlabParamParser::wrap(thiz.poll_for_frame(&f));
+                outv[1] = MatlabParamParser::wrap(std::move(f));
+            } else {
+                mexWarnMsgTxt("rs2::frame_queue::poll_for_frame: invalid type parameter");
+                outv[0] = MatlabParamParser::wrap(false);
+                outv[1] = MatlabParamParser::wrap(rs2::frame());
+            }
+        });
         frame_queue_factory.record("capacity", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::frame_queue>(inv[0]);
@@ -1032,7 +1074,13 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
             }
         });
-        // rs2::syncer::poll_for_frames(frameset*)                      [?]
+        syncer_factory.record("poll_for_frames", 2, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::syncer>(inv[0]);
+            rs2::frameset fs;
+            outv[0] = MatlabParamParser::wrap(thiz.poll_for_frames(&fs));
+            outv[1] = MatlabParamParser::wrap(std::move(fs));
+        });
         factory->record(syncer_factory);
     }
     {
@@ -1431,6 +1479,18 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.start(config));
             }
         });
+        pipeline_factory.record("start#fq", 1, 2, 3, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
+            if (inc == 2) {
+                auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[1]);
+                outv[0] = MatlabParamParser::wrap(thiz.start(fq));
+            } else if (inc == 3) {
+                auto config = MatlabParamParser::parse<rs2::config>(inv[1]);
+                auto fq = MatlabParamParser::parse<rs2::frame_queue>(inv[2]);
+                outv[0] = MatlabParamParser::wrap(thiz.start(config, fq));
+            }
+        });
         pipeline_factory.record("stop", 0, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
@@ -1446,7 +1506,13 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap(thiz.wait_for_frames(timeout_ms));
             }
         });
-        // rs2::pipeline::poll_for_frames                               [TODO/HOW] [multi-output?]
+        pipeline_factory.record("poll_for_frames", 2, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
+        {
+            auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
+            rs2::frameset fs;
+            outv[0] = MatlabParamParser::wrap(thiz.poll_for_frames(&fs));
+            outv[1] = MatlabParamParser::wrap(std::move(fs));
+        });
         pipeline_factory.record("get_active_profile", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[])
         {
             auto thiz = MatlabParamParser::parse<rs2::pipeline>(inv[0]);
@@ -1476,6 +1542,31 @@ void make_factory(){
             auto message = MatlabParamParser::parse<const char *>(inv[1]);
             rs2::log(severity, message);
         });
+        factory->record(free_funcs_factory);
+    }
+
+    // rs_advanced_mode.hpp
+    {
+        ClassFactory advanced_mode_factory("rs400::advanced_mode");
+        advanced_mode_factory.record("is_enabled", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.is_enabled());
+        });
+        advanced_mode_factory.record("toggle_advanced_mode", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            auto enable = MatlabParamParser::parse<bool>(inv[1]);
+            thiz.toggle_advanced_mode(enable);
+        });
+        advanced_mode_factory.record("serialize_json", 1, 1, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            outv[0] = MatlabParamParser::wrap(thiz.serialize_json());
+        });
+        advanced_mode_factory.record("load_json", 0, 2, [](int outc, mxArray* outv[], int inc, const mxArray* inv[]) {
+            auto thiz = MatlabParamParser::parse<rs400::advanced_mode>(inv[0]);
+            auto json_content = MatlabParamParser::parse<std::string>(inv[1]);
+            thiz.load_json(json_content);
+        });
+        factory->record(advanced_mode_factory);
     }
 
     mexAtExit([]() { delete factory; });

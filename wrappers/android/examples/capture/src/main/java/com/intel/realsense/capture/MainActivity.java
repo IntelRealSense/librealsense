@@ -19,6 +19,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -64,6 +65,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSIONS_REQUEST_CAMERA);
@@ -87,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         if(mRsContext != null)
             mRsContext.close();
         stop();
+        mColorizer.close();
         mPipeline.close();
     }
 
@@ -154,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
         {
             config.enableStream(StreamType.DEPTH, 640, 480);
             config.enableStream(StreamType.COLOR, 640, 480);
-            mPipeline.start(config);
+            // try statement needed here to release resources allocated by the Pipeline:start() method
+            try(PipelineProfile pp = mPipeline.start(config)){}
         }
     }
 
@@ -181,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             mHandler.removeCallbacks(mStreaming);
             mPipeline.stop();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to stop streaming");

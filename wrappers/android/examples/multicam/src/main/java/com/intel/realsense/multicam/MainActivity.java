@@ -20,6 +20,7 @@ import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
+import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.StreamType;
 
@@ -48,11 +49,11 @@ public class MainActivity extends AppCompatActivity {
         mAppContext = getApplicationContext();
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
         mGLSurfaceView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         // Android 9 also requires camera permissions
         if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.O &&
@@ -62,6 +63,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mPermissionsGranted = true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mGLSurfaceView.close();
     }
 
     @Override
@@ -85,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        //Release Context
         if(mRsContext != null)
             mRsContext.close();
         stop();
@@ -141,7 +149,9 @@ public class MainActivity extends AppCompatActivity {
             try (Config config = new Config()) {
                 config.enableDevice(deviceList.createDevice(i).getInfo(CameraInfo.SERIAL_NUMBER));
                 config.enableStream(StreamType.DEPTH, 640, 480);
-                mPipelines.get(i).start(config);
+                Pipeline pipe = mPipelines.get(i);
+                // try statement needed here to release resources allocated by the Pipeline:start() method
+                try (PipelineProfile pp = pipe.start(config)) {}
             }
         }
     }
@@ -170,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to start streaming");
+            mGLSurfaceView.clear();
         }
     }
 
@@ -182,8 +193,18 @@ public class MainActivity extends AppCompatActivity {
             for(Pipeline pipe : mPipelines)
                 pipe.stop();
 
+            //Release pipelines
+            for (Pipeline pipeline : mPipelines) {
+                pipeline.close();
+            }
+            //Release colorizers
+            for (Colorizer colorizer : mColorizers) {
+                colorizer.close();
+            }
+
             mPipelines.clear();
             mColorizers.clear();
+            mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
 
             deviceList.close();
