@@ -758,6 +758,9 @@ namespace rs2
         is_3d_view = config_file::instance().get_or_default(
             configurations::viewer::is_3d_view, false);
 
+        ground_truth_r = config_file::instance().get_or_default(
+            configurations::viewer::ground_truth_r, 2500);
+
         metric_system = config_file::instance().get_or_default(
             configurations::viewer::metric_system, true);
 
