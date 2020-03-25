@@ -33,7 +33,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
 
         el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
         el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
-        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToStandardOutput, "true");
+        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToStandardOutput, "false");
 
         CLOG(INFO, "netdev") << "RealSense network logging initialized";
     }
