@@ -26,8 +26,8 @@ namespace rs2
             : process_manager("On-Chip Calibration"), _model(model),
              _dev(dev), _sub(sub), _viewer(viewer)
         {
-			auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-			if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
+                auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
+                if (!strcmp(dev_name, "Intel RealSense D415")) { speed = 4; }
         }
 
         bool allow_calib_keep() const { return true; }
