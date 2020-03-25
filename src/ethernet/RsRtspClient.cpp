@@ -364,7 +364,7 @@ void updateExtrinsicsMap(rs2_video_stream videoStream, std::string extrinsics_st
 void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -479,7 +479,7 @@ void RsRTSPClient::continueAfterDESCRIBE(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -504,7 +504,7 @@ void RsRTSPClient::continueAfterSETUP(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -527,7 +527,7 @@ void RsRTSPClient::continueAfterPLAY(RTSPClient *rtspClient, int resultCode, cha
 void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -550,7 +550,7 @@ void RsRTSPClient::continueAfterTEARDOWN(RTSPClient *rtspClient, int resultCode,
 void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -573,7 +573,7 @@ void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, ch
 void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -621,7 +621,7 @@ void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, 
 void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
@@ -646,7 +646,7 @@ void RsRTSPClient::continueAfterSETCOMMAND(RTSPClient *rtspClient, int resultCod
 void RsRTSPClient::continueAfterGETCOMMAND(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
     std::string resultStr;
-    if(NULL != resultString)
+    if(nullptr != resultString)
     {
         resultStr = resultString;
         delete [] resultString;
