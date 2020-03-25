@@ -12,6 +12,7 @@
 #include "ivcam/sr300.h"
 #include "ds5/ds5-factory.h"
 #include "l500/l500-factory.h"
+#include "fa/fa-factory.h"
 #include "ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
@@ -184,8 +185,15 @@ namespace librealsense
 
             for (auto&& g : groups)
             {
-                if (g.front().vid != VID_INTEL_CAMERA)
+                if (g.front().vid != VID_INTEL_CAMERA) 
+                {
+					// added to avoid maping F450 camera as platform camera
+                    if (g.front().vid == fa::RS450_VID || g.front().vid == fa::RS450_UART_VID) 
+                    {
+                        continue;
+                    }
                     list.push_back(std::make_shared<platform_camera_info>(ctx, g));
+                }
             }
             return list;
         }
@@ -322,6 +330,12 @@ namespace librealsense
         {
             auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
             std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+        }
+
+        if (mask & RS2_PRODUCT_LINE_FA)
+        {
+            auto fa_devices = fa_info::pick_fa_devices(ctx, devices.uvc_devices);
+            std::copy(begin(fa_devices), end(fa_devices), std::back_inserter(list));
         }
 
         auto l500_devices = l500_info::pick_l500_devices(ctx, devices);
