@@ -23,6 +23,7 @@ struct RsFrameHeader
 {
     RsNetworkHeader networkHeader;
     RsMetadataHeader metadataHeader;
+    uint32_t reserved;
 };
 
 struct IpDeviceControlData

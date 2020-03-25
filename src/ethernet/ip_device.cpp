@@ -363,6 +363,15 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
             {
                 Raw_Frame* frame = rtp_stream.get()->extract_frame();
                 rtp_stream.get()->frame_data_buff.pixels = frame->m_buffer;
+
+                if (((std::intptr_t)frame->m_buffer & 0xF) == 0)
+                {
+                        std::cout<<"address is 16 bit alliened\n";
+                }
+                else
+                {
+                    std::cout<<"address is NOT 16 bit alliened\n";
+                }
                 //rtp_stream.get()->frame_data_buff.timestamp = (frame->m_timestamp.tv_sec*1000)+(frame->m_timestamp.tv_usec/1000); // convert to milliseconds
                 rtp_stream.get()->frame_data_buff.timestamp = frame->m_metadata->timestamp;
 
