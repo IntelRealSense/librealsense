@@ -11,7 +11,7 @@
 struct RsNetworkHeader
 {
     uint32_t frameSize;
-    uint32_t reserved1;
+    uint32_t reserved1;//IMPORTANT:: RsNetworkHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
     uint64_t reserved2;
 };
 struct RsMetadataHeader
@@ -20,7 +20,7 @@ struct RsMetadataHeader
     long long frameCounter;
     int actualFps;
     rs2_timestamp_domain timestampDomain;
-    uint64_t reserved;
+    uint64_t reserved;//IMPORTANT:: RsMetadataHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
 };
 struct RsFrameHeader
 {
