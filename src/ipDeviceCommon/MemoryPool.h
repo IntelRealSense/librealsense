@@ -23,7 +23,7 @@ public:
         std::unique_lock<std::mutex> lk(m_mutex);
         for(int i = 0; i < POOL_SIZE; i++)
         {
-            unsigned char* mem = new unsigned char[MAX_MESSAGE_SIZE];
+            unsigned char* mem = static_cast<unsigned char*>(aligned_alloc(16,MAX_MESSAGE_SIZE));
             m_pool.push(mem);
         }
         lk.unlock();
@@ -80,7 +80,7 @@ public:
             m_pool.pop();
             if(mem != nullptr)
             {
-                delete mem;
+                free(mem);
             }
             else
             {

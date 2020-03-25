@@ -8,20 +8,25 @@
 
 #pragma pack(push, 1)
 
-struct RsNetworkHeader
-{
-    uint32_t frameSize;
-    uint32_t reserved1;//IMPORTANT:: RsNetworkHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
-    uint64_t reserved2;
+union RsNetworkHeader { //IMPORTANT:: RsNetworkHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
+    char maxHeaderSize[128];
+    struct
+    {
+        uint32_t frameSize;
+    } data;
 };
-struct RsMetadataHeader
-{
-    double timestamp;
-    long long frameCounter;
-    int actualFps;
-    rs2_timestamp_domain timestampDomain;
-    uint64_t reserved;//IMPORTANT:: RsMetadataHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
-};
+
+union RsMetadataHeader { //IMPORTANT:: RsNetworkHeader should be alligned to 16 bytes, this enables frame data to start on 16 bit alligned address
+    char maxHeaderSize[128];
+    struct 
+    {
+        double timestamp;
+        long long frameCounter;
+        int actualFps;
+        rs2_timestamp_domain timestampDomain;
+    } data;
+}; 
+
 struct RsFrameHeader
 {
     RsNetworkHeader networkHeader;
