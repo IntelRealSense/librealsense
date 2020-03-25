@@ -207,7 +207,8 @@ void init_frame(py::module &m) {
 
     py::class_<rs2::depth_frame, rs2::video_frame> depth_frame(m, "depth_frame", "Extends the video_frame class with additional depth related attributes and functions.");
     depth_frame.def(py::init<rs2::frame>())
-        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in meters at the given pixel");
+        .def("get_distance", &rs2::depth_frame::get_distance, "x"_a, "y"_a, "Provide the depth in meters at the given pixel")
+        .def("get_units", &rs2::depth_frame::get_units, "Provide the scaling factor to use when converting from get_data() units to meters");
     
     // rs2::disparity_frame
     py::class_<rs2::disparity_frame, rs2::depth_frame> disparity_frame(m, "disparity_frame", "Extends the depth_frame class with additional disparity related attributes and functions.");

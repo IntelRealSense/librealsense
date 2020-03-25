@@ -36,6 +36,7 @@ if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
 endif()
 
 add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 include_directories(${PROJECT_NAME}
   ../../common

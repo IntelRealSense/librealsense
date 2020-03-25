@@ -95,7 +95,7 @@ enum class ERealSenseOptionType : uint8
     HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
-    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/Rolling Shutter SKUs */
+    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
     STREAM_FILTER                              , /**< Select a stream to process */
     STREAM_FORMAT_FILTER                       , /**< Select a stream format to process */
     STREAM_INDEX_FILTER                        , /**< Select a stream index to process */
@@ -117,6 +117,14 @@ enum class ERealSenseOptionType : uint8
     ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
     ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
     FREEFALL_DETECTION_ENABLED                 , /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
+    AVALANCHE_PHOTO_DIODE                      , /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
+    POST_PROCESSING_SHARPENING                 , /**< Changes the amount of sharpening in the post-processed image */
+    PRE_PROCESSING_SHARPENING                  , /**< Changes the amount of sharpening in the pre-processed image */
+    NOISE_FILTERING                            , /**< Control edges and background noise */
+    INVALIDATION_BYPASS                        , /**< Enable\disable pixel invalidation */
+    AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
+    SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
+    EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
 };
 
 UENUM(Blueprintable)

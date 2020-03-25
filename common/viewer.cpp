@@ -1583,6 +1583,136 @@ namespace rs2
                 }
             }
 
+            //switch( stream_mv.profile.stream_type() )
+            {
+                static std::vector< std::pair< ImColor, bool > > colors =
+                {
+                    { ImColor( 1.f, 1.f, 1.f, 1.f ), false },  // the default color
+                    { ImColor( 1.f, 0.f, 0.f, 1.f ), false },
+                    { ImColor( 0.f, 1.f, 0.f, 1.f ), false },
+                    { ImColor( 0.f, 0.f, 1.f, 1.f ), false },
+                    { ImColor( 1.f, 0.f, 1.f, 1.f ), false },
+                    { ImColor( 1.f, 1.f, 0.f, 1.f ), false },
+                };
+                typedef size_t ColorIdx;
+                static std::map< size_t, ColorIdx > id2color;
+
+                // Returns the color (from those pre-defined above) for the given object, based on its ID
+                auto get_color = [&]( object_in_frame const & object ) -> ImColor
+                {
+                    ColorIdx & color = id2color[object.id];  // Creates it with 0 as default if not already there
+                    if( color < int( colors.size() ))
+                    {
+                        if( color > 0 )
+                            return colors[color].first;  // Return an already-assigned color
+                        // Find the next available color
+                        size_t x = 0;
+                        for( auto & p : colors )
+                        {
+                            bool & in_use = p.second;
+                            if( !in_use )
+                            {
+                                in_use = true;
+                                color = x;
+                                return p.first;
+                            }
+                            ++x;
+                        }
+                        // No available color; use the default and mark the object so we don't do this again
+                        color = 100;
+                    }
+                    // If we're here it's because there're more objects than colors
+                    return colors[0].first;
+                };
+
+                glColor3f( 1, 1, 1 );
+                auto p_objects = stream_mv.dev->detected_objects;
+                std::lock_guard< std::mutex > lock( p_objects->mutex );
+
+                // Mark colors that are no longer in use
+                for( auto it = id2color.begin(); it != id2color.end(); )
+                {
+                    size_t id = it->first;
+                    bool found = false;
+                    for( object_in_frame & object : *p_objects )
+                    {
+                        if( object.id == id )
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if( !found )
+                    {
+                        colors[it->second].second = false;  // no longer in use
+                        auto it_to_erase = it++;
+                        id2color.erase( it_to_erase );
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+
+
+                for( object_in_frame & object : *p_objects )
+                {
+                    rect const & normalized_bbox = stream_mv.profile.stream_type() == RS2_STREAM_DEPTH
+                        ? object.normalized_depth_bbox
+                        : object.normalized_color_bbox;
+                    rect bbox = normalized_bbox.unnormalize( stream_rect );
+                    bbox.grow( 10, 5 );  // Allow more text, and easier identification of the face
+
+                    float const max_depth = 2.f;
+                    float const min_depth = 0.8f;
+                    float const depth_range = max_depth - min_depth;
+                    float usable_depth = std::min( object.mean_depth, max_depth );
+                    float a = 0.75f * (max_depth - usable_depth) / depth_range + 0.25f;
+
+                    // Don't draw text in boxes that are too small...
+                    auto h = bbox.h;
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImColor( 1.f, 1.f, 1.f, a ) );
+                    ImColor bg( dark_sensor_bg.x, dark_sensor_bg.y, dark_sensor_bg.z, dark_sensor_bg.w * a );
+
+                    if( object.mean_depth )
+                    {
+                        std::string str = to_string() << std::setprecision( 2 ) << object.mean_depth << " m";
+                        auto size = ImGui::CalcTextSize( str.c_str() );
+                        if( size.y < h  &&  size.x < bbox.w )
+                        {
+                            ImGui::GetWindowDrawList()->AddRectFilled(
+                                { bbox.x + 1, bbox.y + 1 },
+                                { bbox.x + size.x + 20, bbox.y + size.y + 6 },
+                                bg );
+                            ImGui::SetCursorScreenPos( { bbox.x + 10, bbox.y + 3 } );
+                            ImGui::Text( str.c_str() );
+                            h -= size.y;
+                        }
+                    }
+                    if( ! object.name.empty() )
+                    {
+                        auto size = ImGui::CalcTextSize( object.name.c_str() );
+                        if( size.y < h  &&  size.x < bbox.w )
+                        {
+                            ImGui::GetWindowDrawList()->AddRectFilled(
+                                { bbox.x + bbox.w - size.x - 20, bbox.y + bbox.h - size.y - 6 },
+                                { bbox.x + bbox.w - 1, bbox.y + bbox.h - 1 },
+                                bg );
+                            ImGui::SetCursorScreenPos( { bbox.x + bbox.w - size.x - 10, bbox.y + bbox.h - size.y - 4 } );
+                            ImGui::Text( object.name.c_str() );
+                            h -= size.y;
+                        }
+                    }
+
+                    ImGui::PopStyleColor();
+
+                    // The rectangle itself is always drawn, in the same color as the text
+                    auto frame_color = get_color( object );
+                    glColor3f( a * frame_color.Value.x, a * frame_color.Value.y, a * frame_color.Value.z );
+                    draw_rect( bbox );
+                }
+            }
+
             glColor3f(header_window_bg.x, header_window_bg.y, header_window_bg.z);
             stream_rect.y -= 32;
             stream_rect.h += 32;
@@ -1702,11 +1832,11 @@ namespace rs2
             glPopAttrib();
         }
 
-        static const double x = -M_PI_2;
-        static float _rx[4][4] = {
-            { 1, 0, 0, 0 },
-            { 0, float(cos(x)), float(-sin(x)), 0 },
-            { 0, float(sin(x)), float(cos(x)), 0 },
+        auto x = static_cast<float>(-M_PI / 2);
+        float _rx[4][4] = {
+            { 1 , 0, 0, 0 },
+            { 0, static_cast<float>(cos(x)), static_cast<float>(-sin(x)), 0 },
+            { 0, static_cast<float>(sin(x)), static_cast<float>(cos(x)), 0 },
             { 0, 0, 0, 1 }
         };
         static const double z = M_PI;
@@ -1784,7 +1914,7 @@ namespace rs2
         }
 
         {
-            auto tiles = 12;
+            float tiles = 12;
             if (!metric_system) tiles *= 1.f / FEET_TO_METER;
 
             // Render "floor" grid
@@ -1799,7 +1929,7 @@ namespace rs2
 
             for (int i = 0; i <= ceil(tiles); i++)
             {
-                float I = i;
+                float I = float(i);
                 if (!metric_system) I *= FEET_TO_METER;
 
                 if (i == tiles / 2) glColor4f(0.7f, 0.7f, 0.7f, 1.f);

@@ -195,6 +195,7 @@ EXPORTS
     rs2_embedded_frames_count
     rs2_extract_frame
     rs2_depth_frame_get_distance
+    rs2_depth_frame_get_units
     rs2_depth_stereo_frame_get_baseline
     rs2_get_stereo_baseline
 

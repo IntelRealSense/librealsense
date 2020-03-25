@@ -89,7 +89,7 @@ classdef device < handle
                 case 'debug_protocol'
                     error('debug_protocol is not supported in Matlab');
                 case 'advanced_mode'
-                    error('advanced_mode is not supported in Matlab');
+                    dev = realsense.advanced_mode(out, -1);
                 case 'recorder'
                     dev = realsense.recorder(out, -1);
                 case 'playback'

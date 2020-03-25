@@ -43,6 +43,7 @@ JpegCompression::JpegCompression(int t_width, int t_height, rs2_format t_format,
 
 JpegCompression::~JpegCompression()
 {
+    delete[] m_rowBuffer;
     jpeg_destroy_decompress(&m_dinfo);
     jpeg_destroy_compress(&m_cinfo);
 }
@@ -171,6 +172,7 @@ int JpegCompression::compressBuffer(unsigned char* t_buffer, int t_size, unsigne
     {
         INF << "frame " << m_compFrameCounter << "\tcolor\tcompression\tJPEG\t" << t_size << "\t/\t" << compressedSize;
     }
+    free(data);
     return compressWithHeaderSize;
 }
 
@@ -256,6 +258,5 @@ int JpegCompression::decompressBuffer(unsigned char* t_buffer, int t_compressedS
     {
         INF << "frame " << m_decompFrameCounter << "\tcolor\tdecompression\tJPEG\t" << t_compressedSize << "\t/\t" << uncompressedSize;
     }
-
     return uncompressedSize;
 }

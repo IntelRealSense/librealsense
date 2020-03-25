@@ -10,5 +10,10 @@ public class DepthFrame extends VideoFrame {
         return nGetDistance(mHandle, x, y);
     }
 
+    public float getUnits() {
+        return nGetUnits(mHandle);
+    }
+
     private static native float nGetDistance(long handle, int x, int y);
+    private static native float nGetUnits(long handle);
 }

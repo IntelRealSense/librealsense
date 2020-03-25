@@ -79,6 +79,11 @@ namespace librealsense
     {
         auto xyz = (float3*)(f->get_data());
 
+        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
+        *xyz = _imu2depth_cs_alignment_matrix * (*xyz);
+
+        // IMU calibration is done with data in depth sensor's coordinate system, so calibration parameters should be applied for motion correction
+        // in the same coordinate system
         if (_mm_correct_opt)
         {
             if ((_mm_correct_opt->query() > 0.f)) // TBD resolve duality of is_enabled/is_active
@@ -91,9 +96,6 @@ namespace librealsense
                     *xyz = _gyro_sensitivity * (*xyz) - _gyro_bias;
             }
         }
-
-        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
-        *xyz = _imu2depth_cs_alignment_matrix * (*xyz);
     }
 
     acceleration_transform::acceleration_transform(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)

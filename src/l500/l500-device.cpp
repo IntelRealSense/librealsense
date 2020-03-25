@@ -119,12 +119,28 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "L500");
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 
+        std::shared_ptr< freefall_option > freefall_opt;
         if( _fw_version >= firmware_version( "1.3.5.0" ) )
         {
             depth_sensor.register_option(
                 RS2_OPTION_FREEFALL_DETECTION_ENABLED,
-                std::make_shared< freefall_option >( *_hw_monitor )
+                freefall_opt = std::make_shared< freefall_option >( *_hw_monitor )
             );
+        }
+        else
+        {
+            LOG_DEBUG( "Skipping Freefall control: requires FW 1.3.5" );
+        }
+        if( _fw_version >= firmware_version( "1.3.12.9" ) )
+        {
+            depth_sensor.register_option(
+                RS2_OPTION_INTER_CAM_SYNC_MODE,
+                std::make_shared< hw_sync_option >( *_hw_monitor, freefall_opt )
+            );
+        }
+        else
+        {
+            LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
     }
 
@@ -148,7 +164,7 @@ namespace librealsense
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         depth_ep->get_option(RS2_OPTION_GLOBAL_TIME_ENABLED).set(0);
 
-
+        depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
        
         auto is_zo_enabled_opt = std::make_shared<bool_option>();
         auto weak_is_zo_enabled_opt = std::weak_ptr<bool_option>(is_zo_enabled_opt);

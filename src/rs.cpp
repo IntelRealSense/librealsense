@@ -2160,6 +2160,14 @@ float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref, x, y)
 
+float rs2_depth_frame_get_units( const rs2_frame* frame_ref, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( frame_ref );
+    auto df = VALIDATE_INTERFACE((( frame_interface * ) frame_ref ), librealsense::depth_frame );
+    return df->get_units();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, frame_ref )
+
 float rs2_depth_stereo_frame_get_baseline(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);

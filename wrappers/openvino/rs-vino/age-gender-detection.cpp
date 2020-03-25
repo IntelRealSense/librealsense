@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2019 Intel Corporation
+// Copyright (C) 2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -14,10 +14,11 @@ namespace openvino_helpers
 {
     age_gender_detection::age_gender_detection(
         const std::string &pathToModel,
-        int maxBatch, bool isBatchDynamic, bool isAsync,
+        bool isAsync,
+        int maxBatch, bool isBatchDynamic,
         bool doRawOutputMessages
     )
-        : base_detection( "Age/Gender", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages)
+        : base_detection( "age/gender", pathToModel, maxBatch, isBatchDynamic, isAsync, doRawOutputMessages)
         , _n_enqued_frames(0)
     {
     }
@@ -27,11 +28,8 @@ namespace openvino_helpers
     {
         if( !_n_enqued_frames )
             return;
-        if (isBatchDynamic) {
-            _request->SetBatch( _n_enqued_frames );
-        }
-        base_detection::submit_request();
         _n_enqued_frames = 0;
+        base_detection::submit_request();
     }
 
 
@@ -39,15 +37,8 @@ namespace openvino_helpers
     {
         if( !enabled() )
             return;
-        if( _n_enqued_frames == maxBatch )
-        {
-            LOG(WARNING) << "Number of detected faces more than maximum (" << maxBatch << ") processed by Age/Gender Recognition network";
-            return;
-        }
         if( !_request )
-        {
             _request = net.CreateInferRequestPtr();
-        }
 
         Blob::Ptr inputBlob = _request->GetBlob( input );
         matU8ToBlob<uint8_t>( face, inputBlob, _n_enqued_frames );
@@ -74,20 +65,15 @@ namespace openvino_helpers
 
     CNNNetwork age_gender_detection::read_network()
     {
-        LOG(INFO) << "Loading network files for Age/Gender Recognition network from: " << pathToModel;
+        LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
+        
         CNNNetReader netReader;
-        // Read network
         netReader.ReadNetwork(pathToModel);
-
-        // Set maximum batch size to be used.
         netReader.getNetwork().setBatchSize(maxBatch);
-        if( doRawOutputMessages )
-            LOG(DEBUG) << "Batch size is set to " << netReader.getNetwork().getBatchSize() << " for Age/Gender Recognition network";
-
 
         // Extract model name and load its weights
-        std::string binFileName = fileNameNoExt(pathToModel) + ".bin";
-        netReader.ReadWeights(binFileName);
+        std::string binFileName = remove_ext( pathToModel ) + ".bin";
+        netReader.ReadWeights( binFileName );
 
         // Age/Gender Recognition network should have one input and two outputs
 

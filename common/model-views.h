@@ -22,6 +22,8 @@
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
 #include "../third-party/json.hpp"
+#include "objects-in-frame.h"
+#include "processing-block-model.h"
 
 #include "realsense-ui-advanced-mode.h"
 #include "fw-update-helper.h"
@@ -381,47 +383,6 @@ namespace rs2
     void save_processing_block_to_config_file(const char* name, 
         std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 
-    class processing_block_model
-    {
-    public:
-        processing_block_model(subdevice_model* owner,
-            const std::string& name,
-            std::shared_ptr<rs2::filter> block,
-            std::function<rs2::frame(rs2::frame)> invoker,
-            std::string& error_message,
-            bool enabled = true);
-
-        const std::string& get_name() const { return _name; }
-
-        option_model& get_option(rs2_option opt);
-
-        rs2::frame invoke(rs2::frame f) const { return _invoker(f); }
-
-        void save_to_config_file();
-
-        std::vector<rs2_option> get_option_list()
-        {
-            return _block->get_supported_options();
-        }
-
-        void populate_options(const std::string& opt_base_label,
-            subdevice_model* model,
-            bool* options_invalidated,
-            std::string& error_message);
-
-        std::shared_ptr<rs2::filter> get_block() { return _block; }
-
-        bool enabled = true;
-        bool visible = true;
-    private:
-        std::shared_ptr<rs2::filter> _block;
-        std::map<int, option_model> options_metadata;
-        std::string _name;
-        std::string _full_name;
-        std::function<rs2::frame(rs2::frame)> _invoker;
-        subdevice_model* _owner;
-    };
-
     class syncer_model
     {
     public:
@@ -599,7 +560,7 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::string& error_message, viewer_model& viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
@@ -667,6 +628,7 @@ namespace rs2
         std::shared_ptr<sensor> s;
         device dev;
         tm2_model tm2;
+        std::shared_ptr< atomic_objects_in_frame > detected_objects;
 
         std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
@@ -726,6 +688,7 @@ namespace rs2
 
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
+
 
     class stream_model
     {
@@ -817,6 +780,8 @@ namespace rs2
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
 
+        std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
+
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
         std::shared_ptr<rs2::asynchronous_syncer> dev_syncer;
@@ -870,6 +835,7 @@ namespace rs2
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
         periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
+        std::shared_ptr< atomic_objects_in_frame > _detected_objects;
     };
 
     class viewer_model;

@@ -21,13 +21,21 @@ classdef pipeline < handle
         end
 
         % Functions
-        function pipeline_profile = start(this, config)
-            narginchk(1, 2);
+        function pipeline_profile = start(this, varargin)
+            narginchk(1, 3);
             if nargin == 1
                 out = realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle);
+            elseif nargin == 2
+                validateattributes(varargin{1}, {'realsense.config', 'realsense.frame_queue'}, {'scalar'}, '', 'config_or_framequeue', 2);
+                if isa(varargin{1}, 'realsense.config')
+                    out = realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle, varargin{1}.objectHandle);
+                else
+                    out = realsense.librealsense_mex('rs2::pipeline', 'start#fq', this.objectHandle, varargin{1}.objectHandle);
+                end
             else
-                validateattributes(config, {'realsense.config'}, {'scalar'}, '', 'config', 2);
-                out = realsense.librealsense_mex('rs2::pipeline', 'start', this.objectHandle, config.objectHandle);
+                validateattributes(varargin{1}, {'realsense.config'}, {'scalar'}, '', 'config', 2);
+                validateattributes(varargin{2}, {'realsense.frame_queue'}, {'scalar'}, '', 'frame_queue', 2);
+                out = realsense.librealsense_mex('rs2::pipeline', 'start#fq', this.objectHandle, varargin{1}.objectHandle, varargin{2}.objectHandle);
             end
             pipeline_profile = realsense.pipeline_profile(out);
         end
@@ -47,7 +55,10 @@ classdef pipeline < handle
             end
             frames = realsense.frameset(out);
         end
-        % TODO: poll_for_frames
+        function [res, frames] = poll_for_frames(this)
+            res, out = realsense.librealsense_mex('rs2::pipeline', 'poll_for_frames', this.objectHandle);
+            frames = realsense.frameset(out);
+        end
         function profile = get_active_profile(this)
             out = realsense.librealsense_mex('rs2::pipeline', 'get_active_profile', this.objectHandle);
             realsense.pipeline_profile(out);
