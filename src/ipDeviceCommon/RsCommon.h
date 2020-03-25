@@ -11,6 +11,8 @@
 struct RsNetworkHeader
 {
     uint32_t frameSize;
+    uint32_t reserved1;
+    uint64_t reserved2;
 };
 struct RsMetadataHeader
 {
@@ -18,12 +20,12 @@ struct RsMetadataHeader
     long long frameCounter;
     int actualFps;
     rs2_timestamp_domain timestampDomain;
+    uint64_t reserved;
 };
 struct RsFrameHeader
 {
     RsNetworkHeader networkHeader;
     RsMetadataHeader metadataHeader;
-    uint32_t reserved;
 };
 
 struct IpDeviceControlData
