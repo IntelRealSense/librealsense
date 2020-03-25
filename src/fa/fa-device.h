@@ -18,10 +18,9 @@ namespace librealsense
     class fa_device : public virtual device, public debug_interface, public global_time_interface, public updatable
     {
     public:
-
         synthetic_sensor& get_ir_sensor()
         {
-            return dynamic_cast<synthetic_sensor&>(get_sensor(_ir_device_idx));
+            return dynamic_cast<synthetic_sensor&>(get_sensor(0));
         }
 
         uvc_sensor& get_raw_ir_sensor()
@@ -30,8 +29,10 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*ir_sensor.get_raw_sensor());
         }
 
-        fa_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
+        fa_device::fa_device(const std::shared_ptr<context>& ctx,
+            const std::vector<platform::uvc_device_info>& uvc_infos,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -47,15 +48,6 @@ namespace librealsense
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
     protected:
 
-        std::vector<uint8_t> get_raw_calibration_table(fa::calibration_table_id table_id) const;
-        std::vector<uint8_t> get_new_calibration_table() const;
-
-        bool is_camera_in_advanced_mode() const;
-
-        float get_stereo_baseline_mm() const;
-
-        ds::d400_caps  parse_device_capabilities(const uint16_t pid) const;
-
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
@@ -64,17 +56,23 @@ namespace librealsense
         firmware_version            _recommended_fw_version;
         ds::d400_caps               _device_capabilities;
 
-        uint8_t _ir_device_idx;
-
-        std::shared_ptr<stream_interface> _left_ir_stream;
-        std::shared_ptr<stream_interface> _right_ir_stream;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
 
         std::unique_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
         bool _is_locked = true;
+        virtual rs2_intrinsics get_intrinsics(unsigned int, const stream_profile&) const
+        {
+            return rs2_intrinsics{};
+        }
+
+        std::vector<tagged_profile> get_profiles_tags() const override
+        {
+            std::vector<tagged_profile> markers;
+            markers.push_back({ RS2_STREAM_INFRARED, -1, 1920, 1080, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            return markers;
+        }
     };
 
     class fa_notification_decoder : public notification_decoder

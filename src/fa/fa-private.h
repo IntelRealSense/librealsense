@@ -15,7 +15,11 @@ namespace librealsense
 {
     namespace fa
     {
-        const uint16_t RS450_PID = 0x0BBB; // F450 //pid to correct
+        const uint16_t RS450_VID = 0x2AAD;		// F450 - UVC VID
+        const uint16_t RS450_PID = 0x6373; 		// F450 - UVC PID
+
+        const uint16_t RS450_UART_VID = 0x04D8;	// F450 - UART VID
+        const uint16_t RS450_UART_PID = 0x00DD;	// F450 - UART PID
 
 
         // DS5 depth XU identifiers
@@ -35,15 +39,7 @@ namespace librealsense
         static const std::set<std::uint16_t> rs_fa_sku_pid = {
             fa::RS450_PID,
         };
-
-        static const std::set<std::uint16_t> multi_sensors_pid = {
-            fa::RS450_PID//,
-            //fa::RS450_RIGHT_PID
-        };
-
         
-
-
 
         static const std::map<std::uint16_t, std::string> rs_fa_sku_names = {
             { RS450_PID,            "Intel RealSense D450"}
@@ -223,22 +219,6 @@ namespace librealsense
         enum fa_rect_resolutions : unsigned short
         {
             res_1920_1080,
-            res_1280_720,
-            res_640_480,
-            res_848_480,
-            res_640_360,
-            res_424_240,
-            res_320_240,
-            res_480_270,
-            res_1280_800,
-            res_960_540,
-            reserved_1,
-            reserved_2,
-            res_640_400,
-            // Resolutions for DS5U
-            res_576_576,
-            res_720_720,
-            res_1152_1152,
             max_fa_rect_resolutions
         };
 
@@ -500,21 +480,7 @@ namespace librealsense
         };
 
         static std::map< fa_rect_resolutions, int2> resolutions_list = {
-            { res_320_240,{ 320, 240 } },
-            { res_424_240,{ 424, 240 } },
-            { res_480_270,{ 480, 270 } },
-            { res_640_360,{ 640, 360 } },
-            { res_640_400,{ 640, 400 } },
-            { res_640_480,{ 640, 480 } },
-            { res_848_480,{ 848, 480 } },
-            { res_960_540,{ 960, 540 } },
-            { res_1280_720,{ 1280, 720 } },
-            { res_1280_800,{ 1280, 800 } },
             { res_1920_1080,{ 1920, 1080 } },
-            //Resolutions for DS5U
-            { res_576_576,{ 576, 576 } },
-            { res_720_720,{ 720, 720 } },
-            { res_1152_1152,{ 1152, 1152 } },
         };
 
 
