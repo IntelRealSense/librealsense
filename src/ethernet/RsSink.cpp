@@ -101,7 +101,7 @@ void RsSink::afterGettingFrameUid3(void* t_clientData, unsigned t_frameSize, uns
 void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedBytes, struct timeval t_presentationTime, unsigned /*t_durationInMicroseconds*/)
 {
     RsNetworkHeader* header = (RsNetworkHeader*)m_receiveBuffer;
-    if(header->frameSize == t_frameSize - sizeof(RsNetworkHeader))
+    if(header->data.frameSize == t_frameSize - sizeof(RsNetworkHeader))
     {
         if(this->m_rtpCallback != NULL)
         {
@@ -112,7 +112,7 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
                 {
                     return;
                 }
-                int decompressedSize = m_iCompress->decompressBuffer(m_receiveBuffer + sizeof(RsFrameHeader), header->frameSize - sizeof(RsMetadataHeader), m_to + sizeof(RsFrameHeader));
+                int decompressedSize = m_iCompress->decompressBuffer(m_receiveBuffer + sizeof(RsFrameHeader), header->data.frameSize - sizeof(RsMetadataHeader), m_to + sizeof(RsFrameHeader));
                 if(decompressedSize != -1)
                 {
                     // copy metadata
@@ -123,7 +123,7 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
             }
             else
             {
-                this->m_rtpCallback->on_frame(m_receiveBuffer + sizeof(RsNetworkHeader), header->frameSize, t_presentationTime);
+                this->m_rtpCallback->on_frame(m_receiveBuffer + sizeof(RsNetworkHeader), header->data.frameSize, t_presentationTime);
             }
         }
         else
@@ -136,7 +136,7 @@ void RsSink::afterGettingFrame(unsigned t_frameSize, unsigned t_numTruncatedByte
     else
     {
         m_memPool->returnMem(m_receiveBuffer);
-        envir() << m_streamId << ":corrupted frame!!!: data size is " << header->frameSize << " frame size is " << t_frameSize << "\n";
+        envir() << m_streamId << ":corrupted frame!!!: data size is " << header->data.frameSize << " frame size is " << t_frameSize << "\n";
     }
     m_receiveBuffer = nullptr;
 

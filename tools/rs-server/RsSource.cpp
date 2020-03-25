@@ -101,32 +101,32 @@ void RsDeviceSource::deliverRSFrame(rs2::frame* t_frame)
     }
     memmove(fTo + sizeof(RsFrameHeader), data, fFrameSize);
     fFrameSize += sizeof(RsMetadataHeader);
-    header.networkHeader.frameSize = fFrameSize;
+    header.networkHeader.data.frameSize = fFrameSize;
     fFrameSize += sizeof(RsNetworkHeader);
     if(t_frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP))
     {
-        header.metadataHeader.timestamp = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP) / 1000;
+        header.metadataHeader.data.timestamp = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP) / 1000;
     }
     else
     {
-        header.metadataHeader.timestamp = t_frame->get_timestamp();
+        header.metadataHeader.data.timestamp = t_frame->get_timestamp();
     }
 
     if(t_frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))
     {
-        header.metadataHeader.frameCounter = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        header.metadataHeader.data.frameCounter = t_frame->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
     }
     else
     {
-        header.metadataHeader.frameCounter = t_frame->get_frame_number();
+        header.metadataHeader.data.frameCounter = t_frame->get_frame_number();
     }
 
     if(t_frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
     {
-        header.metadataHeader.actualFps = t_frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+        header.metadataHeader.data.actualFps = t_frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
     }
 
-    header.metadataHeader.timestampDomain = t_frame->get_frame_timestamp_domain();
+    header.metadataHeader.data.timestampDomain = t_frame->get_frame_timestamp_domain();
 
     memmove(fTo, &header, sizeof(header));
 

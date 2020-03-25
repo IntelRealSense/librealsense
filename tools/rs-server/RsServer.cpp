@@ -26,9 +26,11 @@ struct server
 
     void main(int argc, char** argv)
     {
+        std::cout << "Rs-server is running\n";
+
         START_EASYLOGGINGPP(argc, argv);
 
-        OutPacketBuffer::increaseMaxSizeTo(MAX_FRAME_SIZE);
+        OutPacketBuffer::increaseMaxSizeTo(MAX_MESSAGE_SIZE);
 
         // Begin by setting up our usage environment:
         scheduler = BasicTaskScheduler::createNew();
@@ -129,6 +131,7 @@ struct server
         env = NULL;
         delete scheduler;
         scheduler = NULL;
+        std::cout << "Rs-server downloading\n";
     }
 
     // Make server a proper singleton
