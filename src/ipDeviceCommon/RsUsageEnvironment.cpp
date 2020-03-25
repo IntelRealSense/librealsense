@@ -1,4 +1,4 @@
-// License: Apache 2.0. See LICENSE file in root directory.
+// License:    Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "RsUsageEnvironment.h"
@@ -34,6 +34,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
         el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
         el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");
         el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToStandardOutput, "false");
+        el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::ToFile, "true");
 
         CLOG(INFO, "netdev") << "RealSense network logging initialized";
     }
