@@ -14,8 +14,6 @@ matrix:
         - cd $LRS_RUN_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
-        - for i in ../records/single_cam/*; do ./live-test -d yes -i ~[multicam] from "$i"; done
-        - for i in ../records/multi_cam/*; do ./live-test -d yes -i [multicam] from "$i"; done
         - unset LRS_LOG_LEVEL
         - C:/Python38/python.exe ../../unit-tests/run-unit-tests.py --verbose .
         

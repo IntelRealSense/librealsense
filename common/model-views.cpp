@@ -22,6 +22,8 @@
 #include "fw-update-helper.h"
 #include "on-chip-calib.h"
 #include "viewer.h"
+#include "post-processing-filters-list.h"
+#include "post-processing-block-model.h"
 #include <imgui_internal.h>
 #include <time.h>
 
@@ -856,7 +858,7 @@ namespace rs2
         std::shared_ptr<rs2::filter> block,
         std::function<rs2::frame(rs2::frame)> invoker,
         std::string& error_message, bool enable)
-        : _owner(owner), _name(name), _block(block), _invoker(invoker), enabled(enable)
+        : _owner(owner), _name(name), _block(block), _invoker(invoker), _enabled(enable)
     {
         std::stringstream ss;
         ss << "##" << ((owner) ? owner->dev.get_info(RS2_CAMERA_INFO_NAME) : _name)
@@ -868,15 +870,15 @@ namespace rs2
         else
             _full_name = _name;
 
-        enabled = restore_processing_block(_full_name.c_str(),
-                                           block, enabled);
+        _enabled = restore_processing_block(_full_name.c_str(),
+                                            block, _enabled);
 
         populate_options(ss.str().c_str(), owner, owner ? &owner->_options_invalidated : nullptr, error_message);
     }
 
     void processing_block_model::save_to_config_file()
     {
-        save_processing_block_to_config_file(_full_name.c_str(), _block, enabled);
+        save_processing_block_to_config_file(_full_name.c_str(), _block, _enabled);
     }
 
     option_model& processing_block_model::get_option(rs2_option opt)
@@ -902,23 +904,33 @@ namespace rs2
 
     subdevice_model::subdevice_model(
         device& dev,
-        std::shared_ptr<sensor> s, std::string& error_message, viewer_model& viewer)
-        : s(s), dev(dev), tm2(), ui(), last_valid_ui(),
+        std::shared_ptr<sensor> s,
+        std::shared_ptr< atomic_objects_in_frame > device_detected_objects,
+        std::string& error_message,
+        viewer_model& viewer
+    )
+        : s( s ), dev( dev ), tm2(), ui(), last_valid_ui(),
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
         depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
-        viewer(viewer)
+        viewer(viewer),
+        detected_objects( device_detected_objects )
     {
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
 
+        std::string device_name( dev.get_info( RS2_CAMERA_INFO_NAME ));
+        std::string sensor_name( s->get_info( RS2_CAMERA_INFO_NAME ));
+
         std::stringstream ss;
         ss << configurations::viewer::post_processing 
-           << "." << dev.get_info(RS2_CAMERA_INFO_NAME)
-           << "." << s->get_info(RS2_CAMERA_INFO_NAME);
+           << "." << device_name
+           << "." << sensor_name;
         auto key = ss.str();
+
+        bool const is_rgb_camera = s->is< color_sensor >();
 
         if (config_file::instance().contains(key.c_str()))
         {
@@ -978,20 +990,37 @@ namespace rs2
                     viewer.zo_sensors++;
                 }
                 else
-                    model->enabled = false;
+                    model->enable( false );
             }
 
             if (shared_filter->is<hole_filling_filter>())
-                model->enabled = false;
+                model->enable( false );
 
             if (shared_filter->is<decimation_filter>())
             {
-                std::string sn_name(s->get_info(RS2_CAMERA_INFO_NAME));
-                if (sn_name == "RGB Camera")
-                    model->enabled = false;
+                if( is_rgb_camera )
+                    model->enable( false );
             }
 
             post_processing.push_back(model);
+        }
+
+        if( is_rgb_camera )
+        {
+            for( auto & create_filter : post_processing_filters_list::get() )
+            {
+                auto filter = create_filter();
+                if( !filter )
+                    continue;
+                filter->start( *this );
+                std::shared_ptr< processing_block_model > model(
+                    new post_processing_block_model {
+                        this, filter,
+                        [=]( rs2::frame f ) { return filter->process( f ); },
+                        error_message
+                    } );
+                post_processing.push_back( model );
+            }
         }
 
         auto colorizer = std::make_shared<processing_block_model>(
@@ -1004,10 +1033,11 @@ namespace rs2
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
 
-        if (dev.supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        if (s->supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
         {
             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-            std::string id = dev.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+            std::string id = s->get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+
             bool has_metadata = !rs2::metadata_helper::instance().can_support_metadata(product)
                 || rs2::metadata_helper::instance().is_enabled(id);
             static bool showed_metadata_prompt = false;
@@ -1752,6 +1782,13 @@ namespace rs2
 
         streaming = false;
         _pause = false;
+        
+        if( profiles[0].stream_type() == RS2_STREAM_COLOR )
+        {
+            std::lock_guard< std::mutex > lock( detected_objects->mutex );
+            detected_objects->clear();
+            detected_objects->sensor_is_on = false;
+        }
 
         s->stop();
 
@@ -1798,7 +1835,7 @@ namespace rs2
     //The function decides if specific frame should be sent to the syncer
     bool subdevice_model::is_synchronized_frame(viewer_model& viewer, const frame& f)
     {
-        if(zero_order_artifact_fix && zero_order_artifact_fix->enabled && 
+        if(zero_order_artifact_fix && zero_order_artifact_fix->is_enabled() && 
             (f.get_profile().stream_type() == RS2_STREAM_DEPTH || f.get_profile().stream_type() == RS2_STREAM_INFRARED || f.get_profile().stream_type() == RS2_STREAM_CONFIDENCE))
             return true;
         if (!viewer.is_3d_view || viewer.is_3d_depth_source(f) || viewer.is_3d_texture_source(f))
@@ -1809,7 +1846,7 @@ namespace rs2
 
     void subdevice_model::play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer> syncer)
     {
-        if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->enabled)
+        if (post_processing_enabled && zero_order_artifact_fix && zero_order_artifact_fix->is_enabled())
         {
             verify_zero_order_conditions();
         }
@@ -1860,6 +1897,11 @@ namespace rs2
 
         _options_invalidated = true;
         streaming = true;
+        if( s->is< color_sensor >() )
+        {
+            std::lock_guard< std::mutex > lock( detected_objects->mutex );
+            detected_objects->sensor_is_on = true;
+        }
     }
     void subdevice_model::update(std::string& error_message, notifications_model& notifications)
     {
@@ -3333,13 +3375,14 @@ namespace rs2
         : dev(dev),
           syncer(viewer.syncer),
            _update_readonly_options_timer(std::chrono::seconds(6))
+        , _detected_objects( std::make_shared< atomic_objects_in_frame >() )
     {        
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
         for (auto&& sub : dev.query_sensors())
         {
-            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), error_message, viewer);
+            auto model = std::make_shared<subdevice_model>(dev, std::make_shared<sensor>(sub), _detected_objects, error_message, viewer);
             subdevices.push_back(model);
         }
 
@@ -3444,7 +3487,7 @@ namespace rs2
                 continue;
 
             for(auto&& pp : sub->post_processing)
-                if (pp->enabled)
+                if (pp->is_enabled())
                     res = pp->invoke(res);
         }
 
@@ -3767,7 +3810,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = 1000.0 / (float)fps * 1e6;
+            uint64_t step = uint64_t( 1000.0 / (float)fps * 1e6 );
             p.seek(std::chrono::nanoseconds(curr_frame - step));
         }
         if (ImGui::IsItemHovered())
@@ -3867,7 +3910,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = 1000.0 / (float)fps * 1e6;
+            uint64_t step = uint64_t( 1000.0 / (float)fps * 1e6 );
             p.seek(std::chrono::nanoseconds(curr_frame + step));
         }
         if (ImGui::IsItemHovered())
@@ -5791,11 +5834,18 @@ namespace rs2
 
                                 if (ImGui::Button(label.c_str(), { 30,24 }))
                                 {
-                                    if (sub->zero_order_artifact_fix && sub->zero_order_artifact_fix->enabled)
+                                    if (sub->zero_order_artifact_fix && sub->zero_order_artifact_fix->is_enabled())
                                         sub->verify_zero_order_conditions();
                                     sub->post_processing_enabled = true;
                                     config_file::instance().set(get_device_sensor_name(sub.get()).c_str(),
                                         sub->post_processing_enabled);
+                                    for( auto&& pb : sub->post_processing )
+                                    {
+                                        if( !pb->visible )
+                                            continue;
+                                        if( pb->is_enabled() )
+                                            pb->processing_block_enable_disable( true );
+                                    }
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
@@ -5814,6 +5864,13 @@ namespace rs2
                                     sub->post_processing_enabled = false;
                                     config_file::instance().set(get_device_sensor_name(sub.get()).c_str(),
                                         sub->post_processing_enabled);
+                                    for( auto&& pb : sub->post_processing )
+                                    {
+                                        if( !pb->visible )
+                                            continue;
+                                        if( pb->is_enabled() )
+                                            pb->processing_block_enable_disable( false );
+                                    }
                                 }
                                 if (ImGui::IsItemHovered())
                                 {
@@ -5859,7 +5916,7 @@ namespace rs2
 
                                     if (!sub->post_processing_enabled)
                                     {
-                                        if (!pb->enabled)
+                                        if (!pb->is_enabled())
                                         {
                                             std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
 
@@ -5877,7 +5934,7 @@ namespace rs2
                                     }
                                     else
                                     {
-                                        if (!pb->enabled)
+                                        if (!pb->is_enabled())
                                         {
                                             std::string label = to_string() << " " << textual_icons::toggle_off << "##" << id << "," << sub->s->get_info(RS2_CAMERA_INFO_NAME) << "," << pb->get_name();
 
@@ -5888,7 +5945,7 @@ namespace rs2
                                             {
                                                 if (pb->get_block()->is<zero_order_invalidation>())
                                                     sub->verify_zero_order_conditions();
-                                                pb->enabled = true;
+                                                pb->enable( true );
                                                 pb->save_to_config_file();
                                             }
                                             if (ImGui::IsItemHovered())
@@ -5906,7 +5963,7 @@ namespace rs2
 
                                                 if (ImGui::Button(label.c_str(), { 25,24 }))
                                                 {
-                                                    pb->enabled = false;
+                                                    pb->enable( false );
                                                     pb->save_to_config_file();
                                                 }
                                                 if (ImGui::IsItemHovered())

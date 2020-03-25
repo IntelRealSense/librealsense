@@ -92,7 +92,7 @@ namespace librealsense
                 LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
                 return RS2_TIMESTAMP_DOMAIN_COUNT;
             }
-            if(f->additional_data.metadata_size >= platform::uvc_header_size )
+            if (f->additional_data.metadata_size >= platform::uvc_header_size)
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             else
                 return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
@@ -101,10 +101,10 @@ namespace librealsense
 
     class sr300_timestamp_reader_from_metadata : public frame_timestamp_reader
     {
-       std::unique_ptr<sr300_timestamp_reader> _backup_timestamp_reader;
-       bool one_time_note;
-       mutable std::recursive_mutex _mtx;
-       arithmetic_wraparound<uint32_t,uint64_t > ts_wrap;
+        std::unique_ptr<sr300_timestamp_reader> _backup_timestamp_reader;
+        bool one_time_note;
+        mutable std::recursive_mutex _mtx;
+        arithmetic_wraparound<uint32_t, uint64_t > ts_wrap;
 
     protected:
 
@@ -117,8 +117,8 @@ namespace librealsense
                 return false;
             }
             // Metadata support for a specific stream is immutable
-            const bool has_md_ts = [&]{ std::lock_guard<std::recursive_mutex> lock(_mtx);
-                return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size >= platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] >= platform::uvc_header_size);
+            const bool has_md_ts = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size >= platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] >= platform::uvc_header_size);
             }();
 
             return has_md_ts;
@@ -134,7 +134,7 @@ namespace librealsense
             }
             // Metadata support for a specific stream is immutable
             const bool has_md_frame_counter = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
-                return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size > platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] > platform::uvc_header_size);
+            return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size > platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] > platform::uvc_header_size);
             }();
 
             return has_md_frame_counter;
@@ -160,14 +160,14 @@ namespace librealsense
     {
     public:
         std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
-                                                 bool register_device_notifications) const override;
+            bool register_device_notifications) const override;
 
         sr300_info(std::shared_ptr<context> ctx,
-                    platform::uvc_device_info color,
-                    platform::uvc_device_info depth,
-                    platform::usb_device_info hwm)
+            platform::uvc_device_info color,
+            platform::uvc_device_info depth,
+            platform::usb_device_info hwm)
             : device_info(ctx), _color(std::move(color)),
-             _depth(std::move(depth)), _hwm(std::move(hwm)) {}
+            _depth(std::move(depth)), _hwm(std::move(hwm)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<context> ctx,
@@ -185,7 +185,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public virtual device, public debug_interface, public updatable
+    class sr300_camera : public  device, public debug_interface, public updatable
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -228,7 +228,7 @@ namespace librealsense
 
             explicit preset_option(sr300_camera& owner, const option_range& opt_range)
                 : option_base(opt_range),
-                  _owner(owner)
+                _owner(owner)
             {}
 
         private:
@@ -387,7 +387,7 @@ namespace librealsense
         }
 
         synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx)); }
-        
+
         uvc_sensor& get_raw_depth_sensor()
         {
             synthetic_sensor& depth_sensor = get_depth_sensor();
@@ -395,11 +395,11 @@ namespace librealsense
         }
 
         sr300_camera(std::shared_ptr<context> ctx,
-                     const platform::uvc_device_info& color,
-                     const platform::uvc_device_info& depth,
-                     const platform::usb_device_info& hwm_device,
-                     const platform::backend_device_group& group,
-                     bool register_device_notifications);
+            const platform::uvc_device_info& color,
+            const platform::uvc_device_info& depth,
+            const platform::usb_device_info& hwm_device,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
 
         void rs2_apply_ivcam_preset(int preset)
         {
@@ -439,7 +439,7 @@ namespace librealsense
                 { 1,    1,   6,   1,  -1 }, /* GRCursor                  */
                 { 16,   1,   5,   3,   9 }, /* Default                   */
                 { 1,    1,   5,   1,  -1 }, /* MidRange                  */
-                { 1,   -1,  -1,  -1, - 1 }  /* IROnly                    */
+                { 1,   -1,  -1,  -1, -1 }  /* IROnly                    */
             };
 
             // The Default preset is handled differently from all the rest,
@@ -476,10 +476,10 @@ namespace librealsense
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
+
+
     private:
         const uint8_t _depth_device_idx;
-        const uint8_t _color_device_idx;
-        std::shared_ptr<hw_monitor> _hw_monitor;
         bool _is_locked = true;
 
         template<class T>
@@ -528,5 +528,20 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
 
         lazy<ivcam::camera_calib_params> _camer_calib_params;
+
+    protected:
+        const uint8_t _color_device_idx;
+        std::shared_ptr<hw_monitor> _hw_monitor;
     };
+
+    class sr305_camera final : public sr300_camera {
+    public:
+        sr305_camera(std::shared_ptr<context> ctx,
+            const platform::uvc_device_info& color,
+            const platform::uvc_device_info& depth,
+            const platform::usb_device_info& hwm_device,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
+    };
+
 }

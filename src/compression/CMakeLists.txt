@@ -15,6 +15,8 @@ file(GLOB COMPRESSION_SOURCES
  "../ipDeviceCommon/*.h"
 )
 
+set(COMPRESSION_SOURCES ${COMPRESSION_SOURCES} ${LZ4_DIR}/lz4.h ${LZ4_DIR}/lz4.c)
+
 add_library(${PROJECT_NAME} STATIC ${COMPRESSION_SOURCES})
 
 include_directories(${PROJECT_NAME}
@@ -26,7 +28,6 @@ include_directories(${PROJECT_NAME}
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 add_dependencies(realsense2-compression 
-    lz4
     libjpeg-turbo
     zlib
 )
@@ -34,7 +35,7 @@ add_dependencies(realsense2-compression
 include_directories(${PROJECT_NAME}
     ${CMAKE_BINARY_DIR}/zlib/include
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
-    ${CMAKE_BINARY_DIR}/lz4/include
+    ${LZ4_DIR}
 )
 
 if(WIN32)
@@ -43,14 +44,12 @@ if(WIN32)
         PRIVATE ${DEPENDENCIES}
         PRIVATE ${ZLIB_LIBRARY}
         PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/turbojpeg-static.lib
-        PRIVATE ${CMAKE_BINARY_DIR}/lz4/lib/lz4.lib
     )
 else()
     target_link_libraries(${PROJECT_NAME}
         PRIVATE ${DEPENDENCIES}
         PRIVATE ${CMAKE_BINARY_DIR}/zlib/lib/libz.a
         PRIVATE ${CMAKE_BINARY_DIR}/libjpeg-turbo/lib/libturbojpeg.a
-        PRIVATE ${CMAKE_BINARY_DIR}/lz4/lib/liblz4.a
     )
 endif()    
 

@@ -180,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "streaming started successfully");
         } catch (Exception e) {
             Log.d(TAG, "failed to start streaming");
+            mGLSurfaceView.clear();
         }
     }
 
