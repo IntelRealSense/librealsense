@@ -2,7 +2,7 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 3.1.3)
 
-project(uvc_fw)
+project(fw)
 
 file(READ "firmware-version.h" ver)
 

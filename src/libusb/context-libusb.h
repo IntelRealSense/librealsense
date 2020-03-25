@@ -34,8 +34,7 @@ namespace librealsense
             int _handler_requests = 0;
             struct libusb_context* _ctx;
             int _kill_handler_thread = 0;
-            bool _handling_events = false;
-            std::shared_ptr<active_object<>> _event_handler;
+            std::thread _event_handler;
         };
     }
 }
