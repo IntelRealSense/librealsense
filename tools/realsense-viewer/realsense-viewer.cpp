@@ -448,7 +448,7 @@ int main(int argc, const char** argv) try
             }
         }
 
-        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 18)});
+        ImGui::SetNextWindowSize({ viewer_model.panel_width, 20.f * (new_devices_count + multiline_devices_names) + 8 + (is_ip_device_connected? 0 : 20)});
         if (ImGui::BeginPopup("select"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, dark_grey);
@@ -514,8 +514,12 @@ int main(int argc, const char** argv) try
                 //ImGui::Separator();
                 if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
                 {
+#ifdef NETWORK_DEVICE
                     ip_address = config_file::instance().get_or_default(configurations::viewer::last_ip, std::string{});
                     ImGui::OpenPopup("Network Device");
+#else
+                    error_message = "To enable RealSense device over network, please build the SDK with CMake flag -DBUILD_NETWORK_DEVICE=ON.\nThis binary distribution was built with network features disabled.";
+#endif
                 }
 
                 float width = 300;
