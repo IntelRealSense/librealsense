@@ -35,7 +35,7 @@ add_dependencies(realsense2-compression
 include_directories(${PROJECT_NAME}
     ${CMAKE_BINARY_DIR}/zlib/include
     ${CMAKE_BINARY_DIR}/libjpeg-turbo/include
-    ${LZ4_INCLUDE_PATH}
+    ${LZ4_DIR}
 )
 
 if(WIN32)
