@@ -42,7 +42,7 @@ ip_device::~ip_device()
         for (int remote_sensor_index = 0; remote_sensor_index < NUM_OF_SENSORS; remote_sensor_index++)
         {
             update_sensor_state(remote_sensor_index, {}, false);
-            delete (remote_sensors[remote_sensor_index]); //->sensors_option.clear();
+            delete (remote_sensors[remote_sensor_index]);
         }
     }
     catch (const std::exception &e)
@@ -145,7 +145,6 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
                 }
                 catch(const std::exception& e)
                 {
-                    //todo: do not catch at constructor
                     ERR << e.what();
                 }
             }
@@ -175,7 +174,6 @@ bool ip_device::init_device_data(rs2::software_device sw_device)
 
             auto stream_profile = remote_sensors[sensor_id]->sw_sensor->add_video_stream(st, is_default);
             device_streams.push_back(stream_profile);
-            //stream_profile.register_extrinsics_to()
             streams_collection[stream_key] = std::make_shared<rs_rtp_stream>(st, stream_profile);
             memory_pool = &rs_rtp_stream::get_memory_pool();
         }
@@ -222,8 +220,7 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        //TODO: move this after the rtsp call.
-                        //currently it is so as workaround to avoid re-try.
+                        //the ftate flag is togled before the actual updatee to avoid endless re-tries on case of failure.
                         remote_sensors[i]->is_enabled = enabled;
                         update_sensor_state(i, sw_sensor->get_active_streams(), true);
                     }
@@ -234,7 +231,7 @@ void ip_device::polling_state_loop()
                         rs2_software_notification notification;
                         notification.description = e.what();
                         notification.severity = RS2_LOG_SEVERITY_ERROR;
-                        //TODO: set values for type, serialized_data
+                        notification.type = RS2_EXCEPTION_TYPE_UNKNOWN;
                         remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
@@ -331,7 +328,6 @@ void ip_device::update_sensor_state(int sensor_index, std::vector<rs2::stream_pr
         rtp_callbacks[requested_stream_key] = new rs_rtp_callback(streams_collection[requested_stream_key]);
         remote_sensors[sensor_index]->rtsp_client->addStream(streams_collection[requested_stream_key].get()->m_rs_stream, rtp_callbacks[requested_stream_key]);
         inject_frames_thread[requested_stream_key] = std::thread(&ip_device::inject_frames_loop, this, streams_collection[requested_stream_key]);
-        //streams_uid_per_sensor[sensor_index].push_front(requested_stream_key);
         remote_sensors[sensor_index]->active_streams_keys.push_front(requested_stream_key);
     }
 
@@ -364,20 +360,16 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
                 Raw_Frame* frame = rtp_stream.get()->extract_frame();
                 rtp_stream.get()->frame_data_buff.pixels = frame->m_buffer;
 
-                //rtp_stream.get()->frame_data_buff.timestamp = (frame->m_timestamp.tv_sec*1000)+(frame->m_timestamp.tv_usec/1000); // convert to milliseconds
-                rtp_stream.get()->frame_data_buff.timestamp = frame->m_metadata->data.timestamp;
+                rtp_stream.get()->frame_data_buff.timestamp = frame->m_metadata->timestamp;
 
                 rtp_stream.get()->frame_data_buff.frame_number++;
-                // TODO Michal: change this to HW time once we pass the metadata
-                //rtp_stream.get()->frame_data_buff.domain = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
-                rtp_stream.get()->frame_data_buff.domain = frame->m_metadata->data.timestampDomain;
+                rtp_stream.get()->frame_data_buff.domain = frame->m_metadata->timestampDomain;
 
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, rtp_stream.get()->frame_data_buff.timestamp);
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, frame->m_metadata->data.actualFps);
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, rtp_stream.get()->frame_data_buff.frame_number);
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, 1);
 
-                //nhershko todo: set it at actuqal arrivial time
                 remote_sensors[sensor_id]->sw_sensor->set_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count());
                 remote_sensors[sensor_id]->sw_sensor->on_video_frame(rtp_stream.get()->frame_data_buff);
             }
