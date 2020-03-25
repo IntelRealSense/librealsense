@@ -8,7 +8,6 @@
 #include <iostream>
 #include <mutex>
 #include <queue>
-#include <stdlib.h>
 
 #include "NetdevLog.h"
 
