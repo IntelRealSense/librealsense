@@ -797,7 +797,6 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + 172), float(y + 33) });
 
-
                     if (!recommend_keep)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
