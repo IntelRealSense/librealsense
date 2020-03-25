@@ -251,7 +251,6 @@ namespace librealsense
         int data_sampling = DEFAULT_SAMPLING;
         int apply_preset = 1;
 
-
         if (json.size() > 0)
         {
             auto jsn = parse_json(json);
