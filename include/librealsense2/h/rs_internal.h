@@ -347,6 +347,7 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
 */
 void rs2_software_sensor_add_recommended_processing_block(rs2_sensor* sensor, rs2_processing_block* block, rs2_error** error);
 
+/**
 * Sensors hold the parent device in scope via a shared_ptr. This function detaches that so that the software sensor doesn't keep the software device alive.
 * Note that this is dangerous as it opens the door to accessing freed memory if care isn't taken.
 * \param[in] sensor         the software sensor
