@@ -37,6 +37,8 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
 
+#include "../usb/usb-types.h"
+
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> fa_ir_fourcc_to_rs2_format = {
@@ -229,12 +231,10 @@ namespace librealsense
     class fa_ir_sensor : public synthetic_sensor
     {
     public:
-        fa_ir_sensor(device* owner,
+        fa_ir_sensor(fa_device* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor)
             : synthetic_sensor("Infrared Camera", uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
-            _default_stream(new stream(RS2_STREAM_INFRARED))
-        {
-        }
+            _owner(owner) {}
 
         stream_profiles init_stream_profiles() override
         {
@@ -245,32 +245,44 @@ namespace librealsense
             for (auto&& p : results)
             {
                 // Register stream types
-                assign_stream(_default_stream, p);
-                environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_default_stream, *p);
+                if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() < 2)
+                {
+                    assign_stream(_owner->_left_ir_stream, p);
+					environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_left_ir_stream, *p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 2)
+                {
+                    assign_stream(_owner->_right_ir_stream, p);
+					environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_right_ir_stream, *p);
+                }
             }
 
             return results;
         }
 
     private:
-        std::shared_ptr<stream_interface> _default_stream;
+        const fa_device* _owner;
     };
 
     fa_device::fa_device(const std::shared_ptr<context>& ctx,
         const std::vector<platform::uvc_device_info>& uvc_infos,
         const platform::backend_device_group& group,
         bool register_device_notifications)
-        : device(ctx, group, register_device_notifications)
+        : device(ctx, group, register_device_notifications),
+        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
+        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
     {
         std::vector<std::shared_ptr<platform::uvc_device>> devs;
         for (auto&& info : uvc_infos)
             devs.push_back(ctx->get_backend().create_uvc_device(info));
+
         auto raw_ir_ep = std::make_shared<uvc_sensor>("Infrared Camera",
             std::make_shared<platform::multi_pins_uvc_device>(devs),
             std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(environment::get_instance().get_time_service())),
             this);
         auto ir_ep = std::make_shared<fa_ir_sensor>(this, raw_ir_ep);
-        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
+        ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 1));
+        ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 2));
         add_sensor(ir_ep);
 
         register_info(RS2_CAMERA_INFO_NAME, "F450 Camera");
@@ -280,6 +292,16 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, uvc_infos.front().unique_id);
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
+        
+        /*USB TYPE DESCRIPTION
+        auto _usb_mode = platform::usb_spec::usb3_type;
+        std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
+        _usb_mode = raw_ir_ep.get_usb_specification();
+        if (platform::usb_spec_names.count(_usb_mode) && (platform::usb_undefined != _usb_mode)) {
+            usb_type_str = platform::usb_spec_names.at(_usb_mode);
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        }*/
+        
     }
 
     notification fa_notification_decoder::decode(int value)
@@ -316,6 +338,8 @@ namespace librealsense
     
     double fa_device::get_device_time_ms()
     {
+        return 0.0;
+        /*
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
@@ -329,6 +353,6 @@ namespace librealsense
         }
         uint32_t dt = *(uint32_t*)res.data();
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
-        return ts;
+        return ts;*/
     }
 }
