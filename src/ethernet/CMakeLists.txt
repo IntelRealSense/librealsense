@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.9.0)
+cmake_minimum_required(VERSION 3.1.0)
 
 project(realsense2-net VERSION 1.0.0 LANGUAGES CXX C)
 
@@ -24,19 +24,19 @@ file(GLOB REALSENSE_NET_CPP
   "${LIVE}/UsageEnvironment/*.c*"
 )
 
+if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
+    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
+endif()
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+
+add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
+
 set(REALSENSE_NET_PUBLIC_HEADERS
     ../../include/librealsense2-net/rs_net.h
     ../../include/librealsense2-net/rs_net.hpp
 )
 
 set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
-
-if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
-    list(APPEND REALSENSE_NET_CPP ../../third-party/easyloggingpp/src/easylogging++.cc)
-endif()
-
-add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP})
-add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
 include_directories(${PROJECT_NAME}
   ../../common
@@ -82,35 +82,47 @@ target_link_libraries(${PROJECT_NAME}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${REALSENSE_NET_PUBLIC_HEADERS}")
-
-# set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 # set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
 
+WRITE_BASIC_CONFIG_VERSION_FILE("${CMAKE_CURRENT_BINARY_DIR}/realsense2-netConfigVersion.cmake"
+    VERSION ${REALSENSE_VERSION_STRING} 
+    COMPATIBILITY AnyNewerVersion
+)
+
+set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+configure_package_config_file(../../CMake/realsense2-netConfig.cmake.in realsense2-netConfig.cmake
+    INSTALL_DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+    INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+)
+configure_file(../../config/librealsense-net.pc.in ../../config/realsense2-net.pc @ONLY)
+
 install(TARGETS ${PROJECT_NAME}
-#    EXPORT realsense2-netTargets
+    EXPORT realsense2-netTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/librealsense2-net"
 )
 
-#install(EXPORT realsense2-netTargets
-#    FILE realsense2-netTargets.cmake
-#    NAMESPACE ${PROJECT_NAME}::
-#    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-#)
-#
-#install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfig.cmake"
-#    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-#)
-#
-#install(FILES "${CMAKE_BINARY_DIR}/src/net/realsense2-netConfigVersion.cmake"
-#        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
-#)
-#
+install(EXPORT realsense2-netTargets
+    FILE realsense2-netTargets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfig.cmake"
+    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfigVersion.cmake"
+        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+)
+
 # Set library pkgconfig file for facilitating 3rd party integration
-#install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
-#        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-#)
-#
-#install(CODE "execute_process(COMMAND ldconfig)")
+install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
+
+install(CODE "execute_process(COMMAND ldconfig)")

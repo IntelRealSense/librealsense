@@ -83,8 +83,6 @@ if(BUILD_EXAMPLES)
     add_subdirectory(tools)
 endif()
 
-set(BUILD_NETWORK_DEVICE OFF CACHE BOOL "Enable Network Device support")
-
 if(BUILD_NETWORK_DEVICE)
     add_subdirectory(src/ethernet)
     add_subdirectory(src/compression)

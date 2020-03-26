@@ -2,7 +2,6 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "CompressionFactory.h"
-#include "GzipCompression.h"
 #include "JpegCompression.h"
 #include "Lz4Compression.h"
 #include "RvlCompression.h"
@@ -25,9 +24,6 @@ std::shared_ptr<ICompression> CompressionFactory::getObject(int t_width, int t_h
 
     switch(zipMeth)
     {
-    case ZipMethod::gzip:
-        return std::make_shared<GzipCompression>(t_width, t_height, t_format, t_bpp);
-        break;
     case ZipMethod::rvl:
         return std::make_shared<RvlCompression>(t_width, t_height, t_format, t_bpp);
         break;
