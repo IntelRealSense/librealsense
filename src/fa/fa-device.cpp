@@ -42,10 +42,12 @@
 namespace librealsense
 {
     std::map<uint32_t, rs2_format> fa_ir_fourcc_to_rs2_format = {
-        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV}
+        {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
     }; 
     std::map<uint32_t, rs2_stream> fa_ir_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED}
+        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED},
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED}
     };   
     std::vector<uint8_t> fa_device::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
@@ -280,9 +282,15 @@ namespace librealsense
             std::make_shared<platform::multi_pins_uvc_device>(devs),
             std::unique_ptr<ds5_timestamp_reader>(new ds5_timestamp_reader(environment::get_instance().get_time_service())),
             this);
+        
         auto ir_ep = std::make_shared<fa_ir_sensor>(this, raw_ir_ep);
         ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 1));
-        ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 2));
+        // Second Infrared is read as UYVY so that the streams will have different profiles - needed because of design of mf-uvc class 
+        //ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 2));
+        std::vector<rs2_format> target_format = map_supported_color_formats(RS2_FORMAT_UYVY);
+        target_format.push_back( RS2_FORMAT_YUYV );
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, target_format, RS2_STREAM_INFRARED, 2));
+        
         add_sensor(ir_ep);
 
         register_info(RS2_CAMERA_INFO_NAME, "F450 Camera");
