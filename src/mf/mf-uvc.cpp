@@ -873,6 +873,10 @@ namespace librealsense
         {
             bool quit = false;
             CComPtr<IMFMediaType> pMediaType = nullptr;
+
+            //added to permit streaming 2 different streams from different pins with exaclty the same profile
+            int f450InfraredIndex = 0;
+
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
                 for (auto k = 0;; k++)
@@ -912,6 +916,15 @@ namespace librealsense
                     if (fourcc_map.count(device_fourcc))
                         device_fourcc = fourcc_map.at(device_fourcc);
 
+                    if (height == 1088)
+                    {
+                        if (f450InfraredIndex == 0)
+                            ++f450InfraredIndex;
+                        else
+                        {
+                            device_fourcc = 0x55595659; //UYVY
+                        }
+                    }
                     stream_profile sp;
                     sp.width = width;
                     sp.height = height;
