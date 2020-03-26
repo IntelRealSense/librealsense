@@ -220,7 +220,7 @@ void ip_device::polling_state_loop()
                 {
                     try
                     {
-                        //the ftate flag is togled before the actual updatee to avoid endless re-tries on case of failure.
+                        //the state flag is togled before the actual updatee to avoid endless re-tries on case of failure.
                         remote_sensors[i]->is_enabled = enabled;
                         update_sensor_state(i, sw_sensor->get_active_streams(), true);
                     }
@@ -232,6 +232,7 @@ void ip_device::polling_state_loop()
                         notification.description = e.what();
                         notification.severity = RS2_LOG_SEVERITY_ERROR;
                         notification.type = RS2_EXCEPTION_TYPE_UNKNOWN;
+                        notification.serialized_data = e.what();
                         remote_sensors[i]->sw_sensor.get()->on_notification(notification);
                         continue;
                     }
