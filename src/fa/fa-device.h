@@ -50,6 +50,11 @@ namespace librealsense
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
+        
+        friend class fa_ir_sensor;
+
+        std::shared_ptr<stream_interface> _left_ir_stream;
+        std::shared_ptr<stream_interface> _right_ir_stream;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;

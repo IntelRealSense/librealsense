@@ -36,17 +36,12 @@ namespace librealsense
         std::vector<tagged_profile> get_profiles_tags() const override
         {
             std::vector<tagged_profile> tags;
-            auto usb_spec = get_usb_spec();
-            if (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined)
-            {
-                tags.push_back({ RS2_STREAM_INFRARED, 0, 720, 720, RS2_FORMAT_RGB8, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            }
-            else
-            {
-                tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 15, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            }
+            tags.push_back({ RS2_STREAM_INFRARED, 1, 1920, 1080, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, 2, 1920, 1080, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             return tags;
         };
+
+        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
     };
 
     std::shared_ptr<device_interface> fa_info::create(std::shared_ptr<context> ctx,
@@ -75,6 +70,12 @@ namespace librealsense
     inline std::shared_ptr<matcher> create_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
     {
         return std::make_shared<timestamp_composite_matcher>(matchers);
+    }
+
+    std::shared_ptr<matcher> rs450_device::create_matcher(const frame_holder& frame) const
+    {
+        std::vector<stream_interface*> streams = { _left_ir_stream.get() , _right_ir_stream.get() };
+        return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
 }
