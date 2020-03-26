@@ -10,7 +10,6 @@
 
 #include "tm-info.h"
 #include "tm-device.h"
-#include "libusb.h"
 #include "common/fw/target.h"
 
 namespace librealsense

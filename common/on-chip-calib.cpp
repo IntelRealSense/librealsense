@@ -335,6 +335,9 @@ namespace rs2
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = true;
 
+        config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+
+
         auto calib_dev = _dev.as<auto_calibrated_device>();
         _old_calib = calib_dev.get_calibration_table();
 
@@ -390,6 +393,9 @@ namespace rs2
 
             _viewer.is_3d_view = _in_3d_view;
 
+            _viewer.ground_truth_r = ground_truth;
+            config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+
             _viewer.synchronization_enable = _synchronized;
 
             stop_viewer(invoke);
@@ -431,7 +437,7 @@ namespace rs2
         using namespace chrono;
 
         auto health = get_manager().get_health();
-        auto recommend_keep = health > 0.25;
+        auto recommend_keep = fabs(health) > 0.25f;  
         if (!recommend_keep && update_state == RS2_CALIB_STATE_CALIB_COMPLETE && !get_manager().tare)
         {
             auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -505,6 +511,8 @@ namespace rs2
 
             if (update_state == RS2_CALIB_STATE_TARE_INPUT || update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 ImGui::SetCursorScreenPos({ float(x + width - 30), float(y) });
+            else if (update_state == RS2_CALIB_STATE_FAILED)
+                ImGui::SetCursorScreenPos({ float(x + 2), float(y + 27) });
             else
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 27) });
 
@@ -557,7 +565,7 @@ namespace rs2
                     ImGui::Text("%s", "Avg Step Count:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Number of frames to average, Min = 1, Max = 30, Default = 10");
+                        ImGui::SetTooltip("%s", "Number of frames to average, Min = 1, Max = 30, Default = 20"); 
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
@@ -572,7 +580,7 @@ namespace rs2
                     ImGui::Text("%s", "Step Count:");
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("%s", "Max iteration steps, Min = 5, Max = 30, Default = 10");
+                        ImGui::SetTooltip("%s", "Max iteration steps, Min = 5, Max = 30, Default = 20");
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
@@ -636,6 +644,8 @@ namespace rs2
 
                 std::string id = to_string() << "##ground_truth_for_tare" << index;
 
+                get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r,2500);
+
                 std::string gt = to_string() << get_manager().ground_truth;
                 const int MAX_SIZE = 256;
                 char buff[MAX_SIZE];
@@ -649,6 +659,8 @@ namespace rs2
                     ss >> get_manager().ground_truth;
                 }
                 ImGui::PopItemWidth();
+
+                config_file::instance().set(configurations::viewer::ground_truth_r, get_manager().ground_truth);
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
 
@@ -689,6 +701,7 @@ namespace rs2
                 for (auto&& s : vals) vals_cstr.push_back(s.c_str());
 
                 ImGui::PushItemWidth(width - 145);
+
                 ImGui::Combo(id.c_str(), &get_manager().speed, vals_cstr.data(), vals.size());
                 ImGui::PopItemWidth();
 
@@ -751,7 +764,7 @@ namespace rs2
             {
                 auto health = get_manager().get_health();
 
-                auto recommend_keep = health > 0.25;
+                auto recommend_keep = fabs(health) > 0.25f;
 
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
 
@@ -789,7 +802,7 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
                         ImGui::Text("%s", "(Good)");
                     }
-                    else if (health < 0.75f)
+                    else if (fabs(health) < 0.75f)
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, yellowish);
                         ImGui::Text("%s", "(Can be Improved)");
@@ -804,9 +817,9 @@ namespace rs2
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("%s", "Calibration Health-Check captures how far camera calibration is from the optimal one\n"
-                            "[0, 0.15) - Good\n"
-                            "[0.15, 0.25) - Can be Improved\n"
-                            "[0.25, ) - Requires Calibration");
+                            "[0, 0.25) - Good\n"
+                            "[0.25, 0.75) - Can be Improved\n"
+                            "[0.75, ) - Requires Calibration");
                     }
                 }
 
@@ -1130,6 +1143,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return 110;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 210;
+        else if (update_state == RS2_CALIB_STATE_FAILED) return 110;
         else return 100;
     }
 

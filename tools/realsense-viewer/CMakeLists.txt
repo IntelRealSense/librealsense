@@ -158,7 +158,7 @@ set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
-    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} uvc_fw)
+    target_link_libraries(realsense-viewer fw)
 endif()
 
 if(BUILD_NETWORK_DEVICE)

@@ -142,14 +142,14 @@ namespace librealsense
         composite_identity_matcher(std::vector<std::shared_ptr<matcher>> matchers);
 
         void sync(frame_holder f, syncronization_environment env) override;
-        virtual bool are_equivalent(frame_holder& a, frame_holder& b) { return false; }
-        virtual bool is_smaller_than(frame_holder& a, frame_holder& b) { return false; }
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) { return false; }
-        virtual void clean_inactive_streams(frame_holder& f) {}
-        virtual void update_last_arrived(frame_holder& f, matcher* m) {}
+        virtual bool are_equivalent(frame_holder& a, frame_holder& b) override { return false; }
+        virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
+        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing) override { return false; }
+        virtual void clean_inactive_streams(frame_holder& f) override {}
+        virtual void update_last_arrived(frame_holder& f, matcher* m) override {}
 
     protected:
-        virtual void update_next_expected(const frame_holder& f) {}
+        virtual void update_next_expected(const frame_holder& f) override {}
     };
 
     class frame_number_composite_matcher : public composite_matcher

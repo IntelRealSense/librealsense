@@ -166,6 +166,8 @@ namespace librealsense
 
             double sample_hw_time = _device->get_device_time_ms();
             double system_time_finish = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+            if (system_time_finish - system_time_start > 2.0)
+                throw io_exception("get_device_time_ms() took too long (more then 2 mSecs)");
             double system_time((system_time_finish + system_time_start) / 2);
             if (sample_hw_time < _last_sample_hw_time)
             {
@@ -178,6 +180,10 @@ namespace librealsense
             _coefs.add_value(crnt_sample);
             _is_ready = true;
             return true;
+        }
+        catch (const io_exception& ex)
+        {
+            LOG_DEBUG("Temporary skip during time_diff_keeper polling: " << ex.what());
         }
         catch (const wrong_api_call_sequence_exception& ex)
         {

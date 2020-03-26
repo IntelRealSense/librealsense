@@ -152,7 +152,7 @@ template <rs2_format FMT> struct itemsize {
     static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };
 template <rs2_format FMT> struct fmtstring {
-    static constexpr std::string func() { return py::format_descriptor<typename FmtToType<FMT>::type>::format(); }
+    static const std::string func() { return py::format_descriptor<typename FmtToType<FMT>::type>::format(); }
 };
 
 template<template<rs2_format> class F>

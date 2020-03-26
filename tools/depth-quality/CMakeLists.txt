@@ -80,7 +80,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     if (IMPORT_DEPTH_CAM_FW)
         add_definitions(-DINTERNAL_FW)
-        target_link_libraries(rs-depth-quality uvc_fw)
+        target_link_libraries(rs-depth-quality fw)
     endif()
 
     set_target_properties (rs-depth-quality PROPERTIES

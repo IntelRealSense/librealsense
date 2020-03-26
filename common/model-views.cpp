@@ -5136,6 +5136,7 @@ namespace rs2
                                     keep_showing_popup = true;
 
                             if(!keep_showing_popup)
+                            {
                                 if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                 {
                                     //Known preset was chosen
@@ -5160,6 +5161,7 @@ namespace rs2
                                     error_message = safe_call([&]() { load_json(f); });
                                     selected_file_preset = f;
                                 }
+                            }
                         }
                         if (keep_showing_popup)
                         {

@@ -310,7 +310,7 @@ namespace librealsense
             }
 
             if (progress_callback)
-                progress_callback->on_update_progress(count * (2 * speed)); //curently this number does not reflect the actual progress
+                progress_callback->on_update_progress(count++ * (2 * speed)); //curently this number does not reflect the actual progress
 
             now = std::chrono::high_resolution_clock::now();
 
