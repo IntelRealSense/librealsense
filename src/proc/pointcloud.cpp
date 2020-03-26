@@ -223,7 +223,7 @@ namespace librealsense
         auto occlusion_invalidation = std::make_shared<ptr_option<uint8_t>>(
             occlusion_none,
             occlusion_max - 1, 1,
-            occlusion_none,
+            occlusion_monotonic_scan,
             (uint8_t*)&_occlusion_filter->_occlusion_filter,
             "Occlusion removal");
         occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
@@ -235,10 +235,8 @@ namespace librealsense
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 
         });
-
-        occlusion_invalidation->set_description(0.f, "Off");
-        occlusion_invalidation->set_description(1.f, "Heuristic");
-        occlusion_invalidation->set_description(2.f, "Exhaustive");
+        occlusion_invalidation->set_description(1.f, "Off");
+        occlusion_invalidation->set_description(2.f, "On");
         register_option(RS2_OPTION_FILTER_MAGNITUDE, occlusion_invalidation);
     }
 

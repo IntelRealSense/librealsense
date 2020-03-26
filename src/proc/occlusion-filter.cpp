@@ -9,7 +9,7 @@
 
 namespace librealsense
 {
-    occlusion_filter::occlusion_filter() : _occlusion_filter(occlusion_none)
+    occlusion_filter::occlusion_filter() : _occlusion_filter(occlusion_monotonic_scan)
     {
     }
 
@@ -27,9 +27,6 @@ namespace librealsense
             break;
         case occlusion_monotonic_scan:
             monotonic_heuristic_invalidation(points, uv_map, pix_coord);
-            break;
-        case occlusion_exhaustic_search:
-            comprehensive_invalidation(points, uv_map, pix_coord);
             break;
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
@@ -49,44 +46,86 @@ namespace librealsense
     {
         float occZTh = 0.1f; //meters
         int occDilationSz = 1;
-        auto pixels_ptr = pix_coord.data();
         auto points_width = _depth_intrinsics->width;
         auto points_height = _depth_intrinsics->height;
+        auto pixels_ptr = pix_coord.data();
+        auto points_ptr = points;
+        auto uv_map_ptr = uv_map;
+        float maxInLine = -1;
+        float maxZ = 0;
 
         for (size_t y = 0; y < points_height; ++y)
         {
-            float maxInLine = -1;
-            float maxZ = 0;
+            maxInLine = -1;
+            maxZ = 0;
             int occDilationLeft = 0;
 
             for (size_t x = 0; x < points_width; ++x)
             {
-                if (points->z)
+                if (points_ptr->z)
                 {
                     // Occlusion detection
-                    if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points->z - maxZ) > occZTh))
+                    if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points_ptr->z - maxZ) > occZTh))
                     {
-                        uv_map->x = 0.f;
-                        uv_map->y = 0.f;
+                        *uv_map_ptr = { 0.f , 0.f };
+                        *points_ptr = { 0, 0, 0 };
                         occDilationLeft = occDilationSz;
                     }
                     else
                     {
                         maxInLine = pixels_ptr->x;
-                        maxZ = points->z;
+                        maxZ = points_ptr->z;
                         if (occDilationLeft > 0)
                         {
-                            uv_map->x = 0.f;
-                            uv_map->y = 0.f;
+                            *uv_map_ptr = { 0.f , 0.f };
+                            *points_ptr = { 0, 0, 0 };
                             occDilationLeft--;
                         }
                     }
                 }
-
-                ++points;
-                ++uv_map;
+                ++points_ptr;
+                ++uv_map_ptr;
                 ++pixels_ptr;
             }
+        }
+
+        // occlusion removal support for L500
+        pixels_ptr = pix_coord.data();
+        points_ptr = points;
+        uv_map_ptr = uv_map;
+        for (size_t x = 0; x < points_width; ++x)
+        {
+            maxInLine = -1;
+            maxZ = 0;
+            int occDilationUp = 0;
+            for (size_t y = 0; y < points_height; ++y)
+            {
+                if ((points_ptr + y * points_width)->z)
+                {
+                    // Occlusion detection for L500
+                    if (((pixels_ptr + y * points_width)->y < maxInLine) || (((pixels_ptr + y * points_width)->y == maxInLine) && (points_ptr->z - maxZ) > occZTh))
+                    {
+                        *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
+                        *(points_ptr + y * points_width) = { 0, 0, 0 };
+
+                        occDilationUp = occDilationSz;
+                    }
+                    else
+                    {
+                        maxInLine = (pixels_ptr + y * points_width)->y;
+                        maxZ = points_ptr->z;
+                        if (occDilationUp > 0)
+                        {
+                            *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
+                            *(points_ptr + y * points_width) = { 0, 0, 0 };
+                            occDilationUp--;
+                        }
+                    }
+                }
+            }
+            ++points_ptr;
+            ++uv_map_ptr;
+            ++pixels_ptr;
         }
     }
 

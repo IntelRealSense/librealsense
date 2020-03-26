@@ -6,9 +6,9 @@
 namespace librealsense
 {
     enum occlusion_rect_type : uint8_t {
+        occlusion_min,
         occlusion_none,
         occlusion_monotonic_scan,
-        occlusion_exhaustic_search,
         occlusion_max };
 
     class pointcloud;
