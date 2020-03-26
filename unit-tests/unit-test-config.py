@@ -206,7 +206,7 @@ for sdir in normal_tests:
     n_tests += 1
 if len(shared_tests):
     handle.write( 'if(NOT ${BUILD_SHARED_LIBS})\n' )
-    handle.write( '    message( WARNING "' + str(len(shared_tests)) + ' shared unit-tests will NOT run! Check BUILD_SHARED_LIBS to run them..." )\n' )
+    handle.write( '    message( INFO "' + str(len(shared_tests)) + ' shared lib unit-tests will be skipped. Check BUILD_SHARED_LIBS to run them..." )\n' )
     handle.write( 'else()\n' )
     for test in shared_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )
@@ -215,7 +215,7 @@ if len(shared_tests):
     handle.write( 'endif()\n' )
 if len(static_tests):
     handle.write( 'if(${BUILD_SHARED_LIBS})\n' )
-    handle.write( '    message( WARNING "' + str(len(static_tests)) + ' static unit-tests will NOT run! Uncheck BUILD_SHARED_LIBS to run them..." )\n' )
+    handle.write( '    message( INFO "' + str(len(static_tests)) + ' static lib unit-tests will be skipped. Uncheck BUILD_SHARED_LIBS to run them..." )\n' )
     handle.write( 'else()\n' )
     for test in static_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )
