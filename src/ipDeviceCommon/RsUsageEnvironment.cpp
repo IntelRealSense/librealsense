@@ -3,7 +3,7 @@
 
 #include "RsUsageEnvironment.h"
 
-#ifdef BUILD_EASYLOGGINGCPP
+#ifdef BUILD_EASYLOGGINGPP
 #ifdef BUILD_SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
 #endif

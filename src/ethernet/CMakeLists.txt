@@ -12,16 +12,16 @@ add_definitions(-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFF
 
 set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
 
-file(GLOB REALSENSE_NET_CPP 
-  "*.h*"
-  "*.c*"
-  "realsense-net.def"
-  "../ipDeviceCommon/*.h*"
-  "../ipDeviceCommon/*.c*"
-  "${LIVE}/groupsock/*.c*"
-  "${LIVE}/BasicUsageEnvironment/*.c*"
-  "${LIVE}/liveMedia/*.c*"
-  "${LIVE}/UsageEnvironment/*.c*"
+file(GLOB REALSENSE_NET_CPP
+    "*.h*"
+    "*.c*"
+    "realsense-net.def"
+    "../ipDeviceCommon/*.h*"
+    "../ipDeviceCommon/*.c*"
+    "${LIVE}/groupsock/*.c*"
+    "${LIVE}/BasicUsageEnvironment/*.c*"
+    "${LIVE}/liveMedia/*.c*"
+    "${LIVE}/UsageEnvironment/*.c*"
 )
 
 if (${BUILD_SHARED_LIBS} AND ${BUILD_EASYLOGGINGPP})
@@ -39,39 +39,39 @@ set(REALSENSE_NET_PUBLIC_HEADERS
 set(CMAKECONFIG_NET_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
 include_directories(${PROJECT_NAME}
-  ../../common
-  ../ipDeviceCommon
-  ../../third-party/easyloggingpp/src
-  ${LIVE}/groupsock/include 
-  ${LIVE}/liveMedia/include  
-  ${LIVE}/UsageEnvironment/include 
-  ${LIVE}/BasicUsageEnvironment/include 
+    ../../common
+    ../ipDeviceCommon
+    ../../third-party/easyloggingpp/src
+    ${LIVE}/groupsock/include
+    ${LIVE}/liveMedia/include
+    ${LIVE}/UsageEnvironment/include
+    ${LIVE}/BasicUsageEnvironment/include
 )
 
 if(WIN32)
-        #
-        # Windows doesn't support POSIX ssize_t type
-        # by default so I use the following defines:
-        #
-        # #ifdef _WIN64
-        # #  define ssize_t __int64
-        # #else
-        # #  define ssize_t long
-        # #endif
-        #
-        if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-                # 64-bit environment...
-                message(STATUS "Target is 64 bits")
-                add_definitions(-Dssize_t=__int64)
-        else("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-                # 32-bit environment...
-                message(STATUS "Target is 32 bits")
-                add_definitions(-Dssize_t=long)
-        endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    #
+    # Windows doesn't support POSIX ssize_t type
+    # by default so I use the following defines:
+    #
+    # #ifdef _WIN64
+    # #  define ssize_t __int64
+    # #else
+    # #  define ssize_t long
+    # #endif
+    #
+    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+            # 64-bit environment...
+            message(STATUS "Target is 64 bits")
+            add_definitions(-Dssize_t=__int64)
+    else("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+            # 32-bit environment...
+            message(STATUS "Target is 32 bits")
+            add_definitions(-Dssize_t=long)
+    endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
 
-        add_definitions(-DELPP_WINSOCK2)
+    add_definitions(-DELPP_WINSOCK2)
         
-        set(WINLIB Ws2_32.lib)
+    set(WINLIB Ws2_32.lib)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
@@ -117,12 +117,12 @@ install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfig.cmake"
 )
 
 install(FILES "${CMAKE_BINARY_DIR}/src/ethernet/realsense2-netConfigVersion.cmake"
-        DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
+    DESTINATION ${CMAKECONFIG_NET_INSTALL_DIR}
 )
 
 # Set library pkgconfig file for facilitating 3rd party integration
 install(FILES "${CMAKE_BINARY_DIR}/config/realsense2-net.pc"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
 
 install(CODE "execute_process(COMMAND ldconfig)")
