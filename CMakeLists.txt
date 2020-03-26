@@ -83,6 +83,10 @@ if(BUILD_EXAMPLES)
     add_subdirectory(tools)
 endif()
 
+if(BUILD_UNIT_TESTS)
+    add_subdirectory(unit-tests)
+endif()
+
 if(BUILD_NETWORK_DEVICE)
     add_subdirectory(src/ethernet)
     add_subdirectory(src/compression)
