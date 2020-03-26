@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+set(realsense2-net_VERSION_MAJOR "@REALSENSE_VERSION_MAJOR@")
+set(realsense2-net_VERSION_MINOR "@REALSENSE_VERSION_MINOR@")
+set(realsense2-net_VERSION_PATCH "@REALSENSE_VERSION_PATCH@")
+
+set(realsense2-net_VERSION ${realsense2-net_VERSION_MAJOR}.${realsense2-net_VERSION_MINOR}.${realsense2-gl_VERSION_PATCH})
+
+set_and_check(realsense2-net_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+
+include("${CMAKE_CURRENT_LIST_DIR}/realsense2-netTargets.cmake")
+set(realsense2-net_LIBRARY realsense2-net::realsense2-net)

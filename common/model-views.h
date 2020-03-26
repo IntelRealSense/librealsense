@@ -157,6 +157,7 @@ namespace rs2
         namespace viewer
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
+            static const char* ground_truth_r      { "viewer_model.ground_truth_r" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
@@ -171,6 +172,8 @@ namespace rs2
             static const char* show_map_ruler      { "viewer_model.show_map_ruler" };
             static const char* show_stream_details { "viewer_model.show_stream_details" };
             static const char* metric_system       { "viewer_model.metric_system" };
+
+            static const char* last_ip             { "viewer_model.last_ip" };
         }
         namespace window
         {

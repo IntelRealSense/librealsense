@@ -901,7 +901,12 @@ namespace librealsense
         //{
         //    throw not_implemented_exception("device time not supported for backend.");
         //}
-
+        
+#ifdef RASPBERRY_PI
+        // TODO: This is temporary work-around since global timestamp seems to compromise RPi stability
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+#else
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
@@ -916,6 +921,7 @@ namespace librealsense
         uint32_t dt = *(uint32_t*)res.data();
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
+#endif
     }
 
     std::shared_ptr<synthetic_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
