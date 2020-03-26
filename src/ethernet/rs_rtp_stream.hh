@@ -117,7 +117,6 @@ public:
 private:
     static void frame_deleter(void* p)
     {
-        printf("here frame_deleter\n");
         get_memory_pool().returnMem((unsigned char*)p - sizeof(RsFrameHeader));
     }
 
