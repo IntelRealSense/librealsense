@@ -10,14 +10,12 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-
 set( ELPP_DIR ../../third-party/easyloggingpp/src )
 include_directories( ${ELPP_DIR} )
 set( ELPP_FILES
     ${ELPP_DIR}/easylogging++.cc
     ${ELPP_DIR}/easylogging++.h
 )
-
 
 include(../../common/CMakeLists.txt)
 
@@ -156,15 +154,19 @@ include_directories(
 
 set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
 
-target_link_libraries(realsense-viewer ${DEPENDENCIES}
-                                        ${GTK3_LIBRARIES}
-                                        Threads::Threads
-                                        realsense2-gl
-                                        )
+set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
+
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(realsense-viewer fw)
 endif()
+
+if(BUILD_NETWORK_DEVICE)
+    add_definitions(-DNETWORK_DEVICE)
+    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
+endif()
+
+target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 
 set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools

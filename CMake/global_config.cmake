@@ -69,6 +69,11 @@ macro(global_set_flags)
         include(libusb_config)
     endif()
 
+    if(BUILD_NETWORK_DEVICE)
+        add_definitions(-DNET_DEVICE)
+        set(LRS_NET_TARGET realsense2-net)
+    endif()
+
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
