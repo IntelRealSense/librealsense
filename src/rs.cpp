@@ -188,7 +188,7 @@ rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error
     return rs2_query_devices_ex(context, RS2_PRODUCT_LINE_ANY_INTEL, error);
 }
 
-rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error)
+rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_mask, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(context);
 
@@ -208,6 +208,7 @@ rs2_device_list* rs2_query_devices_ex(const rs2_context* context, int product_ma
 
     return new rs2_device_list{ context->ctx, results };
 }
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, context, product_mask);
 
 rs2_sensor_list* rs2_query_sensors(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
