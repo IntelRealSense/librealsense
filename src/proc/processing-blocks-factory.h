@@ -30,6 +30,7 @@ namespace librealsense
         std::shared_ptr<processing_block> generate();
         
         static processing_block_factory create_id_pbf(rs2_format format, rs2_stream stream, int idx = 0);
+        
         template<typename T>
         static std::vector<processing_block_factory> create_pbf_vector(rs2_format src, const std::vector<rs2_format>& dst, rs2_stream stream)
         {
@@ -44,6 +45,25 @@ namespace librealsense
                 }
 
                 rgb_factories.push_back({ { {src} }, { {d, stream} }, [d]() { return std::make_shared<T>(d); } });
+            }
+
+            return rgb_factories;
+        }
+
+        template<typename T>
+        static std::vector<processing_block_factory> create_pbf_vector(rs2_format src, const std::vector<rs2_format>& dst, rs2_stream stream, int idx)
+        {
+            std::vector<processing_block_factory> rgb_factories;
+            for (auto d : dst)
+            {
+                // register identity processing block if requested
+                if (src == d)
+                {
+                    rgb_factories.push_back({ { {src} }, { {src, stream, idx} }, []() { return std::make_shared<identity_processing_block>(); } });
+                    continue;
+                }
+
+                rgb_factories.push_back({ { {src} }, { {d, stream, idx} }, [d]() { return std::make_shared<T>(d); } });
             }
 
             return rgb_factories;
