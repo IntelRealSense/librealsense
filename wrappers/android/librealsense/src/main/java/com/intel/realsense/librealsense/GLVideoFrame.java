@@ -76,6 +76,7 @@ public class GLVideoFrame extends GLFrame {
             {
                 case RGB8:
                 case BGR8:
+                case YUYV:
                     GLES10.glTexImage2D(GLES10.GL_TEXTURE_2D, 0, GLES10.GL_RGB, vf.getWidth(), vf.getHeight(), 0, GLES10.GL_RGB, GLES10.GL_UNSIGNED_BYTE, buffer);
                     break;
                 case RGBA8:

@@ -27,6 +27,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private Map<StreamType,Pointcloud> mPointcloud = null;
     private boolean mHasColorizedDepth = false;
 
+    private Frame mRgbTexture;
+    private YuyDecoder mYuyDecoder = new YuyDecoder();
+
     public Map<Integer, Pair<String,Rect>> getRectangles() {
         return calcRectangles();
     }
@@ -69,6 +72,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
         List<FilterInterface> filters = createProcessingPipe();
         try(FrameSet processed = applyFilters(frameSet, filters)){
+            decodeYuyv(processed);
             choosePointsTexture(processed);
             processed.foreach(new FrameCallback() {
                 @Override
@@ -78,6 +82,14 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 }
             });
         }
+    }
+
+    // convert YUYV color stream into RGB* format
+    private void decodeYuyv(FrameSet frameSet) {
+         try (Frame d = frameSet.first(StreamType.COLOR, StreamFormat.YUYV)) {
+            if (d != null)
+                mRgbTexture = mYuyDecoder.process(d);
+         }
     }
 
     private void choosePointsTexture(FrameSet frameSet){
@@ -143,6 +155,18 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 mPointsTexture.close();
                 mPointsTexture = null;
             }
+
+            // convert YUYV into RGB8 for display
+            if(mRgbTexture != null && sp.getFormat() == StreamFormat.YUYV){
+                // set frame label to original format
+                curr.setLabel(sp.getType() + " - " + sp.getFormat());
+
+                 // replace frame content with the converted frame
+                 ((GLVideoFrame) curr).setFrame(mRgbTexture);
+
+                    mRgbTexture.close();
+                    mRgbTexture = null;
+            }
         }
     }
 
@@ -156,6 +180,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             mPointcloud = null;
             if(mPointsTexture != null) mPointsTexture.close();
             mPointsTexture = null;
+
+            if(mRgbTexture != null) mRgbTexture.close();
+            mRgbTexture = null;
         }
     }
 
@@ -200,6 +227,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
             for(Integer uid : mFrames.keySet()){
                 GLFrame fl = mFrames.get(uid);
+
                 Rect r = rects.get(uid).second;
                 if(mWindowHeight > mWindowWidth){// TODO: remove, w/a for misaligned labels
                     int newTop = mWindowHeight - r.height() - r.top;
@@ -219,6 +247,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         switch (format){
             case RGB8:
             case RGBA8:
+            case YUYV:
             case Y8:
             case MOTION_XYZ32F:
             case XYZ32F: return true;
