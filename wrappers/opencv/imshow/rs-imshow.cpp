@@ -240,6 +240,8 @@ auto max_optimization_iters = 50;
 
         translation_gradients calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
 
+        rotation_gradients calc_rotation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
+
         std::pair< std::vector<float2>, std::vector<float>> calc_rc(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
 
         coeffs<translation_gradients> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
@@ -249,8 +251,17 @@ auto max_optimization_iters = 50;
         translation_gradients auto_cal_algo::calculate_translation_x_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
 
         coeffs<rotation_gradients> calc_rotation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
+        
+        float calculate_rotation_x_alpha_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        float calculate_rotation_x_beta_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        float calculate_rotation_x_gamma_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        float calculate_rotation_y_alpha_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        float calculate_rotation_y_beta_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        float calculate_rotation_y_gamma_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
 
-        template<class T>
+        rotation_gradients extract_angles_from_rotation(const float rotation[9]);
+        
+            template<class T>
         std::vector<float> calc_gradients(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
         {
             auto vertical_edge = calc_vertical_gradient(image, image_widht, image_height);
@@ -420,13 +431,13 @@ auto max_optimization_iters = 50;
         return res;
     }
 
-    std::vector<float> auto_cal_algo::calc_intensity(std::vector<float> image1, std::vector<float> image2)
+    std::vector<float> auto_cal_algo::calc_intensity(std::vector<float> imagexp1, std::vector<float> imagexp2)
     {
-        std::vector<float> res(image1.size(), 0);
+        std::vector<float> res(imagexp1.size(), 0);
         //check that sizes are equal
-        for (auto i = 0; i < image1.size(); i++)
+        for (auto i = 0; i < imagexp1.size(); i++)
         {
-            res[i] = sqrt(pow(image1[i], 2) + pow(image2[i] , 2));
+            res[i] = sqrt(pow(imagexp1[i], 2) + pow(imagexp2[i] , 2));
         }
         return res;
     }
@@ -842,14 +853,17 @@ auto max_optimization_iters = 50;
     auto_cal_algo::calib_gradients auto_cal_algo::calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin)
     {
         auto c = uv;
-        std::sort(c.begin(), c.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
+        //std::sort(c.begin(), c.end(), [](float2 v1, float2 v2) {return v1.x < v2.x;});
         auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, width_yuy2, height_yuy2, uv);
        //std::sort(interp_IDT_x.begin(), interp_IDT_x.end());
 
         auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, width_yuy2, height_yuy2, uv);
        //std::sort(interp_IDT_y.begin(), interp_IDT_y.end());
         auto rc = calc_rc(z_data, yuy_data, yuy_intrin, yuy_extrin);
+        
+        calc_rotation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin, rc.second, rc.first);
         calc_translation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin, rc.second, rc.first);
+
         return calib_gradients();
     }
 
@@ -857,6 +871,12 @@ auto max_optimization_iters = 50;
     {
         calc_translation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
         return translation_gradients();
+    }
+
+    auto_cal_algo::rotation_gradients auto_cal_algo::calc_rotation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy)
+    {
+        calc_rotation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
+        return rotation_gradients();
     }
 
     std::pair< std::vector<float2>,std::vector<float>> auto_cal_algo::calc_rc(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
@@ -868,7 +888,7 @@ auto max_optimization_iters = 50;
         std::vector<float> r2(z_data.vertices.size());
         std::vector<float> rc(z_data.vertices.size());
 
-        std::sort(v.begin(), v.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0]; });
+        //std::sort(v.begin(), v.end(), [](rs2_vertex v1, rs2_vertex v2) {return v1.xyz[0] < v2.xyz[0]; });
         for (auto i = 0; i < z_data.vertices.size(); ++i)
         {
             rs2_vertex p = {};
@@ -998,12 +1018,491 @@ auto max_optimization_iters = 50;
 
     auto_cal_algo::coeffs<auto_cal_algo::rotation_gradients> auto_cal_algo::calc_rotation_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy)
     {
-        return coeffs<rotation_gradients>();
+        auto_cal_algo::coeffs<auto_cal_algo::rotation_gradients> res;
+        auto engles = extract_angles_from_rotation(yuy_extrin.rotation);
+        auto v = z_data.vertices;
+        res.x_coeffs.resize(v.size());
+        res.y_coeffs.resize(v.size());
+
+        for (auto i = 0; i < v.size(); i++)
+        {
+            res.x_coeffs[i].alpha = calculate_rotation_x_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.x_coeffs[i].beta = calculate_rotation_x_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.x_coeffs[i].gamma = calculate_rotation_x_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+
+            res.y_coeffs[i].alpha = calculate_rotation_y_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.y_coeffs[i].beta = calculate_rotation_y_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.y_coeffs[i].gamma = calculate_rotation_y_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+        }
+        std::sort(res.x_coeffs.begin(), res.x_coeffs.end(), [](auto_cal_algo::rotation_gradients  r1, auto_cal_algo::rotation_gradients   r2) {return r1.gamma < r2.gamma; });
+        std::sort(res.y_coeffs.begin(), res.y_coeffs.end(), [](auto_cal_algo::rotation_gradients  r1, auto_cal_algo::rotation_gradients   r2) {return r1.gamma < r2.gamma; });
+
+        return res;
+    }
+
+    float auto_cal_algo::calculate_rotation_x_alpha_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 = ppx * (sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g;
+        auto exp2 = -(cos_a*sin_g + cos_g * sin_a*sin_b);
+        auto exp3 = y * (-1 * (cos_a*cos_g - sin_a * sin_b*sin_g));
+        auto exp4 = z * (cos_b*sin_a);
+        auto exp5 = z * (fx*sin_b + ppx * cos_a*cos_b);
+        auto exp6 = -ppx * (cos_a*sin_g + cos_g * sin_a*sin_b);
+        auto exp7 = -ppx * (cos_a*cos_g - sin_a * sin_b*sin_g);
+        auto exp8 = ppx * (cos_g*sin_a + cos_a * sin_b*sin_g) - fx * cos_b*sin_g;
+        auto exp9 = fx * (double)t[0] + ppx * (double)t[2];
+        auto exp10 = z * (ppx*cos_b*sin_a);
+        auto exp11 = z * (cos_a*cos_b);
+        auto exp12 = x * (sin_a*sin_g - cos_a * cos_g*sin_b);
+        auto exp13 = y * (cos_g*sin_a + cos_a * sin_b*sin_g);
+        auto exp48 = 6 * (double)d[3] * x1;
+        auto exp49 = 2 * (double)d[2] * y1;
+        auto exp50 = 2 * (double)d[0] * x1 + 4 * (double)d[1] * x1*xy2 + 6 * (double)d[4] * x1*x2_y2;
+        auto exp15 = (double)rc + exp48 + exp49 + x1 * exp50;
+        auto exp16 = z * cos_a*cos_b;
+        auto exp17 = x * (sin_a*sin_g - cos_a * cos_g*sin_b);
+        auto exp18 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto exp20 = x * (-(cos_a*sin_g + cos_g * sin_a*sin_b));
+        auto exp21 = y * (-(cos_a*cos_g - sin_a * sin_b*sin_g));
+        auto exp22 = z * cos_b*sin_a;
+        auto exp23 = z * (ppy*cos_a*cos_b - fy * cos_b*sin_a);
+        auto exp24 = fy * (cos_a*sin_g + cos_g * sin_a*sin_b) +
+            ppy * (sin_a*sin_g - cos_a * cos_g*sin_b);
+        auto exp53 = x * exp24;
+        auto exp25 = y * (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) +
+            ppy * (cos_g*sin_a + cos_a * sin_b*sin_g));
+        auto exp26 = fy * (sin_a*sin_g - cos_a * cos_g*sin_b) -
+            ppy * (cos_a*sin_g + cos_g * sin_a*sin_b);
+        auto exp27 = fy * (double)t[1] + ppy * (double)t[2];
+        auto exp28 = y * (fy*(cos_g*sin_a + cos_a * sin_b*sin_g) -
+            ppy * (cos_a*cos_g - sin_a * sin_b*sin_g));
+        auto exp29 = x * (exp26)+exp28 + z
+            * (fy*cos_a*cos_b + ppy * cos_b*sin_a);
+        auto exp30 = x * (sin_a*sin_g - cos_a * cos_g*sin_b);
+        auto exp31 = y * (cos_g*sin_a + cos_a * sin_b*sin_g);
+        auto exp32 = z * (cos_a*cos_b) + exp30 + exp31 + ((double)t[2]);
+        auto exp33 = fx * ((exp20 + exp21 + exp22)
+            *(exp23 + exp53 + exp25 + exp27) - exp29 * exp32);
+        auto exp34 = 2 * (double)d[2] * x1 + 2 * (double)d[3] * y1 + x1
+            * (2 * (double)d[0] * y1 + 4 * (double)d[1] * y1*xy2 + 6 * (double)d[4] * y1*x2_y2);
+        auto exp35 = x * (sin_a*sin_g - cos_a * cos_g*sin_b);
+        auto exp36 = y * (cos_g*sin_a + cos_a * sin_b*sin_g);
+        auto exp37 = z * (cos_a*cos_b) + exp35 + exp36 + t[2];
+        auto exp44 = x * exp2 + exp3 + exp4;
+        auto exp45 = exp5 + x * exp1 + y * exp8 + exp9;
+        auto exp46 = x * (exp6)+y * (exp7)+exp10;
+        auto exp47 = exp11 + exp12 + exp13 + (double)t[2];
+        auto exp51 = exp44 * exp45;
+        auto exp52 = exp46 * exp47;
+        auto exp38 = exp51 - exp52;
+        auto exp39 = exp16 + exp17 + y * exp18 + (double)t[2];
+        auto exp40 = fy * exp37 * exp37;
+        auto exp41 = exp38 * exp15;
+        auto exp42 = exp39 * exp39;
+        auto exp43 = exp33 * exp34;
+
+        auto res = exp41 / exp42 + exp43 / exp40;
+
+        return res;
+    }
+
+    float auto_cal_algo::calculate_rotation_x_beta_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 =cos_a*cos_b*cos_g;
+        auto exp2 = z*(-cos_a*sin_b);
+        auto exp3 = cos_a * cos_b*sin_g;
+        auto exp4 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto exp5 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto exp6 = ppx * exp5 - fx * cos_b*sin_g;
+        auto exp7 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto exp8 = fx * sin_b + ppx * cos_a*cos_b;
+        auto exp9 = ppx * (sin_a*sin_g - cos_a * cos_g*sin_b) +
+            fx * cos_b*cos_g;
+        auto exp10 = fx * t[0] + ppx * t[2];
+        auto exp11 = z * exp8 + x * exp9 + y * exp6 + exp10;
+        auto  exp12 = fx * cos_g*sin_b + ppx * cos_a*cos_b*cos_g;
+        auto  exp13 = fx * cos_b - ppx * cos_a*sin_b;
+        auto  exp14 = fx * sin_b*sin_g + ppx * cos_a*cos_b*sin_g;
+        auto exp15 = z * exp13 - x * exp12 + y * exp14;
+        auto exp16 = exp2 - x * (exp1)+y * (exp3);
+        auto exp17 = cos_a * cos_b;
+        auto  exp18 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto  exp19 = sin_a * sin_g - cos_a * cos_g*sin_b;
+        auto  exp20 = exp19;
+        auto  exp21 = exp19;
+        auto  exp22 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto  exp23 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto exp24 = exp23;
+        auto  exp25 = t[2];
+        auto  exp26 = z * exp17 + x * exp20 + y * exp24 + exp25;
+        auto  exp27 = exp16 * exp11 - exp15 * exp26;
+        auto  exp28 = 2 * d[0] * x1 + 4 * d[1] * x1*xy2+6 * d[4] * x1*x2_y2;
+        auto  exp29 = rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * exp28;
+        auto  exp30 = exp27 * exp29;
+        auto  exp31 = cos_a * cos_b;
+        auto  exp32 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto  exp33 = sin_a * sin_g - cos_a * cos_g*sin_b;
+        auto  exp34 = exp33;
+        auto  exp35 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto  exp36 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto  exp37 = exp36;
+        auto  exp38 = t[2];
+        auto  exp39 = -cos_a * sin_b;
+        auto exp40 = cos_a * cos_b*cos_g;
+        auto  exp41 = cos_a * cos_b*sin_g;
+        auto  exp42 = ppy * cos_a*cos_b - fy * cos_b*sin_a;
+        auto  exp43 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto  exp44 = sin_a * sin_g - cos_a * cos_g*sin_b;
+        auto  exp45 =0;
+        auto  exp46 = z * exp31 + x * exp34 + y * exp37 + exp38;
+        auto  exp47 = z * exp39 - x * exp40 + y * exp41;
+        auto  exp48 = fy * exp43 + ppy * exp44 + exp45;
+        auto  exp50 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto  exp51 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto  exp52 = fy * exp50 + ppy * exp51;
+        auto  exp53 = fy * t[1] + ppy * t[2];
+        auto exp54 = -ppy * cos_a*sin_b + fy * sin_a*sin_b;
+        auto exp55 = ppy * cos_a*cos_b*cos_g - fy * cos_b*cos_g*sin_a;
+        auto  exp56 = ppy * cos_a*cos_b*sin_g - fy * cos_b*sin_a*sin_g;
+        auto  exp57 = z * exp42 + x * exp48 + y * exp52 + exp53;
+        auto  exp58 = z * exp54 - x * exp55 + y * exp56;
+        auto  exp59 = cos_a * cos_b;
+        auto  exp60 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto  exp61 = sin_a * sin_g - cos_a * cos_g*sin_b;
+        auto  exp62 = exp61;
+        auto  exp63 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto  exp64 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto  exp65 = 0;
+        auto  exp66 = exp64 - exp65;
+        auto  exp67 = t[2];
+        auto  exp68 = z * exp59 + x * exp62 + y * exp66 + 1 * exp67;
+        auto  exp69 = exp47 * exp57 - exp58 * exp68;
+        auto  exp70 = 2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2;
+        auto  exp71 = 2 * d[2] * x1 + 2 * d[3] * y1 + x1 * exp70;
+        auto  exp72 = fx * exp69*exp71;
+        auto  exp73 = cos_a * cos_b;
+        auto  exp74 = cos_a * sin_g + cos_g * sin_a*sin_b;
+        auto  exp75 = sin_a * sin_g - cos_a * cos_g*sin_b;
+        auto  exp76 = exp75;
+        auto  exp77 = cos_a * cos_g - sin_a * sin_b*sin_g;
+        auto  exp78 = cos_g * sin_a + cos_a * sin_b*sin_g;
+        auto  exp79 = exp78;
+        auto  exp80 = t[2];
+        auto  exp81 = z * exp73 + x * exp76 + y * exp79 + exp80;
+        auto  exp82 = fy * exp81*exp81;
+        auto res = -exp30 / (exp46* exp46) - exp72/ exp82;
+
+        return res;
+    }
+
+    float auto_cal_algo::calculate_rotation_x_gamma_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 = z * cos_a*cos_b +
+            x * (sin_a*sin_g - cos_a * cos_g*sin_b) +
+            y * (cos_g*sin_a + cos_a * sin_b*sin_g) +
+            t[2];
+
+        auto res = (
+            ((y*(sin_a*sin_g - cos_a * cos_g*sin_b) - x * (cos_g*sin_a + cos_a * sin_b*sin_g))*
+            (z*(fx*sin_b + ppx * cos_a*cos_b) +
+                x * (ppx*(sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g) +
+                y * (ppx*(cos_g*sin_a + cos_a * sin_b*sin_g) - fx * cos_b*sin_g) +
+                (fx*t[0] + ppx * t[2])) -
+                (y*(ppx* (sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g) -
+                    x * (ppx*(cos_g*sin_a + cos_a * sin_b*sin_g) - fx * cos_b*sin_g))*
+                    (z*(cos_a*cos_b) + x * (sin_a*sin_g - cos_a * cos_g*sin_b) +
+                        y * (cos_g*sin_a + cos_a * sin_b*sin_g) + t[2]))*
+                        (rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
+            )
+            /
+            (exp1* exp1) + (fx*((y*(sin_a*sin_g - cos_a * cos_g*sin_b) -
+                x * (cos_g*sin_a + cos_a * sin_b*sin_g))*
+                (z*(ppy*cos_a*cos_b - fy * cos_b*sin_a) +
+                    x * (fy*(cos_a*sin_g + cos_g * sin_a*sin_b) + ppy * (sin_a*sin_g - cos_a * cos_g*sin_b)) + y *
+                    (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) + ppy *
+                    (cos_g*sin_a + cos_a * sin_b*sin_g)) +
+                        (fy * t[1] + ppy * t[2])) -
+                    (y*(fy*(cos_a*sin_g + cos_g * sin_a*sin_b) +
+                        ppy * (sin_a*sin_g - cos_a * cos_g*sin_b)) - x *
+                        (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) + ppy * (cos_g*sin_a + cos_a * sin_b*sin_g)))*
+                        (z*cos_a*cos_b + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) +
+                            y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + t[2]))*(2 * d[2] * x1 + 2 * d[3] * y1 + x1 *
+                            (2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2)) / (fy*exp1*exp1));
+
+        return res;
+    }
+
+    float auto_cal_algo::calculate_rotation_y_alpha_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 = z * (cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) +
+            y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + t[2];
+
+        auto res = (((x*(-(cos_a*sin_g + cos_g * sin_a*sin_b)) + y * (-1 * (cos_a*cos_g - sin_a * sin_b*sin_g)) + z *
+            (cos_b*sin_a))*(z*(ppy * cos_a*cos_b - fy * cos_b*sin_a) + x * (fy*(cos_a*sin_g + cos_g * sin_a*sin_b) +
+                ppy * (sin_a*sin_g - cos_a * cos_g*sin_b)) + y * (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) +
+                    ppy * (cos_g*sin_a + cos_a * sin_b*sin_g)) + (fy * t[1] + ppy * t[2])) - (x*(fy*(sin_a*sin_g - cos_a * cos_g*sin_b) -
+                        ppy * (cos_a*sin_g + cos_g * sin_a*sin_b)) + y * (fy*(cos_g*sin_a + cos_a * sin_b*sin_g) -
+                            ppy * (cos_a*cos_g - sin_a * sin_b*sin_g)) + z * (fy*cos_a*cos_b + ppy * cos_b*sin_a))*
+                            (z*(cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) + y * ((cos_g*sin_a + cos_a * sin_b*sin_g) - 0 * cos_b*sin_g) + (t[2])))*
+            (rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))) /
+            (exp1*exp1) + (fy*((x*(-(cos_a*sin_g + cos_g * sin_a*sin_b)) + y * (-(cos_a*cos_g - sin_a * sin_b*sin_g)) +
+                z * (cos_b*sin_a))*(z*(fx*sin_b + ppx * cos_a*cos_b) + x * (ppx*(sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g) + y *
+                (ppx*(cos_g*sin_a + cos_a * sin_b*sin_g) - fx * cos_b*sin_g) + (fx*t[0] + ppx * t[2])) - (x*(-ppx * (cos_a*sin_g + cos_g * sin_a*sin_b)) +
+                    y * (-ppx * (cos_a*cos_g - sin_a * sin_b*sin_g)) + z * (ppx*cos_b*sin_a))*(z*(cos_a*cos_b - 0 * cos_b*sin_a) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) +
+                        y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + (t[2])))*(2 * d[2] * x1 + 2 * d[3] * y1 + y1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))) / (fx*(exp1*exp1));
+
+        return res;
+    }
+
+    float auto_cal_algo::calculate_rotation_y_beta_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 = z * ( cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b))
+            + y * ((cos_g*sin_a + cos_a * sin_b*sin_g))+ (t[2]);
+
+        auto res = -(((z*(-cos_a * sin_b) - x * (cos_a*cos_b*cos_g)
+            + y * (cos_a*cos_b*sin_g))*(z*(ppy * cos_a*cos_b - fy * cos_b*sin_a)
+                + x * (fy*(cos_a*sin_g + cos_g * sin_a*sin_b) + ppy * (sin_a*sin_g - cos_a * cos_g*sin_b))
+                + y * (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) + ppy * (cos_g*sin_a + cos_a * sin_b*sin_g))
+                + (fy * t[1] + ppy * t[2])) - (z*(0 * cos_b - ppy * cos_a*sin_b + fy * sin_a*sin_b)
+                    - x * (ppy * cos_a*cos_b*cos_g - fy * cos_b*cos_g*sin_a) + y * (ppy * cos_a*cos_b*sin_g - fy * cos_b*sin_a*sin_g))*
+                    (z*(cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) + y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + t[2]))
+            *(rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))) /
+            (exp1*exp1) - (fy*((z*(-cos_a * sin_b) - x * (cos_a*cos_b*cos_g) + y * (cos_a*cos_b*sin_g))*(z*(fx*sin_b + ppx * cos_a*cos_b)
+                + x * (ppx * (sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g) + y * (+ppx * (cos_g*sin_a + cos_a * sin_b*sin_g) - fx * cos_b*sin_g)
+                + (fx*t[0] + ppx * t[2])) - (z*(fx*cos_b - ppx * cos_a*sin_b) - x * (fx*cos_g*sin_b + ppx * cos_a*cos_b*cos_g) + y
+                    * (fx*sin_b*sin_g + ppx * cos_a*cos_b*sin_g))*(z*(cos_a*cos_b) + x * (sin_a*sin_g - cos_a * cos_g*sin_b) + y
+                        * (cos_g*sin_a + cos_a * sin_b*sin_g) + t[2]))*(2 * d[2] * x1 + 2 * d[3] * y1 + y1 *
+                        (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))) / (fx*(exp1*exp1));
+
+        return res;
+
+    }
+
+    float auto_cal_algo::calculate_rotation_y_gamma_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+
+        auto sin_a = (double)sin(rot_angles.alpha);
+        auto sin_b = (double)sin(rot_angles.beta);
+        auto sin_g = (double)sin(rot_angles.gamma);
+
+        auto cos_a = (double)cos(rot_angles.alpha);
+        auto cos_b = (double)cos(rot_angles.beta);
+        auto cos_g = (double)cos(rot_angles.gamma);
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto exp1 = z * (cos_a*cos_b) + x * (+(sin_a*sin_g - cos_a * cos_g*sin_b))
+            + y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + t[2];
+
+        auto res = (((y*(+ (sin_a*sin_g - cos_a * cos_g*sin_b))- x * ((cos_g*sin_a + cos_a * sin_b*sin_g)))
+                  *(z*(ppy * cos_a*cos_b - fy * cos_b*sin_a) + x * (fy*(cos_a*sin_g + cos_g * sin_a*sin_b)
+                  + ppy * (sin_a*sin_g - cos_a * cos_g*sin_b))+ y * (fy*(cos_a*cos_g - sin_a * sin_b*sin_g)
+                  + ppy * (cos_g*sin_a + cos_a * sin_b*sin_g))
+                  + (fy * t[1] + ppy * t[2])) - (y*(fy*(cos_a*sin_g + cos_g * sin_a*sin_b)+ ppy * (sin_a*sin_g - cos_a * cos_g*sin_b))
+                  - x * (fy*(cos_a*cos_g - sin_a * sin_b*sin_g) + ppy * (cos_g*sin_a + cos_a * sin_b*sin_g)))*(z*(cos_a*cos_b )
+                  + x * ((sin_a*sin_g - cos_a * cos_g*sin_b))+ y * ( + (cos_g*sin_a + cos_a * sin_b*sin_g))+ (t[2])))
+                  *(rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))) 
+                  / (exp1*exp1) + (fy*((y*(+ (sin_a*sin_g - cos_a * cos_g*sin_b))- x * (+ (cos_g*sin_a + cos_a * sin_b*sin_g)))
+                  *(z*(fx*sin_b + ppx * cos_a*cos_b )+ x * ( ppx * (sin_a*sin_g - cos_a * cos_g*sin_b) + fx * cos_b*cos_g)
+                  + y * ( + ppx * (cos_g*sin_a + cos_a * sin_b*sin_g)- fx * cos_b*sin_g)+ (fx*t[0] + ppx * t[2])) 
+                  - (y*(ppx * (sin_a*sin_g - cos_a * cos_g*sin_b)+ fx * cos_b*cos_g)- x 
+                  * ( + ppx * (cos_g*sin_a + cos_a * sin_b*sin_g)- fx * cos_b*sin_g))*(z*(cos_a*cos_b )
+                  + x * ((sin_a*sin_g - cos_a * cos_g*sin_b))+ y * ((cos_g*sin_a + cos_a * sin_b*sin_g))+ (t[2])))
+                  *(2 * d[2] * x1 + 2 * d[3] * y1 + y1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
+                  ) / (fx*(exp1*exp1));
+
+        return res;
+    }
+
+    auto_cal_algo::rotation_gradients auto_cal_algo::extract_angles_from_rotation(const float rotation[9])
+    {
+        auto_cal_algo::rotation_gradients res;
+        auto epsilon = 0.00001;
+        res.alpha = atan2(-rotation[7], rotation[8]);
+        res.beta = asin(rotation[6]);
+        res.gamma = atan2(-rotation[3], rotation[0]);
+
+        float rot[9];
+
+        rot[0] = cos(res.beta)*cos(res.gamma);
+        rot[1] = -cos(res.beta)*sin(res.gamma);
+        rot[2] = sin(res.beta);
+        rot[3] = cos(res.alpha)*sin(res.gamma) + cos(res.gamma)*sin(res.alpha)*sin(res.beta);
+        rot[4] = cos(res.alpha)*cos(res.gamma) - sin(res.alpha)*sin(res.beta)*sin(res.gamma);
+        rot[5] = -cos(res.beta)*sin(res.alpha);
+        rot[6] = sin(res.alpha)*sin(res.gamma) - cos(res.alpha)*cos(res.gamma)*sin(res.beta);
+        rot[7] = cos(res.gamma)*sin(res.alpha) + cos(res.alpha)*sin(res.beta)*sin(res.gamma);
+        rot[8] = cos(res.alpha)*cos(res.beta);
+
+        auto sum = 0;
+        for (auto i = 0; i < 9; i++)
+        {
+            sum += rot[i] - rotation[i];
+        }
+
+        if((abs(sum)) > epsilon)
+            throw "No fit";
+        return res;
     }
 
     auto_cal_algo::coeffs<auto_cal_algo::translation_gradients> auto_cal_algo::calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy)
     {
         auto_cal_algo::coeffs<auto_cal_algo::translation_gradients> res;
+
+        auto v = z_data.vertices;
+        res.y_coeffs.resize(v.size());
+        res.x_coeffs.resize(v.size());
 
         for (auto i = 0; i < rc.size(); i++)
         {
@@ -1036,8 +1535,8 @@ auto max_optimization_iters = 50;
         auto z_data = preproccess_z(ir_data);
         //std::sort(z_data.weights.begin(), z_data.weights.end(), [](float v1, float v2) {return v1 < v2;});
         
-        /*std::string res_file1("LongRange/15/binFiles/Z_edge_768x1024_single_00.bin");
-        res = get_image<float>(res_file1, width_z, height_z);
+        /*std::string res_filexp1("LongRange/15/binFiles/Z_edge_768x1024_single_00.bin");
+        res = get_image<float>(res_filexp1, width_z, height_z);
         for (auto i = 0;i < z_data.edges.size(); i++)
         {
             auto val = z_data.edges[i];
@@ -1082,7 +1581,7 @@ int main()
 
     std::cout << "Hello World!\n";
 
-    /* std::string res_file("F9440842_scene1/binFiles/Z_edgeSupressed_480x640_single_00.bin");
+    /* std::string res_file("F9440842_scenexp1/binFiles/Z_edgeSupressed_480x640_single_00.bin");
      auto res = get_image<float>(res_file, width_z, height_z);
 
      cv::Mat res_mat(height_z, width_z, CV_32F, res.data());
