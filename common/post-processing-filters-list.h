@@ -31,7 +31,22 @@ struct post_processing_filters_list
         auto & filters = get();
         return filters.insert(
             filters.end(),
-            [name]() -> std::shared_ptr< post_processing_filter > { return std::make_shared< T >( name ); }
+            [name]() -> std::shared_ptr< post_processing_filter >
+            {
+                try
+                {
+                    return std::make_shared< T >( name );
+                }
+                catch( std::exception const& e )
+                {
+                    LOG( ERROR ) << "Failed to start " << name << ": " << e.what();
+                }
+                catch( ... )
+                {
+                    LOG( ERROR ) << "Failed to start " << name << ": unknown exception";
+                }
+                return std::shared_ptr< T >();
+            }
             );
     }
 };
