@@ -25,8 +25,9 @@ include_directories(${PROJECT_NAME}
     ../../third-party/easyloggingpp/src    
 )
 
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
-#set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+#Disabled due to CMake 3.5.1 compatibility
+#target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 add_dependencies(${PROJECT_NAME} 
     libjpeg-turbo
