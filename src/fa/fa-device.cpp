@@ -37,6 +37,7 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
 
+#include "proc/uvyv_to_yuyv.h"
 #include "../usb/usb-types.h"
 
 namespace librealsense
@@ -285,12 +286,13 @@ namespace librealsense
         
         auto ir_ep = std::make_shared<fa_ir_sensor>(this, raw_ir_ep);
         ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 1));
-        // Second Infrared is read as UYVY so that the streams will have different profiles - needed because of design of mf-uvc class 
-        //ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_YUYV, RS2_STREAM_INFRARED, 2));
-        std::vector<rs2_format> target_format = map_supported_color_formats(RS2_FORMAT_UYVY);
-        target_format.push_back( RS2_FORMAT_YUYV );
-        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, target_format, RS2_STREAM_INFRARED, 2));
+        // Second Infrared is marked as UYVY so that the streams will have different profiles - needed because of design of mf-uvc class 
+        // It is then converted back to YUYV for streaming
+        std::vector<rs2_format> target_format = { RS2_FORMAT_YUYV };
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_to_yuyv_converter>
+            (RS2_FORMAT_UYVY, target_format, RS2_STREAM_INFRARED, 2));
         
+
         add_sensor(ir_ep);
 
         register_info(RS2_CAMERA_INFO_NAME, "F450 Camera");
