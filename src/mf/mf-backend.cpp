@@ -89,6 +89,7 @@ namespace librealsense
 
         wmf_hid_device::wmf_hid_device(const hid_device_info& info)
         {
+            CoInitializeEx(nullptr, COINIT_MULTITHREADED);
             bool found = false;
 
             wmf_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info, CComPtr<ISensor> sensor) {
@@ -102,6 +103,20 @@ namespace librealsense
             if (!found)
             {
                 LOG_ERROR("hid device is no longer connected!");
+            }
+        }
+
+        wmf_hid_device::~wmf_hid_device()
+        {
+            try {
+                _connected_sensors.clear();
+                _opened_sensors.clear();
+                _streaming_sensors.clear();
+                CoUninitialize();
+            }
+            catch (...)
+            {
+                // TODO: Write to log
             }
         }
 

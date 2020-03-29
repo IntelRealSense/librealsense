@@ -55,6 +55,7 @@ namespace librealsense
         public:
             static void foreach_hid_device(std::function<void(hid_device_info, CComPtr<ISensor>)> action);
             wmf_hid_device(const hid_device_info& info);
+            ~wmf_hid_device();
 
             void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles;}
             void open(const std::vector<hid_profile>&iio_profiles) override;
