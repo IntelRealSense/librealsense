@@ -6,10 +6,11 @@
 
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
+#include  "../../common/tiny-profiler.h"
 
 namespace librealsense
 {
-    occlusion_filter::occlusion_filter() : _occlusion_filter(occlusion_monotonic_scan)
+    occlusion_filter::occlusion_filter() : _occlusion_filter(occlusion_monotonic_scan) , _occlusion_scanning(horizontal)
     {
     }
 
@@ -53,82 +54,94 @@ namespace librealsense
         auto uv_map_ptr = uv_map;
         float maxInLine = -1;
         float maxZ = 0;
-
-        for (size_t y = 0; y < points_height; ++y)
+ 
+        if (_occlusion_scanning == horizontal)
         {
-            maxInLine = -1;
-            maxZ = 0;
-            int occDilationLeft = 0;
 
-            for (size_t x = 0; x < points_width; ++x)
             {
-                if (points_ptr->z)
+                scoped_timer t1("Horizontal Scan");
+                for (size_t y = 0; y < points_height; ++y)
                 {
-                    // Occlusion detection
-                    if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points_ptr->z - maxZ) > occZTh))
+
+                    maxInLine = -1;
+                    maxZ = 0;
+                    int occDilationLeft = 0;
+
+                    for (size_t x = 0; x < points_width; ++x)
                     {
-                        *uv_map_ptr = { 0.f , 0.f };
-                        *points_ptr = { 0, 0, 0 };
-                        occDilationLeft = occDilationSz;
-                    }
-                    else
-                    {
-                        maxInLine = pixels_ptr->x;
-                        maxZ = points_ptr->z;
-                        if (occDilationLeft > 0)
+                        if (points_ptr->z)
                         {
-                            *uv_map_ptr = { 0.f , 0.f };
-                            *points_ptr = { 0, 0, 0 };
-                            occDilationLeft--;
+                            // Occlusion detection
+                            if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points_ptr->z - maxZ) > occZTh))
+                            {
+                                *uv_map_ptr = { 0.f , 0.f };
+                                *points_ptr = { 0, 0, 0 };
+                                occDilationLeft = occDilationSz;
+                            }
+                            else
+                            {
+                                maxInLine = pixels_ptr->x;
+                                maxZ = points_ptr->z;
+                                if (occDilationLeft > 0)
+                                {
+                                    *uv_map_ptr = { 0.f , 0.f };
+                                    *points_ptr = { 0, 0, 0 };
+                                    occDilationLeft--;
+                                }
+                            }
                         }
+                        ++points_ptr;
+                        ++uv_map_ptr;
+                        ++pixels_ptr;
                     }
                 }
-                ++points_ptr;
-                ++uv_map_ptr;
-                ++pixels_ptr;
             }
         }
-
-        // occlusion removal support for L500
-        pixels_ptr = pix_coord.data();
-        points_ptr = points;
-        uv_map_ptr = uv_map;
-        for (size_t x = 0; x < points_width; ++x)
-        {
-            maxInLine = -1;
-            maxZ = 0;
-            int occDilationUp = 0;
-            for (size_t y = 0; y < points_height; ++y)
+        else if (_occlusion_scanning == vertical) {
+            // occlusion removal support for L500
+            pixels_ptr = pix_coord.data();
+            points_ptr = points;
+            uv_map_ptr = uv_map;
             {
-                if ((points_ptr + y * points_width)->z)
+                scoped_timer t1("Vertical Scan");
+                for (size_t x = 0; x < points_width; ++x)
                 {
-                    // Occlusion detection for L500
-                    if (((pixels_ptr + y * points_width)->y < maxInLine) || (((pixels_ptr + y * points_width)->y == maxInLine) && (points_ptr->z - maxZ) > occZTh))
-                    {
-                        *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
-                        *(points_ptr + y * points_width) = { 0, 0, 0 };
 
-                        occDilationUp = occDilationSz;
-                    }
-                    else
+                    maxInLine = -1;
+                    maxZ = 0;
+                    int occDilationUp = 0;
+                    for (size_t y = 0; y < points_height; ++y)
                     {
-                        maxInLine = (pixels_ptr + y * points_width)->y;
-                        maxZ = points_ptr->z;
-                        if (occDilationUp > 0)
+                        if ((points_ptr + y * points_width)->z)
                         {
-                            *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
-                            *(points_ptr + y * points_width) = { 0, 0, 0 };
-                            occDilationUp--;
+                            // Occlusion detection for L500
+                            if (((pixels_ptr + y * points_width)->y < maxInLine) || (((pixels_ptr + y * points_width)->y == maxInLine) && (points_ptr->z - maxZ) > occZTh))
+                            {
+                                *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
+                                *(points_ptr + y * points_width) = { 0, 0, 0 };
+
+                                occDilationUp = occDilationSz;
+                            }
+                            else
+                            {
+                                maxInLine = (pixels_ptr + y * points_width)->y;
+                                maxZ = points_ptr->z;
+                                if (occDilationUp > 0)
+                                {
+                                    *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
+                                    *(points_ptr + y * points_width) = { 0, 0, 0 };
+                                    occDilationUp--;
+                                }
+                            }
                         }
                     }
+                    ++points_ptr;
+                    ++uv_map_ptr;
+                    ++pixels_ptr;
                 }
             }
-            ++points_ptr;
-            ++uv_map_ptr;
-            ++pixels_ptr;
         }
     }
-
     // Prepare texture map without occlusion that for every texture coordinate there no more than one depth point that is mapped to it
     // i.e. for every (u,v) map coordinate we select the depth point with minimum Z. all other points that are mapped to this texel will be invalidated
     // Algo input data:

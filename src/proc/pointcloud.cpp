@@ -205,6 +205,11 @@ namespace librealsense
 
             if (_occlusion_filter->active())
             {
+                float extrensic_low_threshold = 0.0002f; // in L500 X-axis translation in extrinsic matrix is close to 0 and Y-axis is > 0 because RGB and depth sensors are vertically aligned
+                float extrensic_high_threshold = 0.01f;
+                if ((extr.translation[0] < extrensic_low_threshold) && (extr.translation[1] > extrensic_high_threshold)) {
+                    _occlusion_filter->set_scanning(static_cast<uint8_t>(vertical));
+                }
                 _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
             }
         }
