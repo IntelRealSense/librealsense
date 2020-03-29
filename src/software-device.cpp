@@ -254,7 +254,10 @@ namespace librealsense
 
     void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
-        if (!_is_streaming) return;
+        if (!_is_streaming) {
+            software_frame.deleter(software_frame.pixels);
+            return;
+        }
         
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
