@@ -37,12 +37,14 @@ namespace librealsense
         void reset();
         void add_value(CSample val);
         void add_const_y_coefs(double dy);
-        void update_linear_coefs(double x);
+        bool update_samples_base(double x);
         double calc_value(double x) const;
+        double get_last_hw_time() const;
         bool is_full() const;
 
     private:
         void calc_linear_coefs();
+        void get_a_b(double x, double& a, double& b) const;
 
     private:
         unsigned int _buffer_size;
@@ -51,8 +53,6 @@ namespace librealsense
         double _prev_a, _prev_b;    //Linear regression coeffitions - previously used values.
         double _dest_a, _dest_b;    //Linear regression coeffitions - recently calculated.
         double _prev_time, _time_span_ms;
-        mutable std::recursive_mutex _add_mtx;
-        mutable std::recursive_mutex _stat_mtx;
     };
 
     class global_time_interface;
@@ -76,7 +76,6 @@ namespace librealsense
         unsigned int _poll_intervals_ms;
         int             _users_count;
         active_object<> _active_object;
-        mutable std::recursive_mutex _mtx;      // Watch the update process
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.
         CLinearCoefficients _coefs;
