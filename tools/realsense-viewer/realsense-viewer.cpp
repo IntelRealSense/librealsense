@@ -40,7 +40,6 @@
 // to initialize ours if we want to use the APIs!
 INITIALIZE_EASYLOGGINGPP
 #endif
-
 using namespace rs2;
 using namespace rs400;
 
@@ -308,7 +307,7 @@ int main(int argc, const char** argv) try
         }
     }
 
-#if 1
+#ifdef BUILD_SHARED_LIBS
     // Configure the logger
     el::Configurations conf;
     conf.set( el::Level::Global, el::ConfigurationType::Format, "[%level] %msg" );
@@ -334,10 +333,14 @@ int main(int argc, const char** argv) try
     el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
     auto dispatcher = el::Helpers::logDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
     dispatcher->vm = &viewer_model;
-    // Remove the default logger (which will log to standard out/err) or it'll still be active
     el::Helpers::uninstallLogDispatchCallback< el::base::DefaultLogDispatchCallback >( "DefaultLogDispatchCallback" );
+#else
+     rs2::log_to_callback( RS2_LOG_SEVERITY_INFO,
+         [&]( rs2_log_severity severity, rs2::log_message const& msg )
+         {
+             viewer_model.not_model.add_log( msg.raw() );
+         } );
 #endif
-
     window.on_file_drop = [&](std::string filename)
     {
         
