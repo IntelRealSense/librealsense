@@ -51,7 +51,7 @@ using namespace rs2;
 As part of the API we offer the `pointcloud` class which calculates a pointcloud and corresponding texture mapping from depth and color frames. To make sure we always have something to display, we also make a `rs2::points` object to store the results of the pointcloud calculation.
 ```cpp
 // Declare pointcloud object, for calculating pointclouds and texture mappings
-pointcloud pc = rs2::context().create_pointcloud();
+rs2::pointcloud pc;
 // We want the points object to be persistent so we can display the last cloud when a frame drops
 rs2::points points;
 ```
