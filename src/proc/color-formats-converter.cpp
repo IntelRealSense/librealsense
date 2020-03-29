@@ -649,6 +649,7 @@ namespace librealsense
         }
     }
 
+
     /////////////////////////////
     // MJPEG unpacking routines //
     /////////////////////////////
@@ -682,6 +683,11 @@ namespace librealsense
         }
     }
 
+    void unpack_uyvy_to_yuyv(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
+    {
+        memcpy(d[0], s, actual_size);
+    }
+
     void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_yuy2(_target_format, _target_stream, dest, source, width, height, actual_size);
@@ -690,6 +696,11 @@ namespace librealsense
     void uyvy_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_uyvyc(_target_format, _target_stream, dest, source, width, height, actual_size);
+    }
+
+    void uyvy_to_yuyv_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    {
+        unpack_uyvy_to_yuyv(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
     void mjpeg_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
