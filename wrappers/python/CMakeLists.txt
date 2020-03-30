@@ -135,6 +135,13 @@ install(TARGETS pybackend2
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+if(BUILD_NETWORK_DEVICE)
+    pybind11_add_module(pyrealsense2_net SHARED pyrs_net.cpp)
+    target_link_libraries(pyrealsense2_net PRIVATE realsense2-net)
+    set_target_properties(pyrealsense2_net PROPERTIES FOLDER Wrappers/python)
+    include_directories(../../include)
+endif()
+
 if (BUILD_PYTHON_DOCS)
     add_subdirectory(docs)
 endif()
