@@ -19,7 +19,6 @@ TEST_CASE( "Logging C++ WARN", "[log]" ) {
     log_all();
     REQUIRE( n_callbacks == 2 );
 #else //BUILD_EASYLOGGINGPP
-    REQUIRE_THROWS(rs2::log_to_callback(rs2::log_to_callback(RS2_LOG_SEVERITY_WARN, callback));
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_WARN, callback));
 #endif //BUILD_EASYLOGGINGPP
-}
 }
