@@ -60,6 +60,7 @@ public:
 
 
 TEST_CASE_METHOD( test_fixture, "rs2::log vs LOG()", "[log]" ) {
+
 #if BUILD_EASYLOGGINGPP
     reset();
 

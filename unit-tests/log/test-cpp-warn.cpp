@@ -13,6 +13,7 @@ TEST_CASE( "Logging C++ WARN", "[log]" ) {
         ++n_callbacks;
         TRACE( severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw() );
     };
+
 #if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_WARN, callback );
     REQUIRE( !n_callbacks );
