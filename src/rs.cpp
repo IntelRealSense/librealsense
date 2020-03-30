@@ -1223,7 +1223,7 @@ const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error*
     log_message const& wrapper = *(log_message const*) (msg);
     return wrapper.el_msg.file().c_str();
 #else //BUILD_EASYLOGGINGPP
-	throw std::runtime_error("rs2_get_log_message_filename is not supported without BUILD_EASYLOGGINGPP");
+    throw std::runtime_error("rs2_get_log_message_filename is not supported without BUILD_EASYLOGGINGPP");
 #endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
@@ -1235,7 +1235,7 @@ const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** err
     log_message const & wrapper = *( log_message const * )( msg );
     return wrapper.el_msg.message().c_str();
 #else //BUILD_EASYLOGGINGPP
-	throw std::runtime_error("rs2_get_raw_log_message is not supported without BUILD_EASYLOGGINGPP");
+    throw std::runtime_error("rs2_get_raw_log_message is not supported without BUILD_EASYLOGGINGPP");
 #endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
@@ -1252,7 +1252,7 @@ const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** er
     }
     return wrapper.built_msg.c_str();
 #else //BUILD_EASYLOGGINGPP
-	throw std::runtime_error("rs2_get_full_log_message is not supported without BUILD_EASYLOGGINGPP");
+    throw std::runtime_error("rs2_get_full_log_message is not supported without BUILD_EASYLOGGINGPP");
 #endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
