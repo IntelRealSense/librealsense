@@ -311,6 +311,29 @@ namespace librealsense
             usb_type_str = platform::usb_spec_names.at(_usb_mode);
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
         }*/
+
+        // OPTIONS
+        // EXPOSURE
+        auto exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_EXPOSURE);
+        auto auto_exposure_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
+        ir_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
+        ir_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
+        ir_ep->register_option(RS2_OPTION_EXPOSURE,
+            std::make_shared<auto_disabling_control>(
+                exposure_option,
+                auto_exposure_option));
+        //WHITE BALANCE
+        auto white_balance_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_WHITE_BALANCE);
+        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*raw_ir_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+        ir_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
+        ir_ep->register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
+        ir_ep->register_option(RS2_OPTION_WHITE_BALANCE,
+            std::make_shared<auto_disabling_control>(
+                white_balance_option,
+                auto_white_balance_option));
+        //LOW LIGHT COMPENSATION
+        ir_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+
         
     }
 
