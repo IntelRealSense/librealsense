@@ -16,7 +16,7 @@ namespace Intel.RealSense
     [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
     internal static class NativeMethods
     {
-        private const string dllName = "realsense2";
+        private const string dllName = "realsense2d";
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate IntPtr MemCpyDelegate(IntPtr dest, IntPtr src, int count);
