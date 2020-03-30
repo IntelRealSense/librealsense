@@ -1149,9 +1149,13 @@ HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
 void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error** error ) BEGIN_API_CALL
 {
     // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
+#if BUILD_EASYLOGGINGPP
     librealsense::log_to_callback( min_severity,
         { callback, []( rs2_log_callback * p ) { p->release(); } }
     );
+#else //BUILD_EASYLOGGINGPP
+    throw std::runtime_error("rs2_log_to_callback_cpp is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
 
@@ -1189,9 +1193,13 @@ public:
 void rs2_log_to_callback( rs2_log_severity min_severity, rs2_log_callback_ptr on_log, void * arg, rs2_error** error ) BEGIN_API_CALL
 {
     // Wrap the C function with a callback interface that will get deleted when done
+#if BUILD_EASYLOGGINGPP
     librealsense::log_to_callback( min_severity,
         librealsense::log_callback_ptr{ new on_log_callback( on_log, arg ) }
     );
+#else //BUILD_EASYLOGGINGPP
+    throw std::runtime_error("rs2_log_to_callback is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log, arg )
 
@@ -1199,30 +1207,43 @@ HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, on_log, arg )
 unsigned rs2_get_log_message_line_number( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
+#if BUILD_EASYLOGGINGPP
     log_message const& wrapper = *(log_message const*) (msg);
     return wrapper.el_msg.line();
+#else //BUILD_EASYLOGGINGPP
+    throw std::runtime_error("rs2_get_log_message_line_number is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, msg )
 
 const char* rs2_get_log_message_filename( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
+#if BUILD_EASYLOGGINGPP
     log_message const& wrapper = *(log_message const*) (msg);
     return wrapper.el_msg.file().c_str();
+#else //BUILD_EASYLOGGINGPP
+	throw std::runtime_error("rs2_get_log_message_filename is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 
 const char* rs2_get_raw_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
+#if BUILD_EASYLOGGINGPP
     log_message const & wrapper = *( log_message const * )( msg );
     return wrapper.el_msg.message().c_str();
+#else //BUILD_EASYLOGGINGPP
+	throw std::runtime_error("rs2_get_raw_log_message is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 
 const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( msg );
+#if BUILD_EASYLOGGINGPP
     log_message & wrapper = *( log_message * )( msg );
     if( wrapper.built_msg.empty() )
     {
@@ -1230,6 +1251,9 @@ const char* rs2_get_full_log_message( rs2_log_message const* msg, rs2_error** er
         wrapper.built_msg = wrapper.el_msg.logger()->logBuilder()->build( &wrapper.el_msg, append_new_line );
     }
     return wrapper.built_msg.c_str();
+#else //BUILD_EASYLOGGINGPP
+	throw std::runtime_error("rs2_get_full_log_message is not supported without BUILD_EASYLOGGINGPP");
+#endif //BUILD_EASYLOGGINGPP
 }
 HANDLE_EXCEPTIONS_AND_RETURN( nullptr, msg )
 

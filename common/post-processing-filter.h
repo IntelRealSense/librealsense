@@ -49,7 +49,9 @@ public:
 
     virtual void start( rs2::subdevice_model & model )
     {
+#if BUILD_EASYLOGGINGPP
         LOG(INFO) << "Starting " + get_name();
+#endif // BUILD_EASYLOGGINGPP
     }
 
 protected:
