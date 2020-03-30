@@ -2,7 +2,6 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "identity-processing-block.h"
-#include "image.h"
 
 librealsense::identity_processing_block::identity_processing_block() :
     identity_processing_block("Identity processing block")

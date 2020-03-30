@@ -4,8 +4,7 @@
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
 
-#include "proc/synthetic-stream.h"
-#include "proc/occlusion-filter.h"
+#include "occlusion-filter.h"
 
 namespace librealsense
 {

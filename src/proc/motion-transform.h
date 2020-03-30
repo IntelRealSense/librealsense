@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "synthetic-stream.h"
+
 namespace librealsense
 {
     class enable_motion_correction;

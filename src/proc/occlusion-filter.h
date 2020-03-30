@@ -3,6 +3,8 @@
 
 #pragma once
 #include "../include/librealsense2/hpp/rs_frame.hpp"
+#include "types.h"
+
 namespace librealsense
 {
     enum occlusion_rect_type : uint8_t {

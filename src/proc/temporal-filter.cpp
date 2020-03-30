@@ -3,12 +3,9 @@
 
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "source.h"
+
+#include "temporal-filter.h"
 #include "option.h"
-#include "environment.h"
-#include "context.h"
-#include "proc/synthetic-stream.h"
-#include "proc/temporal-filter.h"
 
 namespace librealsense
 {

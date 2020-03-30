@@ -3,13 +3,10 @@
 
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
+
+#include "spatial-filter.h"
 #include "option.h"
-#include "environment.h"
-#include "context.h"
 #include "software-device.h"
-#include "proc/synthetic-stream.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/spatial-filter.h"
 
 namespace librealsense
 {
