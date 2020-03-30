@@ -45,7 +45,11 @@ public:
             ++n_callbacks_lrs;
             TRACE( "LRS: " << severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw() );
         };
+#if BUILD_EASYLOGGINGPP
         rs2::log_to_callback( RS2_LOG_SEVERITY_ALL, callback );
+#else //BUILD_EASYLOGGINGPP
+        REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ALL, callback));
+#endif //BUILD_EASYLOGGINGPP
     }
 
     void reset()
@@ -56,7 +60,7 @@ public:
 
 
 TEST_CASE_METHOD( test_fixture, "rs2::log vs LOG()", "[log]" ) {
-
+#if BUILD_EASYLOGGINGPP
     reset();
 
     SECTION( "lrs should get its own callbacks" ) {
@@ -75,4 +79,5 @@ TEST_CASE_METHOD( test_fixture, "rs2::log vs LOG()", "[log]" ) {
         REQUIRE( n_callbacks_lrs == 0 );
         REQUIRE( n_callbacks_our == 1 );
     }
+#endif //BUILD_EASYLOGGINGPP
 }

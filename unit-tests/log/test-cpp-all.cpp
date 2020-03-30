@@ -15,8 +15,12 @@ TEST_CASE( "Logging C++ ALL", "[log]" ) {
     };
 
     // ALL == will log everything
+#if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_ALL, callback );
     REQUIRE( !n_callbacks );
     log_all();
     REQUIRE( n_callbacks == 4 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ALL, callback));
+#endif //BUILD_EASYLOGGINGPP
 }

@@ -20,6 +20,7 @@ TEST_CASE( "Logging to two callbacks", "[log]" ) {
         TRACE( severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw() );
     };
 
+#if BUILD_EASYLOGGINGPP
     REQUIRE_NOTHROW( rs2::log_to_callback( RS2_LOG_SEVERITY_ERROR, callback1 ));
     REQUIRE_NOTHROW( rs2::log_to_callback( RS2_LOG_SEVERITY_ERROR, callback2 ));
 
@@ -28,4 +29,8 @@ TEST_CASE( "Logging to two callbacks", "[log]" ) {
     log_all();  // one error should go to each
     REQUIRE( n_callbacks_1 == 1 );
     REQUIRE( n_callbacks_2 == 1 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ERROR, callback1));
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ERROR, callback2));
+#endif //BUILD_EASYLOGGINGPP
 }

@@ -14,9 +14,13 @@ TEST_CASE( "Logging with invalid enum", "[log]" ) {
         TRACE( severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw() );
     };
 
+#if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_ALL, callback );
     REQUIRE( !n_callbacks );
     REQUIRE_THROWS( rs2::log( rs2_log_severity( 10 ), "10" ) );  // Throws recoverable_exception, which will issue a log by itself!
     REQUIRE_THROWS( rs2::log( rs2_log_severity( -1 ), "-1" ) );  //     'invalid enum value for argument "severity"'
     REQUIRE( n_callbacks == 2 );
+#else //BUILD_EASYLOGGINGPP
+	REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ALL, callback));
+#endif //BUILD_EASYLOGGINGPP
 }

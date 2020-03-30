@@ -24,8 +24,12 @@ TEST_CASE( "Logging C ERROR", "[log]" ) {
 
     rs2_error* e = nullptr;
     rs2_log_to_callback( RS2_LOG_SEVERITY_ERROR, c_callback, ( void * ) 0xbadf00d, &e );
+#if BUILD_EASYLOGGINGPP
     REQUIRE_NOTHROW( rs2::error::handle( e ) );
     REQUIRE( !c_n_callbacks );
     log_all();
     REQUIRE( c_n_callbacks == 1 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::error::handle(e));
+#endif //BUILD_EASYLOGGINGPP
 }

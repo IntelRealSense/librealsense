@@ -17,8 +17,12 @@ TEST_CASE( "Without LRS_LOG_LEVEL", "[log]" ) {
         TRACE( severity << ' ' << msg.filename() << '+' << msg.line_number() << ": " << msg.raw() );
     };
 
+#if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_ERROR, callback );
     REQUIRE( !n_callbacks );
     log_all();
     REQUIRE( n_callbacks == 1 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_ERROR, callback));
+#endif //BUILD_EASYLOGGINGPP
 }

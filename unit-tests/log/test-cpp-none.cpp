@@ -15,8 +15,12 @@ TEST_CASE( "Logging C++ NONE", "[log]" ) {
     };
 
     // NONE == will log nothing
+#if BUILD_EASYLOGGINGPP
     rs2::log_to_callback( RS2_LOG_SEVERITY_NONE, callback );
     REQUIRE( !n_callbacks );
     log_all();
     REQUIRE( n_callbacks == 0 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::log_to_callback(RS2_LOG_SEVERITY_NONE, callback));
+#endif //BUILD_EASYLOGGINGPP
 }

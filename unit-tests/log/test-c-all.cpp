@@ -25,8 +25,12 @@ TEST_CASE( "Logging C ALL", "[log]" ) {
     // ALL == will log everything
     rs2_error* e = nullptr;
     rs2_log_to_callback( RS2_LOG_SEVERITY_ALL, c_callback, nullptr, &e );
+#if BUILD_EASYLOGGINGPP
     REQUIRE_NOTHROW( rs2::error::handle( e ) );
     REQUIRE( !c_n_callbacks );
     log_all();
     REQUIRE( c_n_callbacks == 4 );
+#else //BUILD_EASYLOGGINGPP
+    REQUIRE_THROWS(rs2::error::handle(e));
+#endif //BUILD_EASYLOGGINGPP
 }
