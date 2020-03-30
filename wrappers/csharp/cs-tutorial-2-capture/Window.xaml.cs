@@ -40,24 +40,26 @@ namespace Intel.RealSense
         {
             InitializeComponent();
 
+            const int f450_width = 1920;
+            const int f450_height = 1088;
             try
             {
-                Action<VideoFrame> updateDepth;
-                Action<VideoFrame> updateColor;
+                Action<VideoFrame> updateInfraredFirst;
+                Action<VideoFrame> updateInfraredSecond;
 
-                // The colorizer processing block will be used to visualize the depth frames.
+                // The colorizer processing block will be used to visualize the irFirst frames.
                 colorizer = new Colorizer();
 
-                // Create and config the pipeline to strem color and depth frames.
+                // Create and config the pipeline to strem irSecond and irFirst frames.
                 pipeline = new Pipeline();
 
                 var cfg = new Config();
-                cfg.EnableStream(Stream.Depth, 640, 480);
-                cfg.EnableStream(Stream.Color, Format.Rgb8);
+                cfg.EnableStream(Stream.Infrared, 1, f450_width, f450_height, Format.Yuyv, 5);
+                cfg.EnableStream(Stream.Infrared, 2, f450_width, f450_height, Format.Yuyv, 5);
 
                 var pp = pipeline.Start(cfg);
 
-                SetupWindow(pp, out updateDepth, out updateColor);
+                SetupWindow(pp, out updateInfraredFirst, out updateInfraredSecond);
 
                 Task.Factory.StartNew(() =>
                 {
@@ -68,21 +70,32 @@ namespace Intel.RealSense
                         // at the end of scope. 
                         using (var frames = pipeline.WaitForFrames())
                         {
-                            var colorFrame = frames.ColorFrame.DisposeWith(frames);
-                            var depthFrame = frames.DepthFrame.DisposeWith(frames);
+                            var irFirstFrame = frames.InfraredFrame.DisposeWith(frames);
+                            var irSecondFrame = frames.InfraredFrame.DisposeWith(frames);
 
-                            // We colorize the depth frame for visualization purposes
-                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
+                            // We colorize the ir frames for visualization purposes
+                            //var colorizedIrFirstFrame = colorizer.Process<VideoFrame>(irFirstFrame).DisposeWith(frames);
+                            //var colorizedIrSecondFrame = colorizer.Process<VideoFrame>(irSecondFrame).DisposeWith(frames);
 
                             // Render the frames.
-                            Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
-                            Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+                            //Dispatcher.Invoke(DispatcherPriority.Render, updateInfraredFirst, colorizedDepth);
+                            Dispatcher.Invoke(DispatcherPriority.Render, updateInfraredFirst, irFirstFrame);
+                            Dispatcher.Invoke(DispatcherPriority.Render, updateInfraredSecond, irSecondFrame);
+                            //Dispatcher.Invoke(DispatcherPriority.Render, updateInfraredFirst, colorizedIrFirstFrame);
+                            //Dispatcher.Invoke(DispatcherPriority.Render, updateInfraredSecond, colorizedIrSecondFrame);
 
+                            /*Dispatcher.Invoke(new Action(() =>
+                            {
+                                String irFirst_dev_sn = irFirstFrame.Sensor.Info[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = irFirst_dev_sn + " : " + String.Format("{0,-20:0.00}", 
+                                    irFirstFrame.Timestamp) + "(" + irFirstFrame.TimestampDomain.ToString() + ")";
+                            }));
                             Dispatcher.Invoke(new Action(() =>
                             {
-                                String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
-                                txtTimeStamp.Text = depth_dev_sn + " : " + String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
-                            }));
+                                String irSecond_dev_sn = irSecondFrame.Sensor.Info[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = irSecond_dev_sn + " : " + String.Format("{0,-20:0.00}",
+                                    irSecondFrame.Timestamp) + "(" + irSecondFrame.TimestampDomain.ToString() + ")";
+                            }));*/
                         }
                     }
                 }, tokenSource.Token);
@@ -99,15 +112,15 @@ namespace Intel.RealSense
             tokenSource.Cancel();
         }
 
-        private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> depth, out Action<VideoFrame> color)
+        private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> irFirst, out Action<VideoFrame> irSecond)
         {
-            using (var p = pipelineProfile.GetStream(Stream.Depth).As<VideoStreamProfile>())
-                imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
-            depth = UpdateImage(imgDepth);
+            using (var p = pipelineProfile.GetStream(Stream.Infrared).As<VideoStreamProfile>())
+                imgIrFirst.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            irFirst = UpdateImage(imgIrFirst);
 
-            using (var p = pipelineProfile.GetStream(Stream.Color).As<VideoStreamProfile>())
-                imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
-            color = UpdateImage(imgColor);
+            using (var p = pipelineProfile.GetStream(Stream.Infrared).As<VideoStreamProfile>())
+                imgIrSecond.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+            irSecond = UpdateImage(imgIrSecond);
         }
     }
 }

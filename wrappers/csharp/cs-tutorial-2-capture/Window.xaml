@@ -15,7 +15,7 @@
 
         <TextBox x:Name="txtTimeStamp" Grid.Column="0" />
 
-        <Image x:Name="imgDepth" Grid.Column="0" />
-        <Image x:Name="imgColor" Grid.Column="1" />
+        <Image x:Name="imgIrFirst" Grid.Column="0" />
+        <Image x:Name="imgIrSecond" Grid.Column="1" />
     </Grid>
 </Window>
