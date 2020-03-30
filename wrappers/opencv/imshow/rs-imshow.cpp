@@ -239,19 +239,22 @@ auto max_optimization_iters = 50;
         calib_gradients calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
 
         translation_gradients calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
-
         rotation_gradients calc_rotation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
+        k_gradients calc_k_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
 
         std::pair< std::vector<float2>, std::vector<float>> calc_rc(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin);
 
         coeffs<translation_gradients> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
-
-        translation_gradients auto_cal_algo::calculate_translation_y_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-
-        translation_gradients auto_cal_algo::calculate_translation_x_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-
         coeffs<rotation_gradients> calc_rotation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
-        
+        coeffs<k_gradients> calc_k_gradients_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy);
+
+        k_gradients calculate_k_gradients_y_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        k_gradients calculate_k_gradients_x_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+
+        translation_gradients calculate_translation_y_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        translation_gradients calculate_translation_x_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+
+         
         float calculate_rotation_x_alpha_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
         float calculate_rotation_x_beta_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
         float calculate_rotation_x_gamma_coeff(rotation_gradients rot_angles, rs2_vertex v, float rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
@@ -863,6 +866,7 @@ auto max_optimization_iters = 50;
         
         calc_rotation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin, rc.second, rc.first);
         calc_translation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin, rc.second, rc.first);
+        calc_k_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, yuy_intrin, yuy_extrin, rc.second, rc.first);
 
         return calib_gradients();
     }
@@ -877,6 +881,12 @@ auto max_optimization_iters = 50;
     {
         calc_rotation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
         return rotation_gradients();
+    }
+
+    auto_cal_algo::k_gradients auto_cal_algo::calc_k_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<float> interp_IDT_x, std::vector<float> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy)
+    {
+        calc_k_gradients_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
+        return k_gradients();
     }
 
     std::pair< std::vector<float2>,std::vector<float>> auto_cal_algo::calc_rc(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
@@ -1036,6 +1046,71 @@ auto max_optimization_iters = 50;
         }
         std::sort(res.x_coeffs.begin(), res.x_coeffs.end(), [](auto_cal_algo::rotation_gradients  r1, auto_cal_algo::rotation_gradients   r2) {return r1.gamma < r2.gamma; });
         std::sort(res.y_coeffs.begin(), res.y_coeffs.end(), [](auto_cal_algo::rotation_gradients  r1, auto_cal_algo::rotation_gradients   r2) {return r1.gamma < r2.gamma; });
+
+        return res;
+    }
+
+    auto_cal_algo::coeffs<auto_cal_algo::k_gradients> auto_cal_algo::calc_k_gradients_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<float>& rc, const std::vector<float2>& xy)
+    {
+        auto_cal_algo::coeffs<auto_cal_algo::k_gradients> res;
+        auto v = z_data.vertices;
+        res.x_coeffs.resize(v.size());
+        res.y_coeffs.resize(v.size());
+
+        for (auto i = 0; i < v.size(); i++)
+        {
+            res.x_coeffs[i] = calculate_k_gradients_x_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.y_coeffs[i] = calculate_k_gradients_y_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+        }
+        std::sort(res.x_coeffs.begin(), res.x_coeffs.end(), [](auto_cal_algo::k_gradients  r1, auto_cal_algo::k_gradients   r2) {return r1.fy < r2.fy; });
+        std::sort(res.x_coeffs.begin(), res.x_coeffs.end(), [](auto_cal_algo::k_gradients  r1, auto_cal_algo::k_gradients   r2) {return r1.ppy < r2.ppy; });
+
+        return res;
+    }
+
+    auto_cal_algo::k_gradients auto_cal_algo::calculate_k_gradients_y_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        return k_gradients();
+    }
+
+    auto_cal_algo::k_gradients auto_cal_algo::calculate_k_gradients_x_coeff(rs2_vertex v, float rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    {
+        auto_cal_algo::k_gradients res;
+
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+        auto d = yuy_intrin.coeffs;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
+        auto x = (double)v.xyz[0];
+        auto y = (double)v.xyz[1];
+        auto z = (double)v.xyz[2];
+
+        auto x2 = x1 * x1;
+        auto y2 = y1 * y1;
+        auto xy2 = x2 + y2;
+        auto x2_y2 = xy2 * xy2;
+
+        res.fx = ((r[0] * x + r[3] * y + r[6] * z + t[0])
+            *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))) 
+            / (x*r[2] + y * r[5] + z * r[8] + t[2]);
+
+
+        res.ppx = ((r[2] * x + r[5] * y + r[8] * z + t[2] * 1)
+            *(rc + 6 * d[3] * x1 + 2 * d[2] * y1 + x1 * (2 * d[0] * x1 + 4 * d[1] * x1*(xy2)+6 * d[4] * x1*x2_y2))
+            ) / (x*r[2] + y * (r[5]) + z * (r[8]) + (t[2]));
+
+
+        res.fy = (fx*(2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))*
+            (r[1] * x + r[4] * y + r[7] * z + t[1] * 1))
+            / (fy*(x*(0 * r[0] + 0 * r[1] + 1 * r[2]) + y * (0 * r[1] + 0 * r[4] + 1 * r[5]) + z * (0 * r[6] + 0 * r[7] + 1 * r[8]) + 1 * (t[2])));
+
+        res.ppy = (fx*(2 * d[2] * x1 + 2 * d[3] * y1 + x1 * (2 * d[0] * y1 + 4 * d[1] * y1*(xy2)+6 * d[4] * y1*x2_y2))*(r[2] * x + r[5] * y + r[8] * z + t[2] * 1))
+            / (fy*(x*(0 * r[0] + 1 * r[2]) + y * (0 * r[3] + 0 * r[4] + 1 * r[5]) + z * (r[8]) + (t[2])));
 
         return res;
     }
