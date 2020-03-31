@@ -323,11 +323,14 @@ int main(int argc, const char** argv) try
     protected:
         void handle( const el::LogDispatchData* data ) noexcept override
         {
-            vm->not_model.add_log( 
-                data->logMessage()->logger()->logBuilder()->build(
-                    data->logMessage(),
-                    data->dispatchAction() == el::base::DispatchAction::NormalLog
-                ));
+            // TODO align LRS and Easyloging severity levels. W/A for easylogging on Linux
+            if (data->logMessage()->level() > el::Level::Debug)
+            {
+                vm->not_model.add_log(
+                    data->logMessage()->logger()->logBuilder()->build(
+                        data->logMessage(),
+                        data->dispatchAction() == el::base::DispatchAction::NormalLog));
+            }
         }
     };
     el::Helpers::installLogDispatchCallback< viewer_model_dispatcher >( "viewer_model_dispatcher" );
