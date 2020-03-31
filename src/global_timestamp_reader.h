@@ -37,9 +37,8 @@ namespace librealsense
         void reset();
         void add_value(CSample val);
         void add_const_y_coefs(double dy);
-        bool update_samples_base(double x);
+        bool update_samples_base(double x, double& last_sample_x);
         double calc_value(double x) const;
-        double get_last_hw_time() const;
         bool is_full() const;
 
     private:

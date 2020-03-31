@@ -118,11 +118,11 @@ namespace librealsense
         double a, b;
         get_a_b(x, a, b);
         double y(a * (x - _base_sample._x) + b + _base_sample._y);
-        LOG_DEBUG("CLinearCoefficients::calc_value: " << x << " -> " << y << " with coefs:" << a << ", " << b << ", " << _base_sample._x << ", " << _base_sample._y);
+        LOG_DEBUG(__FUNCTION__ << ": " << x << " -> " << y << " with coefs:" << a << ", " << b << ", " << _base_sample._x << ", " << _base_sample._y);
         return y;
     }
 
-    bool CLinearCoefficients::update_samples_base(double x)
+    bool CLinearCoefficients::update_samples_base(double x, double& last_sample_x)
     {
         static const double max_device_time(pow(2, 32) * TIMESTAMP_USEC_TO_MSEC);
         double base_x;
@@ -132,7 +132,7 @@ namespace librealsense
             base_x = -max_device_time;
         else
             return false;
-        LOG_DEBUG("CLinearCoefficients:update_samples_base(" << base_x << ")");
+        LOG_DEBUG(__FUNCTION__ << "(" << base_x << ")");
 
         double a, b;
         get_a_b(x+base_x, a, b);
@@ -142,12 +142,8 @@ namespace librealsense
         }
         _prev_time -= base_x;
         _base_sample._y += a * base_x;
+        last_sample_x = _last_values.front()._x;
         return true;
-    }
-
-    double CLinearCoefficients::get_last_hw_time() const
-    {
-        return (_last_values.front()._x);
     }
 
     time_diff_keeper::time_diff_keeper(global_time_interface* dev, const unsigned int sampling_interval_ms) :
@@ -217,11 +213,12 @@ namespace librealsense
             std::lock_guard<std::recursive_mutex> lock(_read_mtx);
             if (_is_ready)
             {
-                _coefs.update_samples_base(sample_hw_time);
+                double un_used;
+                _coefs.update_samples_base(sample_hw_time, un_used);
             }
             CSample crnt_sample(sample_hw_time, system_time);
             _coefs.add_value(crnt_sample);
-            _last_sample_hw_time = _coefs.get_last_hw_time();
+            _last_sample_hw_time = sample_hw_time;
             _is_ready = true;
             return true;
         }
@@ -263,10 +260,11 @@ namespace librealsense
         if (_is_ready)
         {
             std::lock_guard<std::recursive_mutex> lock(_read_mtx);
-            if (_coefs.update_samples_base(crnt_hw_time))
+            double last_sample_hw_time;
+            if (_coefs.update_samples_base(crnt_hw_time, last_sample_hw_time))
             {
-                // A time loop happend:
-                _last_sample_hw_time = _coefs.get_last_hw_time();
+                // A time loop happened:
+                _last_sample_hw_time = last_sample_hw_time;
             }
             return _coefs.calc_value(crnt_hw_time);
         }
