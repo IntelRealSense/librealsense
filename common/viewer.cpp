@@ -785,9 +785,9 @@ namespace rs2
     viewer_model::viewer_model(context &ctx_)
             : ppf(*this),
               ctx(ctx_),
+              frameset_alloc(this),
               synchronization_enable(true),
-              zo_sensors(0),
-              frameset_alloc(this)
+              zo_sensors(0)
     {
         syncer = std::make_shared<syncer_model>();
         reset_camera();
@@ -1677,7 +1677,7 @@ namespace rs2
                     ImGui::PushStyleColor( ImGuiCol_Text, ImColor( 1.f, 1.f, 1.f, a ) );
                     ImColor bg( dark_sensor_bg.x, dark_sensor_bg.y, dark_sensor_bg.z, dark_sensor_bg.w * a );
 
-                    if( object.mean_depth )
+                    if( fabs(object.mean_depth) > 0.f )
                     {
                         std::string str = to_string() << std::setprecision( 2 ) << object.mean_depth << " m";
                         auto size = ImGui::CalcTextSize( str.c_str() );
@@ -1688,7 +1688,7 @@ namespace rs2
                                 { bbox.x + size.x + 20, bbox.y + size.y + 6 },
                                 bg );
                             ImGui::SetCursorScreenPos( { bbox.x + 10, bbox.y + 3 } );
-                            ImGui::Text( str.c_str() );
+                            ImGui::Text("%s",  str.c_str() );
                             h -= size.y;
                         }
                     }
@@ -1702,7 +1702,7 @@ namespace rs2
                                 { bbox.x + bbox.w - 1, bbox.y + bbox.h - 1 },
                                 bg );
                             ImGui::SetCursorScreenPos( { bbox.x + bbox.w - size.x - 10, bbox.y + bbox.h - size.y - 4 } );
-                            ImGui::Text( object.name.c_str() );
+                            ImGui::Text("%s",  object.name.c_str() );
                             h -= size.y;
                         }
                     }

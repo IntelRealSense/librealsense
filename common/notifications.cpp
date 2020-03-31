@@ -702,6 +702,9 @@ namespace rs2
     {
         std::lock_guard<std::recursive_mutex> lock(m);
         if (!line.size()) return;
+        // Limit the notification window
+        while (log.size() > 200)
+            log.pop_front();
         if (line[line.size() - 1] != '\n') line += "\n";
         log.push_back(line);
         new_log = true;
