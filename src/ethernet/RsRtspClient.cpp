@@ -185,30 +185,34 @@ int RsRTSPClient::stop()
 
 int RsRTSPClient::close()
 {
-    unsigned res = this->sendTeardownCommand(*this->m_scs.m_session, this->continueAfterTEARDOWN);
-    // wait for continueAfterTEARDOWN to finish
-    std::unique_lock<std::mutex> lck(m_commandMtx);
-    m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
-    // for the next command
-    if (!m_commandDone)
-    {
-        RsRtspReturnValue err = {RsRtspReturnCode::ERROR_TIME_OUT, "client time out"};
-        throw std::runtime_error(format_error_msg(__FUNCTION__, err));
-    }
-    m_commandDone = false;
+	{
+		unsigned res = this->sendTeardownCommand(*this->m_scs.m_session, this->continueAfterTEARDOWN);
+		// wait for continueAfterTEARDOWN to finish
+		std::unique_lock<std::mutex> lck(m_commandMtx);
+		m_cv.wait_for(lck, std::chrono::seconds(RTSP_CLIENT_COMMANDS_TIMEOUT_SEC), [this] { return m_commandDone; });
+		// for the next command
+		if (!m_commandDone)
+		{
+			RsRtspReturnValue err = { RsRtspReturnCode::ERROR_TIME_OUT, "client time out" };
+			throw std::runtime_error(format_error_msg(__FUNCTION__, err));
+		}
+		m_commandDone = false;
 
-    if (m_lastReturnValue.exit_code != RsRtspReturnCode::OK)
-    {
-        throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
-    }
+		if (m_lastReturnValue.exit_code != RsRtspReturnCode::OK)
+		{
+			throw std::runtime_error(format_error_msg(__FUNCTION__, m_lastReturnValue));
+		}
+	}
     m_eventLoopWatchVariable = ~0;
-    std::unique_lock<std::mutex> lk(m_taskSchedulerMutex);
+	{
+		std::lock_guard<std::mutex> lk(m_taskSchedulerMutex);
+	}
     this->envir() << "Closing the stream.\n";
+    UsageEnvironment* env = m_env;
+    TaskScheduler* scheduler = m_scheduler;
     Medium::close(this);
-    m_env->reclaim();
-    m_env = NULL;
-    delete m_scheduler;
-    m_scheduler = NULL;
+    env->reclaim();
+    delete scheduler;
     return m_lastReturnValue.exit_code;
 }
 
