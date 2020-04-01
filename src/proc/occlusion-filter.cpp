@@ -7,6 +7,12 @@
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
 #include  "../../common/tiny-profiler.h"
+#include <vector>
+#include <cmath>
+
+#define ROTATION_BUFFER_SIZE 8
+#define VERTICAL_SCAN_WINDOW_SIZE 64
+#define DEPTH_OCCLUSION_THRESHOLD 1
 
 namespace librealsense
 {
@@ -20,14 +26,14 @@ namespace librealsense
         _texels_depth.resize(_texels_intrinsics.value().width*_texels_intrinsics.value().height);
     }
 
-    void occlusion_filter::process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const
+   void occlusion_filter::process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const
     {
         switch (_occlusion_filter)
         {
         case occlusion_none:
             break;
         case occlusion_monotonic_scan:
-            monotonic_heuristic_invalidation(points, uv_map, pix_coord);
+            monotonic_heuristic_invalidation(points, uv_map, pix_coord, depth);
             break;
         default:
             throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
@@ -35,6 +41,38 @@ namespace librealsense
         }
     }
 
+    template<size_t SIZE>
+    void rotate_image_counterclockwise(byte* dest[], const byte* source, int width, int height)
+    {
+        {
+            scoped_timer t1("Rotation Time - counterclockwise");
+            auto width_out = height;
+            auto height_out = width;
+
+            auto out = dest[0];
+            byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE]; // = { 0 };
+            for (int i = 0; i <= height - ROTATION_BUFFER_SIZE; i = i + ROTATION_BUFFER_SIZE)
+            {
+                for (int j = 0; j <= width - ROTATION_BUFFER_SIZE; j = j + ROTATION_BUFFER_SIZE)
+                {
+                    for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ++ii)
+                    {
+                        auto out_index = (((height_out - ROTATION_BUFFER_SIZE - j + 1) * width_out) - i - ROTATION_BUFFER_SIZE + (ii)*width_out);
+                        memcpy(&(buffer[ii]), &source[(out_index)*SIZE], ROTATION_BUFFER_SIZE * SIZE);
+                    }
+                    for (int ii = 0; ii < ROTATION_BUFFER_SIZE; ++ii)
+                    {
+                        for (int jj = 0; jj < ROTATION_BUFFER_SIZE; ++jj)
+                        {
+                            auto source_index = ((j + jj) + (width * (i + ii))) * SIZE;
+                            memcpy(&out[source_index], (void*)(&buffer[ROTATION_BUFFER_SIZE - 1 - jj][(ROTATION_BUFFER_SIZE - 1 - ii) * SIZE]), SIZE);
+                        }
+                    }
+
+                }
+            }
+        }
+    }
     // IMPORTANT! This implementation is based on the assumption that the RGB sensor is positioned strictly to the left of the depth sensor.
     // namely D415/D435 and SR300. The implementation WILL NOT work properly for different setups
     // Heuristic occlusion invalidation algorithm:
@@ -43,7 +81,7 @@ namespace librealsense
     // -  The occlusion is designated as U coordinate for a given pixel is less than the U coordinate of the predecessing pixel.
     // -  The UV mapping for the occluded pixel is reset to (0,0). Later on the (0,0) coordinate in the texture map is overwritten
     //    with a invalidation color such as black/magenta according to the purpose (production/debugging)
-    void occlusion_filter::monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const
+    void occlusion_filter::monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2>& pix_coord, const rs2::depth_frame& depth) const
     {
         float occZTh = 0.1f; //meters
         int occDilationSz = 1;
@@ -54,7 +92,11 @@ namespace librealsense
         auto uv_map_ptr = uv_map;
         float maxInLine = -1;
         float maxZ = 0;
- 
+
+        auto frame_size = static_cast<int>(_depth_intrinsics->width * _depth_intrinsics->height);
+        std::allocator<byte> alloc;
+        byte* depth_planes[1];
+
         if (_occlusion_scanning == horizontal)
         {
 
@@ -71,10 +113,9 @@ namespace librealsense
                     {
                         if (points_ptr->z)
                         {
-                            // Occlusion detection
+                            //Occlusion detection
                             if (pixels_ptr->x < maxInLine || (pixels_ptr->x == maxInLine && (points_ptr->z - maxZ) > occZTh))
                             {
-                                *uv_map_ptr = { 0.f , 0.f };
                                 *points_ptr = { 0, 0, 0 };
                                 occDilationLeft = occDilationSz;
                             }
@@ -84,7 +125,6 @@ namespace librealsense
                                 maxZ = points_ptr->z;
                                 if (occDilationLeft > 0)
                                 {
-                                    *uv_map_ptr = { 0.f , 0.f };
                                     *points_ptr = { 0, 0, 0 };
                                     occDilationLeft--;
                                 }
@@ -97,47 +137,56 @@ namespace librealsense
                 }
             }
         }
-        else if (_occlusion_scanning == vertical) {
-            // occlusion removal support for L500
-            pixels_ptr = pix_coord.data();
-            points_ptr = points;
-            uv_map_ptr = uv_map;
+        else if (_occlusion_scanning == vertical)
+        {
+            depth_planes[0] = (byte*)alloc.allocate(depth.get_bytes_per_pixel() * frame_size);
+            int bpp = depth.get_bytes_per_pixel();
+            rotate_image_counterclockwise<2>(depth_planes, (const byte*)(depth.get_data()), points_width, points_height);
+
+            // scan depth frame after clockwise rotation: check if there is a significant jump between adjacen pixels in Z-axis (depth), it means there could be occlusion.
+            // scan over a small window so that points depth is the same
+            // save suspected points and run occlusion-invalidation vertical scan only on them
+            // after rotation : height = points_width , width = points_height
+
+            auto rotated_depth_width = _depth_intrinsics->height;
+            auto rotated_depth_height = _depth_intrinsics->width;
+
+            for (int i = 0; i < rotated_depth_height; i++)
             {
-                scoped_timer t1("Vertical Scan");
-                for (size_t x = 0; x < points_width; ++x)
+                for (int j = 0; j < rotated_depth_width - VERTICAL_SCAN_WINDOW_SIZE; j = j + VERTICAL_SCAN_WINDOW_SIZE)
                 {
+                    // before rotation: occlusion detected in the positive direction of Y
+                    // after counterclockwise rotation : scan from right to left (positive direction of X) to detect occlusion 
+                    // compare depth each pixel only with the pixel on its right (i,j+1) 
+                    auto index = i * rotated_depth_width + j;
+                    auto uv_i = j;
+                    auto uv_j = rotated_depth_height - i;
+                    auto uv_index = uv_i * rotated_depth_height + uv_j; // 90 degrees rotation transform from rotated depth
+                    auto index_right = index + 1;
+                    float diff_right = abs((depth_planes[0])[index] - (depth_planes[0])[index_right]);
 
-                    maxInLine = -1;
-                    maxZ = 0;
-                    int occDilationUp = 0;
-                    for (size_t y = 0; y < points_height; ++y)
+                    if ((diff_right > DEPTH_OCCLUSION_THRESHOLD))
                     {
-                        if ((points_ptr + y * points_width)->z)
-                        {
-                            // Occlusion detection for L500
-                            if (((pixels_ptr + y * points_width)->y < maxInLine) || (((pixels_ptr + y * points_width)->y == maxInLine) && (points_ptr->z - maxZ) > occZTh))
-                            {
-                                *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
-                                *(points_ptr + y * points_width) = { 0, 0, 0 };
+                        pixels_ptr = pix_coord.data() + uv_index;
+                        points_ptr = points + uv_index;
+                        uv_map_ptr = uv_map + uv_index;
+                        maxInLine = -1;
+                        maxZ = 0;
+                        int occDilationUp = 0;
 
-                                occDilationUp = occDilationSz;
+                        for (size_t y = 0; y <= VERTICAL_SCAN_WINDOW_SIZE; ++y)
+                        {
+                            if (((pixels_ptr + y * points_width)->y < maxInLine))
+                            {
+                                *(points_ptr + y * points_width) = { 0.f, 0.f, 0.f };
                             }
                             else
                             {
                                 maxInLine = (pixels_ptr + y * points_width)->y;
-                                maxZ = points_ptr->z;
-                                if (occDilationUp > 0)
-                                {
-                                    *(uv_map_ptr + y * points_width) = { 0.f , 0.f };
-                                    *(points_ptr + y * points_width) = { 0, 0, 0 };
-                                    occDilationUp--;
-                                }
                             }
+
                         }
                     }
-                    ++points_ptr;
-                    ++uv_map_ptr;
-                    ++pixels_ptr;
                 }
             }
         }

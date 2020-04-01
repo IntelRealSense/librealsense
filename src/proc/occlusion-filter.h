@@ -3,15 +3,18 @@
 
 #pragma once
 #include "../include/librealsense2/hpp/rs_frame.hpp"
+#include "proc/rotation-transform.h"
+
 namespace librealsense
 {
     enum occlusion_rect_type : uint8_t {
         occlusion_min,
         occlusion_none,
         occlusion_monotonic_scan,
-        occlusion_max };
+        occlusion_max
+    };
 
-    enum scanning_type : uint8_t {
+    enum occlusion_scanning_type : uint8_t {
         horizontal,
         vertical
     };
@@ -25,25 +28,26 @@ namespace librealsense
 
         bool active(void) const { return (occlusion_none != _occlusion_filter); };
 
-        void process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const;
+        void process(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const;
 
         void set_mode(uint8_t filter_type) { _occlusion_filter = (occlusion_rect_type)filter_type; }
-        void set_scanning(uint8_t scanning) { _occlusion_scanning = (scanning_type)scanning; }
+        void set_scanning(uint8_t scanning) { _occlusion_scanning = (occlusion_scanning_type)scanning; }
 
         void set_texel_intrinsics(const rs2_intrinsics& in);
         void set_depth_intrinsics(const rs2_intrinsics& in) { _depth_intrinsics = in; }
+
     private:
 
         friend class pointcloud;
 
-        void monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const;
-
+        void monotonic_heuristic_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord, const rs2::depth_frame& depth) const;;
         void comprehensive_invalidation(float3* points, float2* uv_map, const std::vector<float2> & pix_coord) const;
 
         optional_value<rs2_intrinsics>              _depth_intrinsics;
         optional_value<rs2_intrinsics>              _texels_intrinsics;
         mutable std::vector<float>                  _texels_depth; // Temporal translation table of (mapped_x*mapped_y) holds the minimal depth value among all depth pixels mapped to that texel
         occlusion_rect_type                         _occlusion_filter;
-        scanning_type                               _occlusion_scanning;
+        occlusion_scanning_type                     _occlusion_scanning;
+        int                                         _raw_size;
     };
 }
