@@ -50,7 +50,7 @@ namespace librealsense
             auto height_out = width;
 
             auto out = dest[0];
-            byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE]; // = { 0 };
+            byte buffer[ROTATION_BUFFER_SIZE][ROTATION_BUFFER_SIZE * SIZE];
             for (int i = 0; i <= height - ROTATION_BUFFER_SIZE; i = i + ROTATION_BUFFER_SIZE)
             {
                 for (int j = 0; j <= width - ROTATION_BUFFER_SIZE; j = j + ROTATION_BUFFER_SIZE)
