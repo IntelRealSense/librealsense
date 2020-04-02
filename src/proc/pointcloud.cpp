@@ -3,15 +3,12 @@
 
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
-
-#include "proc/synthetic-stream.h"
 #include "environment.h"
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
 #include "option.h"
 #include "environment.h"
 #include "context.h"
-
 #include <iostream>
 
 #ifdef RS2_USE_CUDA
@@ -20,7 +17,6 @@
 #ifdef __SSSE3__
 #include "proc/sse/sse-pointcloud.h"
 #endif
-
 
 namespace librealsense
 {

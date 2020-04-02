@@ -3,7 +3,6 @@
 
 #pragma once
 #include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "synthetic-stream.h"
 
 namespace librealsense
 {

@@ -3,16 +3,12 @@
 
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
-
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
 #include  "../../common/tiny-profiler.h"
 #include <vector>
 #include <cmath>
 
-#define ROTATION_BUFFER_SIZE 8
-#define VERTICAL_SCAN_WINDOW_SIZE 64
-#define DEPTH_OCCLUSION_THRESHOLD 1
 
 namespace librealsense
 {
@@ -139,6 +135,7 @@ namespace librealsense
         }
         else if (_occlusion_scanning == vertical)
         {
+
             depth_planes[0] = (byte*)alloc.allocate(depth.get_bytes_per_pixel() * frame_size);
             int bpp = depth.get_bytes_per_pixel();
             rotate_image_counterclockwise<2>(depth_planes, (const byte*)(depth.get_data()), points_width, points_height);
@@ -150,6 +147,7 @@ namespace librealsense
 
             auto rotated_depth_width = _depth_intrinsics->height;
             auto rotated_depth_height = _depth_intrinsics->width;
+
 
             for (int i = 0; i < rotated_depth_height; i++)
             {
@@ -163,26 +161,29 @@ namespace librealsense
                     auto uv_j = rotated_depth_height - i;
                     auto uv_index = uv_i * rotated_depth_height + uv_j; // 90 degrees rotation transform from rotated depth
                     auto index_right = index + 1;
-                    float diff_right = abs((depth_planes[0])[index] - (depth_planes[0])[index_right]);
+                    uint16_t diff_right = abs((depth_planes[0])[index] - (depth_planes[0])[index_right]);
+                    auto depth_scale = depth.get_units();
+                    float scaled_threshold = DEPTH_OCCLUSION_THRESHOLD / depth.get_units(); // convert to depth units
 
                     if ((diff_right > DEPTH_OCCLUSION_THRESHOLD))
                     {
                         pixels_ptr = pix_coord.data() + uv_index;
                         points_ptr = points + uv_index;
                         uv_map_ptr = uv_map + uv_index;
-                        maxInLine = -1;
+                        maxInLine = pixels_ptr->y;
                         maxZ = 0;
                         int occDilationUp = 0;
 
-                        for (size_t y = 0; y <= VERTICAL_SCAN_WINDOW_SIZE; ++y)
+                        for (size_t y = 1; y <= VERTICAL_SCAN_WINDOW_SIZE; ++y)
                         {
-                            if (((pixels_ptr + y * points_width)->y < maxInLine))
+                            if ((pixels_ptr + y * points_width)->y < maxInLine)
                             {
                                 *(points_ptr + y * points_width) = { 0.f, 0.f, 0.f };
                             }
                             else
                             {
                                 maxInLine = (pixels_ptr + y * points_width)->y;
+                               // break;
                             }
 
                         }

@@ -5,6 +5,10 @@
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "proc/rotation-transform.h"
 
+#define ROTATION_BUFFER_SIZE 8
+#define VERTICAL_SCAN_WINDOW_SIZE 64
+#define DEPTH_OCCLUSION_THRESHOLD 0.05  //meters
+
 namespace librealsense
 {
     enum occlusion_rect_type : uint8_t {
@@ -48,6 +52,5 @@ namespace librealsense
         mutable std::vector<float>                  _texels_depth; // Temporal translation table of (mapped_x*mapped_y) holds the minimal depth value among all depth pixels mapped to that texel
         occlusion_rect_type                         _occlusion_filter;
         occlusion_scanning_type                     _occlusion_scanning;
-        int                                         _raw_size;
     };
 }
