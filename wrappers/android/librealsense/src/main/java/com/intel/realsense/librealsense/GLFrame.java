@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 public abstract class GLFrame implements AutoCloseable {
     protected Frame mFrame;
     protected ByteBuffer mBuffer;
-    protected String mLabel = null;
 
     public abstract void draw(Rect rect);
 
@@ -25,16 +24,7 @@ public abstract class GLFrame implements AutoCloseable {
         GLES10.glOrthof(0, r.width(), r.height(), 0, -1, +1);
     }
 
-    // set custom label for the frame
-    public void setLabel(String label)
-    {
-        mLabel = label;
-    }
-
     public String getLabel() {
-        if (mLabel != null)
-            return mLabel;
-
         if(mFrame == null)
             return "";
         try(StreamProfile sp = mFrame.getProfile()){

@@ -27,7 +27,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private Map<StreamType,Pointcloud> mPointcloud = null;
     private boolean mHasColorizedDepth = false;
 
-    private Frame mRgbTexture;
+    private boolean mHasColorYuy = false;
     private YuyDecoder mYuyDecoder = new YuyDecoder();
 
     public Map<Integer, Pair<String,Rect>> getRectangles() {
@@ -42,8 +42,13 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         List<FilterInterface> rv = new ArrayList<>();
         if(!mHasColorizedDepth && !showPoints())
             rv.add(mColorizer);
+
+        // convert yuyv into rgb8 for display and uv mapping
+        if(mHasColorYuy)
+            rv.add(mYuyDecoder);
+
         if(showPoints()){
-            if(mHasColorRbg8)
+            if(mHasColorRbg8 || mHasColorYuy)
                 rv.add(mPointcloud.get(StreamType.COLOR));
             else
                 rv.add(mPointcloud.get(StreamType.DEPTH));
@@ -62,7 +67,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     }
 
     public void upload(FrameSet frameSet) {
-        mHasColorRbg8 = mHasColorizedDepth = false;
+        mHasColorRbg8 = mHasColorizedDepth = mHasColorYuy = false;
         frameSet.foreach(new FrameCallback() {
             @Override
             public void onFrame(Frame f) {
@@ -72,7 +77,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
         List<FilterInterface> filters = createProcessingPipe();
         try(FrameSet processed = applyFilters(frameSet, filters)){
-            decodeYuyv(processed);
             choosePointsTexture(processed);
             processed.foreach(new FrameCallback() {
                 @Override
@@ -84,18 +88,10 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         }
     }
 
-    // convert YUYV color stream into RGB* format
-    private void decodeYuyv(FrameSet frameSet) {
-         try (Frame d = frameSet.first(StreamType.COLOR, StreamFormat.YUYV)) {
-            if (d != null)
-                mRgbTexture = mYuyDecoder.process(d);
-         }
-    }
-
     private void choosePointsTexture(FrameSet frameSet){
         if(!showPoints())
             return;
-        if(mHasColorRbg8)
+        if(mHasColorRbg8 || mHasColorYuy)
             mPointsTexture = frameSet.first(StreamType.COLOR, StreamFormat.RGB8);
         else{
             try (Frame d = frameSet.first(StreamType.DEPTH, StreamFormat.Z16)) {
@@ -110,6 +106,11 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             if(sp.getType() == StreamType.COLOR && sp.getFormat() == StreamFormat.RGB8) {
                 mHasColorRbg8 = true;
             }
+
+            if(sp.getType() == StreamType.COLOR && sp.getFormat() == StreamFormat.YUYV) {
+                mHasColorYuy = true;
+            }
+
             if(sp.getType() == StreamType.DEPTH && sp.getFormat() == StreamFormat.RGB8) {
                 mHasColorizedDepth = true;
             }
@@ -155,18 +156,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
                 mPointsTexture.close();
                 mPointsTexture = null;
             }
-
-            // convert YUYV into RGB8 for display
-            if(mRgbTexture != null && sp.getFormat() == StreamFormat.YUYV){
-                // set frame label to original format
-                curr.setLabel(sp.getType() + " - " + sp.getFormat());
-
-                 // replace frame content with the converted frame
-                 ((GLVideoFrame) curr).setFrame(mRgbTexture);
-
-                    mRgbTexture.close();
-                    mRgbTexture = null;
-            }
         }
     }
 
@@ -180,9 +169,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             mPointcloud = null;
             if(mPointsTexture != null) mPointsTexture.close();
             mPointsTexture = null;
-
-            if(mRgbTexture != null) mRgbTexture.close();
-            mRgbTexture = null;
         }
     }
 
@@ -247,7 +233,6 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         switch (format){
             case RGB8:
             case RGBA8:
-            case YUYV:
             case Y8:
             case MOTION_XYZ32F:
             case XYZ32F: return true;
