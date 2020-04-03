@@ -12,11 +12,6 @@ namespace librealsense
     class auto_cal_algo
     {
     public:
-      
-        std::string z_file = "LongRange/15/Z_GrayScale_1024x768_0001.raw";//"LongRange/13/Z_GrayScale_1024x768_00.01.21.3573_F9440687_0001.raw";
-        std::string i_file = "LongRange/15/I_GrayScale_1024x768_0001.raw";//"LongRange/13/I_GrayScale_1024x768_00.01.21.3573_F9440687_0000.raw";
-        std::string yuy2_file = "LongRange/15/YUY2_YUY2_1920x1080_0001.raw";
-        std::string yuy2_prev_file = "LongRange/15/YUY2_YUY2_1920x1080_0001.raw";
 
         enum direction :uint8_t
         {
@@ -30,45 +25,138 @@ namespace librealsense
         struct ir_frame_data
         {
             std::vector<uint8_t> ir_frame;
-            std::vector<float> ir_edges;
+            std::vector<double> ir_edges;
+
+            int width;
+            int height;
         };
 
         struct z_frame_data
         {
             std::vector<uint16_t> frame;
-            std::vector<float> gradient_x;
-            std::vector<float> gradient_y;
-            std::vector<float> edges;
-            std::vector<float> supressed_edges;
+            std::vector<double> gradient_x;
+            std::vector<double> gradient_y;
+            std::vector<double> edges;
+            std::vector<double> supressed_edges;
             std::vector<direction> directions;
-            std::vector<float> subpixels_x;
-            std::vector<float> subpixels_y;
+            std::vector<double> subpixels_x;
+            std::vector<double> subpixels_y;
             std::vector< uint16_t> closest;
-            std::vector<float> weights;
-            std::vector<float> direction_deg;
+            std::vector<double> weights;
+            std::vector<double> direction_deg;
+            std::vector<rs2_vertex> vertices;
+
+            int width;
+            int height;
         };
 
         struct yuy2_frame_data
         {
             std::vector<uint8_t> yuy2_frame;
             std::vector<uint8_t> yuy2_prev_frame;
-            std::vector<float> edges;
-            std::vector<float> edges_IDT;
-            std::vector<float> edges_IDTx;
-            std::vector<float> edges_IDTy;
+            std::vector<double> edges;
+            std::vector<double> edges_IDT;
+            std::vector<double> edges_IDTx;
+            std::vector<double> edges_IDTy;
+
+            int width;
+            int height;
         };
 
-        enum convolution_operation
+        struct translation
         {
-            convolution_dot_product,
-            convolution_max_element
+            double t1;
+            double t2;
+            double t3;
         };
 
-        std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
-                                                             {deg_45, {1, 1}},
-                                                             {deg_90, {0, 1}},
-                                                             {deg_135, {-1, 1}} };
+        struct rotation_in_angles
+        {
+            double alpha;
+            double beta;
+            double gamma;
+        };
 
+        struct rotation
+        {
+            float rot[9];
+        };
+
+        struct k_matrix
+        {
+            double fx;
+            double fy;
+            double ppx;
+            double ppy;
+        };
+
+        struct calib
+        {
+            rotation_in_angles rot_angles;
+            rotation rot;
+            translation trans;
+            k_matrix k_mat;
+            int           width;
+            int           height;
+            rs2_distortion model;
+            double         coeffs[5];
+
+            void copy_coefs(calib& obj);
+            calib operator*(double step_size);
+            calib operator/(double factor);
+            calib operator+(const calib& c);
+            calib operator-(const calib& c);
+            calib operator/(const calib& c);
+            double get_norma();
+            double sum();
+            calib normalize();
+        };
+
+        struct optimaization_params
+        {
+            calib curr_calib;
+            calib calib_gradients;
+            double cost;
+            double step_size = 0;
+        };
+
+        template <class T>
+        struct coeffs
+        {
+            std::vector<T> x_coeffs;
+            std::vector<T> y_coeffs;
+        };
+
+        struct params
+        {
+            params();
+
+            double gamma = 0.98;
+            double alpha = 0.333333333333333;
+            double grad_ir_threshold = 3.5f; // Ignore pixels with IR grad of less than this
+            int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
+            double grad_z_min = 25.f; // Ignore pixels with Z grad of less than this
+            double grad_z_max = 1000.f;
+            double edge_thresh4_logic_lum = 0.1;
+
+            double max_step_size = 1;
+            double min_step_size = 0.00001;
+            double control_param = 0.5;
+            int max_back_track_iters = 50;
+            int max_optimization_iters = 50;
+            double min_rgb_mat_delta = 0.00001;
+            double min_cost_delta = 1;
+            double tau = 0.5;
+            double min_weighted_edge_per_section_depth = 50;
+            double num_of_sections_for_edge_distribution_x = 2;
+            double num_of_sections_for_edge_distribution_y = 2;
+            calib normelize_mat;
+        };
+
+        struct std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
+                                                                 {deg_45, {1, 1}},
+                                                                 {deg_90, {0, 1}},
+                                                                 {deg_135, {-1, 1}} };
 
         auto_cal_algo(
             rs2::frame depth,
@@ -84,130 +172,85 @@ namespace librealsense
 
         bool optimize();
 
-        std::vector<uint8_t> create_syntetic_y(int width, int height)
-        {
-            std::vector<uint8_t> res(width*height * 2, 0);
 
-            for (auto i = 0;i < height; i++)
+    private:
+        z_frame_data preproccess_z(rs2::frame depth, const ir_frame_data & ir_data, const rs2_intrinsics& depth_intrinsics, float depth_units);
+        yuy2_frame_data preprocess_yuy2_data(rs2::frame color, rs2::frame prev_color);
+        ir_frame_data preprocess_ir(rs2::frame ir);
+
+        void zero_invalid_edges(z_frame_data& z_data, ir_frame_data ir_data);
+        std::vector<double> get_direction_deg(std::vector<double> gradient_x, std::vector<double> gradient_y);
+        std::vector<direction> get_direction(std::vector<double> gradient_x, std::vector<double> gradient_y);
+        std::pair<uint32_t, uint32_t> get_prev_index(direction dir, uint32_t i, uint32_t j, uint32_t width, uint32_t height);
+        std::pair<uint32_t, uint32_t> get_next_index(direction dir, uint32_t i, uint32_t j, uint32_t width, uint32_t height);
+        std::vector<double> supressed_edges(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
+        std::vector<uint16_t> get_closest_edges(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
+        std::pair<std::vector<double>, std::vector<double>> calc_subpixels(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
+        std::vector<double> blure_edges(std::vector<double> edges, uint32_t image_widht, uint32_t image_height);
+        std::vector<uint8_t> get_luminance_from_yuy2(std::vector<uint16_t> yuy2_imagh);
+        
+        std::vector<uint8_t> get_logic_edges(std::vector<double> edges);
+        bool is_movement_in_images(const yuy2_frame_data & yuy);
+        bool is_scene_valid(yuy2_frame_data yuy);
+        std::vector<double> calculate_weights(z_frame_data& z_data);
+        std::vector <rs2_vertex> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units);
+        calib get_calib_gradients(const z_frame_data& z_data);
+        optimaization_params back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params);
+        double calc_step_size(optimaization_params opt_params);
+        double calc_t(optimaization_params opt_params);
+        std::pair<auto_cal_algo::calib, double> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
+        std::pair<rs2_intrinsics, rs2_extrinsics> convert_calib_to_intrinsics_extrinsics(auto_cal_algo::calib curr_calib);
+        auto_cal_algo::calib intrinsics_extrinsics_to_calib(rs2_intrinsics intrin, rs2_extrinsics extrin);
+        double calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv);
+        calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const calib& curr_calib);
+        translation calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        rotation_in_angles calc_rotation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        k_matrix calc_k_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        std::pair< std::vector<float2>, std::vector<double>> calc_rc(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
+        coeffs<translation> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        coeffs<rotation_in_angles> calc_rotation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        coeffs<k_matrix> calc_k_gradients_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
+        k_matrix calculate_k_gradients_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        k_matrix calculate_k_gradients_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        translation calculate_translation_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        translation calculate_translation_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_x_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_x_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_x_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_y_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        double calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
+        void deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units);
+
+        params _params;
+
+        std::vector<double> calc_intensity(std::vector<double> image1, std::vector<double> image2)
+        {
+            std::vector<double> res(image1.size(), 0);
+
+            for (auto i = 0; i < image1.size(); i++)
             {
-                for (auto j = 0;j < width; j++)
-                {
-                    if (i >= width / 3 && i < width - width / 3 && j >= height / 3 && j < height - height / 3)
-                    {
-                        res[(i*width * 2 + j * 2)] = 200;
-                    }
-                }
+                res[i] = sqrt(pow(image1[i], 2) + pow(image2[i], 2));
             }
             return res;
         }
-
         template<class T>
-        std::vector<T> get_image(std::string file, uint32_t width, uint32_t height, bool simulate = false)
+        double dot_product(std::vector<T> sub_image, std::vector<double> mask)
         {
-            std::ifstream f;
-            f.open(file, std::ios::binary);
-            if (!f.good())
-                throw "invalid file";
-            std::vector<T> data(width * height);
-            f.read((char*)data.data(), width * height * sizeof(T));
-            return data;
-        }
-
-        std::vector<uint16_t> get_depth_image(uint32_t width, uint32_t height)
-        {
-            auto data = get_image<uint16_t>(auto_cal_algo::z_file, width, height);
-            return data;
-        }
-
-        std::vector<uint8_t> get_ir_image(uint32_t width, uint32_t height)
-        {
-            auto data = get_image<uint8_t>(auto_cal_algo::i_file, width, height);
-            return data;
-        }
-
-        std::vector<uint16_t> get_yuy2_image(uint32_t width, uint32_t height)
-        {
-            auto data = get_image<uint16_t>(auto_cal_algo::yuy2_file, width, height);
-            return data;
-        }
-
-        std::vector<uint16_t> get_yuy2_prev_image(uint32_t width, uint32_t height)
-        {
-            auto data = get_image<uint16_t>(auto_cal_algo::yuy2_prev_file, width, height);
-            return data;
-        }
-
-    private:
-        void zero_invalid_edges(z_frame_data& z_data, ir_frame_data ir_data);
-
-        std::vector<float> get_direction_deg(std::vector<float> gradient_x, std::vector<float> gradient_y);
-
-        std::vector<direction> get_direction(std::vector<float> gradient_x, std::vector<float> gradient_y);
-
-        std::vector<float> calc_intensity(std::vector<float> image1, std::vector<float> image2);
-
-        std::pair<uint32_t, uint32_t> get_prev_index(direction dir, uint32_t i, uint32_t j, uint32_t width, uint32_t height);
-
-        std::pair<uint32_t, uint32_t> get_next_index(direction dir, uint32_t i, uint32_t j, uint32_t width, uint32_t height);
-
-        std::vector<float> supressed_edges(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
-
-        std::vector<uint16_t> get_closest_edges(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
-
-        std::pair<std::vector<float>, std::vector<float>> calc_subpixels(z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height);
-
-        z_frame_data preproccess_z(rs2::frame depth, const ir_frame_data & ir_data);
-
-        std::vector<float> blure_edges(std::vector<float> edges, uint32_t image_widht, uint32_t image_height, float gamma, float alpha);
-
-        std::vector<uint8_t> get_luminance_from_yuy2(std::vector<uint16_t> yuy2_imagh);
-
-        yuy2_frame_data preprocess_yuy2_data(rs2::frame yuy);
-
-        ir_frame_data get_ir_data();
-
-        std::vector<uint8_t> get_logic_edges(std::vector<float> edges);
-
-        bool is_movement_in_images(const yuy2_frame_data & yuy);
-
-        bool is_scene_valid(yuy2_frame_data yuy);
-
-        std::vector<float> calculate_weights(z_frame_data& z_data);
-
-        std::vector <rs2_vertex> subedges2vertices(z_frame_data z_data, const rs2_intrinsics& intrin, float depth_units);
-
-        template<class T>
-        std::vector<float> calc_gradients(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
-        {
-            auto vertical_edge = calc_vertical_gradient(image, image_widht, image_height);
-
-            auto horizontal_edge = calc_horizontal_gradient(image, image_widht, image_height);
-
-            auto edges = calc_intensity(vertical_edge, horizontal_edge);
-
-            return edges;
-        }
-
-        template<class T>
-        float dot_product(std::vector<T> sub_image, std::vector<float> mask, bool divide = false)
-        {
-            //check that sizes are equal
-            float res = 0;
+            double res = 0;
 
             for (auto i = 0; i < sub_image.size(); i++)
             {
                 res += sub_image[i] * mask[i];
             }
-            if (divide)
-                res /= mask.size();
+
             return res;
         }
 
         template<class T>
-        std::vector<float> convolution(std::vector<T> image, std::vector<float> mask, uint32_t image_widht, uint32_t image_height, uint32_t mask_widht, uint32_t mask_height, convolution_operation op = convolution_dot_product, bool divide = false)
+        std::vector<double> convolution(std::vector<T> image, uint32_t image_widht, uint32_t image_height, uint32_t mask_widht, uint32_t mask_height, std::function<double(std::vector<T> sub_image)> convolution_operation)
         {
-            std::vector<float> res(image.size(), 0);
-
+            std::vector<double> res(image.size(), 0);
 
             for (auto i = 0; i < image_height - mask_height + 1; i++)
             {
@@ -223,66 +266,48 @@ namespace librealsense
                             auto p = (i + l)* image_widht + j + k;
                             sub_image[ind++] = (image[p]);
                         }
-                    }
 
-                    float res1 = 0;
-                    if (op == convolution_dot_product)
-                    {
-                        res1 = dot_product(sub_image, mask);
-                        if (divide)
-                            res1 /= mask.size();
-                    }
-                    else if (op == convolution_max_element)
-                    {
-                        auto max = *std::max_element(sub_image.begin(), sub_image.end());
-                        res1 = (float)max;
                     }
                     auto mid = (i + mask_height / 2) * image_widht + j + mask_widht / 2;
-                    res[mid] = res1;
+                    res[mid] = convolution_operation(sub_image);
                 }
             }
             return res;
         }
 
         template<class T>
-        std::vector<float> calc_vertical_gradient(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
+        std::vector<double> calc_horizontal_gradient(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
         {
-            std::vector<float> vertical_gradients = { -1, 0, 1,
-                                                       -2, 0, 2,
-                                                       -1, 0, 1 };
-
-            return convolution(image, vertical_gradients, image_widht, image_height, 3, 3);
-        }
-
-
-        template<class T>
-        std::vector<float> calc_horizontal_gradient(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
-        {
-            std::vector<float> horizontal_gradients = { -1, -2, -1,
+            std::vector<double> horizontal_gradients = { -1, -2, -1,
                                                           0,  0,  0,
                                                           1,  2,  1 };
 
-            return convolution(image, horizontal_gradients, image_widht, image_height, 3, 3);
+            return convolution<T>(image, image_widht, image_height, 3, 3, [&](std::vector<T> sub_image)
+            {return dot_product(sub_image, horizontal_gradients) / (double)8; });
         }
 
-        void deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics & intrin, const float * x, const float * y, const uint16_t * depth, float depth_units);
+        template<class T>
+        std::vector<double> calc_vertical_gradient(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
+        {
+            std::vector<double> vertical_gradients = { -1, 0, 1,
+                                                       -2, 0, 2,
+                                                       -1, 0, 1 };
 
-        float gamma = 0.98;
-        float alpha = 0.333333333333333;
-        float grad_ir_threshold = 3.5f; // Ignore pixels with IR grad of less than this
-        int grad_z_threshold = 25;  //Ignore pixels with Z grad of less than this
-        float edge_thresh4_logic_lum = 0.1;
+            return convolution<T>(image, image_widht, image_height, 3, 3, [&](std::vector<T> sub_image)
+            {return dot_product(sub_image, vertical_gradients) / (double)8; });;
+        }
 
-        uint32_t width_z = 1024;
-        uint32_t height_z = 768;
-        uint32_t width_yuy2 = 1920;
-        uint32_t height_yuy2 = 1080;
-        float min_weighted_edge_per_section_depth = 50;
-        float num_of_sections_for_edge_distribution_x = 2;
-        float num_of_sections_for_edge_distribution_y = 2;
-        float grad_z_min = 25.f; // Ignore pixels with Z grad of less than this
-        float grad_z_max = 1000.f;
-        float max_optimization_iters = 50;
+        template<class T>
+        std::vector<double> calc_edges(std::vector<T> image, uint32_t image_widht, uint32_t image_height)
+        {
+            auto vertical_edge = calc_vertical_gradient(image, image_widht, image_height);
+
+            auto horizontal_edge = calc_horizontal_gradient(image, image_widht, image_height);
+
+            auto edges = calc_intensity(vertical_edge, horizontal_edge);
+
+            return edges;
+        }
 
         // inputs
         rs2::frame depth, ir, yuy, prev_yuy;
@@ -293,4 +318,6 @@ namespace librealsense
         rs2_extrinsics _extr;
         rs2_intrinsics _intr;
     };
+
+    
 } // namespace librealsense
