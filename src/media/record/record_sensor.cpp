@@ -119,6 +119,42 @@ notifications_callback_ptr librealsense::record_sensor::get_notifications_callba
     return m_sensor.get_notifications_callback();
 }
 
+class calibration_change_callback : public rs2_calibration_change_callback
+{
+    using callback = std::function< void( rs2_calibration_status ) >;
+    callback _callback;
+public:
+    calibration_change_callback( callback cb ) : _callback( cb ) {}
+
+    void on_calibration_change( rs2_calibration_status status ) noexcept override
+    {
+        _callback( status );
+    }
+    void release() override { delete this; }
+};
+
+void librealsense::record_sensor::register_calibration_change_callback( calibration_change_callback_ptr callback )
+{
+    if( m_register_notification_to_base )
+    {
+        m_sensor.register_calibration_change_callback( std::move( callback ) ); //route to base sensor
+        return;
+    }
+
+    m_user_calibration_change_callback = std::move( callback );
+    auto from_live_sensor = calibration_change_callback_ptr(
+        new calibration_change_callback(
+            [&]( rs2_calibration_status status )
+            {
+                if( m_is_recording )
+                    on_calibration_change( status );
+                if( m_user_calibration_change_callback )
+                    m_user_calibration_change_callback->on_calibration_change( status );
+            } ),
+        []( rs2_calibration_change_callback* p ) { p->release(); } );
+    m_sensor.register_calibration_change_callback( std::move( from_live_sensor ) );
+}
+
 void librealsense::record_sensor::start(frame_callback_ptr callback)
 {
     m_sensor.start(callback);

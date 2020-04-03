@@ -70,8 +70,19 @@ namespace librealsense
                                                              {deg_135, {-1, 1}} };
 
 
+        auto_cal_algo(
+            rs2::frame depth,
+            rs2::frame ir,
+            rs2::frame yuy,
+            rs2::frame prev_yuy
+        );
 
-        bool optimaize(rs2::frame depth, rs2::frame ir, rs2::frame yuy, rs2::frame prev_yuy, const calibration& old_calib, calibration* new_calib);
+        rs2_extrinsics const & get_extrinsics() const { return _extr; }
+        rs2_intrinsics const & get_intrinsics() const { return _intr; }
+        stream_profile_interface * get_from_profile() const { return _from; }
+        stream_profile_interface * get_to_profile() const { return _to; }
+
+        bool optimize();
 
         std::vector<uint8_t> create_syntetic_y(int width, int height)
         {
@@ -273,5 +284,13 @@ namespace librealsense
         float grad_z_max = 1000.f;
         float max_optimization_iters = 50;
 
+        // inputs
+        rs2::frame depth, ir, yuy, prev_yuy;
+        stream_profile_interface* const _from;
+        stream_profile_interface* const _to;
+
+        // input/output
+        rs2_extrinsics _extr;
+        rs2_intrinsics _intr;
     };
 } // namespace librealsense

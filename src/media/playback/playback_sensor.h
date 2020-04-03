@@ -34,6 +34,7 @@ namespace librealsense
         void close() override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         notifications_callback_ptr get_notifications_callback() const override;
+        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;

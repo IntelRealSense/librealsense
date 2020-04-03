@@ -2,6 +2,7 @@
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "auto-cal-algo.h"
+#include "context.h"
 #include "../include/librealsense2/rsutil.h"
 #include "proc/pointcloud.h"
 
@@ -438,7 +439,24 @@ namespace librealsense
         return res;
     }
 
-    bool auto_cal_algo::optimaize(rs2::frame depth, rs2::frame ir, rs2::frame yuy, rs2::frame prev_yuy, const calibration & old_calib, calibration * new_calib)
+    auto_cal_algo::auto_cal_algo(
+        rs2::frame depth,
+        rs2::frame ir,
+        rs2::frame yuy,
+        rs2::frame prev_yuy
+    )
+        : depth( depth )
+        , ir( ir )
+        , yuy( yuy )
+        , prev_yuy( prev_yuy )
+        , _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
+        , _extr( depth.get_profile().get_extrinsics_to( yuy.get_profile() ) )
+        , _from( depth.get_profile().get()->profile )
+        , _to( yuy.get_profile().get()->profile )
+    {
+    }
+
+    bool auto_cal_algo::optimize()
     {
         std::vector<float> arr = { 1,0,0,0 };
         std::vector<float2> p = { { -0.5,-0.5} };

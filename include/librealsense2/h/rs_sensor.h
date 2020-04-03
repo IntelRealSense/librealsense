@@ -98,6 +98,18 @@ typedef struct rs2_extrinsics
     float translation[3]; /**< Three-element translation vector, in meters */
 } rs2_extrinsics;
 
+/** \brief TODO */
+typedef enum rs2_calibration_status
+{
+    RS2_CALIBRATION_SUCCESSFUL = 0,
+    RS2_CALIBRATION_STARTED    = 1,  // Have all frames in hand; starting processing
+    RS2_CALIBRATION_FAILED     = -1,
+    RS2_CALIBRATION_RETRY      = -2,
+} rs2_calibration_status;
+
+typedef struct rs2_calibration_change_callback rs2_calibration_change_callback;
+typedef void (*rs2_calibration_change_callback_ptr)(rs2_calibration_status, void* arg);
+
 /**
 * Deletes sensors list, any sensors created from this list will remain unaffected
 * \param[in] info_list list to delete
@@ -471,6 +483,23 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_get_video_stream_intrinsics(const rs2_stream_profile* mode, rs2_intrinsics* intrinsics, rs2_error** error);
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C callback function that gets called
+ * \param[in] user          user argument that gets passed to the callback function
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback( const rs2_sensor* sensor, rs2_calibration_change_callback_ptr callback, void* user, rs2_error** error );
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C++ callback interface that gets called
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback_cpp( const rs2_sensor* sensor, rs2_calibration_change_callback* callback, rs2_error** error );
 
 /**
  * Returns the list of recommended processing blocks for a specific sensor. 

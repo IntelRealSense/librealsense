@@ -399,23 +399,42 @@ namespace librealsense
             std::atomic_bool _is_processing;
             std::thread _worker;
 
+            rs2_extrinsics _extr;
+            rs2_intrinsics _intr;
+            stream_profile_interface* _from_profile;
+            stream_profile_interface* _to_profile;
+
         public:
             auto_calibration( std::shared_ptr< autocal_option > enabler_opt );
             ~auto_calibration();
 
             std::shared_ptr< autocal_option > get_enabler_opt() const { return _enabler_opt.lock(); }
 
+            rs2_extrinsics const & get_extrinsics() const { return _extr; }
+            rs2_intrinsics const & get_intrinsics() const { return _intr; }
+            stream_profile_interface * get_from_profile() const { return _from_profile; }
+            stream_profile_interface * get_to_profile() const { return _to_profile; }
+
             void set_special_frame( rs2::frameset const& );
             void set_color_frame( rs2::frame const& );
 
-            void register_callback(update_calic_callback cb);
+            using callback = std::function< void( rs2_calibration_status ) >;
+            void register_callback( callback cb )
+            {
+                _callbacks.push_back( cb );
+            }
         private:
+            std::vector< callback > _callbacks;
+
+            void call_back( rs2_calibration_status status ) const
+            {
+                for( auto && cb : _callbacks )
+                    cb( status );
+            }
+
             bool check_color_depth_sync();
             void start();
             void reset();
-            auto_cal_algo _auto_cal_algo;
-
-            std::vector< update_calic_callback> _callbacks;
         };
 
         /* Depth frame processing for Auto Calibration: detect special frames

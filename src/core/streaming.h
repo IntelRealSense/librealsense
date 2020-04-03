@@ -78,14 +78,6 @@ namespace librealsense
         virtual void set_c_wrapper(rs2_stream_profile* wrapper) = 0;
     };
 
-    struct calibration
-    {
-        rs2_extrinsics extrinsics;
-        rs2_intrinsics intrinsics;
-        stream_profile_interface* from;
-        stream_profile_interface* to;
-    };
-
     class frame_interface : public sensor_part
     {
     public:
@@ -238,6 +230,7 @@ namespace librealsense
         virtual void register_notifications_callback(notifications_callback_ptr callback) = 0;
         virtual int register_before_streaming_changes_callback(std::function<void(bool)> callback) = 0;
         virtual void unregister_before_start_callback(int token) = 0;
+        virtual void register_calibration_change_callback( calibration_change_callback_ptr callback ) = 0;
         virtual void start(frame_callback_ptr callback) = 0;
         virtual void stop() = 0;
         virtual frame_callback_ptr get_frames_callback() const = 0;
@@ -250,8 +243,6 @@ namespace librealsense
 
 
     class matcher;
-
-    using  update_calic_callback = std::function<void(calibration new_calib)>;
 
     class device_interface : public virtual info_interface, public std::enable_shared_from_this<device_interface>
     {

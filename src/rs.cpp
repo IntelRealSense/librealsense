@@ -346,7 +346,63 @@ void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrins
 
     *intr = vid->get_intrinsics();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, intr)
+HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+
+// librealsense wrapper around a C function
+class calibration_change_callback : public rs2_calibration_change_callback
+{
+    rs2_calibration_change_callback_ptr _callback;
+    void* _user_arg;
+
+public:
+    calibration_change_callback( rs2_calibration_change_callback_ptr callback, void* user_arg )
+        : _callback( callback ), _user_arg( user_arg ) {}
+
+    void on_calibration_change( rs2_calibration_status status ) noexcept override
+    {
+        if( _callback )
+        {
+            try
+            {
+                _callback( status, _user_arg );
+            }
+            catch( ... )
+            {
+                std::cerr << "Received an execption from profile intrinsics callback!" << std::endl;
+            }
+        }
+    }
+    void release() override
+    {
+        // Shouldn't get called...
+        throw std::runtime_error( "calibration_change_callback::release() ?!?!?!" );
+        delete this;
+    }
+};
+
+void rs2_register_calibration_change_callback( const rs2_sensor* sensor, rs2_calibration_change_callback_ptr callback, void * user, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( callback );
+
+    // Wrap the C function with a callback interface that will get deleted when done
+    sensor->sensor->register_calibration_change_callback(
+        std::make_shared< calibration_change_callback >( callback, user )
+        );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, callback, user )
+
+void rs2_register_calibration_change_callback_cpp( const rs2_sensor* sensor, rs2_calibration_change_callback* callback, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( callback );
+
+    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
+    sensor->sensor->register_calibration_change_callback(
+        { callback, []( rs2_calibration_change_callback* p ) { p->release(); } }
+        );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, callback )
 
 void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) BEGIN_API_CALL
 {

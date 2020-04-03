@@ -52,6 +52,9 @@ EXPORTS
     rs2_get_notification_category
     rs2_get_notification_serialized_data
 
+    rs2_register_calibration_change_callback
+    rs2_register_calibration_change_callback_cpp
+
     rs2_get_frame_metadata
     rs2_supports_frame_metadata
     rs2_get_frame_timestamp

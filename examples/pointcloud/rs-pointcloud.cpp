@@ -26,7 +26,21 @@ int main(int argc, char * argv[]) try
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Start streaming with default recommended configuration
-    pipe.start();
+    auto pipeline_profile = pipe.start();
+    auto profile = pipeline_profile.get_stream( RS2_STREAM_COLOR ).as< rs2::video_stream_profile >();
+    if( profile )
+    {
+        auto dev = pipeline_profile.get_device();
+        auto sensor = dev.first< rs2::color_sensor >();
+        auto original_int = profile.get_intrinsics();
+        sensor.register_calibration_change_callback(
+            []( rs2_calibration_status )
+            {
+                std::cout << "Calibration change detected!" << std::endl;
+            } );
+        //profile.get_device
+    }
+    //profile.register_callback_on_intrinsics_change( []() {} );
 
     while (app) // Application still alive?
     {

@@ -265,10 +265,6 @@ namespace librealsense
                 start();
         }
 
-        void auto_calibration::register_callback(update_calic_callback cb)
-        {
-            _callbacks.push_back(cb);
-        }
 
         bool auto_calibration::check_color_depth_sync()
         {
@@ -289,21 +285,29 @@ namespace librealsense
                 try
                 {
                     LOG_INFO("Auto calibration has started ...");
+                    call_back( RS2_CALIBRATION_STARTED );
 
-                    // TODO this is where we do the work...
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
-                    calibration curr_calib = { df.get_profile().get_extrinsics_to(_cf.get_profile()), _cf.get_profile().as<rs2::video_stream_profile>().get_intrinsics(), df.get_profile().get()->profile, _cf.get_profile().get()->profile };
-                    calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, df.get_profile().get()->profile, _cf.get_profile().get()->profile };
-                    if (_auto_cal_algo.optimaize(df, irf, _cf, _pcf, curr_calib, &new_calib))
+                    auto_cal_algo algo( df, irf, _cf, _pcf );
+                    _from_profile = algo.get_from_profile();
+                    _to_profile = algo.get_to_profile();
+
+                    //calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, df.get_profile().get()->profile, _cf.get_profile().get()->profile };
+                    if( algo.optimize() )
                     {
                       /*  auto prof = _cf.get_profile().get()->profile;
                         auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
                         if (video)
                             video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
                         _df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
-                        for (auto cb : _callbacks)
-                            cb(new_calib);
+                        _extr = algo.get_extrinsics();
+                        _intr = algo.get_intrinsics();
+                        call_back( RS2_CALIBRATION_SUCCESSFUL );
+                    }
+                    else
+                    {
+                        call_back( RS2_CALIBRATION_FAILED );
                     }
 
                     reset();

@@ -651,6 +651,8 @@ namespace librealsense
         int index;
         uint32_t width, height, fps;
         resolution_func stream_resolution; // Calculates the relevant resolution from the given backend resolution.
+
+        std::pair< uint32_t, uint32_t > width_height() const { return std::make_pair( width, height ); }
     };
 
 
@@ -1045,6 +1047,7 @@ namespace librealsense
     typedef std::shared_ptr<rs2_frame_callback> frame_callback_ptr;
     typedef std::shared_ptr<rs2_frame_processor_callback> frame_processor_callback_ptr;
     typedef std::shared_ptr<rs2_notifications_callback> notifications_callback_ptr;
+    typedef std::shared_ptr<rs2_calibration_change_callback> calibration_change_callback_ptr;
     typedef std::shared_ptr<rs2_software_device_destruction_callback> software_device_destruction_callback_ptr;
     typedef std::shared_ptr<rs2_devices_changed_callback> devices_changed_callback_ptr;
     typedef std::shared_ptr<rs2_update_progress_callback> update_progress_callback_ptr;
