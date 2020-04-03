@@ -375,6 +375,8 @@ namespace librealsense
         public:
             autocal_option( hw_monitor& hwm );
 
+            void trigger_special_frame();
+
             virtual void set( float value ) override;
             virtual const char* get_description() const override
             {

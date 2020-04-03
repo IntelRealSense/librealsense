@@ -10,10 +10,13 @@
 #include "l500-device.h"
 #include "stream.h"
 #include "l500-depth.h"
+#include "depth-to-rgb-calibration-device.h"
 
 namespace librealsense
 {
-    class l500_color : public virtual l500_device
+    class l500_color
+        : public virtual l500_device
+        , public depth_to_rgb_calibration_device
     {
     public:
         std::shared_ptr<synthetic_sensor> create_color_device(std::shared_ptr<context> ctx,
@@ -26,8 +29,19 @@ namespace librealsense
 
         void update_intrinsics( const stream_profile& profile, rs2_intrinsics const& intr );
 
-        void trigger_depth_to_rgb_calibration()
+        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
         {
+            _calibration_change_callbacks.push_back( callback );
+        }
+
+        void trigger_depth_to_rgb_calibration() override
+        {
+            if( !_autocal )
+                return;
+            auto opt = _autocal->get_enabler_opt();
+            if( !opt )
+                return;
+            opt->trigger_special_frame();
         }
 
     protected:
@@ -45,6 +59,7 @@ namespace librealsense
         std::vector<uint8_t> get_raw_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     
+        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
     };
 
     class l500_color_sensor : public synthetic_sensor, public video_sensor_interface, public color_sensor
@@ -147,11 +162,6 @@ namespace librealsense
             _action_delayer.do_after_delay([&]() {
                 synthetic_sensor::stop();
             });
-        }
-
-        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
-        {
-            _owner->_calibration_change_callbacks.push_back( callback );
         }
 
     private:

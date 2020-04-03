@@ -41,6 +41,7 @@
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
+#include "depth-to-rgb-calibration-device.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -380,29 +381,43 @@ public:
     }
 };
 
-void rs2_register_calibration_change_callback( const rs2_sensor* sensor, rs2_calibration_change_callback_ptr callback, void * user, rs2_error** error ) BEGIN_API_CALL
+void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_change_callback_ptr callback, void * user, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+
     // Wrap the C function with a callback interface that will get deleted when done
-    sensor->sensor->register_calibration_change_callback(
+    d2r->register_calibration_change_callback(
         std::make_shared< calibration_change_callback >( callback, user )
         );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, callback, user )
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback, user )
 
-void rs2_register_calibration_change_callback_cpp( const rs2_sensor* sensor, rs2_calibration_change_callback* callback, rs2_error** error ) BEGIN_API_CALL
+void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+
     // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
-    sensor->sensor->register_calibration_change_callback(
+    d2r->register_calibration_change_callback(
         { callback, []( rs2_calibration_change_callback* p ) { p->release(); } }
         );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, callback )
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )
+
+void rs2_trigger_depth_to_rgb_calibration( rs2_device * dev, rs2_error** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( dev );
+    
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+
+    d2r->trigger_depth_to_rgb_calibration();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , dev )
 
 void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) BEGIN_API_CALL
 {

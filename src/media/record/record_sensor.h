@@ -32,7 +32,6 @@ namespace librealsense
         bool supports_option(rs2_option id) const override;
         void register_notifications_callback(notifications_callback_ptr callback) override;
         notifications_callback_ptr get_notifications_callback() const override;
-        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
         bool is_streaming() const override;
@@ -44,7 +43,6 @@ namespace librealsense
         int register_before_streaming_changes_callback(std::function<void(bool)> callback) override;
         void unregister_before_start_callback(int token) override;
         signal<record_sensor, const notification&> on_notification;
-        signal<record_sensor, rs2_calibration_status> on_calibration_change;
         signal<record_sensor, frame_holder> on_frame;
         signal<record_sensor, rs2_extension, std::shared_ptr<extension_snapshot>> on_extension_change;
         void stop_with_error(const std::string& message);
@@ -69,7 +67,6 @@ namespace librealsense
         std::set<int> m_recorded_streams_ids;
         std::set<rs2_option> m_recording_options;
         librealsense::notifications_callback_ptr m_user_notification_callback;
-        librealsense::calibration_change_callback_ptr m_user_calibration_change_callback;
         std::atomic_bool m_is_recording;
         frame_callback_ptr m_frame_callback;
         frame_callback_ptr m_original_callback;

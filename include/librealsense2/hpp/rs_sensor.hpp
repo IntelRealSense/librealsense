@@ -98,24 +98,6 @@ namespace rs2
         void release() override { delete this; }
     };
 
-    /*
-        Wrapper around any callback function that is given to calibration_change_callback.
-    */
-    template< class callback >
-    class calibration_change_callback : public rs2_calibration_change_callback
-    {
-        //using callback = std::function< void( rs2_calibration_status ) >;
-        callback _callback;
-    public:
-        calibration_change_callback( callback cb ) : _callback( cb ) {}
-
-        void on_calibration_change( rs2_calibration_status status ) noexcept override
-        {
-            _callback( status );
-        }
-        void release() override { delete this; }
-    };
-
 
     class sensor : public options
     {
@@ -229,29 +211,6 @@ namespace rs2
                 new notifications_callback<T>(std::move(callback)), &e);
             error::handle(e);
         }
-
-        /*
-        Your callback should look like this, for example:
-            sensor.register_calibration_change_callback(
-                []( TODO ) noexcept
-                {
-                    ...
-                })
-        */
-        template< typename F >
-        void register_calibration_change_callback( F callback )
-        {
-            // We wrap the callback with an interface and pass it to librealsense, who will
-            // now manage its lifetime. Rather than deleting it, though, it will call its
-            // release() function, where (back in our context) it can be safely deleted:
-            rs2_error* e = nullptr;
-            rs2_register_calibration_change_callback_cpp(
-                _sensor.get(),
-                new calibration_change_callback< F >( std::move( callback ) ),
-                &e );
-            error::handle( e );
-        }
-
 
         /**
         * Retrieves the list of stream profiles supported by the sensor.

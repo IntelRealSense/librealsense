@@ -20,7 +20,11 @@
 namespace librealsense
 {
 
-    class l500_device : public virtual device, public debug_interface, public global_time_interface, public updatable
+    class l500_device
+        : public virtual device
+        , public debug_interface
+        , public global_time_interface
+        , public updatable
     {
     public:
         l500_device(std::shared_ptr<context> ctx,
@@ -79,7 +83,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _confidence_stream;
         
         std::shared_ptr< ivcam2::auto_calibration > _autocal;
-        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
 
         void force_hardware_reset() const;
         bool _is_locked = true;

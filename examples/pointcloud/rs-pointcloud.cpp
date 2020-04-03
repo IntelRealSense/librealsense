@@ -33,7 +33,8 @@ int main(int argc, char * argv[]) try
         auto dev = pipeline_profile.get_device();
         auto sensor = dev.first< rs2::color_sensor >();
         auto original_int = profile.get_intrinsics();
-        sensor.register_calibration_change_callback(
+        rs2::depth_to_rgb_calibration_device d2r{ dev };
+        d2r.register_calibration_change_callback(
             []( rs2_calibration_status )
             {
                 std::cout << "Calibration change detected!" << std::endl;

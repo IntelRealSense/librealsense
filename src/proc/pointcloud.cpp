@@ -14,6 +14,7 @@
 #include "../device.h"
 #include "../stream.h"
 #include <iostream>
+#include "depth-to-rgb-calibration-device.h"
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
@@ -126,7 +127,9 @@ namespace librealsense
                 auto sensor = ((frame_interface*)other.get())->get_sensor();
                 if (sensor)
                 {
-                    device_interface* dev = nullptr;
+                    device_interface* dev = sensor->get_device().shared_from_this().get();
+                    depth_to_rgb_calibration_device * d2r = dynamic_cast<depth_to_rgb_calibration_device*>(dev);
+                    assert( d2r );
                     try
                     {
                         auto const expected_wh = to_profile( _other_stream.get_profile().get()->profile ).width_height();
@@ -144,7 +147,7 @@ namespace librealsense
                                     set_extrinsics();
                                 }
                             };
-                        sensor->register_calibration_change_callback(
+                        d2r->register_calibration_change_callback(
                             create_calibration_change_callback_ptr( fn )
                             //{ new rs2::calibration_change_callback( fn ), [](rs2_calibration_change_callback * p) { p->release(); } }
                         );

@@ -310,6 +310,47 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 */
 const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
+
+typedef enum rs2_calibration_status
+{
+    RS2_CALIBRATION_SUCCESSFUL = 0,
+    RS2_CALIBRATION_STARTED = 1,  // Have all frames in hand; starting processing
+    RS2_CALIBRATION_FAILED = -1,
+    RS2_CALIBRATION_RETRY = -2,
+
+    RS2_CALIBRATION_STATUS_FIRST = -2,
+    RS2_CALIBRATION_STATUS_LAST = 1,
+    RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
+} rs2_calibration_status;
+const char* rs2_calibration_status_to_string( rs2_calibration_status );
+
+typedef struct rs2_calibration_change_callback rs2_calibration_change_callback;
+typedef void (*rs2_calibration_change_callback_ptr)(rs2_calibration_status, void* arg);
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C callback function that gets called
+ * \param[in] user          user argument that gets passed to the callback function
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_change_callback_ptr callback, void* user, rs2_error** error );
+
+/**
+ * Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration
+ * \param[in] sensor        the sensor
+ * \param[in] callback      the C++ callback interface that gets called
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error );
+
+/**
+ * TODO
+ * \param[in] dev           the device
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_trigger_depth_to_rgb_calibration( rs2_device* dev, rs2_error** error );
+
 /**
 * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
 * \param[in] ground_truth_mm     Ground truth in mm must be between 2500 - 2000000

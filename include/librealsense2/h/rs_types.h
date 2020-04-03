@@ -181,6 +181,7 @@ typedef enum rs2_extension
     RS2_EXTENSION_DEPTH_HUFFMAN_DECODER,
     RS2_EXTENSION_SERIALIZABLE,
     RS2_EXTENSION_AUTO_CALIBRATION_FILTER,
+    RS2_EXTENSION_DEPTH_TO_RGB_CALIBRATION_DEVICE,
     RS2_EXTENSION_COUNT
 } rs2_extension;
 const char* rs2_extension_type_to_string(rs2_extension type);

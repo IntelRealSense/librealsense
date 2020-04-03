@@ -527,6 +527,71 @@ return results;
  
     };
 
+    /*
+        Wrapper around any callback function that is given to calibration_change_callback.
+    */
+    template< class callback >
+    class calibration_change_callback : public rs2_calibration_change_callback
+    {
+        //using callback = std::function< void( rs2_calibration_status ) >;
+        callback _callback;
+    public:
+        calibration_change_callback( callback cb ) : _callback( cb ) {}
+
+        void on_calibration_change( rs2_calibration_status status ) noexcept override
+        {
+            _callback( status );
+        }
+        void release() override { delete this; }
+    };
+
+    class depth_to_rgb_calibration_device : public device
+    {
+    public:
+        depth_to_rgb_calibration_device( device d )
+            : device( d )
+        {
+            rs2_error* e = nullptr;
+            if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEPTH_TO_RGB_CALIBRATION_DEVICE, &e ) == 0 && !e )
+            {
+                _dev.reset();
+            }
+            error::handle( e );
+        }
+
+        /*
+        Your callback should look like this, for example:
+            sensor.register_calibration_change_callback(
+                []( rs2_calibration_status ) noexcept
+                {
+                    ...
+                })
+        */
+        template< typename T >
+        void register_calibration_change_callback( T callback )
+        {
+            // We wrap the callback with an interface and pass it to librealsense, who will
+            // now manage its lifetime. Rather than deleting it, though, it will call its
+            // release() function, where (back in our context) it can be safely deleted:
+            rs2_error* e = nullptr;
+            rs2_register_calibration_change_callback_cpp(
+                _dev.get(),
+                new calibration_change_callback< T >( std::move( callback )),
+                &e );
+            error::handle( e );
+        }
+
+        /**
+        * This will improve the Depth- to RGB-frame alignment.
+        */
+        void trigger_depth_to_rgb_calibration()
+        {
+            rs2_error* e = nullptr;
+            rs2_trigger_depth_to_rgb_calibration( _dev.get(), &e );
+            error::handle( e );
+        }
+    };
+
     class debug_protocol : public device
     {
     public:

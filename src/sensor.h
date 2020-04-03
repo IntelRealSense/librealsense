@@ -68,10 +68,6 @@ namespace librealsense
         {
             _on_open = callback;
         }
-        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
-        {
-            // Only specific sensors (L500) can change calibration on the fly
-        }
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default

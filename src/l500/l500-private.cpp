@@ -203,14 +203,19 @@ namespace librealsense
         {
         }
 
+        void autocal_option::trigger_special_frame()
+        {
+            command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
+            auto res = _hwm.send( cmd );
+        }
+
         void autocal_option::set( float value )
         {
             bool_option::set( value );
             if( is_true() )
             {
                 // We've turned it on -- try to immediately get a special frame
-                command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
-                auto res = _hwm.send( cmd );
+                trigger_special_frame();
             }
             _record_action( *this );
         }
