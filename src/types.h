@@ -502,9 +502,9 @@ namespace librealsense
     // Enumerated type support //
     /////////////////////////////
 
-#define RS2_ENUM_HELPERS(TYPE, PREFIX) RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, PREFIX, 0, RS2_##PREFIX##_COUNT)
+#define RS2_ENUM_HELPERS(TYPE, PREFIX) RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, 0, RS2_##PREFIX##_COUNT)
 
-#define RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, PREFIX, START, END) LRS_EXTENSION_API const char* get_string(TYPE value); \
+#define RS2_ENUM_HELPERS_CUSTOMIZED(TYPE, START, END) LRS_EXTENSION_API const char* get_string(TYPE value); \
         inline bool is_valid(TYPE value) { return value >= START && value <END; } \
         inline std::ostream & operator << (std::ostream & out, TYPE value) { if(is_valid(value)) return out << get_string(value); else return out << (int)value; } \
         inline bool try_parse(const std::string& str, TYPE& res)       \
@@ -532,7 +532,8 @@ namespace librealsense
     RS2_ENUM_HELPERS(rs2_matchers, MATCHER)
     RS2_ENUM_HELPERS(rs2_sensor_mode, SENSOR_MODE)
     RS2_ENUM_HELPERS(rs2_l500_visual_preset, L500_VISUAL_PRESET)
-    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, AMBIENT_LIGHT, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST )
+    RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
 
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //

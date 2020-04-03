@@ -151,7 +151,21 @@ namespace librealsense
         }
 #undef CASE
     }
-    
+
+    const char* get_string( rs2_calibration_status value )
+    {
+#define CASE(X) STRCASE(CALIBRATION, X)
+        switch( value )
+        {
+            CASE( SUCCESSFUL )
+            CASE( FAILED )
+            CASE( STARTED )
+            CASE( RETRY )
+        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
+        }
+#undef CASE
+    }
+
     const char* get_string(rs2_ambient_light value)
     {
 #define CASE(X) STRCASE(AMBIENT_LIGHT, X)

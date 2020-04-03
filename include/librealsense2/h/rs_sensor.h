@@ -105,7 +105,12 @@ typedef enum rs2_calibration_status
     RS2_CALIBRATION_STARTED    = 1,  // Have all frames in hand; starting processing
     RS2_CALIBRATION_FAILED     = -1,
     RS2_CALIBRATION_RETRY      = -2,
+
+    RS2_CALIBRATION_STATUS_FIRST = -2,
+    RS2_CALIBRATION_STATUS_LAST = 1,
+    RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
 } rs2_calibration_status;
+const char* rs2_calibration_status_to_string( rs2_calibration_status );
 
 typedef struct rs2_calibration_change_callback rs2_calibration_change_callback;
 typedef void (*rs2_calibration_change_callback_ptr)(rs2_calibration_status, void* arg);
