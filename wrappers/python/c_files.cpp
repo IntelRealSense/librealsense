@@ -33,7 +33,7 @@ void init_c_files(py::module &m) {
     // rs2_sr300_visual_preset
     // rs2_rs400_visual_preset
     BIND_ENUM(m, rs2_playback_status, RS2_PLAYBACK_STATUS_COUNT, "") // No docstring in C++
-    BIND_ENUM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_COUNT, "Calibration callback status -- see sensor.trigger_depth_to_rgb_calibration")
+    BIND_ENUM_CUSTOM(m, rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST, "Calibration callback status -- see sensor.trigger_depth_to_rgb_calibration")
 
     /** rs_types.h **/
     py::class_<rs2_intrinsics> intrinsics(m, "intrinsics", "Video stream intrinsics.");
