@@ -549,7 +549,7 @@ return results;
     {
     public:
         depth_to_rgb_calibration_device( device d )
-            : device( d )
+            : device( d.get() )
         {
             rs2_error* e = nullptr;
             if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEPTH_TO_RGB_CALIBRATION_DEVICE, &e ) == 0 && !e )

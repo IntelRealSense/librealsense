@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/hpp/rs_export.hpp"
+#include "types.h"
 
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
@@ -55,6 +56,5 @@ PYBIND11_MODULE(NAME, m) {
     }, "min_severity"_a, "callback"_a);
     m.def("log", &rs2::log, "severity"_a, "message"_a);
 
-    // rs2::log?
     /** end rs.hpp **/
 }

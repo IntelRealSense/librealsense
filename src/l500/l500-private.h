@@ -423,6 +423,7 @@ namespace librealsense
             using callback = std::function< void( rs2_calibration_status ) >;
             void register_callback( callback cb )
             {
+                std::cout << "-D- new autocal callback " << std::endl;
                 _callbacks.push_back( cb );
             }
         private:

@@ -32,6 +32,7 @@ namespace librealsense
         void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
         {
             _calibration_change_callbacks.push_back( callback );
+            std::cout << "-D- register_calibration_change_callback - now " << _calibration_change_callbacks.size() << std::endl;
         }
 
         void trigger_depth_to_rgb_calibration() override
@@ -153,7 +154,7 @@ namespace librealsense
         {
             _action_delayer.do_after_delay([&]() {
                     synthetic_sensor::start(callback);
-                    _owner->trigger_depth_to_rgb_calibration();
+                    //_owner->trigger_depth_to_rgb_calibration();
             });
         }
 

@@ -162,7 +162,6 @@ namespace librealsense
         if( _autocal )
         {
             // Have the auto-calibration mechanism notify us when calibration has finished
-            auto to = to_profile( _autocal->get_to_profile() );
             _autocal->register_callback(
                 [&]( rs2_calibration_status status )
                 {
@@ -170,10 +169,10 @@ namespace librealsense
                     {
                         auto && extr = _autocal->get_extrinsics();
                         update_intrinsics( to_profile( _autocal->get_to_profile() ), _autocal->get_intrinsics() );
-                        for( auto&& cb : _calibration_change_callbacks )
-                            cb->on_calibration_change( RS2_CALIBRATION_SUCCESSFUL );
                     }
-                } );
+                    for( auto&& cb : _calibration_change_callbacks )
+                        cb->on_calibration_change( status );
+            } );
         }
     }
 

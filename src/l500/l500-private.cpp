@@ -205,6 +205,7 @@ namespace librealsense
 
         void autocal_option::trigger_special_frame()
         {
+            std::cout << "-D- Sending HW command: GET_SPECIAL_FRAME" << std::endl;
             command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
             auto res = _hwm.send( cmd );
         }
@@ -243,13 +244,17 @@ namespace librealsense
             auto irf = fs.get_infrared_frame();
             if( ! irf )
             {
-                LOG_DEBUG( "Ignoring special frame: no IR frame found!" );
+                LOG_ERROR( "Ignoring special frame: no IR frame found!" );
+                std::cout << "-D- no IR frame; ignoring" << std::endl;
+                call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
             auto df = fs.get_depth_frame();
             if( !df )
             {
-                LOG_DEBUG( "Ignoring special frame: no depth frame found!" );
+                LOG_ERROR( "Ignoring special frame: no depth frame found!" );
+                std::cout << "-D- no depth frame; ignoring" << std::endl;
+                call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
 
@@ -273,15 +278,22 @@ namespace librealsense
 
         bool auto_calibration::check_color_depth_sync()
         {
-            if (!_sf)
+            if( !_sf )
+            {
+                //std::cout << "-D- no special frame yet" << std::endl;
                 return false;
-            if (!_cf)
+            }
+            if( !_cf )
+            {
+                //std::cout << "-D- no color frame yet" << std::endl;
                 return false;
+            }
             return true;
         }
 
         void auto_calibration::start()
         {
+            std::cout << "-D- in start(); processing... " << std::endl;
             _is_processing = true;
             if( _worker.joinable() )
                 _worker.join();
@@ -301,7 +313,8 @@ namespace librealsense
                     //calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, df.get_profile().get()->profile, _cf.get_profile().get()->profile };
                     if( algo.optimize() )
                     {
-                      /*  auto prof = _cf.get_profile().get()->profile;
+                        std::cout << "-D- optimized" << std::endl;
+                        /*  auto prof = _cf.get_profile().get()->profile;
                         auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
                         if (video)
                             video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
@@ -320,6 +333,8 @@ namespace librealsense
                 }
                 catch (...)
                 {
+                    std::cout << "-D- exception!!!!!!!!!!!!!" << std::endl;
+                    call_back( RS2_CALIBRATION_FAILED );
                     reset();
                     LOG_ERROR("Auto calibration has finished ...");
                 }});
@@ -332,6 +347,7 @@ namespace librealsense
             _pcf = rs2::frame{};
 
             _is_processing = false;
+            std::cout << "-D- reset() " << std::endl;
         }
 
         autocal_depth_processing_block::autocal_depth_processing_block(
@@ -345,6 +361,8 @@ namespace librealsense
 
         static bool is_special_frame( rs2::frame const& f )
         {
+            if( f && !f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ) )
+                std::cout << "-D- no LASER_POWER_MODE" << std::endl;
             return(f
                 && f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE )
                 && 0x5F == f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ));
@@ -356,7 +374,7 @@ namespace librealsense
             // return the frame as is.
             if( auto is_enabled = _is_enabled_opt.lock() )
                 if( !is_enabled->is_true() )
-                    return f;
+                    ; // return f;
 
             auto fs = f.as< rs2::frameset >();
             if( fs )
@@ -365,6 +383,7 @@ namespace librealsense
                 if( is_special_frame( df ))
                 {
                     LOG_INFO( "Auto calibration SF received" );
+                    std::cout << "-D- Got special frame" << std::endl;
                     _autocal->set_special_frame( f );
                 }
                 // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
@@ -409,7 +428,7 @@ namespace librealsense
             // return the frame as is.
             if( auto is_enabled = _is_enabled_opt.lock() )
                 if( !is_enabled->is_true() )
-                    return f;
+                    ; // return f;
 
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
             if( f.is< rs2::frameset >() )

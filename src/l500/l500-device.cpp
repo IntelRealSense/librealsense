@@ -177,7 +177,7 @@ namespace librealsense
                 auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
-                auto sync = std::make_shared<syncer_process_unit>( is_zo_enabled_opt );
+                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
                 auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
 
                 auto cpb = std::make_shared<composite_processing_block>();
@@ -187,7 +187,8 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
-                    sync->add_enabling_option( _autocal->get_enabler_opt() );
+                    std::cout << "-D- Setting up depth_processing_block... 1" << std::endl;
+                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
                 return cpb;
@@ -211,6 +212,7 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
+                    std::cout << "-D- Setting up depth_processing_block... 2" << std::endl;
                     sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
@@ -240,6 +242,7 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
+                    std::cout << "-D- Setting up depth_processing_block... 3" << std::endl;
                     sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }

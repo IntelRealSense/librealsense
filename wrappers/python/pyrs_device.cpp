@@ -31,6 +31,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, updatable))
         .def(BIND_DOWNCAST(device, update_device))
         .def(BIND_DOWNCAST(device, auto_calibrated_device))
+        .def(BIND_DOWNCAST(device, depth_to_rgb_calibration_device))
         .def("__repr__", [](const rs2::device &self) {
             std::stringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME)
@@ -91,15 +92,15 @@ void init_device(py::module &m) {
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");
 
-        py::class_<rs2::depth_to_rgb_calibration_device, rs2::device> depth_to_rgb_calibration_device( m, "depth_to_rgb_calibration_device" );
-        depth_to_rgb_calibration_device.def( py::init<rs2::device>(), "device"_a )
-            .def( "trigger_depth_to_rgb_calibration", &rs2::depth_to_rgb_calibration_device::trigger_depth_to_rgb_calibration, "TODO" )
-            .def( "register_calibration_change_callback",
-                []( rs2::depth_to_rgb_calibration_device& self, std::function<void( rs2_calibration_status )> callback )
-                {
-                    self.register_calibration_change_callback( callback );
-                },
-                "TODO", "callback"_a, py::call_guard<py::gil_scoped_release>() );
+    py::class_<rs2::depth_to_rgb_calibration_device, rs2::device> depth_to_rgb_calibration_device( m, "depth_to_rgb_calibration_device" );
+    depth_to_rgb_calibration_device.def( py::init<rs2::device>(), "device"_a )
+        .def( "trigger_depth_to_rgb_calibration", &rs2::depth_to_rgb_calibration_device::trigger_depth_to_rgb_calibration, "TODO" )
+        .def( "register_calibration_change_callback",
+            []( rs2::depth_to_rgb_calibration_device& self, std::function<void( rs2_calibration_status )> callback )
+            {
+                self.register_calibration_change_callback( callback );
+            },
+            "TODO", "callback"_a, py::call_guard<py::gil_scoped_release>() );
 
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++

@@ -71,7 +71,6 @@ namespace librealsense
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-
     };
 
     std::shared_ptr<device_interface> l500_info::create(std::shared_ptr<context> ctx,
