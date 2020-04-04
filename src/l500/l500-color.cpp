@@ -180,6 +180,13 @@ namespace librealsense
         }
     }
 
+    void l500_color::trigger_depth_to_rgb_calibration()
+    {
+        if( _autocal )
+            _autocal->trigger_special_frame();
+    }
+
+
     void l500_color::update_intrinsics( stream_profile const& profile, rs2_intrinsics const& intr )
     {
         if( intr.width != profile.width  ||  intr.height != profile.height )

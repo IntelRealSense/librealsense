@@ -313,13 +313,15 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float g
 
 typedef enum rs2_calibration_status
 {
-    RS2_CALIBRATION_SUCCESSFUL = 0,
-    RS2_CALIBRATION_STARTED = 1,  // Have all frames in hand; starting processing
-    RS2_CALIBRATION_FAILED = -1,
-    RS2_CALIBRATION_RETRY = -2,
+    RS2_CALIBRATION_SUCCESSFUL    =  0,
+    RS2_CALIBRATION_STARTED       =  1,  // Have all frames in hand; starting processing
 
-    RS2_CALIBRATION_STATUS_FIRST = -2,
-    RS2_CALIBRATION_STATUS_LAST = 1,
+    RS2_CALIBRATION_FAILED        = -1,
+    RS2_CALIBRATION_SCENE_INVALID = -2,  // Scene was not good enough for calibration; will retry
+    RS2_CALIBRATION_RETRY         = -3,
+
+    RS2_CALIBRATION_STATUS_FIRST  = -3,
+    RS2_CALIBRATION_STATUS_LAST   =  1,
     RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
 } rs2_calibration_status;
 const char* rs2_calibration_status_to_string( rs2_calibration_status );

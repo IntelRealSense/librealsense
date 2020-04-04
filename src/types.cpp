@@ -160,6 +160,7 @@ namespace librealsense
             CASE( SUCCESSFUL )
             CASE( FAILED )
             CASE( STARTED )
+            CASE( SCENE_INVALID )
             CASE( RETRY )
         default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
         }

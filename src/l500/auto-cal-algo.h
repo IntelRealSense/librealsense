@@ -170,6 +170,7 @@ namespace librealsense
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
+        bool is_scene_valid() { return true; }
         bool optimize();
 
 

@@ -158,16 +158,15 @@ namespace librealsense
         is_zo_enabled_opt->set(false);
         depth_sensor.register_option(RS2_OPTION_ZERO_ORDER_ENABLED, is_zo_enabled_opt);
 
-        std::shared_ptr< autocal_option > autocal_enabled_opt;
+        //std::shared_ptr< autocal_option > autocal_enabled_opt;
         if( _fw_version >= firmware_version( "1.3.12.0" ) )
         {
-            autocal_enabled_opt = std::make_shared< autocal_option >( *_hw_monitor );
+            _autocal = std::make_shared< auto_calibration >( *_hw_monitor );
+
             depth_sensor.register_option(
                 RS2_OPTION_AUTO_CALIBRATION_ENABLED,
-                autocal_enabled_opt
+                std::make_shared< auto_calibration::enabler_option >( _autocal )
             );
-
-            _autocal = std::make_shared< auto_calibration >( autocal_enabled_opt );
         }
 
         depth_sensor.register_processing_block(
@@ -202,7 +201,7 @@ namespace librealsense
                 auto is_zo_enabled_opt = weak_is_zo_enabled_opt.lock();
                 auto z16rot = std::make_shared<identity_processing_block>();
                 auto y8rot = std::make_shared<identity_processing_block>();
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
                 auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
 
                 auto cpb = std::make_shared<composite_processing_block>();
@@ -213,7 +212,7 @@ namespace librealsense
                 if( _autocal )
                 {
                     std::cout << "-D- Setting up depth_processing_block... 2" << std::endl;
-                    sync->add_enabling_option( _autocal->get_enabler_opt() );
+                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
                 return cpb;
@@ -231,7 +230,7 @@ namespace librealsense
                 auto z16rot = std::make_shared<rotation_transform>(RS2_FORMAT_Z16, RS2_STREAM_DEPTH, RS2_EXTENSION_DEPTH_FRAME);
                 auto y8rot = std::make_shared<rotation_transform>(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME);
                 auto conf = std::make_shared<confidence_rotation_transform>();
-                auto sync = std::make_shared<syncer_process_unit>(is_zo_enabled_opt);
+                auto sync = std::make_shared<syncer_process_unit>(); // is_zo_enabled_opt );
                 auto zo = std::make_shared<zero_order>(is_zo_enabled_opt);
 
                 auto cpb = std::make_shared<composite_processing_block>();
@@ -243,7 +242,7 @@ namespace librealsense
                 if( _autocal )
                 {
                     std::cout << "-D- Setting up depth_processing_block... 3" << std::endl;
-                    sync->add_enabling_option( _autocal->get_enabler_opt() );
+                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
                 return cpb;

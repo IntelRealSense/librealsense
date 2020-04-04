@@ -8,7 +8,6 @@
 #include "option.h"
 #include "core/extension.h"
 #include "fw-update/fw-update-unsigned.h"
-#include "auto-cal-algo.h"
 
 static const int NUM_OF_RGB_RESOLUTIONS = 5;
 static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
@@ -369,48 +368,53 @@ namespace librealsense
             std::shared_ptr< freefall_option > _freefall_opt;
         };
 
-        /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
-        class autocal_option : public bool_option
-        {
-        public:
-            autocal_option( hw_monitor& hwm );
-
-            void trigger_special_frame();
-
-            virtual void set( float value ) override;
-            virtual const char* get_description() const override
-            {
-                return "Enable to ask FW for a special frame for auto calibration";
-            }
-            virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
-
-        private:
-            std::function<void( const option& )> _record_action = []( const option& ) {};
-            hw_monitor& _hwm;
-        };
-
         /*
         */
         class auto_calibration
         {
-            std::weak_ptr< autocal_option > _enabler_opt;
-
             rs2::frameset _sf;
             rs2::frame _cf, _pcf;  // Keep the last and previous frame!
 
+            hw_monitor & _hwm;
+
             std::atomic_bool _is_processing;
             std::thread _worker;
+            unsigned _n_retries;
 
             rs2_extrinsics _extr;
             rs2_intrinsics _intr;
             stream_profile_interface* _from_profile;
             stream_profile_interface* _to_profile;
 
+            class retrier;
+            std::shared_ptr< retrier > _retrier;
+
         public:
-            auto_calibration( std::shared_ptr< autocal_option > enabler_opt );
+            /* For RS2_OPTION_AUTO_CALIBRATION_ENABLED */
+            class enabler_option : public bool_option
+            {
+                std::shared_ptr< auto_calibration > _autocal;
+
+            public:
+                enabler_option( std::shared_ptr< auto_calibration > const & autocal );
+
+                virtual void set( float value ) override;
+                virtual const char* get_description() const override
+                {
+                    return "Enable to ask FW for a special frame for auto calibration";
+                }
+                virtual void enable_recording( std::function<void( const option& )> record_action ) override { _record_action = record_action; }
+
+            private:
+                std::function<void( const option& )> _record_action = []( const option& ) {};
+            };
+
+        public:
+            auto_calibration( hw_monitor & hwm );
             ~auto_calibration();
 
-            std::shared_ptr< autocal_option > get_enabler_opt() const { return _enabler_opt.lock(); }
+            void trigger_special_frame( bool is_retry = false );
+            bool is_processing() const { return _is_processing; }
 
             rs2_extrinsics const & get_extrinsics() const { return _extr; }
             rs2_intrinsics const & get_intrinsics() const { return _intr; }
@@ -445,7 +449,6 @@ namespace librealsense
         class autocal_depth_processing_block : public generic_processing_block
         {
             std::shared_ptr< auto_calibration > _autocal;
-            std::weak_ptr< autocal_option > _is_enabled_opt;
 
         public:
             autocal_depth_processing_block( std::shared_ptr< auto_calibration > autocal );
@@ -462,7 +465,6 @@ namespace librealsense
         class autocal_color_processing_block : public generic_processing_block
         {
             std::shared_ptr< auto_calibration > _autocal;
-            std::weak_ptr< autocal_option > _is_enabled_opt;
 
         public:
             autocal_color_processing_block( std::shared_ptr< auto_calibration > autocal );

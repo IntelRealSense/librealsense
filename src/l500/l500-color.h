@@ -35,15 +35,7 @@ namespace librealsense
             std::cout << "-D- register_calibration_change_callback - now " << _calibration_change_callbacks.size() << std::endl;
         }
 
-        void trigger_depth_to_rgb_calibration() override
-        {
-            if( !_autocal )
-                return;
-            auto opt = _autocal->get_enabler_opt();
-            if( !opt )
-                return;
-            opt->trigger_special_frame();
-        }
+        void trigger_depth_to_rgb_calibration() override;
 
     protected:
         std::shared_ptr<stream_interface> _color_stream;

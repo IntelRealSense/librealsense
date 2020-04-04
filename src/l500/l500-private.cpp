@@ -5,6 +5,7 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "context.h"
 #include "core/video.h"
+#include "auto-cal-algo.h"
 
 using namespace std;
 
@@ -197,34 +198,73 @@ namespace librealsense
             _record_action( *this );
         }
 
-        autocal_option::autocal_option( hw_monitor& hwm )
+#define AC_LOG_PREFIX "Depth- to RGB-calibration: "
+//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
+
+        auto_calibration::enabler_option::enabler_option( std::shared_ptr< auto_calibration > const & autocal )
             : bool_option( false )
-            , _hwm( hwm )
+            , _autocal( autocal )
         {
         }
 
-        void autocal_option::trigger_special_frame()
-        {
-            std::cout << "-D- Sending HW command: GET_SPECIAL_FRAME" << std::endl;
-            command cmd{ GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
-            auto res = _hwm.send( cmd );
-        }
-
-        void autocal_option::set( float value )
+        void auto_calibration::enabler_option::set( float value )
         {
             bool_option::set( value );
             if( is_true() )
             {
                 // We've turned it on -- try to immediately get a special frame
-                trigger_special_frame();
+                _autocal->trigger_special_frame();
             }
             _record_action( *this );
         }
 
 
-        auto_calibration::auto_calibration( std::shared_ptr< autocal_option > enabler_opt )
+        // Implementation class: starts another thread responsible for sending a retry
+        // NOTE that it does this as long as our shared_ptr keeps us alive: once it's gone, if the
+        // retry period elapses then nothing will happen!
+        class auto_calibration::retrier
+        {
+            auto_calibration & _ac;
+
+            retrier( auto_calibration & ac )
+                : _ac( ac )
+            {
+                AC_LOG( DEBUG, "retrier " << std::hex << this );
+            }
+
+            void retry()
+            {
+                AC_LOG( DEBUG, "retrying " << std::hex << this );
+                _ac.trigger_special_frame( true );
+            }
+
+        public:
+            ~retrier()
+            {
+                AC_LOG( DEBUG, "~retrier " << std::hex << this );
+            }
+
+            static std::shared_ptr< retrier > start( auto_calibration & autocal )
+            {
+                auto r = std::shared_ptr< retrier >( new retrier( autocal ) );
+                std::weak_ptr< retrier > weak { r };
+                std::thread( [weak]()
+                {
+                    std::this_thread::sleep_for( std::chrono::seconds( 2 ) );
+                    if( auto r = weak.lock() )
+                        r->retry();
+                    else
+                        AC_LOG( DEBUG, "retry period over; no retry needed" );
+                } ).detach();
+                return r;
+            };
+        };
+
+
+        auto_calibration::auto_calibration( hw_monitor & hwm )
             : _is_processing{ false }
-            , _enabler_opt( enabler_opt )
+            , _hwm( hwm )
         {
         }
 
@@ -237,28 +277,61 @@ namespace librealsense
             }
         }
 
-        void auto_calibration::set_special_frame( rs2::frameset const& fs )
+        void auto_calibration::trigger_special_frame( bool is_retry )
         {
             if( _is_processing )
+            {
+                AC_LOG( ERROR, "Failed to trigger_special_frame: auto-calibration is already in-process" );
                 return;
+            }
+            if( is_retry )
+            {
+                if( _n_retries > 4 )
+                {
+                    AC_LOG( ERROR, "too many retries; aborting" );
+                    call_back( RS2_CALIBRATION_FAILED );
+                    return;
+                }
+                ++_n_retries;
+                AC_LOG( DEBUG, "GET_SPECIAL_FRAME (retry " << _n_retries << ")" );
+                call_back( RS2_CALIBRATION_RETRY );
+            }
+            else
+            {
+                _n_retries = 0;
+                AC_LOG( DEBUG, "GET_SPECIAL_FRAME" );
+            }
+            command cmd { GET_SPECIAL_FRAME, 0x5F, 1 };  // 5F = SF = Special Frame, for easy recognition
+            auto res = _hwm.send( cmd );
+            // Start a timer: enable retries if something's wrong with the special frame
+            _retrier = retrier::start( *this );
+        }
+
+        void auto_calibration::set_special_frame( rs2::frameset const& fs )
+        {
+            AC_LOG( DEBUG, "special frame received :)" );
+            if( _is_processing )
+            {
+                AC_LOG( ERROR, "already processing; ignoring special frame!" );
+                return;
+            }
             auto irf = fs.get_infrared_frame();
             if( ! irf )
             {
-                LOG_ERROR( "Ignoring special frame: no IR frame found!" );
-                std::cout << "-D- no IR frame; ignoring" << std::endl;
+                AC_LOG( ERROR, "no IR frame found; ignoring special frame!" );
                 call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
             auto df = fs.get_depth_frame();
             if( !df )
             {
-                LOG_ERROR( "Ignoring special frame: no depth frame found!" );
-                std::cout << "-D- no depth frame; ignoring" << std::endl;
+                AC_LOG( ERROR, "no depth frame found; ignoring special frame!" );
                 call_back( RS2_CALIBRATION_FAILED );
                 return;
             }
 
             _sf = fs;
+            _retrier.reset();
 
             if( check_color_depth_sync() )
                 start();
@@ -267,6 +340,7 @@ namespace librealsense
         void auto_calibration::set_color_frame( rs2::frame const& f )
         {
             if( _is_processing )
+                // No error message -- we expect to get new color frames while processing...
                 return;
 
             _pcf = _cf;
@@ -293,7 +367,7 @@ namespace librealsense
 
         void auto_calibration::start()
         {
-            std::cout << "-D- in start(); processing... " << std::endl;
+            AC_LOG( DEBUG, "starting processing ..." );
             _is_processing = true;
             if( _worker.joinable() )
                 _worker.join();
@@ -301,7 +375,7 @@ namespace librealsense
             {
                 try
                 {
-                    LOG_INFO("Auto calibration has started ...");
+                    AC_LOG( DEBUG, "auto calibration has started ...");
                     call_back( RS2_CALIBRATION_STARTED );
 
                     auto df = _sf.get_depth_frame();
@@ -310,10 +384,16 @@ namespace librealsense
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    //calibration new_calib = { rs2_extrinsics{0}, rs2_intrinsics{0}, df.get_profile().get()->profile, _cf.get_profile().get()->profile };
-                    if( algo.optimize() )
+                    if( !algo.is_scene_valid() )
                     {
-                        std::cout << "-D- optimized" << std::endl;
+                        AC_LOG( DEBUG, "scene is deemed invalid for calibration; retrying..." );
+                        call_back( RS2_CALIBRATION_SCENE_INVALID );
+                        reset();
+                        trigger_special_frame( true );
+                    }
+                    else if( algo.optimize() )
+                    {
+                        AC_LOG( DEBUG, "optimization successful!" );
                         /*  auto prof = _cf.get_profile().get()->profile;
                         auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
                         if (video)
@@ -322,21 +402,19 @@ namespace librealsense
                         _extr = algo.get_extrinsics();
                         _intr = algo.get_intrinsics();
                         call_back( RS2_CALIBRATION_SUCCESSFUL );
+                        reset();
                     }
                     else
                     {
                         call_back( RS2_CALIBRATION_FAILED );
+                        reset();
                     }
-
-                    reset();
-                    LOG_INFO("Auto calibration has finished ...");
                 }
                 catch (...)
                 {
-                    std::cout << "-D- exception!!!!!!!!!!!!!" << std::endl;
+                    AC_LOG( ERROR, "unknown exception!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
                     reset();
-                    LOG_ERROR("Auto calibration has finished ...");
                 }});
         }
 
@@ -347,7 +425,7 @@ namespace librealsense
             _pcf = rs2::frame{};
 
             _is_processing = false;
-            std::cout << "-D- reset() " << std::endl;
+            AC_LOG( DEBUG, "reset()" );
         }
 
         autocal_depth_processing_block::autocal_depth_processing_block(
@@ -355,14 +433,11 @@ namespace librealsense
         )
             : generic_processing_block( "Auto Calibration (depth)" )
             , _autocal{ autocal }
-            , _is_enabled_opt( autocal->get_enabler_opt() )
         {
         }
 
         static bool is_special_frame( rs2::frame const& f )
         {
-            if( f && !f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ) )
-                std::cout << "-D- no LASER_POWER_MODE" << std::endl;
             return(f
                 && f.supports_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE )
                 && 0x5F == f.get_frame_metadata( RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE ));
@@ -370,22 +445,14 @@ namespace librealsense
 
         rs2::frame autocal_depth_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
         {
-            // If is_enabled_opt is false, meaning this processing block is not active,
-            // return the frame as is.
-            if( auto is_enabled = _is_enabled_opt.lock() )
-                if( !is_enabled->is_true() )
-                    ; // return f;
+            // AC can be triggered manually, too, so we do NOT check whether the option is on!
 
             auto fs = f.as< rs2::frameset >();
             if( fs )
             {
                 auto df = fs.get_depth_frame();
                 if( is_special_frame( df ))
-                {
-                    LOG_INFO( "Auto calibration SF received" );
-                    std::cout << "-D- Got special frame" << std::endl;
                     _autocal->set_special_frame( f );
-                }
                 // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
                 return rs2::frame{};
             }
@@ -409,8 +476,6 @@ namespace librealsense
                 return rs2::frame{};
 
             return source.allocate_composite_frame( results );
-
-            //return generic_processing_block::prepare_output( source, input, results );
         }
 
         autocal_color_processing_block::autocal_color_processing_block(
@@ -418,17 +483,12 @@ namespace librealsense
         )
             : generic_processing_block( "Auto Calibration (color)" )
             , _autocal{ autocal }
-            , _is_enabled_opt( autocal->get_enabler_opt() )
         {
         }
 
         rs2::frame autocal_color_processing_block::process_frame( const rs2::frame_source& source, const rs2::frame& f )
         {
-            // If is_enabled_opt is false, meaning this processing block is not active,
-            // return the frame as is.
-            if( auto is_enabled = _is_enabled_opt.lock() )
-                if( !is_enabled->is_true() )
-                    ; // return f;
+            // AC can be triggered manually, too, so we do NOT check whether the option is on!
 
             // Disregard framesets: we'll get those broken down into individual frames by generic_processing_block's on_frame
             if( f.is< rs2::frameset >() )
@@ -445,15 +505,5 @@ namespace librealsense
         {
             return true;
         }
-#if 0
-        rs2::frame autocal_color_processing_block::prepare_output( const rs2::frame_source& source, rs2::frame input, std::vector<rs2::frame> results )
-        {
-            // The default prepare_output() will send the input back as the frame if the results are empty
-            if( results.empty() )
-                return rs2::frame{};
-
-            return generic_processing_block::prepare_output( source, input, results );
-        }
-#endif
     } // librealsense::ivcam2
 } // namespace librealsense
