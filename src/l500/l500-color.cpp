@@ -167,8 +167,12 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
+                        auto && intr = _autocal->get_intrinsics();
+                        update_intrinsics( to_profile( _autocal->get_to_profile() ), intr );
+                        stream_interface * from = _autocal->get_from_profile();
+                        stream_interface * to = _autocal->get_to_profile();
                         auto && extr = _autocal->get_extrinsics();
-                        update_intrinsics( to_profile( _autocal->get_to_profile() ), _autocal->get_intrinsics() );
+                        environment::get_instance().get_extrinsics_graph().register_extrinsics( *from, *to, extr );
                     }
                     for( auto&& cb : _calibration_change_callbacks )
                         cb->on_calibration_change( status );
