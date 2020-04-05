@@ -248,12 +248,12 @@ namespace librealsense
             for (auto&& p : results)
             {
                 // Register stream types
-                if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() < 2)
+                if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 0)
                 {
                     assign_stream(_owner->_left_ir_stream, p);
 					environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_left_ir_stream, *p);
                 }
-                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 2)
+                else if (p->get_stream_type() == RS2_STREAM_INFRARED && p->get_stream_index() == 1)
                 {
                     assign_stream(_owner->_right_ir_stream, p);
 					environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_owner->_right_ir_stream, *p);
@@ -272,8 +272,8 @@ namespace librealsense
         const platform::backend_device_group& group,
         bool register_device_notifications)
         : device(ctx, group, register_device_notifications),
-        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
+        _left_ir_stream(new stream(RS2_STREAM_INFRARED, 0)),
+        _right_ir_stream(new stream(RS2_STREAM_INFRARED, 1))
     {
         std::vector<std::shared_ptr<platform::uvc_device>> devs;
         for (auto&& info : uvc_infos)
@@ -285,13 +285,14 @@ namespace librealsense
             this);
         
         auto ir_ep = std::make_shared<fa_ir_sensor>(this, raw_ir_ep);
-        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>
-            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 0));
+        
         // Second Infrared is marked as UYVY so that the streams will have different profiles - needed because of design of mf-uvc class 
         // It is then converted back to YUYV for streaming
-        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_to_yuyv_converter>
-            (RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 2));
-        
+        // TODO Remi - composite processing block to be used so that uyvy will be read as yuyv, and the color formats will be still available
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
 
         add_sensor(ir_ep);
 
