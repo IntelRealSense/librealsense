@@ -57,6 +57,6 @@ namespace librealsense
         void set_extrinsics();
 
         stream_filter _prev_stream_filter;
-        bool _registered_auto_calib_cb = false;
+        std::shared_ptr< pointcloud > _registered_auto_calib_cb;
     };
 }
