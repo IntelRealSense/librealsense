@@ -685,7 +685,10 @@ namespace librealsense
 
     void unpack_uyvy_to_yuyv(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
     {
-        memcpy(d[0], s, actual_size);
+        if (dst_format == RS2_FORMAT_UYVY)
+            memcpy(d[0], s, actual_size);
+        else
+            unpack_uyvyc(dst_format, dst_stream, d, s, w, h, actual_size);
     }
 
     void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
