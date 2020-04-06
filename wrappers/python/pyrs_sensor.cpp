@@ -3,6 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
+#include "override-intrinsics-sensor.h"
 
 void init_sensor(py::module &m) {
     /** rs_sensor.hpp **/
@@ -71,6 +72,7 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
+        .def(BIND_DOWNCAST(sensor, override_intrinsics_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer));
 
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
@@ -99,6 +101,11 @@ void init_sensor(py::module &m) {
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
         .def("__nonzero__", &rs2::fisheye_sensor::operator bool); // No docstring in C++
+
+    py::class_<rs2::override_intrinsics_sensor, rs2::sensor> oi_sensor( m, "override_intrinsics_sensor" );
+    oi_sensor.def( py::init<rs2::sensor>(), "sensor"_a )
+        .def( "override_intrinsics", &rs2::override_intrinsics_sensor::override_intrinsics, "profile"_a, "intrinsics"_a )
+        .def( "__nonzero__", &rs2::override_intrinsics_sensor::operator bool );
 
     // rs2::depth_stereo_sensor
     py::class_<rs2::depth_stereo_sensor, rs2::depth_sensor> depth_stereo_sensor(m, "depth_stereo_sensor"); // No docstring in C++

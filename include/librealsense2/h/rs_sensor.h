@@ -599,6 +599,18 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile , const rs2_intrinsics* intrinsics, rs2_error** error);
 
 /**
+ * \brief Override intrinsics of a given sensor that supports override_intrinsics_sensor.
+ *
+ * This will affect intrinsics at the source and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
+ *
+* \param[in] sensor       The RealSense device
+* \param[in] profile      Target stream profile
+* \param[in] intrinsics   Intrinsics value to be written to the sensor
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_intrinsics* intrinsics, rs2_error** error );
+
+/**
  * Set extrinsics between two sensors
  * \param[in]  from_sensor  Origin sensor
  * \param[in]  from_profile Origin profile

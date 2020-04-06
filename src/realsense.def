@@ -28,6 +28,7 @@ EXPORTS
     rs2_register_extrinsics
     rs2_override_extrinsics
     rs2_get_motion_intrinsics
+    rs2_override_intrinsics
 
     rs2_get_stream_profiles
     rs2_get_active_streams

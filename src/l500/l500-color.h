@@ -11,6 +11,7 @@
 #include "stream.h"
 #include "l500-depth.h"
 #include "device-calibration.h"
+#include "override-intrinsics-sensor.h"
 
 namespace librealsense
 {
@@ -55,7 +56,11 @@ namespace librealsense
         std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
     };
 
-    class l500_color_sensor : public synthetic_sensor, public video_sensor_interface, public color_sensor
+    class l500_color_sensor
+        : public synthetic_sensor
+        , public video_sensor_interface
+        , public override_intrinsics_sensor
+        , public color_sensor
     {
     public:
         explicit l500_color_sensor(l500_color* owner,
@@ -68,6 +73,11 @@ namespace librealsense
         {}
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
+        
+        void override_intrinsics( stream_profile_interface const* profile, rs2_intrinsics const& intr ) override
+        {
+            _owner->update_intrinsics( to_profile( profile ), intr );
+        }
 
         stream_profiles init_stream_profiles() override
         {

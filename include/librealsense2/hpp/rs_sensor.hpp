@@ -662,5 +662,30 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
     };
+
+    class override_intrinsics_sensor : public sensor
+    {
+    public:
+        override_intrinsics_sensor( sensor s )
+            : sensor( s.get() )
+        {
+            rs2_error* e = nullptr;
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_OVERRIDE_INTRINSICS_SENSOR, &e ) == 0 && !e )
+            {
+                _sensor.reset();
+            }
+            error::handle( e );
+        }
+
+        operator bool() const { return _sensor.get() != nullptr; }
+
+        /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
+        void override_intrinsics( const stream_profile & profile, rs2_intrinsics const& intr )
+        {
+            rs2_error* e = nullptr;
+            rs2_override_intrinsics( _sensor.get(), profile.get(), &intr, &e );
+            error::handle( e );
+        }
+    };
 }
 #endif // LIBREALSENSE_RS2_SENSOR_HPP

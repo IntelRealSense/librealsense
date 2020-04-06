@@ -122,5 +122,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/frame-validator.h"
         "${CMAKE_CURRENT_LIST_DIR}/auto-calibrated-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/override-intrinsics-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/serializable-interface.h"
 )
