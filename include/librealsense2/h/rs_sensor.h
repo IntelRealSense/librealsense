@@ -465,6 +465,25 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
     rs2_extrinsics extrin, rs2_error** error);
 
 /**
+ * \brief Override an existing extrinsic value.
+ *
+ * This will affect any edge on the graph that shares this extrinsic, unlike
+ * rs2_register_extrinsics that will write over the existing value and remove any shares
+ * on it!
+ *
+ * Whereas rs2_register_extrinsics will create an edge on the graph, this function will
+ * throw an exception if an edge does not already exist.
+ *
+ * \param[in] from          origin stream profile
+ * \param[in] to            target stream profile
+ * \param[out] extrin       extrinsics from origin to target
+ * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_override_extrinsics(const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
+    rs2_extrinsics extrin, rs2_error** error);
+
+/**
  * When called on a video profile, returns the intrinsics of specific stream configuration
  * \param[in] mode          input stream profile
  * \param[out] intrinsics   resulting intrinsics for the video profile
