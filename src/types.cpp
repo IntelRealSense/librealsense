@@ -158,7 +158,7 @@ namespace librealsense
         switch( type )
         {
             CASE( DEPTH_TO_RGB )
-        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
+        default: assert( !is_valid( type ) ); return UNKNOWN_VALUE;
         }
 #undef CASE
     }
