@@ -27,6 +27,27 @@ namespace librealsense
 
     bool auto_cal_algo::optimize()
     {
+        std::cout << "-D- old intr"
+            << ": width: " << _intr.width
+            << ", height: " << _intr.height
+            << ", ppx: " << _intr.ppx
+            << ", ppy: " << _intr.ppy
+            << ", fx: " << _intr.fx
+            << ", fy: " << _intr.fy
+            << ", model: " << _intr.model
+            << ", coeffs: ["
+            << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
+            << "]"
+            << std::endl;
+        std::cout << "-D- old extr:"
+            << " rotation: ["
+            << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
+            << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
+            << "]  translation: ["
+            << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
+            << "]"
+            << std::endl;
+
         auto yuy_data = preprocess_yuy2_data(yuy, prev_yuy);
         auto ir_data = preprocess_ir(ir);
 
@@ -65,6 +86,40 @@ namespace librealsense
             optimized = true;
         }
         std::cout << "Optimaized cost = " << params_curr.cost << std::endl;
+#if 1
+        auto r = params_curr.curr_calib.rot.rot;
+        auto t = params_curr.curr_calib.trans;
+        auto c = params_curr.curr_calib.coeffs;
+
+        _extr = rs2_extrinsics { {r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8] },
+                                {(float)t.t1, (float)t.t2, (float)t.t3} };
+
+        _intr = rs2_intrinsics { params_curr.curr_calib.width, params_curr.curr_calib.height,  //_intr.width, _intr.height,
+                                (float)params_curr.curr_calib.k_mat.ppx, (float)params_curr.curr_calib.k_mat.ppy,
+                                (float)params_curr.curr_calib.k_mat.fx, (float)params_curr.curr_calib.k_mat.fy,
+                                params_curr.curr_calib.model, {(float)c[0], (float)c[1], (float)c[2], (float)c[3], (float)c[4]} };
+
+        std::cout << "-D- new intr"
+            << ": width: " << _intr.width
+            << ", height: " << _intr.height
+            << ", ppx: " << _intr.ppx
+            << ", ppy: " << _intr.ppy
+            << ", fx: " << _intr.fx
+            << ", fy: " << _intr.fy
+            << ", model: " << _intr.model
+            << ", coeffs: ["
+            << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
+            << "]"
+            << std::endl;
+        std::cout << "-D- new extr:"
+            << " rotation: ["
+            << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
+            << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
+            << "]  translation: ["
+            << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
+            << "]"
+            << std::endl;
+#endif
 
         return optimized;
     }
@@ -1539,6 +1594,9 @@ namespace librealsense
 
     void auto_cal_algo::calib::copy_coefs(calib & obj)
     {
+        obj.width = this->width;
+        obj.height = this->height;
+
         obj.coeffs[0] = this->coeffs[0];
         obj.coeffs[1] = this->coeffs[1];
         obj.coeffs[2] = this->coeffs[2];
@@ -1719,6 +1777,8 @@ namespace librealsense
         auto trans = extrin.translation;
         auto coeffs = intrin.coeffs;
 
+        cal.height = intrin.height;
+        cal.width = intrin.width;
         cal.rot = { rot[0], rot[1], rot[2], rot[3], rot[4], rot[5] ,rot[6], rot[7], rot[8] };
         cal.trans = { trans[0], trans[1], trans[2] };
         cal.k_mat = { intrin.fx, intrin.fy,intrin.ppx, intrin.ppy };

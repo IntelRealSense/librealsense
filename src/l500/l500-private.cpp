@@ -230,19 +230,19 @@ namespace librealsense
             retrier( auto_calibration & ac )
                 : _ac( ac )
             {
-                AC_LOG( DEBUG, "retrier " << std::hex << this );
+                AC_LOG( DEBUG, "retrier " << std::hex << this << std::dec );
             }
 
             void retry()
             {
-                AC_LOG( DEBUG, "retrying " << std::hex << this );
+                AC_LOG( DEBUG, "retrying " << std::hex << this << std::dec );
                 _ac.trigger_special_frame( true );
             }
 
         public:
             ~retrier()
             {
-                AC_LOG( DEBUG, "~retrier " << std::hex << this );
+                AC_LOG( DEBUG, "~retrier " << std::hex << this << std::dec );
             }
 
             static std::shared_ptr< retrier > start( auto_calibration & autocal )
@@ -409,6 +409,12 @@ namespace librealsense
                         call_back( RS2_CALIBRATION_FAILED );
                         reset();
                     }
+                }
+                catch( std::exception& ex )
+                {
+                    AC_LOG( ERROR, "caught exception: " << ex.what() );
+                    call_back( RS2_CALIBRATION_FAILED );
+                    reset();
                 }
                 catch (...)
                 {
