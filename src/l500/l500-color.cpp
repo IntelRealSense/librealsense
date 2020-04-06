@@ -183,7 +183,9 @@ namespace librealsense
 
                         // _color_extrinsic is color->depth and the auto-cal extr are depth->color so we have to invert:
                         rs2_extrinsics extr_i = inverse( _autocal->get_extrinsics() );
-                        *_color_extrinsic = [=]() { return extr_i; };
+                        //*_color_extrinsic = [=]() { return extr_i; };
+                        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_color_stream, *_depth_stream, extr_i );
+
                         std::cout << "-D- done" << std::endl;
                     }
                     for( auto&& cb : _calibration_change_callbacks )
