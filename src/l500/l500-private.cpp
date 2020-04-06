@@ -198,10 +198,6 @@ namespace librealsense
             _record_action( *this );
         }
 
-#define AC_LOG_PREFIX "Depth- to RGB-calibration: "
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
-
         auto_calibration::enabler_option::enabler_option( std::shared_ptr< auto_calibration > const & autocal )
             : bool_option( false )
             , _autocal( autocal )

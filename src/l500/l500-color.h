@@ -33,7 +33,6 @@ namespace librealsense
         void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
         {
             _calibration_change_callbacks.push_back( callback );
-            std::cout << "-D- register_calibration_change_callback - now " << _calibration_change_callbacks.size() << std::endl;
         }
 
         void trigger_device_calibration( rs2_calibration_type ) override;

@@ -186,7 +186,6 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
-                    std::cout << "-D- Setting up depth_processing_block... 1" << std::endl;
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
@@ -211,7 +210,6 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
-                    std::cout << "-D- Setting up depth_processing_block... 2" << std::endl;
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }
@@ -241,7 +239,6 @@ namespace librealsense
                 cpb->add(zo);
                 if( _autocal )
                 {
-                    std::cout << "-D- Setting up depth_processing_block... 3" << std::endl;
                     //sync->add_enabling_option( _autocal->get_enabler_opt() );
                     cpb->add( std::make_shared< autocal_depth_processing_block >( _autocal ) );
                 }

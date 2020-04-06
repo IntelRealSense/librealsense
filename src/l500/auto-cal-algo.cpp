@@ -6,6 +6,11 @@
 #include "../include/librealsense2/rsutil.h"
 #include <algorithm>
 
+#define AC_LOG_PREFIX "AC1: "
+//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
+
 namespace librealsense
 {
     auto_cal_algo::auto_cal_algo(
@@ -27,7 +32,7 @@ namespace librealsense
 
     bool auto_cal_algo::optimize()
     {
-        std::cout << "-D- old intr"
+        AC_LOG( DEBUG, "old intr"
             << ": width: " << _intr.width
             << ", height: " << _intr.height
             << ", ppx: " << _intr.ppx
@@ -37,16 +42,14 @@ namespace librealsense
             << ", model: " << _intr.model
             << ", coeffs: ["
             << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
-            << "]"
-            << std::endl;
-        std::cout << "-D- old extr:"
+            << "]" );
+        AC_LOG( DEBUG, "old extr:"
             << " rotation: ["
             << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
             << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
             << "]  translation: ["
             << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
-            << "]"
-            << std::endl;
+            << "]" );
 
         auto yuy_data = preprocess_yuy2_data(yuy, prev_yuy);
         auto ir_data = preprocess_ir(ir);
@@ -62,7 +65,7 @@ namespace librealsense
         auto optimized = false;
 
         auto cost = calc_cost_and_grad(z_data, yuy_data, params_orig.curr_calib);
-        std::cout << "Original cost = " << cost.second << std::endl;
+        AC_LOG( DEBUG, "Original cost = " << cost.second );
 
         optimaization_params params_curr = params_orig;
 
@@ -81,11 +84,11 @@ namespace librealsense
                 break;
 
             params_curr = new_params;
-            std::cout << "Current optimaized cost = " << params_curr.cost << std::endl;
+            AC_LOG( DEBUG, "Current optimaized cost = " << params_curr.cost );
 
             optimized = true;
         }
-        std::cout << "Optimaized cost = " << params_curr.cost << std::endl;
+        AC_LOG( DEBUG, "Optimaized cost = " << params_curr.cost );
 #if 1
         auto r = params_curr.curr_calib.rot.rot;
         auto t = params_curr.curr_calib.trans;
@@ -99,7 +102,7 @@ namespace librealsense
                                 (float)params_curr.curr_calib.k_mat.fx, (float)params_curr.curr_calib.k_mat.fy,
                                 params_curr.curr_calib.model, {(float)c[0], (float)c[1], (float)c[2], (float)c[3], (float)c[4]} };
 
-        std::cout << "-D- new intr"
+        AC_LOG( DEBUG, "new intr"
             << ": width: " << _intr.width
             << ", height: " << _intr.height
             << ", ppx: " << _intr.ppx
@@ -109,16 +112,14 @@ namespace librealsense
             << ", model: " << _intr.model
             << ", coeffs: ["
             << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
-            << "]"
-            << std::endl;
-        std::cout << "-D- new extr:"
+            << "]" );
+        AC_LOG( DEBUG, "new extr:"
             << " rotation: ["
             << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
             << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
             << "]  translation: ["
             << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
-            << "]"
-            << std::endl;
+            << "]" );
 #endif
 
         return optimized;
@@ -715,7 +716,7 @@ namespace librealsense
 
             uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
             new_params.cost = calc_cost(z_data, yuy_data, uvmap);
-            std::cout << "Current back tracking line search cost = " << new_params.cost << std::endl;
+            AC_LOG( DEBUG, "Current back tracking line search cost = " << new_params.cost );
         }
 
         if (curr_params.cost - new_params.cost >= step_size * t)
@@ -775,12 +776,15 @@ namespace librealsense
     {
         calib res;
         auto interp_IDT_x = biliniar_interp(yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv);
+#if 0
         std::ofstream f;
         f.open("res");
         for (auto i = 0; i < interp_IDT_x.size(); i++)
         {
             f << uv[i].x << " " << uv[i].y << std::endl;
         }
+        f.close();
+#endif
 
         auto interp_IDT_y = biliniar_interp(yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv);
 
@@ -1573,13 +1577,15 @@ namespace librealsense
     {
         auto uvmap = get_texture_map(z_data.vertices, curr_calib);
 
+#if 0
         std::ofstream f;
         f.open("uvmap");
         for (auto i = 0; i < uvmap.size(); i++)
         {
             f << uvmap[i].x << " " << uvmap[i].y << std::endl;
-
         }
+        f.close();
+#endif
         auto cost = calc_cost(z_data, yuy_data, uvmap);
         auto grad = calc_gradients(z_data, yuy_data, uvmap, curr_calib);
         return { grad, cost };

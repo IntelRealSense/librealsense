@@ -176,17 +176,17 @@ namespace librealsense
                 {
                     if( status == RS2_CALIBRATION_SUCCESSFUL )
                     {
-                        std::cout << "-D------> updating intrinsics..." << std::endl;
+                        AC_LOG( DEBUG, "------> updating intrinsics..." );
                         auto && intr = _autocal->get_intrinsics();
                         update_intrinsics( to_profile( _autocal->get_to_profile() ), intr );
-                        std::cout << "-D------> updating extrinsics..." << std::endl;
+                        AC_LOG( DEBUG, "------> updating extrinsics..." );
 
                         // _color_extrinsic is color->depth and the auto-cal extr are depth->color so we have to invert:
                         rs2_extrinsics extr_i = inverse( _autocal->get_extrinsics() );
                         //*_color_extrinsic = [=]() { return extr_i; };
                         environment::get_instance().get_extrinsics_graph().override_extrinsics( *_color_stream, *_depth_stream, extr_i );
 
-                        std::cout << "-D- done" << std::endl;
+                        AC_LOG( DEBUG, "done" );
                     }
                     for( auto&& cb : _calibration_change_callbacks )
                         cb->on_calibration_change( status );
@@ -216,7 +216,7 @@ namespace librealsense
             auto model = intrinsic->resolution.intrinsic_resolution[i];
             if( model.height == profile.height && model.width == profile.width )
             {
-                std::cout << "-D- getting intrinsics from profile " << i << " res " << model.width << 'x' << model.height << std::endl;
+                 AC_LOG( DEBUG, "getting intrinsics from profile " << i << " res " << model.width << 'x' << model.height );
 
                 rs2_intrinsics intrinsics;
                 intrinsics.width = model.width;
@@ -247,13 +247,11 @@ namespace librealsense
 
     void l500_color::update_intrinsics( stream_profile const& profile, rs2_intrinsics const& intr )
     {
-        std::cout << "." << std::flush;
         if( intr.width != profile.width  ||  intr.height != profile.height )
             throw std::runtime_error( to_string() << "new calibration intrinsics do not match profile! (" << intr.width << 'x' << intr.height << "; expected " << profile.width << 'x' << profile.height << ")" );
 
         using namespace ivcam2;
 
-        std::cout << "." << std::flush;
         auto & intrinsic = *const_cast<intrinsic_rgb *>( check_calib< intrinsic_rgb >( *_color_intrinsics_table_raw ));
         auto num_of_res = intrinsic.resolution.num_of_resolutions;
         bool found = false;
@@ -263,7 +261,7 @@ namespace librealsense
             if( model.height != profile.height || model.width != profile.width )
                 continue;
 
-            std::cout << "-D- new intr (" << i << ")"
+            AC_LOG( DEBUG, "new intr (" << i << ")"
                 << ": width: " << intr.width
                 << ", height: " << intr.height
                 << ", ppx: " << intr.ppx
@@ -273,8 +271,7 @@ namespace librealsense
                 << ", model: " << intr.model
                 << ", coeffs: ["
                 << intr.coeffs[0] << ", " << intr.coeffs[1] << ", " << intr.coeffs[2] << ", " << intr.coeffs[3] << ", " << intr.coeffs[4]
-                << "]"
-                << std::endl;
+                << "]" );
 
             model.ipm.focal_length.x = intr.fx;
             model.ipm.focal_length.y = intr.fy;
@@ -290,7 +287,6 @@ namespace librealsense
             model.distort.radial_k3     = is_inverse ? intr.coeffs[4] : 0;
             found = true;
         }
-        std::cout << std::endl;
         if( ! found )
             throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist" );
     }
