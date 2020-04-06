@@ -152,13 +152,16 @@ namespace librealsense
         _color_intrinsics_table_raw = [this]() { return get_raw_intrinsics_table(); };
         _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
 
+        // This lazy instance will get shared between all the extrinsics edges. If you ever need to override
+        // it, be careful not to overwrite the shared-ptr itself (register_extrinsics) or the sharing
+        // will get ruined. Instead, overwriting the lazy<> function should do it:
+        //      *_color_extrinsic = [=]() { return extr; };
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>(
             [this]()
             {
-                return _have_extr_override
-                    ? _extr_override
-                    : from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw));
+                return from_pose(get_color_stream_extrinsic(*_color_extrinsics_table_raw));
             } );
+        // Note this is from color->depth!
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
@@ -178,19 +181,9 @@ namespace librealsense
                         update_intrinsics( to_profile( _autocal->get_to_profile() ), intr );
                         std::cout << "-D------> updating extrinsics..." << std::endl;
 
-                        auto & l = *_color_extrinsic;
+                        // _color_extrinsic is color->depth and the auto-cal extr are depth->color so we have to invert:
                         rs2_extrinsics extr_i = inverse( _autocal->get_extrinsics() );
-                        l = [extr_i]() { return extr_i; };
-                        //_have_extr_override = true;
-                        //std::shared_ptr<lazy<rs2_extrinsics>> color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>(
-                        //    [=]() { return extr; } );
-                        //environment::get_instance().get_extrinsics_graph().register_extrinsics( *_color_stream, *_depth_stream, color_extrinsic );
-                        //register_stream_to_extrinsic_group( *_color_stream, 0 );
-
-                        //stream_interface * from = _autocal->get_from_profile();
-                        //stream_interface * to = _autocal->get_to_profile();
-                        //auto && extr = _autocal->get_extrinsics();
-                        //environment::get_instance().get_extrinsics_graph().register_extrinsics( *from, *to, extr );
+                        *_color_extrinsic = [=]() { return extr_i; };
                         std::cout << "-D- done" << std::endl;
                     }
                     for( auto&& cb : _calibration_change_callbacks )
