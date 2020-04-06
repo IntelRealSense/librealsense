@@ -1098,7 +1098,18 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
 
     environment::get_instance().get_extrinsics_graph().register_extrinsics(*from->profile, *to->profile, extrin);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, from, to)
+HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
+
+void rs2_override_extrinsics( const rs2_stream_profile* from,
+    const rs2_stream_profile* to,
+    rs2_extrinsics extrin, rs2_error** error )BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( from );
+    VALIDATE_NOT_NULL( to );
+
+    environment::get_instance().get_extrinsics_graph().override_extrinsics( *from->profile, *to->profile, extrin );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( , from, to, extrin )
 
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
