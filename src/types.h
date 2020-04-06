@@ -536,6 +536,16 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_calibration_status, RS2_CALIBRATION_STATUS_FIRST, RS2_CALIBRATION_STATUS_LAST )
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
 
+    inline std::ostream& operator<<( std::ostream& out, rs2_extrinsics const & e )
+    {
+        return out
+            << "[ r["
+            << e.rotation[0] << "," << e.rotation[1] << "," << e.rotation[2] << "," << e.rotation[3] << "," << e.rotation[4] << ","
+            << e.rotation[5] << "," << e.rotation[6] << "," << e.rotation[7] << "," << e.rotation[8]
+            << "]  t[" << e.translation[0] << "," << e.translation[1] << "," << e.translation[2] << "] ]";
+    }
+
+
     ////////////////////////////////////////////
     // World's tiniest linear algebra library //
     ////////////////////////////////////////////
