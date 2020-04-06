@@ -14,7 +14,7 @@
 #include "../device.h"
 #include "../stream.h"
 #include <iostream>
-#include "depth-to-rgb-calibration-device.h"
+#include "device-calibration.h"
 
 #ifdef RS2_USE_CUDA
 #include "proc/cuda/cuda-pointcloud.h"
@@ -128,7 +128,7 @@ namespace librealsense
                 if (sensor)
                 {
                     auto dev = sensor->get_device().shared_from_this();
-                    depth_to_rgb_calibration_device * d2r = dynamic_cast<depth_to_rgb_calibration_device*>(dev.get());
+                    device_calibration * d2r = dynamic_cast<device_calibration*>(dev.get());
                     assert( d2r );
                     try
                     {

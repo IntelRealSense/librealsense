@@ -10,13 +10,13 @@
 #include "l500-device.h"
 #include "stream.h"
 #include "l500-depth.h"
-#include "depth-to-rgb-calibration-device.h"
+#include "device-calibration.h"
 
 namespace librealsense
 {
     class l500_color
         : public virtual l500_device
-        , public depth_to_rgb_calibration_device
+        , public device_calibration
     {
     public:
         std::shared_ptr<synthetic_sensor> create_color_device(std::shared_ptr<context> ctx,
@@ -35,7 +35,7 @@ namespace librealsense
             std::cout << "-D- register_calibration_change_callback - now " << _calibration_change_callbacks.size() << std::endl;
         }
 
-        void trigger_depth_to_rgb_calibration() override;
+        void trigger_device_calibration( rs2_calibration_type ) override;
 
     protected:
         std::shared_ptr<stream_interface> _color_stream;
@@ -110,7 +110,7 @@ namespace librealsense
         {
             _action_delayer.do_after_delay([&]() {
                     synthetic_sensor::start(callback);
-                    //_owner->trigger_depth_to_rgb_calibration();
+                    //_owner->trigger_device_calibration( RS2_CALIBRATION_DEPTH_TO_RGB );
             });
         }
 

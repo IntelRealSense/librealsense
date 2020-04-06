@@ -41,7 +41,7 @@
 #include "software-device.h"
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
-#include "depth-to-rgb-calibration-device.h"
+#include "device-calibration.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -386,7 +386,7 @@ void rs2_register_calibration_change_callback( rs2_device* dev, rs2_calibration_
     VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
 
     // Wrap the C function with a callback interface that will get deleted when done
     d2r->register_calibration_change_callback(
@@ -400,7 +400,7 @@ void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibrat
     VALIDATE_NOT_NULL( dev );
     VALIDATE_NOT_NULL( callback );
 
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
 
     // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
     d2r->register_calibration_change_callback(
@@ -409,15 +409,15 @@ void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibrat
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )
 
-void rs2_trigger_depth_to_rgb_calibration( rs2_device * dev, rs2_error** error ) BEGIN_API_CALL
+void rs2_trigger_device_calibration( rs2_device * dev, rs2_calibration_type type, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( dev );
     
-    auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::depth_to_rgb_calibration_device );
+    auto cal = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
 
-    d2r->trigger_depth_to_rgb_calibration();
+    cal->trigger_device_calibration( type );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , dev )
+HANDLE_EXCEPTIONS_AND_RETURN( , dev, type )
 
 void rs2_get_motion_intrinsics(const rs2_stream_profile* mode, rs2_motion_device_intrinsic * intrinsics, rs2_error ** error) BEGIN_API_CALL
 {
@@ -1204,6 +1204,7 @@ const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata
 const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
 const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
 const char* rs2_ambient_light_to_string( rs2_ambient_light ambient ) { return get_string( ambient ); }
+const char* rs2_calibration_type_to_string(rs2_calibration_type type)                     { return get_string(type); }
 const char* rs2_calibration_status_to_string(rs2_calibration_status status)               { return get_string(status); }
 
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
@@ -1356,8 +1357,8 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                   != nullptr;
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
-        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface) != nullptr;
-        case RS2_EXTENSION_DEPTH_TO_RGB_CALIBRATION_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::depth_to_rgb_calibration_device) != nullptr;
+        case RS2_EXTENSION_AUTO_CALIBRATED_DEVICE: return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::auto_calibrated_interface)   != nullptr;
+        case RS2_EXTENSION_DEVICE_CALIBRATION    : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::device_calibration)          != nullptr;
         case RS2_EXTENSION_SERIALIZABLE          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::serializable_interface) != nullptr;
 
         default:

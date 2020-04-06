@@ -54,7 +54,8 @@ EXPORTS
 
     rs2_register_calibration_change_callback
     rs2_register_calibration_change_callback_cpp
-    rs2_trigger_depth_to_rgb_calibration
+    rs2_trigger_device_calibration
+    rs2_calibration_type_to_string
     rs2_calibration_status_to_string
 
     rs2_get_frame_metadata

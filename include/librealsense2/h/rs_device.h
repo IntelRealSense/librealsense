@@ -311,16 +311,31 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
 
+/**
+ * Used in device_calibration; enumerates the different calibration types
+ * available for that extension.
+ */
+typedef enum rs2_calibration_type
+{
+    RS2_CALIBRATION_DEPTH_TO_RGB,
+    RS2_CALIBRATION_TYPE_COUNT
+} rs2_calibration_type;
+const char* rs2_calibration_type_to_string( rs2_calibration_type );
+
+/**
+ * Used in device_calibration with rs2_calibration_change_callback
+ */
 typedef enum rs2_calibration_status
 {
-    RS2_CALIBRATION_SUCCESSFUL    =  0,
+    RS2_CALIBRATION_SUCCESSFUL    =  0,  // Have new calibration in-hand
     RS2_CALIBRATION_STARTED       =  1,  // Have all frames in hand; starting processing
 
     RS2_CALIBRATION_FAILED        = -1,
     RS2_CALIBRATION_SCENE_INVALID = -2,  // Scene was not good enough for calibration; will retry
-    RS2_CALIBRATION_RETRY         = -3,
+    RS2_CALIBRATION_BAD_RESULT    = -3,  // Calibration finished, but results aren't good; will retry
+    RS2_CALIBRATION_RETRY         = -4,  // Initiating retry (asked for a new special frame)
 
-    RS2_CALIBRATION_STATUS_FIRST  = -3,
+    RS2_CALIBRATION_STATUS_FIRST  = -4,
     RS2_CALIBRATION_STATUS_LAST   =  1,
     RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
 } rs2_calibration_status;
@@ -349,9 +364,10 @@ void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibrat
 /**
  * TODO
  * \param[in] dev           the device
+ * \param[in] type          the type of calibration requested
  * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
-void rs2_trigger_depth_to_rgb_calibration( rs2_device* dev, rs2_error** error );
+void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type, rs2_error** error );
 
 /**
 * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.

@@ -545,14 +545,14 @@ return results;
         void release() override { delete this; }
     };
 
-    class depth_to_rgb_calibration_device : public device
+    class device_calibration : public device
     {
     public:
-        depth_to_rgb_calibration_device( device d )
+        device_calibration( device d )
             : device( d.get() )
         {
             rs2_error* e = nullptr;
-            if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEPTH_TO_RGB_CALIBRATION_DEVICE, &e ) == 0 && !e )
+            if( rs2_is_device_extendable_to( _dev.get(), RS2_EXTENSION_DEVICE_CALIBRATION, &e ) == 0 && !e )
             {
                 _dev.reset();
             }
@@ -582,12 +582,12 @@ return results;
         }
 
         /**
-        * This will improve the Depth- to RGB-frame alignment.
+        * This will trigger the given calibration, if available
         */
-        void trigger_depth_to_rgb_calibration()
+        void trigger_device_calibration( rs2_calibration_type type )
         {
             rs2_error* e = nullptr;
-            rs2_trigger_depth_to_rgb_calibration( _dev.get(), &e );
+            rs2_trigger_device_calibration( _dev.get(), type, &e );
             error::handle( e );
         }
     };

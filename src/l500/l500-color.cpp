@@ -192,8 +192,10 @@ namespace librealsense
         }
     }
 
-    void l500_color::trigger_depth_to_rgb_calibration()
+    void l500_color::trigger_device_calibration( rs2_calibration_type type )
     {
+        if( type != RS2_CALIBRATION_DEPTH_TO_RGB )
+            throw std::runtime_error( to_string() << "unsupported calibration type (" << type << ")" );
         if( _autocal )
             _autocal->trigger_special_frame();
     }
