@@ -258,7 +258,8 @@ namespace librealsense
             INTERCAM_SYNC_DEFAULT,
             INTERCAM_SYNC_MASTER,
             INTERCAM_SYNC_SLAVE,
-            INTERCAM_SYNC_MAX
+            INTERCAM_SYNC_FULL_SLAVE,
+            INTERCAM_SYNC_MAX = 258 // 4-258 are for Genlock with trigger frequency 1-255
         };
 
         enum class d400_caps : uint16_t
