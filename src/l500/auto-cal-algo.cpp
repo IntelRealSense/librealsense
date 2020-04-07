@@ -7,8 +7,8 @@
 #include <algorithm>
 
 #define AC_LOG_PREFIX "AC1: "
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
 
 namespace librealsense
@@ -62,7 +62,7 @@ namespace librealsense
         optimaization_params params_orig;
         params_orig.curr_calib = intrinsics_extrinsics_to_calib(_intr, _extr);
 
-        auto optimized = false;
+        auto optimized = true;
 
         auto cost = calc_cost_and_grad(z_data, yuy_data, params_orig.curr_calib);
         AC_LOG( DEBUG, "Original cost = " << cost.second );
@@ -77,18 +77,24 @@ namespace librealsense
             params_curr.calib_gradients = res.first;
 
             auto new_params = back_tracking_line_search(z_data, yuy_data, params_curr);
-            if ((new_params.curr_calib - params_curr.curr_calib).get_norma() < _params.min_rgb_mat_delta)
+            auto norm = (new_params.curr_calib - params_curr.curr_calib).get_norma();
+            if( norm < _params.min_rgb_mat_delta )
+            {
+                AC_LOG( DEBUG, "{normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
                 break;
+            }
 
-            if (abs(new_params.cost - params_curr.cost) < _params.min_cost_delta)
+            auto delta = abs( new_params.cost - params_curr.cost );
+            if( delta < _params.min_cost_delta )
+            {
+                AC_LOG( DEBUG, "Current cost = " << new_params.cost << "; delta= " << delta << " < " << _params.min_cost_delta << "  -->  stopping" );
                 break;
+            }
 
             params_curr = new_params;
-            AC_LOG( DEBUG, "Current optimaized cost = " << params_curr.cost );
-
-            optimized = true;
+            AC_LOG( DEBUG, "Current cost = " << params_curr.cost << "; delta= " << delta );
         }
-        AC_LOG( DEBUG, "Optimaized cost = " << params_curr.cost );
+        AC_LOG( DEBUG, "Optimized cost = " << params_curr.cost );
 #if 1
         auto r = params_curr.curr_calib.rot.rot;
         auto t = params_curr.curr_calib.trans;

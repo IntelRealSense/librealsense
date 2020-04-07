@@ -13,8 +13,8 @@ static const int NUM_OF_RGB_RESOLUTIONS = 5;
 static const int NUM_OF_DEPTH_RESOLUTIONS = 2;
 
 #define AC_LOG_PREFIX "AC1: "
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
 
 namespace librealsense
