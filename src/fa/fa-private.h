@@ -219,6 +219,7 @@ namespace librealsense
         enum fa_rect_resolutions : unsigned short
         {
             res_1920_1080,
+            res_640_480,
             max_fa_rect_resolutions
         };
 
@@ -481,6 +482,7 @@ namespace librealsense
 
         static std::map< fa_rect_resolutions, int2> resolutions_list = {
             { res_1920_1080,{ 1920, 1080 } },
+            { res_640_480,{ 640, 480 } }
         };
 
 
