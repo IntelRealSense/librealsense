@@ -295,7 +295,11 @@ namespace librealsense
 
     void l500_color_sensor::override_intrinsics( rs2_intrinsics const& intr )
     {
-        auto vspi = dynamic_cast<video_stream_profile_interface*>(_owner->_color_stream.get());
+        auto&& active_streams = get_active_streams();
+        if( active_streams.size() != 1 )
+            throw std::runtime_error( to_string() << "expected 1 active stream; found " << active_streams.size() );
+        std::shared_ptr< stream_profile_interface > spi = active_streams.front();
+        auto vspi = dynamic_cast<video_stream_profile_interface*>(spi.get());
         if( !vspi )
             throw std::runtime_error( "could not get video stream profile" );
         _owner->update_intrinsics(
