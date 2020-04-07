@@ -38,8 +38,8 @@ namespace librealsense
             std::vector<tagged_profile> tags;
             tags.push_back({ RS2_STREAM_INFRARED, 0, 1920, 1088, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_INFRARED, 1, 1920, 1088, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, 0, 640, 352, RS2_FORMAT_YUYV, 29, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 352, RS2_FORMAT_YUYV, 29, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, 0, 640, 352, RS2_FORMAT_YUYV, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, 1, 640, 352, RS2_FORMAT_YUYV, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             return tags;
         };
 
