@@ -465,23 +465,15 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
     rs2_extrinsics extrin, rs2_error** error);
 
 /**
- * \brief Override an existing extrinsic value.
+ * \brief Override extrinsics of a given sensor that supports override_trinsics_sensor.
  *
- * This will affect any edge on the graph that shares this extrinsic, unlike
- * rs2_register_extrinsics that will write over the existing value and remove any shares
- * on it!
+ * This will affect extrinsics at the source device and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
  *
- * Whereas rs2_register_extrinsics will create an edge on the graph, this function will
- * throw an exception if an edge does not already exist.
- *
- * \param[in] from          origin stream profile
- * \param[in] to            target stream profile
- * \param[out] extrin       extrinsics from origin to target
- * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in] sensor       The RealSense device
+* \param[in] extrinsics   Extrinsics between the two device sensors
+* \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_override_extrinsics(const rs2_stream_profile* from,
-    const rs2_stream_profile* to,
-    rs2_extrinsics extrin, rs2_error** error);
+void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error );
 
 /**
  * When called on a video profile, returns the intrinsics of specific stream configuration
@@ -599,16 +591,15 @@ int rs2_send_wheel_odometry(const rs2_sensor* sensor, char wo_sensor_id, unsigne
 void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile , const rs2_intrinsics* intrinsics, rs2_error** error);
 
 /**
- * \brief Override intrinsics of a given sensor that supports override_intrinsics_sensor.
+ * \brief Override intrinsics of a given sensor that supports override_trinsics_sensor.
  *
  * This will affect intrinsics at the source and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
  *
 * \param[in] sensor       The RealSense device
-* \param[in] profile      Target stream profile
 * \param[in] intrinsics   Intrinsics value to be written to the sensor
 * \param[out] error       If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_intrinsics* intrinsics, rs2_error** error );
+void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* intrinsics, rs2_error** error );
 
 /**
  * Set extrinsics between two sensors

@@ -133,12 +133,6 @@ namespace Intel.RealSense
             NativeMethods.rs2_register_extrinsics(Handle, other.Handle, extrinsics, out error);
         }
 
-        public void OverrideExtrinsicsTo(StreamProfile other, Extrinsics extrinsics)
-        {
-            object error;
-            NativeMethods.rs2_override_extrinsics(Handle, other.Handle, extrinsics, out error);
-        }
-
         /// <summary>
         /// Clone the current profile and change the type, index and format to input parameters
         /// </summary>

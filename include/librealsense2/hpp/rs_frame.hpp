@@ -166,30 +166,6 @@ namespace rs2
             error::handle(e);
         }
 
-        /**
-         * \brief Override an existing extrinsic value.
-         *
-         * This will affect any edge on the graph that shares this extrinsic, unlike
-         * register_extrinsics_to() that will write over the existing value and remove any shares
-         * on it!
-         *
-         * Whereas register_extrinsics_to() will create an edge on the graph, this function will
-         * throw an exception if an edge does not already exist.
-         *
-         * This is used during calibration of a device.
-         *
-         * \param[in] from          origin stream profile
-         * \param[in] to            target stream profile
-         * \param[out] extrin       extrinsics from origin to target
-         * \param[out] error        if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-         */
-        void override_extrinsics_to(const stream_profile& to, rs2_extrinsics const & extrinsics)
-        {
-            rs2_error * e = nullptr;
-            rs2_override_extrinsics( get(), to.get(), extrinsics, &e );
-            error::handle( e );
-        }
-
         bool is_cloned() { return bool(_clone); }
         explicit stream_profile(const rs2_stream_profile* profile) : _profile(profile)
         {

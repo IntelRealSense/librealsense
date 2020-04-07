@@ -62,7 +62,6 @@ void init_frame(py::module &m) {
              "to a specific profile (sensor). The extrinsic information is generally available as part of the camera calibration, "
              "and librealsense is responsible for retrieving and assigning these parameters where appropriate. This specific function "
              "is intended for synthetic/mock-up (software) devices for which the parameters are produced and injected by the user.", "to"_a, "extrinsics"_a)
-        .def("override_extrinsics_to", &rs2::stream_profile::override_extrinsics_to, "Overrides existing extrinsics", "to"_a, "extrinsics"_a)
         .def("__repr__", [](const rs2::stream_profile& self) {
             std::stringstream ss;
             if (auto vf = self.as<rs2::video_stream_profile>())

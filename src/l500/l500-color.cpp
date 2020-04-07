@@ -178,7 +178,8 @@ namespace librealsense
                     {
                         AC_LOG( DEBUG, "------> updating intrinsics..." );
                         auto && intr = _autocal->get_intrinsics();
-                        update_intrinsics( to_profile( _autocal->get_to_profile() ), intr );
+                        auto profile = to_profile( _autocal->get_to_profile() );
+                        update_intrinsics( profile, intr );
                         AC_LOG( DEBUG, "------> updating extrinsics..." );
 
                         // _color_extrinsic is color->depth and the auto-cal extr are depth->color so we have to invert:
@@ -240,7 +241,7 @@ namespace librealsense
                 return intrinsics;
             }
         }
-        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist" );
+        throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
     }
 
 
@@ -288,7 +289,25 @@ namespace librealsense
             found = true;
         }
         if( ! found )
-            throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " doesn't exist" );
+            throw std::runtime_error( to_string() << "intrinsics for resolution " << profile.width << "," << profile.height << " don't exist" );
+    }
+
+
+    void l500_color_sensor::override_intrinsics( rs2_intrinsics const& intr )
+    {
+        auto vspi = dynamic_cast<video_stream_profile_interface*>(_owner->_color_stream.get());
+        if( !vspi )
+            throw std::runtime_error( "could not get video stream profile" );
+        _owner->update_intrinsics(
+            { vspi->get_format(), vspi->get_stream_type(), vspi->get_stream_index(), vspi->get_width(), vspi->get_height(), 0 },
+            intr );
+    }
+
+    void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
+    {
+        rs2_extrinsics extr_i = inverse( extr );
+        //*_owner->_color_extrinsic = [=]() { return extr_i; };
+        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_color_stream, *_owner->_depth_stream, extr_i );
     }
 
 

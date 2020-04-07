@@ -663,14 +663,14 @@ namespace rs2
         explicit wheel_odometer(std::shared_ptr<rs2_sensor> dev) : wheel_odometer(sensor(dev)) {}
     };
 
-    class override_intrinsics_sensor : public sensor
+    class override_trinsics_sensor : public sensor
     {
     public:
-        override_intrinsics_sensor( sensor s )
+        override_trinsics_sensor( sensor s )
             : sensor( s.get() )
         {
             rs2_error* e = nullptr;
-            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_OVERRIDE_INTRINSICS_SENSOR, &e ) == 0 && !e )
+            if( rs2_is_sensor_extendable_to( _sensor.get(), RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR, &e ) == 0 && !e )
             {
                 _sensor.reset();
             }
@@ -680,10 +680,18 @@ namespace rs2
         operator bool() const { return _sensor.get() != nullptr; }
 
         /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
-        void override_intrinsics( const stream_profile & profile, rs2_intrinsics const& intr )
+        void override_intrinsics( rs2_intrinsics const& intr )
         {
             rs2_error* e = nullptr;
-            rs2_override_intrinsics( _sensor.get(), profile.get(), &intr, &e );
+            rs2_override_intrinsics( _sensor.get(), &intr, &e );
+            error::handle( e );
+        }
+
+        /** Override the intrinsics at the sensor level, as DEPTH_TO_RGB calibration does */
+        void override_extrinsics( rs2_extrinsics const& extr )
+        {
+            rs2_error* e = nullptr;
+            rs2_override_extrinsics( _sensor.get(), &extr, &e );
             error::handle( e );
         }
     };

@@ -42,7 +42,7 @@
 #include "global_timestamp_reader.h"
 #include "auto-calibrated-device.h"
 #include "device-calibration.h"
-#include "override-intrinsics-sensor.h"
+#include "override-trinsics-sensor.h"
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1101,16 +1101,15 @@ void rs2_register_extrinsics(const rs2_stream_profile* from,
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from, to, extrin)
 
-void rs2_override_extrinsics( const rs2_stream_profile* from,
-    const rs2_stream_profile* to,
-    rs2_extrinsics extrin, rs2_error** error )BEGIN_API_CALL
+void rs2_override_extrinsics( const rs2_sensor* sensor, const rs2_extrinsics* extrinsics, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( from );
-    VALIDATE_NOT_NULL( to );
+    VALIDATE_NOT_NULL( sensor );
+    VALIDATE_NOT_NULL( extrinsics );
 
-    environment::get_instance().get_extrinsics_graph().override_extrinsics( *from->profile, *to->profile, extrin );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    ois->override_extrinsics( *extrinsics );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , from, to, extrin )
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, extrinsics )
 
 void rs2_hardware_reset(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
@@ -1339,7 +1338,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_COLOR_SENSOR        : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR       : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR      : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
-    case RS2_EXTENSION_OVERRIDE_INTRINSICS_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::override_intrinsics_sensor)    != nullptr;
+    case RS2_EXTENSION_OVERRIDE_TRINSICS_SENSOR : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::override_trinsics_sensor)    != nullptr;
 
     default:
         return false;
@@ -2560,16 +2559,15 @@ void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* prof
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 
-void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_intrinsics* intrinsics, rs2_error** error ) BEGIN_API_CALL
+void rs2_override_intrinsics( const rs2_sensor* sensor, const rs2_intrinsics* intrinsics, rs2_error** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( sensor );
-    VALIDATE_NOT_NULL( profile );
     VALIDATE_NOT_NULL( intrinsics );
     
-    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_intrinsics_sensor );
-    ois->override_intrinsics( profile->profile, *intrinsics );
+    auto ois = VALIDATE_INTERFACE( sensor->sensor, librealsense::override_trinsics_sensor );
+    ois->override_intrinsics( *intrinsics );
 }
-HANDLE_EXCEPTIONS_AND_RETURN( , sensor, profile, intrinsics )
+HANDLE_EXCEPTIONS_AND_RETURN( , sensor, intrinsics )
 
 void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error) BEGIN_API_CALL
 {
