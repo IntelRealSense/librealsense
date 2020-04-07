@@ -207,6 +207,7 @@ namespace librealsense
                 if ((extr.translation[0] < extrensic_low_threshold) && (extr.translation[1] > extrensic_high_threshold))
                 {
                     _occlusion_filter->set_scanning(static_cast<uint8_t>(vertical));
+                    _occlusion_filter->_depth_units = _depth_units.value();
                 }
                 _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map, depth);
             }
