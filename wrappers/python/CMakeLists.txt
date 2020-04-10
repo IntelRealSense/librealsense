@@ -38,11 +38,6 @@ target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
-install(TARGETS pyrealsense2 EXPORT realsense2Targets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
-        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
-)
 
 set(RAW_RS
     pybackend.cpp
@@ -132,12 +127,17 @@ set_target_properties(pybackend2 PROPERTIES
 set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
 include_directories(pybackend2 ../../include)
 
-install(TARGETS pybackend2
-        EXPORT realsense2Targets
+install(TARGETS pybackend2 pyrealsense2
+        EXPORT pyrealsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
         ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
 )
+
+install(EXPORT pyrealsense2Targets
+  FILE pyrealsense2Targets.cmake
+  NAMESPACE pyrealsense2::
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
 
 if (BUILD_PYTHON_DOCS)
     add_subdirectory(docs)
