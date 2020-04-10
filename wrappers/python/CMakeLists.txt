@@ -7,6 +7,10 @@ if (NOT BUILD_PYTHON_BINDINGS)
     message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
 endif()
 
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
+
+set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
+
 set(DEPENDENCIES realsense2)
 
 add_subdirectory(third_party/pybind11)
@@ -36,8 +40,8 @@ set_target_properties(pyrealsense2 PROPERTIES VERSION
 set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
 install(TARGETS pyrealsense2 EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
 )
 
 set(RAW_RS
@@ -131,8 +135,8 @@ include_directories(pybackend2 ../../include)
 install(TARGETS pybackend2
         EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
 )
 
 if (BUILD_PYTHON_DOCS)
