@@ -306,7 +306,10 @@ namespace librealsense
         void auto_calibration::set_special_frame( rs2::frameset const& fs )
         {
             AC_LOG( DEBUG, "special frame received :)" );
-            if( _is_processing )
+			// Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
+			call_back( RS2_CALIBRATION_SPECIAL_FRAME );
+
+			if( _is_processing )
             {
                 AC_LOG( ERROR, "already processing; ignoring special frame!" );
                 return;

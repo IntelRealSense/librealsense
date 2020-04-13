@@ -168,7 +168,8 @@ namespace librealsense
 #define CASE(X) STRCASE(CALIBRATION, X)
         switch( value )
         {
-            CASE( SUCCESSFUL )
+			CASE( SUCCESSFUL )
+			CASE( SPECIAL_FRAME )
             CASE( FAILED )
             CASE( STARTED )
             CASE( SCENE_INVALID )

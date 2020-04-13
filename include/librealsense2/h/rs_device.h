@@ -328,7 +328,8 @@ const char* rs2_calibration_type_to_string( rs2_calibration_type );
 typedef enum rs2_calibration_status
 {
     RS2_CALIBRATION_SUCCESSFUL    =  0,  // Have new calibration in-hand
-    RS2_CALIBRATION_STARTED       =  1,  // Have all frames in hand; starting processing
+	RS2_CALIBRATION_SPECIAL_FRAME =  1,  // Special frame received; expect a frame-drop!
+    RS2_CALIBRATION_STARTED       =  2,  // Have all frames in hand; starting processing
 
     RS2_CALIBRATION_FAILED        = -1,
     RS2_CALIBRATION_SCENE_INVALID = -2,  // Scene was not good enough for calibration; will retry
@@ -336,7 +337,7 @@ typedef enum rs2_calibration_status
     RS2_CALIBRATION_RETRY         = -4,  // Initiating retry (asked for a new special frame)
 
     RS2_CALIBRATION_STATUS_FIRST  = -4,
-    RS2_CALIBRATION_STATUS_LAST   =  1,
+    RS2_CALIBRATION_STATUS_LAST   =  2,
     RS2_CALIBRATION_STATUS_COUNT = RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1,
 } rs2_calibration_status;
 const char* rs2_calibration_status_to_string( rs2_calibration_status );
