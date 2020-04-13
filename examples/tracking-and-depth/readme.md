@@ -23,7 +23,7 @@ and used to attach T265 and D435
 using **M3 screws, 10mm & 18mm**, respectively.
 ![snapshot00](https://user-images.githubusercontent.com/28366639/60457143-2b27dd80-9bf0-11e9-8286-757953d9013e.png)
 If the mount is used in the depicted orientation with T265 below and D435 mounted above,
-the provided [calibration](./H_t265_d400.txt) can be used to transform between point cloud and pose reference frame.
+the provided [calibration](./H_t265_d400.cfg) can be used to transform between point cloud and pose reference frame.
 
 In the depicted orientation a **¼-20 nut** can be inserted into the 3D-print in order to mount the assembly on a tripod.
 
