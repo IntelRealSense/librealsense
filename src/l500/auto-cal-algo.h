@@ -170,8 +170,9 @@ namespace librealsense
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
-        bool is_scene_valid() { return true; }
-        bool optimize();
+		bool is_scene_valid() { return true; }
+		static bool is_valid_params( optimaization_params const & original, optimaization_params const & now );
+        rs2_calibration_status optimize();
 
 
     private:
@@ -222,6 +223,8 @@ namespace librealsense
         double calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
         double calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
         void deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units);
+
+		void debug_calibration(char const * prefix);
 
         params _params;
 

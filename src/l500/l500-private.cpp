@@ -390,24 +390,23 @@ namespace librealsense
                         reset();
                         trigger_special_frame( true );
                     }
-                    else if( algo.optimize() )
-                    {
-                        AC_LOG( DEBUG, "optimization successful!" );
-                        /*  auto prof = _cf.get_profile().get()->profile;
-                        auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
-                        if (video)
-                            video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
-                        _df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
-                        _extr = algo.get_extrinsics();
-                        _intr = algo.get_intrinsics();
-                        call_back( RS2_CALIBRATION_SUCCESSFUL );
-                        reset();
-                    }
-                    else
-                    {
-                        call_back( RS2_CALIBRATION_FAILED );
-                        reset();
-                    }
+					else
+					{
+						auto status = algo.optimize();
+						if( status == RS2_CALIBRATION_SUCCESSFUL )
+						{
+							AC_LOG( DEBUG, "optimization successful!" );
+							/*  auto prof = _cf.get_profile().get()->profile;
+							auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
+							if (video)
+								video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
+							_df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
+							_extr = algo.get_extrinsics();
+							_intr = algo.get_intrinsics();
+						}
+						call_back( status );
+						reset();
+					}
                 }
                 catch( std::exception& ex )
                 {

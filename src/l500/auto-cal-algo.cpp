@@ -30,26 +30,9 @@ namespace librealsense
     {
     }
 
-    bool auto_cal_algo::optimize()
+    rs2_calibration_status auto_cal_algo::optimize()
     {
-        AC_LOG( DEBUG, "old intr"
-            << ": width: " << _intr.width
-            << ", height: " << _intr.height
-            << ", ppx: " << _intr.ppx
-            << ", ppy: " << _intr.ppy
-            << ", fx: " << _intr.fx
-            << ", fy: " << _intr.fy
-            << ", model: " << _intr.model
-            << ", coeffs: ["
-            << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
-            << "]" );
-        AC_LOG( DEBUG, "old extr:"
-            << " rotation: ["
-            << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
-            << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
-            << "]  translation: ["
-            << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
-            << "]" );
+        debug_calibration("old");
 
         auto yuy_data = preprocess_yuy2_data(yuy, prev_yuy);
         auto ir_data = preprocess_ir(ir);
@@ -62,10 +45,10 @@ namespace librealsense
         optimaization_params params_orig;
         params_orig.curr_calib = intrinsics_extrinsics_to_calib(_intr, _extr);
 
-        auto optimized = true;
+        bool optimized = false;
 
-        auto cost = calc_cost_and_grad(z_data, yuy_data, params_orig.curr_calib);
-        AC_LOG( DEBUG, "Original cost = " << cost.second );
+        auto const original_cost = calc_cost_and_grad(z_data, yuy_data, params_orig.curr_calib).second;
+        AC_LOG( DEBUG, "Original cost = " << original_cost );
 
         optimaization_params params_curr = params_orig;
 
@@ -92,9 +75,15 @@ namespace librealsense
             }
 
             params_curr = new_params;
-            AC_LOG( DEBUG, "Current cost = " << params_curr.cost << "; delta= " << delta );
+            optimized = true;
+            AC_LOG( DEBUG, "Cost = " << params_curr.cost << "; delta= " << delta );
         }
-        AC_LOG( DEBUG, "Optimized cost = " << params_curr.cost );
+        if( !optimized )
+        {
+            AC_LOG( INFO, "Calibration not necessary; nothing done" );
+            return RS2_CALIBRATION_NOT_NEEDED;
+        }
+        AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 #if 1
         auto r = params_curr.curr_calib.rot.rot;
         auto t = params_curr.curr_calib.trans;
@@ -108,7 +97,19 @@ namespace librealsense
                                 (float)params_curr.curr_calib.k_mat.fx, (float)params_curr.curr_calib.k_mat.fy,
                                 params_curr.curr_calib.model, {(float)c[0], (float)c[1], (float)c[2], (float)c[3], (float)c[4]} };
 
-        AC_LOG( DEBUG, "new intr"
+        debug_calibration( "new" );
+
+        if (!is_valid_params( params_orig, params_curr ))
+            return RS2_CALIBRATION_BAD_RESULT;
+
+#endif
+
+        return RS2_CALIBRATION_SUCCESSFUL;
+    }
+
+    void auto_cal_algo::debug_calibration(char const * prefix)
+    {
+        AC_LOG(DEBUG, prefix << " intr"
             << ": width: " << _intr.width
             << ", height: " << _intr.height
             << ", ppx: " << _intr.ppx
@@ -118,17 +119,19 @@ namespace librealsense
             << ", model: " << _intr.model
             << ", coeffs: ["
             << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
-            << "]" );
-        AC_LOG( DEBUG, "new extr:"
+            << "]");
+        AC_LOG(DEBUG, prefix << " extr:"
             << " rotation: ["
             << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
             << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
             << "]  translation: ["
             << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
-            << "]" );
-#endif
+            << "]");
+    }
 
-        return optimized;
+    bool auto_cal_algo::is_valid_params( optimaization_params const & old, optimaization_params const & now )
+    {
+        return true;
     }
 
     auto_cal_algo::z_frame_data auto_cal_algo::preproccess_z(rs2::frame depth, const ir_frame_data& ir_data, const rs2_intrinsics& depth_intrinsics, float depth_units)

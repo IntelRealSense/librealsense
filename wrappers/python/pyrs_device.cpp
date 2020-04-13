@@ -98,9 +98,17 @@ void init_device(py::module &m) {
         .def( "register_calibration_change_callback",
             []( rs2::device_calibration& self, std::function<void( rs2_calibration_status )> callback )
             {
-                self.register_calibration_change_callback( callback );
+                self.register_calibration_change_callback( 
+					[callback]( rs2_calibration_status status )
+					{
+						//std::cout << "... calling calibration callback" << std::endl;
+						py::gil_scoped_acquire release;
+						//std::cout << "..." << std::endl;
+						callback( status );
+						//std::cout << "... done" << std::endl;
+					} );
             },
-            "TODO", "callback"_a, py::call_guard<py::gil_scoped_release>() );
+            "TODO", "callback"_a );
 
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++

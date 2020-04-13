@@ -44,17 +44,29 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_<rs2::log_message> log_message(m, "log_message");
     log_message.def("line_number", &rs2::log_message::line_number)
-        .def("filename", &rs2::log_message::filename)
-        .def("raw", &rs2::log_message::raw)
-        .def("full", &rs2::log_message::full)
-        .def("__str__", &rs2::log_message::raw)
-        .def("__repr__", &rs2::log_message::full);
+        .def("filename", &rs2::log_message::filename, py::call_guard<py::gil_scoped_release>())
+        .def("raw", &rs2::log_message::raw, py::call_guard<py::gil_scoped_release>())
+        .def("full", &rs2::log_message::full, py::call_guard<py::gil_scoped_release>())
+        .def("__str__", &rs2::log_message::raw, py::call_guard<py::gil_scoped_release>())
+        .def("__repr__", &rs2::log_message::full, py::call_guard<py::gil_scoped_release>());
 
     m.def("log_to_callback", [](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
-    {
-        rs2::log_to_callback(min_severity, callback);
-    }, "min_severity"_a, "callback"_a);
-    m.def("log", &rs2::log, "severity"_a, "message"_a);
+        {
+			rs2::log_to_callback( min_severity,
+				[callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
+				{
+					try
+					{
+						py::gil_scoped_acquire release;
+						callback( severity, msg );
+					}
+					catch( ... )
+					{
+						std::cerr << "?!?!?!!? exception in python log_to_callback callback ?!?!?!?!?" << std::endl;
+					}
+				} );
+        }, "min_severity"_a, "callback"_a);
+    m.def("log", &rs2::log, "severity"_a, "message"_a, py::call_guard<py::gil_scoped_release>());
 
     /** end rs.hpp **/
 }
