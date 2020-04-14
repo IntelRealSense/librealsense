@@ -407,8 +407,8 @@ namespace librealsense
         return *_range;
     }
 
-    external_sync_mode2::external_sync_mode2(hw_monitor& hwm)
-        : _hwm(hwm)
+    external_sync_mode2::external_sync_mode2(hw_monitor& hwm, sensor_base* ep)
+        : _hwm(hwm), _sensor(ep)
     {
         _range = [this]()
         {
@@ -421,6 +421,9 @@ namespace librealsense
 
     void external_sync_mode2::set(float value)
     {
+        if (_sensor->is_streaming())
+            throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
+
         command cmd(ds::SET_CAM_SYNC);
         if (value < 4)
             cmd.param1 = static_cast<int>(value);

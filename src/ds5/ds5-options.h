@@ -232,12 +232,12 @@ namespace librealsense
     class external_sync_mode2 : public option
     {
     public:
-        external_sync_mode2(hw_monitor& hwm);
+        external_sync_mode2(hw_monitor& hwm, sensor_base* depth_ep);
         virtual ~external_sync_mode2() = default;
         virtual void set(float value) override;
         virtual float query() const override;
         virtual option_range get_range() const override;
-        virtual bool is_enabled() const override { return true; }
+        virtual bool is_enabled() const override { return _sensor && !_sensor ->is_streaming(); }
 
         const char* get_description() const override
         {
@@ -251,6 +251,7 @@ namespace librealsense
         std::function<void(const option &)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
+        sensor_base* _sensor;
     };
 
     class emitter_on_and_off_option : public option

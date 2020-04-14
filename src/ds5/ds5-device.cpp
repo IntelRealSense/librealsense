@@ -768,7 +768,7 @@ namespace librealsense
         if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
         {
             depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode2>(*_hw_monitor));
+                std::make_shared<external_sync_mode2>(*_hw_monitor, &raw_depth_sensor));
         }
         else if (_fw_version >= firmware_version("5.9.15.1"))
         {
