@@ -89,8 +89,8 @@ namespace librealsense
         auto t = params_curr.curr_calib.trans;
         auto c = params_curr.curr_calib.coeffs;
 
-        _extr = rs2_extrinsics { {r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8] },
-                                {(float)t.t1, (float)t.t2, (float)t.t3} };
+        _extr = rs2_extrinsics { {float(r[0]),float(r[1]),float(r[2]),float(r[3]),float(r[4]),float(r[5]),float(r[6]),float(r[7]),float(r[8]) },
+                                {float(t.t1), float(t.t2), float(t.t3)} };
 
         _intr = rs2_intrinsics { params_curr.curr_calib.width, params_curr.curr_calib.height,  //_intr.width, _intr.height,
                                 (float)params_curr.curr_calib.k_mat.ppx, (float)params_curr.curr_calib.k_mat.ppy,
@@ -205,7 +205,7 @@ namespace librealsense
         return { ir_frame, edges };
     }
 
-    auto_cal_algo::rotation_in_angles extract_angles_from_rotation(const float rotation[9])
+    auto_cal_algo::rotation_in_angles extract_angles_from_rotation(const double rotation[9])
     {
         auto_cal_algo::rotation_in_angles res;
         auto epsilon = 0.00001;
@@ -261,6 +261,7 @@ namespace librealsense
         return res;
     }
 
+
     void auto_cal_algo::zero_invalid_edges(z_frame_data& z_data, ir_frame_data ir_data)
     {
         for (auto i = 0; i < ir_data.ir_edges.size(); i++)
@@ -274,6 +275,7 @@ namespace librealsense
             }
         }
     }
+
 
     std::vector< double> auto_cal_algo::get_direction_deg(std::vector<double> gradient_x, std::vector<double> gradient_y)
     {
@@ -318,14 +320,23 @@ namespace librealsense
 
     std::pair< uint32_t, uint32_t> auto_cal_algo::get_prev_index(auto_cal_algo::direction dir, uint32_t i, uint32_t j, uint32_t width, uint32_t height)
     {
+        auto edge_minus_idx = 0;
+        auto edge_minus_idy = 0;
+
         auto d = dir_map[dir];
+        if (j - d.first < 0)
+            edge_minus_idx = width - 1 - j;
+        else if (j - d.first >= width)
+            edge_minus_idx = 0;
+        else
+            edge_minus_idx = j - d.first;
 
-        auto edge_minus_idx = j - d.first;
-        auto edge_minus_idy = i - d.second;
-
-
-        edge_minus_idx = edge_minus_idx < 0 ? 0 : edge_minus_idx;
-        edge_minus_idy = edge_minus_idy < 0 ? 0 : edge_minus_idy;
+        if (i - d.second < 0)
+            edge_minus_idy = height - 1 - i;
+        else if (i - d.second >= height)
+            edge_minus_idy = 0;
+        else
+            edge_minus_idy = i - d.second;
 
         return { edge_minus_idx, edge_minus_idy };
     }
@@ -334,13 +345,24 @@ namespace librealsense
     {
         auto d = dir_map[dir];
 
-        auto edge_plus_idx = j + d.first;
-        auto edge_plus_idy = i + d.second;
+        auto edge_plus_idx = 0;
+        auto edge_plus_idy = 0;
 
-        edge_plus_idx = edge_plus_idx < 0 ? 0 : edge_plus_idx;
-        edge_plus_idy = edge_plus_idy < 0 ? 0 : edge_plus_idy;
+        if (j + d.first < 0)
+            edge_plus_idx = width - 1 - j;
+        else if (j + d.first >= width)
+            edge_plus_idx = 0;
+        else
+            edge_plus_idx = j + d.first;
 
-        return { edge_plus_idx, edge_plus_idy };
+         if (i + d.second < 0)
+            edge_plus_idy = height - 1 - i;
+        else if (i + d.second >= height)
+            edge_plus_idy = 0;
+        else
+            edge_plus_idy = i + d.second;
+
+       return { edge_plus_idx, edge_plus_idy };
     }
 
     std::vector< double> auto_cal_algo::supressed_edges(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
@@ -354,7 +376,7 @@ namespace librealsense
 
                 auto edge = z_data.edges[idx];
 
-                if (edge == 0)  continue;
+                //if (edge == 0)  continue;
 
                 auto edge_prev_idx = get_prev_index(z_data.directions[idx], i, j, width, height);
 
@@ -377,6 +399,7 @@ namespace librealsense
         return res;
     }
 
+
     std::vector<uint16_t > auto_cal_algo::get_closest_edges(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
     {
         std::vector< uint16_t> z_closest;
@@ -389,7 +412,7 @@ namespace librealsense
 
                 auto edge = z_data.edges[idx];
 
-                if (edge == 0)  continue;
+                //if (edge == 0)  continue;
 
                 auto edge_prev_idx = get_prev_index(z_data.directions[idx], i, j, width, height);
 
@@ -414,6 +437,7 @@ namespace librealsense
         }
         return z_closest;
     }
+
 
     std::pair<std::vector< double>, std::vector< double>> auto_cal_algo::calc_subpixels(const z_frame_data& z_data, ir_frame_data ir_data, uint32_t width, uint32_t height)
     {
@@ -447,7 +471,11 @@ namespace librealsense
                 {
                     if (ir_data.ir_edges[idx] > _params.grad_ir_threshold && z_data.edges[idx] > _params.grad_z_threshold)
                     {
-                        auto fraq_step = double((-0.5f*double(z_edge_plus - z_edge_ninus)) / double(z_edge_plus + z_edge_ninus - 2 * z_edge));
+                        double fraq_step = 0;
+                        if (double(z_edge_plus + z_edge_ninus - (double)2 * z_edge) == 0)
+                            fraq_step = std::numeric_limits<double>::max();
+
+                        fraq_step = double((-0.5f*double(z_edge_plus - z_edge_ninus)) / double(z_edge_plus + z_edge_ninus - 2 * z_edge));
                         subpixels_y.push_back(i + 1 + fraq_step * (double)dir_map[dir].second - 1);
                         subpixels_x.push_back(j + 1 + fraq_step * (double)dir_map[dir].first - 1);
 
@@ -459,7 +487,47 @@ namespace librealsense
         return { subpixels_x, subpixels_y };
     }
 
-   
+    /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
+    static void deproject_pixel_to_point(double point[3], const struct rs2_intrinsics * intrin, const double pixel[2], double depth)
+    {
+        double x = (double)(pixel[0] - intrin->ppx) / intrin->fx;
+        double y = (double)(pixel[1] - intrin->ppy) / intrin->fy;
+
+        point[0] = depth * x;
+        point[1] = depth * y;
+        point[2] = depth;
+    }
+    /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
+    static void transform_point_to_point(double to_point[3], const struct rs2_extrinsics * extrin, const double from_point[3])
+    {
+        to_point[0] = (double)extrin->rotation[0] * from_point[0] + (double)extrin->rotation[3] * from_point[1] + (double)extrin->rotation[6] * from_point[2] + (double)extrin->translation[0];
+        to_point[1] = (double)extrin->rotation[1] * from_point[0] + (double)extrin->rotation[4] * from_point[1] + (double)extrin->rotation[7] * from_point[2] + (double)extrin->translation[1];
+        to_point[2] = (double)extrin->rotation[2] * from_point[0] + (double)extrin->rotation[5] * from_point[1] + (double)extrin->rotation[8] * from_point[2] + (double)extrin->translation[2];
+    }
+
+    /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
+    static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics * intrin, const double point[3])
+    {
+        double x = point[0] / point[2], y = point[1] / point[2];
+
+        if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+        {
+            double r2 = x * x + y * y;
+            double f = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2*r2 + intrin->coeffs[4] * r2*r2*r2;
+
+            double xcd = x * f;
+            double ycd = y * f;
+
+            double dx = xcd + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+            double dy = ycd + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+
+            x = dx;
+            y = dy;
+        }
+
+        pixel[0] = x * (double)intrin->fx + (double)intrin->ppx;
+        pixel[1] = y * (double)intrin->fy + (double)intrin->ppy;
+    }
 
     std::vector<double> auto_cal_algo::blure_edges(std::vector<double> edges, uint32_t image_widht, uint32_t image_height)
     {
@@ -477,6 +545,7 @@ namespace librealsense
                 else
                     res[i*image_widht + j] = std::max(res[i*image_widht + j], (std::max(res[i*image_widht + j - 1] * _params.gamma, res[(i - 1)*image_widht + j] * _params.gamma)));
             }
+
 
         for (int i = image_height - 1; i >= 0; i--)
             for (int j = image_widht - 1; j >= 0; j--)
@@ -496,6 +565,7 @@ namespace librealsense
                 res[i*image_widht + j] = _params.alpha * edges[i*image_widht + j] + (1 - _params.alpha) * res[i*image_widht + j];
         return res;
     }
+
 
     std::vector<uint8_t> auto_cal_algo::get_luminance_from_yuy2(std::vector<uint16_t> yuy2_imagh)
     {
@@ -531,6 +601,15 @@ namespace librealsense
         return true;
     }
 
+    double get_max(double x, double y)
+    {
+        return x > y ? x : y;
+    }
+    double get_min(double x, double y)
+    {
+        return x < y ? x : y;
+    }
+
     std::vector<double> auto_cal_algo::calculate_weights(z_frame_data& z_data)
     {
         std::vector<double> res;
@@ -538,29 +617,29 @@ namespace librealsense
         {
             if (z_data.supressed_edges[i])
                 z_data.weights.push_back(
-                    std::min(std::max((float)z_data.supressed_edges[i] - (float)_params.grad_z_min, 0.f),
-                    (float)_params.grad_z_max - (float)_params.grad_z_min));
+                    get_min(get_max(z_data.supressed_edges[i] - _params.grad_z_min, (double)0),
+                        _params.grad_z_max - _params.grad_z_min));
         }
 
         return res;
     }
 
-    std::vector<rs2_vertex> auto_cal_algo::subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units)
+    std::vector<double3> auto_cal_algo::subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units)
     {
-        std::vector<rs2_vertex> res(z_data.subpixels_x.size());
+        std::vector<double3> res(z_data.subpixels_x.size());
         deproject_sub_pixel(res, intrin, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units);
         z_data.vertices = res;
         return res;
     }
 
 
-    void auto_cal_algo::deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics& intrin, const double* x, const double* y, const uint16_t* depth, double depth_units)
+    void auto_cal_algo::deproject_sub_pixel(std::vector<double3>& points, const rs2_intrinsics& intrin, const double* x, const double* y, const uint16_t* depth, double depth_units)
     {
-        auto ptr = (float*)points.data();
+        auto ptr = (double*)points.data();
         for (int i = 0; i < points.size(); ++i)
         {
-            const float pixel[] = { x[i], y[i] };
-            rs2_deproject_pixel_to_point(ptr, &intrin, pixel, (*depth++)*depth_units);
+            const double pixel[] = { x[i], y[i] };
+            deproject_pixel_to_point(ptr, &intrin, pixel, (*depth++)*(double)depth_units);
             ptr += 3;
         }
     }
@@ -604,8 +683,9 @@ namespace librealsense
         return cal;
     }
 
-    std::vector<float2> get_texture_map(
-        /*const*/ std::vector<rs2_vertex> points,
+
+    std::vector<double2> get_texture_map(
+        /*const*/ std::vector<double3> points,
         auto_cal_algo::calib curr_calib)
     {
 
@@ -614,21 +694,23 @@ namespace librealsense
         auto intrinsics = ext.first;
         auto extr = ext.second;
 
-        std::vector<float2> uv(points.size());
+        std::vector<double2> uv(points.size());
+        std::vector<double3> v(points.size());
 
         for (auto i = 0; i < points.size(); ++i)
         {
-            rs2_vertex p = {};
-            rs2_transform_point_to_point(&p.xyz[0], &extr, &points[i].xyz[0]);
-            float2 pixel = {};
-            rs2_project_point_to_pixel(&pixel.x, &intrinsics, &p.xyz[0]);
+            double3 p = {};
+            transform_point_to_point(&p.x, &extr, &points[i].x);
+
+            double2 pixel = {};
+            project_point_to_pixel(&pixel.x, &intrinsics, &p.x);
             uv[i] = pixel;
         }
 
         return uv;
     }
 
-    std::vector<double> biliniar_interp(std::vector<double> vals, uint32_t width, uint32_t height, std::vector<float2> uv)
+    std::vector<double> biliniar_interp(std::vector<double> vals, uint32_t width, uint32_t height, std::vector<double2> uv)
     {
         std::vector<double> res(uv.size());
 
@@ -683,18 +765,11 @@ namespace librealsense
         return res;
     }
 
-
-
-    auto_cal_algo::calib auto_cal_algo::get_calib_gradients(const z_frame_data& z_data)
-    {
-
-        return calib();
-    }
-
     auto_cal_algo::optimaization_params auto_cal_algo::back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, auto_cal_algo::optimaization_params curr_params)
     {
         auto_cal_algo::optimaization_params new_params;
 
+        auto orig = curr_params;
         auto grads_norm = curr_params.calib_gradients.normalize();
         auto normalized_grads = grads_norm / _params.normelize_mat;
         auto normalized_grads_norm = normalized_grads.get_norma();
@@ -725,12 +800,15 @@ namespace librealsense
 
             uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
             new_params.cost = calc_cost(z_data, yuy_data, uvmap);
-            AC_LOG( DEBUG, "Current back tracking line search cost = " << new_params.cost );
+
+            std::cout.precision(15);
+            std::cout << std::fixed << "Current back tracking line search cost = " << new_params.cost << std::endl;
+            AC_LOG(DEBUG, "Current back tracking line search cost = " << new_params.cost);
         }
 
         if (curr_params.cost - new_params.cost >= step_size * t)
         {
-            new_params = curr_params;
+            new_params = orig;
         }
 
         return new_params;
@@ -759,7 +837,7 @@ namespace librealsense
     }
 
 
-    double auto_cal_algo::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv)
+    double auto_cal_algo::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv)
     {
         auto d_vals = biliniar_interp(yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv);
         double cost = 0;
@@ -780,7 +858,7 @@ namespace librealsense
         return cost;
     }
 
-    auto_cal_algo::calib auto_cal_algo::calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv,
+    auto_cal_algo::calib auto_cal_algo::calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv,
         const calib& curr_calib)
     {
         calib res;
@@ -801,16 +879,16 @@ namespace librealsense
 
         auto intrin_extrin = calib_to_intrinsics_extrinsics(curr_calib);
 
-        res.rot_angles = calc_rotation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, intrin_extrin.first, intrin_extrin.second, rc.second, rc.first);
-        res.trans = calc_translation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, intrin_extrin.first, intrin_extrin.second, rc.second, rc.first);
-        res.k_mat = calc_k_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, intrin_extrin.first, intrin_extrin.second, rc.second, rc.first);
-
+        res.rot_angles = calc_rotation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first);
+        res.trans = calc_translation_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first);
+        res.k_mat = calc_k_gradients(z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first);
+        res.rot = extract_rotation_from_angles(res.rot_angles);
         return res;
     }
 
-    auto_cal_algo::translation auto_cal_algo::calc_translation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::translation auto_cal_algo::calc_translation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib& yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
-        auto coefs = calc_translation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
+        auto coefs = calc_translation_coefs(z_data, yuy_data, yuy_intrin_extrin, rc, xy);
         auto w = z_data.weights;
 
         translation sums = { 0 };
@@ -836,9 +914,9 @@ namespace librealsense
         return averages;
     }
 
-    auto_cal_algo::rotation_in_angles auto_cal_algo::calc_rotation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::rotation_in_angles auto_cal_algo::calc_rotation_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
-        auto coefs = calc_rotation_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
+        auto coefs = calc_rotation_coefs(z_data, yuy_data, yuy_intrin_extrin, rc, xy);
         auto w = z_data.weights;
 
         rotation_in_angles sums = { 0 };
@@ -856,7 +934,6 @@ namespace librealsense
 
             sum_of_valids++;
 
-
             sum_alpha += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].alpha + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].alpha);
             sum_beta += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].beta + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].beta);
             sum_gamma += (double)w[i] * (double)((double)interp_IDT_x[i] * (double)coefs.x_coeffs[i].gamma + (double)interp_IDT_y[i] * (double)coefs.y_coeffs[i].gamma);
@@ -869,9 +946,10 @@ namespace librealsense
         return averages;
     }
 
-    auto_cal_algo::k_matrix auto_cal_algo::calc_k_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::k_matrix auto_cal_algo::calc_k_gradients(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
-        auto coefs = calc_k_gradients_coefs(z_data, yuy_data, yuy_intrin, yuy_extrin, rc, xy);
+        auto coefs = calc_k_gradients_coefs(z_data, yuy_data, yuy_intrin_extrin, rc, xy);
+
         auto w = z_data.weights;
 
         rotation_in_angles sums = { 0 };
@@ -904,11 +982,12 @@ namespace librealsense
         return averages;
     }
 
-    std::pair< std::vector<float2>, std::vector<double>> auto_cal_algo::calc_rc(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib& curr_calib)
+
+    std::pair< std::vector<double2>, std::vector<double>> auto_cal_algo::calc_rc(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib& curr_calib)
     {
         auto v = z_data.vertices;
 
-        std::vector<float2> f1(z_data.vertices.size());
+        std::vector<double2> f1(z_data.vertices.size());
         std::vector<double> r2(z_data.vertices.size());
         std::vector<double> rc(z_data.vertices.size());
 
@@ -916,25 +995,49 @@ namespace librealsense
         auto yuy_intrin = intrin_extrin.first;
         auto yuy_extrin = intrin_extrin.second;
 
+        auto fx = (double)yuy_intrin.fx;
+        auto fy = (double)yuy_intrin.fy;
+        auto ppx = (double)yuy_intrin.ppx;
+        auto ppy = (double)yuy_intrin.ppy;
+
+        auto r = yuy_extrin.rotation;
+        auto t = yuy_extrin.translation;
+
+        double mat[3][4] = {
+            fx*(double)r[0] + ppx * (double)r[2], fx*(double)r[3] + ppx * (double)r[5], fx*(double)r[6] + ppx * (double)r[8], fx*(double)t[0] + ppx * (double)t[2],
+            fy*(double)r[1] + ppy * (double)r[2], fy*(double)r[4] + ppy * (double)r[5], fy*(double)r[7] + ppy * (double)r[8], fy*(double)t[1] + ppy * (double)t[2],
+            r[2], r[5], r[8], t[2] };
+
         for (auto i = 0; i < z_data.vertices.size(); ++i)
         {
-            rs2_vertex p = {};
-            rs2_transform_point_to_point(&p.xyz[0], &yuy_extrin, &v[i].xyz[0]);
-            f1[i].x = p.xyz[0] * yuy_intrin.fx + yuy_intrin.ppx*p.xyz[2];
-            f1[i].x /= p.xyz[2];
-            f1[i].x = (f1[i].x - yuy_intrin.ppx) / yuy_intrin.fx;
+            //rs2_vertex p = {};
+            //rs2_transform_point_to_point(&p.xyz[0], &yuy_extrin, &v[i].xyz[0]);
+            double x = v[i].x;
+            double y = v[i].y;
+            double z = v[i].z;
 
-            f1[i].y = p.xyz[1] * yuy_intrin.fy + yuy_intrin.ppy*p.xyz[2];
-            f1[i].y /= p.xyz[2];
-            f1[i].y = (f1[i].y - yuy_intrin.ppy) / yuy_intrin.fy;
+            double x1 = (double)mat[0][0] * (double)x + (double)mat[0][1] * (double)y + (double)mat[0][2] * (double)z + (double)mat[0][3];
+            double y1 = (double)mat[1][0] * (double)x + (double)mat[1][1] * (double)y + (double)mat[1][2] * (double)z + (double)mat[1][3];
+            double z1 = (double)mat[2][0] * (double)x + (double)mat[2][1] * (double)y + (double)mat[2][2] * (double)z + (double)mat[2][3];
 
-            r2[i] = f1[i].x*f1[i].x + f1[i].y*f1[i].y;
-            rc[i] = 1 + yuy_intrin.coeffs[0] * r2[i] + yuy_intrin.coeffs[1] * r2[i] * r2[i] + yuy_intrin.coeffs[4] * r2[i] * r2[i] * r2[i];
+            auto x_in = x1 / z1;
+            auto y_in = y1 / z1;
+
+            auto x2 = ((x_in - ppx) / fx);
+            auto y2 = ((y_in - ppy) / fy);
+
+            f1[i].x = x2;
+            f1[i].y = y2;
+
+            auto r2 = (x2 * x2 + y2 * y2);
+
+            rc[i] = 1 + (double)yuy_intrin.coeffs[0] * r2 + (double)yuy_intrin.coeffs[1] * r2 * r2 + (double)yuy_intrin.coeffs[4] * r2 * r2 * r2;
         }
 
         return { f1,rc };
     }
-    auto_cal_algo::translation auto_cal_algo::calculate_translation_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin)
+
+    auto_cal_algo::translation auto_cal_algo::calculate_translation_y_coeff(double3 v, double rc, double2 xy, const calib& yuy_intrin_extrin)
     {
         auto_cal_algo::translation res;
 
@@ -946,16 +1049,17 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
-        auto x = (double)v.xyz[0];
-        auto y = (double)v.xyz[1];
-        auto z = (double)v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto exp1 = (double)r[2] * x + (double)r[5] * y + (double)r[8] * z + (double)t[2];
         auto exp2 = fx * (double)r[2] * x + fx * (double)r[5] * y + fx * (double)r[8] * z + fx * (double)t[2];
@@ -987,7 +1091,8 @@ namespace librealsense
         return res;
     }
 
-    auto_cal_algo::translation auto_cal_algo::calculate_translation_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+
+    auto_cal_algo::translation auto_cal_algo::calculate_translation_x_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
         auto_cal_algo::translation res;
 
@@ -999,16 +1104,17 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
-        auto x = (double)v.xyz[0];
-        auto y = (double)v.xyz[1];
-        auto z = (double)v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto exp1 = rc + 6 * (double)d[3] * x1 + 2 * (double)d[2] * y1 + x1 *
             (2 * (double)d[0] * x1 + 4 * (double)d[1] * x1*(xy2)+6 * (double)d[4] * x1*(x2_y2));
@@ -1039,29 +1145,29 @@ namespace librealsense
 
     }
 
-    auto_cal_algo::coeffs<auto_cal_algo::rotation_in_angles> auto_cal_algo::calc_rotation_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::coeffs<auto_cal_algo::rotation_in_angles> auto_cal_algo::calc_rotation_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
         auto_cal_algo::coeffs<auto_cal_algo::rotation_in_angles> res;
-        auto engles = extract_angles_from_rotation(yuy_extrin.rotation);
+        auto engles = extract_angles_from_rotation(yuy_intrin_extrin.rot.rot);
         auto v = z_data.vertices;
         res.x_coeffs.resize(v.size());
         res.y_coeffs.resize(v.size());
 
         for (auto i = 0; i < v.size(); i++)
         {
-            res.x_coeffs[i].alpha = calculate_rotation_x_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.x_coeffs[i].beta = calculate_rotation_x_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.x_coeffs[i].gamma = calculate_rotation_x_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.x_coeffs[i].alpha = calculate_rotation_x_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.x_coeffs[i].beta = calculate_rotation_x_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.x_coeffs[i].gamma = calculate_rotation_x_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
 
-            res.y_coeffs[i].alpha = calculate_rotation_y_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.y_coeffs[i].beta = calculate_rotation_y_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.y_coeffs[i].gamma = calculate_rotation_y_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.y_coeffs[i].alpha = calculate_rotation_y_alpha_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.y_coeffs[i].beta = calculate_rotation_y_beta_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.y_coeffs[i].gamma = calculate_rotation_y_gamma_coeff(engles, v[i], rc[i], xy[i], yuy_intrin_extrin);
         }
 
         return res;
     }
 
-    auto_cal_algo::coeffs<auto_cal_algo::k_matrix> auto_cal_algo::calc_k_gradients_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::coeffs<auto_cal_algo::k_matrix> auto_cal_algo::calc_k_gradients_coefs(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
         auto_cal_algo::coeffs<auto_cal_algo::k_matrix> res;
         auto v = z_data.vertices;
@@ -1070,29 +1176,30 @@ namespace librealsense
 
         for (auto i = 0; i < v.size(); i++)
         {
-            res.x_coeffs[i] = calculate_k_gradients_x_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.y_coeffs[i] = calculate_k_gradients_y_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.x_coeffs[i] = calculate_k_gradients_x_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.y_coeffs[i] = calculate_k_gradients_y_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
         }
 
         return res;
     }
 
-    auto_cal_algo::k_matrix auto_cal_algo::calculate_k_gradients_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    auto_cal_algo::k_matrix auto_cal_algo::calculate_k_gradients_y_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
         auto_cal_algo::k_matrix res;
 
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
-        auto x = (double)v.xyz[0];
-        auto y = (double)v.xyz[1];
-        auto z = (double)v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto x2 = x1 * x1;
         auto y2 = y1 * y1;
@@ -1118,22 +1225,23 @@ namespace librealsense
         return res;
     }
 
-    auto_cal_algo::k_matrix auto_cal_algo::calculate_k_gradients_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    auto_cal_algo::k_matrix auto_cal_algo::calculate_k_gradients_x_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
         auto_cal_algo::k_matrix res;
 
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
+
         auto x1 = (double)xy.x;
         auto y1 = (double)xy.y;
-        auto x = (double)v.xyz[0];
-        auto y = (double)v.xyz[1];
-        auto z = (double)v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto x2 = x1 * x1;
         auto y2 = y1 * y1;
@@ -1160,15 +1268,15 @@ namespace librealsense
         return res;
     }
 
-    double auto_cal_algo::calculate_rotation_x_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_x_alpha_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = (double)sin(rot_angles.alpha);
         auto sin_b = (double)sin(rot_angles.beta);
@@ -1185,9 +1293,9 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = (double)v.xyz[0];
-        auto y = (double)v.xyz[1];
-        auto z = (double)v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
 
         auto exp1 = z * (0 * sin_b + 1 * cos_a*cos_b - 0 * cos_b*sin_a)
@@ -1259,15 +1367,15 @@ namespace librealsense
         return res;
     }
 
-    double auto_cal_algo::calculate_rotation_x_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_x_beta_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = yuy_intrin.ppx;
-        auto ppy = yuy_intrin.ppy;
-        auto fx = yuy_intrin.fx;
-        auto fy = yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = sin(rot_angles.alpha);
         auto sin_b = sin(rot_angles.beta);
@@ -1276,17 +1384,17 @@ namespace librealsense
         auto cos_a = cos(rot_angles.alpha);
         auto cos_b = cos(rot_angles.beta);
         auto cos_g = cos(rot_angles.gamma);
-        auto x1 = xy.x;
-        auto y1 = xy.y;
+        auto x1 = (double)xy.x;
+        auto y1 = (double)xy.y;
 
         auto x2 = x1 * x1;
         auto y2 = y1 * y1;
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = v.xyz[0];
-        auto y = v.xyz[1];
-        auto z = v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto exp1 = z * (cos_a*cos_b) +
             x * ((sin_a*sin_g - cos_a * cos_g*sin_b))
@@ -1344,15 +1452,15 @@ namespace librealsense
         return res;
     }
 
-    double auto_cal_algo::calculate_rotation_x_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_x_gamma_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = (double)sin(rot_angles.alpha);
         auto sin_b = (double)sin(rot_angles.beta);
@@ -1369,9 +1477,9 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = v.xyz[0];
-        auto y = v.xyz[1];
-        auto z = v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto exp1 = z * cos_a*cos_b +
             x * (sin_a*sin_g - cos_a * cos_g*sin_b) +
@@ -1408,15 +1516,15 @@ namespace librealsense
         return res;
     }
 
-    double auto_cal_algo::calculate_rotation_y_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_y_alpha_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = (double)sin(rot_angles.alpha);
         auto sin_b = (double)sin(rot_angles.beta);
@@ -1436,9 +1544,9 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = v.xyz[0];
-        auto y = v.xyz[1];
-        auto z = v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
 
         auto exp1 = z * (cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b)) +
@@ -1461,15 +1569,15 @@ namespace librealsense
         return res;
     }
 
-    double auto_cal_algo::calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = (double)sin(rot_angles.alpha);
         auto sin_b = (double)sin(rot_angles.beta);
@@ -1486,9 +1594,9 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = v.xyz[0];
-        auto y = v.xyz[1];
-        auto z = v.xyz[2];
+        auto x = (double)v.x;
+        auto y = (double)v.y;
+        auto z = (double)v.z;
 
         auto exp1 = z * (cos_a*cos_b) + x * ((sin_a*sin_g - cos_a * cos_g*sin_b))
             + y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + (t[2]);
@@ -1512,15 +1620,15 @@ namespace librealsense
 
     }
 
-    double auto_cal_algo::calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin)
+    double auto_cal_algo::calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin)
     {
-        auto r = yuy_extrin.rotation;
-        auto t = yuy_extrin.translation;
-        auto d = yuy_intrin.coeffs;
-        auto ppx = (double)yuy_intrin.ppx;
-        auto ppy = (double)yuy_intrin.ppy;
-        auto fx = (double)yuy_intrin.fx;
-        auto fy = (double)yuy_intrin.fy;
+        auto r = yuy_intrin_extrin.rot.rot;
+        double t[3] = { yuy_intrin_extrin.trans.t1, yuy_intrin_extrin.trans.t2, yuy_intrin_extrin.trans.t3 };
+        auto d = yuy_intrin_extrin.coeffs;
+        auto ppx = (double)yuy_intrin_extrin.k_mat.ppx;
+        auto ppy = (double)yuy_intrin_extrin.k_mat.ppy;
+        auto fx = (double)yuy_intrin_extrin.k_mat.fx;
+        auto fy = (double)yuy_intrin_extrin.k_mat.fy;
 
         auto sin_a = (double)sin(rot_angles.alpha);
         auto sin_b = (double)sin(rot_angles.beta);
@@ -1537,9 +1645,9 @@ namespace librealsense
         auto xy2 = x2 + y2;
         auto x2_y2 = xy2 * xy2;
 
-        auto x = v.xyz[0];
-        auto y = v.xyz[1];
-        auto z = v.xyz[2];
+        auto x = v.x;
+        auto y = v.y;
+        auto z = v.z;
 
         auto exp1 = z * (cos_a*cos_b) + x * (+(sin_a*sin_g - cos_a * cos_g*sin_b))
             + y * ((cos_g*sin_a + cos_a * sin_b*sin_g)) + t[2];
@@ -1564,7 +1672,7 @@ namespace librealsense
         return res;
     }
 
-    auto_cal_algo::coeffs<auto_cal_algo::translation> auto_cal_algo::calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy)
+    auto_cal_algo::coeffs<auto_cal_algo::translation> auto_cal_algo::calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy)
     {
         auto_cal_algo::coeffs<auto_cal_algo::translation> res;
 
@@ -1574,13 +1682,14 @@ namespace librealsense
 
         for (auto i = 0; i < rc.size(); i++)
         {
-            res.y_coeffs[i] = calculate_translation_y_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
-            res.x_coeffs[i] = calculate_translation_x_coeff(v[i], rc[i], xy[i], yuy_intrin, yuy_extrin);
+            res.y_coeffs[i] = calculate_translation_y_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
+            res.x_coeffs[i] = calculate_translation_x_coeff(v[i], rc[i], xy[i], yuy_intrin_extrin);
 
         }
 
         return res;
     }
+
 
     std::pair<auto_cal_algo::calib, double> auto_cal_algo::calc_cost_and_grad(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib& curr_calib)
     {
