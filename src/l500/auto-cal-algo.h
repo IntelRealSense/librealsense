@@ -6,9 +6,11 @@
 #include "serializable-interface.h"
 #include "hw-monitor.h"
 #include "sensor.h"
-
 namespace librealsense
 {
+	struct double3 { double x, y, z; double & operator [] (int i) { return (&x)[i]; } };
+	struct double2 { double x, y; double & operator [] (int i) { return (&x)[i]; } };
+
     class auto_cal_algo
     {
     public:
@@ -44,7 +46,7 @@ namespace librealsense
             std::vector< uint16_t> closest;
             std::vector<double> weights;
             std::vector<double> direction_deg;
-            std::vector<rs2_vertex> vertices;
+            std::vector<double3> vertices;
 
             int width;
             int height;
@@ -79,7 +81,7 @@ namespace librealsense
 
         struct rotation
         {
-            float rot[9];
+           double rot[9];
         };
 
         struct k_matrix
@@ -131,27 +133,27 @@ namespace librealsense
         {
             params();
 
-            double gamma = 0.98;
-            double alpha = 0.333333333333333;
-            double grad_ir_threshold = 3.5f; // Ignore pixels with IR grad of less than this
-            int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
-            double grad_z_min = 25.f; // Ignore pixels with Z grad of less than this
-            double grad_z_max = 1000.f;
-            double edge_thresh4_logic_lum = 0.1;
+	        double gamma = 0.98;
+	        double alpha = (double)1 / (double)3;
+	        double grad_ir_threshold = 3.5; // Ignore pixels with IR grad of less than this
+	        int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
+	        double grad_z_min = 25; // Ignore pixels with Z grad of less than this
+	        double grad_z_max = 1000;
+	        double edge_thresh4_logic_lum = 0.1;
 
-            double max_step_size = 1;
-            double min_step_size = 0.00001;
-            double control_param = 0.5;
-            int max_back_track_iters = 50;
-            int max_optimization_iters = 50;
-            double min_rgb_mat_delta = 0.00001;
-            double min_cost_delta = 1;
-            double tau = 0.5;
-            double min_weighted_edge_per_section_depth = 50;
-            double num_of_sections_for_edge_distribution_x = 2;
-            double num_of_sections_for_edge_distribution_y = 2;
-            calib normelize_mat;
-        };
+	        double max_step_size = 1;
+	        double min_step_size = 0.00001;
+	        double control_param = 0.5;
+	        int max_back_track_iters = 50;
+	        int max_optimization_iters = 50;
+	        double min_rgb_mat_delta = 0.00001;
+	        double min_cost_delta = 1;
+	        double tau = 0.5;
+	        double min_weighted_edge_per_section_depth = 50;
+	        double num_of_sections_for_edge_distribution_x = 2;
+	        double num_of_sections_for_edge_distribution_y = 2;
+	        calib normelize_mat;
+    };
 
         struct std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
                                                                  {deg_45, {1, 1}},
@@ -170,8 +172,8 @@ namespace librealsense
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
-		bool is_scene_valid() { return true; }
-		static bool is_valid_params( optimaization_params const & original, optimaization_params const & now );
+        bool is_scene_valid() { return true; }
+        static bool is_valid_params( optimaization_params const & original, optimaization_params const & now );
         rs2_calibration_status optimize();
 
 
@@ -195,36 +197,35 @@ namespace librealsense
         bool is_movement_in_images(const yuy2_frame_data & yuy);
         bool is_scene_valid(yuy2_frame_data yuy);
         std::vector<double> calculate_weights(z_frame_data& z_data);
-        std::vector <rs2_vertex> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units);
-        calib get_calib_gradients(const z_frame_data& z_data);
-        optimaization_params back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params);
+        std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units);
+    	optimaization_params back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params);
         double calc_step_size(optimaization_params opt_params);
         double calc_t(optimaization_params opt_params);
         std::pair<auto_cal_algo::calib, double> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
         std::pair<rs2_intrinsics, rs2_extrinsics> convert_calib_to_intrinsics_extrinsics(auto_cal_algo::calib curr_calib);
         auto_cal_algo::calib intrinsics_extrinsics_to_calib(rs2_intrinsics intrin, rs2_extrinsics extrin);
-        double calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv);
-        calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<float2>& uv, const calib& curr_calib);
-        translation calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        rotation_in_angles calc_rotation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        k_matrix calc_k_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        std::pair< std::vector<float2>, std::vector<double>> calc_rc(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
-        coeffs<translation> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        coeffs<rotation_in_angles> calc_rotation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        coeffs<k_matrix> calc_k_gradients_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const rs2_intrinsics & yuy_intrin, const rs2_extrinsics & yuy_extrin, const std::vector<double>& rc, const std::vector<float2>& xy);
-        k_matrix calculate_k_gradients_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        k_matrix calculate_k_gradients_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        translation calculate_translation_y_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        translation calculate_translation_x_coeff(rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_x_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_x_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_x_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_y_alpha_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        double calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, rs2_vertex v, double rc, float2 xy, const rs2_intrinsics& yuy_intrin, const rs2_extrinsics& yuy_extrin);
-        void deproject_sub_pixel(std::vector<rs2_vertex>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units);
+        double calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv);
+        calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib);
+        translation calc_translation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        rotation_in_angles calc_rotation_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        k_matrix calc_k_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        std::pair< std::vector<double2>, std::vector<double>> calc_rc(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
+        coeffs<translation> calc_translation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        coeffs<rotation_in_angles> calc_rotation_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        coeffs<k_matrix> calc_k_gradients_coefs(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy);
+        k_matrix calculate_k_gradients_y_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        k_matrix calculate_k_gradients_x_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        translation calculate_translation_y_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        translation calculate_translation_x_coeff(double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_x_alpha_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_x_beta_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_x_gamma_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_y_alpha_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_y_beta_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        double calculate_rotation_y_gamma_coeff(rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin);
+        void deproject_sub_pixel(std::vector<double3>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units);
 
-		void debug_calibration(char const * prefix);
+        void debug_calibration(char const * prefix);
 
         params _params;
 
@@ -312,7 +313,6 @@ namespace librealsense
 
             return edges;
         }
-
         // inputs
         rs2::frame depth, ir, yuy, prev_yuy;
         stream_profile_interface* const _from;
