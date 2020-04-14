@@ -241,7 +241,7 @@ namespace librealsense
 
         const char* get_description() const override
         {
-            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with trigger frequency 1-255";
+            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
         }
         void enable_recording(std::function<void(const option &)> record_action) override
         {
