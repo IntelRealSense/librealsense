@@ -39,6 +39,7 @@ else()
     ../../common
     ../../src/ipDeviceCommon
     ../../include/librealsense2
+    ../../third-party/tclap/include
     ../../third-party/easyloggingpp/src
     ${LIVE}/groupsock/include 
     ${LIVE}/liveMedia/include  
