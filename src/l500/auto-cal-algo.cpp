@@ -7,9 +7,9 @@
 #include <algorithm>
 
 #define AC_LOG_PREFIX "AC1: "
-#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) std::cout << "-D- " << MSG << std::endl
+#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
 
 namespace librealsense
 {
@@ -41,6 +41,12 @@ namespace librealsense
         auto vf = depth.get_profile().as<rs2::video_stream_profile>();
 
         auto z_data = preproccess_z(depth, ir_data, vf.get_intrinsics(), depth_units);
+
+        if( !is_scene_valid( yuy_data, z_data ))
+        {
+            AC_LOG( ERROR, "Calibration scene was found invalid!" );
+            return RS2_CALIBRATION_SCENE_INVALID;
+        }
 
         optimaization_params params_orig;
         params_orig.curr_calib = intrinsics_extrinsics_to_calib(_intr, _extr);
@@ -193,16 +199,21 @@ namespace librealsense
         return res;
     }
 
-    auto_cal_algo::ir_frame_data auto_cal_algo::preprocess_ir(rs2::frame ir)
+    auto_cal_algo::ir_frame_data auto_cal_algo::preprocess_ir( rs2::frame f )
     {
         auto vf = ir.get_profile().as<rs2::video_stream_profile>();
 
-        std::vector<uint8_t> ir_frame(ir.get_data_size(), 0);
-        std::copy((uint8_t*)(ir.get_data()), (uint8_t*)(ir.get_data()) + vf.width()*vf.height(), ir_frame.begin());
+        ir_frame_data ir;
+        ir.width = vf.width();
+        ir.height = vf.height();
 
-        auto edges = calc_edges(ir_frame, vf.width(), vf.height());
+        size_t data_size = f.get_data_size();
+        byte const * const data = (byte *) f.get_data();
+        byte const * const end_data = data + data_size;
+        ir.ir_frame.assign( data, end_data );
 
-        return { ir_frame, edges };
+        ir.ir_edges = calc_edges( ir.ir_frame, vf.width(), vf.height());
+        return ir;
     }
 
     auto_cal_algo::rotation_in_angles extract_angles_from_rotation(const double rotation[9])
@@ -596,8 +607,213 @@ namespace librealsense
         return true;
     }
 
-    bool auto_cal_algo::is_scene_valid(yuy2_frame_data yuy)
+    enum frame_t { YUY, DEPTH, IR };
+    //bool isEdgeDistributed(std::vector<double> yuy_weights,byte* section_map, int section_x, int section_y)
+    void sum_per_section( std::vector<double>& sum_weights_per_section, std::vector<unsigned char> &section_map, std::vector<double>& weights, double num_of_sections )
     {
+        auto sum_per_section_iter = sum_weights_per_section.begin(); // NOHA :: TODO :: check sum_weights_per_section allocation
+        for( auto i = 0; i < num_of_sections; i++ )
+        {
+            *(sum_per_section_iter + i) = 0;
+            auto section_depth_iter = section_map.begin();
+            auto weights_depth_iter = weights.begin();
+            for( auto ii = 0; ii < section_map.size(); ++ii )
+            {
+                if( *(section_depth_iter + ii) == i )
+                {
+                    *(sum_per_section_iter + i) += *(weights_depth_iter + ii);
+                }
+            }
+        }
+    }
+
+    static void check_edge_distribution(
+        std::vector<double>& sum_weights_per_section,
+        double& min_max_ratio,
+        bool& is_edge_distributed,
+        double distribution_min_max_ratio,
+        double min_weighted_edge_per_section_depth
+    )
+    {
+        // NOHA :: TODO :: add prints from Matlab
+        double z_max = *std::max_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
+        double z_min = *std::min_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
+        min_max_ratio = z_min / z_max;
+        if( min_max_ratio < distribution_min_max_ratio )
+        {
+            // NOHA :: TODO :: return here
+            is_edge_distributed = false;
+            return;
+        }
+        for( auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it )
+        {
+            if( *it < min_weighted_edge_per_section_depth )
+            {
+                is_edge_distributed = false;
+                return;
+            }
+        }
+        is_edge_distributed = true;
+    }
+
+    bool auto_cal_algo::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
+    {
+        double num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
+        
+        // depth frame
+        sum_per_section( z.sum_weights_per_section, z.section_map, z.weights, num_of_sections );
+        check_edge_distribution( z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed, _params.edge_distribution_min_max_ratio, _params.min_weighted_edge_per_section_depth );
+        // yuy frame
+        sum_per_section( yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections );
+        check_edge_distribution( yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed, _params.edge_distribution_min_max_ratio, _params.min_weighted_edge_per_section_depth );
+
+        /*auto sum_per_section_iter = z_data.sum_weights_per_section.begin(); // NOHA :: TODO :: check sum_weights_per_section allocation
+        for (auto i = 0; i < _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y; i++)
+        {
+            *(sum_per_section_iter + i) = 0;
+            auto section_depth_iter = z_data.section_map.begin();
+            auto weights_depth_iter = z_data.weights.begin();
+            for (auto ii = 0; ii < z_data.section_map.size(); ++ii)
+            {
+                if (*(section_depth_iter + ii) == i)
+                {
+                    *(sum_per_section_iter + i) += *(weights_depth_iter + ii);
+                }
+            }
+        }
+        // NOHA :: TODO :: add prints from Matlab
+        double z_max = *(std::max_element(z_data.sum_weights_per_section.begin(), z_data.sum_weights_per_section.end()));
+        double z_min = *(std::min_element(z_data.sum_weights_per_section.begin(), z_data.sum_weights_per_section.end()));
+        z_data.min_max_ratio = z_min / z_max;
+        if (z_data.min_max_ratio < _params.edge_distribution_min_max_ratio)
+        {
+            z_data.is_edge_distributed = false; // NOHA :: TODO :: return here
+            res = false;
+        }
+        for (auto it = z_data.sum_weights_per_section.begin(); it != z_data.sum_weights_per_section.end(); ++it)
+        {
+            if (*it < _params.min_weighted_edge_per_section_depth)
+            {
+                z_data.is_edge_distributed = false;
+                res = false;
+            }
+        }
+
+
+        auto yuy_sum_per_section_iter = yuy_data.sum_weights_per_section.begin(); // NOHA :: TODO :: check sum_weights_per_section allocation
+        for (auto i = 0; i < _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y; i++)
+        {
+            *(yuy_sum_per_section_iter + i) = 0;
+            for (auto it = yuy_data.edges_IDT.begin(); it != yuy_data.edges_IDT.end(); ++it, ++i)
+            {
+                auto section_yuy_iter = yuy_data.section_map.begin();
+                auto edges_yuy_iter = yuy_data.edges_IDT.begin();
+                auto jj = 0;
+                for (auto ii = 0; ii < yuy_data.section_map.size(); ++ii, ++jj)
+                {
+                    if (*(edges_yuy_iter + jj) == 0) // section map is filtered when edges_IDT>0
+                    {
+                        ii--;
+                        continue;
+                    }
+                    if (*(section_yuy_iter + ii) == i)
+                    {
+                        *(yuy_sum_per_section_iter + i) += *(edges_yuy_iter + jj);
+                    }
+                }
+            }
+
+            double yuy_max = *(std::max_element(yuy_data.sum_weights_per_section.begin(), yuy_data.sum_weights_per_section.end()));
+            double yuy_min = *(std::min_element(yuy_data.sum_weights_per_section.begin(), yuy_data.sum_weights_per_section.end()));
+            yuy_data.min_max_ratio = yuy_min / yuy_max;
+            if (yuy_data.min_max_ratio < _params.edge_distribution_min_max_ratio)
+            {
+                yuy_data.is_edge_distributed = false;
+                res = false;
+            }
+            for (auto it = yuy_data.sum_weights_per_section.begin(); it != yuy_data.sum_weights_per_section.end(); ++it)
+            {
+                if (*it < _params.min_weighted_edge_per_section_depth)
+                {
+                    yuy_data.is_edge_distributed = false;
+                    res = false;
+                }
+            }
+        }*/
+        return (z.is_edge_distributed && yuy.is_edge_distributed);
+    }
+
+    void auto_cal_algo::section_per_pixel(
+        frame_data const & f,
+        size_t const section_w,
+        size_t const section_h,
+        byte * const section_map
+    )
+    {
+        //% [gridX,gridY] = meshgrid(0:res(2)-1,0:res(1)-1);
+        //% gridX = floor(gridX/res(2)*params.numSectionsH);
+        //% gridY = floor(gridY/res(1)*params.numSectionsV);
+
+        // res(2) is width; res(1) is height
+        //    -->  section_x = x * section_w / width
+        //    -->  section_y = y * section_h / height
+
+        // We need to align the pixel-map orientation the same as the image data
+        // In Matlab, it's always height-oriented (data + x*h + y) whereas our frame
+        // data is width-oriented (data + y*w + x)
+        //    -->  we iterate over cols within rows
+
+        byte * section = section_map;
+        for( size_t row = 0; row < f.height; row++ )
+        {
+            size_t const section_y = row * section_h / f.height;  // note not a floating point division!
+            for( size_t col = 0; col < f.width; col++ )
+            {
+                size_t const section_x = col * section_w / f.width;  // note not a floating point division!
+                //% sectionMap = gridY + gridX*params.numSectionsH;   TODO BUGBUGBUG!!!
+                *section++ = section_y + section_x * section_h;
+            }
+        }
+    }
+
+    bool auto_cal_algo::is_scene_valid( yuy2_frame_data & yuy, z_frame_data & z )
+    {
+        // NOHA :: TODO :: variable/functions name convention
+        // NOHA :: add section_map code here
+        std::vector< byte > section_map_depth( z.width * z.height );
+        std::vector< byte > section_map_rgb( yuy.width * yuy.height );
+
+        size_t const section_w = _params.num_of_sections_for_edge_distribution_x;  //% params.numSectionsH
+        size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
+
+        // Get a map for each pixel to its corresponding section
+        section_per_pixel( z,   section_w, section_h, section_map_depth.data() );
+        section_per_pixel( yuy, section_w, section_h, section_map_rgb.data() );
+
+        // remove pixels in section map that were removed in weights
+        for( auto i = 0; i < z.supressed_edges.size(); i++ )
+        {
+            if( z.supressed_edges[i] )
+            {
+                z.section_map.push_back( section_map_depth[i] );
+            }
+            // NOHA :: TODO :: 
+            // 1. throw exception when section map depth is wrong
+            // 2. allocate section vector using reserve() - size = z_data.weights (keep push_back)
+        }
+
+        // remove pixels in section map where edges_IDT > 0
+        int i = 0;
+        for( auto it = yuy.edges_IDT.begin(); it != yuy.edges_IDT.end(); ++it, ++i )
+        {
+            if( *it > 0 )
+            {
+                yuy.section_map.push_back( section_map_rgb[i] );
+            }
+        }
+
+        //call is_edge_distributed
+        bool res = is_edge_distributed( z, yuy );
         return true;
     }
 
@@ -801,9 +1017,7 @@ namespace librealsense
             uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
             new_params.cost = calc_cost(z_data, yuy_data, uvmap);
 
-            std::cout.precision(15);
-            std::cout << std::fixed << "Current back tracking line search cost = " << new_params.cost << std::endl;
-            AC_LOG(DEBUG, "Current back tracking line search cost = " << new_params.cost);
+            AC_LOG( DEBUG, "Current back tracking line search cost = " << std::fixed << std::setprecision(15) << new_params.cost );
         }
 
         if (curr_params.cost - new_params.cost >= step_size * t)

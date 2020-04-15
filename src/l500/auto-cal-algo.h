@@ -8,8 +8,8 @@
 #include "sensor.h"
 namespace librealsense
 {
-	struct double3 { double x, y, z; double & operator [] (int i) { return (&x)[i]; } };
-	struct double2 { double x, y; double & operator [] (int i) { return (&x)[i]; } };
+    struct double3 { double x, y, z; double & operator [] (int i) { return (&x)[i]; } };
+    struct double2 { double x, y; double & operator [] (int i) { return (&x)[i]; } };
 
     class auto_cal_algo
     {
@@ -24,16 +24,19 @@ namespace librealsense
             deg_none
         };
 
-        struct ir_frame_data
+        struct frame_data
+        {
+            size_t width;
+            size_t height;
+        };
+
+        struct ir_frame_data : frame_data
         {
             std::vector<uint8_t> ir_frame;
             std::vector<double> ir_edges;
-
-            int width;
-            int height;
         };
 
-        struct z_frame_data
+        struct z_frame_data : frame_data
         {
             std::vector<uint16_t> frame;
             std::vector<double> gradient_x;
@@ -48,11 +51,14 @@ namespace librealsense
             std::vector<double> direction_deg;
             std::vector<double3> vertices;
 
-            int width;
-            int height;
+            std::vector<unsigned char> section_map;
+            bool is_edge_distributed;
+            std::vector<double>sum_weights_per_section;
+            double min_max_ratio;
         };
 
-        struct yuy2_frame_data
+        // TODO why "yuy2"?
+        struct yuy2_frame_data : frame_data
         {
             std::vector<uint8_t> yuy2_frame;
             std::vector<uint8_t> yuy2_prev_frame;
@@ -61,8 +67,10 @@ namespace librealsense
             std::vector<double> edges_IDTx;
             std::vector<double> edges_IDTy;
 
-            int width;
-            int height;
+            std::vector<unsigned char> section_map;
+            bool is_edge_distributed;
+            std::vector<double>sum_weights_per_section;
+            double min_max_ratio;
         };
 
         struct translation
@@ -133,27 +141,29 @@ namespace librealsense
         {
             params();
 
-	        double gamma = 0.98;
-	        double alpha = (double)1 / (double)3;
-	        double grad_ir_threshold = 3.5; // Ignore pixels with IR grad of less than this
-	        int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
-	        double grad_z_min = 25; // Ignore pixels with Z grad of less than this
-	        double grad_z_max = 1000;
-	        double edge_thresh4_logic_lum = 0.1;
+            double gamma = 0.98;
+            double alpha = (double)1 / (double)3;
+            double grad_ir_threshold = 3.5; // Ignore pixels with IR grad of less than this
+            int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
+            double grad_z_min = 25; // Ignore pixels with Z grad of less than this
+            double grad_z_max = 1000;
+            double edge_thresh4_logic_lum = 0.1;
 
-	        double max_step_size = 1;
-	        double min_step_size = 0.00001;
-	        double control_param = 0.5;
-	        int max_back_track_iters = 50;
-	        int max_optimization_iters = 50;
-	        double min_rgb_mat_delta = 0.00001;
-	        double min_cost_delta = 1;
-	        double tau = 0.5;
-	        double min_weighted_edge_per_section_depth = 50;
-	        double num_of_sections_for_edge_distribution_x = 2;
-	        double num_of_sections_for_edge_distribution_y = 2;
-	        calib normelize_mat;
-    };
+            double max_step_size = 1;
+            double min_step_size = 0.00001;
+            double control_param = 0.5;
+            int max_back_track_iters = 50;
+            int max_optimization_iters = 50;
+            double min_rgb_mat_delta = 0.00001;
+            double min_cost_delta = 1;
+            double tau = 0.5;
+            double min_weighted_edge_per_section_depth = 50;
+            size_t num_of_sections_for_edge_distribution_x = 2;
+            size_t num_of_sections_for_edge_distribution_y = 2;
+            calib normelize_mat;
+
+            double edge_distribution_min_max_ratio = 1;
+        };
 
         struct std::map < direction, std::pair<int, int>> dir_map = { {deg_0, {1, 0}},
                                                                  {deg_45, {1, 1}},
@@ -172,7 +182,6 @@ namespace librealsense
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
-        bool is_scene_valid() { return true; }
         static bool is_valid_params( optimaization_params const & original, optimaization_params const & now );
         rs2_calibration_status optimize();
 
@@ -181,6 +190,8 @@ namespace librealsense
         z_frame_data preproccess_z(rs2::frame depth, const ir_frame_data & ir_data, const rs2_intrinsics& depth_intrinsics, float depth_units);
         yuy2_frame_data preprocess_yuy2_data(rs2::frame color, rs2::frame prev_color);
         ir_frame_data preprocess_ir(rs2::frame ir);
+
+        bool is_scene_valid( yuy2_frame_data & yuy_data, z_frame_data & z_data );
 
         void zero_invalid_edges(z_frame_data& z_data, ir_frame_data ir_data);
         std::vector<double> get_direction_deg(std::vector<double> gradient_x, std::vector<double> gradient_y);
@@ -195,10 +206,9 @@ namespace librealsense
         
         std::vector<uint8_t> get_logic_edges(std::vector<double> edges);
         bool is_movement_in_images(const yuy2_frame_data & yuy);
-        bool is_scene_valid(yuy2_frame_data yuy);
         std::vector<double> calculate_weights(z_frame_data& z_data);
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units);
-    	optimaization_params back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params);
+        optimaization_params back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params);
         double calc_step_size(optimaization_params opt_params);
         double calc_t(optimaization_params opt_params);
         std::pair<auto_cal_algo::calib, double> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib);
@@ -226,6 +236,9 @@ namespace librealsense
         void deproject_sub_pixel(std::vector<double3>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units);
 
         void debug_calibration(char const * prefix);
+
+        bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
+        void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
 
         params _params;
 
