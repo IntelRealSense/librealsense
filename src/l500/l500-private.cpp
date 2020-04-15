@@ -5,7 +5,7 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "context.h"
 #include "core/video.h"
-#include "auto-cal-algo.h"
+#include "depth-to-rgb-calibration.h"
 
 using namespace std;
 
@@ -306,10 +306,10 @@ namespace librealsense
         void auto_calibration::set_special_frame( rs2::frameset const& fs )
         {
             AC_LOG( DEBUG, "special frame received :)" );
-			// Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
-			call_back( RS2_CALIBRATION_SPECIAL_FRAME );
+            // Notify of the special frame -- mostly for validation team so they know to expect a frame drop...
+            call_back( RS2_CALIBRATION_SPECIAL_FRAME );
 
-			if( _is_processing )
+            if( _is_processing )
             {
                 AC_LOG( ERROR, "already processing; ignoring special frame!" );
                 return;
@@ -370,7 +370,7 @@ namespace librealsense
             _is_processing = true;
             if( _worker.joinable() )
                 _worker.join();
-            _worker = std::thread([&]()
+            _worker = std::thread( [&]()
             {
                 try
                 {
@@ -379,34 +379,49 @@ namespace librealsense
 
                     auto df = _sf.get_depth_frame();
                     auto irf = _sf.get_infrared_frame();
-                    auto_cal_algo algo( df, irf, _cf, _pcf );
+                    depth_to_rgb_calibration algo( df, irf, _cf, _pcf );
                     _from_profile = algo.get_from_profile();
                     _to_profile = algo.get_to_profile();
 
-                    if( !algo.is_scene_valid() )
+                    bool retry = false;
+                    auto status = algo.optimize();
+                    switch( status )
                     {
-                        AC_LOG( DEBUG, "scene is deemed invalid for calibration; retrying..." );
-                        call_back( RS2_CALIBRATION_SCENE_INVALID );
-                        reset();
+                    case RS2_CALIBRATION_SUCCESSFUL:
+                        AC_LOG( DEBUG, "optimization successful!" );
+                        /*  auto prof = _cf.get_profile().get()->profile;
+                        auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
+                        if (video)
+                            video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
+                        _df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
+                        _extr = algo.get_extrinsics();
+                        _intr = algo.get_intrinsics();
+                        break;
+                    case RS2_CALIBRATION_NOT_NEEDED:
+                        // This is the same as SUCCESSFUL, except there was no change because the
+                        // existing calibration is good enough. We notify and exit.
+                        break;
+                    case RS2_CALIBRATION_BAD_RESULT:
+                    case RS2_CALIBRATION_SCENE_INVALID:
+                        // These two require a retry
+                        retry = true;
+                        break;
+                    case RS2_CALIBRATION_FAILED:
+                        // This is not expected; really only possible when the algorithm crashed or had
+                        // some unusual condition -- we just report it and quit (TODO maybe retry?)
+                        break;
+                    default:
+                        // All the rest of the codes are not end-states of the algo, so we don't expect
+                        // to get here!
+                        AC_LOG( ERROR, "Unexpected status '" << status << "' received from AC algo; stopping!" );
+                        break;
+                    }
+                    call_back( status );
+                    reset();
+                    if( retry )
+                    {
                         trigger_special_frame( true );
                     }
-					else
-					{
-						auto status = algo.optimize();
-						if( status == RS2_CALIBRATION_SUCCESSFUL )
-						{
-							AC_LOG( DEBUG, "optimization successful!" );
-							/*  auto prof = _cf.get_profile().get()->profile;
-							auto&& video = dynamic_cast<video_stream_profile_interface*>(prof);
-							if (video)
-								video->set_intrinsics([new_calib]() {return new_calib.intrinsics;});
-							_df.get_profile().register_extrinsics_to(_cf.get_profile(), new_calib.extrinsics);*/
-							_extr = algo.get_extrinsics();
-							_intr = algo.get_intrinsics();
-						}
-						call_back( status );
-						reset();
-					}
                 }
                 catch( std::exception& ex )
                 {
@@ -416,7 +431,7 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    AC_LOG( ERROR, "unknown exception!!!" );
+                    AC_LOG( ERROR, "unknown exception in AC!!!" );
                     call_back( RS2_CALIBRATION_FAILED );
                     reset();
                 }});
