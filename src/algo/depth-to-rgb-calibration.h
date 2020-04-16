@@ -239,6 +239,8 @@ namespace depth_to_rgb_calibration {
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         bool is_grad_dir_balanced(z_frame_data& z_data);
+        void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed, double distribution_min_max_ratio, double min_weighted_edge_per_section_depth);
+        void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;

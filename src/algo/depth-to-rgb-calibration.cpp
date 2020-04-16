@@ -10,7 +10,7 @@
 //#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
 #define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
-
+#define AC_LOG_CONTINUE(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) 
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
 
@@ -663,15 +663,17 @@ bool optimizer::is_movement_in_images( const yuy2_frame_data& yuy )
     return true;
 }
 
-//bool isEdgeDistributed(std::vector<double> yuy_weights,byte* section_map, int section_x, int section_y)
-static
-void sum_per_section(
+
+void optimizer::sum_per_section(
     std::vector< double > & sum_weights_per_section,
     std::vector< byte > const & section_map,
     std::vector< double > const & weights,
     size_t num_of_sections
 )
-{
+{/*sumWeightsPerSection = zeros(params.numSectionsV*params.numSectionsH,1);
+for ix = 1:params.numSectionsV*params.numSectionsH
+    sumWeightsPerSection(ix) = sum(weights(sectionMap == ix-1));
+end*/
     sum_weights_per_section.resize( num_of_sections );
     auto p_sum = sum_weights_per_section.data();
     for( byte i = 0; i < num_of_sections; ++i, ++p_sum )
@@ -688,7 +690,7 @@ void sum_per_section(
     }
 }
 
-static void check_edge_distribution(
+void optimizer::check_edge_distribution(
     std::vector<double>& sum_weights_per_section,
     double& min_max_ratio,
     bool& is_edge_distributed,
@@ -696,23 +698,47 @@ static void check_edge_distribution(
     double min_weighted_edge_per_section_depth
 )
 {
-    // NOHA :: TODO :: add prints from Matlab
+    /*minMaxRatio = min(sumWeightsPerSection)/max(sumWeightsPerSection);
+if minMaxRatio < params.edgeDistributMinMaxRatio
+    isDistributed = false;
+    fprintf('isEdgeDistributed: Ratio between min and max is too small: %0.5f, threshold is %0.5f\n',minMaxRatio, params.edgeDistributMinMaxRatio);
+    return;
+end*/
     double z_max = *std::max_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     double z_min = *std::min_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     min_max_ratio = z_min / z_max;
     if( min_max_ratio < distribution_min_max_ratio )
     {
-        // NOHA :: TODO :: return here
         is_edge_distributed = false;
+        AC_LOG_CONTINUE(DEBUG, "check_edge_distribution: Ratio between min and max is too small:  " << min_max_ratio);
+        AC_LOG(DEBUG, "check_edge_distribution: threshold is:  " << distribution_min_max_ratio);
         return;
     }
+    /*if any(sumWeightsPerSection< params.minWeightedEdgePerSection)
+    isDistributed = false;
+    printVals = num2str(sumWeightsPerSection(1));
+    for k = 2:numel(sumWeightsPerSection)
+        printVals = [printVals,',',num2str(sumWeightsPerSection(k))];
+    end
+    disp(['isEdgeDistributed: weighted edge per section is too low: ' printVals ', threshold is ' num2str(params.minWeightedEdgePerSection)]);
+    return;
+end*/
     for( auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it )
     {
         if( *it < min_weighted_edge_per_section_depth )
         {
             is_edge_distributed = false;
-            return;
+            break;
         }
+    }
+    if (!is_edge_distributed) {
+        AC_LOG_CONTINUE(DEBUG, "check_edge_distribution: weighted edge per section is too low:  ");
+        for (auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it)
+        {
+            AC_LOG_CONTINUE(DEBUG, " " << *it);
+        }
+        AC_LOG(DEBUG, "threshold is: " << min_weighted_edge_per_section_depth);
+        return;
     }
     is_edge_distributed = true;
 }
@@ -732,83 +758,12 @@ bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
     AC_LOG( DEBUG, "... check_edge_distribution" );
     check_edge_distribution( yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed, _params.edge_distribution_min_max_ratio, _params.min_weighted_edge_per_section_depth );
 
-    /*auto sum_per_section_iter = z_data.sum_weights_per_section.begin(); // NOHA :: TODO :: check sum_weights_per_section allocation
-    for (auto i = 0; i < _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y; i++)
-    {
-        *(sum_per_section_iter + i) = 0;
-        auto section_depth_iter = z_data.section_map.begin();
-        auto weights_depth_iter = z_data.weights.begin();
-        for (auto ii = 0; ii < z_data.section_map.size(); ++ii)
-        {
-            if (*(section_depth_iter + ii) == i)
-            {
-                *(sum_per_section_iter + i) += *(weights_depth_iter + ii);
-            }
-        }
-    }
-    // NOHA :: TODO :: add prints from Matlab
-    double z_max = *(std::max_element(z_data.sum_weights_per_section.begin(), z_data.sum_weights_per_section.end()));
-    double z_min = *(std::min_element(z_data.sum_weights_per_section.begin(), z_data.sum_weights_per_section.end()));
-    z_data.min_max_ratio = z_min / z_max;
-    if (z_data.min_max_ratio < _params.edge_distribution_min_max_ratio)
-    {
-        z_data.is_edge_distributed = false; // NOHA :: TODO :: return here
-        res = false;
-    }
-    for (auto it = z_data.sum_weights_per_section.begin(); it != z_data.sum_weights_per_section.end(); ++it)
-    {
-        if (*it < _params.min_weighted_edge_per_section_depth)
-        {
-            z_data.is_edge_distributed = false;
-            res = false;
-        }
-    }
-
-
-    auto yuy_sum_per_section_iter = yuy_data.sum_weights_per_section.begin(); // NOHA :: TODO :: check sum_weights_per_section allocation
-    for (auto i = 0; i < _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y; i++)
-    {
-        *(yuy_sum_per_section_iter + i) = 0;
-        for (auto it = yuy_data.edges_IDT.begin(); it != yuy_data.edges_IDT.end(); ++it, ++i)
-        {
-            auto section_yuy_iter = yuy_data.section_map.begin();
-            auto edges_yuy_iter = yuy_data.edges_IDT.begin();
-            auto jj = 0;
-            for (auto ii = 0; ii < yuy_data.section_map.size(); ++ii, ++jj)
-            {
-                if (*(edges_yuy_iter + jj) == 0) // section map is filtered when edges_IDT>0
-                {
-                    ii--;
-                    continue;
-                }
-                if (*(section_yuy_iter + ii) == i)
-                {
-                    *(yuy_sum_per_section_iter + i) += *(edges_yuy_iter + jj);
-                }
-            }
-        }
-
-        double yuy_max = *(std::max_element(yuy_data.sum_weights_per_section.begin(), yuy_data.sum_weights_per_section.end()));
-        double yuy_min = *(std::min_element(yuy_data.sum_weights_per_section.begin(), yuy_data.sum_weights_per_section.end()));
-        yuy_data.min_max_ratio = yuy_min / yuy_max;
-        if (yuy_data.min_max_ratio < _params.edge_distribution_min_max_ratio)
-        {
-            yuy_data.is_edge_distributed = false;
-            res = false;
-        }
-        for (auto it = yuy_data.sum_weights_per_section.begin(); it != yuy_data.sum_weights_per_section.end(); ++it)
-        {
-            if (*it < _params.min_weighted_edge_per_section_depth)
-            {
-                yuy_data.is_edge_distributed = false;
-                res = false;
-            }
-        }
-    }*/
     return (z.is_edge_distributed && yuy.is_edge_distributed);
 }
 
-bool optimizer::is_grad_dir_balanced(z_frame_data& z_data)//, yuy2_frame_data& yuy_data)
+bool optimizer::is_grad_dir_balanced(
+    z_frame_data& z_data
+    )
 {
     /*function [isBalanced,dirRatio1,perpRatio,dirRatio2,weightsPerDir] = isGradDirBalanced(frame,params)
 isBalanced = false;
@@ -830,7 +785,6 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
     auto j = 0;
     for (auto i = 0; i < z_data.supressed_edges.size(); ++i)
     {
-        //for (auto it = i_weights.begin(); it != i_weights.end(); it++) {
         if (*(supressed_edges_iter + i) > 0)
         {
             *(i_weights_iter + i) = 1; // is it needed ??
@@ -929,19 +883,22 @@ isBalanced = true;
         auto perp_ratio = *max_val / max_val_perp;
         if (perp_ratio > _params.grad_dir_ratio_prep)
         {
-            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
+            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
         if (min_val_perp < 1e-3)// % Don't devide by zero...
         {
-            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
-            dir_ratio2 = 0; // = nan; NOHA:: TODO :: what should be the value for nan
+            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
+            dir_ratio2 = DBL_MAX; // = nan 
             return false;
         }
         dir_ratio2 = max_val_perp / min_val_perp;
         if (dir_ratio2 > _params.grad_dir_ratio)
         {
-            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
+            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
     }
@@ -984,8 +941,6 @@ void optimizer::section_per_pixel(
 
 bool optimizer::is_scene_valid()
 {
-    // NOHA :: TODO :: variable/functions name convention
-    // NOHA :: add section_map code here
     std::vector< byte > section_map_depth( _z.width * _z.height );
     std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
