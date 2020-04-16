@@ -33,8 +33,8 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
     _algo.set_yuy_data(
-        std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() ),
-        std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() ),
+        std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
+        std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
         color_profile.width(), color_profile.height()
     );
 
@@ -42,7 +42,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto ir_profile = ir.get_profile().as< rs2::video_stream_profile >();
     auto ir_data = (impl::ir_t const *) ir.get_data();
     _algo.set_ir_data(
-        std::vector< impl::ir_t >( ir_data, ir_data + ir.get_data_size() ),
+        std::vector< impl::ir_t >( ir_data, ir_data + ir.get_data_size() / sizeof( impl::ir_t )),
         ir_profile.width(), ir_profile.height()
     );
 
@@ -50,7 +50,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto z_profile = depth.get_profile().as< rs2::video_stream_profile >();
     auto z_data = (impl::z_t const *) depth.get_data();
     _algo.set_z_data(
-        std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() ),
+        std::vector< impl::z_t >( z_data, z_data + depth.get_data_size() / sizeof( impl::z_t ) ),
         z_profile.get_intrinsics(),
         depth.as< rs2::depth_frame >().get_units()
     );
