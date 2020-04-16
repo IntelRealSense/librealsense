@@ -1073,24 +1073,25 @@ void optimizer::deproject_sub_pixel( std::vector<double3>& points, const rs2_int
     }
 }
 
-static
-std::pair< rs2_intrinsics, rs2_extrinsics > calib_to_intrinsics_extrinsics( calib const & curr_calib )
+rs2_intrinsics calib::get_intrinsics() const
 {
-    auto & rot = curr_calib.rot.rot;
-    auto & trans = curr_calib.trans;
-    auto & k = curr_calib.k_mat;
-    auto & coeffs = curr_calib.coeffs;
+    return {
+        width, height,
+        float( k_mat.ppx ), float( k_mat.ppy ),
+        float( k_mat.fx ), float( k_mat.fy ),
+        model,
+        { float( coeffs[0] ), float( coeffs[1] ), float( coeffs[2] ), float( coeffs[3] ), float( coeffs[4] )}
+    };
+}
 
-    rs2_intrinsics intrinsics = { curr_calib.width, curr_calib.height,
-                                  float(k.ppx), float(k.ppy),
-                                  float(k.fx), float(k.fy),
-                                  curr_calib.model,
-                                  {float(coeffs[0]), float(coeffs[1]), float(coeffs[2]), float(coeffs[3]), float(coeffs[4])} };
-
-    rs2_extrinsics extr = { { float(rot[0]), float(rot[1]), float(rot[2]), float(rot[3]), float(rot[4]), float(rot[5]), float(rot[6]), float(rot[7]), float(rot[8]) },
-                            { float(trans.t1), float(trans.t2), float(trans.t3) } };
-
-    return { intrinsics, extr };
+rs2_extrinsics calib::get_extrinsics() const
+{
+    auto & r = rot.rot;
+    auto & t = trans;
+    return {
+        { float( r[0] ), float( r[1] ), float( r[2] ), float( r[3] ), float( r[4] ), float( r[5] ), float( r[6] ), float( r[7] ), float( r[8] ) },
+        { float( t.t1 ), float( t.t2 ), float( t.t3 ) }
+    };
 }
 
 static
@@ -1098,10 +1099,8 @@ std::vector< double2 > get_texture_map(
     /*const*/ std::vector< double3 > points,
     calib const & curr_calib )
 {
-    auto ext = calib_to_intrinsics_extrinsics( curr_calib );
-
-    auto intrinsics = ext.first;
-    auto extr = ext.second;
+    auto intrinsics = curr_calib.get_intrinsics();
+    auto extr = curr_calib.get_extrinsics();
 
     std::vector<double2> uv( points.size() );
     std::vector<double3> v( points.size() );
@@ -1284,8 +1283,6 @@ calib optimizer::calc_gradients( const z_frame_data& z_data, const yuy2_frame_da
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
-    auto intrin_extrin = calib_to_intrinsics_extrinsics( curr_calib );
-
     res.rot_angles = calc_rotation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
     res.trans = calc_translation_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
     res.k_mat = calc_k_gradients( z_data, yuy_data, interp_IDT_x, interp_IDT_y, curr_calib, rc.second, rc.first );
@@ -1398,17 +1395,16 @@ std::pair< std::vector<double2>, std::vector<double>> optimizer::calc_rc( const 
     std::vector<double> r2( z_data.vertices.size() );
     std::vector<double> rc( z_data.vertices.size() );
 
-    auto intrin_extrin = calib_to_intrinsics_extrinsics( curr_calib );
-    auto yuy_intrin = intrin_extrin.first;
-    auto yuy_extrin = intrin_extrin.second;
+    auto yuy_intrin = curr_calib.get_intrinsics();
+    auto yuy_extrin = curr_calib.get_extrinsics();
 
     auto fx = (double)yuy_intrin.fx;
     auto fy = (double)yuy_intrin.fy;
     auto ppx = (double)yuy_intrin.ppx;
     auto ppy = (double)yuy_intrin.ppy;
 
-    auto r = yuy_extrin.rotation;
-    auto t = yuy_extrin.translation;
+    auto & r = yuy_extrin.rotation;
+    auto & t = yuy_extrin.translation;
 
     double mat[3][4] = {
         fx*(double)r[0] + ppx * (double)r[2], fx*(double)r[3] + ppx * (double)r[5], fx*(double)r[6] + ppx * (double)r[8], fx*(double)t[0] + ppx * (double)t[2],
@@ -2306,13 +2302,12 @@ bool optimizer::is_valid_results()
     return true;
 }
 
-void optimizer::get_results( rs2_intrinsics * p_intrinsics, rs2_extrinsics * p_extrinsics )
+calib const & optimizer::get_calibration() const
 {
-    auto res = calib_to_intrinsics_extrinsics( _params_curr.curr_calib );
-
-    if( p_intrinsics )
-        *p_intrinsics = res.first;
-    if( p_extrinsics )
-        *p_extrinsics = res.second;
+    return _params_curr.curr_calib;
 }
 
+double optimizer::get_cost() const
+{
+    return _params_curr.cost;
+}

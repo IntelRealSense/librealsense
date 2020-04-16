@@ -106,8 +106,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         }
 
         AC_LOG( DEBUG, "... optimizing" );
-        algo::calib calibration( _intr, _extr );
-        auto n_iterations = _algo.optimize( calibration );
+        auto n_iterations = _algo.optimize( algo::calib( _intr, _extr ));
         if( !n_iterations )
         {
             //AC_LOG( INFO, "Calibration not necessary; nothing done" );
@@ -119,9 +118,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         if( !_algo.is_valid_results() )
             return RS2_CALIBRATION_BAD_RESULT;
 
-        //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
-
-        _algo.get_results( &_intr, &_extr );
+        _intr = _algo.get_calibration().get_intrinsics();
+        _extr = _algo.get_calibration().get_extrinsics();
         debug_calibration( "new" );
 
         return RS2_CALIBRATION_SUCCESSFUL;
@@ -137,9 +135,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
     AC_LOG( DEBUG, prefix << " intr: "
+        << _intr.width << "x" << _intr.height
         << std::setprecision( 12 )
-        << "width: " << _intr.width
-        << ", height: " << _intr.height
         << ", ppx: " << _intr.ppx
         << ", ppy: " << _intr.ppy
         << ", fx: " << _intr.fx
@@ -150,10 +147,10 @@ void depth_to_rgb_calibration::debug_calibration( char const * prefix )
         << "]" );
     AC_LOG( DEBUG, prefix << " extr:"
         << std::setprecision( 12 )
-        << " rotation: ["
+        << " r["
         << _extr.rotation[0] << ", " << _extr.rotation[1] << ", " << _extr.rotation[2] << ", " << _extr.rotation[3] << ", " << _extr.rotation[4] << ", "
         << _extr.rotation[5] << ", " << _extr.rotation[6] << ", " << _extr.rotation[7] << ", " << _extr.rotation[8]
-        << "]  translation: ["
+        << "]  t["
         << _extr.translation[0] << ", " << _extr.translation[1] << ", " << _extr.translation[2]
         << "]" );
 }
@@ -198,37 +195,6 @@ int main(int argc, char * argv[]) try
     );
     auto status = cal.optimize();
     AC_LOG( INFO, "Auto calibration finished, status= " << rs2_calibration_status_to_string( status ));
-
-
-#if 0
-    rs2::log_to_console(RS2_LOG_SEVERITY_ERROR);
-    // Create a simple OpenGL window for rendering:
-    window app(1280, 720, "RealSense Capture Example");
-
-    // Declare depth colorizer for pretty visualization of depth data
-    rs2::colorizer color_map;
-    // Declare rates printer for showing streaming rates of the enabled streams.
-    rs2::rates_printer printer;
-
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
-
-    // Start streaming with default recommended configuration
-    // The default video configuration contains Depth and Color streams
-    // If a device is capable to stream IMU data, both Gyro and Accelerometer are enabled by default
-    pipe.start();
-
-    while (app) // Application still alive?
-    {
-        rs2::frameset data = pipe.wait_for_frames().    // Wait for next set of frames from the camera
-                             apply_filter(printer).     // Print each enabled stream frame rate
-                             apply_filter(color_map);   // Find and colorize the depth data
-
-        // The show method, when applied on frameset, break it to frames and upload each frame into a gl textures
-        // Each texture is displayed on different viewport according to it's stream unique id
-        app.show(data);
-    }
-#endif
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
