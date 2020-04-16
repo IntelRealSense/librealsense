@@ -85,7 +85,8 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 
-        _algo.get_results( &_intr, &_extr );
+        _intr = _algo.get_calibration().get_intrinsics();
+        _extr = _algo.get_calibration().get_extrinsics();
         debug_calibration( "new" );
 
         return RS2_CALIBRATION_SUCCESSFUL;

@@ -116,6 +116,9 @@ namespace depth_to_rgb_calibration {
         calib( calib const & ) = default;
         explicit calib( rs2_intrinsics const & intrinsics, rs2_extrinsics const & extrinsics );
 
+        rs2_intrinsics get_intrinsics() const;
+        rs2_extrinsics get_extrinsics() const;
+
         void copy_coefs( calib& obj );
         calib operator*( double step_size );
         calib operator/( double factor );
@@ -196,8 +199,8 @@ namespace depth_to_rgb_calibration {
         bool is_scene_valid();
         size_t optimize( calib const & original_calibration );
         bool is_valid_results();
-        void get_results( rs2_intrinsics * p_intrinsics, rs2_extrinsics * p_extrinsics );
-
+        calib const & get_calibration() const;
+        double get_cost() const;
 
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
