@@ -184,12 +184,13 @@ int main(int argc, char * argv[]) try
         { -1.02322638034821, 13.7332067489624, 1.02426385879517 }
     };
 
-    const std::string root_dir = "C:/work/autocal/LongRange 768X1024 (RGB 1920X1080)/";
+    //const std::string root_dir = "C:/work/autocal/LongRange 768X1024 (RGB 1920X1080)/";
+    const std::string root_dir = "C:/Users/nyassin/Documents/auto_calibration/";
     depth_to_rgb_calibration cal(
         root_dir + "2/Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
         root_dir + "2/I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
         root_dir + "2/YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
-        root_dir + "2/YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
+        root_dir + "2/YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0001.raw",
         depth_intrinsics, depth_units, rgb_intrinsics,
         extrinsics
     );

@@ -657,11 +657,6 @@ std::vector<uint8_t> optimizer::get_logic_edges( std::vector<double> edges )
     return logic_edges;
 }
 
-bool optimizer::is_movement_in_images( const yuy2_frame_data& yuy )
-{
-    auto logic_edges = get_logic_edges( yuy.edges );
-    return true;
-}
 
 
 void optimizer::sum_per_section(
@@ -939,6 +934,49 @@ void optimizer::section_per_pixel(
     }
 }
 
+void edge_sobel_XY()
+{
+    /*function [E,Ix,Iy] = edgeSobelXY(I)
+[Ix,Iy] = imgradientxy(I);% Sobel image gradients [-1,0,1;-2,0,2;-1,0,1]
+Ix = Ix/8;
+Iy = Iy/8;
+mask = zeros(size(Ix));
+mask(2:end-1,2:end-1) = 1;
+Ix(~mask) = 0;
+Iy(~mask) = 0;
+E = single(sqrt(Ix.^2+Iy.^2));
+end*/
+}
+
+bool optimizer::is_movement_in_images(const yuy2_frame_data& yuy)
+{
+    /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
+isMovement = false;
+
+[edgeIm1,~,~] = OnlineCalibration.aux.edgeSobelXY(uint8(im1));
+logicEdges = abs(edgeIm1) > params.edgeThresh4logicIm*max(edgeIm1(:));
+*/
+    auto logic_edges = get_logic_edges(yuy.edges);
+    /*
+SE = strel('square', params.seSize);
+dilatedIm = imdilate(logicEdges,SE);
+
+% diffIm = abs(im1-im2);
+diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);
+IDiffMasked = abs(diffIm);
+IDiffMasked(dilatedIm) = 0;
+% figure; imagesc(IDiffMasked); title('IDiffMasked');impixelinfo; colorbar;
+ixMoveSuspect = IDiffMasked > params.moveThreshPixVal;
+if sum(ixMoveSuspect(:)) > params.moveThreshPixNum
+    isMovement = true;
+end
+movingPixels = sum(ixMoveSuspect(:));
+disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ', allowed #: ' num2str(params.moveThreshPixNum)]);
+end*/
+    
+    return false;
+}
+
 bool optimizer::is_scene_valid()
 {
     std::vector< byte > section_map_depth( _z.width * _z.height );
@@ -979,10 +1017,11 @@ bool optimizer::is_scene_valid()
     }
     AC_LOG( DEBUG, "... " << _yuy.section_map.size() << " not suppressed" );
 
+    bool res_movement = is_movement_in_images(_yuy);
     bool res_edges = is_edge_distributed( _z, _yuy );
     bool res_gradient = is_grad_dir_balanced(_z);
 
-    return (res_edges && res_gradient);
+    return ((!res_movement) && res_edges && res_gradient);
 }
 
 double get_max( double x, double y )
