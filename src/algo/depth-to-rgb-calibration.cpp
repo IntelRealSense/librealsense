@@ -808,6 +808,145 @@ bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
     return (z.is_edge_distributed && yuy.is_edge_distributed);
 }
 
+bool optimizer::is_grad_dir_balanced(z_frame_data& z_data)//, yuy2_frame_data& yuy_data)
+{
+    /*function [isBalanced,dirRatio1,perpRatio,dirRatio2,weightsPerDir] = isGradDirBalanced(frame,params)
+isBalanced = false;
+dirRatio2 = nan;
+perpRatio = nan;
+iWeights = frame.zEdgeSupressed>0;
+weightIm = frame.zEdgeSupressed;
+weightIm(iWeights) = frame.weights;
+weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));sum(weightIm(frame.dirI == 3));sum(weightIm(frame.dirI == 4))];
+*/
+//bool is_balanced = false;
+    auto i_weights = z_data.supressed_edges; // vector of 0,1 - put 1 when supressed edges is > 0
+    auto weights_im = z_data.supressed_edges;
+
+    auto i_weights_iter = i_weights.begin();
+    auto weights_im_iter = weights_im.begin();
+    auto supressed_edges_iter = z_data.supressed_edges.begin();
+    auto weights_iter = z_data.weights.begin();
+    auto j = 0;
+    for (auto i = 0; i < z_data.supressed_edges.size(); ++i)
+    {
+        //for (auto it = i_weights.begin(); it != i_weights.end(); it++) {
+        if (*(supressed_edges_iter + i) > 0)
+        {
+            *(i_weights_iter + i) = 1; // is it needed ??
+            *(weights_im_iter + i) = *(weights_iter + j);
+            j++;
+        }
+    }
+    std::vector<double> weights_per_dir(deg_none); // deg_non is number of directions
+    auto directions_iter = z_data.directions.begin();
+    auto weights_per_dir_iter = weights_per_dir.begin();
+    for (auto i = 0; i < deg_none; ++i)
+    {
+        *(weights_per_dir_iter + i) = 0; // init sum per direction
+        for (auto ii = 0; ii < z_data.directions.size(); ++ii) // directions size = z_data size = weights_im size
+        {
+            if (*(directions_iter + ii) == i)
+            {
+                *(weights_per_dir_iter + i) += *(weights_im_iter + ii);
+            }
+        }
+    }
+
+    /*
+    [maxVal,maxIx] = max(weightsPerDir);
+    ixMatch = mod(maxIx+2,4);
+    if ixMatch == 0
+        ixMatch = 4;
+    end
+    if weightsPerDir(ixMatch) < 1e-3 %Don't devide by zero...
+        dirRatio1 = 1e6;
+    else
+        dirRatio1 = maxVal/weightsPerDir(ixMatch);
+    end
+    */
+    auto max_val = max_element(weights_per_dir.begin(), weights_per_dir.end());
+    auto max_ix = distance(weights_per_dir.begin(), max_val);
+    auto ix_match = (max_ix + 2) % 4; // NOHA :: TODO :: check value
+    double dir_ratio1;
+    double dir_ratio2;
+    if (weights_per_dir.at(ix_match) < 1e-3) //%Don't devide by zero...
+    {
+        dir_ratio1 = 1e6;
+    }
+    else
+    {
+        dir_ratio1 = *max_val / weights_per_dir.at(ix_match);
+    }
+    /*
+if dirRatio1 > params.gradDirRatio
+    ixCheck = true(size(weightsPerDir));
+    ixCheck([maxIx,ixMatch]) = false;
+    [maxValPerp,~] = max(weightsPerDir(ixCheck));
+    perpRatio = maxVal/maxValPerp;
+    if perpRatio > params.gradDirRatioPerp
+        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
+        return;
+    end
+    if min(weightsPerDir(ixCheck)) < 1e-3 %Don't devide by zero...
+        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
+        dirRatio2 = nan;
+        return;
+    end
+       dirRatio2 = maxValPerp/min(weightsPerDir(ixCheck));
+    if dirRatio2 > params.gradDirRatio
+        fprintf('isGradDirBalanced: gradient direction is not balanced: %0.5f, threshold is %0.5f\n',dirRatio1, params.gradDirRatio );
+        return;
+    end
+end
+isBalanced = true;
+    */
+
+    if (dir_ratio1 > _params.grad_dir_ratio)
+    {
+        std::vector<double> ix_check(deg_none); // deg_non is number of directions
+        auto ix_check_iter = ix_check.begin();
+        double max_val_perp = *weights_per_dir.begin();
+        double min_val_perp = *weights_per_dir.begin();
+        for (auto i = 0; i < deg_none; ++i)
+        {
+            *(ix_check_iter + i) = true;
+            if ((i != max_ix) && (i != ix_match))
+            {
+                if (max_val_perp < *(weights_per_dir_iter + i))
+                {
+                    max_val_perp = *(weights_per_dir_iter + i);
+                }
+                if (min_val_perp > * (weights_per_dir_iter + i))
+                {
+                    min_val_perp = *(weights_per_dir_iter + i);
+                }
+            }
+        }
+        ix_check.at(max_ix) = false;
+        ix_check.at(ix_match) = false;
+
+        auto perp_ratio = *max_val / max_val_perp;
+        if (perp_ratio > _params.grad_dir_ratio_prep)
+        {
+            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
+            return false;
+        }
+        if (min_val_perp < 1e-3)// % Don't devide by zero...
+        {
+            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
+            dir_ratio2 = 0; // = nan; NOHA:: TODO :: what should be the value for nan
+            return false;
+        }
+        dir_ratio2 = max_val_perp / min_val_perp;
+        if (dir_ratio2 > _params.grad_dir_ratio)
+        {
+            std::cout << "isGradDirBalanced: gradient direction is not balanced: " << dir_ratio1 << "threshold is " << _params.grad_dir_ratio << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
 void optimizer::section_per_pixel(
     frame_data const & f,
     size_t const section_w,
@@ -885,9 +1024,10 @@ bool optimizer::is_scene_valid()
     }
     AC_LOG( DEBUG, "... " << _yuy.section_map.size() << " not suppressed" );
 
-    //call is_edge_distributed
-    bool res = is_edge_distributed( _z, _yuy );
-    return true;
+    bool res_edges = is_edge_distributed( _z, _yuy );
+    bool res_gradient = is_grad_dir_balanced(_z);
+
+    return (res_edges && res_gradient);
 }
 
 double get_max( double x, double y )

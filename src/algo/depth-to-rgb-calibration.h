@@ -168,6 +168,8 @@ namespace depth_to_rgb_calibration {
         calib normelize_mat;
 
         double edge_distribution_min_max_ratio = 1;
+        double grad_dir_ratio = 10;
+        double grad_dir_ratio_prep = 1.5;
     };
 
     typedef uint16_t yuy_t;
@@ -236,7 +238,7 @@ namespace depth_to_rgb_calibration {
 
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
-
+        bool is_grad_dir_balanced(z_frame_data& z_data);
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
