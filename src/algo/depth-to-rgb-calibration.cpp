@@ -1483,7 +1483,7 @@ k_matrix optimizer::calculate_k_gradients_y_coeff( double3 v, double rc, double2
 
     res.fy = ((r[1] * x + r[4] * y + r[7] * z + t[1])*
         (rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2)))
-        / (x*r[2] + y * r[7] + z * r[8] + t[2]);
+        / (x*r[2] + y * r[5] + z * r[8] + t[2]);
 
     res.ppy = ((r[2] * x + r[5] * y + r[8] * z + t[2])*
         (rc + 2 * d[3] * x1 + 6 * d[2] * y1 + y1 * (2 * d[0] * y1 + 4 * d[1] * y1*xy2 + 6 * d[4] * y1*x2_y2)))
