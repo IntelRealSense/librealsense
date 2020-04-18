@@ -192,7 +192,7 @@ static std::vector< double > get_direction_deg(
 }
 
 static
-std::pair< int, int > get_next_index(
+std::pair< int, int > get_prev_index(
     direction dir,
     int i, int j,
     size_t width, size_t height )
@@ -219,7 +219,7 @@ std::pair< int, int > get_next_index(
 }
 
 static
-std::pair< int, int > get_prev_index(
+std::pair< int, int > get_next_index(
     direction dir,
     int i, int j,
     size_t width, size_t height
@@ -316,6 +316,24 @@ calc_subpixels(
 
             //if( edge == 0 )  continue;   // TODO commented out elsewhere...
 
+            // Note:
+            // The original matlab code shifts in the opposite direction:
+            //     Z_plus  = circshift( frame.z, -currDir );
+            //     Z_minus = circshift( frame.z, +currDir );
+            // But here we're looking at a specific index and what its value would be
+            // AFTER the shift. E.g.:
+            //     1 2 3
+            //     4 5 6
+            // If dir=[1,0] ...
+            // Z_plus = shift left ([-1,0]):
+            //     2 3 1
+            //     5 6 4
+            // Z_minus = shift right ([1,0]):
+            //     3 1 2
+            //     6 4 5
+            // At index [1,0] there was a 2 but now Z_plus-Z_minus (3-1). In other words,
+            // we do not need to negate currDir!
+
             auto edge_prev_idx = get_prev_index( z_data.directions[idx], i, j, width, height );
             auto edge_next_idx = get_next_index( z_data.directions[idx], i, j, width, height );
 
@@ -332,7 +350,7 @@ calc_subpixels(
             {
                 if( ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold )
                 {
-#if 1
+#if 0
                     double fraq_step = 0;
                     if( double( z_edge_plus + z_edge_minus - (double)2 * z_edge ) == 0 )
                         fraq_step = std::numeric_limits<double>::max();
