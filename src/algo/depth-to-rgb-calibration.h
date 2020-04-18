@@ -148,10 +148,13 @@ namespace depth_to_rgb_calibration {
     struct params
     {
         params();
+        
+        void set_depth_resolution( size_t width, size_t height );
+        void set_rgb_resolution( size_t width, size_t height );
 
-        double gamma = 0.98;
+        double gamma = 0.9;
         double alpha = (double)1 / (double)3;
-        double grad_ir_threshold = 3.5; // Ignore pixels with IR grad of less than this
+        double grad_ir_threshold = 3.5; // Ignore pixels with IR gradient less than this (resolution-dependent!)
         int grad_z_threshold = 25; //Ignore pixels with Z grad of less than this
         double grad_z_min = 25; // Ignore pixels with Z grad of less than this
         double grad_z_max = 1000;
@@ -202,6 +205,12 @@ namespace depth_to_rgb_calibration {
         calib const & get_calibration() const;
         double get_cost() const;
 
+        // for debugging/unit-testing
+        z_frame_data    const & get_z_data() const   { return _z; }
+        yuy2_frame_data const & get_yuy_data() const { return _yuy; }
+        ir_frame_data   const & get_ir_data() const  { return _ir; }
+
+        // impl
     private:
         void zero_invalid_edges( z_frame_data& z_data, ir_frame_data const & ir_data );
         std::vector<direction> get_direction( std::vector<double> gradient_x, std::vector<double> gradient_y );

@@ -192,7 +192,7 @@ static std::vector< double > get_direction_deg(
 }
 
 static
-std::pair< int, int > get_prev_index(
+std::pair< int, int > get_next_index(
     direction dir,
     int i, int j,
     size_t width, size_t height )
@@ -219,7 +219,7 @@ std::pair< int, int > get_prev_index(
 }
 
 static
-std::pair< int, int > get_next_index(
+std::pair< int, int > get_prev_index(
     direction dir,
     int i, int j,
     size_t width, size_t height
@@ -248,7 +248,7 @@ std::pair< int, int > get_next_index(
 }
 
 // Return Z edges with weak edges zeroed out
-static std::vector< double > supressed_edges(
+static std::vector< double > suppress_weak_edges(
     z_frame_data const & z_data,
     ir_frame_data const & ir_data,
     double const grad_ir_threshold,
@@ -276,9 +276,9 @@ static std::vector< double > supressed_edges(
 
             auto z_edge_plus = z_data.edges[edge_plus_idx];
             auto z_edge = z_data.edges[idx];
-            auto z_edge_ninus = z_data.edges[edge_minus_idx];
+            auto z_edge_minus = z_data.edges[edge_minus_idx];
 
-            if( z_edge_ninus > z_edge || z_edge_plus > z_edge || ir_data.ir_edges[idx] <= grad_ir_threshold || z_data.edges[idx] <= grad_z_threshold )
+            if( z_edge_minus > z_edge || z_edge_plus > z_edge || ir_data.ir_edges[idx] <= grad_ir_threshold || z_data.edges[idx] <= grad_z_threshold )
             {
                 res[idx] = 0;
             }
@@ -303,6 +303,9 @@ calc_subpixels(
     std::vector< double > subpixels_x;
     std::vector< double > subpixels_y;
 
+    subpixels_x.reserve( z_data.edges.size() );
+    subpixels_y.reserve( z_data.edges.size() );
+
     for( auto i = 0; i < height; i++ )
     {
         for( auto j = 0; j < width; j++ )
@@ -311,36 +314,54 @@ calc_subpixels(
 
             auto edge = z_data.edges[idx];
 
-            if( edge == 0 )  continue;   // TODO commented out elsewhere...
+            //if( edge == 0 )  continue;   // TODO commented out elsewhere...
 
             auto edge_prev_idx = get_prev_index( z_data.directions[idx], i, j, width, height );
-
             auto edge_next_idx = get_next_index( z_data.directions[idx], i, j, width, height );
 
             auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.first;
-
             auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
 
             auto z_edge_plus = z_data.edges[edge_plus_idx];
             auto z_edge = z_data.edges[idx];
-            auto z_edge_ninus = z_data.edges[edge_minus_idx];
+            auto z_edge_minus = z_data.edges[edge_minus_idx];
 
             auto dir = z_data.directions[idx];
-            if( z_edge >= z_edge_ninus && z_edge >= z_edge_plus )
+            double x = 0, y = 0;
+            if( z_edge >= z_edge_minus && z_edge >= z_edge_plus )
             {
                 if( ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold )
                 {
+#if 1
                     double fraq_step = 0;
-                    if( double( z_edge_plus + z_edge_ninus - (double)2 * z_edge ) == 0 )
+                    if( double( z_edge_plus + z_edge_minus - (double)2 * z_edge ) == 0 )
                         fraq_step = std::numeric_limits<double>::max();
 
-                    fraq_step = double( (-0.5f*double( z_edge_plus - z_edge_ninus )) / double( z_edge_plus + z_edge_ninus - 2 * z_edge ) );
-                    subpixels_y.push_back( i + 1 + fraq_step * (double)dir_map[dir].second - 1 );
-                    subpixels_x.push_back( j + 1 + fraq_step * (double)dir_map[dir].first - 1 );
+                    fraq_step = double( (-0.5f*double( z_edge_plus - z_edge_minus )) / double( z_edge_plus + z_edge_minus - 2 * z_edge ) );
+                    y = i + 1 + fraq_step * (double)dir_map[dir].second - 1;
+                    x = j + 1 + fraq_step * (double)dir_map[dir].first - 1;
+#else
+
+                    double fraq_step;
+                    //if( double( z_edge_plus + z_edge_minus - (double)2 * z_edge ) == 0 )
+                    //    fraq_step = std::numeric_limits<double>::max();
+
+                    fraq_step = -0.5 * ( z_edge_plus - z_edge_minus );
+                    fraq_step /= z_edge_plus + z_edge_minus - 2 * z_edge;
+
+                    double dx = dir_map[dir].second * fraq_step;
+                    double dy = dir_map[dir].first  * fraq_step;
+
+                    y = i + dy;
+                    x = j + dx;
+#endif
                 }
             }
+            subpixels_y.push_back( y );
+            subpixels_x.push_back( x );
         }
     }
+    assert( subpixels_x.size() == z_data.edges.size() );
     return { subpixels_x, subpixels_y };
 }
 
@@ -349,17 +370,17 @@ void optimizer::set_z_data(
     rs2_intrinsics const & depth_intrinsics,
     float depth_units )
 {
+    _params.set_depth_resolution( depth_intrinsics.width, depth_intrinsics.height );
+
     _z.frame = std::move( z_data );
     
     _z.gradient_x = calc_vertical_gradient( _z.frame, depth_intrinsics.width, depth_intrinsics.height );
-
     _z.gradient_y = calc_horizontal_gradient( _z.frame, depth_intrinsics.width, depth_intrinsics.height );
-
     _z.edges = calc_intensity( _z.gradient_x, _z.gradient_y );
-
     _z.directions = get_direction( _z.gradient_x, _z.gradient_y );
     _z.direction_deg = get_direction_deg( _z.gradient_x, _z.gradient_y );
-    _z.supressed_edges = supressed_edges( _z, _ir,
+    AC_LOG( DEBUG, "... suppressing edges, IR threshold= " << _params.grad_ir_threshold << "  Z threshold= " << _params.grad_z_threshold );
+    _z.supressed_edges = suppress_weak_edges( _z, _ir,
         _params.grad_ir_threshold, _params.grad_z_threshold,
         depth_intrinsics.width, depth_intrinsics.height );
 
@@ -386,9 +407,9 @@ void optimizer::set_yuy_data(
     size_t height
 )
 {
-    AC_LOG( DEBUG, "... width= " << width << "  height= " << height << "  yuy size= " << yuy_data.size() );
+    _params.set_rgb_resolution( width, height );
+
     _yuy.yuy2_frame = get_luminance_from_yuy2( yuy_data );
-    AC_LOG( DEBUG, "... prev yuy size= " << yuy_data.size() );
     _yuy.yuy2_prev_frame = get_luminance_from_yuy2( prev_yuy_data );
 
     AC_LOG( DEBUG, "... calc_edges" );
@@ -519,6 +540,7 @@ std::vector< uint16_t > optimizer::get_closest_edges(
     size_t width, size_t height )
 {
     std::vector< uint16_t > z_closest;
+    z_closest.reserve( z_data.edges.size() );
 
     for( auto i = 0; i < int(height); i++ )
     {
@@ -540,11 +562,11 @@ std::vector< uint16_t > optimizer::get_closest_edges(
 
             auto z_edge_plus = z_data.edges[edge_plus_idx];
             auto z_edge = z_data.edges[idx];
-            auto z_edge_ninus = z_data.edges[edge_minus_idx];
+            auto z_edge_minus = z_data.edges[edge_minus_idx];
 
-            if( z_edge >= z_edge_ninus && z_edge >= z_edge_plus )
+            //if( z_edge >= z_edge_minus && z_edge >= z_edge_plus )
             {
-                if( ir_data.ir_edges[idx] > _params.grad_ir_threshold && z_data.edges[idx] > _params.grad_z_threshold )
+                //if( ir_data.ir_edges[idx] > _params.grad_ir_threshold && z_data.edges[idx] > _params.grad_z_threshold )
                 {
                     z_closest.push_back( std::min( z_data.frame[edge_minus_idx], z_data.frame[edge_plus_idx] ) );
                 }
@@ -608,9 +630,15 @@ std::vector<double> optimizer::blur_edges( std::vector<double> const & edges, si
             else if( i == 0 )
                 res[j] = std::max( res[j], res[j - 1] * _params.gamma );
             else if( j == 0 )
-                res[i*image_width + j] = std::max( res[i*image_width + j], res[(i - 1)*image_width + j] * _params.gamma );
+                res[i*image_width + j] = std::max(
+                    res[i*image_width + j],
+                    res[(i - 1)*image_width + j] * _params.gamma );
             else
-                res[i*image_width + j] = std::max( res[i*image_width + j], (std::max( res[i*image_width + j - 1] * _params.gamma, res[(i - 1)*image_width + j] * _params.gamma )) );
+                res[i*image_width + j] = std::max(
+                    res[i*image_width + j],
+                    std::max(
+                        res[ i     *image_width + j - 1] * _params.gamma,
+                        res[(i - 1)*image_width + j    ] * _params.gamma ) );
         }
 
 
@@ -2111,6 +2139,26 @@ params::params()
     normelize_mat.k_mat = { 0.354172020000000, 0.265703050000000,1.001765500000000, 1.006649100000000 };
     normelize_mat.rot_angles = { 1508.94780000000, 1604.94300000000,649.384340000000 };
     normelize_mat.trans = { 0.913008390000000, 0.916982890000000, 0.433054570000000 };
+
+    // NOTE: until we know the resolution, the current state is just the default!
+    // We need to get the depth and rgb resolutions to make final decisions!
+}
+
+void params::set_depth_resolution( size_t width, size_t height )
+{
+    AC_LOG( DEBUG, "... depth resolution= " << width << "x" << height );
+    // Some parameters are resolution-dependent
+    bool const XGA = (width == 1024 && height == 768);
+    if( XGA )
+    {
+        AC_LOG( DEBUG, "... changing IR threshold: " << grad_ir_threshold << " -> " << 1.5 << "  (because of resolution)" );
+        grad_ir_threshold = 1.5;
+    }
+}
+
+void params::set_rgb_resolution( size_t width, size_t height )
+{
+    AC_LOG( DEBUG, "... RGB resolution= " << width << "x" << height );
 }
 
 void calib::copy_coefs( calib & obj )
