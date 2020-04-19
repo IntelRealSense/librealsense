@@ -1061,20 +1061,33 @@ void optimizer::section_per_pixel(
 //    return;
 //}
 
+template<class T>
+uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
+{
+    uint8_t res = 0;
+
+    for (auto i = 0; i < sub_image.size(); i++)
+    {
+        res = res | (uint8_t)(sub_image[i] * mask[i]);
+    }
+
+    return res;
+}
 void optimizer::images_dilation(yuy2_frame_data& yuy, std::vector<byte> logic_edges)
 {
+
     
-    _params.dilation_size;
     int area = yuy.height * yuy.width;
     yuy.dilated_image.resize(area);
     auto logic_edges_iter = logic_edges.begin();
-    for (auto i = 0; i < yuy.height; i++)
-    {
-        for (auto j = 0; j < yuy.width; j++)
-        {
 
-        }
-    }
+    std::vector<double> dilation_mask = { 1, 1, 1,
+                                              1,  1,  1,
+                                              1,  1,  1 };
+
+    yuy.dilated_image = convolution<uint8_t>(logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+        {return dilation_calc(sub_image, dilation_mask); });
+
 }
 bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
 {
