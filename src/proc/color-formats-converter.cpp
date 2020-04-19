@@ -696,6 +696,14 @@ namespace librealsense
             unpack_uyvyc(dst_format, dst_stream, d, s, w, h, actual_size);
     }
 
+    void unpack_z16_to_raw16(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
+    {
+        if (dst_format == RS2_FORMAT_RAW16)
+            memcpy(d[0], s, actual_size);
+        else
+            unpack_uyvyc(dst_format, dst_stream, d, s, w, h, actual_size);
+    }
+
     void yuy2_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_yuy2(_target_format, _target_stream, dest, source, width, height, actual_size);
@@ -709,6 +717,11 @@ namespace librealsense
     void uyvy_to_yuyv_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
     {
         unpack_uyvy_to_yuyv(_target_format, _target_stream, dest, source, width, height, actual_size);
+    }
+
+    void z16_to_raw16_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    {
+        unpack_z16_to_raw16(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
     void mjpeg_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
