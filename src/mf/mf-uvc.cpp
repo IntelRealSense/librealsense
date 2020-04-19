@@ -877,6 +877,7 @@ namespace librealsense
             //added to permit streaming 2 different streams from different pins with exaclty the same profile
             int f450InfraredIndex_FHD = 0;
             int f450InfraredIndex_VGA = 0;
+            int f450InfraredIndex_RAW_FHD = 0;
 
             for (unsigned int sIndex = 0; sIndex < _streams.size(); ++sIndex)
             {
@@ -934,6 +935,16 @@ namespace librealsense
                         else
                         {
                             device_fourcc = 0x55595659; //UYVY
+                        }
+                    }
+
+                    if (height == 1080)
+                    {
+                        if (f450InfraredIndex_RAW_FHD == 0)
+                            ++f450InfraredIndex_RAW_FHD;
+                        else
+                        {
+                            device_fourcc = 0x5A313620; //Z16
                         }
                     }
                     stream_profile sp;
