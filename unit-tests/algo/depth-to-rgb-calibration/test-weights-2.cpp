@@ -61,7 +61,7 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         {
             if( fx != dx && ++n_mismatches <= 5 )
                 // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << dx << "{c++} (exact)" );
+                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << +dx << "{c++} (exact)" );
         }
         else if( fx != approx(dx) )
         {
@@ -167,37 +167,50 @@ void init_algo( algo::optimizer & cal,
 
 TEST_CASE( "Weights calc", "[d2rgb]" )
 {
-    for( auto dir : data_dirs )
+    for (auto dir : data_dirs)
     {
         algo::optimizer cal;
-        init_algo( cal, dir, "2",
+        init_algo(cal, dir, "2",
             "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
-            "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
+            "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
             "Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
-            F9440687 );
+            F9440687);
 
-        auto & z_data = cal.get_z_data();
-        auto & ir_data = cal.get_ir_data();
-        auto & yuy_data = cal.get_yuy_data();
+        auto& z_data = cal.get_z_data();
+        auto& ir_data = cal.get_ir_data();
+        auto& yuy_data = cal.get_yuy_data();
 
-        //---
-        CHECK( compare_to_bin_file< float >( yuy_data.edges, dir, "2", "YUY2_edge_1080x1920_single_00", 1080, 1920, compare_same_vectors ));
-        CHECK( compare_to_bin_file< double >( yuy_data.edges_IDT, dir, "2", "YUY2_IDT_1080x1920_double_00", 1080, 1920, compare_same_vectors ));
-        CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTx, dir, "2", "YUY2_IDTx_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
-        CHECK( compare_to_bin_file< double >( yuy_data.edges_IDTy, dir, "2", "YUY2_IDTy_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
 
         //---
-        CHECK( compare_to_bin_file< double >( ir_data.ir_edges, dir, "2", "I_edge_768x1024_double_00", 768, 1024, compare_same_vectors ) );
+        CHECK(compare_to_bin_file< float >(yuy_data.edges, dir, "2", "YUY2_edge_1080x1920_single_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, "2", "YUY2_IDT_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, "2", "YUY2_IDTx_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, "2", "YUY2_IDTy_1080x1920_double_00", 1080, 1920, compare_same_vectors));
 
         //---
-        CHECK( compare_to_bin_file< float >( z_data.edges, dir, "2", "Z_edge_768x1024_single_00", 768, 1024, compare_same_vectors ) );
-        CHECK( compare_to_bin_file< double >( z_data.supressed_edges, dir, "2", "Z_edgeSupressed_768x1024_double_00", 768, 1024, compare_same_vectors ) );
-        CHECK( compare_to_bin_file< byte >( z_data.directions, dir, "2", "Z_dir_768x1024_uint8_00", 768, 1024, compare_same_vectors ) );
+        CHECK(compare_to_bin_file< double >(ir_data.ir_edges, dir, "2", "I_edge_768x1024_double_00", 768, 1024, compare_same_vectors));
 
-        CHECK( compare_to_bin_file< double >( z_data.subpixels_x, dir, "2", "Z_edgeSubPixel_768x1024_double_01", 768, 1024, compare_same_vectors ) );
-        CHECK( compare_to_bin_file< double >( z_data.subpixels_y, dir, "2", "Z_edgeSubPixel_768x1024_double_00", 768, 1024, compare_same_vectors ) );
+        //---
+        CHECK(compare_to_bin_file< float >(z_data.edges, dir, "2", "Z_edge_768x1024_single_00", 768, 1024, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, "2", "Z_edgeSupressed_768x1024_double_00", 768, 1024, compare_same_vectors));
+        CHECK(compare_to_bin_file< byte >(z_data.directions, dir, "2", "Z_dir_768x1024_uint8_00", 768, 1024, compare_same_vectors));
 
-        CHECK( compare_to_bin_file< double >( z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors ) );
+        CHECK(compare_to_bin_file< double >(z_data.subpixels_x, dir, "2", "Z_edgeSubPixel_768x1024_double_01", 768, 1024, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, "2", "Z_edgeSubPixel_768x1024_double_00", 768, 1024, compare_same_vectors));
+
+        CHECK(compare_to_bin_file< double >(z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors));
+
+
+
+        cal.is_scene_valid();
+        // edge distribution
+        CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_section, dir, "2", "depthEdgeWeightDistributionPerSectionDepth_4x1_double_00", 4, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< byte >(z_data.section_map, dir, "2", "sectionMapDepth_trans_5089x1_uint8_00", 5089, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< byte >(yuy_data.section_map, dir, "2", "sectionMapRgb_trans_2073600x1_uint8_00", 2073600, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, "2", "edgeWeightDistributionPerSectionRgb_4x1_double_00", 4, 1, compare_same_vectors));
+
+        // gradient balanced
+        CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, dir, "2", "edgeWeightsPerDir_4x1_double_00", 4, 1, compare_same_vectors));
     }
 }

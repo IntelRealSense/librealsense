@@ -837,7 +837,7 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
             }
         }
     }
-
+    z_data.sum_weights_per_direction = weights_per_dir;
     /*
     [maxVal,maxIx] = max(weightsPerDir);
     ixMatch = mod(maxIx+2,4);
@@ -970,21 +970,109 @@ void optimizer::section_per_pixel(
     }
 }
 
-void edge_sobel_XY()
-{
-    /*function [E,Ix,Iy] = edgeSobelXY(I)
-[Ix,Iy] = imgradientxy(I);% Sobel image gradients [-1,0,1;-2,0,2;-1,0,1]
-Ix = Ix/8;
-Iy = Iy/8;
-mask = zeros(size(Ix));
-mask(2:end-1,2:end-1) = 1;
-Ix(~mask) = 0;
-Iy(~mask) = 0;
-E = single(sqrt(Ix.^2+Iy.^2));
-end*/
-}
+//void optimizer::edge_sobel_XY(yuy2_frame_data& yuy, BYTE* pImgE)
+//{
+//    /*function [E,Ix,Iy] = edgeSobelXY(I)
+//[Ix,Iy] = imgradientxy(I);% Sobel image gradients [-1,0,1;-2,0,2;-1,0,1]
+//Ix = Ix/8;
+//Iy = Iy/8;
+//mask = zeros(size(Ix));
+//mask(2:end-1,2:end-1) = 1;
+//Ix(~mask) = 0;
+//Iy(~mask) = 0;
+//E = single(sqrt(Ix.^2+Iy.^2));
+//end*/
+//
+////CKingimageDoc* pDoc = GetDocument(); // get picture
+////int iBitPerPixel = pDoc->_bmp->bitsperpixel; // used to see if grayscale(8b) or RGB(24b)
+////int iWidth = pDoc->_bmp->width;
+////int iHeight = pDoc->_bmp->height;
+////BYTE* pImg = //pDoc->_bmp->point; // pointer used to point at pixels in the image
+////const int area = iWidth * iHeight;
+////BYTE* pImg2 = new BYTE[area];
+//
+//    auto pImg = yuy.yuy2_prev_frame;
+//    int iWidth = yuy.width;
+//    int iHeight = yuy.height;
+//    //const int area = iWidth * iHeight;
+//    //BYTE* pImg2 = new BYTE[area];
+//    //yuy.edge_sobel_XY.resize(area);
+//    int pixel_x;
+//    int pixel_y;
+//
+//
+//    float sobel_x[3][3] =
+//    { { -1, 0, 1 },
+//      { -2, 0, 2 },
+//      { -1, 0, 1 } };
+//
+//    float sobel_y[3][3] =
+//    { { -1, -2, -1 },
+//      { 0,  0,  0 },
+//      { 1,  2,  1 } };
+//
+//    for (int x = 1; x < iWidth - 1; x++)
+//    {
+//        for (int y = 1; y < iHeight - 1; y++)
+//        {
+//
+//            pixel_x = (sobel_x[0][0] * pImg[iWidth * (y - 1) + (x - 1)])
+//                + (sobel_x[0][1] * pImg[iWidth * (y - 1) + x])
+//                + (sobel_x[0][2] * pImg[iWidth * (y - 1) + (x + 1)])
+//                + (sobel_x[1][0] * pImg[iWidth * y + (x - 1)])
+//                + (sobel_x[1][1] * pImg[iWidth * y + x])
+//                + (sobel_x[1][2] * pImg[iWidth * y + (x + 1)])
+//                + (sobel_x[2][0] * pImg[iWidth * (y + 1) + (x - 1)])
+//                + (sobel_x[2][1] * pImg[iWidth * (y + 1) + x])
+//                + (sobel_x[2][2] * pImg[iWidth * (y + 1) + (x + 1)]);
+//
+//            pixel_y = (sobel_y[0][0] * pImg[iWidth * (y - 1) + (x - 1)])
+//                + (sobel_y[0][1] * pImg[iWidth * (y - 1) + x])
+//                + (sobel_y[0][2] * pImg[iWidth * (y - 1) + (x + 1)])
+//                + (sobel_y[1][0] * pImg[iWidth * y + (x - 1)])
+//                + (sobel_y[1][1] * pImg[iWidth * y + x])
+//                + (sobel_y[1][2] * pImg[iWidth * y + (x + 1)])
+//                + (sobel_y[2][0] * pImg[iWidth * (y + 1) + (x - 1)])
+//                + (sobel_y[2][1] * pImg[iWidth * (y + 1) + x])
+//                + (sobel_y[2][2] * pImg[iWidth * (y + 1) + (x + 1)]);
+//
+//            int val = (int)sqrt((pixel_x * pixel_x) + (pixel_y * pixel_y));
+//
+//            if (val < 0) val = 0;
+//            if (val > 255) val = 255;
+//
+//            pImgE[iHeight * y + x] = val;
+//            //yuy.edge_sobel_XY.push_back(val);
+//          
+//        }
+//    }
+//    auto sobel_iter = yuy.edge_sobel_XY.begin();
+//    for (int x = 1; x < iWidth - 1; x++)
+//    {
+//        for (int y = 1; y < iHeight - 1; y++)
+//        {
+//            *(sobel_iter + iWidth * y + x);
+//        }
+//    }
+//    return;
+//}
 
-bool optimizer::is_movement_in_images(const yuy2_frame_data& yuy)
+void optimizer::images_dilation(yuy2_frame_data& yuy, std::vector<byte> logic_edges)
+{
+    
+    _params.dilation_size;
+    int area = yuy.height * yuy.width;
+    yuy.dilated_image.resize(area);
+    auto logic_edges_iter = logic_edges.begin();
+    for (auto i = 0; i < yuy.height; i++)
+    {
+        for (auto j = 0; j < yuy.width; j++)
+        {
+
+        }
+    }
+}
+bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
 isMovement = false;
@@ -992,7 +1080,11 @@ isMovement = false;
 [edgeIm1,~,~] = OnlineCalibration.aux.edgeSobelXY(uint8(im1));
 logicEdges = abs(edgeIm1) > params.edgeThresh4logicIm*max(edgeIm1(:));
 */
+    /*int area = yuy.height* yuy.width;
+    BYTE* pImgE = new BYTE[area];
+    edge_sobel_XY(yuy, pImgE);*/
     auto logic_edges = get_logic_edges(yuy.edges);
+    images_dilation(yuy, logic_edges);
     /*
 SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);

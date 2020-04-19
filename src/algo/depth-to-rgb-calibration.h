@@ -55,6 +55,7 @@ namespace depth_to_rgb_calibration {
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
+        std::vector<double> sum_weights_per_direction;
         double min_max_ratio;
     };
 
@@ -63,11 +64,12 @@ namespace depth_to_rgb_calibration {
     {
         std::vector<uint8_t> yuy2_frame;
         std::vector<uint8_t> yuy2_prev_frame;
+        std::vector<uint8_t> dilated_image; 
         std::vector<double> edges;
         std::vector<double> edges_IDT;
         std::vector<double> edges_IDTx;
         std::vector<double> edges_IDTy;
-
+        //std::vector<double> edge_sobel_XY;
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
@@ -176,6 +178,7 @@ namespace depth_to_rgb_calibration {
         double edge_distribution_min_max_ratio = 1;
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
+        double dilation_size = 3;
     };
 
     typedef uint16_t yuy_t;
@@ -219,7 +222,7 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_luminance_from_yuy2( std::vector<uint16_t> yuy2_imagh );
 
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
-        bool is_movement_in_images( const yuy2_frame_data & yuy );
+        bool is_movement_in_images(yuy2_frame_data & yuy );
         std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices( z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units );
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
@@ -253,6 +256,8 @@ namespace depth_to_rgb_calibration {
         bool is_grad_dir_balanced(z_frame_data& z_data);
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed, double distribution_min_max_ratio, double min_weighted_edge_per_section_depth);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
+        //void edge_sobel_XY(yuy2_frame_data& yuy, BYTE* pImgE);
+        void images_dilation(yuy2_frame_data& yuy, std::vector<byte> logic_edges);
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
