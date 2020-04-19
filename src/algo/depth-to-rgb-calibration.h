@@ -103,7 +103,7 @@ namespace depth_to_rgb_calibration {
     };
 
     /** \brief Video stream intrinsics. */
-    typedef struct rs2_intrinsics_double
+    struct rs2_intrinsics_double
     {
         rs2_intrinsics_double(const int width, const int height,
             const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5])
@@ -143,7 +143,7 @@ namespace depth_to_rgb_calibration {
     };
 
     /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
-    typedef struct rs2_extrinsics_double
+    struct rs2_extrinsics_double
     {
         rs2_extrinsics_double(const rotation& rot, const translation& trans)
             :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],

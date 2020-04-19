@@ -416,9 +416,11 @@ void optimizer::set_z_data(
     float depth_units )
 {
     _params.set_depth_resolution( depth_intrinsics.width, depth_intrinsics.height );
+    _z.width = depth_intrinsics.width;
+    _z.height = depth_intrinsics.height;
 
     _z.frame = std::move( z_data );
-    
+
     _z.gradient_x = calc_vertical_gradient( _z.frame, depth_intrinsics.width, depth_intrinsics.height );
     _z.gradient_y = calc_horizontal_gradient( _z.frame, depth_intrinsics.width, depth_intrinsics.height );
     _z.edges = calc_intensity( _z.gradient_x, _z.gradient_y );
@@ -438,10 +440,8 @@ void optimizer::set_z_data(
     calculate_weights( _z );
 
     auto vertices = subedges2vertices( _z, depth_intrinsics, depth_units );
-
-    _z.width = depth_intrinsics.width;
-    _z.height = depth_intrinsics.height;
 }
+ 
 
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
@@ -1093,7 +1093,7 @@ std::vector<double> optimizer::calculate_weights( z_frame_data& z_data )
 
 void deproject_sub_pixel(
     std::vector<double3>& points,
-    const rs2_intrinsics& intrin,
+    const rs2_intrinsics_double& intrin,
     std::vector< double > const & edges,
     const double* x,
     const double* y,
