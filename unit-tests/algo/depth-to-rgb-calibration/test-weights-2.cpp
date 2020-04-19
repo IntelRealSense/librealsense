@@ -198,6 +198,6 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK( compare_to_bin_file< double >( z_data.subpixels_x, dir, "2", "Z_edgeSubPixel_768x1024_double_01", 768, 1024, compare_same_vectors ) );
         CHECK( compare_to_bin_file< double >( z_data.subpixels_y, dir, "2", "Z_edgeSubPixel_768x1024_double_00", 768, 1024, compare_same_vectors ) );
 
-        CHECK( compare_to_bin_file< float >( z_data.weights, dir, "2", "weights_5089x1_single_00", 5089, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors ) );
     }
 }

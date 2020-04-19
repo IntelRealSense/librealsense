@@ -17,6 +17,6 @@ dl_algo_file( "${F9440687}/2/binFiles/Z_edgeSupressed_768x1024_double_00.bin" "e
 dl_algo_file( "${F9440687}/2/binFiles/Z_dir_768x1024_uint8_00.bin" "fdbea4895b427c2198f0e5044ae16bccc9fe2739" )
 dl_algo_file( "${F9440687}/2/binFiles/Z_edgeSubPixel_768x1024_double_00.bin" "7bcddf625e1a8c41d585fde532ed88e2e11655a6" )
 dl_algo_file( "${F9440687}/2/binFiles/Z_edgeSubPixel_768x1024_double_01.bin" "a67a7bca9050032d956e4e5dbe922ace9ecc8d09" )
-dl_algo_file( "${F9440687}/2/binFiles/weights_5089x1_single_00.bin" "e5e2bfd87dfcfd335b05d1622ce81e0b5ca7ca42" )
+dl_algo_file( "${F9440687}/2/binFiles/weightsT_5089x1_double_00.bin" "31148b5ae0ee23eb9bb8062d525474a5912fbfe8" )
 
 

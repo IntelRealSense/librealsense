@@ -321,18 +321,13 @@ calc_subpixels(
             //     Z_plus  = circshift( frame.z, -currDir );
             //     Z_minus = circshift( frame.z, +currDir );
             // But here we're looking at a specific index and what its value would be
-            // AFTER the shift. E.g.:
-            //     1 2 3
-            //     4 5 6
-            // If dir=[1,0] ...
-            // Z_plus = shift left ([-1,0]):
-            //     2 3 1
-            //     5 6 4
-            // Z_minus = shift right ([1,0]):
-            //     3 1 2
-            //     6 4 5
-            // At index [1,0] there was a 2 but now Z_plus-Z_minus (3-1). In other words,
-            // we do not need to negate currDir!
+            // AFTER the shift. E.g. (with 1 dimension for simplicity, with dir=[1]):
+            //     original: [ 1 2 3 4 ]
+            //     Z_plus  : [ 2 3 4 1 ]   (shift left [-1])
+            //     Z_minus : [ 4 1 2 3 ]   (shift right [1])
+            // At index [2] (0-based) there was a 3 but we now need Z_plus-Z_minus (see below)
+            // or (4-2). Note that, for Z_plus, the shift was left but the new value was from
+            // the right! In other words, we do not need to negate currDir!
 
             auto edge_prev_idx = get_prev_index( z_data.directions[idx], i, j, width, height );
             auto edge_next_idx = get_next_index( z_data.directions[idx], i, j, width, height );
@@ -340,39 +335,34 @@ calc_subpixels(
             auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.first;
             auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
 
-            auto z_edge_plus = z_data.edges[edge_plus_idx];
+            auto z_plus = z_data.edges[edge_plus_idx];
             auto z_edge = z_data.edges[idx];
-            auto z_edge_minus = z_data.edges[edge_minus_idx];
+            auto z_minus = z_data.edges[edge_minus_idx];
 
             auto dir = z_data.directions[idx];
             double x = 0, y = 0;
-            if( z_edge >= z_edge_minus && z_edge >= z_edge_plus )
+            if( z_edge >= z_minus && z_edge >= z_plus )
             {
                 if( ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold )
                 {
-#if 0
+                    //% fraqStep = (-0.5*(zEdge_plus-zEdge_minus)./(zEdge_plus+zEdge_minus-2*zEdge)); % The step we need to move to reach the subpixel gradient i nthe gradient direction
+                    //% subGrad_d = fraqStep.*reshape(currDir,1,1,[]);
+                    //% subGrad_d = subGrad_d + cat(3,gridY,gridX);% the location of the subpixel gradient
+                    //% ...
+                    //% zEdgeSubPixel(cat(3,supressedEdges_d,supressedEdges_d)) = subGrad_d(cat(3,supressedEdges_d,supressedEdges_d));
+
                     double fraq_step = 0;
-                    if( double( z_edge_plus + z_edge_minus - (double)2 * z_edge ) == 0 )
+                    if( double( z_plus + z_minus - (double)2 * z_edge ) == 0 )
                         fraq_step = std::numeric_limits<double>::max();
 
-                    fraq_step = double( (-0.5f*double( z_edge_plus - z_edge_minus )) / double( z_edge_plus + z_edge_minus - 2 * z_edge ) );
-                    y = i + 1 + fraq_step * (double)dir_map[dir].second - 1;
-                    x = j + 1 + fraq_step * (double)dir_map[dir].first - 1;
-#else
+                    fraq_step = double( (-0.5f*double( z_plus - z_minus )) / double( z_plus + z_minus - 2 * z_edge ) );
 
-                    double fraq_step;
-                    //if( double( z_edge_plus + z_edge_minus - (double)2 * z_edge ) == 0 )
-                    //    fraq_step = std::numeric_limits<double>::max();
-
-                    fraq_step = -0.5 * ( z_edge_plus - z_edge_minus );
-                    fraq_step /= z_edge_plus + z_edge_minus - 2 * z_edge;
-
-                    double dx = dir_map[dir].second * fraq_step;
-                    double dy = dir_map[dir].first  * fraq_step;
-
-                    y = i + dy;
-                    x = j + dx;
-#endif
+                    // NOTE:
+                    // We adjust by +1 to fit the X/Y to matlab's 1-based index convention
+                    // TODO make sure this fits in with our own USAGE of these coordinates (where we would
+                    // likely have to do -1)
+                    y = i + 1 + fraq_step * (double)dir_map[dir].second;
+                    x = j + 1 + fraq_step * (double)dir_map[dir].first;
                 }
             }
             subpixels_y.push_back( y );
