@@ -599,11 +599,11 @@ static void deproject_pixel_to_point(double point[3], const struct rs2_intrinsic
     point[2] = depth;
 }
 /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
-static void transform_point_to_point(double to_point[3], const struct rs2_extrinsics_double * extrin, const double from_point[3])
+static void transform_point_to_point(double to_point[3], const rs2_extrinsics_double & extr, const double from_point[3])
 {
-    to_point[0] = (double)extrin->rotation[0] * from_point[0] + (double)extrin->rotation[3] * from_point[1] + (double)extrin->rotation[6] * from_point[2] + (double)extrin->translation[0];
-    to_point[1] = (double)extrin->rotation[1] * from_point[0] + (double)extrin->rotation[4] * from_point[1] + (double)extrin->rotation[7] * from_point[2] + (double)extrin->translation[1];
-    to_point[2] = (double)extrin->rotation[2] * from_point[0] + (double)extrin->rotation[5] * from_point[1] + (double)extrin->rotation[8] * from_point[2] + (double)extrin->translation[2];
+    to_point[0] = (double)extr.rotation[0] * from_point[0] + (double)extr.rotation[3] * from_point[1] + (double)extr.rotation[6] * from_point[2] + (double)extr.translation[0];
+    to_point[1] = (double)extr.rotation[1] * from_point[0] + (double)extr.rotation[4] * from_point[1] + (double)extr.rotation[7] * from_point[2] + (double)extr.translation[1];
+    to_point[2] = (double)extr.rotation[2] * from_point[0] + (double)extr.rotation[5] * from_point[1] + (double)extr.rotation[8] * from_point[2] + (double)extr.translation[2];
 }
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
@@ -1102,12 +1102,12 @@ void deproject_sub_pixel(
 {
     auto ptr = (double*)points.data();
     double const * edge = edges.data();
-    for( int i = 0; i < points.size(); ++i, ++edge )
+    for( size_t i = 0; i < edges.size(); ++i )
     {
-        if( !*edge )
+        if( !edge[i] )
             continue;
         const double pixel[] = { x[i], y[i] };
-        deproject_pixel_to_point( ptr, &intrin, pixel, (*depth++)*(double)depth_units );
+        deproject_pixel_to_point( ptr, &intrin, pixel, depth[i] * depth_units );
         ptr += 3;
     }
 }
@@ -1140,19 +1140,18 @@ rs2_extrinsics_double calib::get_extrinsics() const
 
 static
 std::vector< double2 > get_texture_map(
-    /*const*/ std::vector< double3 > points,
+    /*const*/ std::vector< double3 > const & points,
     calib const & curr_calib )
 {
     auto intrinsics = curr_calib.get_intrinsics();
     auto extr = curr_calib.get_extrinsics();
 
     std::vector<double2> uv( points.size() );
-    std::vector<double3> v( points.size() );
 
     for( auto i = 0; i < points.size(); ++i )
     {
         double3 p = {};
-        transform_point_to_point( &p.x, &extr, &points[i].x );
+        transform_point_to_point( &p.x, extr, &points[i].x );
 
         double2 pixel = {};
         project_point_to_pixel( &pixel.x, &intrinsics, &p.x );
