@@ -5,4 +5,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/fa-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fa-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fa-private.cpp"
+		"${CMAKE_CURRENT_LIST_DIR}/fa-device.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fa-factory.h"
+        "${CMAKE_CURRENT_LIST_DIR}/fa-private.h"
 )
