@@ -248,31 +248,33 @@ std::pair< int, int > get_next_index(
 }
 
 // Return Z edges with weak edges zeroed out
-static std::vector< double > suppress_weak_edges(
-    z_frame_data const & z_data,
+static void suppress_weak_edges(
+    z_frame_data & z_data,
     ir_frame_data const & ir_data,
-    double const grad_ir_threshold,
-    double const grad_z_threshold,
-    size_t width, size_t height )
+    params const & params )
 {
-    auto res = z_data.edges;
-    for( auto i = 0; i < height; i++ )
+    std::vector< double > & res = z_data.supressed_edges;
+    res = z_data.edges;
+    double const grad_ir_threshold = params.grad_ir_threshold;
+    double const grad_z_threshold = params.grad_z_threshold;
+    z_data.n_strong_edges = 0;
+    for( auto i = 0; i < z_data.height; i++ )
     {
-        for( auto j = 0; j < width; j++ )
+        for( auto j = 0; j < z_data.width; j++ )
         {
-            auto idx = i * width + j;
+            auto idx = i * z_data.width + j;
 
             auto edge = z_data.edges[idx];
 
             //if (edge == 0)  continue;
 
-            auto edge_prev_idx = get_prev_index( z_data.directions[idx], i, j, width, height );
+            auto edge_prev_idx = get_prev_index( z_data.directions[idx], i, j, z_data.width, z_data.height );
 
-            auto edge_next_idx = get_next_index( z_data.directions[idx], i, j, width, height );
+            auto edge_next_idx = get_next_index( z_data.directions[idx], i, j, z_data.width, z_data.height );
 
-            auto edge_minus_idx = edge_prev_idx.second * width + edge_prev_idx.first;
+            auto edge_minus_idx = edge_prev_idx.second * z_data.width + edge_prev_idx.first;
 
-            auto edge_plus_idx = edge_next_idx.second * width + edge_next_idx.first;
+            auto edge_plus_idx = edge_next_idx.second * z_data.width + edge_next_idx.first;
 
             auto z_edge_plus = z_data.edges[edge_plus_idx];
             auto z_edge = z_data.edges[idx];
@@ -282,9 +284,12 @@ static std::vector< double > suppress_weak_edges(
             {
                 res[idx] = 0;
             }
+            else
+            {
+                ++z_data.n_strong_edges;
+            }
         }
     }
-    return res;
 }
 
 static
@@ -388,9 +393,7 @@ void optimizer::set_z_data(
     _z.directions = get_direction( _z.gradient_x, _z.gradient_y );
     _z.direction_deg = get_direction_deg( _z.gradient_x, _z.gradient_y );
     AC_LOG( DEBUG, "... suppressing edges, IR threshold= " << _params.grad_ir_threshold << "  Z threshold= " << _params.grad_z_threshold );
-    _z.supressed_edges = suppress_weak_edges( _z, _ir,
-        _params.grad_ir_threshold, _params.grad_z_threshold,
-        depth_intrinsics.width, depth_intrinsics.height );
+    suppress_weak_edges( _z, _ir, _params );
 
     auto subpixels = calc_subpixels( _z, _ir,
         _params.grad_ir_threshold, _params.grad_z_threshold,
@@ -1015,6 +1018,9 @@ end*/
 
 bool optimizer::is_scene_valid()
 {
+    return true;
+
+
     std::vector< byte > section_map_depth( _z.width * _z.height );
     std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
@@ -1083,24 +1089,33 @@ std::vector<double> optimizer::calculate_weights( z_frame_data& z_data )
     return res;
 }
 
-std::vector<double3> optimizer::subedges2vertices( z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units )
-{
-    std::vector<double3> res( z_data.subpixels_x.size() );
-    deproject_sub_pixel( res, intrin, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units );
-    z_data.vertices = res;
-    return res;
-}
-
-
-void optimizer::deproject_sub_pixel( std::vector<double3>& points, const rs2_intrinsics& intrin, const double* x, const double* y, const uint16_t* depth, double depth_units )
+void deproject_sub_pixel(
+    std::vector<double3>& points,
+    const rs2_intrinsics& intrin,
+    std::vector< double > const & edges,
+    const double* x,
+    const double* y,
+    const uint16_t* depth, double depth_units
+)
 {
     auto ptr = (double*)points.data();
-    for( int i = 0; i < points.size(); ++i )
+    double const * edge = edges.data();
+    for( int i = 0; i < points.size(); ++i, ++edge )
     {
+        if( !*edge )
+            continue;
         const double pixel[] = { x[i], y[i] };
         deproject_pixel_to_point( ptr, &intrin, pixel, (*depth++)*(double)depth_units );
         ptr += 3;
     }
+}
+
+std::vector<double3> optimizer::subedges2vertices( z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units )
+{
+    std::vector<double3> res( z_data.n_strong_edges );
+    deproject_sub_pixel( res, intrin, z_data.supressed_edges, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units );
+    z_data.vertices = res;
+    return res;
 }
 
 rs2_intrinsics calib::get_intrinsics() const

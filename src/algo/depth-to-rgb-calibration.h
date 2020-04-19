@@ -44,6 +44,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double> gradient_y;
         std::vector<double> edges;
         std::vector<double> supressed_edges;
+        size_t n_strong_edges;
         std::vector<direction> directions;
         std::vector<double> subpixels_x;
         std::vector<double> subpixels_y;
@@ -246,7 +247,6 @@ namespace depth_to_rgb_calibration {
         double calculate_rotation_y_alpha_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
         double calculate_rotation_y_beta_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
         double calculate_rotation_y_gamma_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        void deproject_sub_pixel( std::vector<double3>& points, const rs2_intrinsics & intrin, const double * x, const double * y, const uint16_t * depth, double depth_units );
 
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
