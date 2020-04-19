@@ -102,6 +102,75 @@ namespace depth_to_rgb_calibration {
         double ppy;
     };
 
+    /** \brief Video stream intrinsics. */
+    typedef struct rs2_intrinsics_double
+    {
+        rs2_intrinsics_double(const int width, const int height,
+            const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5])
+            :width(width), height(height),
+            ppx(k_mat.ppx), ppy(k_mat.ppy),
+            fx(k_mat.fx), fy(k_mat.fy),
+            model(model),
+            coeffs{ coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4] }
+        {}
+
+        rs2_intrinsics_double(const rs2_intrinsics& obj)
+            :width(obj.width), height(obj.height),
+            ppx(obj.ppx), ppy(obj.ppy),
+            fx(obj.fx), fy(obj.fy),
+            model(obj.model),
+            coeffs{ obj.coeffs[0], obj.coeffs[1], obj.coeffs[2], obj.coeffs[3], obj.coeffs[4] }
+        {}
+
+        operator rs2_intrinsics()
+        {
+            return
+            { width, height,
+                float(ppx), float(ppy),
+                float(fx), float(fy),
+                model,
+            {float(coeffs[0]), float(coeffs[1]), float(coeffs[2]), float(coeffs[3]), float(coeffs[4])} };
+        }
+
+        int           width;     /**< Width of the image in pixels */
+        int           height;    /**< Height of the image in pixels */
+        double         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+        double         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+        double         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
+        double         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
+        rs2_distortion model;    /**< Distortion model of the image */
+        double         coeffs[5]; /**< Distortion coefficients */
+    };
+
+    /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
+    typedef struct rs2_extrinsics_double
+    {
+        rs2_extrinsics_double(const rotation& rot, const translation& trans)
+            :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
+                  rot.rot[3], rot.rot[4], rot.rot[5],
+                  rot.rot[6], rot.rot[7], rot.rot[8] },
+            translation{ trans.t1, trans.t2 , trans.t3 }
+        {}
+
+        rs2_extrinsics_double(const rs2_extrinsics& other)
+            :rotation{ other.rotation[0], other.rotation[1], other.rotation[2],
+                  other.rotation[3], other.rotation[4], other.rotation[5],
+                  other.rotation[6], other.rotation[7], other.rotation[8] },
+            translation{ other.translation[0], other.translation[1] , other.translation[2] }
+        {}
+
+        operator rs2_extrinsics()
+        {
+            return { {float(rotation[0]), float(rotation[1]), float(rotation[2]),
+            float(rotation[3]), float(rotation[4]), float(rotation[5]),
+            float(rotation[6]), float(rotation[7]), float(rotation[8])} ,
+            {float(translation[0]), float(translation[1]), float(translation[2])} };
+        }
+
+        double rotation[9];    /**< Column-major 3x3 rotation matrix */
+        double translation[3]; /**< Three-element translation vector, in meters */
+    };
+
     struct calib
     {
         rotation_in_angles rot_angles;
@@ -115,10 +184,11 @@ namespace depth_to_rgb_calibration {
 
         calib() = default;
         calib( calib const & ) = default;
-        explicit calib( rs2_intrinsics const & intrinsics, rs2_extrinsics const & extrinsics );
+        explicit calib(rs2_intrinsics_double const & intrinsics, rs2_extrinsics_double const & extrinsics);
+        explicit calib(rs2_intrinsics const & intrinsics, rs2_extrinsics const & extrinsics);
 
-        rs2_intrinsics get_intrinsics() const;
-        rs2_extrinsics get_extrinsics() const;
+        rs2_intrinsics_double get_intrinsics() const;
+        rs2_extrinsics_double get_extrinsics() const;
 
         void copy_coefs( calib& obj );
         calib operator*( double step_size );
@@ -197,7 +267,7 @@ namespace depth_to_rgb_calibration {
             size_t width, size_t height );
         void set_z_data(
             std::vector< z_t > && z_data,
-            rs2_intrinsics const & depth_intrinsics,
+            rs2_intrinsics_double const & depth_intrinsics,
             float depth_units );
 
         bool is_scene_valid();
@@ -222,12 +292,12 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> get_logic_edges( std::vector<double> edges );
         bool is_movement_in_images( const yuy2_frame_data & yuy );
         std::vector<double> calculate_weights( z_frame_data& z_data );
-        std::vector <double3> subedges2vertices( z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units );
+        std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
         std::pair<calib, double> calc_cost_and_grad( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib );
-        calib intrinsics_extrinsics_to_calib( rs2_intrinsics intrin, rs2_extrinsics extrin );
+        calib intrinsics_extrinsics_to_calib(rs2_intrinsics_double intrin, rs2_extrinsics_double extrin);
         double calc_cost( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv );
         calib calc_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib );
         translation calc_translation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );

@@ -121,6 +121,37 @@ optimizer::optimizer()
 {
 }
 
+rotation_in_angles extract_angles_from_rotation(const double rotation[9])
+{
+    rotation_in_angles res;
+    auto epsilon = 0.00001;
+    res.alpha = atan2(-rotation[7], rotation[8]);
+    res.beta = asin(rotation[6]);
+    res.gamma = atan2(-rotation[3], rotation[0]);
+
+    double rot[9];
+
+    rot[0] = cos(res.beta)*cos(res.gamma);
+    rot[1] = -cos(res.beta)*sin(res.gamma);
+    rot[2] = sin(res.beta);
+    rot[3] = cos(res.alpha)*sin(res.gamma) + cos(res.gamma)*sin(res.alpha)*sin(res.beta);
+    rot[4] = cos(res.alpha)*cos(res.gamma) - sin(res.alpha)*sin(res.beta)*sin(res.gamma);
+    rot[5] = -cos(res.beta)*sin(res.alpha);
+    rot[6] = sin(res.alpha)*sin(res.gamma) - cos(res.alpha)*cos(res.gamma)*sin(res.beta);
+    rot[7] = cos(res.gamma)*sin(res.alpha) + cos(res.alpha)*sin(res.beta)*sin(res.gamma);
+    rot[8] = cos(res.alpha)*cos(res.beta);
+
+    double sum = 0;
+    for (auto i = 0; i < 9; i++)
+    {
+        sum += rot[i] - rotation[i];
+    }
+
+    if ((abs(sum)) > epsilon)
+        throw "No fit";
+    return res;
+}
+
 size_t optimizer::optimize( calib const & original_calibration )
 {
     optimaization_params params_orig;
@@ -130,6 +161,7 @@ size_t optimizer::optimize( calib const & original_calibration )
     AC_LOG( DEBUG, "Original cost = " << original_cost );
 
     _params_curr = params_orig;
+    _params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
 
     size_t n_iterations = 0;
     for( auto i = 0; i < _params.max_optimization_iters; i++ )
@@ -380,7 +412,7 @@ calc_subpixels(
 
 void optimizer::set_z_data(
     std::vector< z_t > && z_data,
-    rs2_intrinsics const & depth_intrinsics,
+    rs2_intrinsics_double const & depth_intrinsics,
     float depth_units )
 {
     _params.set_depth_resolution( depth_intrinsics.width, depth_intrinsics.height );
@@ -449,37 +481,6 @@ void optimizer::set_ir_data(
     _ir.height = height;
 
     _ir.ir_edges = calc_edges( ir_data, width, height );
-}
-
-rotation_in_angles extract_angles_from_rotation( const double rotation[9] )
-{
-    rotation_in_angles res;
-    auto epsilon = 0.00001;
-    res.alpha = atan2( -rotation[7], rotation[8] );
-    res.beta = asin( rotation[6] );
-    res.gamma = atan2( -rotation[3], rotation[0] );
-
-    double rot[9];
-
-    rot[0] = cos( res.beta )*cos( res.gamma );
-    rot[1] = -cos( res.beta )*sin( res.gamma );
-    rot[2] = sin( res.beta );
-    rot[3] = cos( res.alpha )*sin( res.gamma ) + cos( res.gamma )*sin( res.alpha )*sin( res.beta );
-    rot[4] = cos( res.alpha )*cos( res.gamma ) - sin( res.alpha )*sin( res.beta )*sin( res.gamma );
-    rot[5] = -cos( res.beta )*sin( res.alpha );
-    rot[6] = sin( res.alpha )*sin( res.gamma ) - cos( res.alpha )*cos( res.gamma )*sin( res.beta );
-    rot[7] = cos( res.gamma )*sin( res.alpha ) + cos( res.alpha )*sin( res.beta )*sin( res.gamma );
-    rot[8] = cos( res.alpha )*cos( res.beta );
-
-    double sum = 0;
-    for( auto i = 0; i < 9; i++ )
-    {
-        sum += rot[i] - rotation[i];
-    }
-
-    if( (abs( sum )) > epsilon )
-        throw "No fit";
-    return res;
 }
 
 static rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles )
@@ -588,7 +589,7 @@ std::vector< uint16_t > optimizer::get_closest_edges(
 }
 
 /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
-static void deproject_pixel_to_point( double point[3], const struct rs2_intrinsics * intrin, const double pixel[2], double depth )
+static void deproject_pixel_to_point(double point[3], const struct rs2_intrinsics_double * intrin, const double pixel[2], double depth)
 {
     double x = (double)(pixel[0] - intrin->ppx) / intrin->fx;
     double y = (double)(pixel[1] - intrin->ppy) / intrin->fy;
@@ -598,7 +599,7 @@ static void deproject_pixel_to_point( double point[3], const struct rs2_intrinsi
     point[2] = depth;
 }
 /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
-static void transform_point_to_point( double to_point[3], const struct rs2_extrinsics * extrin, const double from_point[3] )
+static void transform_point_to_point(double to_point[3], const struct rs2_extrinsics_double * extrin, const double from_point[3])
 {
     to_point[0] = (double)extrin->rotation[0] * from_point[0] + (double)extrin->rotation[3] * from_point[1] + (double)extrin->rotation[6] * from_point[2] + (double)extrin->translation[0];
     to_point[1] = (double)extrin->rotation[1] * from_point[0] + (double)extrin->rotation[4] * from_point[1] + (double)extrin->rotation[7] * from_point[2] + (double)extrin->translation[1];
@@ -606,7 +607,7 @@ static void transform_point_to_point( double to_point[3], const struct rs2_extri
 }
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
-static void project_point_to_pixel( double pixel[2], const struct rs2_intrinsics * intrin, const double point[3] )
+static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics_double * intrin, const double point[3])
 {
     double x = point[0] / point[2], y = point[1] / point[2];
 
@@ -1078,6 +1079,7 @@ double get_min( double x, double y )
 std::vector<double> optimizer::calculate_weights( z_frame_data& z_data )
 {
     std::vector<double> res;
+
     for( auto i = 0; i < z_data.supressed_edges.size(); i++ )
     {
         if( z_data.supressed_edges[i] )
@@ -1110,7 +1112,7 @@ void deproject_sub_pixel(
     }
 }
 
-std::vector<double3> optimizer::subedges2vertices( z_frame_data& z_data, const rs2_intrinsics& intrin, double depth_units )
+std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units)
 {
     std::vector<double3> res( z_data.n_strong_edges );
     deproject_sub_pixel( res, intrin, z_data.supressed_edges, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units );
@@ -1118,18 +1120,15 @@ std::vector<double3> optimizer::subedges2vertices( z_frame_data& z_data, const r
     return res;
 }
 
-rs2_intrinsics calib::get_intrinsics() const
+rs2_intrinsics_double calib::get_intrinsics() const
 {
     return {
         width, height,
-        float( k_mat.ppx ), float( k_mat.ppy ),
-        float( k_mat.fx ), float( k_mat.fy ),
-        model,
-        { float( coeffs[0] ), float( coeffs[1] ), float( coeffs[2] ), float( coeffs[3] ), float( coeffs[4] )}
-    };
+        k_mat,
+        model, coeffs};
 }
 
-rs2_extrinsics calib::get_extrinsics() const
+rs2_extrinsics_double calib::get_extrinsics() const
 {
     auto & r = rot.rot;
     auto & t = trans;
@@ -1294,7 +1293,7 @@ double optimizer::calc_cost( const z_frame_data & z_data, const yuy2_frame_data&
     double cost = 0;
 
     auto sum_of_elements = 0;
-    for( auto i = 0; i < d_vals.size(); i++ )
+    for( auto i = 0; i < z_data.weights.size(); i++ )
     {
         if( d_vals[i] != std::numeric_limits<double>::max() )
         {
@@ -2291,7 +2290,7 @@ double calib::get_norma()
 {
     std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
                         trans.t1, trans.t2, trans.t3,
-                        k_mat.ppx, k_mat.ppy, k_mat.fx, k_mat.fy };
+                        k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
 
     double grads_norm = 0;  // TODO meant to have as float??
 
@@ -2309,7 +2308,7 @@ double calib::sum()
     double res = 0;  // TODO meant to have float??
     std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
                         trans.t1, trans.t2, trans.t3,
-                        k_mat.ppx, k_mat.ppy, k_mat.fx, k_mat.fy, };
+                         k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
 
 
     for( auto i = 0; i < grads.size(); i++ )
@@ -2324,7 +2323,7 @@ calib calib::normalize()
 {
     std::vector<double> grads = { rot_angles.alpha,rot_angles.beta, rot_angles.gamma,
                         trans.t1, trans.t2, trans.t3,
-                        k_mat.ppx, k_mat.ppy, k_mat.fx, k_mat.fy };
+                        k_mat.fx, k_mat.fy, k_mat.ppx, k_mat.ppy };
 
     auto norma = get_norma();
 
@@ -2343,7 +2342,26 @@ calib calib::normalize()
     return res;
 }
 
-calib::calib( rs2_intrinsics const & intrin, rs2_extrinsics const & extrin )
+calib::calib(rs2_intrinsics_double const & intrin, rs2_extrinsics_double const & extrin)
+{
+    auto const & r = extrin.rotation;
+    auto const & t = extrin.translation;
+    auto const & c = intrin.coeffs;
+
+    height = intrin.height;
+    width = intrin.width;
+    rot = { r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8] };
+    trans = { t[0], t[1], t[2] };
+    k_mat = { intrin.fx, intrin.fy, intrin.ppx, intrin.ppy };
+    coeffs[0] = c[0];
+    coeffs[1] = c[1];
+    coeffs[2] = c[2];
+    coeffs[3] = c[3];
+    coeffs[4] = c[4];
+    model = intrin.model;
+}
+
+librealsense::algo::depth_to_rgb_calibration::calib::calib(rs2_intrinsics const & intrin, rs2_extrinsics const & extrin)
 {
     auto const & r = extrin.rotation;
     auto const & t = extrin.translation;
