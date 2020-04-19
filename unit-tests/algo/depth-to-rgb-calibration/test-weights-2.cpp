@@ -214,7 +214,10 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, dir, "2", "edgeWeightsPerDir_4x1_double_00", 4, 1, compare_same_vectors));
 
         // movment check
-        CHECK(compare_to_bin_file< double >(yuy_data.dilated_image, dir, "2", "dilatedIm_trans_1920x1080_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(yuy_data.prev_logic_edges, dir, "2", "logicEdges_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.dilated_image, dir, "2", "dilatedIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+
+        
         
     }
 }

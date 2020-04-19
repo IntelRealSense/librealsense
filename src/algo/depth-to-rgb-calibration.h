@@ -67,6 +67,9 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> yuy2_prev_frame;
         std::vector<double> dilated_image;
         std::vector<double> edges;
+        std::vector<double> prev_edges;
+        std::vector<uint8_t> logic_edges;
+        std::vector<uint8_t> prev_logic_edges;
         std::vector<double> edges_IDT;
         std::vector<double> edges_IDTx;
         std::vector<double> edges_IDTy;
@@ -326,8 +329,7 @@ namespace depth_to_rgb_calibration {
         bool is_grad_dir_balanced(z_frame_data& z_data);
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed, double distribution_min_max_ratio, double min_weighted_edge_per_section_depth);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
-        //void edge_sobel_XY(yuy2_frame_data& yuy, BYTE* pImgE);
-        void images_dilation(yuy2_frame_data& yuy, std::vector<byte> logic_edges);
+        void images_dilation(yuy2_frame_data& yuy);
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;

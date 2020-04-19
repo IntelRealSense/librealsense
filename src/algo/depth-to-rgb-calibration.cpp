@@ -457,6 +457,7 @@ void optimizer::set_yuy_data(
 
     AC_LOG( DEBUG, "... calc_edges" );
     _yuy.edges = calc_edges( _yuy.yuy2_frame, width, height );
+    _yuy.prev_edges = calc_edges(_yuy.yuy2_prev_frame, width, height);
 
     AC_LOG( DEBUG, "... blur_edges" );
     _yuy.edges_IDT = blur_edges( _yuy.edges, width, height );
@@ -1073,19 +1074,18 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<double> const
 
     return res;
 }
-void optimizer::images_dilation(yuy2_frame_data& yuy, std::vector<byte> logic_edges)
+void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
 
     
     int area = yuy.height * yuy.width;
     yuy.dilated_image.resize(area);
-    auto logic_edges_iter = logic_edges.begin();
 
     std::vector<double> dilation_mask = { 1, 1, 1,
                                               1,  1,  1,
                                               1,  1,  1 };
 
-    yuy.dilated_image = convolution<uint8_t>(logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+    yuy.dilated_image = convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
         {return dilation_calc(sub_image, dilation_mask); });
 
 }
@@ -1100,8 +1100,8 @@ logicEdges = abs(edgeIm1) > params.edgeThresh4logicIm*max(edgeIm1(:));
     /*int area = yuy.height* yuy.width;
     BYTE* pImgE = new BYTE[area];
     edge_sobel_XY(yuy, pImgE);*/
-    auto logic_edges = get_logic_edges(yuy.edges);
-    images_dilation(yuy, logic_edges);
+    yuy.prev_logic_edges = get_logic_edges(yuy.prev_edges);
+    images_dilation(yuy);
     /*
 SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);
