@@ -61,7 +61,7 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
         {
             if( fx != dx && ++n_mismatches <= 5 )
                 // bytes will be written to stdout as characters, which we never want... hence '+fx'
-                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << dx << "{c++} (exact)" );
+                AC_LOG( DEBUG, "... " << x << ": {matlab}" << +fx << " != " << +dx << "{c++} (exact)" );
         }
         else if( fx != approx(dx) )
         {
