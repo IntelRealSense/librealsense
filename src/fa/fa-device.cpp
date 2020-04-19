@@ -44,11 +44,15 @@ namespace librealsense
 {
     std::map<uint32_t, rs2_format> fa_ir_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+        {rs_fourcc('Z','1','6',' '),  RS2_FORMAT_Z16},
+        {rs_fourcc('B','G','1','6'), RS2_FORMAT_RAW16}
     }; 
     std::map<uint32_t, rs2_stream> fa_ir_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED}
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Z','1','6',' '),  RS2_STREAM_INFRARED},
+        {rs_fourcc('B','G','1','6'), RS2_STREAM_INFRARED}
     };   
     std::vector<uint8_t> fa_device::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
@@ -294,6 +298,14 @@ namespace librealsense
         ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
             (RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
 
+
+        // RAW STREAM
+        ir_ep->register_processing_block(processing_block_factory::
+            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 0));
+        /*ir_ep->register_processing_block(processing_block_factory::
+            create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));*/
+        ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<z16_to_raw16_converter>
+            (RS2_FORMAT_Z16, { RS2_FORMAT_RAW16 }, RS2_STREAM_INFRARED, 1));
         add_sensor(ir_ep);
 
         register_info(RS2_CAMERA_INFO_NAME, "F450 Camera");
