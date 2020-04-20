@@ -35,7 +35,6 @@
   <depend>libusb-1.0-dev</depend>
   <depend>linux-headers-generic</depend>
   <depend>opengl</depend>
-  <depend>libgl1-mesa-dev</depend>
   <depend>udev</depend>
 
   <export>
