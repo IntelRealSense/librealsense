@@ -447,30 +447,29 @@ calc_subpixels(
 
             auto dir = z_data.directions[idx];
             double x = 0, y = 0;
-            if( z_edge >= z_minus && z_edge >= z_plus )
+          
+            if(z_data.supressed_edges[idx])
             {
-                if( ir_data.ir_edges[idx] > grad_ir_threshold && z_data.edges[idx] > grad_z_threshold )
-                {
-                    //% fraqStep = (-0.5*(zEdge_plus-zEdge_minus)./(zEdge_plus+zEdge_minus-2*zEdge)); % The step we need to move to reach the subpixel gradient i nthe gradient direction
-                    //% subGrad_d = fraqStep.*reshape(currDir,1,1,[]);
-                    //% subGrad_d = subGrad_d + cat(3,gridY,gridX);% the location of the subpixel gradient
-                    //% ...
-                    //% zEdgeSubPixel(cat(3,supressedEdges_d,supressedEdges_d)) = subGrad_d(cat(3,supressedEdges_d,supressedEdges_d));
+                //% fraqStep = (-0.5*(zEdge_plus-zEdge_minus)./(zEdge_plus+zEdge_minus-2*zEdge)); % The step we need to move to reach the subpixel gradient i nthe gradient direction
+                //% subGrad_d = fraqStep.*reshape(currDir,1,1,[]);
+                //% subGrad_d = subGrad_d + cat(3,gridY,gridX);% the location of the subpixel gradient
+                //% ...
+                //% zEdgeSubPixel(cat(3,supressedEdges_d,supressedEdges_d)) = subGrad_d(cat(3,supressedEdges_d,supressedEdges_d));
 
-                    double fraq_step = 0;
-                    if( double( z_plus + z_minus - (double)2 * z_edge ) == 0 )
-                        fraq_step = std::numeric_limits<double>::max();
+                double fraq_step = 0;
+                if( double( z_plus + z_minus - (double)2 * z_edge ) == 0 )
+                    fraq_step = std::numeric_limits<double>::max();
 
-                    fraq_step = double( (-0.5f*double( z_plus - z_minus )) / double( z_plus + z_minus - 2 * z_edge ) );
+                fraq_step = double( (-0.5f*double( z_plus - z_minus )) / double( z_plus + z_minus - 2 * z_edge ) );
 
-                    // NOTE:
-                    // We adjust by +1 to fit the X/Y to matlab's 1-based index convention
-                    // TODO make sure this fits in with our own USAGE of these coordinates (where we would
-                    // likely have to do -1)
-                    y = i + 1 + fraq_step * (double)dir_map[dir].second;
-                    x = j + 1 + fraq_step * (double)dir_map[dir].first;
-                }
+                // NOTE:
+                // We adjust by +1 to fit the X/Y to matlab's 1-based index convention
+                // TODO make sure this fits in with our own USAGE of these coordinates (where we would
+                // likely have to do -1)
+                y = i + 1 + fraq_step * (double)dir_map[dir].second;
+                x = j + 1 + fraq_step * (double)dir_map[dir].first;
             }
+
             subpixels_y.push_back( y );
             subpixels_x.push_back( x );
         }
@@ -646,12 +645,14 @@ std::vector< uint16_t > optimizer::get_closest_edges(
             auto z_edge = z_data.edges[idx];
             auto z_edge_minus = z_data.edges[edge_minus_idx];
 
-            //if( z_edge >= z_edge_minus && z_edge >= z_edge_plus )
+           
+            if (z_data.supressed_edges[idx])
             {
-                //if( ir_data.ir_edges[idx] > _params.grad_ir_threshold && z_data.edges[idx] > _params.grad_z_threshold )
-                {
-                    z_closest.push_back( std::min( z_data.frame[edge_minus_idx], z_data.frame[edge_plus_idx] ) );
-                }
+                z_closest.push_back(std::min(z_data.frame[edge_minus_idx], z_data.frame[edge_plus_idx]));
+            }
+            else
+            {
+                z_closest.push_back(0);
             }
         }
     }
@@ -1332,8 +1333,9 @@ void deproject_sub_pixel(
     {
         if( !edge[i] )
             continue;
-        const double pixel[] = { x[i], y[i] };
+        const double pixel[] = { x[i] - 1, y[i] - 1 };
         deproject_pixel_to_point( ptr, &intrin, pixel, depth[i] * depth_units );
+        
         ptr += 3;
     }
 }
@@ -1541,6 +1543,7 @@ calib optimizer::calc_gradients( const z_frame_data& z_data, const yuy2_frame_da
 #if 0
     std::ofstream f;
     f.open( "res" );
+    f.precision(16);
     for( auto i = 0; i < interp_IDT_x.size(); i++ )
     {
         f << uv[i].x << " " << uv[i].y << std::endl;
