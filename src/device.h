@@ -74,18 +74,23 @@ namespace librealsense
 
         void tag_profiles(stream_profiles profiles) const override;
 
+        virtual bool compress_while_record() const override { return true; }
+
+        virtual bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override;
+
     protected:
-        int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
-        int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);
+        int add_sensor(const std::shared_ptr<sensor_interface>& sensor_base);
+        int assign_sensor(const std::shared_ptr<sensor_interface>& sensor_base, uint8_t idx);
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
-        uvc_sensor& get_uvc_sensor(int subdevice);
+        std::vector<rs2_format> map_supported_color_formats(rs2_format source_format);
 
         explicit device(std::shared_ptr<context> ctx,
                         const platform::backend_device_group group,
                         bool device_changed_notifications = false);
 
-    private:
         std::map<int, std::pair<uint32_t, std::shared_ptr<const stream_interface>>> _extrinsics;
+
+    private:
         std::vector<std::shared_ptr<sensor_interface>> _sensors;
         std::shared_ptr<context> _context;
         const platform::backend_device_group _group;

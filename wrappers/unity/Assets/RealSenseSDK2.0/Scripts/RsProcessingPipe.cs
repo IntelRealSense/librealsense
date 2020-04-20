@@ -1,4 +1,4 @@
-﻿using Intel.RealSense;
+using Intel.RealSense;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,7 +17,6 @@ public sealed class ProcessingBlockDataAttribute : System.Attribute
     {
         this.blockClass = blockClass;
     }
-
 }
 
 
@@ -42,7 +41,7 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnSourceStart(PipelineProfile activeProfile)
     {
-        Source.OnNewSample += _block.ProcessFrame;
+        Source.OnNewSample += _block.Process;
         ActiveProfile = activeProfile;
         Streaming = true;
         var h = OnStart;
@@ -52,8 +51,10 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnSourceStop()
     {
+        if (!Streaming)
+            return;
         if (_block != null)
-            Source.OnNewSample -= _block.ProcessFrame;
+            Source.OnNewSample -= _block.Process;
         Streaming = false;
         var h = OnStop;
         if (h != null)
@@ -69,6 +70,7 @@ public class RsProcessingPipe : RsFrameProvider
 
     private void OnDestroy()
     {
+        OnSourceStop();
         if (_block != null)
         {
             _block.Dispose();
@@ -80,12 +82,15 @@ public class RsProcessingPipe : RsFrameProvider
     {
         try
         {
+            if (!Streaming)
+                return;
+
             Frame f = frame;
 
             if (profile != null)
             {
-                var filters = profile.ToArray();
-                // foreach (var pb in profile)
+                var filters = profile._processingBlocks.AsReadOnly();
+
                 foreach (var pb in filters)
                 {
                     if (pb == null || !pb.Enabled)
@@ -94,7 +99,11 @@ public class RsProcessingPipe : RsFrameProvider
                     var r = pb.Process(f, src);
                     if (r != f)
                     {
-                        f.Dispose();
+                        // Prevent from disposing the original frame during post-processing
+                        if (f != frame)
+                        {
+                            f.Dispose();
+                        }
                         f = r;
                     }
                 }

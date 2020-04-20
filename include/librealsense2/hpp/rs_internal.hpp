@@ -70,6 +70,21 @@ namespace rs2
         }
     }
 
+    template<class T>
+    class software_device_destruction_callback : public rs2_software_device_destruction_callback
+    {
+        T on_destruction_function;
+    public:
+        explicit software_device_destruction_callback(T on_destruction) : on_destruction_function(on_destruction) {}
+
+        void on_destruction() override
+        {
+            on_destruction_function();
+        }
+
+        void release() override { delete this; }
+    };
+
     class software_sensor : public sensor
     {
     public:
@@ -78,18 +93,51 @@ namespace rs2
         *
         * \param[in] video_stream   all the parameters that required to defind video stream
         */
-        stream_profile add_video_stream(rs2_video_stream video_stream)
+        stream_profile add_video_stream(rs2_video_stream video_stream, bool is_default=false)
         {
             rs2_error* e = nullptr;
 
-            stream_profile stream(rs2_software_sensor_add_video_stream(_sensor.get(),video_stream, &e));
+            auto profile = rs2_software_sensor_add_video_stream_ex(_sensor.get(), video_stream, is_default, &e);
             error::handle(e);
 
+            stream_profile stream(profile);
             return stream;
         }
 
         /**
-        * Inject frame into the sensor
+        * Add motion stream to software sensor
+        *
+        * \param[in] motion   all the parameters that required to defind motion stream
+        */
+        stream_profile add_motion_stream(rs2_motion_stream motion_stream, bool is_default=false)
+        {
+            rs2_error* e = nullptr;
+
+            auto profile = rs2_software_sensor_add_motion_stream_ex(_sensor.get(), motion_stream, is_default, &e);
+            error::handle(e);
+
+            stream_profile stream(profile);
+            return stream;
+        }
+
+        /**
+        * Add pose stream to software sensor
+        *
+        * \param[in] pose   all the parameters that required to defind pose stream
+        */
+        stream_profile add_pose_stream(rs2_pose_stream pose_stream, bool is_default=false)
+        {
+            rs2_error* e = nullptr;
+
+            auto profile = rs2_software_sensor_add_pose_stream_ex(_sensor.get(), pose_stream, is_default, &e);
+            error::handle(e);
+
+            stream_profile stream(profile);
+            return stream;
+        }
+
+        /**
+        * Inject video frame into the sensor
         *
         * \param[in] frame   all the parameters that required to define video frame
         */
@@ -97,6 +145,30 @@ namespace rs2
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_on_video_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Inject motion frame into the sensor
+        *
+        * \param[in] frame   all the parameters that required to define motion frame
+        */
+        void on_motion_frame(rs2_software_motion_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_on_motion_frame(_sensor.get(), frame, &e);
+            error::handle(e);
+        }
+
+        /**
+        * Inject pose frame into the sensor
+        *
+        * \param[in] frame   all the parameters that required to define pose frame
+        */
+        void on_pose_frame(rs2_software_pose_frame frame)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_on_pose_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
 
@@ -113,7 +185,7 @@ namespace rs2
         }
 
         /**
-        * Register option that will be supported by the sensor
+        * Register read-only option that will be supported by the sensor
         *
         * \param[in] option  the option
         * \param[in] val  the initial value
@@ -126,7 +198,7 @@ namespace rs2
         }
 
         /**
-        * Update value of registered option
+        * Update value of registered read-only option
         *
         * \param[in] option  the option
         * \param[in] val  the initial value
@@ -137,6 +209,38 @@ namespace rs2
             rs2_software_sensor_update_read_only_option(_sensor.get(), option, val, &e);
             error::handle(e);
         }
+        /**
+        * Register option that will be supported by the sensor
+        *
+        * \param[in] option  the option
+        * \param[in] range  range data for the option. range.def will be used as the initial value
+        */
+        void add_option(rs2_option option, const option_range& range, bool is_writable=true)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_sensor_add_option(_sensor.get(), option, range.min,
+                range.max, range.step, range.def, is_writable, &e);
+            error::handle(e);
+        }
+
+        void on_notification(rs2_software_notification notif)
+        {
+            rs2_error * e = nullptr;
+            rs2_software_sensor_on_notification(_sensor.get(), notif, &e);
+            error::handle(e);
+        }
+        /**
+        * Sensors hold the parent device in scope via a shared_ptr. This function detaches that so that the 
+        * software sensor doesn't keep the software device alive. Note that this is dangerous as it opens the
+        * door to accessing freed memory if care isn't taken.
+        */
+        void detach()
+        {
+            rs2_error * e = nullptr;
+            rs2_software_sensor_detach(_sensor.get(), &e);
+            error::handle(e);
+        }
+
     private:
         friend class software_device;
 
@@ -155,23 +259,31 @@ namespace rs2
 
     class software_device : public device
     {
-        std::shared_ptr<rs2_device> create_device_ptr()
+        std::shared_ptr<rs2_device> create_device_ptr(std::function<void(rs2_device*)> deleter)
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_device> dev(
                 rs2_create_software_device(&e),
-                rs2_delete_device);
+                deleter);
             error::handle(e);
             return dev;
         }
 
     public:
-        software_device()
-            : device(create_device_ptr())
-        {}
+        software_device(std::function<void(rs2_device*)> deleter = &rs2_delete_device)
+            : device(create_device_ptr(deleter))
+        {
+            this->set_destruction_callback([]{});
+        }
+
+        software_device(std::string name)
+            : device(create_device_ptr(&rs2_delete_device))
+        {
+            update_info(RS2_CAMERA_INFO_NAME, name);
+        }
 
         /**
-        * Add sensor stream to software sensor
+        * Add software sensor with given name to the software device.
         *
         * \param[in] name   the name of the sensor
         */
@@ -184,6 +296,59 @@ namespace rs2
             error::handle(e);
 
             return software_sensor(sensor);
+        }
+
+        /**
+        * Register destruction callback
+        * \param[in] callback   destruction callback
+        */
+        template<class T>
+        void set_destruction_callback(T callback) const
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_set_destruction_callback_cpp(_dev.get(),
+                new software_device_destruction_callback<T>(std::move(callback)), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Add software device to existing context.
+        * Any future queries on the context will return this device.
+        * This operation cannot be undone (except for destroying the context)
+        *
+        * \param[in] ctx   context to add the device to
+        */
+        void add_to(context& ctx)
+        {
+            rs2_error* e = nullptr;
+            rs2_context_add_software_device(ctx._context.get(), _dev.get(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Add a new camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+        * \param[in] val   string value to set to this camera info type
+        */
+        void register_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_register_info(_dev.get(), info, val.c_str(), &e);
+            error::handle(e);
+        }
+
+        /**
+        * Update an existing camera info value, like serial number
+        *
+        * \param[in] info  Identifier of the camera info type
+        * \param[in] val   string value to set to this camera info type
+        */
+        void update_info(rs2_camera_info info, const std::string& val)
+        {
+            rs2_error* e = nullptr;
+            rs2_software_device_update_info(_dev.get(), info, val.c_str(), &e);
+            error::handle(e);
         }
 
         /**

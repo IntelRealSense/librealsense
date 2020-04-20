@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _proc_rel_path ${CMAKE_CURRENT_LIST_DIR})
 
 if (BUILD_WITH_CUDA)
@@ -5,7 +7,7 @@ if (BUILD_WITH_CUDA)
 endif()
 
 include(${_proc_rel_path}/sse/CMakeLists.txt)
-    
+
 target_sources(${LRS_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.cpp"
@@ -20,6 +22,20 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/temporal-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/y8i-to-y8y8.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/y12i-to-y16y16.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/identity-processing-block.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/threshold.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rates-printer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/zero-order.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/units-transform.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/rotation-transform.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/color-formats-converter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-formats-converter.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/motion-transform.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-exposure-processor.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-decompress.cpp"
+
         "${CMAKE_CURRENT_LIST_DIR}/processing-blocks-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/align.h"
         "${CMAKE_CURRENT_LIST_DIR}/colorizer.h"
@@ -32,4 +48,17 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/hole-filling-filter.h"
         "${CMAKE_CURRENT_LIST_DIR}/syncer-processing-block.h"
         "${CMAKE_CURRENT_LIST_DIR}/disparity-transform.h"
+        "${CMAKE_CURRENT_LIST_DIR}/y8i-to-y8y8.h"
+        "${CMAKE_CURRENT_LIST_DIR}/y12i-to-y16y16.h"
+        "${CMAKE_CURRENT_LIST_DIR}/identity-processing-block.h"
+        "${CMAKE_CURRENT_LIST_DIR}/threshold.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rates-printer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/zero-order.h"
+        "${CMAKE_CURRENT_LIST_DIR}/units-transform.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rotation-transform.h"
+        "${CMAKE_CURRENT_LIST_DIR}/color-formats-converter.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-formats-converter.h"
+        "${CMAKE_CURRENT_LIST_DIR}/motion-transform.h"
+        "${CMAKE_CURRENT_LIST_DIR}/auto-exposure-processor.h"
+        "${CMAKE_CURRENT_LIST_DIR}/depth-decompress.h"
 )

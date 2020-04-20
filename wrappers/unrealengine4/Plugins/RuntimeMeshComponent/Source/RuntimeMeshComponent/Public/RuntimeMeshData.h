@@ -121,6 +121,14 @@ private:
 	void CheckBoundingBox(const FBox& Box) const;
 
 public:
+
+	/* 
+		This will put the RuntimeMesh into serialized mode where it becomes safe to access it from other threads. 
+		Don't do this if you don't need it as it will make interacting with it slighly slower as it incurs thread locks.
+	*/
+	void EnterSerializedMode();
+
+
 	void CreateMeshSection(int32 SectionIndex, bool bWantsHighPrecisionTangents, bool bWantsHighPrecisionUVs, int32 NumUVs, bool bWants32BitIndices, bool bCreateCollision, EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average);
 	
 	template<typename VertexType0, typename IndexType>
@@ -865,6 +873,9 @@ private:
 
 public:
 
+	// HORU :)
+	void UpdateMeshSectionColors(int32 SectionIndex, TArray<FColor>& Colors, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None);
+
 	void CreateMeshSection(int32 SectionIndex, const TArray<FVector>& Vertices, const TArray<int32>& Triangles, const TArray<FVector>& Normals,
 		const TArray<FVector2D>& UV0, const TArray<FColor>& Colors, const TArray<FRuntimeMeshTangent>& Tangents, bool bCreateCollision = false,
 		EUpdateFrequency UpdateFrequency = EUpdateFrequency::Average, ESectionUpdateFlags UpdateFlags = ESectionUpdateFlags::None,
@@ -1092,6 +1103,8 @@ private:
 
 	int32 GetSectionFromCollisionFaceIndex(int32 FaceIndex) const;
 
+	int32 GetSectionAndFaceFromCollisionFaceIndex(int32 & FaceIndex) const;
+
 
 	void DoOnGameThread(FRuntimeMeshGameThreadTaskDelegate Func);
 
@@ -1102,7 +1115,7 @@ private:
 	{
 		SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_SerializationOperator);
 
-		//FRuntimeMeshScopeLock Lock(MeshData.SyncRoot);
+		FRuntimeMeshScopeLock Lock(MeshData.SyncRoot, false, true);
 
 		Ar << MeshData.MeshSections;
 

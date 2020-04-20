@@ -3,21 +3,24 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseUnitTests)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-# View the makefile commands during build
-#set(CMAKE_VERBOSE_MAKEFILE on)
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 set(DEPENDENCIES realsense2)
+
+find_package (Python3 COMPONENTS Interpreter Development)
+if(Python3_FOUND)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test-config.py ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+        RESULT_VARIABLE rv
+    )
+    if( NOT ${rv} EQUAL 0 )
+        message(FATAL_ERROR "unit-test-config has failed with status = ${rv}")
+    endif()
+    add_subdirectory( ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/build )
+else()
+    message(WARNING "Python 3 was not found; Unit tests will be limited!")
+endif()
 
 set (unit_tests_sources
     unit-tests-live.cpp
@@ -25,10 +28,12 @@ set (unit_tests_sources
     unit-tests-post-processing.h
     unit-tests-main.cpp
     unit-tests-common.h
+    unit-tests-post-processing-from-bag.cpp
 )
 
 add_executable(live-test ${unit_tests_sources})
-target_link_libraries(live-test ${DEPENDENCIES})
+set_property(TARGET live-test PROPERTY CXX_STANDARD 11)
+target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
 
 set_target_properties (live-test PROPERTIES
     FOLDER "Unit-Tests"
@@ -36,9 +41,7 @@ set_target_properties (live-test PROPERTIES
 
 install(
     TARGETS
-
     live-test
-	
     RUNTIME DESTINATION
     ${CMAKE_INSTALL_PREFIX}/bin
 )
@@ -62,20 +65,29 @@ add_custom_command(TARGET live-test POST_BUILD
     ${Deployment_Location}
 )
 
+# copy wheel odometry calibration file to build folder
+add_custom_command(TARGET live-test POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/calibration_odometry.json
+    ${CMAKE_CURRENT_BINARY_DIR}/calibration_odometry.json
+)
+
 #Post-Processing data set for unit-tests
 #message(STATUS "Post processing deployment directory=${Deployment_Location}")
-list(APPEND PP_Tests_List  1525186403504 # D415_DS(2)
-                           1525186407536 # D415_DS(3)
-                           1525072818314 # D415_DS(1)_HoleFill(0)
-                           1525072823227 # D415_DS(1)_HoleFill(1)
-                           1524668713358 # D435_DS(3)_HoleFill(2)
-                           1525267760676 # D415_DS(2)+Spat(A:0.85/D:32/I:3)
-                           1525266028697 # D415_DS(2)+Temp(A:0.25/D:15/P:1)
-                           1525265554250 # D415_DS(2)+Temp(A:0.25/D:15/P:3)
-                           1525266069476 # D415_DS(2)+Temp(A:0.25/D:15/P:5)
-                           1525266120520 # D415_DS(3)+Temp(A:0.25/D:15/P:7)
-                           1525267168585 # D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)
-                           1525089539880) # D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)_HoleFill(1)
+list(APPEND PP_Tests_List  1551257764229 # D415_DS(2)
+                           1551257812956 # D415_DS(3)
+                           1551257880762 # D415_DS(2)_HoleFill(0)
+                           1551257882796 # D415_DS(2)_HoleFill(1)
+                           1551257884097 # D435_DS(2)_HoleFill(2)
+                           1551257987255 # D435_DS(2)+Spat(A:0.85/D:32/I:3)
+                           1551259481873 # D435_DS(2)+Spat(A:0.5/D:15/I:2)
+                           1551261946511 # D435_DS(2)+Temp(A:0.25/D:15/P:0)
+                           1551262153516 # D435_DS(2)+Temp(A:0.45/D:25/P:1)
+                           1551262256875 # D435_DS(2)+Temp(A:0.5/D:30/P:4)
+                           1551262841203 # D435_DS(2)+Temp(A:0.5/D:30/P:6)
+                           1551262772964 # D435_DS(2)+Temp(A:0.5/D:30/P:8)
+                           1551262971309 # D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6)
+                           1551263177558) # D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6))_HoleFill(1)
 
 # For each post-processing test pattern the following files shall be present
 list(APPEND PP_Test_extensions_List .Input.raw .Input.csv .Output.raw .Output.csv)
@@ -122,6 +134,20 @@ function(produce_sequence_extensions source target)
 
 endfunction()
 
+function(is_file_empty empty filename)
+    set (data "")
+    if(EXISTS ${filename})
+        file(STRINGS  ${filename} data)
+    endif()
+    string(LENGTH "${data}" data_length)
+    #message(STATUS "Read ${data_length}  bytes from  ${filename}")
+    set(res TRUE)
+    if (NOT ${data_length} STREQUAL "0")
+        set(res FALSE)
+    endif()
+    set(empty ${res} PARENT_SCOPE)
+endfunction()
+
 set(PP_TESTS_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/post_processing_tests_2018_ww18/)
 message(STATUS "Preparing to download Post-processing tests dataset...\nRemote server: ${PP_TESTS_URL}\nTarget Location: ${Deployment_Location}\n")
 foreach(i ${PP_Tests_List})
@@ -142,8 +168,10 @@ foreach(i ${PP_Tests_List})
       set(Test_File_Name "${Test_Pattern}${idx}${ext}")
       set(source ${PP_TESTS_URL}${Test_File_Name})
       set(destination ${Deployment_Location}${Test_File_Name})
-      #message(STATUS "Checking for a required test record ${Test_File_Name}")
-      if(NOT EXISTS "${destination}")
+      set (empty FALSE)
+      is_file_empty(empty, ${destination} )
+      #message(STATUS "Checked " ${empty} " for " ${Test_File_Name} " in " ${destination})
+      if(NOT EXISTS "${destination}" OR ${empty})
           message(STATUS "Downloading ${source}")
           file(DOWNLOAD "${source}" "${destination}" LOG log STATUS status TIMEOUT 300) # SHOW_PROGRESS LOG log STATUS status
           list(GET status 0 op_return_value)
@@ -156,3 +184,26 @@ foreach(i ${PP_Tests_List})
     endforeach(idx)
   endforeach(ext)
 endforeach(i)
+
+list(APPEND PP_Rosbag_Recordings_List
+    [aligned_2c]_all_combinations_depth_color.bag
+    [aligned_2d]_all_combinations_depth_color.bag
+    all_combinations_depth_color.bag
+    [pointcloud]_all_combinations_depth_color.bag
+    single_depth_color_640x480.bag
+    D435i_Depth_and_IMU.bag
+)
+ set(PP_Rosbag_Recordings_URL http://realsense-hw-public.s3.amazonaws.com/rs-tests/Rosbag_unit_test_records/)
+foreach(i ${PP_Rosbag_Recordings_List})
+    set (empty FALSE)
+    is_file_empty(empty, ${Deployment_Location}${i} )
+    if(NOT EXISTS "${Deployment_Location}${i}" OR ${empty})
+        message(STATUS "Target not exist or empty - ${Deployment_Location}${i}")
+        message(STATUS "Downloading ${PP_Rosbag_Recordings_URL}${i}")
+        file(DOWNLOAD "${PP_Rosbag_Recordings_URL}${i}" "${Deployment_Location}${i}" TIMEOUT 600 STATUS status LOG log)
+    endif()
+endforeach(i)
+
+if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
+    add_subdirectory(internal)
+endif()

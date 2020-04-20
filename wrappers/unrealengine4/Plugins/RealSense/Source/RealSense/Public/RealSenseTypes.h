@@ -95,6 +95,36 @@ enum class ERealSenseOptionType : uint8
     HOLES_FILL                                 , /**< Enhance depth data post-processing with holes filling where appropriate*/
     STEREO_BASELINE                            , /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
     AUTO_EXPOSURE_CONVERGE_STEP                , /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+    INTER_CAM_SYNC_MODE                        , /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
+    STREAM_FILTER                              , /**< Select a stream to process */
+    STREAM_FORMAT_FILTER                       , /**< Select a stream format to process */
+    STREAM_INDEX_FILTER                        , /**< Select a stream index to process */
+    EMITTER_ON_OFF                             , /**< When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */
+    ZERO_ORDER_POINT_X                         , /**< Zero order point x*/
+    ZERO_ORDER_POINT_Y                         , /**< Zero order point y*/
+    LLD_TEMPERATURE                            , /**< LLD temperature*/
+    MC_TEMPERATURE                             , /**< MC temperature*/
+    MA_TEMPERATURE                             , /**< MA temperature*/
+    HARDWARE_PRESET                            , /**< Hardware stream configuration */
+    GLOBAL_TIME_ENABLED                        , /**< disable global time  */
+    APD_TEMPERATURE                            , /**< APD temperature*/
+    ENABLE_MAPPING                             , /**< Enable an internal map */
+    ENABLE_RELOCALIZATION                      , /**< Enable appearance based relocalization */
+    ENABLE_POSE_JUMPING                        , /**< Enable position jumping */
+    ENABLE_DYNAMIC_CALIBRATION                 , /**< Enable dynamic calibration */
+    DEPTH_OFFSET                               , /**< Offset from sensor to depth origin in millimetrers */
+    LED_POWER                                  , /**< Power of the LED (light emitting diode), with 0 meaning LED off */
+    ZERO_ORDER_ENABLED                         , /**< Zero-order mode */
+    ENABLE_MAP_PRESERVATION                    , /**< Preserve map from the previous run */
+    FREEFALL_DETECTION_ENABLED                 , /**< Enable/disable sensor shutdown when a free-fall is detected (on by default) */
+    AVALANCHE_PHOTO_DIODE                      , /**< Changes the exposure time of Avalanche Photo Diode in the receiver */
+    POST_PROCESSING_SHARPENING                 , /**< Changes the amount of sharpening in the post-processed image */
+    PRE_PROCESSING_SHARPENING                  , /**< Changes the amount of sharpening in the pre-processed image */
+    NOISE_FILTERING                            , /**< Control edges and background noise */
+    INVALIDATION_BYPASS                        , /**< Enable\disable pixel invalidation */
+    AMBIENT_LIGHT                              , /**< Change the depth ambient light see rs2_ambient_light for values */
+    SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
+    EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
 };
 
 UENUM(Blueprintable)

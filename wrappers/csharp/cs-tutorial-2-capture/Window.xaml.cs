@@ -31,11 +31,8 @@ namespace Intel.RealSense
             var wbmp = img.Source as WriteableBitmap;
             return new Action<VideoFrame>(frame =>
             {
-                using (frame)
-                {
-                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
-                }
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
             });
         }
 
@@ -74,12 +71,18 @@ namespace Intel.RealSense
                             var colorFrame = frames.ColorFrame.DisposeWith(frames);
                             var depthFrame = frames.DepthFrame.DisposeWith(frames);
 
-                            // We colorize the depth frame for visualization purposes, .
-                            var colorizedDepth = colorizer.Process(depthFrame).DisposeWith(frames);
+                            // We colorize the depth frame for visualization purposes
+                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
 
                             // Render the frames.
                             Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                             Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
+
+                            Dispatcher.Invoke(new Action(() =>
+                            {
+                                String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
+                                txtTimeStamp.Text = depth_dev_sn + " : " + String.Format("{0,-20:0.00}", depthFrame.Timestamp) + "(" + depthFrame.TimestampDomain.ToString() + ")";
+                            }));
                         }
                     }
                 }, tokenSource.Token);
@@ -98,11 +101,11 @@ namespace Intel.RealSense
 
         private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> depth, out Action<VideoFrame> color)
         {
-            using (var p = pipelineProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+            using (var p = pipelineProfile.GetStream(Stream.Depth).As<VideoStreamProfile>())
                 imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
             depth = UpdateImage(imgDepth);
 
-            using (var p = pipelineProfile.GetStream(Stream.Color) as VideoStreamProfile)
+            using (var p = pipelineProfile.GetStream(Stream.Color).As<VideoStreamProfile>())
                 imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
             color = UpdateImage(imgColor);
         }

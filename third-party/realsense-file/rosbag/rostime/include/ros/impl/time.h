@@ -56,7 +56,7 @@
   #include <sys/time.h>
 #endif
 
-namespace ros
+namespace rs2rosinternal
 {
 
   template<class T, class D>

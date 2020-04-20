@@ -575,13 +575,13 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
             auto temp_end_address = end_address;
             auto temp_bytes_per_line = bytes_per_line;
 
-            for (auto offset = 0; offset < data_size; ++offset)
+            for (size_t offset = 0; offset < data_size; ++offset)
             {
                 ++temp_bytes_per_line;
                 if (temp_bytes_per_line == num_of_bytes_for_new_line)
                 {
 
-                    int next_add = stoi(temp_curr_address) + num_of_bytes_for_new_line;
+                    unsigned int next_add = stoi(temp_curr_address) + num_of_bytes_for_new_line;
 
                     if (next_add >= temp_end_address)
                         break;
@@ -612,7 +612,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
 
         ss_output << std::hex << stoi(curr_address) << " => ";
 
-        for (auto offset = 0; offset < data_size; ++offset)
+        for (size_t offset = 0; offset < data_size; ++offset)
         {
             ++bytes_per_line;
             ++bytes;
@@ -630,7 +630,7 @@ inline void decode_string_from_raw_data(const command& command, const std::map<s
 
                 if (bytes_per_line == num_of_bytes_for_new_line)
                 {
-                    auto next_add = stoi(curr_address) + num_of_bytes_for_new_line;
+                    unsigned int next_add = stoi(curr_address) + num_of_bytes_for_new_line;
 
                     if (next_add >= end_address)
                         break;

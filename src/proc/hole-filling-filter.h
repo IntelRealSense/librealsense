@@ -166,4 +166,5 @@ namespace librealsense
         rs2::stream_profile     _target_stream_profile;
         uint8_t                 _hole_filling_mode;
     };
+    MAP_EXTENSION(RS2_EXTENSION_HOLE_FILLING_FILTER, librealsense::hole_filling_filter);
 }

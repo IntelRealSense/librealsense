@@ -1,3 +1,4 @@
+#include "RealSenseDetailCustomization.h"
 #include "PCH.h"
 
 #if WITH_EDITOR

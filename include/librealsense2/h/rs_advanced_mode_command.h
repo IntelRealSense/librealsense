@@ -122,6 +122,11 @@ typedef struct
     uint32_t vDiameter;
 }STCensusRadius;
 
+typedef struct
+{
+    float   amplitude;
+}STAFactor;
+
 #ifdef __cplusplus
 extern "C"{
 #endif

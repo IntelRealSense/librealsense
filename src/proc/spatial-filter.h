@@ -281,4 +281,5 @@ namespace librealsense
         uint8_t                 _holes_filling_mode;
         uint8_t                 _holes_filling_radius;
     };
+    MAP_EXTENSION(RS2_EXTENSION_SPATIAL_FILTER, librealsense::spatial_filter);
 }

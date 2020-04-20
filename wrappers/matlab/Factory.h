@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <map>
+#include <string>
 #include <mex.h>
 #include <matrix.h>
 

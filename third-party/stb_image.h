@@ -3468,7 +3468,7 @@ stbi_inline static int stbi__bit_reverse(int v, int bits)
 
 static int stbi__zbuild_huffman(stbi__zhuffman *z, stbi_uc *sizelist, int num)
 {
-   int i,k=0;
+   int i,kl=0;
    int code, next_code[16], sizes[17];
 
    // DEFLATE spec for generating codes
@@ -3484,13 +3484,13 @@ static int stbi__zbuild_huffman(stbi__zhuffman *z, stbi_uc *sizelist, int num)
    for (i=1; i < 16; ++i) {
       next_code[i] = code;
       z->firstcode[i] = (stbi__uint16) code;
-      z->firstsymbol[i] = (stbi__uint16) k;
+      z->firstsymbol[i] = (stbi__uint16) kl;
       code = (code + sizes[i]);
       if (sizes[i])
          if (code-1 >= (1 << i)) return stbi__err("bad codelengths","Corrupt PNG");
       z->maxcode[i] = code << (16-i); // preshift for inner loop
       code <<= 1;
-      k += sizes[i];
+      kl += sizes[i];
    }
    z->maxcode[16] = 0x10000; // sentinel
    for (i=0; i < num; ++i) {
@@ -3501,10 +3501,10 @@ static int stbi__zbuild_huffman(stbi__zhuffman *z, stbi_uc *sizelist, int num)
          z->size [c] = (stbi_uc     ) s;
          z->value[c] = (stbi__uint16) i;
          if (s <= STBI__ZFAST_BITS) {
-            int k = stbi__bit_reverse(next_code[s],s);
-            while (k < (1 << STBI__ZFAST_BITS)) {
-               z->fast[k] = fastv;
-               k += (1 << s);
+            int kll = stbi__bit_reverse(next_code[s],s);
+            while (kll < (1 << STBI__ZFAST_BITS)) {
+               z->fast[kll] = fastv;
+               kll += (1 << s);
             }
          }
          ++next_code[s];
@@ -4110,20 +4110,20 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
          }
          if (img_n != out_n) {
             // insert alpha = 255
-            stbi_uc *cur = a->out + stride*j;
-            int i;
+            stbi_uc *curl = a->out + stride*j;
+            int il;
             if (img_n == 1) {
-               for (i=x-1; i >= 0; --i) {
-                  cur[i*2+1] = 255;
-                  cur[i*2+0] = cur[i];
+               for (il=x-1; il >= 0; --il) {
+                  curl[il*2+1] = 255;
+                  curl[il*2+0] = curl[il];
                }
             } else {
                STBI_ASSERT(img_n == 3);
-               for (i=x-1; i >= 0; --i) {
-                  cur[i*4+3] = 255;
-                  cur[i*4+2] = cur[i*3+2];
-                  cur[i*4+1] = cur[i*3+1];
-                  cur[i*4+0] = cur[i*3+0];
+               for (il=x-1; il >= 0; --il) {
+                  curl[il*4+3] = 255;
+                  curl[il*4+2] = curl[il*3+2];
+                  curl[il*4+1] = curl[il*3+1];
+                  curl[il*4+0] = curl[il*3+0];
                }
             }
          }
@@ -4908,8 +4908,8 @@ static stbi_uc *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int 
 
    if ( !tga_indexed && !tga_is_RLE) {
       for (i=0; i < tga_height; ++i) {
-         int y = tga_inverted ? tga_height -i - 1 : i;
-         stbi_uc *tga_row = tga_data + y*tga_width*tga_comp;
+         int yl = tga_inverted ? tga_height -i - 1 : i;
+         stbi_uc *tga_row = tga_data + yl*tga_width*tga_comp;
          stbi__getn(s, tga_row, tga_width * tga_comp);
       }
    } else  {
@@ -5350,7 +5350,7 @@ static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *c
 
                   if (count >= 128) { // Repeated
                      stbi_uc value[4];
-                     int i;
+                     int il;
 
                      if (count==128)
                         count = stbi__get16be(s);
@@ -5362,7 +5362,7 @@ static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *c
                      if (!stbi__readval(s,packet->channel,value))
                         return 0;
 
-                     for(i=0;i<count;++i, dest += 4)
+                     for(il=0;il<count;++il, dest += 4)
                         stbi__copyval(packet->channel,dest,value);
                   } else { // Raw
                      ++count;
@@ -5592,22 +5592,22 @@ static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)
          bits |= (stbi__int32) stbi__get8(s) << valid_bits;
          valid_bits += 8;
       } else {
-         stbi__int32 code = bits & codemask;
+         stbi__int32 codel = bits & codemask;
          bits >>= codesize;
          valid_bits -= codesize;
          // @OPTIMIZE: is there some way we can accelerate the non-clear path?
-         if (code == clear) {  // clear code
+         if (codel == clear) {  // clear code
             codesize = lzw_cs + 1;
             codemask = (1 << codesize) - 1;
             avail = clear + 2;
             oldcode = -1;
             first = 0;
-         } else if (code == clear + 1) { // end of stream code
+         } else if (codel == clear + 1) { // end of stream code
             stbi__skip(s, len);
             while ((len = stbi__get8(s)) > 0)
                stbi__skip(s,len);
             return g->out;
-         } else if (code <= avail) {
+         } else if (codel <= avail) {
             if (first) return stbi__errpuc("no clear code", "Corrupt GIF");
 
             if (oldcode >= 0) {
@@ -5615,18 +5615,18 @@ static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)
                if (avail > 4096)        return stbi__errpuc("too many codes", "Corrupt GIF");
                p->prefix = (stbi__int16) oldcode;
                p->first = g->codes[oldcode].first;
-               p->suffix = (code == avail) ? p->first : g->codes[code].first;
-            } else if (code == avail)
+               p->suffix = (codel == avail) ? p->first : g->codes[codel].first;
+            } else if (codel == avail)
                return stbi__errpuc("illegal code in raster", "Corrupt GIF");
 
-            stbi__out_gif_code(g, (stbi__uint16) code);
+            stbi__out_gif_code(g, (stbi__uint16) codel);
 
             if ((avail & codemask) == 0 && avail <= 0x0FFF) {
                codesize++;
                codemask = (1 << codesize) - 1;
             }
 
-            oldcode = code;
+            oldcode = codel;
          } else {
             return stbi__errpuc("illegal code in raster", "Corrupt GIF");
          }

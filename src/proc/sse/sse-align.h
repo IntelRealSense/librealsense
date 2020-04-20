@@ -1,3 +1,5 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
+/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 #ifdef __SSSE3__
 
@@ -71,14 +73,14 @@ namespace librealsense
     class align_sse : public align
     {
     public:
-        align_sse(rs2_stream to_stream) : align(to_stream) {}
+        align_sse(rs2_stream to_stream) : align(to_stream, "Align (SSE3)") {}
 
     protected:
         void reset_cache(rs2_stream from, rs2_stream to) override;
 
-        void align_z_to_other(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale) override;
+        void align_z_to_other(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_stream_profile& other_profile, float z_scale) override;
 
-        void align_other_to_z(byte* aligned_data, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale) override;
+        void align_other_to_z(rs2::video_frame& aligned, const rs2::video_frame& depth, const rs2::video_frame& other, float z_scale) override;
 
     private:
         std::shared_ptr<image_transform> _stream_transform;

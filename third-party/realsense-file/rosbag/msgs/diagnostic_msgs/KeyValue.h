@@ -61,13 +61,13 @@ typedef std::shared_ptr< ::diagnostic_msgs::KeyValue const> KeyValueConstPtr;
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::diagnostic_msgs::KeyValue_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace diagnostic_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -151,9 +151,9 @@ string value # a value to track over time\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -170,9 +170,9 @@ namespace serialization
   }; // struct KeyValue_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -190,6 +190,6 @@ struct Printer< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // DIAGNOSTIC_MSGS_MESSAGE_KEYVALUE_H

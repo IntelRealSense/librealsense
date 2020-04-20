@@ -8,11 +8,13 @@
 #include "hw-monitor.h"
 #include "sensor.h"
 #include "core/streaming.h"
+#include "command_transfer.h"
 
 #include <chrono>
 #include <memory>
 #include <vector>
 #include <cmath>
+#include <type_traits>
 
 namespace librealsense
 {
@@ -81,7 +83,7 @@ namespace librealsense
         std::string _desc;
     };
 
-    class option_base : public option
+    class LRS_EXTENSION_API option_base : public virtual option
     {
     public:
         option_base(const option_range& opt_range)
@@ -96,11 +98,55 @@ namespace librealsense
      protected:
         const option_range _opt_range;
         std::function<void(const option&)> _recording_function = [](const option&) {};
-
     };
 
     template<class T>
-    class ptr_option : public option_base
+    class enum_option : public virtual option
+    {
+    public:
+        const char* get_value_description(float val) const override
+        {
+            return get_string((T)((int)val));
+        }
+    };
+
+    class option_description : public virtual option
+    {
+    public:
+        option_description(std::string description)
+            :_description(description) {}
+
+        const char* get_description() const override
+        {
+            return _description.c_str();
+        }
+
+    protected:
+        std::string _description;
+    };
+
+    template<class T>
+    class cascade_option : public T, public observable_option
+    {
+    public:
+        template <class... Args>
+        cascade_option(Args&&... args) :
+            T(std::forward<Args>(args)...){}
+
+        void set(float value) override
+        {
+            notify(value);
+            T::set(value);
+        }
+
+        void set_with_no_signal(float value)
+        {
+            T::set(value);
+        }
+    };
+
+    template<class T>
+    class LRS_EXTENSION_API ptr_option : public option_base
     {
     public:
         ptr_option(T min, T max, T step, T def, T* value, const std::string& desc)
@@ -110,7 +156,7 @@ namespace librealsense
                             static_cast<float>(def), }),
             _min(min), _max(max), _step(step), _def(def), _value(value), _desc(desc)
         {
-            static_assert((std::is_arithmetic<T>::value),  "ptr_option class supports arithmetic built-in types only");
+            static_assert((std::is_arithmetic<T>::value), "ptr_option class supports arithmetic built-in types only");
             _on_set = [](float x) {};
         }
 
@@ -118,7 +164,7 @@ namespace librealsense
         {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
-                throw invalid_value_exception(to_string() << "Given value " << value << " is outside valid range!");
+                throw invalid_value_exception(to_string() << "Given value " << value << " is outside [" << _min << "," << _max << "] range!");
             *_value = val;
             _on_set(value);
         }
@@ -126,12 +172,6 @@ namespace librealsense
         float query() const override
         {
             return static_cast<float>(*_value);
-        }
-
-        option_range get_range() const override {
-            return{
-                (float)_min, (float)_max,
-                (float)_step, (float)_def };
         }
 
         bool is_enabled() const override { return true; }
@@ -157,11 +197,61 @@ namespace librealsense
 
         void on_set(std::function<void(float)> on_set) { _on_set = on_set; }
     private:
-        T _min, _max, _step, _def;
+        T _min, _max, _step, _def; // stored separately so that logic can be done in base type
         T* _value;
         std::string _desc;
         std::map<float, std::string> _item_desc;
         std::function<void(float)> _on_set;
+    };
+
+    class LRS_EXTENSION_API float_option : public option_base
+    {
+    public:
+        float_option(option_range range) : option_base(range), _value(range.def) {}
+
+        void set(float value) override;
+        float query() const override { return _value; }
+        bool is_enabled() const override { return true; }
+        // TODO: expose this outwards
+        const char* get_description() const override { return "A simple custom option for a processing block or software device"; }
+    protected:
+        float _value;
+    };
+
+    template<class T>
+    class float_option_with_description : public float_option, public option_description, public enum_option<T>
+    {
+    public:
+        float_option_with_description(option_range range, std::string description)
+            :float_option(range), option_description(description) {}
+
+        const char* get_description() const override { return option_description::get_description(); }
+    };
+
+    class readonly_float_option : public float_option
+    {
+    public:
+        readonly_float_option(const option_range& range)
+            : float_option(range) {}
+
+        bool is_read_only() const override { return true; }
+        const char* get_description() const override { return "A simple read-only custom option for a software device"; }
+        void set(float) override
+        {
+            // TODO: Use get_description() to give a more useful error message when user-supplied descriptions are implemented
+            throw not_implemented_exception("This option is read-only!");
+        }
+
+        void update(float val) { float_option::set(val); }
+    };
+
+    class LRS_EXTENSION_API bool_option : public float_option
+    {
+    public:
+        bool_option( bool default_on = true ) : float_option(option_range{ 0, 1, 1, default_on ? 1.f : 0.f }) {}
+        bool is_true() { return (_value > _opt_range.min); }
+        // TODO: expose this outwards
+        const char* get_description() const override { return "A simple custom option for a processing block"; }
     };
 
     class uvc_pu_option : public option
@@ -262,6 +352,10 @@ namespace librealsense
             : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
         {}
 
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value)
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _description_per_value(description_per_value)
+        {}
+
         const char* get_description() const override
         {
             return _desciption.c_str();
@@ -270,33 +364,20 @@ namespace librealsense
         {
             _recording_function = record_action;
         }
+        const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        }
     protected:
         uvc_sensor&       _ep;
         platform::extension_unit _xu;
         uint8_t             _id;
         std::string         _desciption;
         std::function<void(const option&)> _recording_function = [](const option&) {};
+        const std::map<float, std::string> _description_per_value;
     };
-
-    inline std::string hexify(unsigned char n)
-    {
-        std::string res;
-
-        do
-        {
-            res += "0123456789ABCDEF"[n % 16];
-            n >>= 4;
-        } while (n);
-
-        reverse(res.begin(), res.end());
-
-        if (res.size() == 1)
-        {
-            res.insert(0, "0");
-        }
-
-        return res;
-    }
 
     template<class T, class R, class W, class U>
     class struct_field_option : public option
@@ -373,18 +454,18 @@ namespace librealsense
             : _polling_error_handler(handler), _value(1)
         {}
 
-        void set(float value);
+        void set(float value) override;
 
-        float query() const;
+        float query() const override;
 
-        option_range get_range() const;
+        option_range get_range() const override;
 
-        bool is_enabled() const;
+        bool is_enabled() const override;
 
 
-        const char* get_description() const;
+        const char* get_description() const override;
 
-        const char* get_value_description(float value) const;
+        const char* get_value_description(float value) const override;
         void enable_recording(std::function<void(const option &)> record_action) override
         {
             _recording_function = record_action;

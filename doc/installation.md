@@ -23,11 +23,14 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   * Complete the boot, login and verify that a supported kernel version (4.**[4,8,10,13,15,16]**]) is in place with `uname -r`  
 
 
-  **Download/Clone librealsense github repository:**  
-    1. Navigate to *librealsense* root directory to run the following scripts.<br />
-       Unplug any connected Intel RealSense camera.<br />  
+**Download/Clone librealsense github repository:**  
+  * Get *librealsense* sources in one of the following ways:<br />
 
+    - Download the complete source tree with *git*<br />
+      `git clone https://github.com/IntelRealSense/librealsense.git`<br />
 
+    - Download and unzip the latest stable version from `master` branch:
+        https://github.com/IntelRealSense/librealsense/archive/master.zip  
 
 **Prepare Linux Backend and the Dev. Environment:**  
   1. Navigate to *librealsense* root directory to run the following scripts.<br />
@@ -49,12 +52,11 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 > **Cmake Note**: certain librealsense CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   
     Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
 
-     **Note** on graphic sub-system utilization:<br />
+  **Note** on graphic sub-system utilization:<br />
      *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
 
-  3. Install Intel Realsense permission scripts located in librealsense source directory:<br />
-    `sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/`  <br />
-    `sudo udevadm control --reload-rules && udevadm trigger`
+  3. Run Intel Realsense permissions script located from librealsense root directory:<br />
+    `./scripts/setup_udev_rules.sh`  
     <br />
 
   4. Build and apply patched kernel modules for: <br />
@@ -71,15 +73,19 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       Based on the custom kernel provided by Canonical Ltd.  
 
       `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
-    * **Arch-based distributions**
-      * You need to install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
-      * You also need to install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
-        * Navigate to the scripts folder  `cd ./scripts/`<br />
-        * Then run the following script to patch the uvc module: `./patch-arch.sh`<br /><br />
-    * **Odroid XU4 with Ubuntu 16.04 4.14 image**
-      Based on the custom kernel provided by Hardkernel
 
+  * **Arch-based distributions**
+    * Install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
+    * Install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
+    * Navigate to the scripts folder  <br />
+      `cd ./scripts/`<br />
+    * Then run the following script to patch the uvc module:  <br />
+      `./patch-arch.sh`<br /><br />
+
+  * **Odroid XU4 with Ubuntu 16.04 4.14 image**
+      Based on the custom kernel provided by Hardkernel  <br />
       `./scripts/patch-realsense-ubuntu-odroid.sh`<br />
+      
       Some additional details on the Odroid installation can also be found in [installation_odroid.md](installation_odroid.md)
 
 > Check the patched modules installation by examining the generated log as well as inspecting the latest entries in kernel log:<br />
@@ -122,7 +128,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   `sudo make uninstall && make clean && make **-j8** && sudo make install`<br />
   This enhancement may significantly improve the build time. The side-effect, however, is that it may cause a low-end platform to hang randomly.<br />
   **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
-  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.
+  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.<br />
+  **Note:** You can find more information about the available configuration options on [this wiki page](https://github.com/IntelRealSense/librealsense/wiki/Build-Configuration).
 
   2. Install IDE (Optional):
     We use QtCreator as an IDE for Linux development on Ubuntu

@@ -25,7 +25,7 @@ std::string profile_to_string(std::shared_ptr<stream_profile_interface> s)
     return os.str();
 }
 
-playback_sensor::playback_sensor(const device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
+playback_sensor::playback_sensor(device_interface& parent_device, const device_serializer::sensor_snapshot& sensor_description):
     m_is_started(false),
     m_sensor_description(sensor_description),
     m_sensor_id(sensor_description.get_sensor_index()),
@@ -43,7 +43,7 @@ playback_sensor::~playback_sensor()
 
 bool playback_sensor::streams_contains_one_frame_or_more()
 {
-    for (auto d : m_dispatchers)
+    for (auto&& d : m_dispatchers)
     {
         if (d.second->empty())
             return false;
@@ -90,7 +90,7 @@ void playback_sensor::open(const stream_profiles& requests)
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
-    m_active_streams = requests;
+    set_active_streams(requests);
     opened(opened_streams);
 }
 
@@ -98,7 +98,7 @@ void playback_sensor::close()
 {
     LOG_DEBUG("Close sensor " << m_sensor_id);
     std::vector<device_serializer::stream_identifier> closed_streams;
-    for (auto dispatcher : m_dispatchers)
+    for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
         for (auto available_profile : m_available_profiles)
@@ -110,7 +110,7 @@ void playback_sensor::close()
         }
     }
     m_dispatchers.clear();
-    m_active_streams.clear();
+    set_active_streams({});
     closed(closed_streams);
 }
 
@@ -167,7 +167,7 @@ bool playback_sensor::extend_to(rs2_extension extension_type, void** ext)
     return playback_device::try_extend_snapshot(e, extension_type, ext);
 }
 
-const device_interface& playback_sensor::get_device()
+device_interface& playback_sensor::get_device()
 {
     return m_parent_device;
 }
@@ -246,7 +246,7 @@ void playback_sensor::register_sensor_options(const device_serializer::sensor_sn
                 auto&& option = options_api->get_option(option_id);
                 float value = option.query();
                 register_option(option_id, std::make_shared<const_value_option>(option.get_description(), option.query()));
-                LOG_DEBUG("Registered " << rs2_option_to_string(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
+                LOG_DEBUG("Registered " << options_api->get_option_name(option_id) << " for sensor " << m_sensor_id << " with value: " << option.query());
             }
         }
         catch (std::exception& e)
@@ -271,8 +271,15 @@ void playback_sensor::set_frames_callback(frame_callback_ptr callback)
 }
 stream_profiles playback_sensor::get_active_streams() const
 {
+    std::lock_guard<std::mutex> lock(m_active_profile_mutex);
     return m_active_streams;
 }
+void playback_sensor::set_active_streams(const stream_profiles& requests)
+{
+    std::lock_guard<std::mutex> lock(m_active_profile_mutex);
+    m_active_streams = requests;
+}
+
 
 int playback_sensor::register_before_streaming_changes_callback(std::function<void(bool)> callback)
 {

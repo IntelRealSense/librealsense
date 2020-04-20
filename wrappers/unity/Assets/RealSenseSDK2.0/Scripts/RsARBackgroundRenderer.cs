@@ -21,7 +21,7 @@ public class RsARBackgroundRenderer : MonoBehaviour
     {
         yield return new WaitUntil(() => Source && Source.Streaming);
 
-        using (var profile = Source.ActiveProfile.GetStream(Stream.Color) as VideoStreamProfile)
+        using (var profile = Source.ActiveProfile.GetStream<VideoStreamProfile>(Stream.Color))
         {
             intrinsics = profile.GetIntrinsics();
         }

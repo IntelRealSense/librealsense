@@ -20,6 +20,12 @@ classdef format < int64
         gpio_raw        (17)
         six_dof         (18)
         disparity32     (19)
-        count           (20)
+		mjpeg     		(20)
+		y8i     		(21)
+		y12i     		(22)
+		inzi     		(23)
+		invi     		(24)
+		w10     		(25)
+        count           (26)
     end
 end

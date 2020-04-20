@@ -8,7 +8,7 @@
 #include <exception>
 
 // Convert rs2::frame to cv::Mat
-cv::Mat frame_to_mat(const rs2::frame& f)
+static cv::Mat frame_to_mat(const rs2::frame& f)
 {
     using namespace cv;
     using namespace rs2;
@@ -23,9 +23,10 @@ cv::Mat frame_to_mat(const rs2::frame& f)
     }
     else if (f.get_profile().format() == RS2_FORMAT_RGB8)
     {
-        auto r = Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), Mat::AUTO_STEP);
-        cvtColor(r, r, CV_RGB2BGR);
-        return r;
+        auto r_rgb = Mat(Size(w, h), CV_8UC3, (void*)f.get_data(), Mat::AUTO_STEP);
+        Mat r_bgr;
+        cvtColor(r_rgb, r_bgr, COLOR_RGB2BGR);
+        return r_bgr;
     }
     else if (f.get_profile().format() == RS2_FORMAT_Z16)
     {
@@ -35,23 +36,20 @@ cv::Mat frame_to_mat(const rs2::frame& f)
     {
         return Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP);
     }
+    else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32)
+    {
+        return Mat(Size(w, h), CV_32FC1, (void*)f.get_data(), Mat::AUTO_STEP);
+    }
 
     throw std::runtime_error("Frame format is not supported yet!");
 }
 
 // Converts depth frame to a matrix of doubles with distances in meters
-cv::Mat depth_frame_to_meters(const rs2::pipeline& pipe, const rs2::depth_frame& f)
+static cv::Mat depth_frame_to_meters( const rs2::depth_frame & f )
 {
-    using namespace cv;
-    using namespace rs2;
-
-    Mat dm = frame_to_mat(f);
-    dm.convertTo(dm, CV_64F);
-    auto depth_scale = pipe.get_active_profile()
-        .get_device()
-        .first<depth_sensor>()
-        .get_depth_scale();
-    dm = dm * depth_scale;
+    cv::Mat dm = frame_to_mat(f);
+    dm.convertTo( dm, CV_64F );
+    dm = dm * f.get_units();
     return dm;
 }
 

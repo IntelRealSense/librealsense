@@ -1,7 +1,8 @@
 # Getting Started with RealSense™ SDK2.0 for LabVIEW®
 
 > **Download Links**:
-> * [**(Latest)** RealSense SDK2 for LabVIEW 1.0, 2.11.0, May 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2.11_0.zip)
+> * [**(Latest)** RealSense SDK2 for LabVIEW 1.0, 2.33.0, Feb 2020](https://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/Windows/labview_2_33_0.zip)
+> * [RealSense SDK2 for LabVIEW 1.0, 2.11.0, May 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2.11_0.zip)
 > * [RealSense SDK2 for LabVIEW 1.0, 2.10.4, Apr 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_10_4.zip)
 > * [RealSense SDK2 for LabVIEW 1.0, 2.8.1, Nov 2017](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_8_1.zip)
 
@@ -80,4 +81,10 @@ So now you are streaming data. To grab data you call the Capture VI inside a loo
 Note that frames can arrive asynchronously. You can query their time stamp or counters to align them, or just grab the nearest frames in time.     
 
 
-Finally, it is VERY important that you use the Release Frame VI to release each frame when it is no longer needed, or you will very quickly stop streaming. Also, be sure to CLOSE everything properly, or you will have problems streaming the next time, and LabVIEW may crash.   
+Finally, it is VERY important that you use the Release Frame VI to release each frame when it is no longer needed, or you will very quickly stop streaming. Also, be sure to CLOSE everything properly, or you will have problems streaming the next time, and LabVIEW may crash. 
+
+
+-------------------
+
+
+> **Note**: If you are looking for a different way to modify DLL file location, please refer to [#1947](https://github.com/IntelRealSense/librealsense/issues/1947) and consider trying   [github.com/ryannazaretian/librealsense/tree/master/wrappers/labview](https://github.com/ryannazaretian/librealsense/tree/master/wrappers/labview) as a possible solution. 

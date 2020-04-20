@@ -36,7 +36,7 @@
  *********************************************************************/
 #include <ros/rate.h>
 
-namespace ros
+namespace rs2rosinternal
 {
 
 Rate::Rate(double frequency)

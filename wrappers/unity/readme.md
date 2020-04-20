@@ -2,7 +2,7 @@
 
 <p align="center"><img src="http://realsense-hw-public.s3.amazonaws.com/rs-tests/unity_screenshot.PNG" height="400" /></p>
 
-> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.16.0/Intel.RealSense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
+> [Download **realsense.unitypackage**](https://github.com/IntelRealSense/librealsense/releases/download/v2.20.0/realsense.unitypackage) and go to `Assets > Scenes > Start Here` to see the home screen above
 
 ## Overview
 
@@ -54,7 +54,7 @@ The Unity wrapper provides several example scenes to help you get started with R
 
 The RealSenseDevice provides an encapsulation of a single device connected to the system. The following image displays the RealSenseDevice script:
 
-![image](https://user-images.githubusercontent.com/22654243/36370418-77bf062a-1567-11e8-98ee-c2489aeb1208.png)
+![device_inspeector](https://user-images.githubusercontent.com/18511514/55072419-b9da0b00-5093-11e9-9f11-a40d263183a0.PNG)
 
 ##### Process Mode
 This option indicates which threading model the user expects to use.
@@ -65,14 +65,11 @@ This option indicates which threading model the user expects to use.
 Note that this option affects all other scripts that do any sort of frame processing.
 
 ##### Configuration
-The device is configured the same way that a `Pipeline` is, i.e. with a `Config`. In order to make it available via Unity Inspector, a `Configuration` object is exposed for each RealSenseDevice. When Starting the scene, the device will try to start streaming the requested configuration (`Pipeline.Start(config)` is called).
-Upon starting the device, the device will begin raising frames via its `OnNewSample` and `OnNewSampleSet` public events. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
+The device is configured the same way that a `Pipeline` is, i.e. with a `Config`. In order to make it available via Unity Inspector, a `Profiles` object is exposed for each RealSenseDevice. When Starting the scene, the device will try to start streaming the requested profiles (`Pipeline.Start(config)` is called).
+Upon starting the device, the device will begin raising frames via its `OnNewSample`public event. These frames are raised either from a separate thread or from the Unity thread, depending on the user's choice of Process Mode.
 
 In addition to stream configuration, the panel also allows users to select a specific device by providing its serial number.
 Setting the profile count to 0 will fall to the default configuration of the device.
-
-![image](https://user-images.githubusercontent.com/22654243/36370385-5dbddb2a-1567-11e8-9c52-aa7ee988f19f.png)
-
 
 ##### RealSense Device Inspector
 
@@ -84,12 +81,9 @@ Once the device is streaming, Unity Inspector will show the device's sensors and
 ##### Texture Streams
 
 Under the `RsDeivce` object in Unity's Hierarchy view, you can find a number of textures that are binded to a 'RsFrameProvider' (RsDevice or RsProcessingPipe) frame callbacks and allow a texture to be updated upon frame arrival.
-
-![rsdevice](https://user-images.githubusercontent.com/18511514/47161652-212cab80-d2fb-11e8-8c8b-d627ee8af2d5.PNG)
-
 Each texture stream is associated with the `RealSenseStreamTexture` script which allows user to bind their textures so that they will be updated with each new frame. The following screenshot displays the configurations available for users when using a texture stream:
 
-![realsensestreamtexture](https://user-images.githubusercontent.com/18511514/47161651-20941500-d2fb-11e8-8293-18459c057c98.PNG)
+![textures](https://user-images.githubusercontent.com/18511514/55073767-3de1c200-5097-11e9-9f6e-60df2cd036ba.PNG)
 
 * Source - Select the requested RsFrameProvider
 * Stream / Format / Index - Filter out frames that doesn't match the requested profile. Stream and Format must be provided, the index field can be set to 0 to accept any value.
@@ -130,8 +124,6 @@ A texture for the point cloud can be provided using `RealSenseStreamTexture.cs` 
 
 ### Images
 
-The Unity wrapper comes with a set of Unity Materials alongside matching Shaders to provide users with textures created from the device's frames.
-
-To get a texture, we provide several Image objects under the `Images` prefab:
+The Unity wrapper comes with a set of Unity Materials alongside matching Shaders to provide users with textures created from the device's frames:
 
 ![image](https://user-images.githubusercontent.com/22654243/35591778-cc043fce-0613-11e8-8138-3aa440e54513.png)

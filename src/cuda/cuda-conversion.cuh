@@ -30,13 +30,13 @@ namespace rscuda
     void y16_y16_from_y12i_10_cuda_helper(uint8_t* const dest[], int count, const rscuda::y12i_pixel * source);
     void unpack_yuy2_cuda_helper(const uint8_t* src, uint8_t* dst, int n, rs2_format format);
     
-	template<rs2_format FORMAT> void unpack_yuy2_cuda(uint8_t * const d[], const uint8_t * s, int n)
-	{
-		const uint8_t *src = reinterpret_cast<const uint8_t *>(s);
-		uint8_t *dst = reinterpret_cast<uint8_t *>(d[0]);
+    template<rs2_format FORMAT> void unpack_yuy2_cuda(uint8_t * const d[], const uint8_t * s, int n)
+    {
+        const uint8_t *src = reinterpret_cast<const uint8_t *>(s);
+        uint8_t *dst = reinterpret_cast<uint8_t *>(d[0]);
 
         unpack_yuy2_cuda_helper(src, dst, n, FORMAT);
-	}
+    }
     
     template<class SOURCE> void split_frame_y8_y8_from_y8i_cuda(uint8_t* const dest[], int count, const SOURCE * source)
     {

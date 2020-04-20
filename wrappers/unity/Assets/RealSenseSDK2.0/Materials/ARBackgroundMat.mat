@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: ARBackgroundMat
   m_Shader: {fileID: 4800000, guid: 66fdfcada2704184485a90166c079a87, type: 3}
-  m_ShaderKeywords: _COLORMAP_VIRIDIS
+  m_ShaderKeywords: _COLORMAP_RAINBOW
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -31,7 +31,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Colormap: 6
+    - _Colormap: 4
     - _MaxRange: 5.4285717
     - _MinRange: 0
-    m_Colors: []
+    m_Colors:
+    - _BgColor: {r: 0.003921569, g: 0.7098039, b: 0.9333333, a: 1}

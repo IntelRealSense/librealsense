@@ -7,11 +7,14 @@
 
 bool librealsense::option_base::is_valid(float value) const
 {
-    if (!std::isnormal(_opt_range.step))
+    if (!std::isnormal(_opt_range.step) && _opt_range.step != 0)
         throw invalid_value_exception(to_string() << "is_valid(...) failed! step is not properly defined. (" << _opt_range.step << ")");
 
     if ((value < _opt_range.min) || (value > _opt_range.max))
         return false;
+
+    if (_opt_range.step == 0)
+        return true;
 
     auto n = (value - _opt_range.min) / _opt_range.step;
     return (fabs(fmod(n, 1)) < std::numeric_limits<float>::min());
@@ -29,6 +32,13 @@ void librealsense::option_base::enable_recording(std::function<void(const option
 void librealsense::option::create_snapshot(std::shared_ptr<option>& snapshot) const
 {
     snapshot = std::make_shared<const_value_option>(get_description(), query());
+}
+
+void librealsense::float_option::set(float value)
+{
+    if (!is_valid(value))
+        throw invalid_value_exception(to_string() << "set(...) failed! " << value << " is not a valid value");
+    _value = value;
 }
 
 void librealsense::uvc_pu_option::set(float value)
@@ -93,7 +103,7 @@ const char* librealsense::uvc_pu_option::get_description() const
     case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return "Enable / disable auto-white-balance";
     case RS2_OPTION_POWER_LINE_FREQUENCY: return "Power Line Frequency";
     case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return "Limit exposure time when auto-exposure is ON to preserve constant fps rate";
-    default: return rs2_option_to_string(_id);
+    default: return _ep.get_option_name(_id);
     }
 }
 
@@ -180,4 +190,13 @@ const char * librealsense::polling_errors_disable::get_value_description(float v
     {
         return "Enable error polling";
     }
+}
+
+std::vector<rs2_option> librealsense::options_container::get_supported_options() const
+{
+    std::vector<rs2_option> options;
+    for (auto option : _options)
+        options.push_back(option.first);
+
+    return options;
 }

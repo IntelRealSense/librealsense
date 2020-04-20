@@ -1,12 +1,12 @@
 % Wraps librealsense2 align class
-classdef align < realsense.processing_block
+classdef align < realsense.filter
     methods
         % Constructor
         function this = align(align_to)
             narginchk(1, 1);
-            validateattributes(align_to, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.stream.count});
-            this.objectHandle = realsense.librealsense_mex('rs2::align', 'new', int64(align_to));
-            this = this@realsense.processing_block(out);
+            validateattributes(align_to, {'realsense.stream', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.stream.count)});
+            out = realsense.librealsense_mex('rs2::align', 'new', int64(align_to));
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

@@ -16,6 +16,7 @@ extern "C" {
 
 #include "rs_types.h"
 #include "rs_sensor.h"
+#include "rs_option.h"
 
 /**
 * Creates Depth-Colorizer processing block that can be used to quickly visualize the depth data
@@ -42,6 +43,32 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
+* Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
+* YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
+* without signficant quality drop. YUY representation can be converted back to more usable RGB form,
+* but this requires somewhat costly conversion.
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
+
+/**
+* Creates depth thresholding processing block
+* By controlling min and max options on the block, one could filter out depth values
+* that are either too large or too small, as a software post-processing step
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_threshold(rs2_error** error);
+
+/**
+* Creates depth units transformation processing block
+* All of the pixels are transformed from depth units into meters.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_units_transform(rs2_error** error);
+
+/**
 * This method creates new custom processing block. This lets the users pass frames between module boundaries for processing
 * This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as sync, colorizer, etc..
 * \param proc       Processing function to be applied to every frame entering the block
@@ -59,6 +86,20 @@ rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* 
 * \return           new processing block, to be released by rs2_delete_processing_block
 */
 rs2_processing_block* rs2_create_processing_block_fptr(rs2_frame_processor_callback_ptr proc, void * context, rs2_error** error);
+
+/**
+* This method adds a custom option to a custom processing block. This is a simple float that can be accessed via rs2_set_option and rs2_get_option
+* This is an infrastructure function aimed at middleware developers, and also used by provided blocks such as save_to_ply, etc..
+* \param[in] block      Processing block
+* \param[in] option_id  an int ID for referencing the option
+* \param[in] min     the minimum value which will be accepted for this option
+* \param[in] max     the maximum value which will be accepted for this option
+* \param[in] step    the granularity of options which accept discrete values, or zero if the option accepts continuous values
+* \param[in] def     the default value of the option. This will be the initial value.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            true if adding the option succeeds. false if it fails e.g. an option with this id is already registered
+*/
+int rs2_processing_block_register_simple_option(rs2_processing_block* block, rs2_option option_id, float min, float max, float step, float def, rs2_error** error);
 
 /**
 * This method is used to direct the output from the processing block to some callback or sink object
@@ -151,6 +192,7 @@ void rs2_enqueue_frame(rs2_frame* frame, void* queue);
 
 /**
 * Creates Align processing block.
+* \param[in] align_to   stream type to be used as the target of frameset alignment
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_align(rs2_stream align_to, rs2_error** error);
@@ -186,6 +228,55 @@ rs2_processing_block* rs2_create_disparity_transform_block(unsigned char transfo
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_hole_filling_filter_block(rs2_error** error);
+
+/**
+* Creates a rates printer block. The printer prints the actual FPS of the invoked frame stream.
+* The block ignores reapiting frames and calculats the FPS only if the frame number of the relevant frame was changed.
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_rates_printer_block(rs2_error** error);
+
+/**
+* Creates Depth post-processing zero order fix block. The filter invalidates pixels that has a wrong value due to zero order effect
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               zero order fix processing block
+*/
+rs2_processing_block* rs2_create_zero_order_invalidation_block(rs2_error** error);
+
+/**
+* Creates Depth frame decompression module. Decoded frames compressed and transmitted with Z16H variable-lenght Huffman code to 
+* standartized Z16 Depth data format. Using the compression allows to reduce the Depth frames bandwidth by more than 50 percent
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Huffman-code decompression processing block
+*/
+rs2_processing_block* rs2_create_huffman_depth_decompress_block(rs2_error** error);
+
+/**
+* Retrieve processing block specific information, like name.
+* \param[in]  block     The processing block
+* \param[in]  info      processing block info type to retrieve
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               The requested processing block info string, in a format specific to the device model
+*/
+const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+* Check if a processing block supports a specific info type.
+* \param[in]  block     The processing block to check
+* \param[in]  info      The parameter to check for support
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               True if the parameter both exist and well-defined for the specific device
+*/
+int rs2_supports_processing_block_info(const rs2_processing_block* block, rs2_camera_info info, rs2_error** error);
+
+/**
+ * Test if the given processing block can be extended to the requested extension
+ * \param[in] block processing block
+ * \param[in] extension The extension to which the sensor should be tested if it is extendable
+ * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \return non-zero value iff the processing block can be extended to the given extension
+ */
+int rs2_is_processing_block_extendable_to(const rs2_processing_block* block, rs2_extension extension_type, rs2_error** error);
 
 #ifdef __cplusplus
 }

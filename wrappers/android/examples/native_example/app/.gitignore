@@ -1,0 +1,8 @@
+*.iml
+
+/build
+/.externalNativeBuild
+/.libs
+
+/src/main/cpp/include
+

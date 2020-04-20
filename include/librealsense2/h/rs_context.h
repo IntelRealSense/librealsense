@@ -54,6 +54,14 @@ void rs2_set_devices_changed_callback(const rs2_context* context, rs2_devices_ch
  * @return  A pointer to a device that plays data from the file, or null in case of failure
  */
 rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error);
+    
+/**
+ * Add an instance of software device to the context
+ * \param ctx   The context to which the new device will be added
+ * \param dev   Instance of software device to register into the context
+ * \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ */
+void rs2_context_add_software_device(rs2_context* ctx, rs2_device* dev, rs2_error** error);
 
 /**
  * Removes a playback device from the context, if exists
@@ -64,6 +72,15 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
 void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** error);
 
 /**
+ * Removes tracking module.
+ * function query_devices() locks the tracking module in the tm_context object. 
+ * If the tracking module device is not used it should be removed using this function, so that other applications could find it.
+ * This function can be used both before the call to query_device() to prevent enabling tracking modules or afterwards to 
+ * release them.
+ */
+void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error);
+
+/**
 * create a static snapshot of all connected devices at the time of the call
 * \param context     Object representing librealsense session
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
@@ -71,11 +88,15 @@ void rs2_context_remove_device(rs2_context* ctx, const char* file, rs2_error** e
 */
 rs2_device_list* rs2_query_devices(const rs2_context* context, rs2_error** error);
 
-#define RS2_PRODUCT_LINE_ANY        0xff
-#define RS2_PRODUCT_LINE_ANY_INTEL  0xfe
-#define RS2_PRODUCT_LINE_NON_INTEL  0x01
-#define RS2_PRODUCT_LINE_D400       0x02
-#define RS2_PRODUCT_LINE_SR300      0x04
+#define RS2_PRODUCT_LINE_ANY            0xff
+#define RS2_PRODUCT_LINE_ANY_INTEL      0xfe
+#define RS2_PRODUCT_LINE_NON_INTEL      0x01
+#define RS2_PRODUCT_LINE_D400           0x02
+#define RS2_PRODUCT_LINE_SR300          0x04
+#define RS2_PRODUCT_LINE_L500           0x08
+#define RS2_PRODUCT_LINE_T200           0x10
+#define RS2_PRODUCT_LINE_DEPTH      (RS2_PRODUCT_LINE_L500 | RS2_PRODUCT_LINE_SR300 | RS2_PRODUCT_LINE_D400)
+#define RS2_PRODUCT_LINE_TRACKING   RS2_PRODUCT_LINE_T200
 
 /**
 * create a static snapshot of all connected devices at the time of the call

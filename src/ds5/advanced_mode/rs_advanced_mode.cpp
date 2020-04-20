@@ -272,19 +272,23 @@ void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error*
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
 
-void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error) BEGIN_API_CALL
+void rs2_set_amp_factor(rs2_device* dev, const  STAFactor* group, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
-    VALIDATE_NOT_NULL(json_content);
+    VALIDATE_NOT_NULL(group);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
-    advanced_mode->load_json(std::string(static_cast<const char*>(json_content), content_size));
+    advanced_mode->set_amp_factor(*group);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, dev, json_content, content_size)
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
 
-rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error) BEGIN_API_CALL
+void rs2_get_amp_factor(rs2_device* dev, STAFactor* group, int mode, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
+    VALIDATE_NOT_NULL(group);
     auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
-    return new rs2_raw_data_buffer{ advanced_mode->serialize_json() };
+    advanced_mode->get_amp_factor(group, mode);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev)
+HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
+void rs2_set_amp_factor(rs2_device* dev, const  STAFactor* group, rs2_error** error);
+
+void rs2_get_amp_factor(rs2_device* dev, STAFactor* group, int mode, rs2_error** error);

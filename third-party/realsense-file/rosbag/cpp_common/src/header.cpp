@@ -52,7 +52,7 @@
 
 using namespace std;
 
-namespace ros
+namespace rs2rosinternal
 {
 
 Header::Header()

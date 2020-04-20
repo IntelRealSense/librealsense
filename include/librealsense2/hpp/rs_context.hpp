@@ -17,7 +17,7 @@ namespace rs2
             :_removed(removed), _added(added) {}
 
         /**
-        * check if specific device was disconnected
+        * check if a specific device was disconnected
         * \return            true if device disconnected, false if device connected
         */
         bool was_removed(const rs2::device& dev) const
@@ -34,7 +34,7 @@ namespace rs2
         }
 
         /**
-        * check if specific device was added
+        * check if a specific device was added
         * \return            true if device added, false otherwise
         */
         bool was_added(const rs2::device& dev) const
@@ -49,7 +49,7 @@ namespace rs2
 
             return res > 0;
         }
-      
+
         /**
         * returns a list of all newly connected devices
         * \return            the list of all new connected devices
@@ -57,15 +57,6 @@ namespace rs2
         device_list get_new_devices()  const
         {
             return _added;
-        }
-
-        /**
-        * returns a list of all newly removed devices
-        * \return            the list of all newly removed devices
-        */
-        device_list get_removed_devices()  const
-        {
-            return _removed;
         }
 
     private:
@@ -96,6 +87,7 @@ namespace rs2
 
     class pipeline;
     class device_hub;
+    class software_device;
 
     /**
     * default librealsense context class
@@ -207,15 +199,22 @@ namespace rs2
             rs2::error::handle(e);
         }
 
+        void unload_tracking_module()
+        {
+            rs2_error* e = nullptr;
+            rs2_context_unload_tracking_module(_context.get(), &e);
+            rs2::error::handle(e);
+        }
+
         context(std::shared_ptr<rs2_context> ctx)
             : _context(ctx)
         {}
         explicit operator std::shared_ptr<rs2_context>() { return _context; };
-protected:
+    protected:
         friend class rs2::pipeline;
         friend class rs2::device_hub;
+        friend class rs2::software_device;
 
-        
         std::shared_ptr<rs2_context> _context;
     };
 

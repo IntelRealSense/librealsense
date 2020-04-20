@@ -53,6 +53,11 @@ public class RsHoleFillingFilter : RsProcessingBlock
         _holesFill = (HoleFillingMode)val;
     }
 
+    public void SetHoleFill(int val)
+    {
+        _holesFill = (HoleFillingMode)val;
+    }
+
     private void UpdateOptions()
     {
         holeFillOption.Value = (float)_holesFill;

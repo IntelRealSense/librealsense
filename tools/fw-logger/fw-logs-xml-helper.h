@@ -1,3 +1,5 @@
+/* License: Apache 2.0. See LICENSE file in root directory. */
+/* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 #include "../../third-party/rapidxml/rapidxml_utils.hpp"
 #include "fw-logs-formating-options.h"
@@ -14,6 +16,7 @@ namespace fw_logger
             event,
             file,
             thread,
+            enums,
             none
         };
 
@@ -28,6 +31,8 @@ namespace fw_logger
         node_type get_next_node(xml_node<>* xml_node_list_of_events, int* id, int* num_of_params, std::string* line);
         bool get_thread_node(xml_node<>* node_file, int* thread_id, std::string* thread_name);
         bool get_event_node(xml_node<>* node_event, int* event_id, int* num_of_params, std::string* line);
+        bool get_enum_name_node(xml_node<>* node_file, int* thread_id, std::string* thread_name);
+        bool get_enum_value_node(xml_node<>* node_file, int* thread_id, std::string* enum_name);
         bool get_file_node(xml_node<>* node_file, int* file_id, std::string* file_name);
         bool get_root_node(xml_node<> **node);
         bool try_load_external_xml();

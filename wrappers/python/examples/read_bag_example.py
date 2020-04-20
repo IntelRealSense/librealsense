@@ -47,6 +47,9 @@ try:
 
     # Create opencv window to render image in
     cv2.namedWindow("Depth Stream", cv2.WINDOW_AUTOSIZE)
+    
+    # Create colorizer object
+    colorizer = rs.colorizer();
 
     # Streaming loop
     while True:
@@ -57,7 +60,7 @@ try:
         depth_frame = frames.get_depth_frame()
 
         # Colorize depth frame to jet colormap
-        depth_color_frame = rs.colorizer().colorize(depth_frame)
+        depth_color_frame = colorizer.colorize(depth_frame)
 
         # Convert depth_frame to numpy array to render image in opencv
         depth_color_image = np.asanyarray(depth_color_frame.get_data())

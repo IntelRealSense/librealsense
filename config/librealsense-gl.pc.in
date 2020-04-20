@@ -1,0 +1,17 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/include
+#TODO: libdir=${exec_prefix}/lib@MULTI_ARCH_SUFFIX@
+libdir= ${prefix}/lib/x86_64-linux-gnu
+
+Name: realsense2-gl
+Description: Intel(R) RealSense(tm) GLSL Extension Module
+Version: @REALSENSE-GL_VERSION_STRING@
+URL: https://github.com/IntelRealSense/librealsense
+Requires.private: @LRS_LIB_NAME@
+Libs: -L${libdir} -l@LRS_LIB_NAME@
+Libs.private: @LRS_PKG_LIBS@
+Cflags: -I${includedir}
+
+#TODO check -Wl -Bdynamic
+#Libs: -L${libdir} -Wl,-Bdynamic -lrealsense

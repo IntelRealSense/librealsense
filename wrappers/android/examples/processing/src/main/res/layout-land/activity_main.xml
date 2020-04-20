@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:orientation="horizontal">
+
+    <RelativeLayout
+        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/orgText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:background="@color/black"
+            android:textSize="20dp"
+            android:paddingTop="20dp"
+            android:text="Original Data"
+            android:textColor="#ffffff"/>
+
+        <com.intel.realsense.librealsense.GLRsSurfaceView
+            android:layout_below="@id/orgText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/glSurfaceViewOrg"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/processedText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:background="@color/black"
+            android:textSize="20dp"
+            android:paddingTop="20dp"
+            android:text="Processed Data"
+            android:textColor="#ffffff"/>
+
+        <com.intel.realsense.librealsense.GLRsSurfaceView
+            android:layout_below="@id/processedText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/glSurfaceViewProcessed"/>
+    </RelativeLayout>
+
+    <android.support.v7.widget.LinearLayoutCompat
+        android:id="@+id/buttonPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true">
+
+        <TextView
+            android:id="@+id/connectCameraText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:background="@color/black"
+            android:textSize="20dp"
+            android:text="Connect a RealSense camera"
+            android:textColor="#ffffff"/>
+    </android.support.v7.widget.LinearLayoutCompat>
+
+
+</LinearLayout>

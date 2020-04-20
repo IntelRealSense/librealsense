@@ -11,6 +11,7 @@
 #include "diagnostic_msgs/KeyValue.h"
 #include "std_msgs/UInt32.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/String.h"
 #include "realsense_msgs/StreamInfo.h"
 #include "realsense_msgs/ImuIntrinsic.h"
@@ -22,11 +23,20 @@
 #include "geometry_msgs/Accel.h"
 #include "metadata-parser.h"
 #include "option.h"
+#include "l500/l500-depth.h"
 #include "rosbag/structures.h"
 #include <regex>
 #include "stream.h"
 #include "types.h"
 #include <vector>
+
+enum ros_file_versions
+{
+    ROS_FILE_VERSION_2 = 2u,
+    ROS_FILE_VERSION_3 = 3u,
+    ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS = 4u
+};
+
 
 namespace librealsense
 {
@@ -34,108 +44,63 @@ namespace librealsense
     {
         switch (source)
         {
-        case RS2_FORMAT_Z16: target = sensor_msgs::image_encodings::MONO16;     return;
-        case RS2_FORMAT_RGB8: target = sensor_msgs::image_encodings::RGB8;       return;
-        case RS2_FORMAT_BGR8: target = sensor_msgs::image_encodings::BGR8;       return;
-        case RS2_FORMAT_RGBA8: target = sensor_msgs::image_encodings::RGBA8;      return;
-        case RS2_FORMAT_BGRA8: target = sensor_msgs::image_encodings::BGRA8;      return;
-        case RS2_FORMAT_Y8: target = sensor_msgs::image_encodings::TYPE_8UC1;  return;
-        case RS2_FORMAT_Y16: target = sensor_msgs::image_encodings::TYPE_16UC1; return;
-        case RS2_FORMAT_RAW8: target = sensor_msgs::image_encodings::MONO8;      return;
-        case RS2_FORMAT_UYVY: target = sensor_msgs::image_encodings::YUV422;     return;
+        case RS2_FORMAT_Z16: target = sensor_msgs::image_encodings::MONO16;     break;
+        case RS2_FORMAT_RGB8: target = sensor_msgs::image_encodings::RGB8;      break;
+        case RS2_FORMAT_BGR8: target = sensor_msgs::image_encodings::BGR8;      break;
+        case RS2_FORMAT_RGBA8: target = sensor_msgs::image_encodings::RGBA8;    break;
+        case RS2_FORMAT_BGRA8: target = sensor_msgs::image_encodings::BGRA8;    break;
+        case RS2_FORMAT_Y8: target = sensor_msgs::image_encodings::TYPE_8UC1;   break;
+        case RS2_FORMAT_Y16: target = sensor_msgs::image_encodings::TYPE_16UC1; break;
+        case RS2_FORMAT_RAW8: target = sensor_msgs::image_encodings::MONO8;     break;
+        case RS2_FORMAT_UYVY: target = sensor_msgs::image_encodings::YUV422;    break;
         default: target = rs2_format_to_string(source);
         }
     }
 
-    inline void convert(const std::string& source, rs2_format& target)
-    {
-        if (source == sensor_msgs::image_encodings::MONO16) { target = RS2_FORMAT_Z16; return; }
-        if (source == sensor_msgs::image_encodings::RGB8) { target = RS2_FORMAT_RGB8; return; }
-        if (source == sensor_msgs::image_encodings::BGR8) { target = RS2_FORMAT_BGR8; return; }
-        if (source == sensor_msgs::image_encodings::RGBA8) { target = RS2_FORMAT_RGBA8; return; }
-        if (source == sensor_msgs::image_encodings::BGRA8) { target = RS2_FORMAT_BGRA8; return; }
-        if (source == sensor_msgs::image_encodings::TYPE_8UC1) { target = RS2_FORMAT_Y8; return; }
-        if (source == sensor_msgs::image_encodings::TYPE_16UC1) { target = RS2_FORMAT_Y16; return; }
-        if (source == sensor_msgs::image_encodings::MONO8) { target = RS2_FORMAT_RAW8; return; }
-        if (source == sensor_msgs::image_encodings::YUV422) { target = RS2_FORMAT_UYVY; return; }
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_format");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_stream& target)
-    {
-        if(!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_stream");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_distortion& target)
+    template <typename T>
+    inline bool convert(const std::string& source, T& target)
     {
         if (!try_parse(source, target))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_distortion");
+            LOG_INFO("Failed to convert source: " << source << " to matching " << typeid(T).name());
+            return false;
         }
+        return true;
     }
 
-    inline void convert(const std::string& source, rs2_option& target)
+    // Specialized methods for selected types
+    template <>
+    inline bool convert(const std::string& source, rs2_format& target)
     {
-        if (!try_parse(source, target))
+        bool ret = true;
+        if (source == sensor_msgs::image_encodings::MONO16)     target = RS2_FORMAT_Z16;
+        if (source == sensor_msgs::image_encodings::RGB8)       target = RS2_FORMAT_RGB8;
+        if (source == sensor_msgs::image_encodings::BGR8)       target = RS2_FORMAT_BGR8;
+        if (source == sensor_msgs::image_encodings::RGBA8)      target = RS2_FORMAT_RGBA8;
+        if (source == sensor_msgs::image_encodings::BGRA8)      target = RS2_FORMAT_BGRA8;
+        if (source == sensor_msgs::image_encodings::TYPE_8UC1)  target = RS2_FORMAT_Y8;
+        if (source == sensor_msgs::image_encodings::TYPE_16UC1) target = RS2_FORMAT_Y16;
+        if (source == sensor_msgs::image_encodings::MONO8)      target = RS2_FORMAT_RAW8;
+        if (source == sensor_msgs::image_encodings::YUV422)     target = RS2_FORMAT_UYVY;
+        if (!(ret = try_parse(source, target)))
         {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_optin");
+            LOG_INFO("Failed to convert source: " << source << " to matching rs2_format");
         }
+        return ret;
     }
 
-    inline void convert(const std::string& source, rs2_frame_metadata_value& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_frame_metadata");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_camera_info& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_camera_info");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_timestamp_domain& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_timestamp_domain");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_notification_category& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_notification_category");
-        }
-    }
-
-    inline void convert(const std::string& source, rs2_log_severity& target)
-    {
-        if (!try_parse(source, target))
-        {
-            throw std::runtime_error(to_string() << "Failed to convert source: \"" << "\" to matching rs2_log_severity");
-        }
-    }
-
-    inline void convert(const std::string& source, double& target)
+    template <>
+    inline bool convert(const std::string& source, double& target)
     {
         target = std::stod(source);
+        return std::isfinite(target);
     }
 
-    inline void convert(const std::string& source, long long& target)
+    template <>
+    inline bool convert(const std::string& source, long long& target)
     {
         target = std::stoll(source);
+        return true;
     }
     /*
     quat2rot(), rot2quat()
@@ -164,28 +129,59 @@ namespace librealsense
 
     inline void rot2quat(const float(&r)[9], geometry_msgs::Transform::_rotation_type& q)
     {
-        q.w = sqrtf(1 + r[0] + r[4] + r[8]) / 2; // qw= sqrt(1 + m00 + m11 + m22) /2
-        q.x = (r[5] - r[7]) / (4 * q.w);         // qx = (m21 - m12)/( 4 *qw)
-        q.y = (r[6] - r[2]) / (4 * q.w);         // qy = (m02 - m20)/( 4 *qw)
-        q.z = (r[1] - r[3]) / (4 * q.w);         // qz = (m10 - m01)/( 4 *qw)
+        auto m = (float(&)[3][3])r; // column major
+        float tr[4];
+        tr[0] = ( m[0][0] + m[1][1] + m[2][2]);
+        tr[1] = ( m[0][0] - m[1][1] - m[2][2]);
+        tr[2] = (-m[0][0] + m[1][1] - m[2][2]);
+        tr[3] = (-m[0][0] - m[1][1] + m[2][2]);
+        if (tr[0] >= tr[1] && tr[0]>= tr[2] && tr[0] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[0] + 1);
+            q.w = s/4;
+            q.x = (m[2][1] - m[1][2]) / s;
+            q.y = (m[0][2] - m[2][0]) / s;
+            q.z = (m[1][0] - m[0][1]) / s;
+        } else if (tr[1] >= tr[2] && tr[1] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[1] + 1);
+            q.w = (m[2][1] - m[1][2]) / s;
+            q.x = s/4;
+            q.y = (m[1][0] + m[0][1]) / s;
+            q.z = (m[2][0] + m[0][2]) / s;
+        } else if (tr[2] >= tr[3]) {
+            float s = 2 * std::sqrt(tr[2] + 1);
+            q.w = (m[0][2] - m[2][0]) / s;
+            q.x = (m[1][0] + m[0][1]) / s;
+            q.y = s/4;
+            q.z = (m[1][2] + m[2][1]) / s;
+        } else {
+            float s = 2 * std::sqrt(tr[3] + 1);
+            q.w = (m[1][0] - m[0][1]) / s;
+            q.x = (m[0][2] + m[2][0]) / s;
+            q.y = (m[1][2] + m[2][1]) / s;
+            q.z = s/4;
+        }
+        q.w = -q.w; // column major
     }
 
-    inline void convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
+    inline bool convert(const geometry_msgs::Transform& source, rs2_extrinsics& target)
     {
         target.translation[0] = source.translation.x;
         target.translation[1] = source.translation.y;
         target.translation[2] = source.translation.z;
         quat2rot(source.rotation, target.rotation);
+        return true;
     }
 
-    inline void convert(const rs2_extrinsics& source, geometry_msgs::Transform& target)
+    inline bool convert(const rs2_extrinsics& source, geometry_msgs::Transform& target)
     {
         target.translation.x = source.translation[0];
         target.translation.y = source.translation[1];
         target.translation.z = source.translation[2];
         rot2quat(source.rotation, target.rotation);
+        return true;
     }
 
+    constexpr const char* FRAME_NUMBER_MD_STR = "Frame number";
     constexpr const char* TIMESTAMP_DOMAIN_MD_STR = "timestamp_domain";
     constexpr const char* SYSTEM_TIME_MD_STR = "system_time";
     constexpr const char* MAPPER_CONFIDENCE_MD_STR = "Mapper Confidence";
@@ -277,13 +273,27 @@ namespace librealsense
         /*version 3 and up*/
         static std::string option_value_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "value" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "value" });
+        }
+
+        static std::string post_processing_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "post_processing" });
+        }
+
+        static std::string l500_data_blocks_topic(const device_serializer::sensor_identifier& sensor_id)
+        {
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "l500_data" });
         }
 
         /*version 3 and up*/
         static std::string option_description_topic(const device_serializer::sensor_identifier& sensor_id, rs2_option option_type)
         {
-            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", rs2_option_to_string(option_type), "description" });
+            std::string topic_name = rs2_option_to_string(option_type);
+            std::replace(topic_name.begin(), topic_name.end(), ' ', '_');
+            return create_from({ device_prefix(sensor_id.device_index), sensor_prefix(sensor_id.sensor_index), "option", topic_name, "description" });
         }
 
         static std::string pose_transform_topic(const device_serializer::stream_identifier& stream_id)
@@ -457,7 +467,7 @@ namespace librealsense
         {
            return  to_string() << "/device_" << stream_id.device_index
                                << "/sensor_" << stream_id.sensor_index
-                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;							   
+                               << "/" << get_string(stream_id.stream_type) << "_" << stream_id.stream_index;                               
         }
 
     private:
@@ -515,12 +525,12 @@ namespace librealsense
     */
     constexpr uint32_t get_file_version()
     {
-        return 3u;
+        return ROS_FILE_WITH_RECOMMENDED_PROCESSING_BLOCKS;
     }
 
     constexpr uint32_t get_minimum_supported_file_version()
     {
-        return 2u;
+        return ROS_FILE_VERSION_2;
     }
 
     constexpr uint32_t get_device_index()
@@ -533,21 +543,21 @@ namespace librealsense
         return device_serializer::nanoseconds::min();
     }
 
-    inline device_serializer::nanoseconds to_nanoseconds(const ros::Time& t)
+    inline device_serializer::nanoseconds to_nanoseconds(const rs2rosinternal::Time& t)
     {
-        if (t == ros::TIME_MIN)
+        if (t == rs2rosinternal::TIME_MIN)
             return get_static_file_info_timestamp();
 
         return device_serializer::nanoseconds(t.toNSec());
     }
 
-    inline ros::Time to_rostime(const device_serializer::nanoseconds& t)
+    inline rs2rosinternal::Time to_rostime(const device_serializer::nanoseconds& t)
     {
         if (t == get_static_file_info_timestamp())
-            return ros::TIME_MIN;
+            return rs2rosinternal::TIME_MIN;
         
         auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(t);
-        return ros::Time(secs.count());
+        return rs2rosinternal::Time(secs.count());
     }
 
     namespace legacy_file_format
@@ -633,7 +643,7 @@ namespace librealsense
             const std::string left_group = R"RE(\s*(0x[0-9a-fA-F]{1,8})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*(0x[0-9a-fA-F]{1,4})\s*,\s*)RE";
             const std::string right_group = R"RE(\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*,\s*(0x[0-9a-fA-F]{1,2})\s*)RE";
             const std::string guid_regex_pattern = R"RE(\{)RE" + left_group + R"RE(\{)RE" + right_group + R"RE(\}\s*\})RE";
-            //The GUID pattern looks like this: 	"{ 0x________, 0x____, 0x____, { 0x__, 0x__, 0x__, ... , 0x__ } }"
+            //The GUID pattern looks like this:     "{ 0x________, 0x____, 0x____, { 0x__, 0x__, 0x__, ... , 0x__ } }"
 
             std::regex reg(guid_regex_pattern, std::regex_constants::icase);
             const std::map<rs2_camera_info, const char*> legacy_infos{

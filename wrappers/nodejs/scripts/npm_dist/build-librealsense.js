@@ -31,7 +31,7 @@ function buildNativeLibMac() {
   });
   child.on('close', (code) => {
     if (code) {
-      throw new Error('Failed to build librealsense, build-dist-mac.sh exited with code ${code}');
+      throw new Error(`Failed to build librealsense, build-dist-mac.sh exited with code ${code}`);
     }
   });
 }
@@ -46,7 +46,7 @@ function buildNativeLibLinux() {
   });
   child.on('close', (code) => {
     if (code) {
-      throw new Error('Failed to build librealsense, build-dist.sh exited with code ${code}');
+      throw new Error(`Failed to build librealsense, build-dist.sh exited with code ${code}`);
     }
   });
 }
@@ -64,7 +64,7 @@ function buildNativeLibWindows() {
   });
   child.on('close', (code) => {
     if (code) {
-      throw new Error('Failed to build librealsense, build-dist.bat exited with code ${code}');
+      throw new Error(`Failed to build librealsense, build-dist.bat exited with code ${code}`);
     }
   });
 }

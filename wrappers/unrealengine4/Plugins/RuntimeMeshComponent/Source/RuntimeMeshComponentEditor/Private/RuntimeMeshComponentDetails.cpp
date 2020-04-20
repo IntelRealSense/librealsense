@@ -13,6 +13,9 @@
 #include "DetailWidgetRow.h"
 #include "RawMesh.h"
 
+#include "Input/SCheckBox.h"
+#include "Input/SComboBox.h"
+
 #define LOCTEXT_NAMESPACE "RuntimeMeshComponentDetails"
 
 TSharedRef<IDetailCustomization> FRuntimeMeshComponentDetails::MakeInstance()
@@ -26,6 +29,12 @@ void FRuntimeMeshComponentDetails::CustomizeDetails(IDetailLayoutBuilder& Detail
 
 	const FText ConvertToStaticMeshText = LOCTEXT("ConvertToStaticMesh", "Create StaticMesh");
 
+	CookingModes = TArray<TSharedPtr<ERuntimeMeshCollisionCookingMode>>
+	{
+		MakeShared<ERuntimeMeshCollisionCookingMode>(ERuntimeMeshCollisionCookingMode::CollisionPerformance),
+		MakeShared<ERuntimeMeshCollisionCookingMode>(ERuntimeMeshCollisionCookingMode::CookingPerformance)
+	};
+
 	// Cache set of selected things
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 18
 	SelectedObjectsList = DetailBuilder.GetDetailsView()->GetSelectedObjects();
@@ -33,6 +42,7 @@ void FRuntimeMeshComponentDetails::CustomizeDetails(IDetailLayoutBuilder& Detail
 	SelectedObjectsList = DetailBuilder.GetDetailsView().GetSelectedObjects();
 #endif
 
+	// Add the Create Static Mesh button
 	RuntimeMeshCategory.AddCustomRow(ConvertToStaticMeshText, false)
 		.NameContent()
 		[
@@ -53,6 +63,106 @@ void FRuntimeMeshComponentDetails::CustomizeDetails(IDetailLayoutBuilder& Detail
 			.Text(ConvertToStaticMeshText)
 		]
 		];
+
+	{
+		// Add all the default properties
+		TArray<TSharedRef<IPropertyHandle>> AllProperties;
+		bool bSimpleProperties = true;
+		bool bAdvancedProperties = false;
+		// Add all properties in the category in order
+		RuntimeMeshCategory.GetDefaultProperties(AllProperties, bSimpleProperties, bAdvancedProperties);
+		for (auto& Property : AllProperties)
+		{
+			RuntimeMeshCategory.AddProperty(Property);
+		}
+	}
+
+	TArray<TWeakObjectPtr<UObject>> ObjectsBeingCustomized;
+	DetailBuilder.GetObjectsBeingCustomized(ObjectsBeingCustomized);
+
+	RuntimeMeshesReferenced.Empty();
+	for (TWeakObjectPtr<UObject>& Object : ObjectsBeingCustomized)
+	{
+		URuntimeMeshComponent* Component = Cast<URuntimeMeshComponent>(Object.Get());
+		if (ensure(Component))
+		{
+			if (Component->GetRuntimeMesh())
+			{
+				RuntimeMeshesReferenced.AddUnique(Component->GetRuntimeMesh());
+			}
+		}
+	}
+
+	FText UseComplexAsSimpleName = LOCTEXT("RuntimeMeshProperty_UseComplexAsSimpleCollision", "Use Complex as Simple Collision");
+	RuntimeMeshCategory.AddCustomRow(UseComplexAsSimpleName, false)
+		.NameContent()
+		[
+			SNew(STextBlock)
+			.Text(UseComplexAsSimpleName)
+			.Font(IDetailLayoutBuilder::GetDetailFont())
+		]
+	.ValueContent()
+		.VAlign(VAlign_Center)
+		[
+			SNew(SCheckBox)
+			.IsChecked(this, &FRuntimeMeshComponentDetails::UseComplexAsSimple)
+			.OnCheckStateChanged(this, &FRuntimeMeshComponentDetails::UseComplexAsSimpleCheckedStateChanged)
+		];
+
+	FText UseAsyncCollisionName = LOCTEXT("RuntimeMeshProperty_AsyncCollision", "Use Async Cooking");
+	RuntimeMeshCategory.AddCustomRow(UseAsyncCollisionName, false)
+		.NameContent()
+		[
+			SNew(STextBlock)
+			.Text(UseAsyncCollisionName)
+			.Font(IDetailLayoutBuilder::GetDetailFont())
+		]
+	.ValueContent()
+		.VAlign(VAlign_Center)
+		[
+			SNew(SCheckBox)
+			.IsChecked(this, &FRuntimeMeshComponentDetails::IsAsyncCollisionEnabled)
+			.OnCheckStateChanged(this, &FRuntimeMeshComponentDetails::AsyncCollisionCheckedStateChanged)
+		];
+
+	FText ShouldSerializeMeshDataName = LOCTEXT("RuntimeMeshProperty_ShouldSerialize", "Should Serialize Mesh Data");
+	RuntimeMeshCategory.AddCustomRow(ShouldSerializeMeshDataName, false)
+		.NameContent()
+		[
+			SNew(STextBlock)
+			.Text(ShouldSerializeMeshDataName)
+			.Font(IDetailLayoutBuilder::GetDetailFont())
+		]
+	.ValueContent()
+		.VAlign(VAlign_Center)
+		[
+			SNew(SCheckBox)
+			.IsChecked(this, &FRuntimeMeshComponentDetails::ShouldSerializeMeshData)
+			.OnCheckStateChanged(this, &FRuntimeMeshComponentDetails::ShouldSerializeMeshDataCheckedStateChanged)
+		];
+
+	FText CollisionCookingModeName = LOCTEXT("RuntimeMeshProperty_CollisionCookingModeName", "Collision Cooking Mode");
+	RuntimeMeshCategory.AddCustomRow(CollisionCookingModeName, false)
+		.NameContent()
+		[
+			SNew(STextBlock)
+			.Text(CollisionCookingModeName)
+			.Font(IDetailLayoutBuilder::GetDetailFont())
+		]
+		.ValueContent()
+		.VAlign(VAlign_Center)
+		[
+			SNew(SComboBox<TSharedPtr<ERuntimeMeshCollisionCookingMode>>)
+			.OptionsSource(&CookingModes)
+			.OnGenerateWidget(this, &FRuntimeMeshComponentDetails::MakeCollisionModeComboItemWidget)
+			.OnSelectionChanged(this, &FRuntimeMeshComponentDetails::CollisionCookingModeSelectionChanged)
+			.InitiallySelectedItem(GetCurrentCollisionCookingMode())
+			[
+				SNew(STextBlock).Text(this, &FRuntimeMeshComponentDetails::GetSelectedModeText)
+			]
+		];
+
+	
 }
 
 URuntimeMeshComponent* FRuntimeMeshComponentDetails::GetFirstSelectedRuntimeMeshComp() const
@@ -73,6 +183,178 @@ URuntimeMeshComponent* FRuntimeMeshComponentDetails::GetFirstSelectedRuntimeMesh
 	return RuntimeMeshComp;
 }
 
+
+ECheckBoxState FRuntimeMeshComponentDetails::UseComplexAsSimple() const
+{
+	ECheckBoxState State = ECheckBoxState::Undetermined;
+
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			ECheckBoxState NewState = Mesh->IsCollisionUsingComplexAsSimple() ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+
+			if (State == ECheckBoxState::Undetermined || State == NewState)
+			{
+				State = NewState;
+			}
+			else
+			{
+				State = ECheckBoxState::Undetermined;
+				break;
+			}
+		}
+	}
+
+	return State;
+}
+
+void FRuntimeMeshComponentDetails::UseComplexAsSimpleCheckedStateChanged(ECheckBoxState InCheckboxState)
+{
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			Mesh->SetCollisionUseComplexAsSimple(InCheckboxState == ECheckBoxState::Checked);
+		}
+	}
+}
+
+ECheckBoxState FRuntimeMeshComponentDetails::IsAsyncCollisionEnabled() const
+{
+	ECheckBoxState State = ECheckBoxState::Undetermined;
+
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			ECheckBoxState NewState = Mesh->IsCollisionUsingAsyncCooking() ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+
+			if (State == ECheckBoxState::Undetermined || State == NewState)
+			{
+				State = NewState;
+			}
+			else
+			{
+				State = ECheckBoxState::Undetermined;
+				break;
+			}
+		}
+	}
+
+	return State;
+}
+
+void FRuntimeMeshComponentDetails::AsyncCollisionCheckedStateChanged(ECheckBoxState InCheckboxState)
+{
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			Mesh->SetCollisionUseAsyncCooking(InCheckboxState == ECheckBoxState::Checked);
+		}
+	}
+}
+
+ECheckBoxState FRuntimeMeshComponentDetails::ShouldSerializeMeshData() const
+{
+	ECheckBoxState State = ECheckBoxState::Undetermined;
+
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			ECheckBoxState NewState = Mesh->ShouldSerializeMeshData() ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+
+			if (State == ECheckBoxState::Undetermined || State == NewState)
+			{
+				State = NewState;
+			}
+			else
+			{
+				State = ECheckBoxState::Undetermined;
+				break;
+			}
+		}
+	}
+
+	return State;
+}
+
+void FRuntimeMeshComponentDetails::ShouldSerializeMeshDataCheckedStateChanged(ECheckBoxState InCheckboxState)
+{
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			Mesh->SetShouldSerializeMeshData(InCheckboxState == ECheckBoxState::Checked);
+		}
+	}
+}
+
+FText FRuntimeMeshComponentDetails::GetModeText(const TSharedPtr<ERuntimeMeshCollisionCookingMode>& Mode) const
+{
+	if (Mode.IsValid())
+	{
+		switch (*Mode)
+		{
+		case ERuntimeMeshCollisionCookingMode::CollisionPerformance:
+			return LOCTEXT("ERuntimeMeshCollisionCookingMode_CollisionPerformance", "Collision Performance");
+		case ERuntimeMeshCollisionCookingMode::CookingPerformance:
+			return LOCTEXT("ERuntimeMeshCollisionCookingMode_CookingPerformance", "Cooking Performance");
+		}
+	}
+	return LOCTEXT("ERuntimeMeshCollisionCookingMode_Unknown", "Unknown/Multiple Values");
+}
+
+TSharedRef<SWidget> FRuntimeMeshComponentDetails::MakeCollisionModeComboItemWidget(TSharedPtr<ERuntimeMeshCollisionCookingMode> Mode)
+{
+	return SNew(STextBlock).Text(GetModeText(Mode)).ToolTipText(GetModeText(Mode));
+}
+
+TSharedPtr<ERuntimeMeshCollisionCookingMode> FRuntimeMeshComponentDetails::GetCurrentCollisionCookingMode() const
+{
+	ERuntimeMeshCollisionCookingMode CurrentMode = ERuntimeMeshCollisionCookingMode::CollisionPerformance;
+	bool bIsFirst = true;
+	bool bIsAllSame = true;
+
+	for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+	{
+		if (Mesh && Mesh->IsValidLowLevel())
+		{
+			ERuntimeMeshCollisionCookingMode NewMode = Mesh->GetCollisionMode();
+			if (bIsFirst || CurrentMode == NewMode)
+			{
+				CurrentMode = NewMode;
+				bIsFirst = false;
+			}
+			else
+			{
+				bIsAllSame = false;
+				break;
+			}
+		}
+	}
+
+	return bIsAllSame ? *CookingModes.FindByPredicate([CurrentMode](const TSharedPtr<ERuntimeMeshCollisionCookingMode>& Mode) -> bool
+	{
+		return *Mode == CurrentMode;
+	}) : nullptr;
+}
+
+void FRuntimeMeshComponentDetails::CollisionCookingModeSelectionChanged(TSharedPtr<ERuntimeMeshCollisionCookingMode> NewMode, ESelectInfo::Type SelectionType)
+{
+	if (NewMode.IsValid())
+	{
+		for (URuntimeMesh* Mesh : RuntimeMeshesReferenced)
+		{
+			if (Mesh && Mesh->IsValidLowLevel())
+			{
+				Mesh->SetCollisionMode(*NewMode);
+			}
+		}
+	}
+}
 
 bool FRuntimeMeshComponentDetails::ConvertToStaticMeshEnabled() const
 {

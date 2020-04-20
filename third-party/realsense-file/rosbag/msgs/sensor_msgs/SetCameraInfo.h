@@ -30,7 +30,7 @@ typedef Response ResponseType;
 } // namespace sensor_msgs
 
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace service_traits
 {
@@ -118,6 +118,6 @@ struct DataType< ::sensor_msgs::SetCameraInfoResponse>
 };
 
 } // namespace service_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // SENSOR_MSGS_MESSAGE_SETCAMERAINFO_H

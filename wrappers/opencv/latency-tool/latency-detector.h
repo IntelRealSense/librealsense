@@ -156,11 +156,11 @@ public:
         _instructions = Mat::zeros(Size(display_w, 120), CV_8UC1);
 
         putText(_instructions, "Point the camera at the screen. Ensure all white circles are being captured",
-            Point(display_w / 2 - 470, 30), CV_FONT_HERSHEY_SIMPLEX,
+            Point(display_w / 2 - 470, 30), FONT_HERSHEY_SIMPLEX,
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
 
         putText(_instructions, "Press any key to exit...",
-            Point(display_w / 2 - 160, 70), CV_FONT_HERSHEY_SIMPLEX,
+            Point(display_w / 2 - 160, 70), FONT_HERSHEY_SIMPLEX,
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
     }
 
@@ -270,7 +270,7 @@ private:
         ss << "Total Collected Samples: " << _latency.total();
 
         putText(_instructions, ss.str().c_str(),
-            Point(80, 20), CV_FONT_HERSHEY_SIMPLEX,
+            Point(80, 20), FONT_HERSHEY_SIMPLEX,
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
 
         ss.str("");
@@ -278,14 +278,14 @@ private:
         ss << "(Average)" << _latency.avg() << "ms";
 
         putText(_instructions, ss.str().c_str(),
-            Point(80, 60), CV_FONT_HERSHEY_SIMPLEX,
+            Point(80, 60), FONT_HERSHEY_SIMPLEX,
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
 
         ss.str("");
         ss << "Software Processing: " << _processing_time.median() << "ms";
 
         putText(_instructions, ss.str().c_str(),
-            Point(80, 100), CV_FONT_HERSHEY_SIMPLEX,
+            Point(80, 100), FONT_HERSHEY_SIMPLEX,
             0.8, Scalar(255, 255, 255), 2, LINE_AA);
     }
 

@@ -34,6 +34,150 @@
 #define NOEXCEPT_FALSE noexcept(false)
 #endif
 
+
+
+struct stream_request
+{
+    rs2_stream stream;
+    rs2_format format;
+    int width;
+    int height;
+    int fps;
+    int index;
+
+    bool operator==(const rs2::video_stream_profile& other) const
+    {
+        return stream == other.stream_type() &&
+            format == other.format() &&
+            width == other.width() &&
+            height == other.height() &&
+            index == other.stream_index();
+    }
+};
+
+struct profile
+{
+    rs2_stream stream;
+    rs2_format format;
+    int width;
+    int height;
+    int index;
+    int fps;
+
+    bool operator==(const profile& other) const
+    {
+        return stream == other.stream &&
+            (format == 0 || other.format == 0 || format == other.format) &&
+            (width == 0 || other.width == 0 || width == other.width) &&
+            (height == 0 || other.height == 0 || height == other.height) &&
+            (index == 0 || other.index == 0 || index == other.index);
+
+    }
+    bool operator!=(const profile& other) const
+    {
+        return !(*this == other);
+    }
+    bool operator<(const profile& other) const
+    {
+        return stream < other.stream;
+    }
+};
+
+inline std::ostream& operator <<(std::ostream& stream, const profile& cap)
+{
+    stream << cap.stream << " " << cap.stream << " " << cap.format << " "
+        << cap.width << " " << cap.height << " " << cap.index << " " << cap.fps;
+    return stream;
+}
+
+struct device_profiles
+{
+    std::vector<profile> streams;
+    int fps;
+    bool sync;
+};
+
+inline std::vector<profile>  configure_all_supported_streams(rs2::sensor& sensor, int width = 640, int height = 480, int fps = 60)
+{
+    std::vector<profile> all_profiles =
+    {
+        { RS2_STREAM_DEPTH,     RS2_FORMAT_Z16,           width, height,    0, fps},
+        { RS2_STREAM_COLOR,     RS2_FORMAT_RGB8,          width, height,    0, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    1, fps},
+        { RS2_STREAM_INFRARED,  RS2_FORMAT_Y8,            width, height,    2, fps},
+        { RS2_STREAM_FISHEYE,   RS2_FORMAT_RAW8,          width, height,    0, fps},
+        { RS2_STREAM_GYRO,      RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 200},
+        { RS2_STREAM_ACCEL,     RS2_FORMAT_MOTION_XYZ32F,   1,      1,      0, 250}
+    };
+
+    std::vector<profile> profiles;
+    std::vector<rs2::stream_profile> modes;
+    auto all_modes = sensor.get_stream_profiles();
+
+    for (auto profile : all_profiles)
+    {
+        if (std::find_if(all_modes.begin(), all_modes.end(), [&](rs2::stream_profile p)
+            {
+                if (auto  video = p.as<rs2::video_stream_profile>())
+                {
+                    if (p.fps() == profile.fps &&
+                        p.stream_index() == profile.index &&
+                        p.stream_type() == profile.stream &&
+                        p.format() == profile.format &&
+                        video.width() == profile.width &&
+                        video.height() == profile.height)
+                    {
+                        modes.push_back(p);
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (auto  motion = p.as<rs2::motion_stream_profile>())
+                    {
+                        if (p.fps() == profile.fps &&
+                            p.stream_index() == profile.index &&
+                            p.stream_type() == profile.stream &&
+                            p.format() == profile.format)
+                        {
+                            modes.push_back(p);
+                            return true;
+                        }
+                    }
+                    else
+                        return false;
+                }
+
+                return false;
+            }) != all_modes.end())
+        {
+            profiles.push_back(profile);
+
+        }
+    }
+    if (modes.size() > 0)
+        REQUIRE_NOTHROW(sensor.open(modes));
+    return profiles;
+}
+
+inline std::pair<std::vector<rs2::sensor>, std::vector<profile>> configure_all_supported_streams(rs2::device& dev, int width = 640, int height = 480, int fps = 30)
+{
+    std::vector<profile> profiles;
+    std::vector<rs2::sensor> sensors;
+    auto sens = dev.query_sensors();
+    for (auto s : sens)
+    {
+        auto res = configure_all_supported_streams(s, width, height, fps);
+        profiles.insert(profiles.end(), res.begin(), res.end());
+        if (res.size() > 0)
+        {
+            sensors.push_back(s);
+        }
+    }
+
+    return{ sensors, profiles };
+}
+
 inline std::string space_to_underscore(const std::string& text) {
     const std::string from = " ";
     const std::string to = "__";
@@ -44,6 +188,92 @@ inline std::string space_to_underscore(const std::string& text) {
         start_pos += to.size();
     }
     return temp;
+}
+
+#define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
+
+//inline long long current_time()
+//{
+//    return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 10000);
+//}
+
+//// disable in one place options that are sensitive to frame content
+//// this is done to make sure unit-tests are deterministic
+inline void disable_sensitive_options_for(rs2::sensor& sen)
+{
+    if (sen.supports(RS2_OPTION_ERROR_POLLING_ENABLED))
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ERROR_POLLING_ENABLED, 0));
+
+    if (sen.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 0));
+
+    if (sen.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 0));
+
+    if (sen.supports(RS2_OPTION_EXPOSURE))
+    {
+        rs2::option_range range;
+        REQUIRE_NOTHROW(range = sen.get_option_range(RS2_OPTION_EXPOSURE)); // TODO: fails sometimes with "Element Not Found!"
+        REQUIRE_NOTHROW(sen.set_option(RS2_OPTION_EXPOSURE, range.def));
+    }
+}
+
+inline void disable_sensitive_options_for(rs2::device& dev)
+{
+    for (auto&& s : dev.query_sensors())
+        disable_sensitive_options_for(s);
+}
+
+inline bool wait_for_reset(std::function<bool(void)> func, std::shared_ptr<rs2::device> dev)
+{
+    if (func())
+        return true;
+
+    WARN("Reset workaround");
+
+    try {
+        dev->hardware_reset();
+    }
+    catch (...)
+    {
+    }
+    return func();
+}
+
+inline bool is_usb3(const rs2::device& dev)
+{
+    bool usb3_device = true;
+    try
+    {
+        std::string usb_type(dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+        // Device types "3.x" and also "" (for legacy playback records) will be recognized as USB3
+        usb3_device = (std::string::npos == usb_type.find("2."));
+    }
+    catch (...) // In case the feature not provided assume USB3 device
+    {
+    }
+
+    return usb3_device;
+}
+
+// Provides for Device PID , USB3/2 (true/false)
+typedef  std::pair<std::string, bool > dev_type;
+
+inline dev_type get_PID(rs2::device& dev)
+{
+    dev_type designator{ "",true };
+    std::string usb_type{};
+    bool usb_descriptor = false;
+
+    REQUIRE_NOTHROW(designator.first = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID));
+    REQUIRE_NOTHROW(usb_descriptor = dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+    if (usb_descriptor)
+    {
+        REQUIRE_NOTHROW(usb_type = dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR));
+        designator.second = (std::string::npos == usb_type.find("2."));
+    }
+
+    return designator;
 }
 
 class command_line_params
@@ -94,7 +324,7 @@ inline bool make_context(const char* id, rs2::context* ctx, std::string min_api_
     std::string base_filename;
     bool record = false;
     bool playback = false;
-    for (auto i = 0; i < argc; i++)
+    for (auto i = 0u; i < argc; i++)
     {
         std::string param(argv[i]);
         if (param == "into")
@@ -554,7 +784,7 @@ inline rs2::stream_profile get_profile_by_resolution_type(rs2::sensor& s, res_ty
         {
             width = video.width();
             height = video.height();
-            if (res = get_res_type(width, height))
+            if ((res = get_res_type(width, height)))
                 return p;
         }
     }

@@ -42,7 +42,7 @@ struct TimeReference_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef ros::Time _time_ref_type;
+   typedef rs2rosinternal::Time _time_ref_type;
   _time_ref_type time_ref;
 
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _source_type;
@@ -68,13 +68,13 @@ typedef std::shared_ptr< ::sensor_msgs::TimeReference const> TimeReferenceConstP
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::sensor_msgs::TimeReference_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::sensor_msgs::TimeReference_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::sensor_msgs::TimeReference_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace sensor_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -181,9 +181,9 @@ string frame_id\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -201,9 +201,9 @@ namespace serialization
   }; // struct TimeReference_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -217,13 +217,13 @@ struct Printer< ::sensor_msgs::TimeReference_<ContainerAllocator> >
     s << std::endl;
     Printer< ::std_msgs::Header_<ContainerAllocator> >::stream(s, indent + "  ", v.header);
     s << indent << "time_ref: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.time_ref);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.time_ref);
     s << indent << "source: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.source);
   }
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // SENSOR_MSGS_MESSAGE_TIMEREFERENCE_H

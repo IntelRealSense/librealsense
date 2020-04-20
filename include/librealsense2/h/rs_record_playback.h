@@ -24,6 +24,7 @@ typedef enum rs2_playback_status
     RS2_PLAYBACK_STATUS_STOPPED, /**< All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/
     RS2_PLAYBACK_STATUS_COUNT
 } rs2_playback_status;
+
 const char* rs2_playback_status_to_string(rs2_playback_status status);
 
 typedef void (*rs2_playback_status_changed_callback_ptr)(rs2_playback_status);
@@ -36,6 +37,16 @@ typedef void (*rs2_playback_status_changed_callback_ptr)(rs2_playback_status);
  * \return A pointer to a device that records its data to file, or null in case of failure
  */
 rs2_device* rs2_create_record_device(const rs2_device* device, const char* file, rs2_error** error);
+
+/**
+* Creates a recording device to record the given device and save it to the given file
+* \param[in]  device                The device to record
+* \param[in]  file                  The desired path to which the recorder should save the data
+* \param[in]  compression_enabled   Indicates if compression is enabled, 0 means false, otherwise true
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return A pointer to a device that records its data to file, or null in case of failure
+*/
+rs2_device* rs2_create_record_device_ex(const rs2_device* device, const char* file, int compression_enabled, rs2_error** error);
 
 /**
 * Pause the recording device without stopping the actual device from streaming.

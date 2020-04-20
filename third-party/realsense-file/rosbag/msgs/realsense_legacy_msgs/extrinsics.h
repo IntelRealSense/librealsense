@@ -68,13 +68,13 @@ typedef std::shared_ptr< ::realsense_legacy_msgs::extrinsics const> extrinsicsCo
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_legacy_msgs::extrinsics_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_legacy_msgs::extrinsics_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_legacy_msgs::extrinsics_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_legacy_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -158,9 +158,9 @@ float32[3] translation # 3 element translation vector, in meters \n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -177,9 +177,9 @@ namespace serialization
   }; // struct extrinsics_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -205,6 +205,6 @@ struct Printer< ::realsense_legacy_msgs::extrinsics_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // realsense_legacy_msgs_MESSAGE_EXTRINSICS_H

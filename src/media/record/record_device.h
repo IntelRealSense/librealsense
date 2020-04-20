@@ -45,6 +45,8 @@ namespace librealsense
 
         std::vector<tagged_profile> get_profiles_tags() const override { return m_device->get_profiles_tags(); };
         void tag_profiles(stream_profiles profiles) const override { m_device->tag_profiles(profiles); }
+        bool compress_while_record() const override { return true; }
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override { return m_device->contradicts(a, others); }
 
     private:
         template <typename T> void write_device_extension_changes(const T& ext);

@@ -1,15 +1,15 @@
 % Wraps librealsense2 colorizer class
-classdef colorizer < realsense.processing_block
+classdef colorizer < realsense.filter
     methods
         % Constructor
         function this = colorizer(color_scheme)
             if (nargin == 0)
                 out = realsense.librealsense_mex('rs2::colorizer', 'new');
             else
-                validateattributes(color_scheme, {'numeric'}, {'scalar', 'nonnegative', 'real'});
+                validateattributes(color_scheme, {'numeric'}, {'scalar', 'nonnegative', 'real', 'integer'});
                 out = realsense.librealsense_mex('rs2::colorizer', 'new', double(color_scheme));
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

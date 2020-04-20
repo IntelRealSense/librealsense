@@ -4,7 +4,7 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: PointCloudMat
   m_Shader: {fileID: 4800000, guid: 3a8f8c691fcc38d4c956485dfc073ab4, type: 3}

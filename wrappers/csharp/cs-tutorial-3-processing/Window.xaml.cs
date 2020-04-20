@@ -30,9 +30,6 @@ namespace Intel.RealSense
         private Pipeline pipeline = new Pipeline();
         private Colorizer colorizer = new Colorizer();
         private Align align = new Align(Stream.Color);
-        private DecimationFilter decimate = new DecimationFilter();
-        private SpatialFilter spatial = new SpatialFilter();
-        private TemporalFilter temp = new TemporalFilter();
         private CustomProcessingBlock block;
         private CancellationTokenSource tokenSource = new CancellationTokenSource();
 
@@ -41,11 +38,8 @@ namespace Intel.RealSense
             var wbmp = img.Source as WriteableBitmap;
             return new Action<VideoFrame>(frame =>
             {
-                using (frame)
-                {
-                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
-                }
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
             });
         }
 
@@ -60,13 +54,19 @@ namespace Intel.RealSense
                 cfg.EnableStream(Stream.Color, Format.Rgb8);
                 var pp = pipeline.Start(cfg);
 
-                using (var p = pp.GetStream(Stream.Depth) as VideoStreamProfile)
-                    imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
-                var updateDepth = UpdateImage(imgDepth);
+                // Get the recommended processing blocks for the depth sensor
+                var sensor = pp.Device.QuerySensors().First(s => s.Is(Extension.DepthSensor));
+                var blocks = sensor.ProcessingBlocks.ToList();
 
-                using (var p = pp.GetStream(Stream.Color) as VideoStreamProfile)
+                // Allocate bitmaps for rendring.
+                // Since the sample aligns the depth frames to the color frames, both of the images will have the color resolution
+                using (var p = pp.GetStream(Stream.Color).As<VideoStreamProfile>())
+                {
                     imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                    imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
+                }
                 var updateColor = UpdateImage(imgColor);
+                var updateDepth = UpdateImage(imgDepth);
 
                 // Create custom processing block
                 // For demonstration purposes it will:
@@ -76,7 +76,7 @@ namespace Intel.RealSense
                 // Processing blocks are inherently thread-safe and play well with
                 // other API primitives such as frame-queues, 
                 // and can be used to encapsulate advanced operations.
-                // All invokations are, however, synchronious so the high-level threading model
+                // All invocations are, however, synchronious so the high-level threading model
                 // is up to the developer
                 block = new CustomProcessingBlock((f, src) =>
                 {
@@ -85,31 +85,31 @@ namespace Intel.RealSense
                     // at the end of scope. 
                     using (var releaser = new FramesReleaser())
                     {
-                        var frames = FrameSet.FromFrame(f).DisposeWith(releaser);
+                        foreach (ProcessingBlock p in blocks)
+                            f = p.Process(f).DisposeWith(releaser);
 
-                        var processedFrames = frames.ApplyFilter(decimate).DisposeWith(releaser)
-                                                .ApplyFilter(spatial).DisposeWith(releaser)
-                                                .ApplyFilter(temp).DisposeWith(releaser)
-                                                .ApplyFilter(align).DisposeWith(releaser)
-                                                .ApplyFilter(colorizer).DisposeWith(releaser);
+                        f = f.ApplyFilter(align).DisposeWith(releaser);
+                        f = f.ApplyFilter(colorizer).DisposeWith(releaser);
 
-                        var colorFrame = processedFrames.ColorFrame.DisposeWith(releaser);
-                        var colorizedDepth = processedFrames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
+                        var frames = f.As<FrameSet>().DisposeWith(releaser);
+                        
+                        var colorFrame = frames[Stream.Color, Format.Rgb8].DisposeWith(releaser);
+                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(releaser);
 
                         // Combine the frames into a single result
                         var res = src.AllocateCompositeFrame(colorizedDepth, colorFrame).DisposeWith(releaser);
                         // Send it to the next processing stage
-                        src.FramesReady(res);
+                        src.FrameReady(res);
                     }
                 });
 
                 // Register to results of processing via a callback:
                 block.Start(f =>
                 {
-                    using (var frames = FrameSet.FromFrame(f))
+                    using (var frames = f.As<FrameSet>())
                     {
                         var colorFrame = frames.ColorFrame.DisposeWith(frames);
-                        var colorizedDepth = frames[Stream.Depth, Format.Rgb8].DisposeWith(frames);
+                        var colorizedDepth = frames.First<VideoFrame>(Stream.Depth, Format.Rgb8).DisposeWith(frames);
 
                         Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                         Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
@@ -125,7 +125,7 @@ namespace Intel.RealSense
                         using (var frames = pipeline.WaitForFrames())
                         {
                             // Invoke custom processing block
-                            block.ProcessFrames(frames);
+                            block.Process(frames);
                         }
                     }
                 }, token);

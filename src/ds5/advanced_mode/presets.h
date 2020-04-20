@@ -109,6 +109,7 @@ namespace librealsense
         STDepthTableControl            depth_table;
         STAEControl                    ae;
         STCensusRadius                 census;
+        STAFactor                      amplitude_factor;
         laser_state_control            laser_state;
         laser_power_control            laser_power;
         exposure_control               depth_exposure;

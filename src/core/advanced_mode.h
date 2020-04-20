@@ -9,6 +9,8 @@
 #define RS400_ADVANCED_MODE_HPP
 #include "ds5/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
+#include "serializable-interface.h"
+
 #undef RS400_ADVANCED_MODE_HPP
 
 
@@ -26,7 +28,8 @@ typedef enum
     etDepthTableControl         = 9,
     etAEControl                 = 10,
     etCencusRadius9             = 11,
-    etLastAdvancedModeGroup     = 12,       // Must be last
+    etAFactor                   = 12,
+    etLastAdvancedModeGroup     = 13,       // Must be last
 }
 EtAdvancedModeRegGroup;
 
@@ -51,9 +54,10 @@ namespace librealsense
     MAP_ADVANCED_MODE(STDepthTableControl, etDepthTableControl);
     MAP_ADVANCED_MODE(STAEControl, etAEControl);
     MAP_ADVANCED_MODE(STCensusRadius, etCencusRadius9);
+    MAP_ADVANCED_MODE(STAFactor, etAFactor);
 
 
-    class ds5_advanced_mode_interface : public recordable<ds5_advanced_mode_interface>
+    class ds5_advanced_mode_interface : public serializable_interface, public recordable<ds5_advanced_mode_interface>
     {
     public:
         virtual bool is_enabled() const = 0;
@@ -76,6 +80,7 @@ namespace librealsense
         virtual void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const = 0;
         virtual void get_ae_control(STAEControl* ptr, int mode = 0) const = 0;
         virtual void get_census_radius(STCensusRadius* ptr, int mode = 0) const = 0;
+        virtual void get_amp_factor(STAFactor* ptr, int mode = 0) const = 0;
 
         virtual void set_depth_control_group(const STDepthControlGroup& val) = 0;
         virtual void set_rsm(const STRsm& val) = 0;
@@ -89,9 +94,7 @@ namespace librealsense
         virtual void set_depth_table_control(const STDepthTableControl& val) = 0;
         virtual void set_ae_control(const STAEControl& val) = 0;
         virtual void set_census_radius(const STCensusRadius& val) = 0;
-
-        virtual std::vector<uint8_t> serialize_json() const = 0;
-        virtual void load_json(const std::string& json_content) = 0;
+        virtual void set_amp_factor(const STAFactor& val) = 0;
 
         virtual ~ds5_advanced_mode_interface() = default;
     };
@@ -104,7 +107,7 @@ namespace librealsense
     {
     public:
         explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
-                                        uvc_sensor& depth_sensor);
+            synthetic_sensor& depth_sensor);
 
         void create_snapshot(std::shared_ptr<ds5_advanced_mode_interface>& snapshot) const override {};
         void enable_recording(std::function<void(const ds5_advanced_mode_interface&)> recording_function) override {};
@@ -129,6 +132,7 @@ namespace librealsense
         void get_depth_table_control(STDepthTableControl* ptr, int mode = 0) const override;
         void get_ae_control(STAEControl* ptr, int mode = 0) const override;
         void get_census_radius(STCensusRadius* ptr, int mode = 0) const override;
+        void get_amp_factor(STAFactor* ptr, int mode = 0) const override;
 
         void set_depth_control_group(const STDepthControlGroup& val) override;
         void set_rsm(const STRsm& val) override;
@@ -142,15 +146,20 @@ namespace librealsense
         void set_depth_table_control(const STDepthTableControl& val) override;
         void set_ae_control(const STAEControl& val) override;
         void set_census_radius(const STCensusRadius& val) override;
+        void set_amp_factor(const STAFactor& val) override;
 
-        std::vector<uint8_t> serialize_json() const;
-        void load_json(const std::string& json_content);
+        std::vector<uint8_t> serialize_json() const override;
+        void load_json(const std::string& json_content) override;
+
+        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
+        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 
     private:
-        void set_exposure(uvc_sensor& sensor, const exposure_control& val);
-        void set_auto_exposure(uvc_sensor& sensor, const auto_exposure_control& val);
-        void get_exposure(uvc_sensor& sensor, exposure_control* ptr) const;
-        void get_auto_exposure(uvc_sensor& sensor, auto_exposure_control* ptr) const;
+        friend class auto_calibrated;
+        void set_exposure(synthetic_sensor& sensor, const exposure_control& val);
+        void set_auto_exposure(synthetic_sensor& sensor, const auto_exposure_control& val);
+        void get_exposure(synthetic_sensor& sensor, exposure_control* ptr) const;
+        void get_auto_exposure(synthetic_sensor& sensor, auto_exposure_control* ptr) const;
 
         void get_laser_power(laser_power_control* ptr) const;
         void get_laser_state(laser_state_control* ptr) const;
@@ -192,16 +201,15 @@ namespace librealsense
         void set_color_auto_white_balance(const auto_white_balance_control& val);
         void set_color_power_line_frequency(const power_line_frequency_control& val);
 
-        bool supports_option(const uvc_sensor& sensor, rs2_option opt) const;
+        bool supports_option(const synthetic_sensor& sensor, rs2_option opt) const;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
-        uvc_sensor& _depth_sensor;
+        synthetic_sensor& _depth_sensor;
         lazy<ds5_color_sensor*> _color_sensor;
         lazy<bool> _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
-
-        static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
-        static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
+        lazy<bool> _rgb_exposure_gain_bind;
+        lazy<bool> _amplitude_factor_support;
 
         preset get_all() const;
         void set_all(const preset& p);
@@ -250,7 +258,7 @@ namespace librealsense
     class advanced_mode_preset_option : public option_base
     {
     public:
-        advanced_mode_preset_option(ds5_advanced_mode_base& advanced, uvc_sensor& ep,
+        advanced_mode_preset_option(ds5_advanced_mode_base& advanced, synthetic_sensor& ep,
                                     const option_range& opt_range);
 
         static rs2_rs400_visual_preset to_preset(float x);
@@ -265,7 +273,7 @@ namespace librealsense
         firmware_version get_firmware_version(const uvc_sensor& sensor) const;
 
         std::mutex _mtx;
-        uvc_sensor& _ep;
+        synthetic_sensor& _ep;
         ds5_advanced_mode_base& _advanced;
         rs2_rs400_visual_preset _last_preset;
     };

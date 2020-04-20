@@ -53,7 +53,7 @@ class Bag;
  *  simply contains a pointer to a bag-file and the index_entry
  *  necessary to get access to the corresponding data.
  *
- *  It adheres to the necessary ros::message_traits to be directly
+ *  It adheres to the necessary rs2rosinternal::message_traits to be directly
  *  serializable.
  */
 class ROSBAG_DECL MessageInstance
@@ -61,13 +61,13 @@ class ROSBAG_DECL MessageInstance
     friend class View;
   
 public:
-    ros::Time   const& getTime()              const;
+    rs2rosinternal::Time   const& getTime()              const;
     std::string const& getTopic()             const;
     std::string const& getDataType()          const;
     std::string const& getMD5Sum()            const;
     std::string const& getMessageDefinition() const;
 
-    std::shared_ptr<ros::M_string> getConnectionHeader() const;
+    std::shared_ptr<rs2rosinternal::M_string> getConnectionHeader() const;
 
     std::string getCallerId() const;
     bool        isLatching()  const;
@@ -104,7 +104,7 @@ private:
 
 } // namespace rosbag
 
-namespace ros {
+namespace rs2rosinternal {
 namespace message_traits {
 
 template<>
@@ -145,7 +145,7 @@ struct Serializer<rosbag::MessageInstance>
 
 } // namespace serialization
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #include "rosbag/bag.h"
 
@@ -153,7 +153,7 @@ namespace rosbag {
 
 template<class T>
 bool MessageInstance::isType() const {
-    char const* md5sum = ros::message_traits::MD5Sum<T>::value();
+    char const* md5sum = rs2rosinternal::message_traits::MD5Sum<T>::value();
     return md5sum == std::string("*") || md5sum == getMD5Sum();
 }
 

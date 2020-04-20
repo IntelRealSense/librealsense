@@ -1,5 +1,5 @@
-#include "PCH.h"
 #include "RealSensePluginImpl.h"
+#include "PCH.h"
 
 #if defined(PROF_ENABLED)
 #include "AllowWindowsPlatformTypes.h"

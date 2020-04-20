@@ -44,7 +44,7 @@ namespace std_msgs
 }
 
 #define ROS_IMPLEMENT_SIMPLE_TOPIC_TRAITS(msg, md5sum, datatype, definition) \
-  namespace ros \
+  namespace rs2rosinternal \
   { \
   namespace message_traits \
   { \
@@ -67,7 +67,7 @@ namespace std_msgs
   }
 
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -208,16 +208,16 @@ struct FrameId<M, typename boost::enable_if<HasHeader<M> >::type >
 template<typename M, typename Enable = void>
 struct TimeStamp
 {
-  static ros::Time* pointer(M& m) { (void)m; return 0; }
-  static ros::Time const* pointer(const M& m) { (void)m; return 0; }
+  static rs2rosinternal::Time* pointer(M& m) { (void)m; return 0; }
+  static rs2rosinternal::Time const* pointer(const M& m) { (void)m; return 0; }
 };
 
 template<typename M>
 struct TimeStamp<M, typename boost::enable_if<HasHeader<M> >::type >
 {
-  static ros::Time* pointer(typename std::remove_const<M>::type &m) { return &m.header.stamp; }
-  static ros::Time const* pointer(const M& m) { return &m.header.stamp; }
-  static ros::Time value(const M& m) { return m.header.stamp; }
+  static rs2rosinternal::Time* pointer(typename std::remove_const<M>::type &m) { return &m.header.stamp; }
+  static rs2rosinternal::Time const* pointer(const M& m) { return &m.header.stamp; }
+  static rs2rosinternal::Time value(const M& m) { return m.header.stamp; }
 };
 
 /**
@@ -314,7 +314,7 @@ inline std::string const* frameId(const M& m)
  * \brief returns TimeStamp<M>::pointer(m);
  */
 template<typename M>
-inline ros::Time* timeStamp(M& m)
+inline rs2rosinternal::Time* timeStamp(M& m)
 {
   return TimeStamp<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
@@ -323,7 +323,7 @@ inline ros::Time* timeStamp(M& m)
  * \brief returns TimeStamp<M>::pointer(m);
  */
 template<typename M>
-inline ros::Time const* timeStamp(const M& m)
+inline rs2rosinternal::Time const* timeStamp(const M& m)
 {
   return TimeStamp<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
@@ -356,6 +356,6 @@ inline bool hasHeader()
 }
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // ROSLIB_MESSAGE_TRAITS_H

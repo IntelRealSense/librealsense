@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <mutex>
 #include <string>
 
@@ -18,10 +19,14 @@
 #include "environment.h"
 #include "core/debug.h"
 #include "stream.h"
+#include "fw-update/fw-update-device-interface.h"
+#include "proc/color-formats-converter.h"
 
 namespace librealsense
 {
     const uint16_t SR300_PID = 0x0aa5;
+    const uint16_t SR300v2_PID = 0x0B48;
+    const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 
@@ -47,11 +52,18 @@ namespace librealsense
             counter = 0;
         }
 
-        double get_frame_timestamp(const request_mapping& /*mode*/, const platform::frame_object& fo) override
+        double get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
+
             // Timestamps are encoded within the first 32 bits of the image and provided in 10nsec units
-            uint32_t rolling_timestamp = *reinterpret_cast<const uint32_t *>(fo.pixels);
+            auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+            if (!f)
+            {
+                LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
+                return 0;
+            }
+            uint32_t rolling_timestamp = *reinterpret_cast<const uint32_t *>(f->get_frame_data());
             if (!started)
             {
                 total = last_timestamp = rolling_timestamp;
@@ -66,15 +78,21 @@ namespace librealsense
             return total * 0.00001; // to msec
         }
 
-        unsigned long long get_frame_counter(const request_mapping & /*mode*/, const platform::frame_object& fo) const override
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override
         {
             std::lock_guard<std::recursive_mutex> lock(_mtx);
             return ++counter;
         }
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override
         {
-            if(fo.metadata_size >= platform::uvc_header_size )
+            auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+            if (!f)
+            {
+                LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
+                return RS2_TIMESTAMP_DOMAIN_COUNT;
+            }
+            if (f->additional_data.metadata_size >= platform::uvc_header_size)
                 return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
             else
                 return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
@@ -83,28 +101,40 @@ namespace librealsense
 
     class sr300_timestamp_reader_from_metadata : public frame_timestamp_reader
     {
-       std::unique_ptr<sr300_timestamp_reader> _backup_timestamp_reader;
-       bool one_time_note;
-       mutable std::recursive_mutex _mtx;
-       arithmetic_wraparound<uint32_t,uint64_t > ts_wrap;
+        std::unique_ptr<sr300_timestamp_reader> _backup_timestamp_reader;
+        bool one_time_note;
+        mutable std::recursive_mutex _mtx;
+        arithmetic_wraparound<uint32_t, uint64_t > ts_wrap;
 
     protected:
 
-        bool has_metadata_ts(const platform::frame_object& fo) const
+        bool has_metadata_ts(const std::shared_ptr<frame_interface>& frame) const
         {
+            auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+            if (!f)
+            {
+                LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
+                return false;
+            }
             // Metadata support for a specific stream is immutable
-            const bool has_md_ts = [&]{ std::lock_guard<std::recursive_mutex> lock(_mtx);
-                return ((fo.metadata != nullptr) && (fo.metadata_size >= platform::uvc_header_size) && ((byte*)fo.metadata)[0] >= platform::uvc_header_size);
+            const bool has_md_ts = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
+            return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size >= platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] >= platform::uvc_header_size);
             }();
 
             return has_md_ts;
         }
 
-        bool has_metadata_fc(const platform::frame_object& fo) const
+        bool has_metadata_fc(const std::shared_ptr<frame_interface>& frame) const
         {
+            auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+            if (!f)
+            {
+                LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
+                return false;
+            }
             // Metadata support for a specific stream is immutable
             const bool has_md_frame_counter = [&] { std::lock_guard<std::recursive_mutex> lock(_mtx);
-            return ((fo.metadata != nullptr) && (fo.metadata_size > platform::uvc_header_size) && ((byte*)fo.metadata)[0] > platform::uvc_header_size);
+            return ((f->additional_data.metadata_blob.data() != nullptr) && (f->additional_data.metadata_size > platform::uvc_header_size) && ((byte*)f->additional_data.metadata_blob.data())[0] > platform::uvc_header_size);
             }();
 
             return has_md_frame_counter;
@@ -117,27 +147,27 @@ namespace librealsense
             reset();
         }
 
-        rs2_time_t get_frame_timestamp(const request_mapping& mode, const platform::frame_object& fo) override;
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
 
-        unsigned long long get_frame_counter(const request_mapping & mode, const platform::frame_object& fo) const override;
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
 
         void reset() override;
 
-        rs2_timestamp_domain get_frame_timestamp_domain(const request_mapping & mode, const platform::frame_object& fo) const override;
+        rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
     class sr300_info : public device_info
     {
     public:
         std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
-                                                 bool register_device_notifications) const override;
+            bool register_device_notifications) const override;
 
         sr300_info(std::shared_ptr<context> ctx,
-                    platform::uvc_device_info color,
-                    platform::uvc_device_info depth,
-                    platform::usb_device_info hwm)
+            platform::uvc_device_info color,
+            platform::uvc_device_info depth,
+            platform::usb_device_info hwm)
             : device_info(ctx), _color(std::move(color)),
-             _depth(std::move(depth)), _hwm(std::move(hwm)) {}
+            _depth(std::move(depth)), _hwm(std::move(hwm)) {}
 
         static std::vector<std::shared_ptr<device_info>> pick_sr300_devices(
             std::shared_ptr<context> ctx,
@@ -155,7 +185,7 @@ namespace librealsense
         platform::usb_device_info _hwm;
     };
 
-    class sr300_camera final : public virtual device, public debug_interface
+    class sr300_camera : public  device, public debug_interface, public updatable
     {
     public:
         std::vector<tagged_profile> get_profiles_tags() const override
@@ -198,7 +228,7 @@ namespace librealsense
 
             explicit preset_option(sr300_camera& owner, const option_range& opt_range)
                 : option_base(opt_range),
-                  _owner(owner)
+                _owner(owner)
             {}
 
         private:
@@ -206,13 +236,14 @@ namespace librealsense
             sr300_camera& _owner;
         };
 
-        class sr300_color_sensor : public uvc_sensor, public video_sensor_interface
+        class sr300_color_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public color_sensor
         {
         public:
-            explicit sr300_color_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-                std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                std::shared_ptr<context> ctx)
-                : uvc_sensor("RGB Camera", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            explicit sr300_color_sensor(sr300_camera* owner,
+                std::shared_ptr<uvc_sensor> uvc_sensor,
+                const std::map<uint32_t, rs2_format>& sr300_color_fourcc_to_rs2_format,
+                const std::map<uint32_t, rs2_stream>& sr300_color_fourcc_to_rs2_stream)
+                : synthetic_sensor("RGB Camera", uvc_sensor, owner, sr300_color_fourcc_to_rs2_format, sr300_color_fourcc_to_rs2_stream), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -224,9 +255,9 @@ namespace librealsense
             {
                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-                auto results = uvc_sensor::init_stream_profiles();
+                auto&& results = synthetic_sensor::init_stream_profiles();
 
-                for (auto p : results)
+                for (auto&& p : results)
                 {
                     // Register stream types
                     if (p->get_stream_type() == RS2_STREAM_COLOR)
@@ -235,9 +266,9 @@ namespace librealsense
                     }
 
                     // Register intrinsics
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    auto profile = to_profile(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<sr300_color_sensor> wp =
                         std::dynamic_pointer_cast<sr300_color_sensor>(this->shared_from_this());
                     video->set_intrinsics([profile, wp]()
@@ -252,17 +283,24 @@ namespace librealsense
 
                 return results;
             }
+
+            processing_blocks get_recommended_processing_blocks() const override
+            {
+                return get_color_recommended_proccesing_blocks();
+            }
+
         private:
             const sr300_camera* _owner;
         };
 
-        class sr300_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_sensor
+        class sr300_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_sensor
         {
         public:
-            explicit sr300_depth_sensor(sr300_camera* owner, std::shared_ptr<platform::uvc_device> uvc_device,
-                std::unique_ptr<frame_timestamp_reader> timestamp_reader,
-                std::shared_ptr<context> ctx)
-                : uvc_sensor("Coded-Light Depth Sensor", uvc_device, move(timestamp_reader), owner), _owner(owner)
+            explicit sr300_depth_sensor(sr300_camera* owner,
+                std::shared_ptr<uvc_sensor> uvc_sensor,
+                const std::map<uint32_t, rs2_format>& sr300_depth_fourcc_to_rs2_format,
+                const std::map<uint32_t, rs2_stream>& sr300_depth_fourcc_to_rs2_stream)
+                : synthetic_sensor("Coded-Light Depth Sensor", uvc_sensor, owner, sr300_depth_fourcc_to_rs2_format, sr300_depth_fourcc_to_rs2_stream), _owner(owner)
             {}
 
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -272,11 +310,11 @@ namespace librealsense
 
             stream_profiles init_stream_profiles() override
             {
-                 auto lock = environment::get_instance().get_extrinsics_graph().lock();
+                auto lock = environment::get_instance().get_extrinsics_graph().lock();
 
-                auto results = uvc_sensor::init_stream_profiles();
+                auto&& results = synthetic_sensor::init_stream_profiles();
 
-                for (auto p : results)
+                for (auto&& p : results)
                 {
                     // Register stream types
                     if (p->get_stream_type() == RS2_STREAM_DEPTH)
@@ -289,9 +327,9 @@ namespace librealsense
                     }
 
                     // Register intrinsics
-                    auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
+                    auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
-                    auto profile = to_profile(p.get());
+                    const auto&& profile = to_profile(p.get());
                     std::weak_ptr<sr300_depth_sensor> wp =
                         std::dynamic_pointer_cast<sr300_depth_sensor>(this->shared_from_this());
 
@@ -320,102 +358,23 @@ namespace librealsense
                     recording_function(*this);
                 });
             }
+
+            static processing_blocks get_sr300_depth_recommended_proccesing_blocks();
+
+            processing_blocks get_recommended_processing_blocks() const override
+            {
+                return get_sr300_depth_recommended_proccesing_blocks();
+            };
+
         private:
             const sr300_camera* _owner;
         };
 
-        std::shared_ptr<uvc_sensor> create_color_device(std::shared_ptr<context> ctx,
-                                                        const platform::uvc_device_info& color)
-        {
-            auto color_ep = std::make_shared<sr300_color_sensor>(this, ctx->get_backend().create_uvc_device(color),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata()),
-                                                           ctx);
-            color_ep->register_pixel_format(pf_yuy2);
-            color_ep->register_pixel_format(pf_yuyv);
+        std::shared_ptr<synthetic_sensor> create_color_device(std::shared_ptr<context> ctx,
+            const platform::uvc_device_info& color);
 
-            color_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
-            color_ep->register_pu(RS2_OPTION_BRIGHTNESS);
-            color_ep->register_pu(RS2_OPTION_CONTRAST);
-            color_ep->register_pu(RS2_OPTION_GAIN);
-            color_ep->register_pu(RS2_OPTION_GAMMA);
-            color_ep->register_pu(RS2_OPTION_HUE);
-            color_ep->register_pu(RS2_OPTION_SATURATION);
-            color_ep->register_pu(RS2_OPTION_SHARPNESS);
-
-            auto white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_WHITE_BALANCE);
-            auto auto_white_balance_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-            color_ep->register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
-            color_ep->register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
-            color_ep->register_option(RS2_OPTION_WHITE_BALANCE,
-                std::make_shared<auto_disabling_control>(
-                    white_balance_option,
-                    auto_white_balance_option));
-
-            auto exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_EXPOSURE);
-            auto auto_exposure_option = std::make_shared<uvc_pu_option>(*color_ep, RS2_OPTION_ENABLE_AUTO_EXPOSURE);
-            color_ep->register_option(RS2_OPTION_EXPOSURE, exposure_option);
-            color_ep->register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, auto_exposure_option);
-            color_ep->register_option(RS2_OPTION_EXPOSURE,
-                std::make_shared<auto_disabling_control>(
-                    exposure_option,
-                    auto_exposure_option));
-
-            auto md_offset = offsetof(metadata_raw, mode);
-            color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
-                [](rs2_metadata_type param) { return static_cast<rs2_metadata_type>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
-            color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_rgb::frame_counter, md_offset));
-            color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS,      make_sr300_attribute_parser(&md_sr300_rgb::actual_fps, md_offset));
-            color_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,make_sr300_attribute_parser(&md_sr300_rgb::frame_latency, md_offset));
-            color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_rgb::actual_exposure, md_offset, [](rs2_metadata_type param) { return param*100; }));
-            color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,   make_sr300_attribute_parser(&md_sr300_rgb::auto_exp_mode, md_offset, [](rs2_metadata_type param) { return (param !=1); }));
-            color_ep->register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,      make_sr300_attribute_parser(&md_sr300_rgb::gain, md_offset));
-            color_ep->register_metadata(RS2_FRAME_METADATA_WHITE_BALANCE,   make_sr300_attribute_parser(&md_sr300_rgb::color_temperature, md_offset));
-
-            return color_ep;
-        }
-
-        std::shared_ptr<uvc_sensor> create_depth_device(std::shared_ptr<context> ctx,
-                                                        const platform::uvc_device_info& depth)
-        {
-            using namespace ivcam;
-
-            auto&& backend = ctx->get_backend();
-
-            // create uvc-endpoint from backend uvc-device
-            auto depth_ep = std::make_shared<sr300_depth_sensor>(this, backend.create_uvc_device(depth),
-                                                           std::unique_ptr<frame_timestamp_reader>(new sr300_timestamp_reader_from_metadata()),
-                                                           ctx);
-            depth_ep->register_xu(depth_xu); // make sure the XU is initialized everytime we power the camera
-            depth_ep->register_pixel_format(pf_invz);
-            depth_ep->register_pixel_format(pf_y8);
-            depth_ep->register_pixel_format(pf_sr300_invi);
-            depth_ep->register_pixel_format(pf_sr300_inzi);
-
-            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_LASER_POWER, IVCAM_DEPTH_LASER_POWER,
-                "Power of the SR300 projector, with 0 meaning projector off");
-            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_ACCURACY, IVCAM_DEPTH_ACCURACY,
-                "Set the number of patterns projected per frame.\nThe higher the accuracy value the more patterns projected.\nIncreasing the number of patterns help to achieve better accuracy.\nNote that this control is affecting the Depth FPS");
-            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_MOTION_RANGE, IVCAM_DEPTH_MOTION_RANGE,
-                "Motion vs. Range trade-off, with lower values allowing for better motion\nsensitivity and higher values allowing for better depth range");
-            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_CONFIDENCE_THRESHOLD, IVCAM_DEPTH_CONFIDENCE_THRESH,
-                "The confidence level threshold used by the Depth algorithm pipe to set whether\na pixel will get a valid range or will be marked with invalid range");
-            register_depth_xu<uint8_t>(*depth_ep, RS2_OPTION_FILTER_OPTION, IVCAM_DEPTH_FILTER_OPTION,
-                "Set the filter to apply to each depth frame.\nEach one of the filter is optimized per the application requirements");
-
-            depth_ep->register_option(RS2_OPTION_VISUAL_PRESET, std::make_shared<preset_option>(*this,
-                                                                                                option_range{0, RS2_SR300_VISUAL_PRESET_COUNT - 1, 1, RS2_SR300_VISUAL_PRESET_DEFAULT}));
-
-            auto md_offset = offsetof(metadata_raw, mode);
-
-            depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp,
-                [](rs2_metadata_type param) { return static_cast<rs2_metadata_type>(param * TIMESTAMP_10NSEC_TO_MSEC); }));
-            depth_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,   make_sr300_attribute_parser(&md_sr300_depth::frame_counter, md_offset));
-            depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_sr300_attribute_parser(&md_sr300_depth::actual_exposure, md_offset,
-                [](rs2_metadata_type param) { return param * 100; }));
-            depth_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS,      make_sr300_attribute_parser(&md_sr300_depth::actual_fps, md_offset));
-
-            return depth_ep;
-        }
+        std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
+            const platform::uvc_device_info& depth);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override
         {
@@ -427,15 +386,20 @@ namespace librealsense
             force_hardware_reset();
         }
 
-        uvc_sensor& get_depth_sensor() { return dynamic_cast<uvc_sensor&>(get_sensor(_depth_device_idx)); }
+        synthetic_sensor& get_depth_sensor() { return dynamic_cast<synthetic_sensor&>(get_sensor(_depth_device_idx)); }
 
+        uvc_sensor& get_raw_depth_sensor()
+        {
+            synthetic_sensor& depth_sensor = get_depth_sensor();
+            return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
+        }
 
         sr300_camera(std::shared_ptr<context> ctx,
-                     const platform::uvc_device_info& color,
-                     const platform::uvc_device_info& depth,
-                     const platform::usb_device_info& hwm_device,
-                     const platform::backend_device_group& group,
-                     bool register_device_notifications);
+            const platform::uvc_device_info& color,
+            const platform::uvc_device_info& depth,
+            const platform::usb_device_info& hwm_device,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
 
         void rs2_apply_ivcam_preset(int preset)
         {
@@ -475,7 +439,7 @@ namespace librealsense
                 { 1,    1,   6,   1,  -1 }, /* GRCursor                  */
                 { 16,   1,   5,   3,   9 }, /* Default                   */
                 { 1,    1,   5,   1,  -1 }, /* MidRange                  */
-                { 1,   -1,  -1,  -1, - 1 }  /* IROnly                    */
+                { 1,   -1,  -1,  -1, -1 }  /* IROnly                    */
             };
 
             // The Default preset is handled differently from all the rest,
@@ -506,19 +470,27 @@ namespace librealsense
         void create_snapshot(std::shared_ptr<debug_interface>& snapshot) const override;
         void enable_recording(std::function<void(const debug_interface&)> record_action) override;
 
+        void enter_update_state() const override;
+        std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
+        void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
+
+
+
     private:
         const uint8_t _depth_device_idx;
-        const uint8_t _color_device_idx;
-        std::shared_ptr<hw_monitor> _hw_monitor;
+        bool _is_locked = true;
 
         template<class T>
-        void register_depth_xu(uvc_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const
+        void register_depth_xu(synthetic_sensor& depth, rs2_option opt, uint8_t id, std::string desc) const
         {
+            auto raw_sensor = depth.get_raw_sensor();
+            auto raw_uvc_sensor = As<uvc_sensor, sensor_base>(raw_sensor);
+            assert(raw_uvc_sensor);
             depth.register_option(opt,
                 std::make_shared<uvc_xu_option<T>>(
-                    depth,
+                    *raw_uvc_sensor,
                     ivcam::depth_xu,
                     id, std::move(desc)));
         }
@@ -556,5 +528,20 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _depth_to_color_extrinsics;
 
         lazy<ivcam::camera_calib_params> _camer_calib_params;
+
+    protected:
+        const uint8_t _color_device_idx;
+        std::shared_ptr<hw_monitor> _hw_monitor;
     };
+
+    class sr305_camera final : public sr300_camera {
+    public:
+        sr305_camera(std::shared_ptr<context> ctx,
+            const platform::uvc_device_info& color,
+            const platform::uvc_device_info& depth,
+            const platform::usb_device_info& hwm_device,
+            const platform::backend_device_group& group,
+            bool register_device_notifications);
+    };
+
 }

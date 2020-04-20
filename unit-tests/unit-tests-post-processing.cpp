@@ -53,7 +53,7 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
     dec_pb = (filters_cfg.downsample_scale != 1);
     dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, (float)filters_cfg.downsample_scale);
 
-    if (spat_pb = filters_cfg.spatial_filter)
+    if ((spat_pb = filters_cfg.spatial_filter))
     {
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.spatial_alpha);
         spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.spatial_delta);
@@ -61,16 +61,16 @@ void post_processing_filters::configure(const ppf_test_config& filters_cfg)
         //spat_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.holes_filling_mode);      // Currently disabled
     }
 
-    if (temp_pb = filters_cfg.temporal_filter)
+    if ((temp_pb = filters_cfg.temporal_filter))
     {
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, filters_cfg.temporal_alpha);
         temp_filter.set_option(RS2_OPTION_FILTER_SMOOTH_DELTA, filters_cfg.temporal_delta);
         temp_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.temporal_persistence);
     }
 
-    if (holes_pb = filters_cfg.holes_filter)
+    if ((holes_pb = filters_cfg.holes_filter))
     {
-        hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, filters_cfg.holes_filling_mode);
+        hole_filling_filter.set_option(RS2_OPTION_HOLES_FILL, float(filters_cfg.holes_filling_mode));
     }
 }
 
@@ -167,23 +167,28 @@ void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
 // Test file name  , Filters configuraiton
 const std::vector< std::pair<std::string, std::string>> ppf_test_cases = {
     // All the tests below include depth-disparity domain transformation
-    // Downsample scales 2/3
-    { "1525186403504",  "D415_DS(2)" },
-{ "1525186407536",  "D415_DS(3)" },
-// Downsample + Hole-Filling modes 0/1/2
-{ "1525072818314",  "D415_DS(1)_HoleFill(0)" },
-{ "1525072823227",  "D415_DS(1)_HoleFill(1)" },
-{ "1524668713358",  "D435_DS(3)_HoleFill(2)" },
-// Downsample + Spatial Filter parameters
-{ "1525267760676",  "D415_DS(2)+Spat(A:0.85/D:32/I:3)" },
+    // Downsample scales 2 and 3 are tested only. scales 4-7 are differ in impementation from the reference code:
+    // In Librealsense for all scales [2-8] the filter is the mean of depth.
+    // I the reference code for [2-3] the filter uses mean of depth, and for 4-7 is switches to man of disparities doe to implementation constrains
+    {"1551257764229", "D435_DS(2)"},
+    {"1551257812956", "D435_DS(3)"},
+    // Downsample + Hole-Filling modes 0/1/2
+    { "1551257880762","D435_DS(2)_HoleFill(0)" },
+    { "1551257882796","D435_DS(2)_HoleFill(1)" },
+    { "1551257884097","D435_DS(2)_HoleFill(2)" },
+    // Downsample + Spatial Filter parameters
+    { "1551257987255",  "D435_DS(2)+Spat(A:0.85/D:32/I:3)" },
+    { "1551259481873",  "D435_DS(2)+Spat(A:0.5/D:15/I:2)" },
 // Downsample + Temporal Filter
-{ "1525266028697",  "D415_DS(2)+Temp(A:0.25/D:15/P:1)" },
-{ "1525265554250",  "D415_DS(2)+Temp(A:0.25/D:15/P:3)" },
-{ "1525266069476",  "D415_DS(2)+Temp(A:0.25/D:15/P:5)" },
-{ "1525266120520",  "D415_DS(3)+Temp(A:0.25/D:15/P:7)" },
+{ "1551261946511",  "D435_DS(2)+Temp(A:0.25/D:15/P:0)" },
+{ "1551262153516",  "D435_DS(2)+Temp(A:0.45/D:25/P:1)" },
+{ "1551262256875",  "D435_DS(2)+Temp(A:0.5/D:30/P:4)" },
+{ "1551262841203",  "D435_DS(2)+Temp(A:0.5/D:30/P:6)" },
+{ "1551262772964",  "D435_DS(2)+Temp(A:0.5/D:30/P:8)" },
+// Downsample + Spatial + Temporal
+{ "1551262971309",  "D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6)" },
 // Downsample + Spatial + Temporal (+ Hole-Filling)
-{ "1525267168585",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)" },
-{ "1525089539880",  "D415_DS(2)_Spat(A:0.85/D:32/I:3)_Temp(A:0.25/D:15/P:0)_HoleFill(1)" },
+{ "1551263177558",  "D435_DS(2)_Spat(A:0.7/D:25/I:2)_Temp(A:0.6/D:15/P:6))_HoleFill(1)" },
 };
 
 // The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
@@ -226,7 +231,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
 
             auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
             depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, test_cfg.depth_units);
-            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline);
+            depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline_mm);
 
             // Establish the required chain of filters
             dev.create_matcher(RS2_MATCHER_DLR_C);
@@ -363,7 +368,7 @@ bool is_equal(rs2::frameset org, rs2::frameset processed)
     {
         auto curr_profile = o.get_profile();
         bool found = false;
-        processed.foreach([&curr_profile, &found](const rs2::frame& f)
+        processed.foreach_rs([&curr_profile, &found](const rs2::frame& f)
         {
             auto processed_profile = f.get_profile();
             if (curr_profile.unique_id() == processed_profile.unique_id())
@@ -532,7 +537,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
     rs2::frameset full_pipe;
     int run_for = 10;
     std::set<int> uids;
-    int uid_count = 0;
+    size_t uid_count = 0;
     while (run_for--)
     {
         full_pipe = pipe.wait_for_frames();
@@ -547,7 +552,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
         full_pipe = full_pipe.apply_filter(pc);
 
         //printf("test frame:\n");
-        full_pipe.foreach([&](const rs2::frame& f) {
+        full_pipe.foreach_rs([&](const rs2::frame& f) {
             uids.insert(f.get_profile().unique_id());
             //printf("stream: %s, format: %d, uid: %d\n", f.get_profile().stream_name().c_str(), f.get_profile().format(), f.get_profile().unique_id());
         });
@@ -559,4 +564,172 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
     REQUIRE(is_subset(original, full_pipe));
     REQUIRE_THROWS(is_subset(full_pipe, original));
     pipe.stop();
+}
+
+TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!mayfail]") {
+    rs2::context ctx;
+
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.20.0"))
+    {
+        auto list = ctx.query_devices();
+        REQUIRE(list.size());
+
+        rs2::device dev;
+        rs2::pipeline pipe(ctx);
+        rs2::config cfg;
+        rs2::pipeline_profile pipe_profile;
+
+        REQUIRE_NOTHROW(cfg.enable_all_streams());
+        REQUIRE_NOTHROW(pipe_profile = cfg.resolve(pipe));
+        REQUIRE(pipe_profile);
+        REQUIRE_NOTHROW(dev = pipe_profile.get_device());
+        REQUIRE(dev);
+        disable_sensitive_options_for(dev);
+        dev_type PID = get_PID(dev);
+        CAPTURE(PID.first);
+        CAPTURE(PID.second);
+
+        REQUIRE_NOTHROW(pipe_profile = pipe.start(cfg));
+        REQUIRE(pipe_profile);
+
+        std::vector<rs2::stream_profile> active_streams;
+        REQUIRE_NOTHROW(active_streams = pipe_profile.get_streams());
+
+        // Make sure that there is a frame for each stream opened
+        rs2::frameset fs;
+        for (auto i = 0; i < 300; i++)
+        {
+            if ((pipe.try_wait_for_frames(&fs,500)) && (fs.size() == active_streams.size()))
+            {
+                pipe.stop();
+                break;
+            }
+        }
+
+        // Sanity check and registration of all possible source and target streams for alignment process
+        std::set<rs2_stream> streams_under_test;
+        for (const auto &str_type : { RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_FISHEYE, RS2_STREAM_CONFIDENCE })
+        {
+            // Currently there is no API to explicitely select target in presense of multiple candidates (IR2)
+            if (auto fr = fs.first_or_default(str_type))
+                streams_under_test.insert(str_type);
+        }
+
+        // Sanity check
+        if (!fs.get_depth_frame() || !streams_under_test.size())
+        {
+            WARN("Align block test requires a device with Depth and Video sensor(s): current device "
+                << "[" << PID.first << ":" <<  PID.second << "]. Test skipped");
+            return;
+        }
+
+        // Check depth->{uvc} alignment.
+        // Note that the test is for verification purposes and does not indicate quality of the mapping process
+        WARN("Testing Depth aligned to 2D video stream");
+        for (auto& tgt_stream : streams_under_test)
+        {
+            WARN("Testing Depth aligned to " << rs2_stream_to_string(tgt_stream));
+            rs2::align align_pb(tgt_stream);
+            auto aligned_fs = align_pb.process(fs);
+            auto origin_depth_frame = fs.get_depth_frame();
+            auto aligned_depth_frame = aligned_fs.get_depth_frame();  // Depth frame is replaced by the aligned depth
+            auto reference_frame = aligned_fs.first(tgt_stream);
+
+            auto orig_dpt_profile = origin_depth_frame.get_profile();
+            auto aligned_dpt_profile = aligned_depth_frame.get_profile();
+            auto aligned_dpth_video_pf = aligned_dpt_profile.as<rs2::video_stream_profile>();
+            auto ref_video_profile = reference_frame.get_profile().as<rs2::video_stream_profile>();
+
+            // Test: the depth frame retains the core attributes of depth stream
+            // Stream type/format/fps, (Depth units currently not available).
+            // TODO solution for Baseline ???
+            REQUIRE(orig_dpt_profile == aligned_dpt_profile);
+            REQUIRE(orig_dpt_profile.unique_id() != aligned_dpt_profile.unique_id());
+
+            // Test: the resulted depth frame properties correspond to the target
+            // Resolution, Intrinsic, Extrinsic
+            REQUIRE(aligned_dpth_video_pf.width() == ref_video_profile.width());
+            REQUIRE(aligned_dpth_video_pf.height() == ref_video_profile.height());
+            const auto ref_intr = ref_video_profile.get_intrinsics();
+            const auto align_dpt_intr = aligned_dpth_video_pf.get_intrinsics();
+            for (auto i = 0; i < 5; i++)
+            {
+                REQUIRE(ref_intr.coeffs[i] == Approx(align_dpt_intr.coeffs[i]));
+            }
+            REQUIRE(ref_intr.fx == Approx(align_dpt_intr.fx));
+            REQUIRE(ref_intr.fy == Approx(align_dpt_intr.fy));
+            REQUIRE(ref_intr.ppx == Approx(align_dpt_intr.ppx));
+            REQUIRE(ref_intr.ppy == Approx(align_dpt_intr.ppy));
+            REQUIRE(ref_intr.model == Approx(align_dpt_intr.model));
+            REQUIRE(ref_intr.width == Approx(align_dpt_intr.width));
+            REQUIRE(ref_intr.height == Approx(align_dpt_intr.height));
+
+            // Extrinsic tests: Aligned_depth_extrinsic == Target frame extrinsic
+            rs2_extrinsics actual_extrinsics = ref_video_profile.get_extrinsics_to(aligned_dpt_profile);
+            rs2_extrinsics expected_extrinsics = { {1,0,0, 0,1,0, 0,0,1}, {0,0,0} };
+            CAPTURE(actual_extrinsics.rotation);
+            CAPTURE(actual_extrinsics.translation);
+            for (auto i = 0; i < 9; i++)
+            {
+                REQUIRE(actual_extrinsics.rotation[i] == Approx(expected_extrinsics.rotation[i]));
+            }
+            for (auto i = 0; i < 3; i++)
+            {
+                REQUIRE(actual_extrinsics.translation[i] == Approx(expected_extrinsics.translation[i]));
+            }
+        }
+
+        WARN("Testing 2D Video stream aligned to Depth sensor");
+        // Check {uvc}->depth alignment.
+        for (auto& tgt_stream : streams_under_test)
+        {
+            WARN("Testing " << rs2_stream_to_string(tgt_stream) << " aligned to Depth");
+            rs2::align align_pb(RS2_STREAM_DEPTH);
+            auto aligned_fs = align_pb.process(fs);
+            auto origin_2D_frame = fs.first(tgt_stream);
+            auto aligned_2D_frame = aligned_fs.first(tgt_stream);
+            auto depth_frame = aligned_fs.get_depth_frame();
+
+            auto orig_2D_profile = origin_2D_frame.get_profile();
+            auto aligned_2D_profile = aligned_2D_frame.get_profile().as<rs2::video_stream_profile>();
+            auto ref_video_profile = depth_frame.get_profile().as<rs2::video_stream_profile>();
+
+            // Test: the 2D frame retains the core attributes of the original stream
+            // Stream type/format/fps
+            REQUIRE(orig_2D_profile == aligned_2D_profile);
+            REQUIRE(orig_2D_profile.unique_id() != aligned_2D_profile.unique_id());
+
+            // Test: the resulted 2D frame properties correspond to the target depth
+            // Resolution, Intrinsic
+            REQUIRE(aligned_2D_profile.width() == ref_video_profile.width());
+            REQUIRE(aligned_2D_profile.height() == ref_video_profile.height());
+            const auto ref_intr = ref_video_profile.get_intrinsics();
+            const auto align_2D_intr = aligned_2D_profile.get_intrinsics();
+            for (auto i = 0; i < 5; i++)
+            {
+                REQUIRE(ref_intr.coeffs[i] == Approx(align_2D_intr.coeffs[i]));
+            }
+            REQUIRE(ref_intr.fx == Approx(align_2D_intr.fx));
+            REQUIRE(ref_intr.fy == Approx(align_2D_intr.fy));
+            REQUIRE(ref_intr.ppx == Approx(align_2D_intr.ppx));
+            REQUIRE(ref_intr.ppy == Approx(align_2D_intr.ppy));
+            REQUIRE(ref_intr.model == Approx(align_2D_intr.model));
+            REQUIRE(ref_intr.width == Approx(align_2D_intr.width));
+            REQUIRE(ref_intr.height == Approx(align_2D_intr.height));
+
+            // Extrinsic tests: Aligned_depth_extrinsic == Target frame extrinsic
+            rs2_extrinsics actual_extrinsics = aligned_2D_profile.get_extrinsics_to(ref_video_profile);
+            rs2_extrinsics expected_extrinsics = { {1,0,0, 0,1,0, 0,0,1}, {0,0,0} };
+            CAPTURE(actual_extrinsics.rotation);
+            CAPTURE(actual_extrinsics.translation);
+            for (auto i = 0; i < 9; i++)
+            {
+                REQUIRE(actual_extrinsics.rotation[i] == Approx(expected_extrinsics.rotation[i]));
+            }
+            for (auto i = 0; i < 3; i++)
+            {
+                REQUIRE(actual_extrinsics.translation[i] == Approx(expected_extrinsics.translation[i]));
+            }
+        }
+    }
 }

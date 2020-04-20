@@ -41,7 +41,7 @@ struct Notification_
 
 
 
-   typedef ros::Time _timestamp_type;
+   typedef rs2rosinternal::Time _timestamp_type;
   _timestamp_type timestamp;
 
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _category_type;
@@ -76,13 +76,13 @@ typedef std::shared_ptr< ::realsense_msgs::Notification const> NotificationConst
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_msgs::Notification_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_msgs::Notification_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_msgs::Notification_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -171,9 +171,9 @@ string serialized_data     # JSON string with additional data\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -193,9 +193,9 @@ namespace serialization
   }; // struct Notification_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -206,7 +206,7 @@ struct Printer< ::realsense_msgs::Notification_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::realsense_msgs::Notification_<ContainerAllocator>& v)
   {
     s << indent << "timestamp: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.timestamp);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.timestamp);
     s << indent << "category: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.category);
     s << indent << "severity: ";
@@ -219,6 +219,6 @@ struct Printer< ::realsense_msgs::Notification_<ContainerAllocator> >
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // REALSENSE_MSGS_MESSAGE_NOTIFICATION_H

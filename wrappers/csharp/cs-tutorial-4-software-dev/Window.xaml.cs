@@ -32,11 +32,8 @@ namespace Intel.RealSense
             var wbmp = img.Source as WriteableBitmap;
             return new Action<VideoFrame>(frame =>
             {
-                using (frame)
-                {
-                    var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
-                    wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
-                }
+                var rect = new Int32Rect(0, 0, frame.Width, frame.Height);
+                wbmp.WritePixels(rect, frame.Data, frame.Stride * frame.Height, frame.Stride);
             });
         }
 
@@ -63,7 +60,7 @@ namespace Intel.RealSense
                 // Setup the SW device and sensors
                 var software_dev = new SoftwareDevice();
                 var depth_sensor = software_dev.AddSensor("Depth");
-                var depth_profile = depth_sensor.AddVideoStream(new VideoStream
+                var depth_profile = depth_sensor.AddVideoStream(new SoftwareVideoStream
                 {
                     type = Stream.Depth,
                     index = 0,
@@ -72,11 +69,11 @@ namespace Intel.RealSense
                     height = 480,
                     fps = 30,
                     bpp = 2,
-                    fmt = Format.Z16,
-                    intrinsics = (profile.GetStream(Stream.Depth) as VideoStreamProfile).GetIntrinsics()
+                    format = Format.Z16,
+                    intrinsics = profile.GetStream(Stream.Depth).As<VideoStreamProfile>().GetIntrinsics()
                 });
                 var color_sensor = software_dev.AddSensor("Color");
-                var color_profile = color_sensor.AddVideoStream(new VideoStream
+                var color_profile = color_sensor.AddVideoStream(new SoftwareVideoStream
                 {
                     type = Stream.Color,
                     index = 0,
@@ -85,8 +82,8 @@ namespace Intel.RealSense
                     height = 480,
                     fps = 30,
                     bpp = 3,
-                    fmt = Format.Rgb8,
-                    intrinsics = (profile.GetStream(Stream.Color) as VideoStreamProfile).GetIntrinsics()
+                    format = Format.Rgb8,
+                    intrinsics = profile.GetStream(Stream.Color).As<VideoStreamProfile>().GetIntrinsics()
                 });
 
                 // Note about the Syncer: If actual FPS is significantly different from reported FPS in AddVideoStream
@@ -99,10 +96,13 @@ namespace Intel.RealSense
                 color_sensor.Open(color_profile);
 
                 // Push the SW device frames to the syncer
-                depth_sensor.Start(f => { sync.SubmitFrame(f); });
-                color_sensor.Start(f => { sync.SubmitFrame(f); });
+                depth_sensor.Start(sync.SubmitFrame);
+                color_sensor.Start(sync.SubmitFrame);
 
                 var token = tokenSource.Token;
+
+                ushort[] depthData = null;
+                byte[] colorData = null;
 
                 var t = Task.Factory.StartNew(() =>
                 {
@@ -114,14 +114,14 @@ namespace Intel.RealSense
                             var depthFrame = frames.DepthFrame.DisposeWith(frames);
                             var colorFrame = frames.ColorFrame.DisposeWith(frames);
 
-                            var depthBytes = new byte[depthFrame.Stride * depthFrame.Height];
-                            depthFrame.CopyTo(depthBytes);
-                            depth_sensor.AddVideoFrame(depthBytes, depthFrame.Stride, depthFrame.BitsPerPixel / 8, depthFrame.Timestamp,
-                            depthFrame.TimestampDomain, (int)depthFrame.Number, depth_profile);
+                            depthData = depthData ?? new ushort[depthFrame.Width * depthFrame.Height];
+                            depthFrame.CopyTo(depthData);
+                            depth_sensor.AddVideoFrame(depthData, depthFrame.Stride, depthFrame.BitsPerPixel / 8, depthFrame.Timestamp,
+                                depthFrame.TimestampDomain, (int)depthFrame.Number, depth_profile);
 
-                            var colorBytes = new byte[colorFrame.Stride * colorFrame.Height];
-                            colorFrame.CopyTo(colorBytes);
-                            color_sensor.AddVideoFrame(colorBytes, colorFrame.Stride, colorFrame.BitsPerPixel / 8, colorFrame.Timestamp,
+                            colorData = colorData ?? new byte[colorFrame.Stride * colorFrame.Height];
+                            colorFrame.CopyTo(colorData);
+                            color_sensor.AddVideoFrame(colorData, colorFrame.Stride, colorFrame.BitsPerPixel / 8, colorFrame.Timestamp,
                                 colorFrame.TimestampDomain, (int)colorFrame.Number, color_profile);
                         }
 
@@ -133,7 +133,7 @@ namespace Intel.RealSense
                                 var depthFrame = new_frames.DepthFrame.DisposeWith(new_frames);
                                 var colorFrame = new_frames.ColorFrame.DisposeWith(new_frames);
 
-                                VideoFrame colorizedDepth = colorizer.Process(depthFrame).DisposeWith(new_frames) as VideoFrame;
+                                var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(new_frames);
 
                                 // Render the frames.
                                 Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
@@ -157,11 +157,11 @@ namespace Intel.RealSense
 
         private void SetupWindow(PipelineProfile pipelineProfile, out Action<VideoFrame> depth, out Action<VideoFrame> color)
         {
-            using (var p = pipelineProfile.GetStream(Stream.Depth) as VideoStreamProfile)
+            using (var p = pipelineProfile.GetStream(Stream.Depth).As<VideoStreamProfile>())
                 imgDepth.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
             depth = UpdateImage(imgDepth);
 
-            using (var p = pipelineProfile.GetStream(Stream.Color) as VideoStreamProfile)
+            using (var p = pipelineProfile.GetStream(Stream.Color).As<VideoStreamProfile>())
                 imgColor.Source = new WriteableBitmap(p.Width, p.Height, 96d, 96d, PixelFormats.Rgb24, null);
             color = UpdateImage(imgColor);
         }

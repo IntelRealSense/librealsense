@@ -20,3 +20,13 @@ Content/Developers/
 *.opendb
 *.exe
 *.pdb
+
+.kdev4/
+CMakeLists.txt
+*.code-workspace
+*.kdev4
+*.pro
+*.workspace
+*.pri
+*CodeCompletionFolders.txt
+*CodeLitePreProcessor.txt

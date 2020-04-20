@@ -56,7 +56,7 @@
 using std::string;
 using boost::format;
 using std::shared_ptr;
-using ros::Exception;
+using rs2rosinternal::Exception;
 
 namespace rosbag {
 

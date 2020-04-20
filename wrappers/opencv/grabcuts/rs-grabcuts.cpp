@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) try
     // Skips some frames to allow for auto-exposure stabilization
     for (int i = 0; i < 10; i++) pipe.wait_for_frames();
 
-    while (waitKey(1) < 0 && cvGetWindowHandle(window_name))
+    while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         frameset data = pipe.wait_for_frames();
         // Make sure the frameset is spatialy aligned 
@@ -61,14 +61,14 @@ int main(int argc, char * argv[]) try
 
         // Generate "near" mask image:
         auto near = frame_to_mat(bw_depth);
-        cvtColor(near, near, CV_BGR2GRAY);
+        cvtColor(near, near, COLOR_BGR2GRAY);
         // Take just values within range [180-255]
         // These will roughly correspond to near objects due to histogram equalization
         create_mask_from_depth(near, 180, THRESH_BINARY);
 
         // Generate "far" mask image:
         auto far = frame_to_mat(bw_depth);
-        cvtColor(far, far, CV_BGR2GRAY);
+        cvtColor(far, far, COLOR_BGR2GRAY);
         far.setTo(255, far == 0); // Note: 0 value does not indicate pixel near the camera, and requires special attention 
         create_mask_from_depth(far, 100, THRESH_BINARY_INV);
 

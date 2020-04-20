@@ -885,6 +885,16 @@ namespace librealsense
             }, _entity_id, call_type::uvc_unlock);
         }
 
+        void record_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            _owner->try_record([&](recording* rec, lookup_key k)
+            {
+                _source->register_profiles(hid_profiles);
+                auto&& c = rec->add_call(k);
+                c.param1 = rec->save_blob(hid_profiles.data(), hid_profiles.size() * sizeof(hid_profile));
+            }, _entity_id, call_type::hid_register_profiles);
+        }
+
         void record_hid_device::open(const std::vector<hid_profile>& hid_profiles)
         {
             _owner->try_record([&](recording* rec, lookup_key k)
@@ -1054,7 +1064,7 @@ namespace librealsense
             }, 0, call_type::query_uvc_devices);
         }
 
-        shared_ptr<usb_device> record_backend::create_usb_device(usb_device_info info) const
+        shared_ptr<command_transfer> record_backend::create_usb_device(usb_device_info info) const
         {
             return try_record([&](recording* rec, lookup_key k)
             {
@@ -1136,7 +1146,7 @@ namespace librealsense
             return _rec->load_uvc_device_info_list();
         }
 
-        shared_ptr<usb_device> playback_backend::create_usb_device(usb_device_info info) const
+        shared_ptr<command_transfer> playback_backend::create_usb_device(usb_device_info info) const
         {
             auto&& c = _rec->find_call(call_type::create_usb_device, 0);
 
@@ -1215,11 +1225,6 @@ namespace librealsense
 
         void playback_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            auto stored = _rec->load_stream_profiles(_entity_id, call_type::uvc_probe_commit);
-            vector<stream_profile> input{ profile };
-            if (input != stored)
-                throw playback_backend_exception("Recording history mismatch!", call_type::uvc_probe_commit, _entity_id);
-
             lock_guard<mutex> lock(_callback_mutex);
 
             auto it = std::remove_if(begin(_callbacks), end(_callbacks),
@@ -1395,6 +1400,13 @@ namespace librealsense
             : _rec(rec), _entity_id(id), _alive(true)
         {
             _callback_thread = std::thread([this]() { callback_thread(); });
+        }
+
+        void playback_hid_device::register_profiles(const std::vector<hid_profile>& hid_profiles)
+        {
+            auto stored = _rec->find_call(call_type::hid_register_profiles, _entity_id);
+            auto stored_iios = _rec->load_blob(stored.param1);
+            // TODO: Verify sensor_iio
         }
 
         void playback_hid_device::open(const std::vector<hid_profile>& hid_profiles)

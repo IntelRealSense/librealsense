@@ -4,15 +4,17 @@
 #include "record_sensor.h"
 #include "api.h"
 #include "stream.h"
+#include "l500/l500-depth.h"
 
 using namespace librealsense;
 
-librealsense::record_sensor::record_sensor(const device_interface& device,
+librealsense::record_sensor::record_sensor( device_interface& device,
                                             sensor_interface& sensor) :
     m_sensor(sensor),
     m_is_recording(false),
     m_parent_device(device),
     m_is_sensor_hooked(false),
+    m_register_notification_to_base(true),
     m_before_start_callback_token(-1)
 {
     LOG_DEBUG("Created record_sensor");
@@ -91,6 +93,12 @@ bool librealsense::record_sensor::supports_option(rs2_option id) const
 
 void librealsense::record_sensor::register_notifications_callback(notifications_callback_ptr callback)
 {
+    if (m_register_notification_to_base)
+    {
+        m_sensor.register_notifications_callback(std::move(callback)); //route to base sensor
+        return;
+    }
+
     m_user_notification_callback = std::move(callback);
     auto from_live_sensor = notifications_callback_ptr(new notification_callback([&](rs2_notification* n)
     {
@@ -160,15 +168,21 @@ bool librealsense::record_sensor::extend_to(rs2_extension extension_type, void**
         *ext = this;
         return true;
     case RS2_EXTENSION_DEPTH_SENSOR    : return extend_to_aux<RS2_EXTENSION_DEPTH_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_L500_DEPTH_SENSOR: return extend_to_aux<RS2_EXTENSION_L500_DEPTH_SENSOR   >(&m_sensor, ext);
     case RS2_EXTENSION_DEPTH_STEREO_SENSOR: return extend_to_aux<RS2_EXTENSION_DEPTH_STEREO_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_COLOR_SENSOR:        return extend_to_aux<RS2_EXTENSION_COLOR_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_MOTION_SENSOR:       return extend_to_aux<RS2_EXTENSION_MOTION_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_FISHEYE_SENSOR:      return extend_to_aux<RS2_EXTENSION_FISHEYE_SENSOR   >(&m_sensor, ext);
+    case RS2_EXTENSION_POSE_SENSOR:         return extend_to_aux<RS2_EXTENSION_POSE_SENSOR   >(&m_sensor, ext);
+
     //Other extensions are not expected to be extensions of a sensor
     default:
-        LOG_WARNING("Extensions type is unhandled: " << extension_type);
+        LOG_WARNING("Extensions type is unhandled: " << get_string(extension_type));
         return false;
     }
 }
 
-const device_interface& record_sensor::get_device()
+device_interface& record_sensor::get_device()
 {
     return m_parent_device;
 }
@@ -228,6 +242,11 @@ void record_sensor::disable_recording()
     m_is_recording = false;
 }
 
+processing_blocks librealsense::record_sensor::get_recommended_processing_blocks() const
+{
+    return m_sensor.get_recommended_processing_blocks();
+}
+
 void record_sensor::record_frame(frame_holder frame)
 {
     if(m_is_recording)
@@ -253,9 +272,11 @@ void record_sensor::disable_sensor_hooks()
         return;
     unhook_sensor_callbacks();
     m_is_sensor_hooked = false;
+    m_register_notification_to_base = true;
 }
 void record_sensor::hook_sensor_callbacks()
 {
+    m_register_notification_to_base = false;
     m_user_notification_callback = m_sensor.get_notifications_callback();
     register_notifications_callback(m_user_notification_callback);
     m_original_callback = m_sensor.get_frames_callback();

@@ -5,6 +5,7 @@
 
 #include "../include/librealsense2/hpp/rs_frame.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
+#include "proc/synthetic-stream.h"
 
 namespace librealsense
 {
@@ -41,4 +42,5 @@ namespace librealsense
         bool                    _recalc_profile;
         bool                    _options_changed;   // Tracking changes imposed by user
     };
+    MAP_EXTENSION(RS2_EXTENSION_DECIMATION_FILTER, librealsense::decimation_filter);
 }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine.h"
+#include "Engine/Engine.h"
 #include "Components/MeshComponent.h"
 #include "RuntimeMeshRendering.h"
 #include "RuntimeMeshUpdateCommands.h"
@@ -62,6 +62,7 @@ public:
 	~FRuntimeMeshSectionProxy();
 
 	bool ShouldRender();
+	bool CanRender();
 
 	bool WantsToRenderInStaticPath() const;
 

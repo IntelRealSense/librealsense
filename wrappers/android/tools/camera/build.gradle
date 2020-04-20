@@ -1,0 +1,60 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.intel.realsense.camera"
+        minSdkVersion 19
+        targetSdkVersion 28
+        versionCode 5
+        versionName "0.0.5"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+def getFwVersion(String productLine) {
+    try {
+        String versionsFile = new File("$projectDir/../../../../common/fw/firmware-version.h").text
+        def regex = productLine + " \"(.*)\""
+        def matcher = ( versionsFile =~ regex )
+        return matcher[0][1]
+    }catch(e){
+        println(e)
+        return "Unknown FW version"
+    }
+}
+
+task downloadFirmware() {
+    mkdir "$projectDir/src/main/res/raw"
+
+    def d4xxFwVersion = getFwVersion('D4XX_RECOMMENDED_FIRMWARE_VERSION')
+    def d4xxFile = new File("$projectDir/src/main/res/raw/fw_d4xx.bin")
+    if (!d4xxFile.exists()) {
+        println("downloading D4xx fw: " + d4xxFwVersion)
+        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
+    }
+
+    def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')
+    def sr3xxFile = new File("$projectDir/src/main/res/raw/fw_sr3xx.bin")
+    if (!sr3xxFile.exists()) {
+        println("downloading SR3xx fw: " + sr3xxFwVersion)
+        new URL('http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/SR300/FW/SR3XX_FW_Image-' + sr3xxFwVersion + '.bin').withInputStream{ i -> sr3xxFile.withOutputStream{ it << i }}
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:appcompat-v7:26.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation project(':librealsense')
+    implementation 'com.android.support:design:26.0.0'
+}

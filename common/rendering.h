@@ -3,10 +3,13 @@
 
 #pragma once
 
-#include <librealsense2/rs.hpp>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <glad/glad.h>
 
-#define GLFW_INCLUDE_GLU
-#include <GLFW/glfw3.h>
+#include <librealsense2/rs.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
 
 #include <vector>
 #include <algorithm>
@@ -14,6 +17,7 @@
 #include <ctype.h>
 #include <memory>
 #include <string>
+#include <cassert>
 #include <sstream>
 #include <iomanip>
 #include <array>
@@ -21,7 +25,12 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <map>
+#include <unordered_map>
 #include <mutex>
+#include <algorithm>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
 #ifdef _MSC_VER
 #ifndef GL_CLAMP_TO_BORDER
@@ -81,10 +90,10 @@ namespace rs2
     private:
         static const int _numerator = 1000;
         static const int _skip_frames = 5;
-        unsigned long long _num_of_frames;
         int _counter;
         double _delta;
         double _last_timestamp;
+        unsigned long long _num_of_frames;
         unsigned long long _last_frame_counter;
         mutable std::mutex _mtx;
     };
@@ -210,7 +219,7 @@ namespace rs2
     {
         std::vector<float> angles;
         angles.reserve(4);
-        for (int i = 0; i < p.size(); i++)
+        for (size_t i = 0; i < p.size(); i++)
         {
             auto p1 = p[i];
             auto p2 = p[(i+1) % p.size()];
@@ -239,6 +248,19 @@ namespace rs2
     {
         float mat[4][4];
 
+        operator float*() const
+        {
+            return (float*)&mat;
+        } 
+
+        static matrix4 identity()
+        {
+            matrix4 m;
+            for (int i = 0; i < 4; i++)
+                m.mat[i][i] = 1.f;
+            return m;
+        }
+
         matrix4()
         {
             std::memset(mat, 0, sizeof(mat));
@@ -249,8 +271,10 @@ namespace rs2
             std::memcpy(mat,vals,sizeof(mat));
         }
 
+        float& operator()(int i, int j) { return mat[i][j]; }
+
         //init rotation matrix from quaternion
-        matrix4(rs2_quaternion q)
+        matrix4(const rs2_quaternion& q)
         {
             mat[0][0] = 1 - 2*q.y*q.y - 2*q.z*q.z; mat[0][1] = 2*q.x*q.y - 2*q.z*q.w;     mat[0][2] = 2*q.x*q.z + 2*q.y*q.w;     mat[0][3] = 0.0f;
             mat[1][0] = 2*q.x*q.y + 2*q.z*q.w;     mat[1][1] = 1 - 2*q.x*q.x - 2*q.z*q.z; mat[1][2] = 2*q.y*q.z - 2*q.x*q.w;     mat[1][3] = 0.0f;
@@ -259,7 +283,7 @@ namespace rs2
         }
 
         //init translation matrix from vector
-        matrix4(rs2_vector t)
+        matrix4(const rs2_vector& t)
         {
             mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
             mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;
@@ -339,7 +363,7 @@ namespace rs2
         }
     };
 
-    inline matrix4 operator*(matrix4 a, matrix4 b)
+    inline matrix4 operator*(const matrix4& a, const matrix4& b)
     {
         matrix4 res;
         for (int i = 0; i < 4; i++)
@@ -404,13 +428,13 @@ namespace rs2
         int max_distance_index = 0;
         float distance_limit = 0.01f; //1 centimeter
         // Find the point with the maximum distance from the 2 end points of the vector
-        for (int i = 1; i < points.size() - 1; i++)
+        for (size_t i = 1; i < points.size() - 1; i++)
         {
             float d = point_to_line_dist(points[0], points.back(), points[i]);
             if (d > max_distance)
             {
                 max_distance = d;
-                max_distance_index = i;
+                max_distance_index = (int)i;
             }
         }
         // If max distance is greater than the limit, recursively simplify
@@ -459,7 +483,7 @@ namespace rs2
 
     struct mouse_info
     {
-        float2 cursor;
+        float2 cursor{ 0.f, 0.f };
         float2 prev_cursor{ 0.f, 0.f };
         bool mouse_down = false;
         int mouse_wheel = 0;
@@ -921,6 +945,11 @@ namespace rs2
             return false;
         }
 
+        void signal() const
+        {
+            _last = _time.now() - _delta;
+        }
+
     private:
         timer _time;
         mutable clock::time_point _last;
@@ -983,8 +1012,11 @@ namespace rs2
         mutable rs2::frame last[2];
     public:
         std::shared_ptr<colorizer> colorize;
+        std::shared_ptr<yuy_decoder> yuy2rgb;
+        std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
         rect curr_preview_rect{};
+        int texture_id = 0;
 
         texture_buffer(const texture_buffer& other)
         {
@@ -1003,10 +1035,18 @@ namespace rs2
             return last[idx];
         }
 
-        texture_buffer() : last_queue(), texture(),
-            colorize(std::make_shared<colorizer>()) {}
+        texture_buffer() : last_queue(), texture() {}
 
-        GLuint get_gl_handle() const { return texture; }
+        GLuint get_gl_handle() const {
+            // If the frame is already a GPU frame
+            // Just get the texture from the frame
+            if (auto gf = get_last_frame(true).as<gl::gpu_frame>())
+            {
+                auto tex = gf.get_texture_id(texture_id);
+                return tex;
+            }
+            else return texture;
+        }
 
         // Simplified version of upload that lets us load basic RGBA textures
         // This is used for the splash screen
@@ -1023,10 +1063,8 @@ namespace rs2
             glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-        void upload(rs2::frame frame)
+        void upload(rs2::frame frame, rs2_format prefered_format = RS2_FORMAT_ANY)
         {
-            last_queue[0].enqueue(frame);
-            // If the frame timestamp has changed since the last time show(...) was called, re-upload the texture
             if (!texture)
                 glGenTextures(1, &texture);
 
@@ -1034,7 +1072,19 @@ namespace rs2
             int height = 0;
             int stride = 0;
             auto format = frame.get_profile().format();
-            auto data = frame.get_data();
+
+            // Decode compressed data required for mouse pointer depth calculations
+            if (RS2_FORMAT_Z16H==format)
+            {
+                frame = depth_decode->process(frame);
+                format = frame.get_profile().format();
+            }
+
+            last_queue[0].enqueue(frame);
+
+            // When frame is a GPU frame
+            // we don't need to access pixels, keep data NULL
+            auto data = !frame.is<gl::gpu_frame>() ? frame.get_data() : nullptr;
 
             auto rendered_frame = frame;
             auto image = frame.as<video_frame>();
@@ -1045,118 +1095,200 @@ namespace rs2
                 height = image.get_height();
                 stride = image.get_stride_in_bytes();
             }
+            else if (auto profile = frame.get_profile().as<rs2::video_stream_profile>())
+            {
+                width = profile.width();
+                height = profile.height();
+                stride = width;
+            }
 
             glBindTexture(GL_TEXTURE_2D, texture);
             stride = stride == 0 ? width : stride;
             //glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
-            switch (format)
-            {
-            case RS2_FORMAT_ANY:
-                throw std::runtime_error("not a valid format");
-            case RS2_FORMAT_Z16:
-            case RS2_FORMAT_DISPARITY16:
-                if (frame.is<depth_frame>())
-                {
-                    if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
-                    {
-                        data = colorized_frame.get_data();
-                        // Override the first pixel in the colorized image for occlusion invalidation.
-                        memset((void*)data,0, colorized_frame.get_bytes_per_pixel());
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                                     colorized_frame.get_width(),
-                                     colorized_frame.get_height(),
-                                     0, GL_RGB, GL_UNSIGNED_BYTE,
-                                     colorized_frame.get_data());
-                        rendered_frame = colorized_frame;
-                    }
-                }
-                else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
 
-                break;
-            case RS2_FORMAT_DISPARITY32:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
-                break;
-            case RS2_FORMAT_XYZ32F:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
-                break;
-            case RS2_FORMAT_YUYV: // Display YUYV by showing the luminance channel and packing chrominance into ignored alpha channel
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
-                break;
-            case RS2_FORMAT_UYVY: // Use luminance component only to avoid costly UVUY->RGB conversion
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-                break;
-            case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-                break;
-            case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                break;
-            case RS2_FORMAT_Y8:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-                break;
-            case RS2_FORMAT_MOTION_XYZ32F:
+            // Allow upload of points frame type
+            if (auto pc = frame.as<points>())
             {
-                if (auto motion = frame.as<motion_frame>())
+                if (!frame.is<gl::gpu_frame>())
                 {
-                    auto axes = motion.get_motion_data();
-                    draw_motion_data(axes.x, axes.y, axes.z);
+                    // Points can be uploaded as two different 
+                    // formats: XYZ for verteces and UV for texture coordinates
+                    if (prefered_format == RS2_FORMAT_XYZ32F)
+                    {
+                        // Upload vertices
+                        data = pc.get_vertices();
+                        auto v = pc.get_vertices();
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+                    }
+                    else
+                    {
+                        // Upload texture coordinates
+                        data = pc.get_texture_coordinates();
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, data);
+                    }
+
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 }
                 else
                 {
-                    throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
+                    // Update texture_id based on desired format
+                    if (prefered_format == RS2_FORMAT_XYZ32F) texture_id = 0;
+                    else texture_id = 1;
                 }
-                break;
             }
-            case RS2_FORMAT_Y16:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
-                break;
-            case RS2_FORMAT_RAW8:
-            case RS2_FORMAT_MOTION_RAW:
-            case RS2_FORMAT_GPIO_RAW:
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-                break;
-            case RS2_FORMAT_6DOF:
+            else
             {
-                if (auto pose = frame.as<pose_frame>())
+                switch (format)
                 {
-                    rs2_pose pose_data = pose.get_pose_data();
-                    draw_pose_data(pose_data, frame.get_profile().unique_id());
-                }
-                else
+                case RS2_FORMAT_ANY:
+                    throw std::runtime_error("not a valid format");
+                case RS2_FORMAT_Z16H:
+                    throw std::runtime_error("unexpected format: Z16H. Check decoder processing block");
+                case RS2_FORMAT_Z16:
+                case RS2_FORMAT_DISPARITY16:
+                case RS2_FORMAT_DISPARITY32:
+                    if (frame.is<depth_frame>())
+                    {
+                        if (prefered_format == RS2_FORMAT_Z16)
+                        {
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                        }
+                        else if (prefered_format == RS2_FORMAT_DISPARITY32)
+                        {
+                            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, data);
+                        }
+                        else
+                        {
+                            if (auto colorized_frame = colorize->colorize(frame).as<video_frame>())
+                            {
+                                if (!colorized_frame.is<gl::gpu_frame>())
+                                {
+                                    data = colorized_frame.get_data();
+                                    // Override the first pixel in the colorized image for occlusion invalidation.
+                                    memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
+                                    {
+                                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                            colorized_frame.get_width(),
+                                            colorized_frame.get_height(),
+                                            0, GL_RGB, GL_UNSIGNED_BYTE,
+                                            data);
+                                    }
+                                }
+                                rendered_frame = colorized_frame;
+                            }
+                        }
+                    }
+                    else glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_XYZ32F:
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, data);
+                    break;
+                case RS2_FORMAT_YUYV:
+                    if (yuy2rgb)
+                    {
+                        if (auto colorized_frame = yuy2rgb->process(frame).as<video_frame>())
+                        {
+                            if (!colorized_frame.is<gl::gpu_frame>())
+                            {
+                                glBindTexture(GL_TEXTURE_2D, texture);
+                                data = colorized_frame.get_data();
+
+                                // Override the first pixel in the colorized image for occlusion invalidation.
+                                memset((void*)data, 0, colorized_frame.get_bytes_per_pixel());
+                                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                                    colorized_frame.get_width(),
+                                    colorized_frame.get_height(),
+                                    0, GL_RGB, GL_UNSIGNED_BYTE,
+                                    colorized_frame.get_data());
+                            }
+                            rendered_frame = colorized_frame;
+                        }
+                    }
+                    else
+                    {
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
+                    }
+                    break;
+                case RS2_FORMAT_UYVY: // Use luminance component only to avoid costly UVUY->RGB conversion
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                    break;
+                case RS2_FORMAT_RGB8: case RS2_FORMAT_BGR8: // Display both RGB and BGR by interpreting them RGB, to show the flipped byte ordering. Obviously, GL_BGR could be used on OpenGL 1.2+
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_RGBA8: case RS2_FORMAT_BGRA8: // Display both RGBA and BGRA by interpreting them RGBA, to show the flipped byte ordering. Obviously, GL_BGRA could be used on OpenGL 1.2+
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_Y8:
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_MOTION_XYZ32F:
                 {
-                    throw std::runtime_error("Not expecting a frame with 6DOF format that is not a pose_frame");
+                    if (auto motion = frame.as<motion_frame>())
+                    {
+                        auto axes = motion.get_motion_data();
+                        draw_motion_data(axes.x, axes.y, axes.z);
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Not expecting a frame with motion format that is not a motion_frame");
+                    }
+                    break;
                 }
-                break;
+                case RS2_FORMAT_Y16:
+                case RS2_FORMAT_Y10BPACK:
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_SHORT, data);
+                    break;
+                case RS2_FORMAT_RAW8:
+                case RS2_FORMAT_MOTION_RAW:
+                case RS2_FORMAT_GPIO_RAW:
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                    break;
+                case RS2_FORMAT_6DOF:
+                {
+                    if (auto pose = frame.as<pose_frame>())
+                    {
+                        rs2_pose pose_data = pose.get_pose_data();
+                        draw_pose_data(pose_data, frame.get_profile().unique_id());
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Not expecting a frame with 6DOF format that is not a pose_frame");
+                    }
+                    break;
+                }
+                //case RS2_FORMAT_RAW10:
+                //{
+                //    // Visualize Raw10 by performing a naive down sample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
+                //    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
+                //    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
+                //    for (auto y = 0; y<height; y += 2)
+                //    {
+                //        for (auto x = 0; x<width; x += 4)
+                //        {
+                //            *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
+                //            *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
+                //            in0 += 5; in1 += 5;
+                //        }
+                //        in0 = in1; in1 += width * 5 / 4;
+                //    }
+                //    glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
+                //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
+                //}
+                //break;
+                default:
+                {
+                    memset((void*)data, 0, height*width);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+                }
+                }
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             }
-            //case RS2_FORMAT_RAW10:
-            //{
-            //    // Visualize Raw10 by performing a naive down sample. Each 2x2 block contains one red pixel, two green pixels, and one blue pixel, so combine them into a single RGB triple.
-            //    rgb.clear(); rgb.resize(width / 2 * height / 2 * 3);
-            //    auto out = rgb.data(); auto in0 = reinterpret_cast<const uint8_t *>(data), in1 = in0 + width * 5 / 4;
-            //    for (auto y = 0; y<height; y += 2)
-            //    {
-            //        for (auto x = 0; x<width; x += 4)
-            //        {
-            //            *out++ = in0[0]; *out++ = (in0[1] + in1[0]) / 2; *out++ = in1[1]; // RGRG -> RGB RGB
-            //            *out++ = in0[2]; *out++ = (in0[3] + in1[2]) / 2; *out++ = in1[3]; // GBGB
-            //            in0 += 5; in1 += 5;
-            //        }
-            //        in0 = in1; in1 += width * 5 / 4;
-            //    }
-            //    glPixelStorei(GL_UNPACK_ROW_LENGTH, width / 2);        // Update row stride to reflect post-downsampling dimensions of the target texture
-            //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width / 2, height / 2, 0, GL_RGB, GL_UNSIGNED_BYTE, rgb.data());
-            //}
-            //break;
-            default:
-                throw std::runtime_error("The requested format is not supported for rendering");
-            }
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            glPixelStorei(GL_PACK_ALIGNMENT, 1);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glBindTexture(GL_TEXTURE_2D, 0);
 
             last_queue[1].enqueue(rendered_frame);
@@ -1309,7 +1441,7 @@ namespace rs2
             draw_circle(1, 0, 0, 0, 0, 1);
 
             const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
+            const auto vec_threshold = 0.2f;
             if (norm < vec_threshold)
             {
                 const auto radius = 0.05;
@@ -1350,12 +1482,8 @@ namespace rs2
                 std::ostringstream s1;
                 const auto precision = 3;
 
-                s1 << "(" << std::fixed << std::setprecision(precision) << x << "," << std::fixed << std::setprecision(precision) << y << "," << std::fixed << std::setprecision(precision) << z << ")";
-                print_text_in_3d(x, y, z, s1.str().c_str(), false, model, proj, 1 / norm);
-
-                std::ostringstream s2;
-                s2 << std::setprecision(precision) << norm;
-                print_text_in_3d(x / 2, y / 2, z / 2, s2.str().c_str(), true, model, proj, 1 / norm);
+                s1 << std::setprecision(precision) << norm;
+                print_text_in_3d(x / 2, y / 2, z / 2, s1.str().c_str(), true, model, proj, 1 / norm);
             }
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 768, 768, 0);
@@ -1367,12 +1495,12 @@ namespace rs2
         }
 
 
-        void draw_grid()
+        void draw_grid(float step)
         {
             glBegin(GL_LINES);
-            glColor4f(0.4f, 0.4f, 0.4f, 0.8f);
+            glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
             glLineWidth(1);
-            float step = 0.1f;
+            
             for (float x = -1.5; x < 1.5; x += step)
             {
                 for (float y = -1.5; y < 1.5; y += step)
@@ -1402,7 +1530,7 @@ namespace rs2
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
 
-            draw_grid();
+            draw_grid(1.f);
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:
@@ -1419,9 +1547,6 @@ namespace rs2
 
             // remove model matrix from the rest of the render
             glPopMatrix();
-
-            const auto canvas_size = 230;
-            const auto vec_threshold = 0.01f;
 
             glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 1024, 0);
 
@@ -1486,7 +1611,8 @@ namespace rs2
             glColor4f(1.0f, 1.0f, 1.0f, 1 - alpha);
             glEnd();
 
-            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindTexture(GL_TEXTURE_2D, get_gl_handle());
+
             glEnable(GL_TEXTURE_2D);
             draw_texture(normalized_zoom, r);
 
@@ -1498,7 +1624,8 @@ namespace rs2
 
         void show_preview(const rect& r, const rect& normalized_zoom = rect{0, 0, 1, 1})
         {
-            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindTexture(GL_TEXTURE_2D, get_gl_handle());
+
             glEnable(GL_TEXTURE_2D);
 
             // Show stream thumbnail
@@ -1549,30 +1676,6 @@ namespace rs2
                 glVertex2f(normalized_thumbnail_roi.x, normalized_thumbnail_roi.y);
                 glEnd();
             }
-
-            /*if (last)
-            {
-                if (last.get_profile().stream_type() == RS2_STREAM_DEPTH)
-                {
-                    const int segments = 16;
-                    for (int i = 1; i <= segments; i++)
-                    {
-                        auto t1 = (float)i/segments;
-                        auto k1 = cm->min_key() + t1*(cm->max_key() - cm->min_key());
-                        auto t2 = (float)(i - 1)/segments;
-                        auto k2 = cm->min_key() + t2*(cm->max_key() - cm->min_key());
-                        auto c1 = cm->get(k1);
-                        auto c2 = cm->get(k2);
-
-                        glBegin(GL_QUADS);
-                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 22);
-                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 22);
-                            glColor3f(c2.x / 255, c2.y / 255, c2.z / 255); glVertex2f(r.x + r.w - 150 + t2 * 140, r.y + r.h - 4);
-                            glColor3f(c1.x / 255, c1.y / 255, c1.z / 255); glVertex2f(r.x + r.w - 150 + t1 * 140, r.y + r.h - 4);
-                        glEnd();
-                    }
-                }
-            }*/
         }
     };
 
@@ -1657,5 +1760,38 @@ namespace rs2
         dev.as<debug_protocol>().send_and_receive_raw_data(ver_flip);
 
         flip = !flip;
+    }
+
+    inline float to_rad(float deg)
+    {
+        return static_cast<float>(deg * (M_PI / 180.f));
+    }
+
+    inline matrix4 create_perspective_projection_matrix(float width, float height, float fov, float n, float f)
+    {
+        auto ar = width / height;
+        auto y_scale = (1.f / (float)std::tan(to_rad(fov / 2.f))) * ar;
+        auto x_scale = y_scale / ar;
+        auto length = f - n;
+
+        matrix4 res;
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                res.mat[0][0] = 0.f;
+        res.mat[0][0] = x_scale;
+        res.mat[1][1] = y_scale;
+        res.mat[2][2] = -((f + n) / length);
+        res.mat[2][3] = -1;
+        res.mat[3][2] = -((2 * n * f) / length);
+        return res;
+    }
+
+    inline matrix4 identity_matrix()
+    {
+        matrix4 data;
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                data.mat[i][j] = (i == j) ? 1.f : 0.f;
+        return data;
     }
 }

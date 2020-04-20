@@ -19,9 +19,11 @@ UnrealEngine4 wrapper shows how to use RealSense features via Blueprints (UE4 ve
 
 Download and install [RealSense SDK 2.0](https://github.com/IntelRealSense/librealsense/releases)
 
-Download wrapper and [generate project](https://wiki.unrealengine.com/Generate_Visual_Studio_Project) for RealSenseUE.uproject
+Download wrapper and [generate project files](https://wiki.unrealengine.com/Generate_Visual_Studio_Project) for RealSenseUE.uproject
 
-Copy C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64\realsense2.dll to engine bin folder C:\Program Files\Epic Games\UE_4.19\Engine\Binaries\Win64\
+Copy C:\Program Files (x86)\Intel RealSense SDK 2.0\bin\x64\realsense2.dll to either:
+* The engine bin folder C:\Program Files\Epic Games\UE_4.19\Engine\Binaries\Win64\ **OR**
+* The plugin build folder RealSense-UE4-Wrapper\Plugins\RealSense\Binaries\Win64\
 
 In case RealSense SDK was installed in custom folder:
 * edit file RealSense-UE4-Wrapper\Plugins\RealSense\Source\RealSense\RealSense.Build.cs
@@ -187,6 +189,7 @@ ARealSenseTestActor::ARealSenseTestActor()
 * ColorizedDepth is CPU bound
 * PointCloud (PCL) has sometimes texture corruptions at thhe egdes (RealSenseSDK issue)
 * PointCloud (PCL) update/rendering performance is somtime slow
+* rebuilding project files can sometimes fail after switching Unreal Engine versions. Cleaning the solution or Deleting the intermediate directory should fix this.
 
 ## License
 

@@ -4,7 +4,7 @@
 #include "RuntimeMeshComponentPlugin.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "PhysicsEngine/PhysicsSettings.h"
-#include "Physics/IPhysXCookingModule.h"
+#include "IPhysXCookingModule.h"
 #include "RuntimeMeshCore.h"
 #include "RuntimeMeshGenericVertex.h"
 #include "RuntimeMeshUpdateCommands.h"
@@ -13,7 +13,7 @@
 #include "RuntimeMesh.h"
 #include "RuntimeMeshComponentProxy.h"
 #include "RuntimeMeshLegacySerialization.h"
-
+#include "NavigationSystem.h"
 
 
 
@@ -25,6 +25,10 @@ DECLARE_CYCLE_STAT(TEXT("RMC - New Collision Data Recieved"), STAT_RuntimeMeshCo
 
 URuntimeMeshComponent::URuntimeMeshComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 21
+	, BodySetup(nullptr)
+#endif
+
 {
 	SetNetAddressable();
 }
@@ -67,14 +71,14 @@ void URuntimeMeshComponent::NewCollisionMeshReceived()
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 20
 	FNavigationSystem::UpdateComponentData(*this);
 #else
- 	if (UNavigationSystem::ShouldUpdateNavOctreeOnComponentChange() && IsRegistered())
+ 	if (UNavigationSystemV1::ShouldUpdateNavOctreeOnComponentChange() && IsRegistered())
  	{
  		UWorld* MyWorld = GetWorld();
  
- 		if (MyWorld != nullptr && MyWorld->GetNavigationSystem() != nullptr &&
- 			(MyWorld->GetNavigationSystem()->ShouldAllowClientSideNavigation() || !MyWorld->IsNetMode(ENetMode::NM_Client)))
+ 		if (MyWorld != nullptr && FNavigationSystem::GetCurrent(MyWorld) != nullptr &&
+ 			(FNavigationSystem::GetCurrent(MyWorld)->ShouldAllowClientSideNavigation() || !MyWorld->IsNetMode(ENetMode::NM_Client)))
  		{
- 			UNavigationSystem::UpdateComponentInNavOctree(*this);
+			UNavigationSystemV1::UpdateComponentInNavOctree(*this);
  		}
  	}
 #endif
@@ -123,12 +127,16 @@ FPrimitiveSceneProxy* URuntimeMeshComponent::CreateSceneProxy()
 
 UBodySetup* URuntimeMeshComponent::GetBodySetup()
 {
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 21
+	return BodySetup;
+#else
 	if (GetRuntimeMesh())
 	{
 		return GetRuntimeMesh()->BodySetup;
 	}
 	
 	return nullptr;
+#endif
 }
 
 
@@ -165,6 +173,31 @@ UMaterialInterface* URuntimeMeshComponent::GetMaterial(int32 ElementIndex) const
 
 	// Had no RM/Section return null
 	return nullptr;
+}
+
+UMaterialInterface* URuntimeMeshComponent::GetOverrideMaterial(int32 ElementIndex) const
+{
+	return Super::GetMaterial(ElementIndex);
+}
+
+int32 URuntimeMeshComponent::GetSectionIdFromCollisionFaceIndex(int32 FaceIndex) const
+{
+	int32 SectionIndex = 0;
+
+	if (URuntimeMesh* Mesh = GetRuntimeMesh())
+	{
+		SectionIndex = Mesh->GetSectionIdFromCollisionFaceIndex(FaceIndex);
+	}
+
+	return SectionIndex;
+}
+
+void URuntimeMeshComponent::GetSectionIdAndFaceIdFromCollisionFaceIndex(int32 FaceIndex, int32 & SectionIndex, int32 & SectionFaceIndex) const
+{
+	if (URuntimeMesh* Mesh = GetRuntimeMesh())
+	{
+		Mesh->GetSectionIdAndFaceIdFromCollisionFaceIndex(FaceIndex, SectionIndex, SectionFaceIndex);
+	}
 }
 
 UMaterialInterface* URuntimeMeshComponent::GetMaterialFromCollisionFaceIndex(int32 FaceIndex, int32& SectionIndex) const
@@ -211,4 +244,114 @@ void URuntimeMeshComponent::PostLoad()
 	{
 		RuntimeMeshReference->RegisterLinkedComponent(this);
 	}
+}
+
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 22
+
+bool URuntimeMeshComponent::GetPhysicsTriMeshData(struct FTriMeshCollisionData* CollisionData, bool InUseAllTriData)
+{
+	URuntimeMesh* RuntimeMesh = GetRuntimeMesh();
+	if (RuntimeMesh)
+	{
+		return RuntimeMesh->GetPhysicsTriMeshData(CollisionData, InUseAllTriData);
+	}
+
+	return false;
+}
+
+bool URuntimeMeshComponent::ContainsPhysicsTriMeshData(bool InUseAllTriData) const
+{
+	URuntimeMesh* RuntimeMesh = GetRuntimeMesh();
+	if (RuntimeMesh)
+	{
+		return RuntimeMesh->ContainsPhysicsTriMeshData(InUseAllTriData);
+	}
+	return false;
+}
+
+#endif
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 21
+
+UBodySetup* URuntimeMeshComponent::CreateNewBodySetup()
+{
+	UBodySetup* NewBodySetup = NewObject<UBodySetup>(this, NAME_None, (IsTemplate() ? RF_Public : RF_NoFlags));
+	NewBodySetup->BodySetupGuid = FGuid::NewGuid();
+
+	return NewBodySetup;
+}
+
+void URuntimeMeshComponent::FinishPhysicsAsyncCook(UBodySetup* FinishedBodySetup)
+{
+	//SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_AsyncCollisionFinish);
+	check(IsInGameThread());
+
+	int32 FoundIdx;
+	if (AsyncBodySetupQueue.Find(FinishedBodySetup, FoundIdx))
+	{
+		// The new body was found in the array meaning it's newer so use it
+		BodySetup = FinishedBodySetup;
+
+		// Shift down all remaining body setups, removing any old setups
+		for (int32 Index = FoundIdx + 1; Index < AsyncBodySetupQueue.Num(); Index++)
+		{
+			AsyncBodySetupQueue[Index - (FoundIdx + 1)] = AsyncBodySetupQueue[Index];
+			AsyncBodySetupQueue[Index] = nullptr;
+		}
+		AsyncBodySetupQueue.SetNum(AsyncBodySetupQueue.Num() - (FoundIdx + 1));
+		
+		NewCollisionMeshReceived();
+	}
+}
+
+void URuntimeMeshComponent::UpdateCollision(bool bForceCookNow)
+{
+	//SCOPE_CYCLE_COUNTER(STAT_RuntimeMesh_CollisionUpdate);
+	check(IsInGameThread());
+	// HORU: workaround for a nullpointer
+	if (!GetRuntimeMesh())
+		return;
+	//check(GetRuntimeMesh());
+
+	UWorld* World = GetWorld();
+	const bool bShouldCookAsync = !bForceCookNow && World && World->IsGameWorld() && GetRuntimeMesh()->bUseAsyncCooking;
+
+	if (bShouldCookAsync)
+	{
+		UBodySetup* NewBodySetup = CreateNewBodySetup();
+		AsyncBodySetupQueue.Add(NewBodySetup);
+
+		GetRuntimeMesh()->SetBasicBodySetupParameters(NewBodySetup);
+		GetRuntimeMesh()->CopyCollisionElementsToBodySetup(NewBodySetup);
+
+		NewBodySetup->CreatePhysicsMeshesAsync(
+			FOnAsyncPhysicsCookFinished::CreateUObject(this, &URuntimeMeshComponent::FinishPhysicsAsyncCook, NewBodySetup));
+	}
+	else
+	{
+		AsyncBodySetupQueue.Empty();
+		UBodySetup* NewBodySetup = CreateNewBodySetup();
+
+		// Change body setup guid 
+		NewBodySetup->BodySetupGuid = FGuid::NewGuid();
+
+		GetRuntimeMesh()->SetBasicBodySetupParameters(NewBodySetup);
+		GetRuntimeMesh()->CopyCollisionElementsToBodySetup(NewBodySetup);
+
+		// Update meshes
+		NewBodySetup->bHasCookedCollisionData = true;
+		NewBodySetup->InvalidatePhysicsData();
+		NewBodySetup->CreatePhysicsMeshes();
+
+		BodySetup = NewBodySetup;
+		NewCollisionMeshReceived();
+	}
+}
+
+#endif
+
+bool URuntimeMeshComponent::IsAsyncCollisionCookingPending() const
+{
+	return AsyncBodySetupQueue.Num() != 0;
 }

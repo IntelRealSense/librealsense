@@ -1,6 +1,6 @@
 # API Architecture
 
-RealSense API provides access to configure, control and access the streaming data of RealSense depth cameras. The API allows getting started with the camera basic functionality using the high level API, or get full control of all camera settings using the low level API. Choose the API best suited to your needs:
+RealSense API provides access to configuration, control and streaming of data from RealSense depth cameras. You can get started with the  basic functionality using the high level API, or get full control of all camera settings using the low level API:
 
 1. [High-Level Pipeline API](#high-level-pipeline-api)  
 The Pipeline interface configures the Intel® RealSense™ device with the best recommended settings and manages hardware resources and threading. It is accompanied by processing blocks, which abstract and simplify common processing of the camera raw data. Use this API when you require the Camera to work but do not need to fine tune the camera settings or control the streamings threads. Recommended for **Application Developers**.

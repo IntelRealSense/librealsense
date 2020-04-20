@@ -1,3 +1,4 @@
+#include "DepthColorizer.h"
 #include "PCH.h"
 #include "ColorMap.inl"
 

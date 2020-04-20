@@ -56,7 +56,7 @@ struct controller_vendor_data_
    typedef std::array<uint8_t, 6>  _data_type;
   _data_type data;
 
-   typedef ros::Time _timestamp_type;
+   typedef rs2rosinternal::Time _timestamp_type;
   _timestamp_type timestamp;
 
 
@@ -79,13 +79,13 @@ typedef std::shared_ptr< ::realsense_legacy_msgs::controller_vendor_data const> 
 template<typename ContainerAllocator>
 std::ostream& operator<<(std::ostream& s, const ::realsense_legacy_msgs::controller_vendor_data_<ContainerAllocator> & v)
 {
-ros::message_operations::Printer< ::realsense_legacy_msgs::controller_vendor_data_<ContainerAllocator> >::stream(s, "", v);
+rs2rosinternal::message_operations::Printer< ::realsense_legacy_msgs::controller_vendor_data_<ContainerAllocator> >::stream(s, "", v);
 return s;
 }
 
 } // namespace realsense_legacy_msgs
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_traits
 {
@@ -172,9 +172,9 @@ time timestamp\n\
 };
 
 } // namespace message_traits
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace serialization
 {
@@ -194,9 +194,9 @@ namespace serialization
   }; // struct controller_vendor_data_
 
 } // namespace serialization
-} // namespace ros
+} // namespace rs2rosinternal
 
-namespace ros
+namespace rs2rosinternal
 {
 namespace message_operations
 {
@@ -219,11 +219,11 @@ struct Printer< ::realsense_legacy_msgs::controller_vendor_data_<ContainerAlloca
       Printer<uint8_t>::stream(s, indent + "  ", v.data[i]);
     }
     s << indent << "timestamp: ";
-    Printer<ros::Time>::stream(s, indent + "  ", v.timestamp);
+    Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.timestamp);
   }
 };
 
 } // namespace message_operations
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif // realsense_legacy_msgs_MESSAGE_CONTROLLER_VENDOR_DATA_H

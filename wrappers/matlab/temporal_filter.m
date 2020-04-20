@@ -1,11 +1,11 @@
 % Wraps librealsense2 temporal_filter class
-classdef temporal_filter < realsense.processing_block
+classdef temporal_filter < realsense.filter
     methods
         % Constructor
         function this = temporal_filter(smooth_alpha, smooth_delta, persistence_control)
             if (nargin == 0)
                 out = realsense.librealsense_mex('rs2::temporal_filter', 'new');
-            else if (nargin == 3)
+            elseif (nargin == 3)
                 validateattributes(smooth_alpha, {'numeric'}, {'scalar', 'real'});
                 validateattributes(smooth_delta, {'numeric'}, {'scalar', 'real'});
                 validateattributes(persistence_control, {'numeric'}, {'scalar', 'real', 'integer'});
@@ -13,7 +13,7 @@ classdef temporal_filter < realsense.processing_block
             else
                 % TODO: Error out on bad arg count
             end
-            this = this@realsense.processing_block(out);
+            this = this@realsense.filter(out);
         end
         
         % Destructor (uses base class destructor)

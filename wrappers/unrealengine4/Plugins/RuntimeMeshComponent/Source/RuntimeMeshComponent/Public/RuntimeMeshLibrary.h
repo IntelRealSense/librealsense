@@ -65,6 +65,34 @@ public:
 
 	static void GetStaticMeshSection(UStaticMesh* InMesh, int32 LODIndex, int32 SectionIndex, const TSharedPtr<FRuntimeMeshAccessor>& MeshAccessor, const TSharedPtr<FRuntimeMeshIndicesAccessor>& TessellationIndicesAccessor);
 
+	template<typename VertexType0, typename IndexType>
+	static void GetStaticMeshSection(UStaticMesh* InMesh, int32 LODIndex, int32 SectionIndex, TArray<VertexType0>& Vertices, TArray<IndexType>& Triangles) {
+		Vertices.Empty();
+		Triangles.Empty();
+
+		GetStaticMeshSection(InMesh, LODIndex, SectionIndex, 1,
+			[&Vertices](FVector Position, FVector TangentX, FVector TangentY, FVector TangentZ) -> int32
+		{
+			return Vertices.Add(VertexType0(Position, TangentX, TangentY, TangentZ));
+		},
+			[&Vertices](int32 Index, int32 UVIndex, FVector2D UV)
+		{
+			check(UVIndex == 0);
+			Vertices[Index].UV0 = UV;
+		},
+			[&Vertices](int32 Index, FColor Color)
+		{
+			Vertices[Index].Color = Color;
+		},
+			[&Triangles](int32 Index)
+		{
+			Triangles.Add(Index);
+		},
+			[](int32 Index)
+		{
+
+		});
+	};
 
 
 	/** Copy sections from a static mesh to a runtime mesh */

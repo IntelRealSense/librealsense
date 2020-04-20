@@ -100,6 +100,11 @@ public class RsSpatialFilter : RsProcessingBlock
         _holeFillingMode = (HoleFillingMode)val;
     }
 
+    public void SetHolesFill(int val)
+    {
+        _holeFillingMode = (HoleFillingMode)val;
+    }
+
     private void UpdateOptions()
     {
         filterMag.Value = _filterMagnitude;

@@ -43,5 +43,8 @@ classdef context < handle
             validateattributes(file, {'string', 'char'}, {'scalartext', 'nonempty'}, '', 'file', 2);
             realsense.librealsense_mex('rs2::context', 'unload_device', this.objectHandle, file);
         end
+        function unload_tracking_module(this)
+            realsense.librealsense_mex('rs2::context', 'unload_tracking_module', this.objectHandle);
+        end
     end
 end

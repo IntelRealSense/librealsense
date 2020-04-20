@@ -29,8 +29,9 @@ namespace rs2 {
 
                 void convert(rs2::frameset& frameset) override
                 {
+                    rs2::pointcloud pc;
                     start_worker(
-                        [this, &frameset] {
+                        [this, &frameset, pc]() mutable {
                             auto frameDepth = frameset.get_depth_frame();
                             auto frameColor = frameset.get_color_frame();
 
@@ -39,7 +40,6 @@ namespace rs2 {
                                     return;
                                 }
 
-                                rs2::pointcloud pc;
                                 pc.map_to(frameColor);
 
                                 auto points = pc.calculate(frameDepth);

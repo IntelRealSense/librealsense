@@ -24,6 +24,9 @@ public abstract class RsProcessingBlock : ScriptableObject, IProcessingBlock
         set
         {
             enabled = value;
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetObjectEnabled(this, enabled);
+#endif
         }
     }
 
@@ -35,7 +38,6 @@ public abstract class RsProcessingBlock : ScriptableObject, IProcessingBlock
 
 #if UNITY_EDITOR
         var p = UnityEditor.AssetDatabase.GetAssetPath(this);
-        Debug.Log(p);
         var names = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(p).Where(a => a).Select(a => a.name).ToList();
         names.Remove(GetType().Name);
         this.name = UnityEditor.ObjectNames.GetUniqueName(names.ToArray(), GetType().Name);

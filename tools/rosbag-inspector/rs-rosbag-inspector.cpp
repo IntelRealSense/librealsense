@@ -14,6 +14,8 @@
 #include <regex>
 #include <thread>
 
+#include <os.h>
+
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -24,8 +26,6 @@
 #define NOMINMAX
 #endif
 #endif
-#define NOC_FILE_DIALOG_IMPLEMENTATION
-#include <noc_file_dialog.h>
 
 #include "print_helpers.h"
 #include "rosbag_content.h"
@@ -82,6 +82,7 @@ private:
     void init_window()
     {
         glfwMakeContextCurrent(_window);
+        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         glfwSetWindowUserPointer(_window, &files);
 
         glfwSetDropCallback(_window, [](GLFWwindow* w, int count, const char** paths)
@@ -146,7 +147,7 @@ void draw_menu_bar()
         {
             if (ImGui::MenuItem("Load File..."))
             {
-                auto ret = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ROS-bag\0*.bag\0", NULL, NULL);
+                auto ret = file_dialog_open(rs2::file_dialog_mode::open_file, "ROS-bag\0*.bag\0", NULL, NULL);
                 if (ret)
                 {
                     files.AddFiles({ ret });
@@ -373,7 +374,7 @@ inline void sort(sort_type m_sort_type, const std::string& in, const std::string
         {
 
         }
-        if (m.getTime() == ros::TIME_MIN)
+        if (m.getTime() == rs2rosinternal::TIME_MIN)
         {
             bag_out.write(m.getTopic(), m.getTime(), m);
             continue;

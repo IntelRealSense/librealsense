@@ -38,7 +38,9 @@
   #ifdef _MSC_VER
     #define WIN32_LEAN_AND_MEAN // slimmer compile times
     #define _WINSOCKAPI_ // stops windows.h from including winsock.h (and lets us include winsock2.h)
-    #define NOMINMAX // windows c++ pollutes the environment like any factory
+    #ifndef NOMINMAX
+      #define NOMINMAX // windows c++ pollutes the environment like any factory
+    #endif // NOMINMAX
   #endif
   #include <windows.h>
 #endif
@@ -54,7 +56,7 @@
 #endif
 #include <string>
 
-namespace ros {
+namespace rs2rosinternal {
 
 /**
  * Convenient cross platform function for returning a std::string of an
@@ -79,6 +81,6 @@ inline bool get_environment_variable(std::string &str, const char* environment_v
 	}
 }
 
-} // namespace ros
+} // namespace rs2rosinternal
 
 #endif /* CPP_COMMON_PLATFORM_H_ */

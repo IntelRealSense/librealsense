@@ -50,6 +50,8 @@ function makeContext(section) {
 describe('Pipeline tests', function() {
   let ctx;
   let pipe;
+  this.timeout(5000);
+
   before(function() {
     ctx = makeContext('pipeline');
     pipe = new rs2.Pipeline(ctx);
@@ -95,6 +97,7 @@ describe('Frameset test', function() {
   let pipe;
   let frameset;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('frameset');
@@ -151,6 +154,7 @@ describe('Frame test', function() {
   let color;
   let depth;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('frame');
@@ -223,59 +227,61 @@ describe('Frame test', function() {
   });
 });
 
-describe('Colorizer test', function() {
-  let pipe;
-  let frameset;
-  let depth;
-  let colorizer;
-  let ctx;
+if (!(isRecord || isPlayback)) {
+  
+  describe('Colorizer test', function() {
+    let pipe;
+    let frameset;
+    let depth;
+    let colorizer;
+    let ctx;
+    this.timeout(5000);
 
-  before(function() {
-    ctx = makeContext('colorizer');
-    pipe = new rs2.Pipeline(ctx);
-    pipe.start();
-    frameset = pipe.waitForFrames();
-    depth = frameset.depthFrame;
-    colorizer = new rs2.Colorizer();
-  });
+    before(function() {
+      ctx = makeContext('colorizer');
+      pipe = new rs2.Pipeline(ctx);
+      pipe.start();
+      frameset = pipe.waitForFrames();
+      depth = frameset.depthFrame;
+      colorizer = new rs2.Colorizer();
+    });
 
-  after(function() {
-    pipe.stop();
-    rs2.cleanup();
-  });
+    after(function() {
+      pipe.stop();
+      rs2.cleanup();
+    });
 
-  it('colorize test', () => {
-    const depthRGB = colorizer.colorize(depth);
-    assert.equal(depthRGB.height, depth.height);
-    assert.equal(depthRGB.width, depth.width);
-    assert.equal(depthRGB.format, rs2.format.FORMAT_RGB8);
-  });
-  it('colorizer option API test', () => {
-    for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
-      let readonly = colorizer.isOptionReadOnly(i);
-      assert.equal((readonly === undefined) || (typeof readonly === 'boolean'), true);
-      let supports = colorizer.supportsOption(i);
-      assert.equal((supports === undefined) || (typeof supports === 'boolean'), true);
-      let value = colorizer.getOption(i);
-      assert.equal((value === undefined) || (typeof value === 'number'), true);
-      let des = colorizer.getOptionDescription(i);
-      assert.equal((des === undefined) || (typeof des === 'string'), true);
-      des = colorizer.getOptionValueDescription(i, 1);
-      assert.equal((des === undefined) || (typeof des === 'string'), true);
+    it('colorize test', () => {
+      const depthRGB = colorizer.colorize(depth);
+      assert.equal(depthRGB.height, depth.height);
+      assert.equal(depthRGB.width, depth.width);
+      assert.equal(depthRGB.format, rs2.format.FORMAT_RGB8);
+    });
+    it('colorizer option API test', () => {
+      for (let i = rs2.option.OPTION_BACKLIGHT_COMPENSATION; i < rs2.option.OPTION_COUNT; i++) {
+        let readonly = colorizer.isOptionReadOnly(i);
+        assert.equal((readonly === undefined) || (typeof readonly === 'boolean'), true);
+        let supports = colorizer.supportsOption(i);
+        assert.equal((supports === undefined) || (typeof supports === 'boolean'), true);
+        let value = colorizer.getOption(i);
+        assert.equal((value === undefined) || (typeof value === 'number'), true);
+        let des = colorizer.getOptionDescription(i);
+        assert.equal((des === undefined) || (typeof des === 'string'), true);
+        des = colorizer.getOptionValueDescription(i, 1);
+        assert.equal((des === undefined) || (typeof des === 'string'), true);
 
-      if (supports && !readonly) {
-        let range = colorizer.getOptionRange(i);
-        for (let j = range.minvalue; j <= range.maxValue; j += range.step) {
-          colorizer.setOption(i, j);
-          let val = colorizer.getOption(i);
-          assert.equal(val, j);
+        if (supports && !readonly) {
+          let range = colorizer.getOptionRange(i);
+          for (let j = range.minvalue; j <= range.maxValue; j += range.step) {
+            colorizer.setOption(i, j);
+            let val = colorizer.getOption(i);
+            assert.equal(val, j);
+          }
         }
       }
-    }
+    });
   });
-});
 
-if (!(isRecord || isPlayback)) {
   describe('Pointcloud and Points test', function() {
     let pipe;
     let frameset;
@@ -320,6 +326,7 @@ if (!(isRecord || isPlayback)) {
 
 describe('Context tests', function() {
   let ctx;
+  this.timeout(5000);
 
   before(() => {
     ctx = makeContext('context');
@@ -363,6 +370,7 @@ describe('Context tests', function() {
 describe('Sensor tests', function() {
   let ctx;
   let sensors;
+  this.timeout(10000);
 
   before(() => {
     ctx = makeContext('sensor');
@@ -530,10 +538,10 @@ describe('Sensor tests', function() {
       if (!isPlayback) {
         setTimeout(() => {
           dev.cxxDev.triggerErrorForTest();
-        }, 100);
+        }, 5000);
       }
     });
-  }).timeout(5000);
+  });
 });
 
 // describe('Align tests', function() {
@@ -567,6 +575,7 @@ describe(('syncer test'), function() {
   let syncer;
   let ctx;
   let sensors;
+  this.timeout(5000);
 
   before(() => {
     ctx = makeContext('syncer');
@@ -603,6 +612,7 @@ describe('Config test', function() {
   let pipe;
   let cfg;
   let ctx;
+  this.timeout(5000);
 
   before(function() {
     ctx = makeContext('config');
@@ -809,6 +819,8 @@ if (!(isRecord || isPlayback)) {
 
 describe('Device tests', function() {
   let dev;
+  this.timeout(5000);
+
   before(function() {
     let ctx = makeContext('device');
     dev = ctx.queryDevices().devices[0];
@@ -856,6 +868,8 @@ describe('filter tests', function() {
   let temporalFilter;
   let spatialFilter;
   let pipeline;
+  this.timeout(10000);
+
   before(function() {
     ctx = makeContext('filter');
     decimationFilter = new rs2.DecimationFilter();
@@ -876,7 +890,7 @@ describe('filter tests', function() {
     let out = temporalFilter.process(depthFrame);
     assert.equal(out instanceof rs2.DepthFrame, true);
     assert.equal(typeof out.width, 'number');
-  }).timeout(10000); // change the threshold to be 10 seconds to avoid timeout.
+  })
 
   it('spatial filter', () => {
     let frameset = pipeline.waitForFrames();

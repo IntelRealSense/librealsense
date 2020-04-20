@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "Engine.h"
+#include "Engine/Engine.h"
 #include "Components/MeshComponent.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Stats/Stats.h"
-#include "CriticalSection.h"
+#include "HAL/CriticalSection.h"
 #include "RuntimeMeshCore.generated.h"
 
 DECLARE_STATS_GROUP(TEXT("RuntimeMesh"), STATGROUP_RuntimeMesh, STATCAT_Advanced);
@@ -14,7 +14,7 @@ DECLARE_STATS_GROUP(TEXT("RuntimeMesh"), STATGROUP_RuntimeMesh, STATCAT_Advanced
 
 #define RUNTIMEMESH_MAXTEXCOORDS MAX_TEXCOORDS
 
-
+#define RUNTIMEMESH_ENABLE_DEBUG_RENDERING (!(UE_BUILD_SHIPPING || UE_BUILD_TEST) || WITH_EDITOR)
 
 // Custom version for runtime mesh serialization
 namespace FRuntimeMeshVersion
@@ -32,6 +32,8 @@ namespace FRuntimeMeshVersion
 
 		// This was the 4.19 RHI upgrades requiring an internal restructure
 		RuntimeMeshComponentUE4_19 = 6,
+
+		SerializationUpgradeToConfigurable = 7,
 
 		// -----<new versions can be added above this line>-------------------------------------------------
 		VersionPlusOne,
@@ -175,7 +177,7 @@ enum class ERuntimeMeshCollisionCookingMode : uint8
 USTRUCT(BlueprintType)
 struct FRuntimeMeshTangent
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 
 	/** Direction of X tangent for this vertex */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Tangent)
@@ -330,16 +332,33 @@ struct RUNTIMEMESHCOMPONENT_API FRuntimeMeshLockProvider
 	virtual ~FRuntimeMeshLockProvider() { }
 	virtual void Lock(bool bIgnoreThreadIfNullLock = false) = 0;
 	virtual void Unlock() = 0;
+	virtual bool IsThreadSafe() const { return false; }
 };
 
 
 
 struct RUNTIMEMESHCOMPONENT_API FRuntimeMeshNullLockProvider : public FRuntimeMeshLockProvider
 {
+private:
+	bool bIsIgnoringLock;
+public:
 	FRuntimeMeshNullLockProvider() { check(IsInGameThread()); }
 	virtual ~FRuntimeMeshNullLockProvider() { }
-	virtual void Lock(bool bIgnoreThreadIfNullLock = false) override { check(IsInGameThread()); }
-	virtual void Unlock() override { check(IsInGameThread()); }
+	virtual void Lock(bool bIgnoreThreadIfNullLock = false) override 
+	{ 
+		bIsIgnoringLock = bIgnoreThreadIfNullLock;
+		if (!bIgnoreThreadIfNullLock) 
+		{ 
+			check(IsInGameThread()); 
+		} 
+	}
+	virtual void Unlock() override 
+	{ 
+		if (!bIsIgnoringLock)
+		{
+			check(IsInGameThread());
+		}
+	}
 };
 
 struct RUNTIMEMESHCOMPONENT_API FRuntimeMeshMutexLockProvider : public FRuntimeMeshLockProvider
@@ -353,6 +372,7 @@ public:
 	virtual ~FRuntimeMeshMutexLockProvider() { }
 	virtual void Lock(bool bIgnoreThreadIfNullLock = false) override { SyncObject.Lock(); }
 	virtual void Unlock() override { SyncObject.Unlock(); }
+	virtual bool IsThreadSafe() const override { return true; }
 };
 
 
@@ -370,23 +390,23 @@ public:
 	*
 	* @param InSynchObject The synchronization object to manage
 	*/
-	FRuntimeMeshScopeLock(const FRuntimeMeshLockProvider* InSyncObject, bool bIsAlreadyLocked = false)
+	FRuntimeMeshScopeLock(const FRuntimeMeshLockProvider* InSyncObject, bool bIsAlreadyLocked = false, bool bIgnoreThreadIfNullLock = false)
 		: SynchObject(const_cast<FRuntimeMeshLockProvider*>(InSyncObject))
 	{
 		check(SynchObject);
 		if (!bIsAlreadyLocked)
 		{
-			SynchObject->Lock();
+			SynchObject->Lock(bIgnoreThreadIfNullLock);
 		}
 	}
 
-	FRuntimeMeshScopeLock(const TUniquePtr<FRuntimeMeshLockProvider>& InSyncObject, bool bIsAlreadyLocked = false)
+	FRuntimeMeshScopeLock(const TUniquePtr<FRuntimeMeshLockProvider>& InSyncObject, bool bIsAlreadyLocked = false, bool bIgnoreThreadIfNullLock = false)
 		: SynchObject(InSyncObject.Get())
 	{
 		check(SynchObject);
 		if (!bIsAlreadyLocked)
 		{
-			SynchObject->Lock();
+			SynchObject->Lock(bIgnoreThreadIfNullLock);
 		}
 	}
 

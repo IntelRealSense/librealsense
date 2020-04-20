@@ -68,15 +68,10 @@ namespace librealsense
             return "Enable/Disable Automatic Motion Data Correction";
         }
 
-        enable_motion_correction(sensor_base* mm_ep,
-                                 const ds::imu_intrinsics& accel,
-                                 const ds::imu_intrinsics& gyro,
-                                 const option_range& opt_range);
+        enable_motion_correction(sensor_base* mm_ep, const option_range& opt_range);
 
     private:
-        std::atomic<bool>  _is_enabled;
-        ds::imu_intrinsics _accel;
-        ds::imu_intrinsics _gyro;
+        std::atomic<bool>   _is_active;
     };
 
     class enable_auto_exposure_option : public option_base
@@ -93,7 +88,10 @@ namespace librealsense
             return "Enable/disable auto-exposure";
         }
 
-        enable_auto_exposure_option(uvc_sensor* fisheye_ep,
+        auto_exposure_mechanism* get_auto_exposure() { return _auto_exposure.get(); }
+        bool to_add_frames() { return _to_add_frames.load(); }
+
+        enable_auto_exposure_option(synthetic_sensor* fisheye_ep,
                                     std::shared_ptr<auto_exposure_mechanism> auto_exposure,
                                     std::shared_ptr<auto_exposure_state> auto_exposure_state,
                                     const option_range& opt_range);
@@ -195,7 +193,7 @@ namespace librealsense
         {
             return "Number of meters represented by a single depth unit";
         }
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _record_action = record_action;
         }
@@ -221,7 +219,7 @@ namespace librealsense
         {
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
         }
-        void enable_recording(std::function<void(const option &)> record_action)
+        void enable_recording(std::function<void(const option &)> record_action) override
         {
             _record_action = record_action;
         }
@@ -229,5 +227,71 @@ namespace librealsense
         std::function<void(const option &)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
+    };
+
+    class emitter_on_and_off_option : public option
+    {
+    public:
+        emitter_on_and_off_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~emitter_on_and_off_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override
+        {
+            return "Emitter On/Off Mode: 0:disabled(default), 1:enabled(emitter toggles between on and off). Can only be set before streaming";
+        }
+        virtual void enable_recording(std::function<void(const option &)> record_action) override {_record_action = record_action;}
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
+
+    class alternating_emitter_option : public option
+    {
+    public:
+        alternating_emitter_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~alternating_emitter_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override { return *_range; }
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override
+        {
+            return "Alternating Emitter Pattern: 0:disabled(default), 1:enabled( emitter is toggled on/off on per-frame basis)";
+        }
+        virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
+    };
+
+    class emitter_always_on_option : public option
+    {
+    public:
+        emitter_always_on_option(hw_monitor& hwm, sensor_base* depth_ep);
+        virtual ~emitter_always_on_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override
+        {
+            return "Emitter always on mode: 0:disabled(default), 1:enabled.";
+        }
+        virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
+
+    private:
+        std::function<void(const option &)> _record_action = [](const option&) {};
+        lazy<option_range> _range;
+        hw_monitor& _hwm;
+        sensor_base* _sensor;
     };
 }

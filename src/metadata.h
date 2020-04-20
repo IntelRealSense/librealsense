@@ -39,22 +39,30 @@ namespace librealsense
         META_DATA_CAPTURE_STATS_ID              = 0x00000003,
         META_DATA_CAMERA_EXTRINSICS_ID          = 0x00000004,
         META_DATA_CAMERA_INTRINSICS_ID          = 0x00000005,
+        META_DATA_INTEL_L500_CAPTURE_TIMING_ID  = 0x80000010,
+        META_DATA_INTEL_L500_DEPTH_CONTROL_ID   = 0x80000012,
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
+        META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
+        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
     };
 
     static const std::map<md_type, std::string> md_type_desc =
     {
-        { md_type::META_DATA_INTEL_DEPTH_CONTROL_ID,     "Intel Depth Control"},
-        { md_type::META_DATA_INTEL_CAPTURE_TIMING_ID,    "Intel Capture timing"},
-        { md_type::META_DATA_INTEL_CONFIGURATION_ID,     "Intel Configuration"},
-        { md_type::META_DATA_INTEL_STAT_ID,              "Intel Statistics"},
-        { md_type::META_DATA_INTEL_FISH_EYE_CONTROL_ID,  "Intel Fisheye Control"},
-        { md_type::META_DATA_INTEL_RGB_CONTROL_ID,       "Intel RGB Control"},
-        { md_type::META_DATA_INTEl_FE_FOV_MODEL_ID,      "Intel Fisheye FOV Model"},
-        { md_type::META_DATA_CAPTURE_STATS_ID,           "Capture Statistics"},
-        { md_type::META_DATA_CAMERA_EXTRINSICS_ID,       "Camera Extrinsic"},
-        { md_type::META_DATA_CAMERA_INTRINSICS_ID,       "Camera Intrinsic"},
-        { md_type::META_DATA_CAMERA_DEBUG_ID,            "Camera Debug"},
+        { md_type::META_DATA_INTEL_DEPTH_CONTROL_ID,        "Intel Depth Control"},
+        { md_type::META_DATA_INTEL_CAPTURE_TIMING_ID,       "Intel Capture timing"},
+        { md_type::META_DATA_INTEL_CONFIGURATION_ID,        "Intel Configuration"},
+        { md_type::META_DATA_INTEL_STAT_ID,                 "Intel Statistics"},
+        { md_type::META_DATA_INTEL_FISH_EYE_CONTROL_ID,     "Intel Fisheye Control"},
+        { md_type::META_DATA_INTEL_RGB_CONTROL_ID,          "Intel RGB Control"},
+        { md_type::META_DATA_INTEl_FE_FOV_MODEL_ID,         "Intel Fisheye FOV Model"},
+        { md_type::META_DATA_CAPTURE_STATS_ID,              "Capture Statistics"},
+        { md_type::META_DATA_CAMERA_EXTRINSICS_ID,          "Camera Extrinsic"},
+        { md_type::META_DATA_CAMERA_INTRINSICS_ID,          "Camera Intrinsic"},
+        { md_type::META_DATA_CAMERA_DEBUG_ID,               "Camera Debug"},
+        { md_type::META_DATA_INTEL_L500_CAPTURE_TIMING_ID,  "Intel Capture timing"},
+        { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
+        { md_type::META_DATA_HID_IMU_REPORT_ID,             "HID IMU Report"},
+        { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -99,8 +107,18 @@ namespace librealsense
         exposure_priority_attribute     = (1u << 4),
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
+        emitter_mode_attribute          = (1u << 7),
+        led_power_attribute             = (1u << 8)
     };
 
+    /**\brief md_depth_control_attributes - bit mask to find active attributes,
+     *  md_depth_control struct */
+    enum class md_l500_depth_control_attributes : uint32_t
+    {
+        laser_power                     = (1u << 0),
+        preset_id                       = (1u << 1),
+        laser_power_mode                = (1u << 2),
+    };
     /**\brief md_fisheye_control_attributes - bit mask to find active attributes,
      *  md_fisheye_control struct */
     enum class md_fisheye_control_attributes : uint32_t
@@ -163,6 +181,45 @@ namespace librealsense
         right_greeen1_attribute         = (1u << 12),
         right_greeen2_attribute         = (1u << 13),
         right_blue_sum_attribute        = (1u << 14),
+    };
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+*  md_imu_report struct */
+    enum md_hid_report_type : uint8_t
+    {
+        hid_report_unknown,
+        hid_report_imu,
+        hid_report_custom_temperature,
+        hid_report_max,
+    };
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+ *  md_imu_report struct */
+    enum class md_hid_imu_attributes : uint8_t
+    {
+        custom_timestamp_attirbute  = (1u << 0),
+        imu_counter_attribute       = (1u << 1),
+        usb_counter_attribute       = (1u << 2)
+    };
+
+    inline md_hid_imu_attributes operator |(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return static_cast<md_hid_imu_attributes>(static_cast<uint8_t>(l) | static_cast<uint8_t>(r));
+    }
+
+    inline md_hid_imu_attributes operator |=(md_hid_imu_attributes l, md_hid_imu_attributes r)
+    {
+        return l = l | r;
+    }
+
+    /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
+*  md_imu_report struct */
+    enum class md_hid_custom_temp_attributes : uint8_t
+    {
+        source_id_attirbute         = (1u << 0),
+        custom_timestamp_attirbute  = (1u << 1),
+        imu_counter_attribute       = (1u << 2),
+        usb_counter_attribute       = (1u << 3)
     };
 
 #pragma pack(push, 1)
@@ -271,6 +328,20 @@ namespace librealsense
 
     REGISTER_MD_TYPE(md_capture_timing, md_type::META_DATA_INTEL_CAPTURE_TIMING_ID)
 
+    struct l500_md_capture_timing
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;              // Bit array to specify attributes that are valid
+        uint32_t    frame_counter;
+        uint32_t    sensor_timestamp;   //In microsecond unit
+        uint32_t    readout_time;       //The readout time in microsecond unit
+        uint32_t    exposure_time;      //The exposure time in microsecond unit
+        uint32_t    frame_interval;     //The frame interval in microsecond unit
+        uint32_t    pipe_latency;       //The latency between start of frame to frame ready in USB buffer
+    };
+    REGISTER_MD_TYPE(l500_md_capture_timing, md_type::META_DATA_INTEL_L500_CAPTURE_TIMING_ID)
+
         /**\brief md_capture_stats - properties associated with optical sensor
          *  during video streaming. Corresponds to FW STMetaDataCaptureStats object*/
     struct md_capture_stats
@@ -311,11 +382,26 @@ namespace librealsense
         uint32_t    exposure_roi_top;
         uint32_t    exposure_roi_bottom;
         uint32_t    preset;
-        uint32_t    laserPowerMode;
+        uint8_t     emitterMode;
+        uint8_t     reserved;
+        uint16_t    ledPower;
     };
 
     REGISTER_MD_TYPE(md_depth_control, md_type::META_DATA_INTEL_DEPTH_CONTROL_ID)
 
+    /**\brief md_depth_control - depth data-related parameters.
+     *  Corresponds to FW's STMetaDataIntelDepthControl object*/
+        struct md_l500_depth_control
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;
+        uint32_t    laser_power;        //value between 1 to 12
+        uint32_t    preset_id;
+        uint32_t    laser_power_mode;     //Auto or Manual laser power
+    };
+
+    REGISTER_MD_TYPE(md_l500_depth_control, md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID)
 
     /**\brief md_fisheye_control - fisheye-related parameters.
      *  Corresponds to FW's STMetaDataIntelFishEyeControl object*/
@@ -478,6 +564,14 @@ namespace librealsense
         md_configuration        intel_configuration;
     };
 
+    struct md_l500_depth
+    {
+        md_capture_timing       intel_capture_timing;
+        md_capture_stats        intel_capture_stats;
+        md_l500_depth_control   intel_depth_control;
+        md_configuration        intel_configuration;
+    };
+
     struct md_fisheye_normal_mode
     {
         md_capture_timing       intel_capture_timing;
@@ -543,8 +637,8 @@ namespace librealsense
      *  layout as transmitted and received by backend */
     struct metadata_raw
     {
-       platform::uvc_header   header;
-        md_modes          mode;
+        platform::uvc_header    header;
+        md_modes                mode;
     };
 
     constexpr uint8_t metadata_raw_size = sizeof(metadata_raw);
@@ -563,6 +657,49 @@ namespace librealsense
                 (payload.header.md_type_id == md_type::META_DATA_INTEL_CAPTURE_TIMING_ID));
         }
     };
+
+    struct md_imu_report
+    {
+        md_header   header;
+        uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
+        uint64_t    custom_timestamp;   // HW Timestamp
+        uint8_t     imu_counter;        // IMU internal counter
+        uint8_t     usb_counter;        // USB-layer internal counter
+    };
+
+    REGISTER_MD_TYPE(md_imu_report, md_type::META_DATA_HID_IMU_REPORT_ID)
+
+    constexpr uint8_t metadata_imu_report_size = sizeof(md_imu_report);
+
+    struct md_custom_tmp_report
+    {
+        md_header   header;
+        uint8_t     flags;              // Bit array to specify attributes that are valid (limited to 7 fields)
+        uint64_t    custom_timestamp;   // HW Timestamp
+        uint8_t     imu_counter;        // IMU internal counter
+        uint8_t     usb_counter;        // USB-layer internal counter
+        uint8_t     source_id;
+    };
+
+    REGISTER_MD_TYPE(md_custom_tmp_report, md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID)
+
+    /**\brief md_hid_types - aggrevative structure that represents the supported HID
+ * metadata struct types to be handled */
+    union md_hid_report
+    {
+        md_imu_report           imu_report;
+        md_custom_tmp_report    temperature_report;
+    };
+
+    /**\brief metadata_hid_raw - HID metadata structure
+ *  layout populated by backend */
+    struct metadata_hid_raw
+    {
+        platform::hid_header   header;
+        md_hid_report          report_type;
+    };
+
+    constexpr uint8_t metadata_hid_raw_size = sizeof(metadata_hid_raw);
 
 #pragma pack(pop)
 }

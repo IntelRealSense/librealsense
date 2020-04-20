@@ -7,6 +7,10 @@
 
 #include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
 #include "../include/librealsense2/h/rs_option.h"
+#include "usb/usb-types.h"
+#include "usb/usb-device.h"
+#include "hid/hid-types.h"
+#include "command_transfer.h"
 
 #include <memory>       // For shared_ptr
 #include <functional>   // For function
@@ -20,10 +24,10 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 
 const uint16_t MAX_RETRIES                = 100;
-const uint16_t VID_INTEL_CAMERA           = 0x8086;
 const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS = 4;
 const uint16_t DELAY_FOR_RETRIES          = 50;
 
@@ -93,7 +97,7 @@ namespace librealsense
         {
         public:
             virtual double get_time() const = 0;
-            ~time_service() = default;
+            virtual ~time_service() = default;
         };
 
         class os_time_service: public time_service
@@ -107,18 +111,7 @@ namespace librealsense
 
         struct guid { uint32_t data1; uint16_t data2, data3; uint8_t data4[8]; };
         // subdevice and node fields are assigned by Host driver; unit and GUID are hard-coded in camera firmware
-        struct extension_unit { int subdevice, unit, node; guid id; };
-
-        class command_transfer
-        {
-        public:
-            virtual std::vector<uint8_t> send_receive(
-                const std::vector<uint8_t>& data,
-                int timeout_ms = 5000,
-                bool require_response = true) = 0;
-
-            virtual ~command_transfer() = default;
-        };
+        struct extension_unit { int subdevice; uint8_t unit; int node; guid id; };
 
         enum power_state
         {
@@ -160,9 +153,17 @@ namespace librealsense
             uint32_t        timestamp;
             uint8_t         source_clock[6];
         };
+
+        struct hid_header
+        {
+            uint8_t         length;             // HID report total size. Limited to 255
+            uint8_t         report_type;        // Curently supported: IMU/Custom Temperature
+            uint64_t        timestamp;          // Driver-produced/FW-based timestamp. Note that currently only the lower 32bit are used
+        };
 #pragma pack(pop)
 
         constexpr uint8_t uvc_header_size = sizeof(uvc_header);
+        constexpr uint8_t hid_header_size = sizeof(hid_header);
 
         struct frame_object
         {
@@ -175,29 +176,6 @@ namespace librealsense
 
         typedef std::function<void(stream_profile, frame_object, std::function<void()>)> frame_callback;
 
-        // Binary-coded decimal represent the USB specification to which the UVC device complies
-        enum usb_spec : uint16_t {
-            usb_undefined   = 0,
-            usb1_type       = 0x0100,
-            usb1_1_type     = 0x0110,
-            usb2_type       = 0x0200,
-            usb2_1_type     = 0x0210,
-            usb3_type       = 0x0300,
-            usb3_1_type     = 0x0310,
-            usb3_2_type     = 0x0320,
-        };
-
-        static const std::map<usb_spec, std::string> usb_spec_names = {
-                { usb_undefined,"Undefined" },
-                { usb1_type,    "1.0" },
-                { usb1_1_type,  "1.1" },
-                { usb2_type,    "2.0" },
-                { usb2_1_type,  "2.1" },
-                { usb3_type,    "3.0" },
-                { usb3_1_type,  "3.1" },
-                { usb3_2_type,  "3.2" }
-        };
-
         struct uvc_device_info
         {
             std::string id = ""; // to distinguish between different pins of the same device
@@ -206,6 +184,7 @@ namespace librealsense
             uint16_t mi = 0;
             std::string unique_id = "";
             std::string device_path = "";
+            std::string serial = "";
             usb_spec conn_spec = usb_undefined;
             uint32_t uvc_capabilities = 0;
             bool has_metadata_node = false;
@@ -245,30 +224,6 @@ namespace librealsense
                    (a.conn_spec == b.conn_spec);
         }
 
-        struct usb_device_info
-        {
-            std::string id;
-
-            uint16_t vid;
-            uint16_t pid;
-            uint16_t mi;
-            std::string unique_id;
-            usb_spec conn_spec;
-
-            operator std::string()
-            {
-                std::stringstream s;
-
-                s << "vid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nmi- " << mi <<
-                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
-                     "\nunique_id- " << unique_id;
-
-                return s.str();
-            }
-        };
-
         inline bool operator==(const usb_device_info& a,
             const usb_device_info& b)
         {
@@ -280,36 +235,7 @@ namespace librealsense
                 (a.conn_spec == b.conn_spec);
         }
 
-        struct hid_device_info
-        {
-            std::string id;
-            std::string vid;
-            std::string pid;
-            std::string unique_id;
-            std::string device_path;
 
-            operator std::string()
-            {
-                std::stringstream s;
-                s << "id- " << id <<
-                    "\nvid- " << std::hex << vid <<
-                    "\npid- " << std::hex << pid <<
-                    "\nunique_id- " << unique_id <<
-                    "\npath- " << device_path;
-
-                return s.str();
-            }
-        };
-
-        inline bool operator==(const hid_device_info& a,
-            const hid_device_info& b)
-        {
-            return  (a.id == b.id) &&
-                (a.vid == b.vid) &&
-                (a.pid == b.pid) &&
-                (a.unique_id == b.unique_id) &&
-                (a.device_path == b.device_path);
-        }
 
         struct playback_device_info
         {
@@ -331,7 +257,7 @@ namespace librealsense
         {
             void* device_ptr;
 
-            operator std::string()
+            operator std::string() const
             {
                 std::ostringstream oss;
                 oss << device_ptr;
@@ -384,6 +310,7 @@ namespace librealsense
             value
         };
 
+#pragma pack(push, 1)
         struct hid_sensor_data
         {
             short x;
@@ -395,6 +322,7 @@ namespace librealsense
             uint32_t ts_low;
             uint32_t ts_high;
         };
+#pragma pack(pop)
 
         typedef std::function<void(const sensor_data&)> hid_callback;
 
@@ -402,6 +330,7 @@ namespace librealsense
         {
         public:
             virtual ~hid_device() = default;
+            virtual void register_profiles(const std::vector<hid_profile>& hid_profiles) = 0;// TODO: this should be queried from the device
             virtual void open(const std::vector<hid_profile>& hid_profiles) = 0;
             virtual void close() = 0;
             virtual void stop_capture() = 0;
@@ -575,13 +504,6 @@ namespace librealsense
             std::shared_ptr<uvc_device> _dev;
         };
 
-        class usb_device : public command_transfer
-        {
-        public:
-            // interupt endpoint and any additional USB specific stuff
-        };
-
-
 
         class device_watcher;
 
@@ -604,14 +526,12 @@ namespace librealsense
             std::vector<usb_device_info> usb_devices;
             std::vector<hid_device_info> hid_devices;
             std::vector<playback_device_info> playback_devices;
-            std::vector<tm2_device_info> tm2_devices;
 
             bool operator == (const backend_device_group& other)
             {
                 return !list_changed(uvc_devices, other.uvc_devices) &&
                     !list_changed(hid_devices, other.hid_devices) &&
-                    !list_changed(playback_devices, other.playback_devices) &&
-                    !list_changed(tm2_devices, other.tm2_devices);
+                    !list_changed(playback_devices, other.playback_devices);
             }
 
             operator std::string()
@@ -659,7 +579,7 @@ namespace librealsense
             virtual std::shared_ptr<uvc_device> create_uvc_device(uvc_device_info info) const = 0;
             virtual std::vector<uvc_device_info> query_uvc_devices() const = 0;
 
-            virtual std::shared_ptr<usb_device> create_usb_device(usb_device_info info) const = 0;
+            virtual std::shared_ptr<command_transfer> create_usb_device(usb_device_info info) const = 0;
             virtual std::vector<usb_device_info> query_usb_devices() const = 0;
 
             virtual std::shared_ptr<hid_device> create_hid_device(hid_device_info info) const = 0;
@@ -669,12 +589,19 @@ namespace librealsense
 
             virtual std::shared_ptr<device_watcher> create_device_watcher() const = 0;
 
+            virtual std::string get_device_serial(uint16_t device_vid, uint16_t device_pid, const std::string& device_uid) const
+            {
+                std::string empty_str;
+                return empty_str;
+            }
+
             virtual ~backend() = default;
         };
 
         class multi_pins_hid_device : public hid_device
         {
         public:
+            void register_profiles(const std::vector<hid_profile>& hid_profiles) override { _hid_profiles = hid_profiles; }
             void open(const std::vector<hid_profile>& sensor_iio) override
             {
                 for (auto&& dev : _dev) dev->open(sensor_iio);
@@ -714,6 +641,7 @@ namespace librealsense
 
         private:
             std::vector<std::shared_ptr<hid_device>> _dev;
+            std::vector<hid_profile> _hid_profiles;
         };
 
         class multi_pins_uvc_device : public uvc_device

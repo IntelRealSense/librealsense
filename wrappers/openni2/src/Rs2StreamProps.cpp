@@ -85,6 +85,30 @@ OniStatus Rs2Stream::setProperty(int propertyId, const void* data, int dataSize)
 			break;
 		}
 
+		case XN_STREAM_PROPERTY_S2D_TABLE:
+		{
+			if (data && m_oniType == ONI_SENSOR_DEPTH)
+			{
+				if (setTable(data, dataSize, m_s2d))
+				{
+					return ONI_STATUS_OK;
+				}
+			}
+			break;
+		}
+
+		case XN_STREAM_PROPERTY_D2S_TABLE:
+		{
+			if (data && m_oniType == ONI_SENSOR_DEPTH)
+			{
+				if (setTable(data, dataSize, m_d2s))
+				{
+					return ONI_STATUS_OK;
+				}
+			}
+			break;
+		}
+
 		default:
 		{
 			#if defined(RS2_TRACE_NOT_SUPPORTED_PROPS)
@@ -326,6 +350,30 @@ OniStatus Rs2Stream::getProperty(int propertyId, void* data, int* dataSize)
 			{
 				*((double*)data) = EMITTER_DCMOS_DISTANCE_VAL;
 				return ONI_STATUS_OK;
+			}
+			break;
+		}
+
+		case XN_STREAM_PROPERTY_S2D_TABLE:
+		{
+			if (data && dataSize && m_oniType == ONI_SENSOR_DEPTH)
+			{
+				if (getTable(data, dataSize, m_s2d))
+				{
+					return ONI_STATUS_OK;
+				}
+			}
+			break;
+		}
+
+		case XN_STREAM_PROPERTY_D2S_TABLE:
+		{
+			if (data && dataSize && m_oniType == ONI_SENSOR_DEPTH)
+			{
+				if (getTable(data, dataSize, m_d2s))
+				{
+					return ONI_STATUS_OK;
+				}
 			}
 			break;
 		}

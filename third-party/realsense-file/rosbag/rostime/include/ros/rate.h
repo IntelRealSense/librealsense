@@ -40,7 +40,7 @@
 #include "ros/time.h"
 #include "rostime_decl.h"
 
-namespace ros
+namespace rs2rosinternal
 {
 class Duration;
 

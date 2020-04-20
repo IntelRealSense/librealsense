@@ -52,13 +52,13 @@ classdef device < handle
         end
         function value = supports(this, info)
             narginchk(2, 2);
-            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             this.do_init();
             value = realsense.librealsense_mex('rs2::device', 'supports', this.objectHandle, int64(info));
         end
         function info = get_info(this, info)
             narginchk(2, 2);
-            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', realsense.camera_info.count}, '', 'info', 2);
+            validateattributes(info, {'realsense.camera_info', 'numeric'}, {'scalar', 'nonnegative', 'real', 'integer', '<=', int64(realsense.camera_info.count)}, '', 'info', 2);
             this.do_init();
             info = realsense.librealsense_mex('rs2::device', 'get_info', this.objectHandle, int64(info));
         end
@@ -85,15 +85,15 @@ classdef device < handle
             out = realsense.librealsense_mex('rs2::device', 'as', this.objectHandle, type);
             switch type
                 case 'device'
-                    dev = realsense.device(out{:});
+                    dev = realsense.device(out, -1);
                 case 'debug_protocol'
                     error('debug_protocol is not supported in Matlab');
                 case 'advanced_mode'
-                    error('advanced_mode is not supported in Matlab');
+                    dev = realsense.advanced_mode(out, -1);
                 case 'recorder'
-                    dev = realsense.recorder(out{:});
+                    dev = realsense.recorder(out, -1);
                 case 'playback'
-                    dev = realsense.playback(out{:});
+                    dev = realsense.playback(out, -1);
             end
         end
     end

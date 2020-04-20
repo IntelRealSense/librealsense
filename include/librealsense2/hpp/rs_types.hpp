@@ -43,9 +43,18 @@ struct rs2_notifications_callback
     virtual                                 ~rs2_notifications_callback() {}
 };
 
+typedef void ( *log_callback_function_ptr )(rs2_log_severity severity, rs2_log_message const * msg );
+
+struct rs2_software_device_destruction_callback
+{
+    virtual void                            on_destruction() = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_software_device_destruction_callback() {}
+};
+
 struct rs2_log_callback
 {
-    virtual void                            on_event(rs2_log_severity severity, const char * message) = 0;
+    virtual void                            on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_log_callback() {}
 };
@@ -62,6 +71,13 @@ struct rs2_playback_status_changed_callback
     virtual void                            on_playback_status_changed(rs2_playback_status status) = 0;
     virtual void                            release() = 0;
     virtual                                 ~rs2_playback_status_changed_callback() {}
+};
+
+struct rs2_update_progress_callback
+{
+    virtual void                            on_update_progress(const float update_progress) = 0;
+    virtual void                            release() = 0;
+    virtual                                 ~rs2_update_progress_callback() {}
 };
 
 namespace rs2
@@ -166,5 +182,8 @@ namespace rs2
         int max_y;
     };
 }
+
+inline std::ostream & operator << (std::ostream & o, rs2_vector v) { return o << v.x << ", " << v.y << ", " << v.z; }
+inline std::ostream & operator << (std::ostream & o, rs2_quaternion q) { return o << q.x << ", " << q.y << ", " << q.z << ", " << q.w; }
 
 #endif // LIBREALSENSE_RS2_TYPES_HPP

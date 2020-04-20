@@ -86,7 +86,12 @@ int main(int argc, char** argv) try
         throw runtime_error("output not defined");
     }
 
-    auto pipe = make_shared<rs2::pipeline>();
+    // Since we are running in blocking "non-real-time" mode,
+    // we don't want to prevent process termination if some of the frames
+    // did not find a match and hence were not serviced
+    auto pipe = std::shared_ptr<rs2::pipeline>(
+        new rs2::pipeline(), [](rs2::pipeline*) {});
+
     rs2::config cfg;
     cfg.enable_device_from_file(inputFilename.getValue());
     pipe->start(cfg);
@@ -98,20 +103,19 @@ int main(int argc, char** argv) try
     auto duration = playback.get_duration();
     int progress = 0;
     auto frameNumber = 0ULL;
-
-    while (true) {
-        auto frameset = pipe->wait_for_frames();
-
-        int posP = static_cast<int>(playback.get_position() * 100. / duration.count());
+    
+    rs2::frameset frameset;
+    uint64_t posLast = playback.get_position();
+    while (pipe->try_wait_for_frames(&frameset, 1000)) 
+    {
+        int posP = static_cast<int>(posLast * 100. / duration.count());
 
         if (posP > progress) {
             progress = posP;
             cout << posP << "%" << "\r" << flush;
         }
 
-        if (frameset[0].get_frame_number() < frameNumber) {
-            break;
-        }
+
 
         frameNumber = frameset[0].get_frame_number();
 
@@ -124,6 +128,11 @@ int main(int argc, char** argv) try
             [] (shared_ptr<rs2::tools::converter::converter_base>& converter) {
                 converter->wait();
             });
+        const uint64_t posCurr = playback.get_position();
+        if(static_cast<int64_t>(posCurr - posLast) < 0){
+            break;
+        }
+        posLast = posCurr;
     }
 
     cout << endl;

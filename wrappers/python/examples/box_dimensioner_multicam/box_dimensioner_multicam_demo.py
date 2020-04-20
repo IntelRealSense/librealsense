@@ -1,14 +1,14 @@
 ###########################################################################################################################
-##                     	License: Apache 2.0. See LICENSE file in root directory.		                                 ##	
+##                      License: Apache 2.0. See LICENSE file in root directory.                                         ##
 ###########################################################################################################################
 ##                  Simple Box Dimensioner with multiple cameras: Main demo file                                         ##
 ###########################################################################################################################
-## Workflow description: 																								 ##
+## Workflow description:                                                                                                 ##
 ## 1. Place the calibration chessboard object into the field of view of all the realsense cameras.                       ##
 ##    Update the chessboard parameters in the script in case a different size is chosen.                                 ##
 ## 2. Start the program.                                                                                                 ##
 ## 3. Allow calibration to occur and place the desired object ON the calibration object when the program asks for it.    ##
-##	  Make sure that the object to be measured is not bigger than the calibration object in length and width.            ##
+##    Make sure that the object to be measured is not bigger than the calibration object in length and width.            ##
 ## 4. The length, width and height of the bounding box of the object is then displayed in millimeters.                   ##
 ###########################################################################################################################
 
@@ -56,12 +56,12 @@ def run_demo():
 		1: Calibration
 		Calibrate all the available devices to the world co-ordinates.
 		For this purpose, a chessboard printout for use with opencv based calibration process is needed.
-
+		
 		"""
 		# Get the intrinsics of the realsense device 
 		intrinsics_devices = device_manager.get_device_intrinsics(frames)
 		
-	 # Set the chessboard parameters for calibration 
+                # Set the chessboard parameters for calibration 
 		chessboard_params = [chessboard_height, chessboard_width, square_size] 
 		
 		# Estimate the pose of the chessboard in the world coordinate using the Kabsch Method
@@ -88,7 +88,7 @@ def run_demo():
 			chessboard_points_cumulative_3d = np.column_stack( (chessboard_points_cumulative_3d,points3D) )
 
 		# Extract the bounds between which the object's dimensions are needed
-		# 	It is necessary for this demo that the object's length and breath is smaller than that of the chessboard
+		# It is necessary for this demo that the object's length and breath is smaller than that of the chessboard
 		chessboard_points_cumulative_3d = np.delete(chessboard_points_cumulative_3d, 0, 1)
 		roi_2D = get_boundary_corners_2D(chessboard_points_cumulative_3d)
 
@@ -96,11 +96,11 @@ def run_demo():
 
 
 		"""
-		2: Measurement and display
-		Measure the dimension of the object using depth maps from multiple RealSense devices
-		The information from Phase 1 will be used here
+                2: Measurement and display
+                Measure the dimension of the object using depth maps from multiple RealSense devices
+                The information from Phase 1 will be used here
 
-		"""
+                """
 
 		# Enable the emitter of the devices
 		device_manager.enable_emitter(True)
