@@ -216,7 +216,7 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         // movment check
         // 1. dilation
         CHECK(compare_to_bin_file< uint8_t >(yuy_data.prev_logic_edges, dir, "2", "logicEdges_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.dilated_image, dir, "2", "dilatedIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.dilated_image, dir, "2", "dilatedIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
 
         // 2. gausssian
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));

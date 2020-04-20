@@ -82,63 +82,100 @@ namespace
         std::vector<double> res(image.size(), 0);
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
+        int arr[3] = { 0,image_height - mask_height - 1, image_height - mask_height - 2 };
 
+        for (auto arr_i = 0; arr_i < 1; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
             {
                 ind = 0;
+
                 for (auto l = 0; l < mask_height; l++)
                 {
                     for (auto k = 0; k < mask_width; k++)
                     {
                         auto p = l * image_width + jj + k;
                         sub_image[ind] = (image[p]);
-                        if (l == 0) {
+                        if ((l == 2) && (arr_i == 0)) { // first row
                             sub_image[ind] == 0;
                         }
-                        ind++;
-                    }
-                }
-                auto mid = jj + mask_width / 2;
-                res[mid] = convolution_operation(sub_image);
-            }
-            for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
-            {
-                ind = 0;
-                for (auto l = 0; l < mask_height; l++)
-                {
-                    for (auto k = 0; k < mask_width; k++)
-                    {
-                        auto p = (ii + l) * image_width + k;
-                        sub_image[ind] = (image[p]);
-                        if (k == 0) {
-                            sub_image[ind] = 0;
+
+                        /*if ((l == 2) && (arr_i == 1)) {
+                            sub_image[ind] == 0;
                         }
+                        if (((l == 1) || (l == 2)) && (arr_i == 2)) { // last row
+                            sub_image[ind] == 0;
+                        }*/
+
+                        //if ((l == 0) && (arr_i == 0)) { // first row
+                        //    sub_image[ind] == 0;
+                        //}
+                        //
+                        //if ((l == 2) && (arr_i == 1)) {
+                        //    sub_image[ind] == 0;
+                        //}
+                        //if (((l == 1) || (l == 2)) && (arr_i == 2)) { // last row
+                        //    sub_image[ind] == 0;
+                        //}
+                        //if ((jj == 0) && (k == 0)) { // for all
+                        //    sub_image[ind] == 0;
+                        //}
                         ind++;
                     }
-
                 }
-                auto mid = (ii + mask_height / 2) * image_width;
+                auto mid = jj + mask_width / 2;// +arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
             }
 
-        for (auto i = 0; i < image_height - mask_height + 1; i++)
-        {
-            for (auto j = 0; j < image_width - mask_width + 1; j++)
-            {
-                ind = 0;
-                for (auto l = 0; l < mask_height; l++)
-                {
-                    for (auto k = 0; k < mask_width; k++)
-                    {
-                        auto p = (i + l) * image_width + j + k;
-                        sub_image[ind++] = (image[p]);
-                    }
+        }
 
+    arr[0] = 0;
+    arr[1] = image_width - mask_width - 1;
+    arr[2] = image_width - mask_width - 2;
+    for (auto arr_i = 0; arr_i < 1; arr_i++) {
+        for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
+        {
+            ind = 0;
+            for (auto l = 0; l < mask_height; l++)
+            {
+                for (auto k = 0; k < mask_width; k++)
+                {
+                    auto p = (ii + l) * image_width + k;
+                    sub_image[ind] = (image[p]);
+
+                    if ((k == 2) && (arr_i == 0)) {
+                        sub_image[ind] = 0;
+                    }
+                    /*if ((k == 2) && (arr_i == 1)) {
+                        sub_image[ind] = 0;
+                    }
+                    if (((k == 2) || (k == 1)) && (arr_i == 2)) {
+                        sub_image[ind] = 0;
+                    }*/
+                    ind++;
                 }
-                auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
+                auto mid = (ii + mask_height / 2) * image_width; //+ arr[arr_i];
                 res[mid] = convolution_operation(sub_image);
             }
         }
+    }
+    for (auto i = 0; i < image_height - mask_height + 1; i++)
+    {
+        for (auto j = 0; j < image_width - mask_width + 1; j++)
+        {
+            ind = 0;
+            for (auto l = 0; l < mask_height; l++)
+            {
+                for (auto k = 0; k < mask_width; k++)
+                {
+                    auto p = (i + l) * image_width + j + k;
+                    sub_image[ind++] = (image[p]);
+                }
+
+            }
+            auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
+            res[mid] = convolution_operation(sub_image);
+        }
+    }
         return res;
     }
     template<class T>
@@ -1139,7 +1176,7 @@ double dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const
 
     for (auto i = 0; i < sub_image.size(); i++)
     {
-        res = res | (uint8_t)(sub_image[i] * mask[i]);
+        res = res || (uint8_t)(sub_image[i] * mask[i]);
     }
 
     return (double)res;
