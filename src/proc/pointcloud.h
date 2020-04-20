@@ -31,6 +31,7 @@ namespace librealsense
             float2* pixels_ptr);
         virtual rs2::points allocate_points(const rs2::frame_source& source, const rs2::frame& f);
         virtual void preprocess() {}
+        virtual bool run__occlusion_filter();
 
     protected:
         pointcloud(const char* name);

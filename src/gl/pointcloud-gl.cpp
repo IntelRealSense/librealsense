@@ -102,6 +102,62 @@ static const char* project_fragment_text =
 "    }\n"
 "}";
 
+static const char* occulution_vertex_shader_text =
+"#version 110\n"
+"attribute vec3 position;\n"
+"attribute vec2 textureCoords;\n"
+"varying vec2 textCoords;\n"
+"varying vec2 occuTextureCoords[20];\n"
+"uniform vec2 elementPosition;\n"
+"uniform vec2 elementScale;\n"
+"uniform float width;\n"
+"uniform float height;\n"
+"void main(void)\n"
+"{\n"
+"    gl_Position = vec4(position * vec3(elementScale, 1.0) + vec3(elementPosition, 0.0), 1.0);\n"
+"    textCoords = textureCoords;\n"
+"    float pixelsize = 1.0 / width;\n"
+"    float xshift = 0.0;\n"
+"    for (int i = 0; i < 20; i++)\n"
+"    {\n"
+"     occuTextureCoords[i] = textureCoords - vec2(xshift, 0.0);\n"
+"     xshift += pixelsize;\n"
+"    }\n"
+"}";
+
+static const char* occulution_fragment_text =
+"#version 110\n"
+"varying vec2 textCoords;\n"
+"varying vec2 occuTextureCoords[20];\n"
+"uniform sampler2D xyzSampler;\n"
+"uniform sampler2D uvSampler;\n"
+"uniform float opacity;\n"
+"void main(void) {\n"
+"    vec4 xyz[20];\n"
+"    vec4 uv[20];\n"
+"    float uvmax = 0.0;\n"
+"    for (int i = 0; i < 20; i++)\n"
+"    {\n"
+"    vec2 tex = vec2(occuTextureCoords[i].x, 1.0 - occuTextureCoords[i].y);\n"
+"    xyz[i] = texture2D(xyzSampler, tex);\n"
+"    uv[i] = texture2D(uvSampler, tex);\n"
+"    if (uv[i].x > uvmax)\n"
+"    {\n"
+"      uvmax = uv[i].x;\n"
+"    }\n"
+"    }\n"
+"    if (xyz[0].z > 0.0)\n"
+"    {\n"
+"    if (uv[0].x < uvmax)\n"
+"    {\n"
+"    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"    } else {\n"
+"    gl_FragColor = vec4(uv[0].xyz, 1.0);\n"
+"    }\n"
+"    }\n"
+"}";
+
+
 class project_shader : public texture_2d_shader
 {
 public:
@@ -187,9 +243,54 @@ private:
     uint32_t _requires_projection_location;
 };
 
+class occulution_shader : public texture_2d_shader
+{
+public:
+    occulution_shader()
+        : texture_2d_shader(shader_program::load(
+            occulution_vertex_shader_text,
+            occulution_fragment_text,
+            "position", "textureCoords",
+            "output_xyz", "output_uv"))
+    {
+        _width_location = _shader->get_uniform_location("width");
+        _height_location = _shader->get_uniform_location("height");
+
+        _xyz_sampler_location = _shader->get_uniform_location("xyzSampler");
+        _uv_sampler_location = _shader->get_uniform_location("uvSampler");
+    }
+
+    void set_width(float width)
+    {
+        _shader->load_uniform(_width_location, width);
+    }
+
+    void set_height(float height)
+    {
+        _shader->load_uniform(_height_location, height);
+    }
+
+    void set_xyz_sampler(int xyz)
+    {
+        _shader->load_uniform(_xyz_sampler_location, xyz);
+    }
+
+    void set_uv_sampler(int uv)
+    {
+        _shader->load_uniform(_uv_sampler_location, uv);
+    }
+private:
+    uint32_t _width_location;
+    uint32_t _height_location;
+
+    uint32_t _xyz_sampler_location;
+    uint32_t _uv_sampler_location;
+};
+
 void pointcloud_gl::cleanup_gpu_resources()
 {
     _projection_renderer.reset();
+    _occu_renderer.reset();
     _enabled = 0;
 }
 void pointcloud_gl::create_gpu_resources()
@@ -197,6 +298,7 @@ void pointcloud_gl::create_gpu_resources()
     if (glsl_enabled())
     {
         _projection_renderer = std::make_shared<visualizer_2d>(std::make_shared<project_shader>());
+        _occu_renderer = std::make_shared<visualizer_2d>(std::make_shared<occulution_shader>());
     }
     _enabled = glsl_enabled() ? 1 : 0;
 }
@@ -268,7 +370,7 @@ void pointcloud_gl::get_texture_map(
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
 
-        fbo fbo(width, height);
+        fbo fbo1(width, height);
 
         uint32_t output_xyz;
         gf->get_gpu_section().output_texture(0, &output_xyz, TEXTYPE_XYZ);
@@ -294,7 +396,7 @@ void pointcloud_gl::get_texture_map(
 
         gf->get_gpu_section().set_size(width, height);
 
-        fbo.bind();
+        fbo1.bind();
         
         GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
         glDrawBuffers(2, attachments);
@@ -318,7 +420,56 @@ void pointcloud_gl::get_texture_map(
         viz->draw_texture(depth_texture);
         shader.end();
 
-        fbo.unbind();
+        fbo1.unbind();
+
+        // occlusion on glsl
+        if (_occlusion_filter->active())
+        {
+            auto oviz = _occu_renderer;
+
+            fbo fbo2(width, height);
+
+            uint32_t uv_texture;
+            glGenTextures(1, &uv_texture);
+            glBindTexture(GL_TEXTURE_2D, uv_texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, uv_texture, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            gf->get_gpu_section().set_size(width, height);
+
+            fbo2.bind();
+
+            auto& occu_shader = (occulution_shader&)oviz->get_shader();
+
+            occu_shader.begin();
+
+            occu_shader.set_width(width);
+            occu_shader.set_height(height);
+
+            occu_shader.set_xyz_sampler(0);
+            occu_shader.set_uv_sampler(1);
+
+            oviz->draw_texture(output_xyz, output_uv);
+            occu_shader.end();
+
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, output_uv);
+            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+
+            fbo2.unbind();
+
+            glDeleteTextures(1, &uv_texture);
+        }
 
         glBindTexture(GL_TEXTURE_2D, 0);
         if (!_depth_data.is<rs2::gl::gpu_frame>())
@@ -340,4 +491,9 @@ rs2::points pointcloud_gl::allocate_points(
         RS2_EXTENSION_VIDEO_FRAME_GL);
     rs2::frame res { (rs2_frame*)frame_ref };
     return res.as<rs2::points>();
+}
+
+bool pointcloud_gl::run__occlusion_filter()
+{
+    return false;
 }

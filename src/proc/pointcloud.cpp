@@ -203,7 +203,7 @@ namespace librealsense
 
             get_texture_map(res, points, width, height, mapped_intr, extr, pixels_ptr);
 
-            if (_occlusion_filter->active())
+            if (run__occlusion_filter())
             {
                 _occlusion_filter->process(pframe->get_vertices(), pframe->get_texture_coordinates(), _pixels_map);
             }
@@ -321,5 +321,10 @@ namespace librealsense
             return std::make_shared<librealsense::pointcloud>();
         #endif
         #endif
+    }
+
+    bool pointcloud::run__occlusion_filter()
+    {
+        return _occlusion_filter->active();
     }
 }
