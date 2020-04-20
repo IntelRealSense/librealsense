@@ -66,6 +66,13 @@ if(${ROS_BUILD_TYPE})
     set(BUILD_WITH_TM2 OFF)
 endif()
 
+# NCS1 is reset by realsense-viewer since TM2 device has the same VID/PID with NCS1.
+# Workaround is to build realsense-viewer tool without "BUILD_WITH_TM2".
+# Fix issue: https://github.com/IntelRealSense/librealsense/issues/2924
+if(${ROS_BUILD_TYPE})
+    set(BUILD_WITH_TM2 OFF)
+endif()
+
 # Checking Internet connection, as TM2 needs to download the FW from amazon cloud
 if(BUILD_WITH_TM2)
     include(CMake/tm2_connectivity_check.cmake)
