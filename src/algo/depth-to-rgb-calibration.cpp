@@ -84,9 +84,9 @@ namespace
         uint8_t* debug_res = alloc.allocate(image.size());
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
-        int arr[3] = { 0, image_height - mask_height - 2 ,image_height - mask_height - 1 };
+        int arr[3] = { 0, image_height - 3 ,image_height - 1 };
 
-        for (auto arr_i = 0; arr_i < 1; arr_i++) {
+        for (auto arr_i = 0; arr_i < 2; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
             {
                 ind = 0;
@@ -97,9 +97,9 @@ namespace
                         auto p = (l + arr[arr_i]) * image_width + jj + k;
 
                         sub_image[ind] = (image[p]);
-                        bool cond1 = (l == 2);// && (arr_i == 0); // first row
+                        bool cond1 = (l == 2) && (arr_i != 1); // first row
                         bool cond2 = false;// (l == 2) && (arr_i == 1);
-                        bool cond3 =  (l == 1) && (arr_i == 2);
+                        bool cond3 = false;// (l == 1) && (arr_i == 2);
                         if (cond1 || cond2 || cond3) {
                             sub_image[ind] = 0;
                         }
@@ -114,9 +114,8 @@ namespace
         }
 
     arr[0] = 0;
-    arr[1] = image_width - mask_width - 1;
-    arr[2] = image_width - mask_width - 2;
-    for (auto arr_i = 0; arr_i < 1; arr_i++) {
+    arr[1] = image_width - 1;
+    for (auto arr_i = 0; arr_i < 2; arr_i++) {
         for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
         {
             ind = 0;
@@ -124,15 +123,20 @@ namespace
             {
                 for (auto k = 0; k < mask_width; k++)
                 {
-                    auto p = (ii + l) * image_width + k;
+                    auto p = (ii + l) * image_width + k+ arr[arr_i];
+                    if (arr_i !=0)
+                    {
+                        p = p - 2;
+                    }
                     sub_image[ind] = (image[p]);
-
-                    if ((k == 2) && (arr_i == 0)) {
+                    bool cond1 = (k == 2) && (arr_i ==0);
+                    bool cond2 = (k == 0) && (arr_i == 1);
+                    if (cond1 || cond2) {
                         sub_image[ind] = 0;
                     }
                     ind++;
                 }
-                auto mid = (ii + mask_height / 2) * image_width; //+ arr[arr_i];
+                auto mid = (ii + mask_height / 2) * image_width+ arr[arr_i];
                 res[mid] = convolution_operation(sub_image);
             }
         }
