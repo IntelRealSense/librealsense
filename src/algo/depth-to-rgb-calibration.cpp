@@ -41,37 +41,106 @@ namespace
     }
 
     template<class T>
-    std::vector<double> convolution( std::vector<T> const & image,
+    std::vector<double> convolution(std::vector<T> const& image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
-        std::function< double( std::vector<T> const & sub_image ) > convolution_operation
-    )
+        std::function< double(std::vector<T> const& sub_image) > convolution_operation
+        )
     {
-        std::vector<double> res( image.size(), 0 );
+        std::vector<double> res(image.size(), 0);
 
-        for( auto i = 0; i < image_height - mask_height + 1; i++ )
+        for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
-            for( auto j = 0; j < image_width - mask_width + 1; j++ )
+            for (auto j = 0; j < image_width - mask_width + 1; j++)
             {
-                std::vector<T> sub_image( mask_width * mask_height, 0 );
-
+                std::vector<T> sub_image(mask_width * mask_height, 0);
                 auto ind = 0;
-                for( auto l = 0; l < mask_height; l++ )
+                for (auto l = 0; l < mask_height; l++)
                 {
-                    for( auto k = 0; k < mask_width; k++ )
+                    for (auto k = 0; k < mask_width; k++)
                     {
-                        auto p = (i + l)* image_width + j + k;
+                        auto p = (i + l) * image_width + j + k;
                         sub_image[ind++] = (image[p]);
                     }
 
                 }
                 auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
-                res[mid] = convolution_operation( sub_image );
+
+                res[mid] = convolution_operation(sub_image);
+
             }
         }
         return res;
     }
+    template<class T>
+    std::vector<double> convolution2(std::vector<T> const& image,
+        size_t image_width, size_t image_height,
+        size_t mask_width, size_t mask_height,
+        std::function< double(std::vector<T> const& sub_image) > convolution_operation
+        )
+    {
+        std::vector<double> res(image.size(), 0);
+        std::vector<T> sub_image(mask_width * mask_height, 0);
+        auto ind = 0;
 
+            for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
+            {
+                ind = 0;
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    for (auto k = 0; k < mask_width; k++)
+                    {
+                        auto p = l * image_width + jj + k;
+                        sub_image[ind] = (image[p]);
+                        if (l == 0) {
+                            sub_image[ind] == 0;
+                        }
+                        ind++;
+                    }
+                }
+                auto mid = jj + mask_width / 2;
+                res[mid] = convolution_operation(sub_image);
+            }
+            for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
+            {
+                ind = 0;
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    for (auto k = 0; k < mask_width; k++)
+                    {
+                        auto p = (ii + l) * image_width + k;
+                        sub_image[ind] = (image[p]);
+                        if (k == 0) {
+                            sub_image[ind] = 0;
+                        }
+                        ind++;
+                    }
+
+                }
+                auto mid = (ii + mask_height / 2) * image_width;
+                res[mid] = convolution_operation(sub_image);
+            }
+
+        for (auto i = 0; i < image_height - mask_height + 1; i++)
+        {
+            for (auto j = 0; j < image_width - mask_width + 1; j++)
+            {
+                ind = 0;
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    for (auto k = 0; k < mask_width; k++)
+                    {
+                        auto p = (i + l) * image_width + j + k;
+                        sub_image[ind++] = (image[p]);
+                    }
+
+                }
+                auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
+                res[mid] = convolution_operation(sub_image);
+            }
+        }
+        return res;
+    }
     template<class T>
     std::vector<double> calc_horizontal_gradient( std::vector<T> const & image, size_t image_width, size_t image_height )
     {
@@ -1063,7 +1132,7 @@ void optimizer::section_per_pixel(
 //}
 
 template<class T>
-uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
+double dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const& mask)
 {
     uint8_t res = 0;
 
@@ -1072,7 +1141,20 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<double> const
         res = res | (uint8_t)(sub_image[i] * mask[i]);
     }
 
-    return res;
+    return (double)res;
+}
+
+
+void optimizer::images_dilation(yuy2_frame_data& yuy)
+{
+    int area = yuy.height * yuy.width;
+    std::vector<uint8_t> dilation_mask = { 1, 1, 1,
+                                              1,  1,  1,
+                                              1,  1,  1 };
+
+    yuy.dilated_image = convolution2<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+        {return dilation_calc(sub_image, dilation_mask); });
+
 }
 template<class T>
 double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
@@ -1081,23 +1163,10 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
 
     for (auto i = 0; i < sub_image.size(); i++)
     {
-        res = res + (uint8_t)(sub_image[i] * mask[i]);
+        res = res + (double)(sub_image[i] * mask[i]);
     }
 
     return res;
-}
-void optimizer::images_dilation(yuy2_frame_data& yuy)
-{
-    int area = yuy.height * yuy.width;
-    //yuy.dilated_image.resize(area);
-
-    std::vector<double> dilation_mask = { 1, 1, 1,
-                                              1,  1,  1,
-                                              1,  1,  1 };
-
-    yuy.dilated_image = convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
-        {return dilation_calc(sub_image, dilation_mask); });
-
 }
 void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_kernel_size, double sigma)
 {
@@ -1128,22 +1197,19 @@ void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_ker
 void optimizer::gaussian_filter(yuy2_frame_data& yuy)
 {
     int area = yuy.height * yuy.width;
-    //yuy.gaussian_filtered_image.resize(area);
 
     std::vector<double>  gaussian_kernel;
-    //gaussian_kernel.resize(_params.gause_kernel_size * _params.gause_kernel_size);
     calc_gaussian_kernel(gaussian_kernel, _params.gause_kernel_size, _params.gauss_sigma);
 
-    std::vector<uint8_t> yuy_diff;
-    //yuy_diff.resize(area);
     std::vector<uint8_t>::iterator yuy_iter = yuy.yuy2_frame.begin();
     std::vector<uint8_t>::iterator yuy_prev_iter = yuy.yuy2_prev_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
-        yuy_diff.push_back(*yuy_prev_iter - *yuy_iter);
+        yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter));
     }
-    yuy.gaussian_filtered_image = convolution<uint8_t>(yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<uint8_t> const& sub_image)
+    yuy.gaussian_filtered_image = convolution<double>(yuy.yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
         {return gaussian_calc(sub_image, gaussian_kernel); });
+    return;
 }
 bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
 {

@@ -65,6 +65,7 @@ namespace depth_to_rgb_calibration {
     {
         std::vector<uint8_t> yuy2_frame;
         std::vector<uint8_t> yuy2_prev_frame;
+        std::vector<double> yuy_diff;
         std::vector<double> dilated_image;
         std::vector<double> gaussian_filtered_image;
         std::vector<double> edges;
