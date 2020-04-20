@@ -18,5 +18,12 @@ dl_algo_file( "${F9440687}/2/binFiles/Z_dir_768x1024_uint8_00.bin" "fdbea4895b42
 dl_algo_file( "${F9440687}/2/binFiles/Z_edgeSubPixel_768x1024_double_00.bin" "7bcddf625e1a8c41d585fde532ed88e2e11655a6" )
 dl_algo_file( "${F9440687}/2/binFiles/Z_edgeSubPixel_768x1024_double_01.bin" "a67a7bca9050032d956e4e5dbe922ace9ecc8d09" )
 dl_algo_file( "${F9440687}/2/binFiles/weightsT_5089x1_double_00.bin" "31148b5ae0ee23eb9bb8062d525474a5912fbfe8" )
+dl_algo_file( "${F9440687}/2/binFiles/depthEdgeWeightDistributionPerSectionDepth_4x1_double_00.bin" "a0ecf1fc2bd6a4ccb774ac7f034ddb960d5d4cab" )
+dl_algo_file( "${F9440687}/2/binFiles/edgeWeightDistributionPerSectionRgb_4x1_double_00.bin" "50dabe941b9c5430c5c79aa7bc1d2ac5fd483b47" )
+dl_algo_file( "${F9440687}/2/binFiles/edgeWeightsPerDir_4x1_double_00.bin" "4ce0f4abee6bd31cafe480bdeab520b34d21956d" )
+dl_algo_file( "${F9440687}/2/binFiles/sectionMapDepth_trans_5089x1_uint8_00.bin" "fba67013edc223cd9d79c8a231c41d502258e51e" )
+dl_algo_file( "${F9440687}/2/binFiles/sectionMapRgb_trans_2073600x1_uint8_00.bin" "e81ffad91ece2bb59db31e0ab6169447f4682557" )
+dl_algo_file( "${F9440687}/2/binFiles/dilatedIm_1080x1920_double_00.bin" "64863b593349bf20ed86f4e5fb910f9ade2b980c" )
+dl_algo_file( "${F9440687}/2/binFiles/logicEdges_1080x1920_uint8_00.bin" "0451e2169c19db009cc314d5943467b792e9d3bf" )
 
 

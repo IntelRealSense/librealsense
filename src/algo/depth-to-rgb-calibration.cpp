@@ -1124,9 +1124,6 @@ end*/
 
 bool optimizer::is_scene_valid()
 {
-    return true;
-
-
     std::vector< byte > section_map_depth( _z.width * _z.height );
     std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
@@ -1169,6 +1166,7 @@ bool optimizer::is_scene_valid()
     bool res_edges = is_edge_distributed( _z, _yuy );
     bool res_gradient = is_grad_dir_balanced(_z);
 
+    return true;  // TODO Noha -- take this out when you think this is ready and add unit-test where scene is NOT valid
     return ((!res_movement) && res_edges && res_gradient);
 }
 
