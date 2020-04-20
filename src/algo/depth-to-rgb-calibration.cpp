@@ -1245,7 +1245,7 @@ end*/
 
 bool optimizer::is_scene_valid()
 {
-    return true;
+    //return true;
 
 
     std::vector< byte > section_map_depth( _z.width * _z.height );
