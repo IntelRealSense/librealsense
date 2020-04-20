@@ -73,57 +73,42 @@ namespace
         return res;
     }
     template<class T>
-    std::vector<double> convolution2(std::vector<T> const& image,
+    std::vector<uint8_t> convolution2(std::vector<T> const& image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
         std::function< double(std::vector<T> const& sub_image) > convolution_operation
         )
     {
-        std::vector<double> res(image.size(), 0);
+        std::vector<uint8_t> res(image.size(), 0);
+        std::allocator<uint8_t> alloc;
+        uint8_t* debug_res = alloc.allocate(image.size());
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
-        int arr[3] = { 0,image_height - mask_height - 1, image_height - mask_height - 2 };
+        int arr[3] = { 0, image_height - mask_height - 2 ,image_height - mask_height - 1 };
 
         for (auto arr_i = 0; arr_i < 1; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
             {
                 ind = 0;
-
                 for (auto l = 0; l < mask_height; l++)
                 {
                     for (auto k = 0; k < mask_width; k++)
                     {
-                        auto p = l * image_width + jj + k;
+                        auto p = (l + arr[arr_i]) * image_width + jj + k;
+
                         sub_image[ind] = (image[p]);
-                        if ((l == 2) && (arr_i == 0)) { // first row
-                            sub_image[ind] == 0;
+                        bool cond1 = (l == 2);// && (arr_i == 0); // first row
+                        bool cond2 = false;// (l == 2) && (arr_i == 1);
+                        bool cond3 =  (l == 1) && (arr_i == 2);
+                        if (cond1 || cond2 || cond3) {
+                            sub_image[ind] = 0;
                         }
-
-                        /*if ((l == 2) && (arr_i == 1)) {
-                            sub_image[ind] == 0;
-                        }
-                        if (((l == 1) || (l == 2)) && (arr_i == 2)) { // last row
-                            sub_image[ind] == 0;
-                        }*/
-
-                        //if ((l == 0) && (arr_i == 0)) { // first row
-                        //    sub_image[ind] == 0;
-                        //}
-                        //
-                        //if ((l == 2) && (arr_i == 1)) {
-                        //    sub_image[ind] == 0;
-                        //}
-                        //if (((l == 1) || (l == 2)) && (arr_i == 2)) { // last row
-                        //    sub_image[ind] == 0;
-                        //}
-                        //if ((jj == 0) && (k == 0)) { // for all
-                        //    sub_image[ind] == 0;
-                        //}
                         ind++;
                     }
                 }
-                auto mid = jj + mask_width / 2;// +arr[arr_i] * image_width;
+                auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
+                *(debug_res + mid) = res[mid];
             }
 
         }
@@ -145,12 +130,6 @@ namespace
                     if ((k == 2) && (arr_i == 0)) {
                         sub_image[ind] = 0;
                     }
-                    /*if ((k == 2) && (arr_i == 1)) {
-                        sub_image[ind] = 0;
-                    }
-                    if (((k == 2) || (k == 1)) && (arr_i == 2)) {
-                        sub_image[ind] = 0;
-                    }*/
                     ind++;
                 }
                 auto mid = (ii + mask_height / 2) * image_width; //+ arr[arr_i];
@@ -1170,7 +1149,7 @@ void optimizer::section_per_pixel(
 //}
 
 template<class T>
-double dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const& mask)
+uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const& mask)
 {
     uint8_t res = 0;
 
@@ -1179,7 +1158,7 @@ double dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const
         res = res || (uint8_t)(sub_image[i] * mask[i]);
     }
 
-    return (double)res;
+    return res;
 }
 
 
