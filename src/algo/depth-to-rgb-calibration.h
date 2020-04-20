@@ -66,6 +66,7 @@ namespace depth_to_rgb_calibration {
         std::vector<uint8_t> yuy2_frame;
         std::vector<uint8_t> yuy2_prev_frame;
         std::vector<double> dilated_image;
+        std::vector<double> gaussian_filtered_image;
         std::vector<double> edges;
         std::vector<double> prev_edges;
         std::vector<uint8_t> logic_edges;
@@ -253,6 +254,8 @@ namespace depth_to_rgb_calibration {
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
         double dilation_size = 3;
+        double gauss_sigma = 1;
+        double gause_kernel_size = 3;
     };
 
     typedef uint16_t yuy_t;
@@ -330,6 +333,7 @@ namespace depth_to_rgb_calibration {
         void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed, double distribution_min_max_ratio, double min_weighted_edge_per_section_depth);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         void images_dilation(yuy2_frame_data& yuy);
+        void gaussian_filter(yuy2_frame_data& yuy);
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;

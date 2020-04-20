@@ -1074,12 +1074,22 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<double> const
 
     return res;
 }
+template<class T>
+double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const& mask)
+{
+    double res = 0;
+
+    for (auto i = 0; i < sub_image.size(); i++)
+    {
+        res = res + (uint8_t)(sub_image[i] * mask[i]);
+    }
+
+    return res;
+}
 void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
-
-    
     int area = yuy.height * yuy.width;
-    yuy.dilated_image.resize(area);
+    //yuy.dilated_image.resize(area);
 
     std::vector<double> dilation_mask = { 1, 1, 1,
                                               1,  1,  1,
@@ -1089,6 +1099,52 @@ void optimizer::images_dilation(yuy2_frame_data& yuy)
         {return dilation_calc(sub_image, dilation_mask); });
 
 }
+void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_kernel_size, double sigma)
+{
+    /*%Design the Gaussian Kernel
+      Exp_comp = -(x.^2+y.^2)/(2*sigma*sigma);
+      Kernel= exp(Exp_comp)/(2*pi*sigma*sigma);
+    */
+    double area = gause_kernel_size * gause_kernel_size;
+    //std::vector<double> gauss_kernel;
+    //gauss_kernel.resize(area);
+    std::vector<double> x = { -1, 0, 1,
+                              -1, 0, 1,
+                              -1, 0, 1 };
+    std::vector<double> y = { -1,-1,-1,
+                               0, 0, 0,
+                               1, 1, 1 };
+    double exp_comp;
+    std::vector<double>::iterator x_iter = x.begin();
+    std::vector<double>::iterator y_iter = y.begin();
+    for (auto i = 0; i < area; i++, x_iter++, y_iter++)
+    {
+        exp_comp = (-(*x_iter) * (*y_iter) / (2 * sigma * sigma));
+        gaussian_kernel.push_back(exp(exp_comp) / (2 * M_PI * sigma * sigma));
+    }
+
+    //return gauss_kernel;
+}
+void optimizer::gaussian_filter(yuy2_frame_data& yuy)
+{
+    int area = yuy.height * yuy.width;
+    //yuy.gaussian_filtered_image.resize(area);
+
+    std::vector<double>  gaussian_kernel;
+    //gaussian_kernel.resize(_params.gause_kernel_size * _params.gause_kernel_size);
+    calc_gaussian_kernel(gaussian_kernel, _params.gause_kernel_size, _params.gauss_sigma);
+
+    std::vector<uint8_t> yuy_diff;
+    //yuy_diff.resize(area);
+    std::vector<uint8_t>::iterator yuy_iter = yuy.yuy2_frame.begin();
+    std::vector<uint8_t>::iterator yuy_prev_iter = yuy.yuy2_prev_frame.begin();
+    for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
+    {
+        yuy_diff.push_back(*yuy_prev_iter - *yuy_iter);
+    }
+    yuy.gaussian_filtered_image = convolution<uint8_t>(yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<uint8_t> const& sub_image)
+        {return gaussian_calc(sub_image, gaussian_kernel); });
+}
 bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
@@ -1096,15 +1152,14 @@ isMovement = false;
 
 [edgeIm1,~,~] = OnlineCalibration.aux.edgeSobelXY(uint8(im1));
 logicEdges = abs(edgeIm1) > params.edgeThresh4logicIm*max(edgeIm1(:));
-*/
-    /*int area = yuy.height* yuy.width;
-    BYTE* pImgE = new BYTE[area];
-    edge_sobel_XY(yuy, pImgE);*/
-    yuy.prev_logic_edges = get_logic_edges(yuy.prev_edges);
-    images_dilation(yuy);
-    /*
 SE = strel('square', params.seSize);
 dilatedIm = imdilate(logicEdges,SE);
+*/
+    yuy.prev_logic_edges = get_logic_edges(yuy.prev_edges);
+    images_dilation(yuy);
+    gaussian_filter(yuy);
+    /*
+
 
 % diffIm = abs(im1-im2);
 diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);
@@ -1124,7 +1179,7 @@ end*/
 
 bool optimizer::is_scene_valid()
 {
-    return true;
+    //return true;
 
 
     std::vector< byte > section_map_depth( _z.width * _z.height );
