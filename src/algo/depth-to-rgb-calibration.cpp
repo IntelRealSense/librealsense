@@ -80,11 +80,9 @@ namespace
         )
     {
         std::vector<uint8_t> res(image.size(), 0);
-        std::allocator<uint8_t> alloc;
-        uint8_t* debug_res = alloc.allocate(image.size());
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
-        int arr[3] = { 0, image_height - 3 ,image_height - 1 };
+        int arr[3] = { 0, image_height - 1 ,image_height - 1 };
 
         for (auto arr_i = 0; arr_i < 2; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
@@ -95,12 +93,14 @@ namespace
                     for (auto k = 0; k < mask_width; k++)
                     {
                         auto p = (l + arr[arr_i]) * image_width + jj + k;
-
+                        if (arr_i != 0)
+                        {
+                            p = p - 2*image_width;
+                        }
                         sub_image[ind] = (image[p]);
                         bool cond1 = (l == 2) && (arr_i != 1); // first row
-                        bool cond2 = false;// (l == 2) && (arr_i == 1);
-                        bool cond3 = false;// (l == 1) && (arr_i == 2);
-                        if (cond1 || cond2 || cond3) {
+                        bool cond2 = (l == 0) && (arr_i == 1);
+                        if (cond1 || cond2) {
                             sub_image[ind] = 0;
                         }
                         ind++;
@@ -108,9 +108,7 @@ namespace
                 }
                 auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
-                *(debug_res + mid) = res[mid];
             }
-
         }
 
     arr[0] = 0;
