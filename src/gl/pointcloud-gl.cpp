@@ -103,7 +103,7 @@ static const char* project_fragment_text =
 "}";
 
 static const char* occulution_vertex_shader_text =
-"#version 110\n"
+"#version 130\n"
 "attribute vec3 position;\n"
 "attribute vec2 textureCoords;\n"
 "varying vec2 textCoords;\n"
@@ -126,9 +126,11 @@ static const char* occulution_vertex_shader_text =
 "}";
 
 static const char* occulution_fragment_text =
-"#version 110\n"
+"#version 130\n"
 "varying vec2 textCoords;\n"
 "varying vec2 occuTextureCoords[20];\n"
+"out vec4 texture_xyz;\n"
+"out vec4 texture_uv;\n"
 "uniform sampler2D xyzSampler;\n"
 "uniform sampler2D uvSampler;\n"
 "uniform float opacity;\n"
@@ -150,9 +152,11 @@ static const char* occulution_fragment_text =
 "    {\n"
 "    if (uv[0].x < uvmax)\n"
 "    {\n"
-"    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"    texture_xyz = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"    texture_uv = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "    } else {\n"
-"    gl_FragColor = vec4(uv[0].xyz, 1.0);\n"
+"    texture_xyz = vec4(xyz[0].xyz, 1.0);\n"
+"    texture_uv = vec4(uv[0].xyz, 1.0);\n"
 "    }\n"
 "    }\n"
 "}";
@@ -166,7 +170,7 @@ public:
             texture_2d_shader::default_vertex_shader(), 
             project_fragment_text, 
             "position", "textureCoords", 
-            "output_xyz", "output_uv"))
+            "texture_xyz", "texture_uv"))
     {
         _focal_location[0] = _shader->get_uniform_location("focal1");
         _principal_location[0] = _shader->get_uniform_location("principal1");
@@ -429,6 +433,18 @@ void pointcloud_gl::get_texture_map(
 
             fbo fbo2(width, height);
 
+            uint32_t xyz_texture;
+            glGenTextures(1, &xyz_texture);
+            glBindTexture(GL_TEXTURE_2D, xyz_texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, xyz_texture, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
             uint32_t uv_texture;
             glGenTextures(1, &uv_texture);
             glBindTexture(GL_TEXTURE_2D, uv_texture);
@@ -436,10 +452,10 @@ void pointcloud_gl::get_texture_map(
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, uv_texture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, uv_texture, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+            glDrawBuffers(2, attachments);
 
             glClearColor(0, 0, 0, 1);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -463,11 +479,17 @@ void pointcloud_gl::get_texture_map(
 
             glReadBuffer(GL_COLOR_ATTACHMENT0);
             glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, output_xyz);
+            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+
+            glReadBuffer(GL_COLOR_ATTACHMENT1);
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, output_uv);
             glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
 
             fbo2.unbind();
 
+            glDeleteTextures(1, &xyz_texture);
             glDeleteTextures(1, &uv_texture);
         }
 
