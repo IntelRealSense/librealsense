@@ -150,11 +150,13 @@ namespace librealsense
 
     enum class md_f400_capture_timing_attributes
     {
-        exposure_time_attribute         = (1u << 0),
-        gain_value_attribute            = (1u << 1),
-        led_status_attribute            = (1u << 2),
-        laser_status_attribute          = (1u << 3),
-        preset_id_attribute             = (1u << 4),
+        frame_counter_attribute         = (1u << 0),
+        sensor_timestamp_attribute      = (1u << 1),
+        exposure_time_attribute         = (1u << 2),
+        gain_value_attribute            = (1u << 3),
+        led_status_attribute            = (1u << 4),
+        laser_status_attribute          = (1u << 5),
+        preset_id_attribute             = (1u << 6),
     } ;
 
     /**\brief md_configuration_attributes - bit mask to find active attributes,
