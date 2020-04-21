@@ -83,7 +83,7 @@ namespace
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
         int arr[3] = { 0, 1, image_height - 1 };
-        int lines[3] = { 2, 1, 0 };
+        int lines[3] = { 2, 1, 2 };
         //std::allocator<double> alloc;
         //double* debug = alloc.allocate(image.size());
 
@@ -91,9 +91,10 @@ namespace
         // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
         // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
         // first 2 lines
-        for (auto arr_i = 0; arr_i < 2; arr_i++) {
+        for (auto arr_i = 0; arr_i < 3; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
             {
+                if ((arr_i == 0) || (arr_i == 1)) {
                     ind = mask_width * lines[arr_i]; // skip first 2 lines for padding - start from 3rd line
                     for (auto l = lines[arr_i]; l < mask_height; l++)
                     {
@@ -109,6 +110,26 @@ namespace
                     {
                         sub_image[k] = sub_image[k % mask_width + ind];
                     }
+                }
+                if (arr_i == 2) { // last line
+                    // mask will start from 2 previous lines and last 2 lines are padded
+                    ind = 0;
+                    for (auto l = 0; l < mask_height-2; l++) // only for first 3 rows
+                    {
+                        for (auto k = 0; k < mask_width; k++)
+                        {
+                            auto p = (l - lines[arr_i] + arr[arr_i]) * image_width + jj + k;
+                            sub_image[ind++] = (image[p]);
+                        }
+                    }
+                    // last 2 mask rows are the same as 3rd row
+                    ind = mask_width * (lines[arr_i]+1); // 4th,5th rows padding
+                    auto ind_pad = mask_width * lines[arr_i];
+                    for (auto k = 0; k < mask_width * lines[arr_i]; k++)
+                    {
+                        sub_image[ind+k] = sub_image[k % mask_width + ind_pad];
+                    }
+                }
                 auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
                 //*(debug+mid)=res[mid];
