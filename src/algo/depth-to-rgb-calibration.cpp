@@ -80,13 +80,50 @@ namespace
         )
     {
         std::vector<double> res(image.size(), 0);
+        std::vector<T> sub_image(mask_width * mask_height, 0);
+        auto ind = 0;
+        int arr[3] = { 0, 1, image_height - 1 };
+        //std::allocator<double> alloc;
+        //double* debug = alloc.allocate(image.size());
 
+        // poundaries handling 
+        // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
+        // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
+        // first 2 lines
+        for (auto arr_i = 0; arr_i < 1; arr_i++) {
+            for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
+            {
+                ind = 0;
+                if (arr_i == 0)
+                {
+                    ind = mask_width * 2; // skip first 2 lines for padding - start from 3rd line
+                    for (auto l = 2; l < mask_height; l++)
+                    {
+                        for (auto k = 0; k < mask_width; k++)
+                        {
+                            auto p = (l - 2 + arr[arr_i]) * image_width + jj + k;
+                            sub_image[ind++] = (image[p]);
+                        }
+                    }
+                    // l=0
+                    //ind = 0; // fill first 2 lines to same values as 3rd line
+                    auto ind2 = mask_width * 2;
+                    for (auto k = 0; k < mask_width * 2; k++)
+                    {
+                        sub_image[k] = sub_image[k % mask_width + ind2];
+                    }
+                }
+                auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
+                res[mid] = convolution_operation(sub_image);
+                //*(debug+mid)=res[mid];
+            }
+        }
         for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
             for (auto j = 0; j < image_width - mask_width + 1; j++)
             {
-                std::vector<T> sub_image(mask_width * mask_height, 0);
-                auto ind = 0;
+                //std::vector<T> sub_image(mask_width * mask_height, 0);
+                ind = 0;
                 for (auto l = 0; l < mask_height; l++)
                 {
                     for (auto k = 0; k < mask_width; k++)
@@ -97,9 +134,8 @@ namespace
 
                 }
                 auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
-
                 res[mid] = convolution_operation(sub_image);
-
+                //*(debug + mid) = res[mid];
             }
         }
         return res;
@@ -114,7 +150,7 @@ namespace
         std::vector<uint8_t> res(image.size(), 0);
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
-        int arr[3] = { 0, image_height - 1 ,image_height - 1 };
+        int arr[2] = { 0, image_height - 1 };
 
         for (auto arr_i = 0; arr_i < 2; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
@@ -130,7 +166,7 @@ namespace
                             p = p - 2*image_width;
                         }
                         sub_image[ind] = (image[p]);
-                        bool cond1 = (l == 2) && (arr_i != 1); // first row
+                        bool cond1 = (l == 2) && (arr_i == 0); // first row
                         bool cond2 = (l == 0) && (arr_i == 1);
                         if (cond1 || cond2) {
                             sub_image[ind] = 0;
@@ -1225,19 +1261,24 @@ void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_ker
       Exp_comp = -(x.^2+y.^2)/(2*sigma*sigma);
       Kernel= exp(Exp_comp)/(2*pi*sigma*sigma);
     */
-    /*matlab_style_gauss2D(shape=(3,3),sigma=0.5):
-    """
-    2D gaussian mask - should give the same result as MATLAB's
-    fspecial('gaussian',[shape],[sigma])
-    """
-    m,n = [(ss-1.)/2. for ss in shape]
-    y,x = np.ogrid[-m:m+1,-n:n+1]
-    h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
-    h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
-    sumh = h.sum()
-    if sumh != 0:
-        h /= sumh
-    return h*/
+    /*double sigma = 1;
+int W = 5;
+double kernel[W][W];
+double mean = W/2;
+double sum = 0.0; // For accumulating the kernel values
+for (int x = 0; x < W; ++x) 
+    for (int y = 0; y < W; ++y) {
+        kernel[x][y] = exp( -0.5 * (pow((x-mean)/sigma, 2.0) + pow((y-mean)/sigma,2.0)) )
+                         / (2 * M_PI * sigma * sigma);
+
+        // Accumulate the kernel values
+        sum += kernel[x][y];
+    }
+
+// Normalize the kernel
+for (int x = 0; x < W; ++x) 
+    for (int y = 0; y < W; ++y)
+        kernel[x][y] /= sum;*/
     double area = gause_kernel_size * gause_kernel_size;
 
     std::vector<double> x = { -1, 0, 1,

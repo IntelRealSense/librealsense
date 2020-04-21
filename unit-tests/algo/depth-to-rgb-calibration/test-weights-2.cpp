@@ -221,7 +221,5 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         // 2. gausssian
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
-        
-        
     }
 }
