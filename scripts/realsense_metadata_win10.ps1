@@ -76,6 +76,7 @@ $MultiPinDevices =
     "USB\VID_8086&PID_0B52&MI_00" # F416+RGB
     "USB\VID_8086&PID_0B5B&MI_00" # D405
     "USB\VID_8086&PID_0B5C&MI_00" # D455
+    "USB\VID_2AAD&PID_6373&MI_00" # F450 // filters on 8086 shall be changed to 2AAD along the script for the metadata of this device to be enabled
 
 #Inhibit system warnings and erros, such as permissions or missing values
 $ErrorActionPreference = "silentlycontinue"
