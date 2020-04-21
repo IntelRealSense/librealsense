@@ -316,6 +316,9 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, uvc_infos.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_str);
         
+        // Metadata registration
+        register_metadata();
+        
         /*USB TYPE DESCRIPTION
         auto _usb_mode = platform::usb_spec::usb3_type;
         std::string usb_type_str(platform::usb_spec_names.at(_usb_mode));
@@ -346,8 +349,67 @@ namespace librealsense
                 auto_white_balance_option));
         //LOW LIGHT COMPENSATION
         ir_ep->register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+    }
 
-        
+    void fa_device::register_metadata()
+    {
+        auto& ir_sensor = get_ir_sensor();
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
+            make_uvc_header_parser(&platform::uvc_header::timestamp));
+
+        // attributes of md_f400_header
+        static const int S_METADATA_UVC_PART_SIZE = 12;
+        static const int S_FRAME_COUNTER_SIZE = 4;
+        static const int S_SENSOR_TIMESTAMP_SIZE = 4;
+        static const int S_EXPOSURE_TIME_SIZE = 4;
+        static const int S_GAIN_VALUE_SIZE = 1;
+        static const int S_LED_STATUS_SIZE = 1;
+        static const int S_LASER_STATUS_SIZE = 1;
+        static const int S_PRESET_ID_SIZE = 1;
+
+        auto md_prop_offset = /*S_METADATA_UVC_PART_SIZE + */4;
+
+        // REMI - TODO - change the flag to TRUE flag or flag for frame counter
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
+            make_attribute_parser(&md_f400_header::frame_counter,
+                md_f400_capture_timing_attributes::gain_value_attribute, md_prop_offset));
+
+        md_prop_offset += S_FRAME_COUNTER_SIZE;
+        // REMI - TODO - change the flag to TRUE flag or flag for sensor timestamp
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+            make_attribute_parser(&md_f400_header::sensor_timestamp,
+                md_f400_capture_timing_attributes::gain_value_attribute, md_prop_offset));
+
+        md_prop_offset += S_SENSOR_TIMESTAMP_SIZE;
+        //EXPOSURE
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
+            make_attribute_parser(&md_f400_header::exposure_time,
+                md_f400_capture_timing_attributes::exposure_time_attribute, md_prop_offset));
+
+        md_prop_offset += S_EXPOSURE_TIME_SIZE;
+        //GAIN
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,
+            make_attribute_parser(&md_f400_header::gain_value,
+                md_f400_capture_timing_attributes::gain_value_attribute, md_prop_offset));
+
+        md_prop_offset += S_GAIN_VALUE_SIZE;
+        //LED
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_LED_POWER_MODE,
+            make_attribute_parser(&md_f400_header::led_status,
+                md_f400_capture_timing_attributes::led_status_attribute, md_prop_offset));
+
+        md_prop_offset += S_LED_STATUS_SIZE;
+        //LASER
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
+            make_attribute_parser(&md_f400_header::laser_status,
+                md_f400_capture_timing_attributes::laser_status_attribute, md_prop_offset));
+
+        md_prop_offset += S_LASER_STATUS_SIZE;
+        //PRESET
+        ir_sensor.register_metadata(RS2_FRAME_METADATA_PRESET_ID,
+            make_attribute_parser(&md_f400_header::preset_id,
+                md_f400_capture_timing_attributes::preset_id_attribute, md_prop_offset));
+
     }
 
     notification fa_notification_decoder::decode(int value)

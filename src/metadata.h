@@ -44,6 +44,7 @@ namespace librealsense
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
         META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
+        META_DATA_F400_ID                       = 0x80010001
     };
 
     static const std::map<md_type, std::string> md_type_desc =
@@ -146,6 +147,15 @@ namespace librealsense
         power_line_frequency_attribute  = (1u << 12),
         low_light_comp_attribute        = (1u << 13),
     };
+
+    enum class md_f400_capture_timing_attributes
+    {
+        exposure_time_attribute         = (1u << 0),
+        gain_value_attribute            = (1u << 1),
+        led_status_attribute            = (1u << 2),
+        laser_status_attribute          = (1u << 3),
+        preset_id_attribute             = (1u << 4),
+    } ;
 
     /**\brief md_configuration_attributes - bit mask to find active attributes,
      *  md_configuration struct */
@@ -308,6 +318,23 @@ namespace librealsense
         md_type     md_type_id;         // The type of the metadata struct
         uint32_t    md_size;            // Actual size of metadata struct without header
     };
+
+    struct md_f400_header
+    {
+        md_header header;
+        uint16_t version;
+        uint16_t flags;	           // Bit array to specify attributes that are valid.
+        uint32_t frame_counter;    // Always present 
+        uint32_t sensor_timestamp; // In microsecond unit. Always present 
+        uint32_t exposure_time;    // The exposure time in microsecond unit 
+        uint8_t gain_value;        // Sensor's gain (UVC standard) 
+        uint8_t led_status;        // LED On/Off 
+        uint8_t laser_status;      // Projector On/Off
+        uint8_t preset_id;         // FA selected preset type (enumerated) 
+        uint8_t reserved[40];      // 40 bytes reserved for future modifications. The total metadata size is UVC Header (12 bytes) + this struct (64 bytes) = 76 bytes 
+    };
+
+    REGISTER_MD_TYPE(md_f400_header, md_type::META_DATA_F400_ID)
 
     /**\brief md_capture_timing - properties associated with sensor configuration
      *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
