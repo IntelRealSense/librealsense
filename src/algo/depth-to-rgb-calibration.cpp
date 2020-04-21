@@ -324,32 +324,60 @@ optimizer::optimizer()
 {
 }
 
-rotation_in_angles extract_angles_from_rotation(const double rotation[9])
+static rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles )
+{
+    rotation res;
+
+    auto sin_a = sin( rot_angles.alpha );
+    auto sin_b = sin( rot_angles.beta );
+    auto sin_g = sin( rot_angles.gamma );
+
+    auto cos_a = cos( rot_angles.alpha );
+    auto cos_b = cos( rot_angles.beta );
+    auto cos_g = cos( rot_angles.gamma );
+
+    //% function [R] = calcRmatRromAngs(xAlpha,yBeta,zGamma)
+    //%     R = [cos( yBeta )*cos( zGamma ), -cos( yBeta )*sin( zGamma ), sin( yBeta ); ...
+    //%          cos( xAlpha )*sin( zGamma ) + cos( zGamma )*sin( xAlpha )*sin( yBeta ), cos( xAlpha )*cos( zGamma ) - sin( xAlpha )*sin( yBeta )*sin( zGamma ), -cos( yBeta )*sin( xAlpha ); ...
+    //%          sin( xAlpha )*sin( zGamma ) - cos( xAlpha )*cos( zGamma )*sin( yBeta ), cos( zGamma )*sin( xAlpha ) + cos( xAlpha )*sin( yBeta )*sin( zGamma ), cos( xAlpha )*cos( yBeta )];
+    //% end
+    // -> note the transposing of the coordinates
+
+    res.rot[0] = cos_b * cos_g;
+    res.rot[3] = -cos_b * sin_g;
+    res.rot[6] = sin_b;
+    res.rot[1] = cos_a * sin_g + cos_g * sin_a*sin_b;
+    res.rot[4] = cos_a * cos_g - sin_a * sin_b*sin_g;
+    res.rot[7] = -cos_b * sin_a;
+    res.rot[2] = sin_a * sin_g - cos_a * cos_g*sin_b;
+    res.rot[5] = cos_g * sin_a + cos_a * sin_b*sin_g;
+    res.rot[8] = cos_a * cos_b;
+
+    return res;
+}
+
+rotation_in_angles extract_angles_from_rotation(const double r[9])
 {
     rotation_in_angles res;
-    auto epsilon = 0.00001;
-    res.alpha = atan2(-rotation[7], rotation[8]);
-    res.beta = asin(rotation[6]);
-    res.gamma = atan2(-rotation[3], rotation[0]);
+    //% function [xAlpha,yBeta,zGamma] = extractAnglesFromRotMat(R)
+    //%     xAlpha = atan2(-R(2,3),R(3,3));
+    //%     yBeta = asin(R(1,3));
+    //%     zGamma = atan2(-R(1,2),R(1,1));
+    // -> we transpose the coordinates!
+    res.alpha = atan2(-r[7], r[8]);
+    res.beta = asin(r[6]);
+    res.gamma = atan2(-r[3], r[0]);
+    // -> additional code is in the original function that catches some corner
+    //    case, but since these have never occurred we were told not to use it 
 
-    double rot[9];
-
-    rot[0] = cos(res.beta)*cos(res.gamma);
-    rot[1] = -cos(res.beta)*sin(res.gamma);
-    rot[2] = sin(res.beta);
-    rot[3] = cos(res.alpha)*sin(res.gamma) + cos(res.gamma)*sin(res.alpha)*sin(res.beta);
-    rot[4] = cos(res.alpha)*cos(res.gamma) - sin(res.alpha)*sin(res.beta)*sin(res.gamma);
-    rot[5] = -cos(res.beta)*sin(res.alpha);
-    rot[6] = sin(res.alpha)*sin(res.gamma) - cos(res.alpha)*cos(res.gamma)*sin(res.beta);
-    rot[7] = cos(res.gamma)*sin(res.alpha) + cos(res.alpha)*sin(res.beta)*sin(res.gamma);
-    rot[8] = cos(res.alpha)*cos(res.beta);
-
+    // TODO Sanity-check: can be removed
+    rotation rot = extract_rotation_from_angles( res );
     double sum = 0;
     for (auto i = 0; i < 9; i++)
     {
-        sum += rot[i] - rotation[i];
+        sum += rot.rot[i] - r[i];
     }
-
+    auto epsilon = 0.00001;
     if ((abs(sum)) > epsilon)
         throw "No fit";
     return res;
@@ -357,13 +385,12 @@ rotation_in_angles extract_angles_from_rotation(const double rotation[9])
 
 size_t optimizer::optimize( calib const & original_calibration )
 {
-    optimaization_params params_orig;
-    params_orig.curr_calib = original_calibration;
+    _original_calibration = original_calibration;
 
-    auto const original_cost = calc_cost_and_grad( _z, _yuy, original_calibration ).second;
-    AC_LOG( DEBUG, "Original cost = " << original_cost );
+    auto const original_cost = calc_cost_and_grad( _z, _yuy, _original_calibration ).second;
+    AC_LOG( DEBUG, "0: Original cost = " << original_cost );
 
-    _params_curr = params_orig;
+    _params_curr.curr_calib = _original_calibration;
     _params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
 
     size_t n_iterations = 0;
@@ -378,20 +405,20 @@ size_t optimizer::optimize( calib const & original_calibration )
         auto norm = (new_params.curr_calib - _params_curr.curr_calib).get_norma();
         if( norm < _params.min_rgb_mat_delta )
         {
-            AC_LOG( DEBUG, "{normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
+            AC_LOG( DEBUG, n_iterations << ": {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
             break;
         }
 
         auto delta = abs( new_params.cost - _params_curr.cost );
         if( delta < _params.min_cost_delta )
         {
-            AC_LOG( DEBUG, "Current cost = " << new_params.cost << "; delta= " << delta << " < " << _params.min_cost_delta << "  -->  stopping" );
+            AC_LOG( DEBUG, n_iterations << ": Cost = " << new_params.cost << "; delta= " << delta << " < " << _params.min_cost_delta << "  -->  stopping" );
             break;
         }
 
         _params_curr = new_params;
         ++n_iterations;
-        AC_LOG( DEBUG, "Cost = " << _params_curr.cost << "; delta= " << delta );
+        AC_LOG( DEBUG, n_iterations << ": Cost = " << _params_curr.cost << "; delta= " << delta );
     }
     if( !n_iterations )
     {
@@ -399,7 +426,7 @@ size_t optimizer::optimize( calib const & original_calibration )
     }
     else
     {
-        AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << _params_curr.cost );
+        AC_LOG( INFO, "Calibration finished after " << n_iterations << " iterations; original cost= " << original_cost << "  optimized cost= " << _params_curr.cost );
     }
 
     return n_iterations;
@@ -686,31 +713,6 @@ void optimizer::set_ir_data(
     _ir.ir_edges = calc_edges( ir_data, width, height );
 }
 
-static rotation extract_rotation_from_angles( const rotation_in_angles & rot_angles )
-{
-    rotation res;
-
-    auto sin_a = sin( rot_angles.alpha );
-    auto sin_b = sin( rot_angles.beta );
-    auto sin_g = sin( rot_angles.gamma );
-
-    auto cos_a = cos( rot_angles.alpha );
-    auto cos_b = cos( rot_angles.beta );
-    auto cos_g = cos( rot_angles.gamma );
-
-    res.rot[0] = cos_b * cos_g;
-    res.rot[3] = -cos_b * sin_g;
-    res.rot[6] = sin_b;
-    res.rot[1] = cos_a * sin_g + cos_g * sin_a*sin_b;
-    res.rot[4] = cos_a * cos_g - sin_a * sin_b*sin_g;
-    res.rot[7] = -cos_b * sin_a;
-    res.rot[2] = sin_a * sin_g - cos_a * cos_g*sin_b;
-    res.rot[5] = cos_g * sin_a + cos_a * sin_b*sin_g;
-    res.rot[8] = cos_a * cos_b;
-
-    return res;
-}
-
 
 void optimizer::zero_invalid_edges( z_frame_data & z_data, ir_frame_data const & ir_data )
 {
@@ -939,19 +941,18 @@ void optimizer::check_edge_distribution(
 )
 {
     /*minMaxRatio = min(sumWeightsPerSection)/max(sumWeightsPerSection);
-if minMaxRatio < params.edgeDistributMinMaxRatio
-    isDistributed = false;
-    fprintf('isEdgeDistributed: Ratio between min and max is too small: %0.5f, threshold is %0.5f\n',minMaxRatio, params.edgeDistributMinMaxRatio);
-    return;
-end*/
+      if minMaxRatio < params.edgeDistributMinMaxRatio
+          isDistributed = false;
+          fprintf('isEdgeDistributed: Ratio between min and max is too small: %0.5f, threshold is %0.5f\n',minMaxRatio, params.edgeDistributMinMaxRatio);
+          return;
+      end*/
     double z_max = *std::max_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     double z_min = *std::min_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     min_max_ratio = z_min / z_max;
     if( min_max_ratio < distribution_min_max_ratio )
     {
         is_edge_distributed = false;
-        AC_LOG_CONTINUE(DEBUG, "check_edge_distribution: Ratio between min and max is too small:  " << min_max_ratio);
-        AC_LOG(DEBUG, "check_edge_distribution: threshold is:  " << distribution_min_max_ratio);
+        AC_LOG( ERROR, "Edge distribution ratio ({min}" << z_min << "/" << z_max << "{max} = " << min_max_ratio << ") is too small; threshold= " << distribution_min_max_ratio );
         return;
     }
     /*if any(sumWeightsPerSection< params.minWeightedEdgePerSection)
@@ -1144,6 +1145,7 @@ isBalanced = true;
     }
     return true;
 }
+
 void optimizer::section_per_pixel(
     frame_data const & f,
     size_t const section_w,
@@ -1635,7 +1637,7 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
         uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
         new_params.cost = calc_cost( z_data, yuy_data, uvmap );
 
-        AC_LOG( DEBUG, "Current back tracking line search cost = " << std::fixed << std::setprecision( 15 ) << new_params.cost );
+        AC_LOG( DEBUG, "... back tracking line search cost= " << std::fixed << std::setprecision( 15 ) << new_params.cost );
     }
 
     if( curr_params.cost - new_params.cost >= step_size * t )
@@ -1669,25 +1671,44 @@ double optimizer::calc_t( optimaization_params opt_params )
 }
 
 
-double optimizer::calc_cost( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv )
+template< typename T >
+void calc_cost_per_vertex_fn(
+    z_frame_data const & z_data,
+    yuy2_frame_data const & yuy_data,
+    std::vector< double2 > const & uv,
+    T fn
+)
 {
     auto d_vals = biliniar_interp( yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv );
     double cost = 0;
+    std::vector< double > cost_per_vertex;
+    cost_per_vertex.reserve( uv.size() );
 
-    auto sum_of_elements = 0;
-    for( auto i = 0; i < z_data.weights.size(); i++ )
+    for( size_t i = 0; i < z_data.weights.size(); i++ )
     {
-        if( d_vals[i] != std::numeric_limits<double>::max() )
-        {
-            sum_of_elements++;
-            cost += d_vals[i] * z_data.weights[i];
-        }
+        double d_val = d_vals[i];  // may be std::numeric_limits<double>::max()?
+        double weight = z_data.weights[i];
+        double cost = d_val * weight;
+        fn( i, d_val, weight, cost );
     }
-    if( sum_of_elements == 0 )
-        return 0;
-    //throw "didnt convertege";
-    cost /= (double)sum_of_elements;
-    return cost;
+}
+
+
+double optimizer::calc_cost( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv )
+{
+    double cost = 0;
+    size_t N = 0;
+    calc_cost_per_vertex_fn( z_data, yuy_data, uv,
+        [&]( size_t i, double d_val, double weight, double vertex_cost )
+        {
+            if( d_val != std::numeric_limits<double>::max() )
+            {
+                cost += vertex_cost;
+                ++N;
+            }
+        }
+    );
+    return N ? cost / N : 0.;
 }
 
 calib optimizer::calc_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv,
@@ -2566,7 +2587,7 @@ void params::set_rgb_resolution( size_t width, size_t height )
     AC_LOG( DEBUG, "... RGB resolution= " << width << "x" << height );
 }
 
-void calib::copy_coefs( calib & obj )
+void calib::copy_coefs( calib & obj ) const
 {
     obj.width = this->width;
     obj.height = this->height;
@@ -2580,7 +2601,7 @@ void calib::copy_coefs( calib & obj )
     obj.model = this->model;
 }
 
-calib calib::operator*( double step_size )
+calib calib::operator*( double step_size ) const
 {
     calib res;
     res.k_mat.fx = this->k_mat.fx * step_size;
@@ -2601,12 +2622,12 @@ calib calib::operator*( double step_size )
     return res;
 }
 
-calib calib::operator/( double factor )
+calib calib::operator/( double factor ) const
 {
     return (*this)*(1.f / factor);
 }
 
-calib calib::operator+( const calib & c )
+calib calib::operator+( const calib & c ) const
 {
     calib res;
     res.k_mat.fx = this->k_mat.fx + c.k_mat.fx;
@@ -2627,7 +2648,7 @@ calib calib::operator+( const calib & c )
     return res;
 }
 
-calib calib::operator-( const calib & c )
+calib calib::operator-( const calib & c ) const
 {
     calib res;
     res.k_mat.fx = this->k_mat.fx - c.k_mat.fx;
@@ -2648,7 +2669,7 @@ calib calib::operator-( const calib & c )
     return res;
 }
 
-calib calib::operator/( const calib & c )
+calib calib::operator/( const calib & c ) const
 {
     calib res;
     res.k_mat.fx = this->k_mat.fx / c.k_mat.fx;
@@ -2763,8 +2784,158 @@ librealsense::algo::depth_to_rgb_calibration::calib::calib(rs2_intrinsics const 
     model = intrin.model;
 }
 
+// Return the average pixel movement from the calibration
+double optimizer::calc_correction_in_pixels( calib const & from_calibration ) const
+{
+    //%    [uvMap,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,params.rgbPmat,params.Krgb,params.rgbDistort);
+    //% [uvMapNew,~,~] = OnlineCalibration.aux.projectVToRGB(frame.vertices,newParams.rgbPmat,newParams.Krgb,newParams.rgbDistort);
+    auto old_uvmap = get_texture_map( _z.vertices, from_calibration );
+    auto new_uvmap = get_texture_map( _z.vertices, _params_curr.curr_calib );
+    if( old_uvmap.size() != new_uvmap.size() )
+        throw std::runtime_error( to_string() << "did not expect different uvmap sizes (" << old_uvmap.size() << " vs " << new_uvmap.size() << ")" );
+    // uvmap is Nx[x,y]
+
+    //% xyMovement = mean(sqrt(sum((uvMap-uvMapNew).^2,2)));
+    // note: "the mean of a vector containing NaN values is also NaN"
+    // note: .^ = element-wise power
+    // note: "if A is a matrix, then sum(A,2) is a column vector containing the sum of each row"
+    // -> so average of sqrt( dx^2 + dy^2 )
+    
+    size_t const n_pixels = old_uvmap.size();
+    if( !n_pixels )
+        throw std::runtime_error( "no pixels found in uvmap" );
+    double sum = 0;
+    for( auto i = 0; i < n_pixels; i++ )
+    {
+        double2 const & o = old_uvmap[i];
+        double2 const & n = new_uvmap[i];
+        double dx = o.x - n.x, dy = o.y - n.y;
+        double movement = sqrt( dx * dx + dy * dy );
+        sum += movement;
+    }
+    return sum / n_pixels;
+}
+
+// Movement of pixels should clipped by a certain number of pixels
+// This function actually changes the calibration if it exceeds this number of pixels!
+void optimizer::clip_pixel_movement( size_t iteration_number )
+{
+    double xy_movement = calc_correction_in_pixels();
+
+    // Clip any (average) movement of pixels if it's too big
+    AC_LOG( DEBUG, "... average pixel movement= " << xy_movement );
+
+    size_t n_max_movements = sizeof( _params.max_xy_movement_per_calibration ) / sizeof( _params.max_xy_movement_per_calibration[0] );
+    double const max_movement = _params.max_xy_movement_per_calibration[std::min( n_max_movements - 1, iteration_number )];
+
+    if( xy_movement > max_movement )
+    {
+        AC_LOG( DEBUG, "... too big: clipping at limit for iteration " << iteration_number << "= " << max_movement );
+
+        //% mulFactor = maxMovementInThisIteration/xyMovement;
+        double const mul_factor = max_movement / xy_movement;
+
+        //% if ~strcmp( params.derivVar, 'P' )
+        // -> assuming params.derivVar == 'KrgbRT'!!
+        //%     optParams = { 'xAlpha'; 'yBeta'; 'zGamma'; 'Trgb'; 'Kdepth'; 'Krgb' };
+        // -> note we don't do Kdepth at this time!
+        //%     for fn = 1:numel( optParams )
+        //%         diff = newParams.(optParams{ fn }) - params.(optParams{ fn });
+        //%         newParams.(optParams{ fn }) = params.(optParams{ fn }) + diff * mulFactor;
+        //%     end
+        calib const & old_calib = _original_calibration;
+        calib & new_calib = _params_curr.curr_calib;
+        new_calib = old_calib + (new_calib - old_calib) * mul_factor;
+
+        //%     newParams.Rrgb = OnlineCalibration.aux.calcRmatRromAngs( newParams.xAlpha, newParams.yBeta, newParams.zGamma );
+        new_calib.rot = extract_rotation_from_angles( new_calib.rot_angles );
+        //%     newParams.rgbPmat = newParams.Krgb*[newParams.Rrgb, newParams.Trgb];
+        // -> we don't use rgbPmat
+    }
+}
+
+std::vector< double > optimizer::cost_per_section( calib const & calibration )
+{
+    // We require here that the section_map is initialized and ready
+    if( _z.section_map.size() != _z.weights.size() )
+        throw std::runtime_error( "section_map has not been initialized" );
+
+    auto uvmap = get_texture_map( _z.vertices, calibration );
+
+    size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
+    size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;
+    size_t const n_sections = n_sections_x * n_sections_y;
+    
+    std::vector< double > cost_per_section( n_sections, 0. );
+    std::vector< size_t > N_per_section( n_sections, 0 );
+    calc_cost_per_vertex_fn( _z, _yuy, uvmap,
+        [&]( size_t i, double d_val, double weight, double vertex_cost )
+        {
+            if( d_val != std::numeric_limits<double>::max() )
+            {
+                byte section = _z.section_map[i];
+                cost_per_section[section] += vertex_cost;
+                ++N_per_section[section];
+            }
+        }
+    );
+    for( size_t x = 0; x < n_sections; ++x )
+    {
+        double & cost = cost_per_section[x];
+        size_t N = N_per_section[x];
+        if( N )
+            cost /= N;
+    }
+    return cost_per_section;
+}
+
 bool optimizer::is_valid_results()
 {
+    // Clip any (average) movement of pixels if it's too big
+    clip_pixel_movement();
+
+    // Based on (possibly new, clipped) calibration values, see if we've strayed too
+    // far away from the camera's original factory calibration -- which we may not have
+    if( _factory_calibration.width  &&  _factory_calibration.height )
+    {
+        double xy_movement = calc_correction_in_pixels();
+        AC_LOG( DEBUG, "... average pixel movement from factory calibration= " << xy_movement );
+        if( xy_movement > _params.max_xy_movement_from_origin )
+        {
+            AC_LOG( ERROR, "Calibration has moved too far from the original factory calibration (" << xy_movement << " pixels)" );
+            return false;
+        }
+    }
+    else
+    {
+        AC_LOG( DEBUG, "... no factory calibration available; skipping distance check" );
+    }
+
+    //%% Check and see that the score didn't increased by a lot in one image section and decreased in the others
+    //% [c1, costVecOld] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, params );
+    //% [c2, costVecNew] = OnlineCalibration.aux.calculateCost( frame.vertices, frame.weights, frame.rgbIDT, newParams );
+    //% scoreDiffPerVertex = costVecNew - costVecOld;
+    //% for i = 0:(params.numSectionsH*params.numSectionsV) - 1
+    //%     scoreDiffPersection( i + 1 ) = nanmean( scoreDiffPerVertex( frame.sectionMapDepth == i ) );
+    //% end
+    auto cost_per_section_old = cost_per_section( _original_calibration );
+    auto cost_per_section_new = cost_per_section( _params_curr.curr_calib );
+    _z.cost_diff_per_section = cost_per_section_new;
+    for( size_t x = 0; x < cost_per_section_old.size(); ++x )
+        _z.cost_diff_per_section[x] -= cost_per_section_old[x];
+    //% validOutputStruct.minImprovementPerSection = min( scoreDiffPersection );
+    //% validOutputStruct.maxImprovementPerSection = max( scoreDiffPersection );
+    double min_cost_diff = *std::min_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    double max_cost_diff = *std::max_element( _z.cost_diff_per_section.begin(), _z.cost_diff_per_section.end() );
+    AC_LOG( DEBUG, "... min cost diff= " << min_cost_diff << "  max= " << max_cost_diff );
+    if( min_cost_diff < 0. )
+    {
+        AC_LOG( ERROR, "Some image sections were hurt by the optimization; invalidating calibration!" );
+        for( size_t x = 0; x < cost_per_section_old.size(); ++x )
+            AC_LOG( DEBUG, "... cost diff in section " << x << "= " << _z.cost_diff_per_section[x] );
+        return false;
+    }
+
     return true;
 }
 
