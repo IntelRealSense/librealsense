@@ -83,6 +83,7 @@ namespace
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
         int arr[3] = { 0, 1, image_height - 1 };
+        int lines[3] = { 2, 1, 0 };
         //std::allocator<double> alloc;
         //double* debug = alloc.allocate(image.size());
 
@@ -90,29 +91,24 @@ namespace
         // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
         // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
         // first 2 lines
-        for (auto arr_i = 0; arr_i < 1; arr_i++) {
+        for (auto arr_i = 0; arr_i < 2; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
             {
-                ind = 0;
-                if (arr_i == 0)
-                {
-                    ind = mask_width * 2; // skip first 2 lines for padding - start from 3rd line
-                    for (auto l = 2; l < mask_height; l++)
+                    ind = mask_width * lines[arr_i]; // skip first 2 lines for padding - start from 3rd line
+                    for (auto l = lines[arr_i]; l < mask_height; l++)
                     {
                         for (auto k = 0; k < mask_width; k++)
                         {
-                            auto p = (l - 2 + arr[arr_i]) * image_width + jj + k;
+                            auto p = (l - lines[arr_i] + arr[arr_i]) * image_width + jj + k;
                             sub_image[ind++] = (image[p]);
                         }
                     }
-                    // l=0
-                    //ind = 0; // fill first 2 lines to same values as 3rd line
-                    auto ind2 = mask_width * 2;
-                    for (auto k = 0; k < mask_width * 2; k++)
+                    // fill first 2 lines to same values as 3rd line
+                    ind = mask_width * lines[arr_i];
+                    for (auto k = 0; k < mask_width * lines[arr_i]; k++)
                     {
-                        sub_image[k] = sub_image[k % mask_width + ind2];
+                        sub_image[k] = sub_image[k % mask_width + ind];
                     }
-                }
                 auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
                 //*(debug+mid)=res[mid];
@@ -122,7 +118,6 @@ namespace
         {
             for (auto j = 0; j < image_width - mask_width + 1; j++)
             {
-                //std::vector<T> sub_image(mask_width * mask_height, 0);
                 ind = 0;
                 for (auto l = 0; l < mask_height; l++)
                 {
