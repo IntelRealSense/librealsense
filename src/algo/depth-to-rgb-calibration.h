@@ -256,7 +256,7 @@ namespace depth_to_rgb_calibration {
         double grad_dir_ratio_prep = 1.5;
         double dilation_size = 3;
         double gauss_sigma = 1;
-        double gause_kernel_size = 3;
+        double gause_kernel_size = 5;
     };
 
     typedef uint16_t yuy_t;

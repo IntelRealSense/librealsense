@@ -73,7 +73,39 @@ namespace
         return res;
     }
     template<class T>
-    std::vector<uint8_t> convolution2(std::vector<T> const& image,
+    std::vector<double> gauss_convolution(std::vector<T> const& image,
+        size_t image_width, size_t image_height,
+        size_t mask_width, size_t mask_height,
+        std::function< double(std::vector<T> const& sub_image) > convolution_operation
+        )
+    {
+        std::vector<double> res(image.size(), 0);
+
+        for (auto i = 0; i < image_height - mask_height + 1; i++)
+        {
+            for (auto j = 0; j < image_width - mask_width + 1; j++)
+            {
+                std::vector<T> sub_image(mask_width * mask_height, 0);
+                auto ind = 0;
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    for (auto k = 0; k < mask_width; k++)
+                    {
+                        auto p = (i + l) * image_width + j + k;
+                        sub_image[ind++] = (image[p]);
+                    }
+
+                }
+                auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
+
+                res[mid] = convolution_operation(sub_image);
+
+            }
+        }
+        return res;
+    }
+    template<class T>
+    std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
         std::function< double(std::vector<T> const& sub_image) > convolution_operation
@@ -1171,7 +1203,7 @@ void optimizer::images_dilation(yuy2_frame_data& yuy)
                                               1,  1,  1,
                                               1,  1,  1 };
 
-    yuy.dilated_image = convolution2<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
+    yuy.dilated_image = dilation_convolution<uint8_t>(yuy.prev_logic_edges, yuy.width, yuy.height, _params.dilation_size, _params.dilation_size, [&](std::vector<uint8_t> const& sub_image)
         {return dilation_calc(sub_image, dilation_mask); });
 
 }
@@ -1193,9 +1225,21 @@ void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_ker
       Exp_comp = -(x.^2+y.^2)/(2*sigma*sigma);
       Kernel= exp(Exp_comp)/(2*pi*sigma*sigma);
     */
+    /*matlab_style_gauss2D(shape=(3,3),sigma=0.5):
+    """
+    2D gaussian mask - should give the same result as MATLAB's
+    fspecial('gaussian',[shape],[sigma])
+    """
+    m,n = [(ss-1.)/2. for ss in shape]
+    y,x = np.ogrid[-m:m+1,-n:n+1]
+    h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
+    h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
+    sumh = h.sum()
+    if sumh != 0:
+        h /= sumh
+    return h*/
     double area = gause_kernel_size * gause_kernel_size;
-    //std::vector<double> gauss_kernel;
-    //gauss_kernel.resize(area);
+
     std::vector<double> x = { -1, 0, 1,
                               -1, 0, 1,
                               -1, 0, 1 };
@@ -1217,16 +1261,20 @@ void optimizer::gaussian_filter(yuy2_frame_data& yuy)
 {
     int area = yuy.height * yuy.width;
 
-    std::vector<double>  gaussian_kernel;
-    calc_gaussian_kernel(gaussian_kernel, _params.gause_kernel_size, _params.gauss_sigma);
+    std::vector<double>  gaussian_kernel = { 0.002969,  0.013306,  0.021938,  0.013306,  0.002969,
+       0.013306,  0.059634,  0.09832 ,  0.059634,  0.013306,
+       0.021938,  0.09832 ,  0.162103,  0.09832 ,  0.021938,
+       0.013306,  0.059634,  0.09832 ,  0.059634,  0.013306,
+       0.002969,  0.013306,  0.021938,  0.013306,  0.002969 };
+    //calc_gaussian_kernel(gaussian_kernel, _params.gause_kernel_size, _params.gauss_sigma);
 
     std::vector<uint8_t>::iterator yuy_iter = yuy.yuy2_frame.begin();
     std::vector<uint8_t>::iterator yuy_prev_iter = yuy.yuy2_prev_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
-        yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter));
+        yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
     }
-    yuy.gaussian_filtered_image = convolution<double>(yuy.yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
+    yuy.gaussian_filtered_image = gauss_convolution<double>(yuy.yuy_diff, yuy.width, yuy.height, _params.gause_kernel_size, _params.gause_kernel_size, [&](std::vector<double> const& sub_image)
         {return gaussian_calc(sub_image, gaussian_kernel); });
     return;
 }
