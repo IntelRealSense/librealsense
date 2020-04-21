@@ -37,13 +37,12 @@ namespace librealsense
         {
             std::vector<tagged_profile> tags;
 
-            for (int i = 0; i < 2; ++i) {
-                tags.push_back({ RS2_STREAM_INFRARED, i, 1920, 1088, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, i, 640, 352, RS2_FORMAT_YUYV, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-
-                tags.push_back({ RS2_STREAM_INFRARED, i, 1920, 1080, RS2_FORMAT_RAW16, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-                tags.push_back({ RS2_STREAM_INFRARED, i, 640, 352, RS2_FORMAT_RAW16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
-            }
+            tags.push_back({ RS2_STREAM_INFRARED, 0, 1920, 1088, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, 0, 640, 352, RS2_FORMAT_YUYV, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+                                                  
+            tags.push_back({ RS2_STREAM_INFRARED, 0, 1920, 1080, RS2_FORMAT_RAW16, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            tags.push_back({ RS2_STREAM_INFRARED, 0, 640, 352, RS2_FORMAT_RAW16, 30, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
+            
             return tags;
         };
 
