@@ -114,6 +114,38 @@ namespace
                 //*(debug+mid)=res[mid];
             }
         }
+        // first 2 columns
+        arr[0] = 0;
+        arr[1] = 1;
+        arr[2] = image_height - 1 ;
+        int columns[3] = { 2, 1, 0 };
+        for (auto arr_i = 0; arr_i < 2; arr_i++) {
+            for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
+            {
+                ind = 0; // skip first 2 columns for padding - start from 3rd column
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    ind += columns[arr_i];
+                    for (auto k = columns[arr_i]; k < mask_width; k++)
+                    {
+                        auto p = (ii + l) * image_width + k + arr[arr_i] - columns[arr_i];
+                        sub_image[ind++] = (image[p]);
+                    }
+                }
+                // fill first 2 columns to same values as 3rd column
+                ind = columns[arr_i];
+                for (auto l = 0; l < mask_height; l++)
+                {
+                    ind = columns[arr_i] + l * mask_width;
+                    for (auto k = 1; k <= columns[arr_i]; k++)
+                    {
+                        sub_image[ind - k] = sub_image[ind];
+                    }
+                }
+                auto mid = (ii + mask_height / 2) * image_width + arr[arr_i];
+                res[mid] = convolution_operation(sub_image);
+            }
+        }
         for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
             for (auto j = 0; j < image_width - mask_width + 1; j++)
