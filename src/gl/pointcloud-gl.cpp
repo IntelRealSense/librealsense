@@ -374,28 +374,49 @@ void pointcloud_gl::get_texture_map(
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
 
+        // rendering output
+        uint32_t output_xyz;
+        uint32_t output_uv;
+
+        gf->get_gpu_section().output_texture(0, &output_xyz, TEXTYPE_XYZ);
+        gf->get_gpu_section().output_texture(1, &output_uv, TEXTYPE_UV);
+
+        // fbo1 output
+        uint32_t fbo1_xyz;
+        uint32_t fbo1_uv;
+
+        // when occlusion is turned on, output from fbo1 will be feed into fbo2 for additional processing before rendering to
+        // to final output output_xyz and output_uv, otherwise, fbo1 renders directly to final output
+        if (_occlusion_filter->active())
+        {
+            glGenTextures(1, &fbo1_xyz);
+            glGenTextures(1, &fbo1_uv);
+        }
+        else
+        {
+            fbo1_xyz = output_xyz;
+            fbo1_uv = output_uv;
+        }
+
+        // fbo1 - projection rendering
         fbo fbo1(width, height);
 
-        uint32_t output_xyz;
-        gf->get_gpu_section().output_texture(0, &output_xyz, TEXTYPE_XYZ);
-        glBindTexture(GL_TEXTURE_2D, output_xyz);
+        glBindTexture(GL_TEXTURE_2D, fbo1_xyz);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, output_xyz, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo1_xyz, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        uint32_t output_uv;
-        gf->get_gpu_section().output_texture(1, &output_uv, TEXTYPE_UV);
-        glBindTexture(GL_TEXTURE_2D, output_uv);
+        glBindTexture(GL_TEXTURE_2D, fbo1_uv);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, output_uv, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, fbo1_uv, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         gf->get_gpu_section().set_size(width, height);
@@ -426,33 +447,29 @@ void pointcloud_gl::get_texture_map(
 
         fbo1.unbind();
 
-        // occlusion on glsl
+        // fbo2 - occlusion with glsl
         if (_occlusion_filter->active())
         {
             auto oviz = _occu_renderer;
 
             fbo fbo2(width, height);
 
-            uint32_t xyz_texture;
-            glGenTextures(1, &xyz_texture);
-            glBindTexture(GL_TEXTURE_2D, xyz_texture);
+            glBindTexture(GL_TEXTURE_2D, output_xyz);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, xyz_texture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, output_xyz, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            uint32_t uv_texture;
-            glGenTextures(1, &uv_texture);
-            glBindTexture(GL_TEXTURE_2D, uv_texture);
+            glBindTexture(GL_TEXTURE_2D, output_uv);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, width, height, 0, GL_RG, GL_FLOAT, nullptr);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, uv_texture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, output_uv, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
 
             glDrawBuffers(2, attachments);
@@ -474,23 +491,13 @@ void pointcloud_gl::get_texture_map(
             occu_shader.set_xyz_sampler(0);
             occu_shader.set_uv_sampler(1);
 
-            oviz->draw_texture(output_xyz, output_uv);
+            oviz->draw_texture(fbo1_xyz, fbo1_uv);
             occu_shader.end();
-
-            glReadBuffer(GL_COLOR_ATTACHMENT0);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, output_xyz);
-            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
-
-            glReadBuffer(GL_COLOR_ATTACHMENT1);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, output_uv);
-            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
 
             fbo2.unbind();
 
-            glDeleteTextures(1, &xyz_texture);
-            glDeleteTextures(1, &uv_texture);
+            glDeleteTextures(1, &fbo1_xyz);
+            glDeleteTextures(1, &fbo1_uv);
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);
