@@ -50,6 +50,8 @@ namespace librealsense
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
+
+        void fa_device::register_metadata();
         
         friend class fa_ir_sensor;
 
@@ -78,6 +80,7 @@ namespace librealsense
             markers.push_back({ RS2_STREAM_INFRARED, -1, 1920, 1080, RS2_FORMAT_YUYV, 5, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             return markers;
         }
+
     };
 
     class fa_notification_decoder : public notification_decoder
