@@ -32,7 +32,7 @@ class ip_device
 {
 
 public:
-    ip_device(std::string ip_address, rs2::software_device sw_device);
+    ip_device(rs2::software_device sw_device, std::string ip_address);
     ~ip_device();
 
     ip_sensor* remote_sensors[NUM_OF_SENSORS];
@@ -43,7 +43,8 @@ private:
     //TODO: get smart ptr
     MemoryPool* memory_pool;
 
-    std::string ip_address;
+    std::string  ip_address;
+    unsigned int ip_port;
 
     //todo: consider wrapp all maps to single container
     std::map<long long int, std::shared_ptr<rs_rtp_stream>> streams_collection;
