@@ -145,7 +145,7 @@ namespace librealsense
                 md_type expected_type = md_type_trait<S>::type;
 
                 //REMI - UNCOMMENT AFTER ICATCH CORRECTION
-                if ((s->header.md_type_id != expected_type))//|| (s->header.md_size < sizeof(*s)))
+                /*if ((s->header.md_type_id != expected_type))//|| (s->header.md_size < sizeof(*s)))
                 {
                     std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
                                 md_type_desc.at(s->header.md_type_id) : (to_string()
@@ -153,7 +153,7 @@ namespace librealsense
                     LOG_DEBUG("Metadata mismatch - actual: " << type
                         << ", expected: 0x"  << std::hex << (uint32_t)expected_type << std::dec << " (" << md_type_desc.at(expected_type) << ")");
                     return false;
-                }
+                }*/
 
                  // Check if the attribute's flag is set
                  auto attribute_enabled =  (0 !=(s->flags & static_cast<uint32_t>(_md_flag)));
