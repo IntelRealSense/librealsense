@@ -74,6 +74,82 @@ bool compare_same_vectors( std::vector< F > const & matlab, std::vector< D > con
     return (n_mismatches == 0);
 }
 
+template<>
+bool compare_same_vectors<algo::double2, algo::double2>(std::vector< algo::double2> const & matlab, std::vector< algo::double2> const & cpp)
+{
+    assert(matlab.size() == cpp.size());
+    size_t n_mismatches = 0;
+    size_t size = matlab.size();
+    auto cpp_vac = cpp;
+    auto matlab_vac = matlab;
+    std::sort(matlab_vac.begin(), matlab_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
+    std::sort(cpp_vac.begin(), cpp_vac.end(), [](algo::double2 d1, algo::double2 d2) {return d1.x < d2.x; });
+    for (size_t x = 0; x < size; ++x)
+    {
+        auto fx = matlab_vac[x];
+        auto dx = cpp_vac[x];
+        bool const is_comparable = std::numeric_limits<double>::is_exact || std::is_enum< double >::value;
+        if (is_comparable)
+        {
+            if (fx != dx && ++n_mismatches <= 5)
+                // bytes will be written to stdout as characters, which we never want... hence '+fx'
+                AC_LOG(DEBUG, "... " << x << ": {matlab}" << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++} (exact)");
+        }
+        else if (fx.x != approx(dx.x) || fx.y != approx(dx.y))
+        {
+            if (++n_mismatches <= 5)
+                AC_LOG(DEBUG, "... " << x << ": {matlab}" << std::setprecision(12) << fx.x << " " << fx.y << " != " << dx.x << " " << dx.y << "{c++}");
+        }
+    }
+    if (n_mismatches)
+        AC_LOG(DEBUG, "... " << n_mismatches << " mismatched values of " << size);
+    return (n_mismatches == 0);
+}
+
+template<>
+bool compare_same_vectors<algo::double3, algo::double3>(std::vector< algo::double3> const & matlab, std::vector< algo::double3> const & cpp)
+{
+    assert(matlab.size() == cpp.size());
+    size_t n_mismatches = 0;
+    size_t size = matlab.size();
+    auto cpp_vac = cpp;
+    auto matlab_vac = matlab;
+    std::sort(matlab_vac.begin(), matlab_vac.end(), [](algo::double3 d1, algo::double3 d2) {return d1.x < d2.x; });
+    std::sort(cpp_vac.begin(), cpp_vac.end(), [](algo::double3 d1, algo::double3 d2) {return d1.x < d2.x; });
+    for (size_t x = 0; x < size; ++x)
+    {
+        auto fx = matlab_vac[x];
+        auto dx = cpp_vac[x];
+        bool const is_comparable = std::numeric_limits<double>::is_exact || std::is_enum< double >::value;
+        if (is_comparable)
+        {
+            if (fx != dx && ++n_mismatches <= 5)
+                // bytes will be written to stdout as characters, which we never want... hence '+fx'
+                AC_LOG(DEBUG, "... " << x << ": {matlab}" << fx.x << " " << fx.y << " " << fx.z << " != " << dx.x << " " << dx.y << " " << dx.z << "{c++} (exact)");
+        }
+        else if (fx.x != approx(dx.x) || fx.y != approx(dx.y))
+        {
+            if (++n_mismatches <= 5)
+                AC_LOG(DEBUG, "... " << x << ": {matlab}" << std::setprecision(12) << fx.x << " " << fx.y << " " << fx.z << " != " << dx.x << " " << dx.y << " " << dx.z << "{c++}");
+        }
+    }
+    if (n_mismatches)
+        AC_LOG(DEBUG, "... " << n_mismatches << " mismatched values of " << size);
+    return (n_mismatches == 0);
+}
+
+template< typename F, typename D >
+std::pair<std::vector< F >, std::vector< D > > sort_vectors(std::vector< F > const & matlab, std::vector< D > const & cpp)
+{
+    auto f = matlab;
+    auto d = cpp;
+
+    std::sort(f.begin(), f.end(), [](F f1, F f2) {if (isnan(f1)) return false;  return f1 < f2; });
+    std::sort(d.begin(), d.end(), [](D d1, D d2) {return d1 < d2; });
+
+    return { f,d };
+}
+
 template<class T>
 std::vector< T > read_image_file( std::string const & file, size_t width, size_t height )
 {
@@ -112,6 +188,8 @@ bool compare_to_bin_file(
     char const * dir, char const * test, char const * filename,
     size_t width, size_t height,
     bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
+    bool(*compare_vectors)(std::vector< F > const &, std::vector< D > const &) = nullptr,
+    std::pair<std::vector< F >, std::vector< D >>(*preproccess_vectors)(std::vector< F > const &, std::vector< D > const &) = nullptr
 )
 {
     TRACE( "Comparing " << filename << ".bin ..." );
@@ -123,7 +201,15 @@ bool compare_to_bin_file(
         TRACE( filename << ": {c++ size}" << vec.size() << " != " << bin.size() << "{matlab size}" ), ok = false;
     else
     {
-        if( compare_vectors && !(*compare_vectors)(bin, vec) )
+        auto v = vec;
+        auto b = bin;
+        if (preproccess_vectors)
+        {
+            auto vecs = preproccess_vectors(bin, vec);
+            b = vecs.first;
+            v = vecs.second;
+        }
+        if (compare_vectors && !(*compare_vectors)(b, v))
             ok = false;
         if( !ok )
         {
@@ -134,7 +220,120 @@ bool compare_to_bin_file(
     return ok;
 }
 
-void init_algo( algo::optimizer & cal,
+
+bool get_calib_from_raw_data(algo::calib& calib, double& cost, char const * dir, char const * test, char const * filename)
+{
+    auto data_size = sizeof(algo::rotation) +
+        sizeof(algo::translation) +
+        sizeof(algo::k_matrix) +
+        sizeof(algo::p_matrix) +
+        3 * sizeof(double) + // alpha, bata, gamma
+        sizeof(double); // cost
+
+    auto bin = read_bin_file <double>(dir, test, filename);
+    if (bin.size() * sizeof(double) != data_size)
+    {
+        TRACE(filename << ": {matlab size}" << bin.size() << " != " << data_size);
+        return false;
+    }
+
+    auto data = bin.data();
+
+    auto k = *(algo::k_matrix*)(data);
+    data += sizeof(algo::k_matrix) / sizeof(double);
+    auto a = *(double*)(data);
+    data += 1;
+    auto b = *(double*)(data);
+    data += 1;
+    auto g = *(double*)(data);
+    data += 1;
+    auto rotation = *(algo::rotation*)(data);
+    data += sizeof(algo::rotation) / sizeof(double);
+    auto translation = *(algo::translation*)(data);
+    data += sizeof(algo::translation) / sizeof(double);
+    auto p_mat = *(algo::p_matrix*)(data);
+    data += sizeof(algo::p_matrix) / sizeof(double);
+    cost = *(double*)(data);
+
+    calib.k_mat = k;
+    calib.rot = rotation;
+    calib.trans = translation;
+    calib.p_mat = p_mat;
+    calib.rot_angles = { a,b,g };
+
+    return true;
+}
+
+template< typename D>
+bool compare_and_trace(D val_matlab, D val_cpp, std::string compared)
+{
+    if (val_matlab != approx(val_cpp))
+    {
+        TRACE(compared << " " << val_matlab << " -matlab != " << val_cpp << " -cpp");
+        return false;
+    }
+    return true;
+}
+
+bool compare_calib_to_bin_file(algo::calib calib, double cost, char const * dir, char const * test, char const * filename, bool gradient = false)
+{
+    TRACE("Comparing " << filename << ".bin ...");
+    algo::calib calib_from_file;
+    double cost_matlab;
+    auto res = get_calib_from_raw_data(calib_from_file, cost_matlab, dir, test, filename);
+
+    auto intr_matlab = calib_from_file.get_intrinsics();
+    auto extr_matlab = calib_from_file.get_extrinsics();
+    auto pmat_matlab = calib_from_file.get_p_matrix();
+
+    auto intr_cpp = calib.get_intrinsics();
+    auto extr_cpp = calib.get_extrinsics();
+    auto pmat_cpp = calib.get_p_matrix();
+
+    bool ok = true;
+
+    ok &= compare_and_trace(cost_matlab, cost, "cost");
+
+    ok &= compare_and_trace(intr_matlab.fx, intr_cpp.fx, "fx");
+    ok &= compare_and_trace(intr_matlab.fy, intr_cpp.fy, "fy");
+    ok &= compare_and_trace(intr_matlab.ppx, intr_cpp.ppx, "ppx");
+    ok &= compare_and_trace(intr_matlab.ppy, intr_cpp.ppy, "ppy");
+
+    if (gradient)
+    {
+        ok &= compare_and_trace(calib.rot_angles.alpha, calib_from_file.rot_angles.alpha, "alpha");
+        ok &= compare_and_trace(calib.rot_angles.beta, calib_from_file.rot_angles.beta, "beta");
+        ok &= compare_and_trace(calib.rot_angles.gamma, calib_from_file.rot_angles.gamma, "gamma");
+    }
+    else
+    {
+        for (auto i = 0; i < 9; i++)
+        {
+            std::stringstream str;
+            str << i;
+            ok &= compare_and_trace(extr_matlab.rotation[i], extr_cpp.rotation[i], "rotation[" + str.str() + "]");
+        }
+    }
+
+    for (auto i = 0; i < 3; i++)
+    {
+        std::stringstream str;
+        str << i;
+        ok &= compare_and_trace(extr_matlab.translation[i], extr_cpp.translation[i], "translation[" + str.str() + "]");
+    }
+
+    for (auto i = 0; i < 12; i++)
+    {
+        std::stringstream str;
+        str << i;
+        ok &= compare_and_trace(pmat_matlab.vals[i], pmat_cpp.vals[i], "pmat[" + str.str() + "]");
+    }
+
+
+    return ok;
+}
+
+void init_algo(algo::optimizer & cal,
     char const * data_dir, char const * test,
     char const * yuy,
     char const * yuy_prev,
@@ -164,8 +363,14 @@ void init_algo( algo::optimizer & cal,
 }
 
 
+std::string generet_file_name(std::string prefix, int num, std::string saffix)
+{
+    std::stringstream s;
+    s << num;
+    return prefix + std::string(s.str()) + saffix;
+}
 
-TEST_CASE( "Weights calc", "[d2rgb]" )
+TEST_CASE("Weights calc", "[d2rgb]")
 {
     for (auto dir : data_dirs)
     {
@@ -183,7 +388,7 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
 
 
         //---
-        CHECK(compare_to_bin_file< float >(yuy_data.edges, dir, "2", "YUY2_edge_1080x1920_single_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.edges, dir, "2", "YUY2_edge_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(yuy_data.edges_IDT, dir, "2", "YUY2_IDT_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTx, dir, "2", "YUY2_IDTx_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(yuy_data.edges_IDTy, dir, "2", "YUY2_IDTy_1080x1920_double_00", 1080, 1920, compare_same_vectors));
@@ -192,7 +397,7 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK(compare_to_bin_file< double >(ir_data.ir_edges, dir, "2", "I_edge_768x1024_double_00", 768, 1024, compare_same_vectors));
 
         //---
-        CHECK(compare_to_bin_file< float >(z_data.edges, dir, "2", "Z_edge_768x1024_single_00", 768, 1024, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.edges, dir, "2", "Z_edge_768x1024_double_00", 768, 1024, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(z_data.supressed_edges, dir, "2", "Z_edgeSupressed_768x1024_double_00", 768, 1024, compare_same_vectors));
         CHECK(compare_to_bin_file< byte >(z_data.directions, dir, "2", "Z_dir_768x1024_uint8_00", 768, 1024, compare_same_vectors));
 
@@ -200,7 +405,37 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK(compare_to_bin_file< double >(z_data.subpixels_y, dir, "2", "Z_edgeSubPixel_768x1024_double_00", 768, 1024, compare_same_vectors));
 
         CHECK(compare_to_bin_file< double >(z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.closest, dir, "2", "Z_valuesForSubEdges_768x1024_double_00", 768, 1024, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors));
+        CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, "2", "vertices_5089x3_double_00", 5089, 1, compare_same_vectors));
 
+        auto cb = [&](algo::iteration_data_collect data)
+        {
+            auto file = generet_file_name("calib_iteration#_", data.iteration + 1, "_1x32_double_00");
+            CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, "2", file.c_str()));
+
+            file = generet_file_name("uvmap_iteration#_", data.iteration + 1, "_5089x2_double_00");
+            CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, "2", file.c_str(), 5089, 1, compare_same_vectors));
+
+            file = generet_file_name("DVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
+
+            file = generet_file_name("DxVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
+
+            file = generet_file_name("DyVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
+
+            file = generet_file_name("grad_iteration#_", data.iteration + 1, "_1x32_double_00");
+            CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, "2", file.c_str(), true));
+        };
+
+        REQUIRE(cal.optimize(algo::calib(F9440687.rgb, F9440687.extrinsics), cb) == 5);  // n_iterations
+
+        auto new_calib = cal.get_calibration();
+        auto cost = cal.get_cost();
+
+        CHECK(compare_calib_to_bin_file(new_calib, cost, dir, "2", "new_calib_1x32_double_00"));
         // ---
         CHECK( ! cal.is_scene_valid() );
 
@@ -222,11 +457,12 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         //--
-        REQUIRE( cal.optimize( algo::calib( F9440687.rgb, F9440687.extrinsics )) == 5 );  // n_iterations
+
 
         //--
-        CHECK( ! cal.is_valid_results() );
+        /*CHECK( ! cal.is_valid_results() );
         CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );
         CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, "2", "costDiffPerSection_1x4_double_00", 1, 4, compare_same_vectors ) );
+    */
     }
 }

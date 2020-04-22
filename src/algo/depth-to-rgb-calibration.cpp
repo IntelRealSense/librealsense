@@ -9,7 +9,7 @@
 #define AC_LOG_PREFIX "AC1: "
 //#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
+#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl; //LOG_INFO((std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ));
 #define AC_LOG_CONTINUE(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG )
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
@@ -430,29 +430,47 @@ rotation_in_angles extract_angles_from_rotation(const double r[9])
     return res;
 }
 
-size_t optimizer::optimize( calib const & original_calibration )
+size_t optimizer::optimize(calib const & original_calibration, std::function<void(iteration_data_collect data)> cb)
 {
     _original_calibration = original_calibration;
+    optimaization_params params_orig;
+    params_orig.curr_calib = original_calibration;
+    params_orig.curr_calib.p_mat = calc_p_mat(params_orig.curr_calib);
 
-    auto const original_cost = calc_cost_and_grad( _z, _yuy, _original_calibration ).second;
-    AC_LOG( DEBUG, "0: Original cost = " << original_cost );
+    auto const original_cost_and_grad = calc_cost_and_grad(_z, _yuy, params_orig.curr_calib);
 
-    _params_curr.curr_calib = _original_calibration;
+    auto const original_cost = original_cost_and_grad.second;
+    AC_LOG(DEBUG, "Original cost = " << original_cost);
+
+    _params_curr = params_orig;
     _params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
+    _params_curr.curr_calib.p_mat = calc_p_mat(_params_curr.curr_calib);
 
     size_t n_iterations = 0;
-    for( auto i = 0; i < _params.max_optimization_iters; i++ )
+
+    for (auto i = 0; i < _params.max_optimization_iters; i++)
     {
-        auto res = calc_cost_and_grad( _z, _yuy, _params_curr.curr_calib );
+        iteration_data_collect data;
+
+        data.iteration = i;
+
+        auto res = calc_cost_and_grad(_z, _yuy, _params_curr.curr_calib, data);
+        AC_LOG(DEBUG, "Cost = " << std::fixed << std::setprecision(15) << res.second);
 
         _params_curr.cost = res.second;
         _params_curr.calib_gradients = res.first;
 
-        auto new_params = back_tracking_line_search( _z, _yuy, _params_curr );
+        data.params = _params_curr;
+
+        if (cb)
+            cb(data);
+
+        auto new_params = back_tracking_line_search(_z, _yuy, _params_curr);
         auto norm = (new_params.curr_calib - _params_curr.curr_calib).get_norma();
         if( norm < _params.min_rgb_mat_delta )
         {
             AC_LOG( DEBUG, n_iterations << ": {normal(new-curr)} " << norm << " < " << _params.min_rgb_mat_delta << " {min_rgb_mat_delta}  -->  stopping" );
+            _params_curr = new_params;
             break;
         }
 
@@ -460,6 +478,7 @@ size_t optimizer::optimize( calib const & original_calibration )
         if( delta < _params.min_cost_delta )
         {
             AC_LOG( DEBUG, n_iterations << ": Cost = " << new_params.cost << "; delta= " << delta << " < " << _params.min_cost_delta << "  -->  stopping" );
+            _params_curr = new_params;
             break;
         }
 
@@ -860,6 +879,18 @@ static void transform_point_to_point(double to_point[3], const rs2_extrinsics_do
     to_point[2] = (double)extr.rotation[2] * from_point[0] + (double)extr.rotation[5] * from_point[1] + (double)extr.rotation[8] * from_point[2] + (double)extr.translation[2];
 }
 
+static void transform_point_to_uv(double pixel[2], const struct p_matrix& pmat, const double point[3])
+{
+    auto p = pmat.vals;
+    double to_point[3];
+    to_point[0] = p[0] * point[0] + p[1] * point[1] + p[2] * point[2] + p[3];
+    to_point[1] = p[4] * point[0] + p[5] * point[1] + p[6] * point[2] + p[7];
+    to_point[2] = p[8] * point[0] + p[9] * point[1] + p[10] * point[2] + p[11];
+
+    pixel[0] = to_point[0] / to_point[2];
+    pixel[1] = to_point[1] / to_point[2];
+}
+
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics_double * intrin, const double point[3])
 {
@@ -884,7 +915,32 @@ static void project_point_to_pixel(double pixel[2], const struct rs2_intrinsics_
     pixel[1] = y * (double)intrin->fy + (double)intrin->ppy;
 }
 
-std::vector<double> optimizer::blur_edges( std::vector<double> const & edges, size_t image_width, size_t image_height )
+/* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
+static void distort_pixel(double pixel[2], const struct rs2_intrinsics_double * intrin, const double point[2])
+{
+    double x = (point[0] - intrin->ppx) / intrin->fx;
+    double y = (point[1] - intrin->ppy) / intrin->fy;
+
+    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    {
+        double r2 = x * x + y * y;
+        double r2c = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2*r2 + intrin->coeffs[4] * r2*r2*r2;
+
+        double xcd = x * r2c;
+        double ycd = y * r2c;
+
+        double dx = xcd + 2 * intrin->coeffs[2] * x*y + intrin->coeffs[3] * (r2 + 2 * x*x);
+        double dy = ycd + 2 * intrin->coeffs[3] * x*y + intrin->coeffs[2] * (r2 + 2 * y*y);
+
+        x = dx;
+        y = dy;
+    }
+
+    pixel[0] = x * (double)intrin->fx + (double)intrin->ppx;
+    pixel[1] = y * (double)intrin->fy + (double)intrin->ppy;
+}
+
+std::vector<double> optimizer::blur_edges(std::vector<double> const & edges, size_t image_width, size_t image_height)
 {
     std::vector<double> res = edges;
 
@@ -1465,63 +1521,63 @@ bool optimizer::is_scene_valid()
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
 
     // Get a map for each pixel to its corresponding section
-    AC_LOG( DEBUG, "... " );
-    section_per_pixel( _z, section_w, section_h, section_map_depth.data() );
-    AC_LOG( DEBUG, "... " );
-    section_per_pixel( _yuy, section_w, section_h, section_map_rgb.data() );
+    AC_LOG(DEBUG, "... ");
+    section_per_pixel(_z, section_w, section_h, section_map_depth.data());
+    AC_LOG(DEBUG, "... ");
+    section_per_pixel(_yuy, section_w, section_h, section_map_rgb.data());
 
     // remove pixels in section map that were removed in weights
-    AC_LOG( DEBUG, "... " << _z.supressed_edges.size() << " total edges" );
-    for( auto i = 0; i < _z.supressed_edges.size(); i++ )
+    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges");
+    for (auto i = 0; i < _z.supressed_edges.size(); i++)
     {
-        if( _z.supressed_edges[i] )
+        if (_z.supressed_edges[i])
         {
-            _z.section_map.push_back( section_map_depth[i] );
+            _z.section_map.push_back(section_map_depth[i]);
         }
         // NOHA :: TODO :: 
         // 1. throw exception when section map depth is wrong
         // 2. allocate section vector using reserve() - size = z_data.weights (keep push_back)
     }
-    AC_LOG( DEBUG, "... " << _z.section_map.size() << " not suppressed" );
+    AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
 
     // remove pixels in section map where edges_IDT > 0
     int i = 0;
-    AC_LOG( DEBUG, "... " << _z.supressed_edges.size() << " total edges IDT" );
-    for( auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i )
+    AC_LOG(DEBUG, "... " << _z.supressed_edges.size() << " total edges IDT");
+    for (auto it = _yuy.edges_IDT.begin(); it != _yuy.edges_IDT.end(); ++it, ++i)
     {
-        if( *it > 0 )
+        if (*it > 0)
         {
-            _yuy.section_map.push_back( section_map_rgb[i] );
+            _yuy.section_map.push_back(section_map_rgb[i]);
         }
     }
-    AC_LOG( DEBUG, "... " << _yuy.section_map.size() << " not suppressed" );
+    AC_LOG(DEBUG, "... " << _yuy.section_map.size() << " not suppressed");
 
     bool res_movement = is_movement_in_images(_yuy);
-    bool res_edges = is_edge_distributed( _z, _yuy );
+    bool res_edges = is_edge_distributed(_z, _yuy);
     bool res_gradient = is_grad_dir_balanced(_z);
 
     return ((!res_movement) && res_edges && res_gradient);
 }
 
-double get_max( double x, double y )
+double get_max(double x, double y)
 {
     return x > y ? x : y;
 }
-double get_min( double x, double y )
+double get_min(double x, double y)
 {
     return x < y ? x : y;
 }
 
-std::vector<double> optimizer::calculate_weights( z_frame_data& z_data )
+std::vector<double> optimizer::calculate_weights(z_frame_data& z_data)
 {
     std::vector<double> res;
 
-    for( auto i = 0; i < z_data.supressed_edges.size(); i++ )
+    for (auto i = 0; i < z_data.supressed_edges.size(); i++)
     {
-        if( z_data.supressed_edges[i] )
+        if (z_data.supressed_edges[i])
             z_data.weights.push_back(
-                get_min( get_max( z_data.supressed_edges[i] - _params.grad_z_min, (double)0 ),
-                    _params.grad_z_max - _params.grad_z_min ) );
+                get_min(get_max(z_data.supressed_edges[i] - _params.grad_z_min, (double)0),
+                    _params.grad_z_max - _params.grad_z_min));
     }
 
     return res;
@@ -1538,21 +1594,21 @@ void deproject_sub_pixel(
 {
     auto ptr = (double*)points.data();
     double const * edge = edges.data();
-    for( size_t i = 0; i < edges.size(); ++i )
+    for (size_t i = 0; i < edges.size(); ++i)
     {
-        if( !edge[i] )
+        if (!edge[i])
             continue;
         const double pixel[] = { x[i] - 1, y[i] - 1 };
-        deproject_pixel_to_point( ptr, &intrin, pixel, depth[i] * depth_units );
-        
+        deproject_pixel_to_point(ptr, &intrin, pixel, depth[i] * depth_units);
+
         ptr += 3;
     }
 }
 
 std::vector<double3> optimizer::subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units)
 {
-    std::vector<double3> res( z_data.n_strong_edges );
-    deproject_sub_pixel( res, intrin, z_data.supressed_edges, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units );
+    std::vector<double3> res(z_data.n_strong_edges);
+    deproject_sub_pixel(res, intrin, z_data.supressed_edges, z_data.subpixels_x.data(), z_data.subpixels_y.data(), z_data.closest.data(), depth_units);
     z_data.vertices = res;
     return res;
 }
@@ -1562,7 +1618,7 @@ rs2_intrinsics_double calib::get_intrinsics() const
     return {
         width, height,
         k_mat,
-        model, coeffs};
+        model, coeffs };
 }
 
 rs2_extrinsics_double calib::get_extrinsics() const
@@ -1570,49 +1626,31 @@ rs2_extrinsics_double calib::get_extrinsics() const
     auto & r = rot.rot;
     auto & t = trans;
     return {
-        { float( r[0] ), float( r[1] ), float( r[2] ), float( r[3] ), float( r[4] ), float( r[5] ), float( r[6] ), float( r[7] ), float( r[8] ) },
-        { float( t.t1 ), float( t.t2 ), float( t.t3 ) }
+        { float(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]), float(r[5]), float(r[6]), float(r[7]), float(r[8]) },
+        { float(t.t1), float(t.t2), float(t.t3) }
     };
 }
 
-static
-std::vector< double2 > get_texture_map(
-    /*const*/ std::vector< double3 > const & points,
-    calib const & curr_calib )
+p_matrix librealsense::algo::depth_to_rgb_calibration::calib::get_p_matrix() const
 {
-    auto intrinsics = curr_calib.get_intrinsics();
-    auto extr = curr_calib.get_extrinsics();
-
-    std::vector<double2> uv( points.size() );
-
-    for( auto i = 0; i < points.size(); ++i )
-    {
-        double3 p = {};
-        transform_point_to_point( &p.x, extr, &points[i].x );
-
-        double2 pixel = {};
-        project_point_to_pixel( &pixel.x, &intrinsics, &p.x );
-        uv[i] = pixel;
-    }
-
-    return uv;
+    return p_mat;
 }
 
-std::vector<double> biliniar_interp( std::vector<double> const & vals, size_t width, size_t height, std::vector<double2> const & uv )
+std::vector<double> biliniar_interp(std::vector<double> const & vals, size_t width, size_t height, std::vector<double2> const & uv)
 {
-    std::vector<double> res( uv.size() );
+    std::vector<double> res(uv.size());
 
-    for( auto i = 0; i < uv.size(); i++ )
+    for (auto i = 0; i < uv.size(); i++)
     {
         auto x = uv[i].x;
-        auto x1 = floor( x );
-        auto x2 = ceil( x );
+        auto x1 = floor(x);
+        auto x2 = ceil(x);
         auto y = uv[i].y;
-        auto y1 = floor( y );
-        auto y2 = ceil( y );
+        auto y1 = floor(y);
+        auto y2 = ceil(y);
 
-        if( x1 < 0 || x1 >= width  || x2 < 0 || x2 >= width ||
-            y1 < 0 || y1 >= height || y2 < 0 || y2 >= height )
+        if (x1 < 0 || x1 >= width || x2 < 0 || x2 >= width ||
+            y1 < 0 || y1 >= height || y2 < 0 || y2 >= height)
         {
             res[i] = std::numeric_limits<double>::max();
             continue;
@@ -1630,7 +1668,7 @@ std::vector<double> biliniar_interp( std::vector<double> const & vals, size_t wi
         auto bot_r = vals[int(y2*width + x2)];
 
         double interp_x_top, interp_x_bot;
-        if( x1 == x2 )
+        if (x1 == x2)
         {
             interp_x_top = top_l;
             interp_x_bot = bot_l;
@@ -1641,7 +1679,7 @@ std::vector<double> biliniar_interp( std::vector<double> const & vals, size_t wi
             interp_x_bot = ((double)(x2 - x) / (double)(x2 - x1))*(double)bot_l + ((double)(x - x1) / (double)(x2 - x1))*(double)bot_r;
         }
 
-        if( y1 == y2 )
+        if (y1 == y2)
         {
             res[i] = interp_x_bot;
             continue;
@@ -1650,10 +1688,19 @@ std::vector<double> biliniar_interp( std::vector<double> const & vals, size_t wi
         auto interp_y_x = ((double)(y2 - y) / (double)(y2 - y1))*(double)interp_x_top + ((double)(y - y1) / (double)(y2 - y1))*(double)interp_x_bot;
         res[i] = interp_y_x;
     }
+
+    std::ofstream f;
+    f.open("interp_y_x");
+    f.precision(16);
+    for (auto i = 0; i < res.size(); i++)
+    {
+        f << res[i] << std::endl;
+    }
+    f.close();
     return res;
 }
 
-optimaization_params optimizer::back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params curr_params )
+optimaization_params optimizer::back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params curr_params)
 {
     optimaization_params new_params;
 
@@ -1663,44 +1710,63 @@ optimaization_params optimizer::back_tracking_line_search( const z_frame_data & 
     auto normalized_grads_norm = normalized_grads.get_norma();
     auto unit_grad = normalized_grads.normalize();
 
-    auto t = calc_t( curr_params );
-    auto step_size = calc_step_size( curr_params );
+    auto t = calc_t(curr_params);
+    auto step_size = calc_step_size(curr_params);
 
-    curr_params.curr_calib.rot_angles = extract_angles_from_rotation( curr_params.curr_calib.rot.rot );
+    curr_params.curr_calib.rot_angles = extract_angles_from_rotation(curr_params.curr_calib.rot.rot);
     auto movement = unit_grad * step_size;
     new_params.curr_calib = curr_params.curr_calib + movement;
-    new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
+    new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
+    new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
 
-    auto uvmap = get_texture_map( z_data.vertices, curr_params.curr_calib );
-    curr_params.cost = calc_cost( z_data, yuy_data, uvmap );
+    auto uvmap = get_texture_map(z_data.vertices, curr_params.curr_calib);
+    curr_params.cost = calc_cost(z_data, yuy_data, uvmap);
 
-    uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
-    new_params.cost = calc_cost( z_data, yuy_data, uvmap );
+    uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
+    new_params.cost = calc_cost(z_data, yuy_data, uvmap);
 
     auto iter_count = 0;
-
-    while( (curr_params.cost - new_params.cost) >= step_size * t && abs( step_size ) > _params.min_step_size && iter_count++ < _params.max_back_track_iters )
+    AC_LOG(DEBUG, "Current back tracking line search cost = " << std::fixed << std::setprecision(15) << new_params.cost);
+    while ((curr_params.cost - new_params.cost) >= step_size * t && abs(step_size) > _params.min_step_size && iter_count++ < _params.max_back_track_iters)
     {
         step_size = _params.tau*step_size;
 
         new_params.curr_calib = curr_params.curr_calib + unit_grad * step_size;
-        new_params.curr_calib.rot = extract_rotation_from_angles( new_params.curr_calib.rot_angles );
+        new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
+        new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
 
-        uvmap = get_texture_map( z_data.vertices, new_params.curr_calib );
-        new_params.cost = calc_cost( z_data, yuy_data, uvmap );
+        uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
+        new_params.cost = calc_cost(z_data, yuy_data, uvmap);
 
-        AC_LOG( DEBUG, "... back tracking line search cost= " << std::fixed << std::setprecision( 15 ) << new_params.cost );
+        AC_LOG(DEBUG, "... back tracking line search cost= " << std::fixed << std::setprecision(15) << new_params.cost);
     }
 
-    if( curr_params.cost - new_params.cost >= step_size * t )
+    if (curr_params.cost - new_params.cost >= step_size * t)
     {
         new_params = orig;
     }
 
+    new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
+    new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
     return new_params;
 }
 
-double optimizer::calc_step_size( optimaization_params opt_params )
+p_matrix librealsense::algo::depth_to_rgb_calibration::optimizer::calc_p_mat(calib c)
+{
+    auto r = c.rot.rot;
+    auto t = c.trans;
+    auto fx = c.k_mat.fx;
+    auto fy = c.k_mat.fy;
+    auto ppx = c.k_mat.ppx;
+    auto ppy = c.k_mat.ppy;
+    return { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
+             fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
+             r[2]                 , r[5]                 , r[8]                 , t.t3 };
+
+
+}
+
+double optimizer::calc_step_size(optimaization_params opt_params)
 {
     auto grads_norm = opt_params.calib_gradients.normalize();
     auto normalized_grads = grads_norm / _params.normelize_mat;
@@ -1728,10 +1794,12 @@ void calc_cost_per_vertex_fn(
     z_frame_data const & z_data,
     yuy2_frame_data const & yuy_data,
     std::vector< double2 > const & uv,
-    T fn
+    T fn, iteration_data_collect& data = iteration_data_collect()
 )
 {
     auto d_vals = biliniar_interp( yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv );
+    data.d_vals = d_vals;
+
     double cost = 0;
     std::vector< double > cost_per_vertex;
     cost_per_vertex.reserve( uv.size() );
@@ -1746,28 +1814,29 @@ void calc_cost_per_vertex_fn(
 }
 
 
-double optimizer::calc_cost( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv )
+double optimizer::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, iteration_data_collect& data)
 {
     double cost = 0;
     size_t N = 0;
-    calc_cost_per_vertex_fn( z_data, yuy_data, uv,
-        [&]( size_t i, double d_val, double weight, double vertex_cost )
+    calc_cost_per_vertex_fn(z_data, yuy_data, uv,
+        [&](size_t i, double d_val, double weight, double vertex_cost)
+    {
+        if (d_val != std::numeric_limits<double>::max())
         {
-            if( d_val != std::numeric_limits<double>::max() )
-            {
-                cost += vertex_cost;
-                ++N;
-            }
+            cost += vertex_cost;
+            ++N;
         }
-    );
+    }
+    , data);
     return N ? cost / N : 0.;
 }
 
-calib optimizer::calc_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv,
-    const calib& curr_calib )
+calib optimizer::calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv,
+    const calib& curr_calib, iteration_data_collect& data)
 {
     calib res;
     auto interp_IDT_x = biliniar_interp( yuy_data.edges_IDTx, yuy_data.width, yuy_data.height, uv );
+    data.d_vals_x = interp_IDT_x;
 #if 0
     std::ofstream f;
     f.open( "res" );
@@ -1780,6 +1849,7 @@ calib optimizer::calc_gradients( const z_frame_data& z_data, const yuy2_frame_da
 #endif
 
     auto interp_IDT_y = biliniar_interp( yuy_data.edges_IDTy, yuy_data.width, yuy_data.height, uv );
+    data.d_vals_y = interp_IDT_y;
 
     auto rc = calc_rc( z_data, yuy_data, curr_calib );
 
@@ -2594,21 +2664,13 @@ coeffs<translation> optimizer::calc_translation_coefs( const z_frame_data& z_dat
 }
 
 
-std::pair<calib, double> optimizer::calc_cost_and_grad( const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib& curr_calib )
+std::pair<calib, double> optimizer::calc_cost_and_grad(const z_frame_data & z_data, const yuy2_frame_data & yuy_data, const calib& curr_calib, iteration_data_collect& data)
 {
-    auto uvmap = get_texture_map( z_data.vertices, curr_calib );
+    auto uvmap = get_texture_map(z_data.vertices, curr_calib);
+    data.uvmap = uvmap;
 
-#if 0
-    std::ofstream f;
-    f.open( "uvmap" );
-    for( auto i = 0; i < uvmap.size(); i++ )
-    {
-        f << uvmap[i].x << " " << uvmap[i].y << std::endl;
-    }
-    f.close();
-#endif
-    auto cost = calc_cost( z_data, yuy_data, uvmap );
-    auto grad = calc_gradients( z_data, yuy_data, uvmap, curr_calib );
+    auto cost = calc_cost(z_data, yuy_data, uvmap, data);
+    auto grad = calc_gradients(z_data, yuy_data, uvmap, curr_calib, data);
     return { grad, cost };
 }
 
@@ -2917,19 +2979,19 @@ std::vector< double > optimizer::cost_per_section( calib const & calibration )
     size_t const n_sections_x = _params.num_of_sections_for_edge_distribution_x;
     size_t const n_sections_y = _params.num_of_sections_for_edge_distribution_y;
     size_t const n_sections = n_sections_x * n_sections_y;
-    
-    std::vector< double > cost_per_section( n_sections, 0. );
-    std::vector< size_t > N_per_section( n_sections, 0 );
-    calc_cost_per_vertex_fn( _z, _yuy, uvmap,
-        [&]( size_t i, double d_val, double weight, double vertex_cost )
+
+    std::vector< double > cost_per_section(n_sections, 0.);
+    std::vector< size_t > N_per_section(n_sections, 0);
+    calc_cost_per_vertex_fn(_z, _yuy, uvmap,
+        [&](size_t i, double d_val, double weight, double vertex_cost)
+    {
+        if (d_val != std::numeric_limits<double>::max())
         {
-            if( d_val != std::numeric_limits<double>::max() )
-            {
-                byte section = _z.section_map[i];
-                cost_per_section[section] += vertex_cost;
-                ++N_per_section[section];
-            }
+            byte section = _z.section_map[i];
+            cost_per_section[section] += vertex_cost;
+            ++N_per_section[section];
         }
+    }
     );
     for( size_t x = 0; x < n_sections; ++x )
     {
@@ -2999,4 +3061,31 @@ calib const & optimizer::get_calibration() const
 double optimizer::get_cost() const
 {
     return _params_curr.cost;
+}
+
+std::vector<double2> librealsense::algo::depth_to_rgb_calibration::optimizer::get_texture_map(std::vector<double3> const & points, calib const & curr_calib) const
+{
+    auto intrinsics = curr_calib.get_intrinsics();
+    auto extr = curr_calib.get_extrinsics();
+    auto p = curr_calib.get_p_matrix();
+
+    std::vector<double2> uv_map(points.size());
+
+    for (auto i = 0; i < points.size(); ++i)
+    {
+        double2 uv = {};
+        transform_point_to_uv(&uv.x, p, &points[i].x);
+
+        double2 uvmap = {};
+        distort_pixel(&uvmap.x, &intrinsics, &uv.x);
+        uv_map[i] = uvmap;
+        /* double3 p = {};
+         transform_point_to_point(&p.x, extr, &points[i].x);
+
+         double2 pixel = {};
+         project_point_to_pixel(&pixel.x, &intrinsics, &p.x);
+         uv[i] = pixel;*/
+    }
+
+    return uv_map;
 }

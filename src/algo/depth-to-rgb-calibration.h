@@ -13,8 +13,19 @@ namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-    struct double3 { double x, y, z; double & operator [] ( int i ) { return (&x)[i]; } };
-    struct double2 { double x, y; double & operator [] ( int i ) { return (&x)[i]; } };
+    struct double3 {
+        double x, y, z;
+        double & operator [] (int i) { return (&x)[i]; }
+        bool operator == (const double3 d) { return x == d.x && y == d.y && z == d.z; }
+        bool operator != (const double3 d) { return !(*this == d); }
+    };
+
+    struct double2 {
+        double x, y;
+        double & operator [] (int i) { return (&x)[i]; };
+        bool operator == (const double2 d) { return x == d.x && y == d.y; }
+        bool operator != (const double2 d) { return !(*this == d); }
+    };
 
     enum direction :uint8_t
     {
@@ -105,6 +116,11 @@ namespace depth_to_rgb_calibration {
         double rot[9];
     };
 
+    struct p_matrix
+    {
+        double vals[12];
+    };
+
     struct k_matrix
     {
         double fx;
@@ -184,29 +200,31 @@ namespace depth_to_rgb_calibration {
 
     struct calib
     {
-        rotation_in_angles rot_angles;
-        rotation rot;
-        translation trans;
-        k_matrix k_mat;
+        rotation_in_angles rot_angles = { 0 };
+        rotation rot = { 0 };
+        translation trans = { 0 };
+        k_matrix k_mat = { 0 };
+        p_matrix p_mat = { 0 };
         int           width = 0;
         int           height = 0;
         rs2_distortion model;
         double         coeffs[5];
 
         calib() = default;
-        calib( calib const & ) = default;
-        explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics );
-        explicit calib( rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics );
+        calib(calib const &) = default;
+        explicit calib(rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics);
+        explicit calib(rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics);
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;
+        p_matrix get_p_matrix() const;
 
-        void copy_coefs( calib & obj ) const;
-        calib operator*( double step_size ) const;
-        calib operator/( double factor ) const;
-        calib operator+( const calib& c ) const;
-        calib operator-( const calib& c ) const;
-        calib operator/( const calib& c ) const;
+        void copy_coefs(calib & obj) const;
+        calib operator*(double step_size) const;
+        calib operator/(double factor) const;
+        calib operator+(const calib& c) const;
+        calib operator-(const calib& c) const;
+        calib operator/(const calib& c) const;
         double get_norma();
         double sum();
         calib normalize();
@@ -267,6 +285,16 @@ namespace depth_to_rgb_calibration {
         double const max_xy_movement_from_origin = 20;
     };
 
+    struct iteration_data_collect
+    {
+        uint32_t iteration;
+        optimaization_params params;
+        std::vector< double2 > uvmap;
+        std::vector<double> d_vals;
+        std::vector<double> d_vals_x;
+        std::vector<double> d_vals_y;
+    };
+
     typedef uint16_t yuy_t;
     typedef uint8_t ir_t;
     typedef uint16_t z_t;
@@ -289,12 +317,13 @@ namespace depth_to_rgb_calibration {
             float depth_units );
 
         bool is_scene_valid();
-        size_t optimize( calib const & original_calibration );
+        size_t optimize(calib const & original_calibration, std::function<void(iteration_data_collect data)> cb = nullptr);
         bool is_valid_results();
         calib const & get_calibration() const;
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
+        std::vector< double2 > get_texture_map(/*const*/ std::vector< double3 > const & points, calib const & curr_calib) const;
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }
@@ -313,13 +342,14 @@ namespace depth_to_rgb_calibration {
         bool is_movement_in_images(yuy2_frame_data & yuy );
         std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
+        p_matrix calc_p_mat(calib c);
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
-        std::pair<calib, double> calc_cost_and_grad( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib );
+        std::pair<calib, double> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib, iteration_data_collect& data = iteration_data_collect());
         calib intrinsics_extrinsics_to_calib(rs2_intrinsics_double intrin, rs2_extrinsics_double extrin);
-        double calc_cost( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv );
-        calib calc_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib );
+        double calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, iteration_data_collect& data = iteration_data_collect());
+        calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib, iteration_data_collect& data = iteration_data_collect());
         translation calc_translation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
         rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
         k_matrix calc_k_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
