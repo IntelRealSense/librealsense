@@ -244,7 +244,7 @@ namespace librealsense
             std::shared_ptr<uvc_sensor> uvc_sensor,
             std::shared_ptr<stream_interface> ir_stream)
             : synthetic_sensor(name, uvc_sensor, owner, fa_ir_fourcc_to_rs2_format, fa_ir_fourcc_to_rs2_stream),
-            _ir_stream(ir_stream) {}
+            _ir_stream(ir_stream), _name(name){}
 
         stream_profiles init_stream_profiles() override
         {
@@ -267,6 +267,7 @@ namespace librealsense
 
     private:
         std::shared_ptr<stream_interface> _ir_stream;
+        std::string _name;
     };
 
     void register_options_for_one_sensor(std::shared_ptr<fa_ir_sensor> ir_ep,
@@ -342,9 +343,9 @@ namespace librealsense
 
         left_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
             (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
-        left_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED));
-        /*left_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
-            (RS2_FORMAT_RAW16, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));*/
+        //left_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED));
+        left_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_RAW16, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
         add_sensor(left_ir_ep);
 
         // RIGHT SENSOR
@@ -358,10 +359,10 @@ namespace librealsense
         auto right_ir_ep = std::make_shared<fa_ir_sensor>(right_sensor_name, this, right_raw_ir_ep, _right_ir_stream);
 
         right_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
-            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));
-        right_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED));
-        /*right_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
-            (RS2_FORMAT_RAW16, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED));*/
+            (RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
+        //right_ir_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_INFRARED, 1));
+        right_ir_ep->register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>
+            (RS2_FORMAT_RAW16, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_INFRARED, 1));
         add_sensor(right_ir_ep);
         
         // CAMERA INFO
