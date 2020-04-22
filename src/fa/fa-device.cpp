@@ -395,7 +395,7 @@ namespace librealsense
         static const int S_LASER_STATUS_SIZE = 1;
         static const int S_PRESET_ID_SIZE = 1;
 
-        auto md_prop_offset = /*S_METADATA_UVC_PART_SIZE + */4;
+        auto md_prop_offset = S_METADATA_UVC_PART_SIZE;
         //FRAME_COUNTER
         ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
             make_attribute_parser(&md_f400_header::frame_counter,
