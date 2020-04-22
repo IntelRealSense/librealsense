@@ -112,16 +112,24 @@ static const char* occulution_vertex_shader_text =
 "uniform vec2 elementScale;\n"
 "uniform float width;\n"
 "uniform float height;\n"
+"uniform int vscan;\n"
 "void main(void)\n"
 "{\n"
 "    gl_Position = vec4(position * vec3(elementScale, 1.0) + vec3(elementPosition, 0.0), 1.0);\n"
 "    textCoords = textureCoords;\n"
 "    float pixelsize = 1.0 / width;\n"
-"    float xshift = 0.0;\n"
+"    float shift = 0.0;\n"
 "    for (int i = 0; i < 20; i++)\n"
 "    {\n"
-"     occuTextureCoords[i] = textureCoords - vec2(xshift, 0.0);\n"
-"     xshift += pixelsize;\n"
+"        if(vscan > 0)\n"
+"        {\n"
+"            occuTextureCoords[i] = textureCoords + vec2(0.0, shift);\n"
+"            pixelsize = 1.0 / height;\n"
+"        } else {\n"
+"            occuTextureCoords[i] = textureCoords - vec2(shift, 0.0);\n"
+"            pixelsize = 1.0 / width;\n"
+"        }\n"
+"        shift += pixelsize;\n"
 "    }\n"
 "}";
 
@@ -134,10 +142,35 @@ static const char* occulution_fragment_text =
 "uniform sampler2D xyzSampler;\n"
 "uniform sampler2D uvSampler;\n"
 "uniform float opacity;\n"
+"uniform int vscan;\n"
 "void main(void) {\n"
 "    vec4 xyz[20];\n"
 "    vec4 uv[20];\n"
 "    float uvmax = 0.0;\n"
+"        if(vscan > 0)\n"
+"        {\n"
+"    for (int i = 0; i < 20; i++)\n"
+"    {\n"
+"    vec2 tex = vec2(occuTextureCoords[i].x, 1.0 - occuTextureCoords[i].y);\n"
+"    xyz[i] = texture2D(xyzSampler, tex);\n"
+"    uv[i] = texture2D(uvSampler, tex);\n"
+"    if (uv[i].y > uvmax)\n"
+"    {\n"
+"      uvmax = uv[i].y;\n"
+"    }\n"
+"    }\n"
+"    if (xyz[0].z > 0.0)\n"
+"    {\n"
+"    if (uv[0].y < uvmax)\n"
+"    {\n"
+"    texture_xyz = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"    texture_uv = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"    } else {\n"
+"    texture_xyz = vec4(xyz[0].xyz, 1.0);\n"
+"    texture_uv = vec4(uv[0].xyz, 1.0);\n"
+"    }\n"
+"    }\n"
+"    } else {\n"
 "    for (int i = 0; i < 20; i++)\n"
 "    {\n"
 "    vec2 tex = vec2(occuTextureCoords[i].x, 1.0 - occuTextureCoords[i].y);\n"
@@ -159,8 +192,8 @@ static const char* occulution_fragment_text =
 "    texture_uv = vec4(uv[0].xyz, 1.0);\n"
 "    }\n"
 "    }\n"
+"    }\n"
 "}";
-
 
 class project_shader : public texture_2d_shader
 {
@@ -262,6 +295,8 @@ public:
 
         _xyz_sampler_location = _shader->get_uniform_location("xyzSampler");
         _uv_sampler_location = _shader->get_uniform_location("uvSampler");
+
+        _scanning_location = _shader->get_uniform_location("vscan");
     }
 
     void set_width(float width)
@@ -283,12 +318,19 @@ public:
     {
         _shader->load_uniform(_uv_sampler_location, uv);
     }
+
+    void set_scanning(int mode)
+    {
+        _shader->load_uniform(_scanning_location, mode);
+    }
 private:
     uint32_t _width_location;
     uint32_t _height_location;
 
     uint32_t _xyz_sampler_location;
     uint32_t _uv_sampler_location;
+
+    uint32_t _scanning_location;
 };
 
 void pointcloud_gl::cleanup_gpu_resources()
@@ -490,6 +532,17 @@ void pointcloud_gl::get_texture_map(
 
             occu_shader.set_xyz_sampler(0);
             occu_shader.set_uv_sampler(1);
+
+            if (_occlusion_filter->find_scanning_direction(extr) == vertical)
+            {
+                // L500 - vertical scan
+                occu_shader.set_scanning(1);
+            }
+            else
+            {
+                // D400 - horizontal scan
+                occu_shader.set_scanning(0);
+            }
 
             oviz->draw_texture(fbo1_xyz, fbo1_uv);
             occu_shader.end();
