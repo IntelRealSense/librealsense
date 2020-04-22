@@ -100,7 +100,7 @@ namespace
                     {
                         for (auto k = 0; k < mask_width; k++)
                         {
-                            auto p = (l - lines[arr_i] + arr[arr_i]) * image_width + jj + k;
+                            auto p = (l - lines[arr_i]) * image_width + jj + k;
                             sub_image[ind++] = (image[p]);
                         }
                     }
@@ -195,12 +195,12 @@ namespace
 
         // corners handling
         // 1. image[0] and image[1]
-        int corners_arr[6] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2 };
-        int left_col[6] = {1,1,1,1,0,0};
-        int right_col[6] = { 0,0,0,0,1,1 };
-        int corner_columns[6] = { 2,1,2,1,2,1 };
-        int corner_rows[6] = { 2, 2,1,1 ,2,2 };
-        for (auto corner = 0; corner < 6; corner++) {
+        int corners_arr[8] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2*image_width - 1, 2*image_width - 2 }; // NOHA :: TODO :: check why last 2 corners aren't fixed
+        int left_col[8] = {1,1,1,1,0,0,0,0};
+        int right_col[8] = { 0,0,0,0,1,1 ,1,1};
+        int corner_columns[8] = { 2,1,2,1,2,1,2,1 };
+        int corner_rows[8] = { 2, 2,1,1 ,2,2,1,1 };
+        for (auto corner = 0; corner < 8; corner++) {
             ind = corner_rows[corner] * mask_width; // starting point in sub-image
             for (auto l = corner_rows[corner]; l < mask_height; l++)
             {
