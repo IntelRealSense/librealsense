@@ -36,6 +36,7 @@ namespace librealsense
         CLinearCoefficients(unsigned int buffer_size);
         void reset();
         void add_value(CSample val);
+        void add_const_y_coefs(double dy);
         void update_linear_coefs(double x);
         double calc_value(double x) const;
         bool is_full() const;
@@ -79,6 +80,7 @@ namespace librealsense
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.
         CLinearCoefficients _coefs;
+        double _min_command_delay;
         bool _is_ready;
     };
 
