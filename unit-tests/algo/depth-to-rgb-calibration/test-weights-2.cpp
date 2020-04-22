@@ -411,22 +411,22 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         auto cb = [&](algo::iteration_data_collect data)
         {
-            auto file = generet_file_name("calib_iteration#_", data.iteration + 1, "_1x32_double_00");
+            auto file = generet_file_name("calib_iteration_", data.iteration + 1, "_1x32_double_00");
             CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, "2", file.c_str()));
 
-            file = generet_file_name("uvmap_iteration#_", data.iteration + 1, "_5089x2_double_00");
+            file = generet_file_name("uvmap_iteration_", data.iteration + 1, "_5089x2_double_00");
             CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, "2", file.c_str(), 5089, 1, compare_same_vectors));
 
-            file = generet_file_name("DVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            file = generet_file_name("DVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("DxVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            file = generet_file_name("DxVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("DyVals_iteration#_", data.iteration + 1, "_5089x1_double_00");
+            file = generet_file_name("DyVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("grad_iteration#_", data.iteration + 1, "_1x32_double_00");
+            file = generet_file_name("grad_iteration_", data.iteration + 1, "_1x32_double_00");
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, "2", file.c_str(), true));
         };
 
@@ -455,7 +455,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
         // 2. gausssian
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
-        //CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         //--
 
 

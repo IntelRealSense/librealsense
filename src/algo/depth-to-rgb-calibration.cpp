@@ -686,9 +686,9 @@ calc_subpixels(
 
                 double fraq_step = 0;
                 if( double( z_plus + z_minus - (double)2 * z_edge ) == 0 )
-                    fraq_step = std::numeric_limits<double>::max();
-
-                fraq_step = double( (-0.5f*double( z_plus - z_minus )) / double( z_plus + z_minus - 2 * z_edge ) );
+                    fraq_step = 0;
+                else
+                    fraq_step = double( (-0.5f*double( z_plus - z_minus )) / double( z_plus + z_minus - 2 * z_edge ) );
 
                 // NOTE:
                 // We adjust by +1 to fit the X/Y to matlab's 1-based index convention
