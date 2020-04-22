@@ -52,25 +52,25 @@ PYBIND11_MODULE(NAME, m) {
         .def("__repr__", &rs2::log_message::full);
 
     m.def("log_to_callback",
-		[](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
+        [](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
         {
-			rs2::log_to_callback( min_severity,
-				[callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
-				{
-					try
-					{
+            rs2::log_to_callback( min_severity,
+                [callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
+                {
+                    try
+                    {
                         // We're not being called from Python but instead are calling it,
-						// we need to acquire it to not have issues with other threads...
-						py::gil_scoped_acquire gil;
-						callback( severity, msg );
-					}
-					catch( ... )
-					{
-						std::cerr << "?!?!?!!? exception in python log_to_callback callback ?!?!?!?!?" << std::endl;
-					}
-				} );
+                        // we need to acquire it to not have issues with other threads...
+                        py::gil_scoped_acquire gil;
+                        callback( severity, msg );
+                    }
+                    catch( ... )
+                    {
+                        std::cerr << "?!?!?!!? exception in python log_to_callback callback ?!?!?!?!?" << std::endl;
+                    }
+                } );
         }, "min_severity"_a, "callback"_a);
-	// A call to rs.log() will cause a callback to get called! We should already own the GIL, but
-	// release it just in case to let others do their thing...
+    // A call to rs.log() will cause a callback to get called! We should already own the GIL, but
+    // release it just in case to let others do their thing...
     m.def("log", &rs2::log, "severity"_a, "message"_a, py::call_guard<py::gil_scoped_release>());
 }
