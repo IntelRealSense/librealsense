@@ -433,6 +433,8 @@ rotation_in_angles extract_angles_from_rotation(const double r[9])
 size_t optimizer::optimize(calib const & original_calibration, std::function<void(iteration_data_collect data)> cb)
 {
     _original_calibration = original_calibration;
+    _original_calibration.p_mat = calc_p_mat(_original_calibration);
+
     optimaization_params params_orig;
     params_orig.curr_calib = original_calibration;
     params_orig.curr_calib.p_mat = calc_p_mat(params_orig.curr_calib);
