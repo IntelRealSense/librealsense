@@ -166,14 +166,13 @@ namespace
                         }
                     }
                 }
-                if (((arr_i == 2) || (arr_i == 3))){//&&(ii>1)) {// NOHA :: TODO :: issue starts here
+                if (((arr_i == 2) || (arr_i == 3))){
                     ind = 0;
                     for (auto l = 0; l < mask_height; l++)
                     {
-                        //ind = l* image_width; 
                         for (auto k = 0; k < mask_width- columns[arr_i]; k++)
                         {
-                            auto p = (ii + l) * image_width + k + arr[arr_i] - 2;
+                            auto p = (ii + l) * image_width + k + arr[arr_i] - 2; // copy 2 previous columns
                             sub_image[ind++] = (image[p]);
                         }
                         ind += columns[arr_i];
@@ -193,6 +192,55 @@ namespace
                 res[mid] = convolution_operation(sub_image);
             }
         }
+        
+        // corners handling
+        // 1. image[0] and image[1]
+        arr[0] = 0;
+        arr[1] = 1;
+        columns[0] = 2;
+        columns[1] = 1;
+        int rows[2] = { 2, 1 };
+        ind = 0;
+        for (auto arr_i = 0; arr_i < 1; arr_i++) {
+            ind = rows[arr_i] * mask_width; // starting point in sub-image
+            for (auto l = rows[arr_i]; l < mask_height; l++)
+            {
+                ind += columns[arr_i];
+                for (auto k = columns[arr_i]; k < mask_width; k++)
+                {
+                    auto p = (l- rows[arr_i]) * image_width + k - columns[arr_i];
+                    sub_image[ind++] = (image[p]);
+                }
+            }
+            // fill first 2 columns to same values as 3rd column
+            // and first 2 rows to same values as 3rd row
+            // 1. rows
+            for (auto l = 0; l < rows[arr_i]; l++)
+            {
+                ind = rows[arr_i] * mask_width; // start with padding first 2 rows
+                auto ind2 = l * mask_width;
+                for (auto k = 0; k < mask_width; k++)
+                {
+                    sub_image[k+ind2] = sub_image[ind++];
+                  
+                }
+            }
+            // 2. columns
+            for (auto l = 0; l < mask_height; l++)
+            {
+                ind = l * mask_width+columns[arr_i];
+                auto ind2 = l * mask_width;
+                for (auto k = 0; k < columns[arr_i]; k++)
+                {
+                    sub_image[k + ind2] = sub_image[ind];
+
+                }
+            }
+            auto mid =  arr[arr_i]; // first row corners
+            res[mid] = convolution_operation(sub_image);
+        }
+
+
         for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
             for (auto j = 0; j < image_width - mask_width + 1; j++)
