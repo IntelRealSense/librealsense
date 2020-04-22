@@ -83,7 +83,7 @@ namespace
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
         int arr[4] = { 0, 1, image_height - 1,image_height - 2 };
-        int lines[4] = { 2, 1, 2 , 1};
+        int lines[4] = { 2, 1, 2 , 1 };
         //std::allocator<double> alloc;
         //double* debug = alloc.allocate(image.size());
 
@@ -114,7 +114,7 @@ namespace
                 if ((arr_i == 2) || (arr_i == 3)) { // last line
                     // mask will start from 2 previous lines and last 2 lines are padded
                     ind = 0;
-                    for (auto l = 0; l < mask_height- lines[arr_i]; l++) // only for first 3 rows
+                    for (auto l = 0; l < mask_height - lines[arr_i]; l++) // only for first 3 rows
                     {
                         for (auto k = 0; k < mask_width; k++)
                         {
@@ -123,11 +123,11 @@ namespace
                         }
                     }
                     // last 2 mask rows are the same as 3rd row
-                    ind = mask_width * (mask_height-lines[arr_i]); // 4th,5th rows padding
+                    ind = mask_width * (mask_height - lines[arr_i]); // 4th,5th rows padding
                     auto ind_pad = mask_width * (mask_height - lines[arr_i] - 1); // previous line
                     for (auto k = 0; k < mask_width * lines[arr_i]; k++)
                     {
-                        sub_image[ind+k] = sub_image[k % mask_width + ind_pad];
+                        sub_image[ind + k] = sub_image[k % mask_width + ind_pad];
                     }
                 }
                 auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
@@ -138,7 +138,7 @@ namespace
         // first 2 columns
         arr[0] = 0;
         arr[1] = 1;
-        arr[2] = image_width - 1 ;
+        arr[2] = image_width - 1;
         arr[3] = image_width - 2;
         int columns[4] = { 2, 1, 2, 1 };
         for (auto arr_i = 0; arr_i < 4; arr_i++) {
@@ -166,11 +166,11 @@ namespace
                         }
                     }
                 }
-                if (((arr_i == 2) || (arr_i == 3))){
+                if (((arr_i == 2) || (arr_i == 3))) {
                     ind = 0;
                     for (auto l = 0; l < mask_height; l++)
                     {
-                        for (auto k = 0; k < mask_width- columns[arr_i]; k++)
+                        for (auto k = 0; k < mask_width - columns[arr_i]; k++)
                         {
                             auto p = (ii + l) * image_width + k + arr[arr_i] - 2; // copy 2 previous columns
                             sub_image[ind++] = (image[p]);
@@ -181,7 +181,7 @@ namespace
                     ind = columns[arr_i];
                     for (auto l = 0; l < mask_height; l++)
                     {
-                        ind = (mask_height - columns[arr_i]-1) + l * mask_width;
+                        ind = (mask_height - columns[arr_i] - 1) + l * mask_width;
                         for (auto k = 1; k <= columns[arr_i]; k++)
                         {
                             sub_image[ind + k] = sub_image[ind];
@@ -192,51 +192,51 @@ namespace
                 res[mid] = convolution_operation(sub_image);
             }
         }
-        
+
         // corners handling
         // 1. image[0] and image[1]
-        arr[0] = 0;
-        arr[1] = 1;
-        columns[0] = 2;
-        columns[1] = 1;
-        int rows[2] = { 2, 1 };
-        ind = 0;
-        for (auto arr_i = 0; arr_i < 1; arr_i++) {
-            ind = rows[arr_i] * mask_width; // starting point in sub-image
-            for (auto l = rows[arr_i]; l < mask_height; l++)
+        int corners_arr[6] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2 };
+        int left_col[6] = {1,1,1,1,0,0};
+        int right_col[6] = { 0,0,0,0,1,1 };
+        int corner_columns[6] = { 2,1,2,1,2,1 };
+        int corner_rows[6] = { 2, 2,1,1 ,2,2 };
+        for (auto corner = 0; corner < 6; corner++) {
+            ind = corner_rows[corner] * mask_width; // starting point in sub-image
+            for (auto l = corner_rows[corner]; l < mask_height; l++)
             {
-                ind += columns[arr_i];
-                for (auto k = columns[arr_i]; k < mask_width; k++)
+                ind += left_col[corner]*corner_columns[corner];
+                for (auto k = left_col[corner] * corner_columns[corner]; k < mask_width- right_col[corner] * corner_columns[corner]; k++)
                 {
-                    auto p = (l- rows[arr_i]) * image_width + k - columns[arr_i];
+                    auto p = (l - corner_rows[corner]) * image_width + k - left_col[corner]*corner_columns[corner] + right_col[corner]*(corners_arr[corner]-2);
                     sub_image[ind++] = (image[p]);
                 }
+                ind += right_col[corner] * corner_columns[corner];
             }
             // fill first 2 columns to same values as 3rd column
             // and first 2 rows to same values as 3rd row
             // 1. rows
-            for (auto l = 0; l < rows[arr_i]; l++)
+            for (auto l = 0; l < corner_rows[corner]; l++)
             {
-                ind = rows[arr_i] * mask_width; // start with padding first 2 rows
+                ind = corner_rows[corner] * mask_width; // start with padding first 2 rows
                 auto ind2 = l * mask_width;
                 for (auto k = 0; k < mask_width; k++)
                 {
-                    sub_image[k+ind2] = sub_image[ind++];
-                  
+                    sub_image[k + ind2] = sub_image[ind++];
+
                 }
             }
             // 2. columns
             for (auto l = 0; l < mask_height; l++)
             {
-                ind = l * mask_width+columns[arr_i];
-                auto ind2 = l * mask_width;
-                for (auto k = 0; k < columns[arr_i]; k++)
+                ind = l * mask_width + left_col[corner] * corner_columns[corner] + right_col[corner] * (mask_width -1 - corner_columns[corner]);
+                auto ind2 = l * mask_width + right_col[corner] * (mask_width - corner_columns[corner]);
+                for (auto k = 0; k < corner_columns[corner]; k++)
                 {
                     sub_image[k + ind2] = sub_image[ind];
 
                 }
             }
-            auto mid =  arr[arr_i]; // first row corners
+            auto mid = corners_arr[corner];
             res[mid] = convolution_operation(sub_image);
         }
 
