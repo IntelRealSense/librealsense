@@ -53,11 +53,15 @@ namespace depth_to_rgb_calibration {
         std::vector<double> direction_deg;
         std::vector<double3> vertices;
 
+        // input validation
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
         std::vector<double> sum_weights_per_direction;
         double min_max_ratio;
+
+        // output validation
+        std::vector< double > cost_diff_per_section;
     };
 
     // TODO why "yuy2"?
@@ -184,25 +188,25 @@ namespace depth_to_rgb_calibration {
         rotation rot;
         translation trans;
         k_matrix k_mat;
-        int           width;
-        int           height;
+        int           width = 0;
+        int           height = 0;
         rs2_distortion model;
         double         coeffs[5];
 
         calib() = default;
         calib( calib const & ) = default;
-        explicit calib(rs2_intrinsics_double const & intrinsics, rs2_extrinsics_double const & extrinsics);
-        explicit calib(rs2_intrinsics const & intrinsics, rs2_extrinsics const & extrinsics);
+        explicit calib( rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics );
+        explicit calib( rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics );
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;
 
-        void copy_coefs( calib& obj );
-        calib operator*( double step_size );
-        calib operator/( double factor );
-        calib operator+( const calib& c );
-        calib operator-( const calib& c );
-        calib operator/( const calib& c );
+        void copy_coefs( calib & obj ) const;
+        calib operator*( double step_size ) const;
+        calib operator/( double factor ) const;
+        calib operator+( const calib& c ) const;
+        calib operator-( const calib& c ) const;
+        calib operator/( const calib& c ) const;
         double get_norma();
         double sum();
         calib normalize();
@@ -257,6 +261,10 @@ namespace depth_to_rgb_calibration {
         double dilation_size = 3;
         double gauss_sigma = 1;
         double gause_kernel_size = 5;
+
+        // output validation
+        double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };
+        double const max_xy_movement_from_origin = 20;
     };
 
     typedef uint16_t yuy_t;
@@ -285,6 +293,8 @@ namespace depth_to_rgb_calibration {
         bool is_valid_results();
         calib const & get_calibration() const;
         double get_cost() const;
+        double calc_correction_in_pixels( calib const & from_calibration ) const;
+        double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }
@@ -328,6 +338,7 @@ namespace depth_to_rgb_calibration {
         double calculate_rotation_y_beta_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
         double calculate_rotation_y_gamma_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
 
+        // input validation
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         bool is_grad_dir_balanced(z_frame_data& z_data);
@@ -335,11 +346,19 @@ namespace depth_to_rgb_calibration {
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         void images_dilation(yuy2_frame_data& yuy);
         void gaussian_filter(yuy2_frame_data& yuy);
+
+        // output validation
+        void clip_pixel_movement( size_t iteration_number = 0 );
+        std::vector< double > cost_per_section( calib const & calibration );
+
+    private:
         params _params;
         yuy2_frame_data _yuy;
         ir_frame_data _ir;
         z_frame_data _z;
-        optimaization_params _params_curr;
+        calib _original_calibration;         // starting state of auto-calibration
+        calib _factory_calibration;          // factory default calibration of the camera
+        optimaization_params _params_curr;   // last-known setting
     };
 
 }  // librealsense::algo::depth_to_rgb_calibration

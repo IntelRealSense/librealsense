@@ -202,7 +202,7 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         CHECK(compare_to_bin_file< double >(z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors));
 
         // ---
-        cal.is_scene_valid();
+        CHECK( ! cal.is_scene_valid() );
 
         // edge distribution
         CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_section, dir, "2", "depthEdgeWeightDistributionPerSectionDepth_4x1_double_00", 4, 1, compare_same_vectors));
@@ -221,5 +221,12 @@ TEST_CASE( "Weights calc", "[d2rgb]" )
         // 2. gausssian
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         //CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        //--
+        REQUIRE( cal.optimize( algo::calib( F9440687.rgb, F9440687.extrinsics )) == 5 );  // n_iterations
+
+        //--
+        CHECK( ! cal.is_valid_results() );
+        CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );
+        CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, "2", "costDiffPerSection_1x4_double_00", 1, 4, compare_same_vectors ) );
     }
 }
