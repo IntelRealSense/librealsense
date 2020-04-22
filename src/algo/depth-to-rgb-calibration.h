@@ -323,7 +323,6 @@ namespace depth_to_rgb_calibration {
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
-        std::vector< double2 > get_texture_map(/*const*/ std::vector< double3 > const & points, calib const & curr_calib) const;
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }

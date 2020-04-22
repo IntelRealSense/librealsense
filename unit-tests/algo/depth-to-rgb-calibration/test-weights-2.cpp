@@ -460,9 +460,8 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
 
         //--
-        /*CHECK( ! cal.is_valid_results() );
+        CHECK( ! cal.is_valid_results() );
         CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );
         CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, "2", "costDiffPerSection_1x4_double_00", 1, 4, compare_same_vectors ) );
-    */
     }
 }

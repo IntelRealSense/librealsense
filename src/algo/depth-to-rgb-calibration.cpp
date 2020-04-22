@@ -1702,6 +1702,37 @@ std::vector<double> biliniar_interp(std::vector<double> const & vals, size_t wid
     return res;
 }
 
+static
+std::vector< double2 > get_texture_map(
+    std::vector<double3> const & points,
+    calib const & curr_calib
+)
+{
+    auto intrinsics = curr_calib.get_intrinsics();
+    auto extr = curr_calib.get_extrinsics();
+    auto p = curr_calib.get_p_matrix();
+
+    std::vector<double2> uv_map( points.size() );
+
+    for( auto i = 0; i < points.size(); ++i )
+    {
+        double2 uv = {};
+        transform_point_to_uv( &uv.x, p, &points[i].x );
+
+        double2 uvmap = {};
+        distort_pixel( &uvmap.x, &intrinsics, &uv.x );
+        uv_map[i] = uvmap;
+        /* double3 p = {};
+         transform_point_to_point(&p.x, extr, &points[i].x);
+
+         double2 pixel = {};
+         project_point_to_pixel(&pixel.x, &intrinsics, &p.x);
+         uv[i] = pixel;*/
+    }
+
+    return uv_map;
+}
+
 optimaization_params optimizer::back_tracking_line_search(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params curr_params)
 {
     optimaization_params new_params;
@@ -3063,31 +3094,4 @@ calib const & optimizer::get_calibration() const
 double optimizer::get_cost() const
 {
     return _params_curr.cost;
-}
-
-std::vector<double2> librealsense::algo::depth_to_rgb_calibration::optimizer::get_texture_map(std::vector<double3> const & points, calib const & curr_calib) const
-{
-    auto intrinsics = curr_calib.get_intrinsics();
-    auto extr = curr_calib.get_extrinsics();
-    auto p = curr_calib.get_p_matrix();
-
-    std::vector<double2> uv_map(points.size());
-
-    for (auto i = 0; i < points.size(); ++i)
-    {
-        double2 uv = {};
-        transform_point_to_uv(&uv.x, p, &points[i].x);
-
-        double2 uvmap = {};
-        distort_pixel(&uvmap.x, &intrinsics, &uv.x);
-        uv_map[i] = uvmap;
-        /* double3 p = {};
-         transform_point_to_point(&p.x, extr, &points[i].x);
-
-         double2 pixel = {};
-         project_point_to_pixel(&pixel.x, &intrinsics, &p.x);
-         uv[i] = pixel;*/
-    }
-
-    return uv_map;
 }
