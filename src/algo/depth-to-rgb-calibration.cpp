@@ -138,8 +138,8 @@ namespace
         // first 2 columns
         arr[0] = 0;
         arr[1] = 1;
-        arr[2] = image_height - 1 ;
-        arr[3] = image_height - 2;
+        arr[2] = image_width - 1 ;
+        arr[3] = image_width - 2;
         int columns[4] = { 2, 1, 2, 1 };
         for (auto arr_i = 0; arr_i < 4; arr_i++) {
             for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
@@ -166,14 +166,14 @@ namespace
                         }
                     }
                 }
-                if (((arr_i == 2) || (arr_i == 3))&&(ii>1)) {// NOHA :: TODO :: issue starts here
+                if (((arr_i == 2) || (arr_i == 3))){//&&(ii>1)) {// NOHA :: TODO :: issue starts here
                     ind = 0;
                     for (auto l = 0; l < mask_height; l++)
                     {
                         //ind = l* image_width; 
                         for (auto k = 0; k < mask_width- columns[arr_i]; k++)
                         {
-                            auto p = (ii + l) * image_width + k + arr[arr_i] - columns[arr_i];
+                            auto p = (ii + l) * image_width + k + arr[arr_i] - 2;
                             sub_image[ind++] = (image[p]);
                         }
                         ind += columns[arr_i];
