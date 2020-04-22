@@ -385,15 +385,8 @@ namespace librealsense
         ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
             make_uvc_header_parser(&platform::uvc_header::timestamp));
 
-        // attributes of md_f400_header
+        // uvc header size
         static const int S_METADATA_UVC_PART_SIZE = 12;
-        static const int S_FRAME_COUNTER_SIZE = 4;
-        static const int S_SENSOR_TIMESTAMP_SIZE = 4;
-        static const int S_EXPOSURE_TIME_SIZE = 4;
-        static const int S_GAIN_VALUE_SIZE = 1;
-        static const int S_LED_STATUS_SIZE = 1;
-        static const int S_LASER_STATUS_SIZE = 1;
-        static const int S_PRESET_ID_SIZE = 1;
 
         auto md_prop_offset = S_METADATA_UVC_PART_SIZE;
         //FRAME_COUNTER
@@ -401,37 +394,31 @@ namespace librealsense
             make_attribute_parser(&md_f400_header::frame_counter,
                 md_f400_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
 
-        md_prop_offset += S_FRAME_COUNTER_SIZE;
         //SENSOR_TIMESTAMP
         ir_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
             make_attribute_parser(&md_f400_header::sensor_timestamp,
                 md_f400_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset));
 
-        md_prop_offset += S_SENSOR_TIMESTAMP_SIZE;
         //EXPOSURE
         ir_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
             make_attribute_parser(&md_f400_header::exposure_time,
                 md_f400_capture_timing_attributes::exposure_time_attribute, md_prop_offset));
 
-        md_prop_offset += S_EXPOSURE_TIME_SIZE;
         //GAIN
         ir_sensor.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,
             make_attribute_parser(&md_f400_header::gain_value,
                 md_f400_capture_timing_attributes::gain_value_attribute, md_prop_offset));
 
-        md_prop_offset += S_GAIN_VALUE_SIZE;
         //LED
         ir_sensor.register_metadata(RS2_FRAME_METADATA_LED_POWER_MODE,
             make_attribute_parser(&md_f400_header::led_status,
                 md_f400_capture_timing_attributes::led_status_attribute, md_prop_offset));
 
-        md_prop_offset += S_LED_STATUS_SIZE;
         //LASER
         ir_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE,
             make_attribute_parser(&md_f400_header::laser_status,
                 md_f400_capture_timing_attributes::laser_status_attribute, md_prop_offset));
 
-        md_prop_offset += S_LASER_STATUS_SIZE;
         //PRESET
         ir_sensor.register_metadata(RS2_FRAME_METADATA_PRESET_ID,
             make_attribute_parser(&md_f400_header::preset_id,
