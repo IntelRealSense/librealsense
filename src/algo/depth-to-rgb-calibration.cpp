@@ -153,17 +153,20 @@ namespace
 
         // corners handling
         // 1. image[0] and image[1]
-        int corners_arr[12] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2,
+        int corners_arr[16] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2,
             (image_height - 2) * image_width,(image_height - 2) * image_width,  // left corners - line before the last
+            (image_height - 1) * image_width,(image_height - 1) * image_width,
+            (image_height - 2) * image_width,(image_height - 2) * image_width,  // right corners - line before the last
             (image_height - 1) * image_width,(image_height - 1) * image_width };
-        int corners_arr_col[12] = { 0,0,0,0,0,0,0,0,0,1,0,1 };
-        int left_col[12] = {1,1,1,1,0,0,0,0,1,1,1,1};
-        int right_col[12] = { 0,0,0,0,1,1 ,1,1,0,0,0,0};
-        int up_rows[12] = { 1,1,1,1,1,1,1,1,0,0,0,0};
-        int down_rows[12] = { 0,0,0,0,0,0 ,0,0,1,1,1,1};
-        int corner_columns[12] = { 2,1,2,1,2,1,2,1,2,1,2,1};
-        int corner_rows[12] = { 2, 2,1,1 ,2,2,1,1,1,1,2,2};
-        for (auto corner = 0; corner < 12; corner++) {
+
+        int corners_arr_col[16] = { 0,0,0,0,0,0,0,0,0,1,0,1,image_width-1,image_width-2,image_width - 1,image_width - 2 };
+        int left_col[16] = {1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0};
+        int right_col[16] = { 0,0,0,0,1,1 ,1,1,0,0,0,0,1,1,1,1};
+        int up_rows[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0};
+        int down_rows[16] = { 0,0,0,0,0,0 ,0,0,1,1,1,1,1,1,1,1};
+        int corner_columns[16] = { 2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1};
+        int corner_rows[16] = { 2, 2,1,1 ,2,2,1,1,1,1,2,2,1,1,2,2};
+        for (auto corner = 0; corner < 16; corner++) {
             ind = up_rows[corner] * corner_rows[corner] * mask_width; // starting point in sub-image
             for (auto l = up_rows[corner] * corner_rows[corner]; l < mask_height - down_rows[corner] * corner_rows[corner]; l++)
             {
@@ -174,8 +177,7 @@ namespace
                     auto down_row_i = (l -2 + right_col[corner] * (corner_rows[corner] - 2)) * image_width + corners_arr[corner];
                     auto row_i = down_rows[corner] * down_row_i + up_rows[corner] * up_row_i;
                     auto up_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
-
-                    auto down_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - corner_columns[corner]);
+                    auto down_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr_col[corner] - 2);
                     auto col_i = down_rows[corner] * down_col_i + up_rows[corner] * up_col_i;
                     auto p = row_i + col_i;
                     sub_image[ind++] = (image[p]);
