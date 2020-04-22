@@ -255,10 +255,11 @@ namespace librealsense
 
         enum inter_cam_sync_mode
         {
-            INTERCAM_SYNC_DEFAULT,
-            INTERCAM_SYNC_MASTER,
-            INTERCAM_SYNC_SLAVE,
-            INTERCAM_SYNC_MAX
+            INTERCAM_SYNC_DEFAULT    = 0,
+            INTERCAM_SYNC_MASTER     = 1,
+            INTERCAM_SYNC_SLAVE      = 2,
+            INTERCAM_SYNC_FULL_SLAVE = 3,
+            INTERCAM_SYNC_MAX        = 258 // 4-258 are for Genlock with burst count of 1-255 frames for each trigger
         };
 
         enum class d400_caps : uint16_t
