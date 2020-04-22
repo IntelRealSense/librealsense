@@ -153,19 +153,29 @@ namespace
 
         // corners handling
         // 1. image[0] and image[1]
-        int corners_arr[8] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2*image_width-1, 2*image_width - 2 };  
-        int left_col[8] = {1,1,1,1,0,0,0,0};
-        int right_col[8] = { 0,0,0,0,1,1 ,1,1};
-        int corner_columns[8] = { 2,1,2,1,2,1,2,1 };
-        int corner_rows[8] = { 2, 2,1,1 ,2,2,1,1 };
-        for (auto corner = 0; corner < 8; corner++) {
-            ind = corner_rows[corner] * mask_width; // starting point in sub-image
-            for (auto l = corner_rows[corner]; l < mask_height; l++)
+        int corners_arr[10] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2, 
+            (image_height - 2)*image_width,(image_height - 2)*image_width+1 }; // left corners - line before the last
+        int left_col[10] = {1,1,1,1,0,0,0,0,1,1};
+        int right_col[10] = { 0,0,0,0,1,1 ,1,1,0,0};
+        int up_rows[10] = { 1,1,1,1,1,1,1,1,0,0};
+        int down_rows[10] = { 0,0,0,0,0,0 ,0,0,1,1 };
+        int corner_columns[10] = { 2,1,2,1,2,1,2,1,2,1 };
+        int corner_rows[10] = { 2, 2,1,1 ,2,2,1,1,1,1 };
+        for (auto corner = 0; corner < 10; corner++) {
+            ind = up_rows[corner] * corner_rows[corner] * mask_width; // starting point in sub-image
+            for (auto l = up_rows[corner] * corner_rows[corner]; l < mask_height - down_rows[corner] * corner_rows[corner]; l++)
             {
                 ind += left_col[corner]*corner_columns[corner];
                 for (auto k = left_col[corner] * corner_columns[corner]; k < mask_width- right_col[corner] * corner_columns[corner]; k++)
                 {
-                    auto p = (l - corner_rows[corner] + right_col[corner] * (corner_rows[corner] - 2)) * image_width + k - left_col[corner]*corner_columns[corner] + right_col[corner]*(corners_arr[corner]-2);
+                    auto up_row_i = (l - corner_rows[corner] + right_col[corner] * (corner_rows[corner] - 2)) * image_width;
+                    auto down_row_i = (l -2 + right_col[corner] * (corner_rows[corner] - 2)) * image_width + corners_arr[corner];
+                    auto row_i = down_rows[corner] * down_row_i + up_rows[corner] * up_row_i;
+                    auto col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
+
+                    //auto down_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
+                    //auto col_i = down_rows[corner] * down_col_i + up_rows[corner] * up_col_i;
+                    auto p = row_i + col_i;
                     sub_image[ind++] = (image[p]);
                 }
                 ind += right_col[corner] * corner_columns[corner];
@@ -173,9 +183,11 @@ namespace
             // fill first 2 columns to same values as 3rd column
             // and first 2 rows to same values as 3rd row
             // 1. rows
-            for (auto l = 0; l < corner_rows[corner]; l++)
+            auto l_init = down_rows[corner] * (mask_height - corner_rows[corner]); // pad last rows
+            auto l_limit = up_rows[corner] * corner_rows[corner] + down_rows[corner] * mask_height;
+            for (auto l = l_init; l < l_limit; l++)
             {
-                ind = corner_rows[corner] * mask_width; // start with padding first 2 rows
+                ind = up_rows[corner] * (corner_rows[corner] * mask_width) + down_rows[corner] *(mask_height - corner_rows[corner]-1) * mask_width; // start with padding first 2 rows
                 auto ind2 = l * mask_width;
                 for (auto k = 0; k < mask_width; k++)
                 {
@@ -198,6 +210,7 @@ namespace
             res[mid] = convolution_operation(sub_image);
         }
 
+        // rest of the pixel in the middle
         for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
             for (auto j = 0; j < image_width - mask_width + 1; j++)
