@@ -27,6 +27,7 @@ dl_algo_file( "${F9440687}/2/binFiles/sectionMapRgb_trans_2073600x1_uint8_00.bin
 dl_algo_file( "${F9440687}/2/binFiles/dilatedIm_1080x1920_double_00.bin" "64863b593349bf20ed86f4e5fb910f9ade2b980c" )
 dl_algo_file( "${F9440687}/2/binFiles/logicEdges_1080x1920_uint8_00.bin" "0451e2169c19db009cc314d5943467b792e9d3bf" )
 dl_algo_file( "${F9440687}/2/binFiles/diffIm_01_1080x1920_double_00.bin" "d5538cd34d0c0b6db02db795e718775489708138" )
+dl_algo_file( "${F9440687}/2/binFiles/diffIm_1080x1920_double_00.bin" "c03441dbe3ea96c5ee2d7a0e2a33339556104a3d" )
 dl_algo_file( "${F9440687}/2/binFiles/costDiffPerSection_1x4_double_00.bin" "cc5d0cbb821dcc817d2d9d17e61ac4731e9a8c0c" )
 dl_algo_file( "${F9440687}/2/binFiles/vertices_5089x3_double_00.bin" "52c7f5d8844a1e102fd77509812b6cbfdd2dc94a" )
 
