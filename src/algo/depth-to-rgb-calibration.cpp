@@ -154,7 +154,8 @@ namespace
         // corners handling
         // 1. image[0] and image[1]
         int corners_arr[10] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2, 
-            (image_height - 2)*image_width,(image_height - 2)*image_width+1 }; // left corners - line before the last
+            (image_height - 2)*image_width,(image_height - 2)*image_width }; // left corners - line before the last
+        int corners_arr_col[10] = { 0,0,0,0,0,0,0,0,0,1 };
         int left_col[10] = {1,1,1,1,0,0,0,0,1,1};
         int right_col[10] = { 0,0,0,0,1,1 ,1,1,0,0};
         int up_rows[10] = { 1,1,1,1,1,1,1,1,0,0};
@@ -171,10 +172,10 @@ namespace
                     auto up_row_i = (l - corner_rows[corner] + right_col[corner] * (corner_rows[corner] - 2)) * image_width;
                     auto down_row_i = (l -2 + right_col[corner] * (corner_rows[corner] - 2)) * image_width + corners_arr[corner];
                     auto row_i = down_rows[corner] * down_row_i + up_rows[corner] * up_row_i;
-                    auto col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
+                    auto up_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
 
-                    //auto down_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - 2);
-                    //auto col_i = down_rows[corner] * down_col_i + up_rows[corner] * up_col_i;
+                    auto down_col_i = k - left_col[corner] * corner_columns[corner] + right_col[corner] * (corners_arr[corner] - corner_columns[corner]);
+                    auto col_i = down_rows[corner] * down_col_i + up_rows[corner] * up_col_i;
                     auto p = row_i + col_i;
                     sub_image[ind++] = (image[p]);
                 }
@@ -206,7 +207,7 @@ namespace
 
                 }
             }
-            auto mid = corners_arr[corner];
+            auto mid = corners_arr[corner]+ corners_arr_col[corner];
             res[mid] = convolution_operation(sub_image);
         }
 
