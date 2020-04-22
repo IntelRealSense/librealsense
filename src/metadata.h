@@ -324,16 +324,16 @@ namespace librealsense
     struct md_f400_header
     {
         md_header header;
-        uint16_t version;
-        uint16_t flags;	           // Bit array to specify attributes that are valid.
+        uint32_t version;
+        uint32_t flags;	           // Bit array to specify attributes that are valid.
         uint32_t frame_counter;    // Always present 
         uint32_t sensor_timestamp; // In microsecond unit. Always present 
-        uint32_t exposure_time;    // The exposure time in microsecond unit 
-        uint8_t gain_value;        // Sensor's gain (UVC standard) 
+        uint16_t exposure_time;    // The exposure time in microsecond unit 
+        uint16_t gain_value;       // Sensor's gain (UVC standard) 
         uint8_t led_status;        // LED On/Off 
         uint8_t laser_status;      // Projector On/Off
         uint8_t preset_id;         // FA selected preset type (enumerated) 
-        uint8_t reserved[40];      // 40 bytes reserved for future modifications. The total metadata size is UVC Header (12 bytes) + this struct (64 bytes) = 76 bytes 
+        uint8_t reserved[52];      // 40 bytes reserved for future modifications. The total metadata size is UVC Header (12 bytes) + this struct (64 bytes) = 76 bytes 
     };
 
     REGISTER_MD_TYPE(md_f400_header, md_type::META_DATA_F400_ID)
