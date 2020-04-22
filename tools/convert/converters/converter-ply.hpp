@@ -27,31 +27,39 @@ namespace rs2 {
                     return "PLY converter";
                 }
 
-                void convert(rs2::frameset& frameset) override
+                void convert(rs2::frame& frame) override
                 {
                     rs2::pointcloud pc;
                     start_worker(
-                        [this, &frameset, pc]() mutable {
-                            auto frameDepth = frameset.get_depth_frame();
-                            auto frameColor = frameset.get_color_frame();
+                        [this, &frame, pc]() mutable {
+                        auto frameset = frame.as<rs2::frameset>();
+                        auto frameDepth = frameset.get_depth_frame();
+                        auto frameColor = frameset.get_color_frame();
 
-                            if (frameDepth && frameColor) {
-                                if (frames_map_get_and_set(rs2_stream::RS2_STREAM_ANY, frameDepth.get_frame_number())) {
-                                    return;
-                                }
-
-                                pc.map_to(frameColor);
-
-                                auto points = pc.calculate(frameDepth);
-
-                                std::stringstream filename;
-                                filename << _filePath
-                                    << "_" << frameDepth.get_frame_number()
-                                    << ".ply";
-
-                                points.export_to_ply(filename.str(), frameColor);
+                        if (frameDepth && frameColor) {
+                            if (frames_map_get_and_set(rs2_stream::RS2_STREAM_ANY, frameDepth.get_frame_number())) {
+                                return;
                             }
-                        });
+
+                            pc.map_to(frameColor);
+
+                            auto points = pc.calculate(frameDepth);
+
+                            std::stringstream filename;
+                            filename << _filePath
+                                << "_" << std::setprecision(14) << std::fixed << frameDepth.get_timestamp()
+                                << ".ply";
+
+                            points.export_to_ply(filename.str(), frameColor);
+
+                            std::stringstream metadata_file;
+                            metadata_file << _filePath
+                                << "_" << std::setprecision(14) << std::fixed << frameDepth.get_timestamp()
+                                << "_metadata.txt";
+
+                            metadata_to_txtfile(frameDepth, metadata_file.str());
+                        }
+                    });
                 }
             };
 
