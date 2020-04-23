@@ -1165,7 +1165,7 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
     */
     auto max_val = max_element(weights_per_dir.begin(), weights_per_dir.end());
     auto max_ix = distance(weights_per_dir.begin(), max_val);
-    auto ix_match = (max_ix + 1) % 3; // NOHA :: TODO :: check value
+    auto ix_match = (max_ix + 1) % 3; 
    /* if (ix_match == 0) {
         ix_match = 3;
     }*/
@@ -1439,9 +1439,6 @@ end*/
 
 bool optimizer::is_scene_valid()
 {
-    //return true;
-
-
     std::vector< byte > section_map_depth( _z.width * _z.height );
     std::vector< byte > section_map_rgb( _yuy.width * _yuy.height );
 
@@ -1462,9 +1459,6 @@ bool optimizer::is_scene_valid()
         {
             _z.section_map.push_back(section_map_depth[i]);
         }
-        // NOHA :: TODO :: 
-        // 1. throw exception when section map depth is wrong
-        // 2. allocate section vector using reserve() - size = z_data.weights (keep push_back)
     }
     AC_LOG(DEBUG, "... " << _z.section_map.size() << " not suppressed");
 
