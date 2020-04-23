@@ -434,7 +434,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 {
     optimaization_params params_orig;
     params_orig.curr_calib = _original_calibration;
-    params_orig.curr_calib.p_mat = calc_p_mat(params_orig.curr_calib);
+    params_orig.curr_calib.calc_p_mat();
 
     auto const original_cost_and_grad = calc_cost_and_grad(_z, _yuy, params_orig.curr_calib);
 
@@ -443,7 +443,7 @@ size_t optimizer::optimize( std::function< void( iteration_data_collect const & 
 
     _params_curr = params_orig;
     _params_curr.curr_calib.rot_angles = extract_angles_from_rotation(_params_curr.curr_calib.rot.rot);
-    _params_curr.curr_calib.p_mat = calc_p_mat(_params_curr.curr_calib);
+    _params_curr.curr_calib.calc_p_mat();
 
     size_t n_iterations = 0;
 
@@ -745,7 +745,7 @@ void optimizer::set_yuy_data(
 )
 {
     _original_calibration = calibration;
-    _original_calibration.p_mat = calc_p_mat( _original_calibration );
+    _original_calibration.calc_p_mat();
     _yuy.width = calibration.width;
     _yuy.height = calibration.height;
     _params.set_rgb_resolution( _yuy.width, _yuy.height );
@@ -1088,26 +1088,23 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
 
     // depth frame
     AC_LOG( DEBUG, "... checking Z edge distribution" );
-    
-
-
     sum_per_section(z.sum_weights_per_section, z.section_map, z.weights, num_of_sections);
     //for debug 
     auto it = z.sum_weights_per_section.begin();
-    AC_LOG(DEBUG, "... sum_per_section(z), section #0  " << *(it));
-    AC_LOG(DEBUG, "... sum_per_section(z), section #1  " << *(it + 2));
-    AC_LOG(DEBUG, "... sum_per_section(z), section #2  " << *(it + 1));
-    AC_LOG(DEBUG, "... sum_per_section(z), section #3  " << *(it + 3));
+    AC_LOG(DEBUG, "    sum_per_section(z), section #0  " << *(it));
+    AC_LOG(DEBUG, "    sum_per_section(z), section #1  " << *(it + 2));
+    AC_LOG(DEBUG, "    sum_per_section(z), section #2  " << *(it + 1));
+    AC_LOG(DEBUG, "    sum_per_section(z), section #3  " << *(it + 3));
     check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
     // yuy frame
     AC_LOG( DEBUG, "... checking YUY edge distribution" );
     sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
     //for debug 
     it = yuy.sum_weights_per_section.begin();
-    AC_LOG(DEBUG, "... sum_per_section(yuy), section #0  " << *(it));
-    AC_LOG(DEBUG, "... sum_per_section(yuy), section #1  " << *(it + 2));
-    AC_LOG(DEBUG, "... sum_per_section(yuy), section #2  " << *(it + 1));
-    AC_LOG(DEBUG, "... sum_per_section(yuy), section #3  " << *(it + 3));
+    AC_LOG(DEBUG, "    sum_per_section(yuy), section #0  " << *(it));
+    AC_LOG(DEBUG, "    sum_per_section(yuy), section #1  " << *(it + 2));
+    AC_LOG(DEBUG, "    sum_per_section(yuy), section #2  " << *(it + 1));
+    AC_LOG(DEBUG, "    sum_per_section(yuy), section #3  " << *(it + 3));
     check_edge_distribution(yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed);
 
     return (z.is_edge_distributed && yuy.is_edge_distributed);
@@ -1559,7 +1556,7 @@ rs2_extrinsics_double calib::get_extrinsics() const
     };
 }
 
-p_matrix librealsense::algo::depth_to_rgb_calibration::calib::get_p_matrix() const
+p_matrix const & calib::get_p_matrix() const
 {
     return p_mat;
 }
@@ -1676,7 +1673,7 @@ optimaization_params optimizer::back_tracking_line_search(const z_frame_data & z
     auto movement = unit_grad * step_size;
     new_params.curr_calib = curr_params.curr_calib + movement;
     new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
-    new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
+    new_params.curr_calib.calc_p_mat();
 
     auto uvmap = get_texture_map(z_data.vertices, curr_params.curr_calib);
     curr_params.cost = calc_cost(z_data, yuy_data, uvmap);
@@ -1692,7 +1689,7 @@ optimaization_params optimizer::back_tracking_line_search(const z_frame_data & z
 
         new_params.curr_calib = curr_params.curr_calib + unit_grad * step_size;
         new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
-        new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
+        new_params.curr_calib.calc_p_mat();
 
         uvmap = get_texture_map(z_data.vertices, new_params.curr_calib);
         new_params.cost = calc_cost(z_data, yuy_data, uvmap);
@@ -1705,22 +1702,23 @@ optimaization_params optimizer::back_tracking_line_search(const z_frame_data & z
         new_params = orig;
     }
 
-    new_params.curr_calib.p_mat = calc_p_mat(new_params.curr_calib);
+    new_params.curr_calib.calc_p_mat();
     new_params.curr_calib.rot = extract_rotation_from_angles(new_params.curr_calib.rot_angles);
     return new_params;
 }
 
-p_matrix librealsense::algo::depth_to_rgb_calibration::optimizer::calc_p_mat(calib c)
+p_matrix const & calib::calc_p_mat()
 {
-    auto r = c.rot.rot;
-    auto t = c.trans;
-    auto fx = c.k_mat.fx;
-    auto fy = c.k_mat.fy;
-    auto ppx = c.k_mat.ppx;
-    auto ppy = c.k_mat.ppy;
-    return { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
-             fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
-             r[2]                 , r[5]                 , r[8]                 , t.t3 };
+    auto r = rot.rot;
+    auto t = trans;
+    auto fx = k_mat.fx;
+    auto fy = k_mat.fy;
+    auto ppx = k_mat.ppx;
+    auto ppy = k_mat.ppy;
+    p_mat = { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
+              fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
+              r[2]                 , r[5]                 , r[8]                 , t.t3 };
+    return p_mat;
 }
 
 double optimizer::calc_step_size(optimaization_params opt_params)
@@ -2924,7 +2922,7 @@ void optimizer::clip_pixel_movement( size_t iteration_number )
 
         //%     newParams.Rrgb = OnlineCalibration.aux.calcRmatRromAngs( newParams.xAlpha, newParams.yBeta, newParams.zGamma );
         new_calib.rot = extract_rotation_from_angles( new_calib.rot_angles );
-        new_calib.p_mat = calc_p_mat( new_calib );
+        new_calib.calc_p_mat();
         //%     newParams.rgbPmat = newParams.Krgb*[newParams.Rrgb, newParams.Trgb];
         // -> we don't use rgbPmat
     }
@@ -3040,12 +3038,88 @@ void write_to_file( void const * data, size_t cb,
 }
 
 template< typename T >
+void write_obj( std::fstream & f, T const & o )
+{
+    f.write( (char const *)&o, sizeof( o ) );
+}
+
+template< typename T >
 void write_vector_to_file( std::vector< T > const & v,
     std::string const & dir,
     char const * filename
 )
 {
     write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
+}
+
+void write_matlab_camera_params_file(
+    rs2_intrinsics const & _intr_depth,
+    calib const & rgb_calibration,
+    float _depth_units,
+    std::string const & dir,
+    char const * filename
+)
+{
+    std::string path = dir + '\\' + filename;
+    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    if( !f )
+        throw std::runtime_error( "failed to open file:\n" + path );
+
+
+    //depth intrinsics
+    write_obj( f, _intr_depth.width );
+    write_obj( f, _intr_depth.height );
+    write_obj( f, _depth_units );
+
+    double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
+                        0, _intr_depth.fy, _intr_depth.ppy,
+                        0, 0, 1 };
+    for( auto i = 0; i < 9; i++ )
+    {
+        write_obj( f, k_depth[i] );
+    }
+
+    //color intrinsics
+    rs2_intrinsics _intr_rgb = rgb_calibration.get_intrinsics();
+    
+    write_obj( f, _intr_rgb.width );
+    write_obj( f, _intr_rgb.height );
+
+    double k_rgb[9] = { _intr_rgb.fx, 0, _intr_rgb.ppx,
+                        0, _intr_rgb.fy, _intr_rgb.ppy,
+                        0, 0, 1 };
+
+
+    for( auto i = 0; i < 9; i++ )
+    {
+        write_obj( f, k_rgb[i] );
+    }
+
+    for( auto i = 0; i < 5; i++ )
+    {
+        write_obj( f, (double)_intr_rgb.coeffs[i] );
+    }
+
+    //extrinsics
+    rs2_extrinsics _extr = rgb_calibration.get_extrinsics();
+    for( auto i = 0; i < 9; i++ )
+    {
+        write_obj( f, (double)_extr.rotation[i] );
+    }
+    //extrinsics
+    for( auto i = 0; i < 3; i++ )
+    {
+        write_obj( f, (double)_extr.translation[i] );
+    }
+
+    auto p_mat = rgb_calibration.get_p_matrix();
+
+    for( auto i = 0; i < 12; i++ )
+    {
+        write_obj( f, p_mat.vals[i] );
+    }
+
+    f.close();
 }
 
 void optimizer::write_data_to( std::string const & dir )
@@ -3062,6 +3136,14 @@ void optimizer::write_data_to( std::string const & dir )
         write_to_file( &_original_calibration, sizeof( _original_calibration ), dir, "rgb.calib" );
         write_to_file( &_z.intrinsics, sizeof( _z.intrinsics ), dir, "depth.intrinsics" );
         write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
+
+        // This file is meant for matlab -- it packages all the information needed
+        write_matlab_camera_params_file(
+            _z.intrinsics,
+            _original_calibration,
+            _z.depth_units,
+            dir, "camera_params.matlab"
+        );
     }
     catch( std::exception const & err )
     {

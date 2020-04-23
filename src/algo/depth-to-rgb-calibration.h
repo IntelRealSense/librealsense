@@ -222,7 +222,9 @@ namespace depth_to_rgb_calibration {
 
         rs2_intrinsics_double get_intrinsics() const;
         rs2_extrinsics_double get_extrinsics() const;
-        p_matrix get_p_matrix() const;
+        p_matrix const & get_p_matrix() const;
+
+        p_matrix const & calc_p_mat();
 
         void copy_coefs(calib & obj) const;
         calib operator*(double step_size) const;
@@ -333,7 +335,6 @@ namespace depth_to_rgb_calibration {
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
-        p_matrix calc_p_mat(calib c);
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }

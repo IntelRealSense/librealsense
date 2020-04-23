@@ -21,15 +21,13 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     rs2::frame yuy,
     rs2::frame prev_yuy
 )
-    : _intr_rgb( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
-    , _intr_depth(depth.get_profile().as< rs2::video_stream_profile >().get_intrinsics())
+    : _intr( yuy.get_profile().as< rs2::video_stream_profile >().get_intrinsics() )
     , _extr( depth.get_profile().get_extrinsics_to( yuy.get_profile()))
     , _depth_units(depth.as< rs2::depth_frame >().get_units())
     , _from( depth.get_profile().get()->profile )
     , _to( yuy.get_profile().get()->profile )
 {
     debug_calibration( "old" );
-    serialize_camera_params();
 
     AC_LOG( DEBUG, "... setting yuy data" );
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
@@ -76,7 +74,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         if( !_algo.is_scene_valid() )
         {
             AC_LOG( ERROR, "Calibration scene was found invalid!" );
-            //return RS2_CALIBRATION_SCENE_INVALID;
+            return RS2_CALIBRATION_SCENE_INVALID;
         }
 
         AC_LOG( DEBUG, "... optimizing" );
@@ -89,11 +87,11 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 
         AC_LOG( DEBUG, "... checking result validity" );
         if( !_algo.is_valid_results() )
-            ; // return RS2_CALIBRATION_BAD_RESULT;
+            return RS2_CALIBRATION_BAD_RESULT;
 
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 
-        _intr_rgb = _algo.get_calibration().get_intrinsics();
+        _intr = _algo.get_calibration().get_intrinsics();
         _extr = _algo.get_calibration().get_extrinsics();
         debug_calibration( "new" );
 
@@ -110,15 +108,15 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 void depth_to_rgb_calibration::debug_calibration( char const * prefix )
 {
     AC_LOG( DEBUG, prefix << " intr"
-        << ": width: " << _intr_rgb.width
-        << ", height: " << _intr_rgb.height
-        << ", ppx: " << _intr_rgb.ppx
-        << ", ppy: " << _intr_rgb.ppy
-        << ", fx: " << _intr_rgb.fx
-        << ", fy: " << _intr_rgb.fy
-        << ", model: " << int(_intr_rgb.model)
+        << ": width: " << _intr.width
+        << ", height: " << _intr.height
+        << ", ppx: " << _intr.ppx
+        << ", ppy: " << _intr.ppy
+        << ", fx: " << _intr.fx
+        << ", fy: " << _intr.fy
+        << ", model: " << int( _intr.model)
         << ", coeffs: ["
-        << _intr_rgb.coeffs[0] << ", " << _intr_rgb.coeffs[1] << ", " << _intr_rgb.coeffs[2] << ", " << _intr_rgb.coeffs[3] << ", " << _intr_rgb.coeffs[4]
+        << _intr.coeffs[0] << ", " << _intr.coeffs[1] << ", " << _intr.coeffs[2] << ", " << _intr.coeffs[3] << ", " << _intr.coeffs[4]
         << "]" );
     AC_LOG( DEBUG, prefix << " extr:"
         << " rotation: ["
@@ -129,61 +127,3 @@ void depth_to_rgb_calibration::debug_calibration( char const * prefix )
         << "]" );
 }
 
-
-std::vector<byte> librealsense::depth_to_rgb_calibration::serialize_camera_params()
-{
-    std::vector<byte> res;
-
-    //depth intrinsics
-    serialize(res, _intr_depth.width);
-    serialize(res, _intr_depth.height);
-    serialize(res, _depth_units);
-
-    double k_depth[9] = { _intr_depth.fx, 0, _intr_depth.ppx,
-                        0, _intr_depth.fy, _intr_depth.ppy,
-                        0, 0, 1 };
-
-
-    for (auto i = 0; i < 9; i++)
-    {
-        serialize(res, k_depth[i]);
-    }
-
-    //color intrinsics
-    serialize(res, _intr_rgb.width);
-    serialize(res, _intr_rgb.height);
-   
-    double k_rgb[9] = { _intr_rgb.fx, 0, _intr_rgb.ppx,
-                        0, _intr_rgb.fy, _intr_rgb.ppy,
-                        0, 0, 1 };
-
-
-    for (auto i = 0; i < 9; i++)
-    {
-        serialize(res, k_rgb[i]);
-    }
-
-    for (auto i = 0; i < 5; i++)
-    {
-        serialize(res, (double)_intr_rgb.coeffs[i]);
-    }
-
-    //extrinsics
-    for (auto i = 0; i < 9; i++)
-    {
-        serialize(res, (double)_extr.rotation[i]);
-    }
-    //extrinsics
-    for (auto i = 0; i < 3; i++)
-    {
-        serialize(res, (double)_extr.translation[i]);
-    }
-
-    auto p_mat = _algo.calc_p_mat(impl::calib{ _intr_rgb , _extr });
-
-    for (auto i = 0; i < 12; i++)
-    {
-        serialize(res, p_mat.vals[i]);
-    }
-    return res;
-}

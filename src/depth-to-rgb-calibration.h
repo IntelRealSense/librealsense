@@ -22,8 +22,7 @@ namespace librealsense
 
         // input/output
         rs2_extrinsics _extr;
-        rs2_intrinsics _intr_rgb;
-        rs2_intrinsics _intr_depth;
+        rs2_intrinsics _intr;
         float          _depth_units;
 
         algo::depth_to_rgb_calibration::optimizer _algo;
@@ -37,7 +36,7 @@ namespace librealsense
         );
 
         rs2_extrinsics const & get_extrinsics() const { return _extr; }
-        rs2_intrinsics const & get_intrinsics() const { return _intr_rgb; }
+        rs2_intrinsics const & get_intrinsics() const { return _intr; }
         stream_profile_interface * get_from_profile() const { return _from; }
         stream_profile_interface * get_to_profile() const { return _to; }
 
@@ -47,13 +46,5 @@ namespace librealsense
         void debug_calibration( char const * prefix );
         std::vector<byte> serialize_camera_params();
     };
-
-    template<typename T>
-    void serialize(std::vector<byte>& res, T obj)
-    {
-        std::vector<byte> bytes(sizeof(T));
-        std::copy((byte*)(&obj), (byte*)(&obj) + sizeof(T), bytes.begin());
-        res.insert(res.end(), bytes.begin(), bytes.end());
-    }
 }  // librealsense
 
