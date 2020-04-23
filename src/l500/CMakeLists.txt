@@ -22,6 +22,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l500-options.h"
 )
 
-if (ENABLE_DEPTH_INVALIDATION)
-    add_definitions(-DDEPTH_INVALIDATION_ENABLED)
+if (ENABLE_L500_DEPTH_INVALIDATION)
+    add_definitions(-DENABLE_L500_DEPTH_INVALIDATION)
 endif()

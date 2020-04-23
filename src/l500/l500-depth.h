@@ -89,7 +89,7 @@ namespace librealsense
         explicit l500_depth_sensor(l500_device* owner, std::shared_ptr<uvc_sensor> uvc_sensor, std::map<uint32_t,rs2_format> l500_depth_fourcc_to_rs2_format_map, std::map<uint32_t, rs2_stream> l500_depth_fourcc_to_rs2_stream_map)
             : synthetic_sensor("L500 Depth Sensor", uvc_sensor, owner, l500_depth_fourcc_to_rs2_format_map, l500_depth_fourcc_to_rs2_stream_map), _owner(owner)
         {
-#ifdef DEPTH_INVALIDATION_ENABLED
+#ifdef ENABLE_L500_DEPTH_INVALIDATION
           _depth_invalidation_enabled = true;
 #else
           _depth_invalidation_enabled = false;
@@ -117,7 +117,7 @@ namespace librealsense
                         << "Unsupported depth invalidation enabled " << val << " is out of range.");
             });
 
-            // The depth invalidation enable option is depricated for now.
+            // The depth invalidation enable option is deprecated for now.
             //register_option(static_cast<rs2_option>(RS2_OPTION_DEPTH_INVALIDATION_ENABLE), _depth_invalidation_option);
         }
 
