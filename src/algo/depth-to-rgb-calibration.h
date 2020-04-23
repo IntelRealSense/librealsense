@@ -327,6 +327,7 @@ namespace depth_to_rgb_calibration {
         double get_cost() const;
         double calc_correction_in_pixels( calib const & from_calibration ) const;
         double calc_correction_in_pixels() const { return calc_correction_in_pixels( _original_calibration ); }
+        p_matrix calc_p_mat(calib c);
 
         // for debugging/unit-testing
         z_frame_data    const & get_z_data() const   { return _z; }
@@ -345,7 +346,7 @@ namespace depth_to_rgb_calibration {
         bool is_movement_in_images(yuy2_frame_data & yuy );
         std::vector<double> calculate_weights( z_frame_data& z_data );
         std::vector <double3> subedges2vertices(z_frame_data& z_data, const rs2_intrinsics_double& intrin, double depth_units);
-        p_matrix calc_p_mat(calib c);
+        
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
