@@ -92,7 +92,6 @@ namespace depth_to_rgb_calibration {
         std::vector<double> edges_IDT;
         std::vector<double> edges_IDTx;
         std::vector<double> edges_IDTy;
-        //std::vector<double> edge_sobel_XY;
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
@@ -278,9 +277,9 @@ namespace depth_to_rgb_calibration {
         double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
-        double dilation_size = 3;
+        size_t dilation_size = 3;
         double gauss_sigma = 1;
-        double gause_kernel_size = 5;
+        size_t gause_kernel_size = 5;
         double move_thresh_pix_val = 20;
         double move_threshold_pix_num = 62.2080;
 

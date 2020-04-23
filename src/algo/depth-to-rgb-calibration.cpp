@@ -51,15 +51,15 @@ namespace
 
         for (auto i = 0; i < image_height - mask_height + 1; i++)
         {
-            for (auto j = 0; j < image_width - mask_width + 1; j++)
+            for (size_t j = 0; j < image_width - mask_width + 1; j++)
             {
                 std::vector<T> sub_image(mask_width * mask_height, 0);
                 auto ind = 0;
-                for (auto l = 0; l < mask_height; l++)
+                for (size_t l = 0; l < mask_height; l++)
                 {
-                    for (auto k = 0; k < mask_width; k++)
+                    for (size_t k = 0; k < mask_width; k++)
                     {
-                        auto p = (i + l) * image_width + j + k;
+                        size_t p = (i + l) * image_width + j + k;
                         sub_image[ind++] = (image[p]);
                     }
 
@@ -81,11 +81,11 @@ namespace
     {
         std::vector<double> res(image.size(), 0);
         std::vector<T> sub_image(mask_width * mask_height, 0);
-        auto ind = 0;
-        int row_bound[4] = { 0, 1, image_height - 1,image_height - 2 };
-        int lines[4] = { 2, 1, 2 , 1 };
-        int first_rows[4] = { 1,1,0,0 };
-        int last_rows[4] = { 0,0,1,1 };
+        size_t ind = 0;
+        size_t row_bound[4] = { 0, 1, image_height - 1,image_height - 2 };
+        size_t lines[4] = { 2, 1, 2 , 1 };
+        size_t first_rows[4] = { 1,1,0,0 };
+        size_t last_rows[4] = { 0,0,1,1 };
         // poundaries handling 
         // Extend - The nearest border pixels are conceptually extended as far as necessary to provide values for the convolution.
         // Corner pixels are extended in 90° wedges.Other edge pixels are extended in lines.
@@ -116,12 +116,12 @@ namespace
         }
         // first 2 columns
 
-        int column_boundaries[4] = { 0,1, image_width - 1 ,image_width - 2 };
-        int columns[4] = { 2, 1, 2, 1 };
-        int left_column[4] = { 1,1,0,0 };
-        int right_column[4] = { 0,0,1,1 };
+        size_t column_boundaries[4] = { 0,1, image_width - 1 ,image_width - 2 };
+        size_t columns[4] = { 2, 1, 2, 1 };
+        size_t left_column[4] = { 1,1,0,0 };
+        size_t right_column[4] = { 0,0,1,1 };
         for (auto col = 0; col < 4; col++) {
-            for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
+            for (size_t ii = 0; ii < image_height - mask_height + 1; ii++)
             {
                 ind = 0; // skip first 2 columns for padding - start from 3rd column
                 for (auto l = 0; l < mask_height; l++)
@@ -129,7 +129,7 @@ namespace
                     ind += left_column[col] * columns[col];
                     for (auto k = left_column[col] * columns[col]; k < mask_width - right_column[col] * columns[col]; k++)
                     {
-                        auto p = (ii + l) * image_width + k - left_column[col] * columns[col] + right_column[col] * (column_boundaries[col] - 2);
+                        size_t p = (ii + l) * image_width + k - left_column[col] * columns[col] + right_column[col] * (column_boundaries[col] - 2);
                         sub_image[ind++] = (image[p]);
                     }
                     ind += right_column[col] * columns[col];
@@ -152,19 +152,19 @@ namespace
 
         // corners handling
         // 1. image[0] and image[1]
-        int corners_arr[16] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2,
+        size_t corners_arr[16] = { 0,1,image_width, image_width + 1,  image_width - 1, image_width - 2, 2 * image_width - 1, 2 * image_width - 2,
             (image_height - 2) * image_width,(image_height - 2) * image_width,  // left corners - line before the last
             (image_height - 1) * image_width,(image_height - 1) * image_width,
             (image_height - 2) * image_width,(image_height - 2) * image_width,  // right corners - line before the last
             (image_height - 1) * image_width,(image_height - 1) * image_width };
 
-        int corners_arr_col[16] = { 0,0,0,0,0,0,0,0,0,1,0,1,image_width - 1,image_width - 2,image_width - 1,image_width - 2 };
-        int left_col[16] = { 1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0 };
-        int right_col[16] = { 0,0,0,0,1,1 ,1,1,0,0,0,0,1,1,1,1 };
-        int up_rows[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0 };
-        int down_rows[16] = { 0,0,0,0,0,0 ,0,0,1,1,1,1,1,1,1,1 };
-        int corner_columns[16] = { 2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1 };
-        int corner_rows[16] = { 2, 2,1,1 ,2,2,1,1,1,1,2,2,1,1,2,2 };
+        size_t corners_arr_col[16] = { 0,0,0,0,0,0,0,0,0,1,0,1,image_width - 1,image_width - 2,image_width - 1,image_width - 2 };
+        size_t left_col[16] = { 1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0 };
+        size_t right_col[16] = { 0,0,0,0,1,1 ,1,1,0,0,0,0,1,1,1,1 };
+        size_t up_rows[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0 };
+        size_t down_rows[16] = { 0,0,0,0,0,0 ,0,0,1,1,1,1,1,1,1,1 };
+        size_t corner_columns[16] = { 2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1 };
+        size_t corner_rows[16] = { 2, 2,1,1 ,2,2,1,1,1,1,2,2,1,1,2,2 };
         for (auto corner = 0; corner < 16; corner++) {
             ind = up_rows[corner] * corner_rows[corner] * mask_width; // starting point in sub-image
             for (auto l = up_rows[corner] * corner_rows[corner]; l < mask_height - down_rows[corner] * corner_rows[corner]; l++)
@@ -214,16 +214,16 @@ namespace
         }
 
         // rest of the pixel in the middle
-        for (auto i = 0; i < image_height - mask_height + 1; i++)
+        for (size_t i = 0; i < image_height - mask_height + 1; i++)
         {
-            for (auto j = 0; j < image_width - mask_width + 1; j++)
+            for (size_t j = 0; j < image_width - mask_width + 1; j++)
             {
                 ind = 0;
-                for (auto l = 0; l < mask_height; l++)
+                for (size_t l = 0; l < mask_height; l++)
                 {
-                    for (auto k = 0; k < mask_width; k++)
+                    for (size_t k = 0; k < mask_width; k++)
                     {
-                        auto p = (i + l) * image_width + j + k;
+                        size_t p = (i + l) * image_width + j + k;
                         sub_image[ind++] = (image[p]);
                     }
 
@@ -239,13 +239,13 @@ namespace
     std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
-        std::function< double(std::vector<T> const& sub_image) > convolution_operation
+        std::function< uint8_t(std::vector<T> const& sub_image) > convolution_operation
         )
     {
         std::vector<uint8_t> res(image.size(), 0);
         std::vector<T> sub_image(mask_width * mask_height, 0);
         auto ind = 0;
-        int arr[2] = { 0, image_height - 1 };
+        size_t arr[2] = { 0, image_height - 1 };
 
         for (auto arr_i = 0; arr_i < 2; arr_i++) {
             for (auto jj = 0; jj < image_width - mask_width + 1; jj++)
@@ -255,7 +255,7 @@ namespace
                 {
                     for (auto k = 0; k < mask_width; k++)
                     {
-                        auto p = (l + arr[arr_i]) * image_width + jj + k;
+                        size_t p = (l + arr[arr_i]) * image_width + jj + k;
                         if (arr_i != 0)
                         {
                             p = p - 2*image_width;
@@ -269,22 +269,22 @@ namespace
                         ind++;
                     }
                 }
-                auto mid = jj + mask_width / 2 + arr[arr_i] * image_width;
+                size_t mid = jj + mask_width / 2 + arr[arr_i] * image_width;
                 res[mid] = convolution_operation(sub_image);
             }
         }
 
     arr[0] = 0;
     arr[1] = image_width - 1;
-    for (auto arr_i = 0; arr_i < 2; arr_i++) {
-        for (auto ii = 0; ii < image_height - mask_height + 1; ii++)
+    for (size_t arr_i = 0; arr_i < 2; arr_i++) {
+        for (size_t ii = 0; ii < image_height - mask_height + 1; ii++)
         {
             ind = 0;
-            for (auto l = 0; l < mask_height; l++)
+            for (size_t l = 0; l < mask_height; l++)
             {
-                for (auto k = 0; k < mask_width; k++)
+                for (size_t k = 0; k < mask_width; k++)
                 {
-                    auto p = (ii + l) * image_width + k+ arr[arr_i];
+                    size_t p = (ii + l) * image_width + k+ arr[arr_i];
                     if (arr_i !=0)
                     {
                         p = p - 2;
@@ -302,21 +302,21 @@ namespace
             }
         }
     }
-    for (auto i = 0; i < image_height - mask_height + 1; i++)
+    for (size_t i = 0; i < image_height - mask_height + 1; i++)
     {
-        for (auto j = 0; j < image_width - mask_width + 1; j++)
+        for (size_t j = 0; j < image_width - mask_width + 1; j++)
         {
             ind = 0;
-            for (auto l = 0; l < mask_height; l++)
+            for (size_t l = 0; l < mask_height; l++)
             {
-                for (auto k = 0; k < mask_width; k++)
+                for (size_t k = 0; k < mask_width; k++)
                 {
-                    auto p = (i + l) * image_width + j + k;
+                    size_t p = (i + l) * image_width + j + k;
                     sub_image[ind++] = (image[p]);
                 }
 
             }
-            auto mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
+            size_t mid = (i + mask_height / 2) * image_width + j + mask_width / 2;
             res[mid] = convolution_operation(sub_image);
         }
     }
@@ -1327,7 +1327,7 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 }
 void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
-    int area = yuy.height * yuy.width;
+    auto area = yuy.height * yuy.width;
     std::vector<uint8_t> dilation_mask = { 1, 1, 1,
                                               1,  1,  1,
                                               1,  1,  1 };
@@ -1351,7 +1351,7 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
 
 void optimizer::gaussian_filter(yuy2_frame_data& yuy)
 {
-    int area = yuy.height * yuy.width;
+    auto area = yuy.height * yuy.width;
 
     /* diffIm = abs(im1-im2);
 diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
