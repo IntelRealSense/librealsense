@@ -1040,9 +1040,7 @@ end*/
 void optimizer::check_edge_distribution(
     std::vector<double>& sum_weights_per_section,
     double& min_max_ratio,
-    bool& is_edge_distributed,
-    double distribution_min_max_ratio,
-    double min_weighted_edge_per_section_depth
+    bool& is_edge_distributed
 )
 {
     /*minMaxRatio = min(sumWeightsPerSection)/max(sumWeightsPerSection);
@@ -1054,10 +1052,10 @@ void optimizer::check_edge_distribution(
     double z_max = *std::max_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     double z_min = *std::min_element( sum_weights_per_section.begin(), sum_weights_per_section.end() );
     min_max_ratio = z_min / z_max;
-    if( min_max_ratio < distribution_min_max_ratio )
+    if( min_max_ratio < _params.edge_distribution_min_max_ratio)
     {
         is_edge_distributed = false;
-        AC_LOG( ERROR, "Edge distribution ratio ({min}" << z_min << "/" << z_max << "{max} = " << min_max_ratio << ") is too small; threshold= " << distribution_min_max_ratio );
+        AC_LOG( ERROR, "Edge distribution ratio ({min}" << z_min << "/" << z_max << "{max} = " << min_max_ratio << ") is too small; threshold= " << _params.edge_distribution_min_max_ratio);
         return;
     }
     /*if any(sumWeightsPerSection< params.minWeightedEdgePerSection)
@@ -1071,7 +1069,7 @@ void optimizer::check_edge_distribution(
 end*/
     for( auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it )
     {
-        if( *it < min_weighted_edge_per_section_depth )
+        if( *it < _params.min_weighted_edge_per_section)
         {
             is_edge_distributed = false;
             break;
@@ -1083,7 +1081,7 @@ end*/
         {
             AC_LOG_CONTINUE(DEBUG, " " << *it);
         }
-        AC_LOG(DEBUG, "threshold is: " << min_weighted_edge_per_section_depth);
+        AC_LOG(DEBUG, "threshold is: " << _params.min_weighted_edge_per_section);
         return;
     }
     is_edge_distributed = true;
@@ -1097,12 +1095,12 @@ bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
     AC_LOG( DEBUG, "... sum_per_section(z), weights.size()= " << z.weights.size() );
     sum_per_section( z.sum_weights_per_section, z.section_map, z.weights, num_of_sections );
     AC_LOG( DEBUG, "... check_edge_distribution" );
-    check_edge_distribution( z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed, _params.edge_distribution_min_max_ratio, _params.min_weighted_edge_per_section_depth );
+    check_edge_distribution( z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed );
     // yuy frame
     AC_LOG( DEBUG, "... sum_per_section(yuy)" );
     sum_per_section( yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections );
     AC_LOG( DEBUG, "... check_edge_distribution" );
-    check_edge_distribution( yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed, _params.edge_distribution_min_max_ratio, _params.min_weighted_edge_per_section_depth );
+    check_edge_distribution( yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed );
 
     return (z.is_edge_distributed && yuy.is_edge_distributed);
 }

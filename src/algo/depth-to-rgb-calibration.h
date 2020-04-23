@@ -270,12 +270,12 @@ namespace depth_to_rgb_calibration {
         double min_rgb_mat_delta = 0.00001;
         double min_cost_delta = 1;
         double tau = 0.5;
-        double min_weighted_edge_per_section_depth = 50;
+        double min_weighted_edge_per_section = 19.5313;
         size_t num_of_sections_for_edge_distribution_x = 2;
         size_t num_of_sections_for_edge_distribution_y = 2;
         calib normelize_mat;
 
-        double edge_distribution_min_max_ratio = 1;
+        double edge_distribution_min_max_ratio = 0.005;
         double grad_dir_ratio = 10;
         double grad_dir_ratio_prep = 1.5;
         double dilation_size = 3;
@@ -375,7 +375,7 @@ namespace depth_to_rgb_calibration {
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
         void section_per_pixel( frame_data const &, size_t section_w, size_t section_h, byte * section_map );
         bool is_grad_dir_balanced(z_frame_data& z_data);
-        void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed, double distribution_min_max_ratio, double min_weighted_edge_per_section_depth);
+        void check_edge_distribution(std::vector<double>& sum_weights_per_section, double& min_max_ratio, bool& is_edge_distributed);
         void sum_per_section(std::vector< double >& sum_weights_per_section, std::vector< byte > const& section_map, std::vector< double > const& weights, size_t num_of_sections);
         void images_dilation(yuy2_frame_data& yuy);
         void gaussian_filter(yuy2_frame_data& yuy);
