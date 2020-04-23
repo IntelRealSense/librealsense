@@ -1167,7 +1167,10 @@ weightsPerDir = [sum(weightIm(frame.dirI == 1));sum(weightIm(frame.dirI == 2));s
     */
     auto max_val = max_element(weights_per_dir.begin(), weights_per_dir.end());
     auto max_ix = distance(weights_per_dir.begin(), max_val);
-    auto ix_match = (max_ix + 2) % 4; // NOHA :: TODO :: check value
+    auto ix_match = (max_ix + 1) % 3; // NOHA :: TODO :: check value
+   /* if (ix_match == 0) {
+        ix_match = 3;
+    }*/
     double dir_ratio1;
     double dir_ratio2;
     if (weights_per_dir.at(ix_match) < 1e-3) //%Don't devide by zero...
@@ -1240,7 +1243,18 @@ isBalanced = true;
             dir_ratio2 = DBL_MAX; // = nan 
             return false;
         }
-        dir_ratio2 = max_val_perp / min_val_perp;
+        
+        //double min_val = *weights_per_dir.begin() * *ix_check.begin();
+        auto ix_check_it = ix_check.begin();
+        std::vector<double> filtered_weights_per_dir;
+        for (auto it = weights_per_dir.begin(); it< weights_per_dir.end();it++, ix_check_it++)
+        {
+            auto mult_val = *it * (*ix_check_it);
+            if (mult_val>0){
+                filtered_weights_per_dir.push_back(*it);
+            }
+        }
+        dir_ratio2 = max_val_perp / *std::min_element(filtered_weights_per_dir.begin(), filtered_weights_per_dir.end());
         if (dir_ratio2 > _params.grad_dir_ratio)
         {
             AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
@@ -1286,93 +1300,6 @@ void optimizer::section_per_pixel(
     }
 }
 
-//void optimizer::edge_sobel_XY(yuy2_frame_data& yuy, BYTE* pImgE)
-//{
-//    /*function [E,Ix,Iy] = edgeSobelXY(I)
-//[Ix,Iy] = imgradientxy(I);% Sobel image gradients [-1,0,1;-2,0,2;-1,0,1]
-//Ix = Ix/8;
-//Iy = Iy/8;
-//mask = zeros(size(Ix));
-//mask(2:end-1,2:end-1) = 1;
-//Ix(~mask) = 0;
-//Iy(~mask) = 0;
-//E = single(sqrt(Ix.^2+Iy.^2));
-//end*/
-//
-////CKingimageDoc* pDoc = GetDocument(); // get picture
-////int iBitPerPixel = pDoc->_bmp->bitsperpixel; // used to see if grayscale(8b) or RGB(24b)
-////int iWidth = pDoc->_bmp->width;
-////int iHeight = pDoc->_bmp->height;
-////BYTE* pImg = //pDoc->_bmp->point; // pointer used to point at pixels in the image
-////const int area = iWidth * iHeight;
-////BYTE* pImg2 = new BYTE[area];
-//
-//    auto pImg = yuy.yuy2_prev_frame;
-//    int iWidth = yuy.width;
-//    int iHeight = yuy.height;
-//    //const int area = iWidth * iHeight;
-//    //BYTE* pImg2 = new BYTE[area];
-//    //yuy.edge_sobel_XY.resize(area);
-//    int pixel_x;
-//    int pixel_y;
-//
-//
-//    float sobel_x[3][3] =
-//    { { -1, 0, 1 },
-//      { -2, 0, 2 },
-//      { -1, 0, 1 } };
-//
-//    float sobel_y[3][3] =
-//    { { -1, -2, -1 },
-//      { 0,  0,  0 },
-//      { 1,  2,  1 } };
-//
-//    for (int x = 1; x < iWidth - 1; x++)
-//    {
-//        for (int y = 1; y < iHeight - 1; y++)
-//        {
-//
-//            pixel_x = (sobel_x[0][0] * pImg[iWidth * (y - 1) + (x - 1)])
-//                + (sobel_x[0][1] * pImg[iWidth * (y - 1) + x])
-//                + (sobel_x[0][2] * pImg[iWidth * (y - 1) + (x + 1)])
-//                + (sobel_x[1][0] * pImg[iWidth * y + (x - 1)])
-//                + (sobel_x[1][1] * pImg[iWidth * y + x])
-//                + (sobel_x[1][2] * pImg[iWidth * y + (x + 1)])
-//                + (sobel_x[2][0] * pImg[iWidth * (y + 1) + (x - 1)])
-//                + (sobel_x[2][1] * pImg[iWidth * (y + 1) + x])
-//                + (sobel_x[2][2] * pImg[iWidth * (y + 1) + (x + 1)]);
-//
-//            pixel_y = (sobel_y[0][0] * pImg[iWidth * (y - 1) + (x - 1)])
-//                + (sobel_y[0][1] * pImg[iWidth * (y - 1) + x])
-//                + (sobel_y[0][2] * pImg[iWidth * (y - 1) + (x + 1)])
-//                + (sobel_y[1][0] * pImg[iWidth * y + (x - 1)])
-//                + (sobel_y[1][1] * pImg[iWidth * y + x])
-//                + (sobel_y[1][2] * pImg[iWidth * y + (x + 1)])
-//                + (sobel_y[2][0] * pImg[iWidth * (y + 1) + (x - 1)])
-//                + (sobel_y[2][1] * pImg[iWidth * (y + 1) + x])
-//                + (sobel_y[2][2] * pImg[iWidth * (y + 1) + (x + 1)]);
-//
-//            int val = (int)sqrt((pixel_x * pixel_x) + (pixel_y * pixel_y));
-//
-//            if (val < 0) val = 0;
-//            if (val > 255) val = 255;
-//
-//            pImgE[iHeight * y + x] = val;
-//            //yuy.edge_sobel_XY.push_back(val);
-//          
-//        }
-//    }
-//    auto sobel_iter = yuy.edge_sobel_XY.begin();
-//    for (int x = 1; x < iWidth - 1; x++)
-//    {
-//        for (int y = 1; y < iHeight - 1; y++)
-//        {
-//            *(sobel_iter + iWidth * y + x);
-//        }
-//    }
-//    return;
-//}
-
 template<class T>
 uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> const& mask)
 {
@@ -1385,8 +1312,6 @@ uint8_t dilation_calc(std::vector<T> const& sub_image, std::vector<uint8_t> cons
 
     return res;
 }
-
-
 void optimizer::images_dilation(yuy2_frame_data& yuy)
 {
     int area = yuy.height * yuy.width;
@@ -1410,49 +1335,7 @@ double gaussian_calc(std::vector<T> const& sub_image, std::vector<double> const&
 
     return res;
 }
-void calc_gaussian_kernel(std::vector<double>& gaussian_kernel, double gause_kernel_size, double sigma)
-{
-    /*%Design the Gaussian Kernel
-      Exp_comp = -(x.^2+y.^2)/(2*sigma*sigma);
-      Kernel= exp(Exp_comp)/(2*pi*sigma*sigma);
-    */
-    /*double sigma = 1;
-int W = 5;
-double kernel[W][W];
-double mean = W/2;
-double sum = 0.0; // For accumulating the kernel values
-for (int x = 0; x < W; ++x) 
-    for (int y = 0; y < W; ++y) {
-        kernel[x][y] = exp( -0.5 * (pow((x-mean)/sigma, 2.0) + pow((y-mean)/sigma,2.0)) )
-                         / (2 * M_PI * sigma * sigma);
 
-        // Accumulate the kernel values
-        sum += kernel[x][y];
-    }
-
-// Normalize the kernel
-for (int x = 0; x < W; ++x) 
-    for (int y = 0; y < W; ++y)
-        kernel[x][y] /= sum;*/
-    double area = gause_kernel_size * gause_kernel_size;
-
-    std::vector<double> x = { -1, 0, 1,
-                              -1, 0, 1,
-                              -1, 0, 1 };
-    std::vector<double> y = { -1,-1,-1,
-                               0, 0, 0,
-                               1, 1, 1 };
-    double exp_comp;
-    std::vector<double>::iterator x_iter = x.begin();
-    std::vector<double>::iterator y_iter = y.begin();
-    for (auto i = 0; i < area; i++, x_iter++, y_iter++)
-    {
-        exp_comp = (-(*x_iter) * (*y_iter) / (2 * sigma * sigma));
-        gaussian_kernel.push_back(exp(exp_comp) / (2 * M_PI * sigma * sigma));
-    }
-
-    //return gauss_kernel;
-}
 void optimizer::gaussian_filter(yuy2_frame_data& yuy)
 {
     int area = yuy.height * yuy.width;
