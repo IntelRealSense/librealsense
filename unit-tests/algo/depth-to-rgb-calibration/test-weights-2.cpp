@@ -457,6 +457,9 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
 
+        // 3. movemont
+        CHECK(compare_to_bin_file< double >(yuy_data.gaussian_diff_masked, dir, "2", "IDiffMasked_1080x1920_double_00", 1080, 1920, compare_same_vectors));
+        CHECK(compare_to_bin_file< uint8_t >(yuy_data.move_suspect, dir, "2", "ixMoveSuspect_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
         //--
         CHECK( ! cal.is_valid_results() );
         CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );

@@ -83,6 +83,8 @@ namespace depth_to_rgb_calibration {
         std::vector<double> yuy_diff;
         std::vector<uint8_t> dilated_image;
         std::vector<double> gaussian_filtered_image;
+        std::vector<double> gaussian_diff_masked;
+        std::vector<uint8_t> move_suspect;
         std::vector<double> edges;
         std::vector<double> prev_edges;
         std::vector<uint8_t> logic_edges;
@@ -279,6 +281,8 @@ namespace depth_to_rgb_calibration {
         double dilation_size = 3;
         double gauss_sigma = 1;
         double gause_kernel_size = 5;
+        double move_thresh_pix_val = 20;
+        double move_threshold_pix_num = 62.2080;
 
         // output validation
         double const max_xy_movement_per_calibration[3] = { 10, 2, 2 };

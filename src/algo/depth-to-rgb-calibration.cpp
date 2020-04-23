@@ -1457,11 +1457,8 @@ void optimizer::gaussian_filter(yuy2_frame_data& yuy)
 {
     int area = yuy.height * yuy.width;
 
-    /*std::vector<double>  gaussian_kernel = { 0.002969,  0.013306,  0.021938,  0.013306,  0.002969,
-       0.013306,  0.059634,  0.09832 ,  0.059634,  0.013306,
-       0.021938,  0.09832 ,  0.162103,  0.09832 ,  0.021938,
-       0.013306,  0.059634,  0.09832 ,  0.059634,  0.013306,
-       0.002969,  0.013306,  0.021938,  0.013306,  0.002969 };*/
+    /* diffIm = abs(im1-im2);
+diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
     std::vector<double>  gaussian_kernel = { 0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968,
         0.013306209891013651, 0.059634295436180138, 0.098320331348845769, 0.059634295436180138, 0.013306209891013651,
         0.021938231279714643, 0.098320331348845769, 0.16210282163712664, 0.098320331348845769, 0.021938231279714643,
@@ -1479,6 +1476,43 @@ void optimizer::gaussian_filter(yuy2_frame_data& yuy)
         {return gaussian_calc(sub_image, gaussian_kernel); });
     return;
 }
+void abs_values(std::vector< double >& vec_in)
+{
+    //std::vector< double > abs_vec_in = vec_in;
+    for (double& val : vec_in)
+    {
+        if (val < 0)
+        {
+            val *= -1;
+        }
+    }
+}
+void gaussian_dilation_mask(std::vector< double >& gauss_diff, std::vector< uint8_t >& dilation_mask)
+{
+    auto gauss_it = gauss_diff.begin();
+    auto dilation_it = dilation_mask.begin();
+    for (auto i = 0; i < gauss_diff.size(); i++, gauss_it++, dilation_it++)
+    {
+        if (*dilation_it)
+        {
+            *gauss_it = 0;
+        }
+    }
+}
+void move_suspected_mask(std::vector< uint8_t >& move_suspect, std::vector< double >& gauss_diff_masked, double movement_threshold)
+{
+    for (auto it = gauss_diff_masked.begin(); it != gauss_diff_masked.end(); ++it)
+    {
+        if (*it > movement_threshold)
+        {
+            move_suspect.push_back(1);
+        }
+        else
+        {
+            move_suspect.push_back(0);
+        }
+    }
+}
 bool optimizer::is_movement_in_images(yuy2_frame_data& yuy)
 {
     /*function [isMovement,movingPixels] = isMovementInImages(im1,im2, params)
@@ -1493,10 +1527,7 @@ dilatedIm = imdilate(logicEdges,SE);
     images_dilation(yuy);
     gaussian_filter(yuy);
     /*
-
-
-% diffIm = abs(im1-im2);
-diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);
+%
 IDiffMasked = abs(diffIm);
 IDiffMasked(dilatedIm) = 0;
 % figure; imagesc(IDiffMasked); title('IDiffMasked');impixelinfo; colorbar;
@@ -1507,6 +1538,20 @@ end
 movingPixels = sum(ixMoveSuspect(:));
 disp(['isMovementInImages: # of pixels above threshold ' num2str(sum(ixMoveSuspect(:))) ', allowed #: ' num2str(params.moveThreshPixNum)]);
 end*/
+    yuy.gaussian_diff_masked = yuy.gaussian_filtered_image;
+    abs_values(yuy.gaussian_diff_masked);
+    gaussian_dilation_mask(yuy.gaussian_diff_masked, yuy.dilated_image);
+    move_suspected_mask(yuy.move_suspect, yuy.gaussian_diff_masked, _params.move_thresh_pix_val);
+    auto sum_move_suspect = 0;
+    for (auto it = yuy.move_suspect.begin(); it != yuy.move_suspect.end(); ++it)
+    {
+        sum_move_suspect += *it;
+    }
+    if (sum_move_suspect > _params.move_threshold_pix_num)
+    {
+        AC_LOG(DEBUG, "is_movement_in_images:  # of pixels above threshold " << sum_move_suspect << " allowed #:" << _params.move_threshold_pix_num);
+        return true;
+    }
     
     return false;
 }
