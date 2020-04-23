@@ -92,7 +92,6 @@ namespace depth_to_rgb_calibration {
         std::vector<double> edges_IDT;
         std::vector<double> edges_IDTx;
         std::vector<double> edges_IDTy;
-        //std::vector<double> edge_sobel_XY;
         std::vector<unsigned char> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
