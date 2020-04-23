@@ -239,7 +239,7 @@ namespace
     std::vector<uint8_t> dilation_convolution(std::vector<T> const& image,
         size_t image_width, size_t image_height,
         size_t mask_width, size_t mask_height,
-        std::function< double(std::vector<T> const& sub_image) > convolution_operation
+        std::function< uint8_t(std::vector<T> const& sub_image) > convolution_operation
         )
     {
         std::vector<uint8_t> res(image.size(), 0);
