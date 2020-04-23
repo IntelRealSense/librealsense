@@ -187,7 +187,7 @@ bool compare_to_bin_file(
     std::vector< D > const & vec,
     char const * dir, char const * test, char const * filename,
     size_t width, size_t height,
-    bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr
+    //bool( *compare_vectors )(std::vector< F > const &, std::vector< D > const &) = nullptr,
     bool(*compare_vectors)(std::vector< F > const &, std::vector< D > const &) = nullptr,
     std::pair<std::vector< F >, std::vector< D >>(*preproccess_vectors)(std::vector< F > const &, std::vector< D > const &) = nullptr
 )
