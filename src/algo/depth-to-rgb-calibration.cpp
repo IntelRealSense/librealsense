@@ -1087,20 +1087,35 @@ end*/
     is_edge_distributed = true;
 }
 
-bool optimizer::is_edge_distributed( z_frame_data & z, yuy2_frame_data & yuy )
+bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
 {
     size_t num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
 
     // depth frame
-    AC_LOG( DEBUG, "... sum_per_section(z), weights.size()= " << z.weights.size() );
-    sum_per_section( z.sum_weights_per_section, z.section_map, z.weights, num_of_sections );
-    AC_LOG( DEBUG, "... check_edge_distribution" );
-    check_edge_distribution( z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed );
+    AC_LOG(DEBUG, "... sum_per_section(z), weights.size()= " << z.weights.size());
+    
+
+
+    sum_per_section(z.sum_weights_per_section, z.section_map, z.weights, num_of_sections);
+    //for debug 
+    auto it = z.sum_weights_per_section.begin();
+    AC_LOG(DEBUG, "... sum_per_section(z), section #0  " << *(it));
+    AC_LOG(DEBUG, "... sum_per_section(z), section #1  " << *(it + 2));
+    AC_LOG(DEBUG, "... sum_per_section(z), section #2  " << *(it + 1));
+    AC_LOG(DEBUG, "... sum_per_section(z), section #3  " << *(it + 3));
+    AC_LOG(DEBUG, "... check_edge_distribution");
+    check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
     // yuy frame
-    AC_LOG( DEBUG, "... sum_per_section(yuy)" );
-    sum_per_section( yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections );
-    AC_LOG( DEBUG, "... check_edge_distribution" );
-    check_edge_distribution( yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed );
+    AC_LOG(DEBUG, "... sum_per_section(yuy)");
+    sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
+    //for debug 
+    it = yuy.sum_weights_per_section.begin();
+    AC_LOG(DEBUG, "... sum_per_section(yuy), section #0  " << *(it));
+    AC_LOG(DEBUG, "... sum_per_section(yuy), section #1  " << *(it + 2));
+    AC_LOG(DEBUG, "... sum_per_section(yuy), section #2  " << *(it + 1));
+    AC_LOG(DEBUG, "... sum_per_section(yuy), section #3  " << *(it + 3));
+    AC_LOG(DEBUG, "... check_edge_distribution");
+    check_edge_distribution(yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed);
 
     return (z.is_edge_distributed && yuy.is_edge_distributed);
 }
