@@ -84,10 +84,3 @@ static char const * const data_dirs[] = {
 };
 
 static size_t const n_data_dirs = sizeof( data_dirs ) / sizeof( data_dirs[0] );
-
-#include <vector>
-#include <iostream>
-
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
-//#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) TRACE( "-" << #TYPE [0] << "- " << MSG )

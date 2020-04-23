@@ -7,9 +7,9 @@
 #include "context.h"
 
 #define AC_LOG_PREFIX "AC1: "
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
+//#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl
 
 
 using namespace librealsense;
@@ -35,10 +35,11 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
     auto color_profile = yuy.get_profile().as< rs2::video_stream_profile >();
     auto yuy_data = (impl::yuy_t const *) yuy.get_data();
     auto prev_yuy_data = (impl::yuy_t const *) prev_yuy.get_data();
+    impl::calib calibration( _intr, _extr );
     _algo.set_yuy_data(
         std::vector< impl::yuy_t >( yuy_data, yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t )),
         std::vector< impl::yuy_t >( prev_yuy_data, prev_yuy_data + yuy.get_data_size() / sizeof( impl::yuy_t ) ),
-        color_profile.width(), color_profile.height()
+        calibration
     );
 
     AC_LOG( DEBUG, "... setting ir data" );
@@ -57,7 +58,13 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
         z_profile.get_intrinsics(),
         depth.as< rs2::depth_frame >().get_units()
     );
-    AC_LOG( DEBUG, "... ready" );
+
+    std::string dir = "C:\\work\\autocal\\data\\";
+    dir += to_string() << depth.get_frame_number();
+    if( mkdir( dir.c_str() ) == 0 )
+        _algo.write_data_to( dir );
+    else
+        AC_LOG( WARNING, "Failed to write AC frame data to: " << dir );
 }
 
 
@@ -69,12 +76,11 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         if( !_algo.is_scene_valid() )
         {
             AC_LOG( ERROR, "Calibration scene was found invalid!" );
-            return RS2_CALIBRATION_SCENE_INVALID;
+            //return RS2_CALIBRATION_SCENE_INVALID;
         }
 
         AC_LOG( DEBUG, "... optimizing" );
-        impl::calib calibration( _intr_rgb, _extr );
-        auto n_iterations = _algo.optimize( calibration );
+        auto n_iterations = _algo.optimize();
         if( !n_iterations )
         {
             //AC_LOG( INFO, "Calibration not necessary; nothing done" );
@@ -83,7 +89,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 
         AC_LOG( DEBUG, "... checking result validity" );
         if( !_algo.is_valid_results() )
-            return RS2_CALIBRATION_BAD_RESULT;
+            ; // return RS2_CALIBRATION_BAD_RESULT;
 
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 

@@ -5,13 +5,19 @@
 //#cmake:add-file ../../../src/algo/depth-to-rgb-calibration.cpp
 //#cmake:add-file ../algo-common.h
 //#cmake:add-file ../camera-info.h
+//#cmake:add-file ac-logger.h
 //#cmake:add-file F9440687.h
 
 #include "../../../src/algo/depth-to-rgb-calibration.h"
 #include "../algo-common.h"
+#include "ac-logger.h"
 #include "F9440687.h"
 
+ac_logger LOG_TO_STDOUT;
+
+
 namespace algo = librealsense::algo::depth_to_rgb_calibration;
+
 
 std::string test_dir( char const * data_dir, char const * test )
 {
@@ -345,10 +351,12 @@ void init_algo(algo::optimizer & cal,
     std::string dir = test_dir( data_dir, test );
     TRACE( "Loading " << dir << " ..." );
 
+    algo::calib calibration( camera.rgb, camera.extrinsics );
+
     cal.set_yuy_data(
         read_image_file< algo::yuy_t >( dir + yuy, camera.rgb.width, camera.rgb.height ),
         read_image_file< algo::yuy_t >( dir + yuy_prev, camera.rgb.width, camera.rgb.height ),
-        camera.rgb.width, camera.rgb.height
+        calibration
     );
 
     cal.set_ir_data(
@@ -375,12 +383,12 @@ TEST_CASE("Weights calc", "[d2rgb]")
     for (auto dir : data_dirs)
     {
         algo::optimizer cal;
-        init_algo(cal, dir, "2",
+        init_algo( cal, dir, "2",
             "YUY2_YUY2_1920x1080_00.00.26.6355_F9440687_0000.raw",
             "YUY2_YUY2_1920x1080_00.00.26.7683_F9440687_0001.raw",
             "I_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
             "Z_GrayScale_1024x768_00.00.26.7119_F9440687_0000.raw",
-            F9440687);
+            F9440687 );
 
         auto& z_data = cal.get_z_data();
         auto& ir_data = cal.get_ir_data();
@@ -409,7 +417,30 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_to_bin_file< double >(z_data.weights, dir, "2", "weightsT_5089x1_double_00", 5089, 1, compare_same_vectors));
         CHECK(compare_to_bin_file< algo::double3 >(z_data.vertices, dir, "2", "vertices_5089x3_double_00", 5089, 1, compare_same_vectors));
 
-        auto cb = [&](algo::iteration_data_collect data)
+
+        // ---
+        CHECK( !cal.is_scene_valid() );
+
+        // edge distribution
+        CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_section, dir, "2", "depthEdgeWeightDistributionPerSectionDepth_4x1_double_00", 4, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< byte >( z_data.section_map, dir, "2", "sectionMapDepth_trans_5089x1_uint8_00", 5089, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< byte >( yuy_data.section_map, dir, "2", "sectionMapRgb_trans_2073600x1_uint8_00", 2073600, 1, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( yuy_data.sum_weights_per_section, dir, "2", "edgeWeightDistributionPerSectionRgb_4x1_double_00", 4, 1, compare_same_vectors ) );
+
+        // gradient balanced
+        CHECK( compare_to_bin_file< double >( z_data.sum_weights_per_direction, dir, "2", "edgeWeightsPerDir_4x1_double_00", 4, 1, compare_same_vectors ) );
+
+        // movment check
+        // 1. dilation
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.prev_logic_edges, dir, "2", "logicEdges_1080x1920_uint8_00", 1080, 1920, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( yuy_data.dilated_image, dir, "2", "dilatedIm_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
+
+        // 2. gausssian
+        CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
+
+
+        auto cb = [&]( algo::iteration_data_collect const & data )
         {
             auto file = generet_file_name("calib_iteration_", data.iteration + 1, "_1x32_double_00");
             CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, "2", file.c_str()));
@@ -430,38 +461,20 @@ TEST_CASE("Weights calc", "[d2rgb]")
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, "2", file.c_str(), true));
         };
 
-        REQUIRE(cal.optimize(algo::calib(F9440687.rgb, F9440687.extrinsics), cb) == 5);  // n_iterations
+        REQUIRE( cal.optimize( cb ) == 5 );  // n_iterations
 
-        auto new_calib = cal.get_calibration();
+        auto new_calibration = cal.get_calibration();
         auto cost = cal.get_cost();
 
-        CHECK(compare_calib_to_bin_file(new_calib, cost, dir, "2", "new_calib_1x32_double_00"));
-        // ---
-        CHECK( ! cal.is_scene_valid() );
+        CHECK(compare_calib_to_bin_file(new_calibration, cost, dir, "2", "new_calib_1x32_double_00"));
 
-        // edge distribution
-        CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_section, dir, "2", "depthEdgeWeightDistributionPerSectionDepth_4x1_double_00", 4, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< byte >(z_data.section_map, dir, "2", "sectionMapDepth_trans_5089x1_uint8_00", 5089, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< byte >(yuy_data.section_map, dir, "2", "sectionMapRgb_trans_2073600x1_uint8_00", 2073600, 1, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(yuy_data.sum_weights_per_section, dir, "2", "edgeWeightDistributionPerSectionRgb_4x1_double_00", 4, 1, compare_same_vectors));
-
-        // gradient balanced
-        CHECK(compare_to_bin_file< double >(z_data.sum_weights_per_direction, dir, "2", "edgeWeightsPerDir_4x1_double_00", 4, 1, compare_same_vectors));
-
-        // movment check
-        // 1. dilation
-        CHECK(compare_to_bin_file< uint8_t >(yuy_data.prev_logic_edges, dir, "2", "logicEdges_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(yuy_data.dilated_image, dir, "2", "dilatedIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
-
-        // 2. gausssian
-        CHECK(compare_to_bin_file< double >(yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors));
-        CHECK(compare_to_bin_file< double >(yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors));
 
         // 3. movemont
         CHECK(compare_to_bin_file< double >(yuy_data.gaussian_diff_masked, dir, "2", "IDiffMasked_1080x1920_double_00", 1080, 1920, compare_same_vectors));
         CHECK(compare_to_bin_file< uint8_t >(yuy_data.move_suspect, dir, "2", "ixMoveSuspect_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
         //--
         CHECK( ! cal.is_valid_results() );
+        // pixel movement is OK, but some sections have negative cost
         CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );
         CHECK( compare_to_bin_file< double >( z_data.cost_diff_per_section, dir, "2", "costDiffPerSection_1x4_double_00", 1, 4, compare_same_vectors ) );
     }

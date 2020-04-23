@@ -6,6 +6,7 @@
 #include "context.h"
 #include "core/video.h"
 #include "depth-to-rgb-calibration.h"
+#include "log.h"
 
 using namespace std;
 
@@ -262,6 +263,29 @@ namespace librealsense
             : _is_processing{ false }
             , _hwm( hwm )
         {
+#if 1
+            // TODO remove this -- but for now, it's an easy way of seeing the AC stuff
+            class ac_logger : public rs2_log_callback
+            {
+            public:
+                explicit ac_logger() {}
+
+                void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
+                {
+                    log_message const & wrapper = (log_message const &)(msg);
+                    char const * raw = wrapper.el_msg.message().c_str();
+                    if( strncmp( "AC1: ", raw, 5 ) )
+                        return;
+                    std::cout << "-" << "DIWE"[severity] << "- ";
+                    std::cout << (raw + 5) << std::endl;
+                }
+
+                void release() override { delete this; }
+            };
+            librealsense::log_to_callback( RS2_LOG_SEVERITY_ALL,
+                { new ac_logger, []( rs2_log_callback * p ) { p->release(); } }
+            );
+#endif
         }
 
         auto_calibration::~auto_calibration()

@@ -7,10 +7,10 @@
 #include <array>
 
 #define AC_LOG_PREFIX "AC1: "
-//#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
+#define AC_LOG(TYPE,MSG) LOG_##TYPE( AC_LOG_PREFIX << MSG )
 //#define AC_LOG(TYPE,MSG) LOG_ERROR( AC_LOG_PREFIX << MSG )
-#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl; //LOG_INFO((std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ));
-#define AC_LOG_CONTINUE(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG )
+//#define AC_LOG(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ) << std::endl; //LOG_INFO((std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG ));
+//#define AC_LOG_CONTINUE(TYPE,MSG) std::cout << (std::string)( to_string() << "-" << #TYPE [0] << "- " << MSG )
 using namespace librealsense::algo::depth_to_rgb_calibration;
 
 
@@ -430,13 +430,10 @@ rotation_in_angles extract_angles_from_rotation(const double r[9])
     return res;
 }
 
-size_t optimizer::optimize(calib const & original_calibration, std::function<void(iteration_data_collect data)> cb)
+size_t optimizer::optimize( std::function< void( iteration_data_collect const & data ) > cb )
 {
-    _original_calibration = original_calibration;
-    _original_calibration.p_mat = calc_p_mat(_original_calibration);
-
     optimaization_params params_orig;
-    params_orig.curr_calib = original_calibration;
+    params_orig.curr_calib = _original_calibration;
     params_orig.curr_calib.p_mat = calc_p_mat(params_orig.curr_calib);
 
     auto const original_cost_and_grad = calc_cost_and_grad(_z, _yuy, params_orig.curr_calib);
@@ -715,6 +712,8 @@ void optimizer::set_z_data(
     _params.set_depth_resolution( depth_intrinsics.width, depth_intrinsics.height );
     _z.width = depth_intrinsics.width;
     _z.height = depth_intrinsics.height;
+    _z.intrinsics = depth_intrinsics;
+    _z.depth_units = depth_units;
 
     _z.frame = std::move( z_data );
 
@@ -723,7 +722,6 @@ void optimizer::set_z_data(
     _z.edges = calc_intensity( _z.gradient_x, _z.gradient_y );
     _z.directions = get_direction( _z.gradient_x, _z.gradient_y );
     _z.direction_deg = get_direction_deg( _z.gradient_x, _z.gradient_y );
-    AC_LOG( DEBUG, "... suppressing edges, IR threshold= " << _params.grad_ir_threshold << "  Z threshold= " << _params.grad_z_threshold );
     suppress_weak_edges( _z, _ir, _params );
 
     auto subpixels = calc_subpixels( _z, _ir,
@@ -743,30 +741,26 @@ void optimizer::set_z_data(
 void optimizer::set_yuy_data(
     std::vector< yuy_t > && yuy_data,
     std::vector< yuy_t > && prev_yuy_data,
-    size_t width,
-    size_t height
+    calib const & calibration
 )
 {
-    _params.set_rgb_resolution( width, height );
+    _original_calibration = calibration;
+    _original_calibration.p_mat = calc_p_mat( _original_calibration );
+    _yuy.width = calibration.width;
+    _yuy.height = calibration.height;
+    _params.set_rgb_resolution( _yuy.width, _yuy.height );
 
     _yuy.yuy2_frame = get_luminance_from_yuy2( yuy_data );
     _yuy.yuy2_prev_frame = get_luminance_from_yuy2( prev_yuy_data );
 
-    AC_LOG( DEBUG, "... calc_edges" );
-    _yuy.edges = calc_edges( _yuy.yuy2_frame, width, height );
-    _yuy.prev_edges = calc_edges(_yuy.yuy2_prev_frame, width, height);
+    _yuy.edges = calc_edges( _yuy.yuy2_frame, _yuy.width, _yuy.height );
+    _yuy.prev_edges = calc_edges(_yuy.yuy2_prev_frame, _yuy.width, _yuy.height);
 
-    AC_LOG( DEBUG, "... blur_edges" );
-    _yuy.edges_IDT = blur_edges( _yuy.edges, width, height );
+    _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
 
-    AC_LOG( DEBUG, "... calc_vertical_gradient" );
-    _yuy.edges_IDTx = calc_vertical_gradient( _yuy.edges_IDT, width, height );
+    _yuy.edges_IDTx = calc_vertical_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
 
-    AC_LOG( DEBUG, "... calc_horizontal_gradient" );
-    _yuy.edges_IDTy = calc_horizontal_gradient( _yuy.edges_IDT, width, height );
-
-    _yuy.width = width;
-    _yuy.height = height;
+    _yuy.edges_IDTy = calc_horizontal_gradient( _yuy.edges_IDT, _yuy.width, _yuy.height );
 }
 
 void optimizer::set_ir_data(
@@ -777,8 +771,9 @@ void optimizer::set_ir_data(
 {
     _ir.width = width;
     _ir.height = height;
-
-    _ir.ir_edges = calc_edges( ir_data, width, height );
+    
+    _ir.ir_frame = std::move( ir_data );
+    _ir.ir_edges = calc_edges( _ir.ir_frame, width, height );
 }
 
 
@@ -1076,10 +1071,10 @@ end*/
         }
     }
     if (!is_edge_distributed) {
-        AC_LOG_CONTINUE(DEBUG, "check_edge_distribution: weighted edge per section is too low:  ");
+        AC_LOG( DEBUG, "check_edge_distribution: weighted edge per section is too low:  ");
         for (auto it = sum_weights_per_section.begin(); it != sum_weights_per_section.end(); ++it)
         {
-            AC_LOG_CONTINUE(DEBUG, " " << *it);
+            AC_LOG( DEBUG, "    " << *it);
         }
         AC_LOG(DEBUG, "threshold is: " << _params.min_weighted_edge_per_section);
         return;
@@ -1092,7 +1087,7 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     size_t num_of_sections = _params.num_of_sections_for_edge_distribution_x * _params.num_of_sections_for_edge_distribution_y;
 
     // depth frame
-    AC_LOG(DEBUG, "... sum_per_section(z), weights.size()= " << z.weights.size());
+    AC_LOG( DEBUG, "... checking Z edge distribution" );
     
 
 
@@ -1103,10 +1098,9 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     AC_LOG(DEBUG, "... sum_per_section(z), section #1  " << *(it + 2));
     AC_LOG(DEBUG, "... sum_per_section(z), section #2  " << *(it + 1));
     AC_LOG(DEBUG, "... sum_per_section(z), section #3  " << *(it + 3));
-    AC_LOG(DEBUG, "... check_edge_distribution");
     check_edge_distribution(z.sum_weights_per_section, z.min_max_ratio, z.is_edge_distributed);
     // yuy frame
-    AC_LOG(DEBUG, "... sum_per_section(yuy)");
+    AC_LOG( DEBUG, "... checking YUY edge distribution" );
     sum_per_section(yuy.sum_weights_per_section, yuy.section_map, yuy.edges_IDT, num_of_sections);
     //for debug 
     it = yuy.sum_weights_per_section.begin();
@@ -1114,7 +1108,6 @@ bool optimizer::is_edge_distributed(z_frame_data& z, yuy2_frame_data& yuy)
     AC_LOG(DEBUG, "... sum_per_section(yuy), section #1  " << *(it + 2));
     AC_LOG(DEBUG, "... sum_per_section(yuy), section #2  " << *(it + 1));
     AC_LOG(DEBUG, "... sum_per_section(yuy), section #3  " << *(it + 3));
-    AC_LOG(DEBUG, "... check_edge_distribution");
     check_edge_distribution(yuy.sum_weights_per_section, yuy.min_max_ratio, yuy.is_edge_distributed);
 
     return (z.is_edge_distributed && yuy.is_edge_distributed);
@@ -1245,13 +1238,13 @@ isBalanced = true;
         auto perp_ratio = *max_val / max_val_perp;
         if (perp_ratio > _params.grad_dir_ratio_prep)
         {
-            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
         if (min_val_perp < 1e-3)// % Don't devide by zero...
         {
-            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             dir_ratio2 = DBL_MAX; // = nan 
             return false;
@@ -1270,7 +1263,7 @@ isBalanced = true;
         dir_ratio2 = max_val_perp / *std::min_element(filtered_weights_per_dir.begin(), filtered_weights_per_dir.end());
         if (dir_ratio2 > _params.grad_dir_ratio)
         {
-            AC_LOG_CONTINUE(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
+            AC_LOG(DEBUG, "is_grad_dir_balanced: gradient direction is not balanced : " << dir_ratio1);
             AC_LOG(DEBUG, "threshold is: " << _params.grad_dir_ratio);
             return false;
         }
@@ -1461,9 +1454,7 @@ bool optimizer::is_scene_valid()
     size_t const section_h = _params.num_of_sections_for_edge_distribution_y;  //% params.numSectionsH
 
     // Get a map for each pixel to its corresponding section
-    AC_LOG(DEBUG, "... ");
     section_per_pixel(_z, section_w, section_h, section_map_depth.data());
-    AC_LOG(DEBUG, "... ");
     section_per_pixel(_yuy, section_w, section_h, section_map_rgb.data());
 
     // remove pixels in section map that were removed in weights
@@ -1730,8 +1721,6 @@ p_matrix librealsense::algo::depth_to_rgb_calibration::optimizer::calc_p_mat(cal
     return { fx* r[0] + ppx * r[2], fx* r[3] + ppx * r[5], fx* r[6] + ppx * r[8], fx* t.t1 + ppx * t.t3,
              fy* r[1] + ppy * r[2], fy* r[4] + ppy * r[5], fy* r[7] + ppy * r[8], fy* t.t2 + ppy * t.t3,
              r[2]                 , r[5]                 , r[8]                 , t.t3 };
-
-
 }
 
 double optimizer::calc_step_size(optimaization_params opt_params)
@@ -1758,15 +1747,14 @@ double optimizer::calc_t( optimaization_params opt_params )
 
 
 template< typename T >
-void calc_cost_per_vertex_fn(
+std::vector< double > calc_cost_per_vertex_fn(
     z_frame_data const & z_data,
     yuy2_frame_data const & yuy_data,
     std::vector< double2 > const & uv,
-    T fn, iteration_data_collect& data = iteration_data_collect()
+    T fn
 )
 {
     auto d_vals = biliniar_interp( yuy_data.edges_IDT, yuy_data.width, yuy_data.height, uv );
-    data.d_vals = d_vals;
 
     double cost = 0;
     std::vector< double > cost_per_vertex;
@@ -1779,23 +1767,28 @@ void calc_cost_per_vertex_fn(
         double cost = d_val * weight;
         fn( i, d_val, weight, cost );
     }
+
+    return d_vals;
 }
 
 
-double optimizer::calc_cost(const z_frame_data & z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, iteration_data_collect& data)
+double optimizer::calc_cost(
+    const z_frame_data & z_data,
+    const yuy2_frame_data & yuy_data,
+    const std::vector< double2 > & uv,
+    iteration_data_collect & data)
 {
     double cost = 0;
     size_t N = 0;
-    calc_cost_per_vertex_fn(z_data, yuy_data, uv,
+    data.d_vals = calc_cost_per_vertex_fn(z_data, yuy_data, uv,
         [&](size_t i, double d_val, double weight, double vertex_cost)
-    {
-        if (d_val != std::numeric_limits<double>::max())
         {
-            cost += vertex_cost;
-            ++N;
-        }
-    }
-    , data);
+            if( d_val != std::numeric_limits<double>::max() )
+            {
+                cost += vertex_cost;
+                ++N;
+            }
+        } );
     return N ? cost / N : 0.;
 }
 
@@ -2931,6 +2924,7 @@ void optimizer::clip_pixel_movement( size_t iteration_number )
 
         //%     newParams.Rrgb = OnlineCalibration.aux.calcRmatRromAngs( newParams.xAlpha, newParams.yBeta, newParams.zGamma );
         new_calib.rot = extract_rotation_from_angles( new_calib.rot_angles );
+        new_calib.p_mat = calc_p_mat( new_calib );
         //%     newParams.rgbPmat = newParams.Krgb*[newParams.Rrgb, newParams.Trgb];
         // -> we don't use rgbPmat
     }
@@ -3029,4 +3023,52 @@ calib const & optimizer::get_calibration() const
 double optimizer::get_cost() const
 {
     return _params_curr.cost;
+}
+
+static
+void write_to_file( void const * data, size_t cb,
+    std::string const & dir,
+    char const * filename
+)
+{
+    std::string path = dir + '\\' + filename;
+    std::fstream f = std::fstream( path, std::ios::out | std::ios::binary );
+    if( !f )
+        throw std::runtime_error( "failed to open file:\n" + path );
+    f.write( (char const *) data, cb );
+    f.close();
+}
+
+template< typename T >
+void write_vector_to_file( std::vector< T > const & v,
+    std::string const & dir,
+    char const * filename
+)
+{
+    write_to_file( v.data(), v.size() * sizeof( T ), dir, filename );
+}
+
+void optimizer::write_data_to( std::string const & dir )
+{
+    AC_LOG( DEBUG, "... writing data to: " << dir );
+    
+    try
+    {
+        write_vector_to_file( _yuy.yuy2_frame, dir, "rgb.raw" );
+        write_vector_to_file( _yuy.yuy2_prev_frame, dir, "rgb_prev.raw" );
+        write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
+        write_vector_to_file( _z.frame, dir, "depth.raw" );
+
+        write_to_file( &_original_calibration, sizeof( _original_calibration ), dir, "rgb.calib" );
+        write_to_file( &_z.intrinsics, sizeof( _z.intrinsics ), dir, "depth.intrinsics" );
+        write_to_file( &_z.depth_units, sizeof( _z.depth_units ), dir, "depth.units" );
+    }
+    catch( std::exception const & err )
+    {
+        AC_LOG( ERROR, "Failed to write data: " << err.what() );
+    }
+    catch( ... )
+    {
+        AC_LOG( ERROR, "Failed to write data (unknown error)" );
+    }
 }

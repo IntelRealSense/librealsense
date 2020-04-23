@@ -36,6 +36,108 @@ namespace depth_to_rgb_calibration {
         deg_none
     };
 
+    struct translation
+    {
+        double t1;
+        double t2;
+        double t3;
+    };
+
+    struct rotation_in_angles
+    {
+        double alpha;
+        double beta;
+        double gamma;
+    };
+
+    struct rotation
+    {
+        double rot[9];
+    };
+
+    struct p_matrix
+    {
+        double vals[12];
+    };
+
+    struct k_matrix
+    {
+        double fx;
+        double fy;
+        double ppx;
+        double ppy;
+    };
+
+    /** \brief Video stream intrinsics. */
+    struct rs2_intrinsics_double
+    {
+        rs2_intrinsics_double() = default;
+        rs2_intrinsics_double( const int width, const int height,
+            const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5] )
+            :width( width ), height( height ),
+            ppx( k_mat.ppx ), ppy( k_mat.ppy ),
+            fx( k_mat.fx ), fy( k_mat.fy ),
+            model( model ),
+            coeffs{ coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4] }
+        {}
+
+        rs2_intrinsics_double( const rs2_intrinsics& obj )
+            :width( obj.width ), height( obj.height ),
+            ppx( obj.ppx ), ppy( obj.ppy ),
+            fx( obj.fx ), fy( obj.fy ),
+            model( obj.model ),
+            coeffs{ obj.coeffs[0], obj.coeffs[1], obj.coeffs[2], obj.coeffs[3], obj.coeffs[4] }
+        {}
+
+        operator rs2_intrinsics()
+        {
+            return
+            { width, height,
+                float( ppx ), float( ppy ),
+                float( fx ), float( fy ),
+                model,
+            {float( coeffs[0] ), float( coeffs[1] ), float( coeffs[2] ), float( coeffs[3] ), float( coeffs[4] )} };
+        }
+
+        int           width;     /**< Width of the image in pixels */
+        int           height;    /**< Height of the image in pixels */
+        double         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+        double         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+        double         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
+        double         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
+        rs2_distortion model;    /**< Distortion model of the image */
+        double         coeffs[5]; /**< Distortion coefficients */
+    };
+
+    /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
+    struct rs2_extrinsics_double
+    {
+        rs2_extrinsics_double( const rotation& rot, const translation& trans )
+            :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
+                  rot.rot[3], rot.rot[4], rot.rot[5],
+                  rot.rot[6], rot.rot[7], rot.rot[8] },
+            translation{ trans.t1, trans.t2 , trans.t3 }
+        {}
+
+        rs2_extrinsics_double( const rs2_extrinsics& other )
+            :rotation{ other.rotation[0], other.rotation[1], other.rotation[2],
+                  other.rotation[3], other.rotation[4], other.rotation[5],
+                  other.rotation[6], other.rotation[7], other.rotation[8] },
+            translation{ other.translation[0], other.translation[1] , other.translation[2] }
+        {}
+
+        operator rs2_extrinsics()
+        {
+            return { {float( rotation[0] ), float( rotation[1] ), float( rotation[2] ),
+            float( rotation[3] ), float( rotation[4] ), float( rotation[5] ),
+            float( rotation[6] ), float( rotation[7] ), float( rotation[8] )} ,
+            {float( translation[0] ), float( translation[1] ), float( translation[2] )} };
+        }
+
+        double rotation[9];    /**< Column-major 3x3 rotation matrix */
+        double translation[3]; /**< Three-element translation vector, in meters */
+    };
+
     struct frame_data
     {
         size_t width;
@@ -50,6 +152,9 @@ namespace depth_to_rgb_calibration {
 
     struct z_frame_data : frame_data
     {
+        rs2_intrinsics_double intrinsics;
+        float depth_units;
+
         std::vector<uint16_t> frame;
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
@@ -96,107 +201,6 @@ namespace depth_to_rgb_calibration {
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
         double min_max_ratio;
-    };
-
-    struct translation
-    {
-        double t1;
-        double t2;
-        double t3;
-    };
-
-    struct rotation_in_angles
-    {
-        double alpha;
-        double beta;
-        double gamma;
-    };
-
-    struct rotation
-    {
-        double rot[9];
-    };
-
-    struct p_matrix
-    {
-        double vals[12];
-    };
-
-    struct k_matrix
-    {
-        double fx;
-        double fy;
-        double ppx;
-        double ppy;
-    };
-
-    /** \brief Video stream intrinsics. */
-    struct rs2_intrinsics_double
-    {
-        rs2_intrinsics_double(const int width, const int height,
-            const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5])
-            :width(width), height(height),
-            ppx(k_mat.ppx), ppy(k_mat.ppy),
-            fx(k_mat.fx), fy(k_mat.fy),
-            model(model),
-            coeffs{ coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4] }
-        {}
-
-        rs2_intrinsics_double(const rs2_intrinsics& obj)
-            :width(obj.width), height(obj.height),
-            ppx(obj.ppx), ppy(obj.ppy),
-            fx(obj.fx), fy(obj.fy),
-            model(obj.model),
-            coeffs{ obj.coeffs[0], obj.coeffs[1], obj.coeffs[2], obj.coeffs[3], obj.coeffs[4] }
-        {}
-
-        operator rs2_intrinsics()
-        {
-            return
-            { width, height,
-                float(ppx), float(ppy),
-                float(fx), float(fy),
-                model,
-            {float(coeffs[0]), float(coeffs[1]), float(coeffs[2]), float(coeffs[3]), float(coeffs[4])} };
-        }
-
-        int           width;     /**< Width of the image in pixels */
-        int           height;    /**< Height of the image in pixels */
-        double         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-        double         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-        double         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
-        double         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
-        rs2_distortion model;    /**< Distortion model of the image */
-        double         coeffs[5]; /**< Distortion coefficients */
-    };
-
-    /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
-    struct rs2_extrinsics_double
-    {
-        rs2_extrinsics_double(const rotation& rot, const translation& trans)
-            :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
-                  rot.rot[3], rot.rot[4], rot.rot[5],
-                  rot.rot[6], rot.rot[7], rot.rot[8] },
-            translation{ trans.t1, trans.t2 , trans.t3 }
-        {}
-
-        rs2_extrinsics_double(const rs2_extrinsics& other)
-            :rotation{ other.rotation[0], other.rotation[1], other.rotation[2],
-                  other.rotation[3], other.rotation[4], other.rotation[5],
-                  other.rotation[6], other.rotation[7], other.rotation[8] },
-            translation{ other.translation[0], other.translation[1] , other.translation[2] }
-        {}
-
-        operator rs2_extrinsics()
-        {
-            return { {float(rotation[0]), float(rotation[1]), float(rotation[2]),
-            float(rotation[3]), float(rotation[4]), float(rotation[5]),
-            float(rotation[6]), float(rotation[7]), float(rotation[8])} ,
-            {float(translation[0]), float(translation[1]), float(translation[2])} };
-        }
-
-        double rotation[9];    /**< Column-major 3x3 rotation matrix */
-        double translation[3]; /**< Three-element translation vector, in meters */
     };
 
     struct calib
@@ -288,14 +292,15 @@ namespace depth_to_rgb_calibration {
         double const max_xy_movement_from_origin = 20;
     };
 
+    // Data that's passed to a callback at each optimization iteration
     struct iteration_data_collect
     {
         uint32_t iteration;
         optimaization_params params;
         std::vector< double2 > uvmap;
-        std::vector<double> d_vals;
-        std::vector<double> d_vals_x;
-        std::vector<double> d_vals_y;
+        std::vector< double > d_vals;
+        std::vector< double > d_vals_x;
+        std::vector< double > d_vals_y;
     };
 
     typedef uint16_t yuy_t;
@@ -310,7 +315,7 @@ namespace depth_to_rgb_calibration {
         void set_yuy_data(
             std::vector< yuy_t > && yuy_data,
             std::vector< yuy_t > && prev_yuy_data,
-            size_t width, size_t height );
+            calib const & calibration );
         void set_ir_data(
             std::vector< ir_t > && ir_data,
             size_t width, size_t height );
@@ -319,8 +324,10 @@ namespace depth_to_rgb_calibration {
             rs2_intrinsics_double const & depth_intrinsics,
             float depth_units );
 
+        void write_data_to( std::string const & directory );
+
         bool is_scene_valid();
-        size_t optimize(calib const & original_calibration, std::function<void(iteration_data_collect data)> cb = nullptr);
+        size_t optimize( std::function< void( iteration_data_collect const & data ) > iteration_callback = nullptr );
         bool is_valid_results();
         calib const & get_calibration() const;
         double get_cost() const;
