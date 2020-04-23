@@ -27,6 +27,9 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private Map<StreamType,Pointcloud> mPointcloud = null;
     private boolean mHasColorizedDepth = false;
 
+    private boolean mHasColorYuy = false;
+    private YuyDecoder mYuyDecoder = new YuyDecoder();
+
     public Map<Integer, Pair<String,Rect>> getRectangles() {
         return calcRectangles();
     }
@@ -39,8 +42,13 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
         List<FilterInterface> rv = new ArrayList<>();
         if(!mHasColorizedDepth && !showPoints())
             rv.add(mColorizer);
+
+        // convert yuyv into rgb8 for display and uv mapping
+        if(mHasColorYuy)
+            rv.add(mYuyDecoder);
+
         if(showPoints()){
-            if(mHasColorRbg8)
+            if(mHasColorRbg8 || mHasColorYuy)
                 rv.add(mPointcloud.get(StreamType.COLOR));
             else
                 rv.add(mPointcloud.get(StreamType.DEPTH));
@@ -59,7 +67,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     }
 
     public void upload(FrameSet frameSet) {
-        mHasColorRbg8 = mHasColorizedDepth = false;
+        mHasColorRbg8 = mHasColorizedDepth = mHasColorYuy = false;
         frameSet.foreach(new FrameCallback() {
             @Override
             public void onFrame(Frame f) {
@@ -83,7 +91,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     private void choosePointsTexture(FrameSet frameSet){
         if(!showPoints())
             return;
-        if(mHasColorRbg8)
+        if(mHasColorRbg8 || mHasColorYuy)
             mPointsTexture = frameSet.first(StreamType.COLOR, StreamFormat.RGB8);
         else{
             try (Frame d = frameSet.first(StreamType.DEPTH, StreamFormat.Z16)) {
@@ -98,6 +106,11 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             if(sp.getType() == StreamType.COLOR && sp.getFormat() == StreamFormat.RGB8) {
                 mHasColorRbg8 = true;
             }
+
+            if(sp.getType() == StreamType.COLOR && sp.getFormat() == StreamFormat.YUYV) {
+                mHasColorYuy = true;
+            }
+
             if(sp.getType() == StreamType.DEPTH && sp.getFormat() == StreamFormat.RGB8) {
                 mHasColorizedDepth = true;
             }
@@ -200,6 +213,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
 
             for(Integer uid : mFrames.keySet()){
                 GLFrame fl = mFrames.get(uid);
+
                 Rect r = rects.get(uid).second;
                 if(mWindowHeight > mWindowWidth){// TODO: remove, w/a for misaligned labels
                     int newTop = mWindowHeight - r.height() - r.top;
