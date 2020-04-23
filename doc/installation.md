@@ -7,13 +7,13 @@
 The scripts and commands below invoke `wget, git, add-apt-repository` which may be blocked by router settings or a firewall. Infrequently, apt-get mirrors or repositories may also timeout. For *librealsense* users behind an enterprise firewall, configuring the system-wide Ubuntu proxy generally resolves most timeout issues.
 
 ## Prerequisites
-**Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may requires to modify BIOS settings
+**Important:** Running RealSense Depth Cameras on Linux requires patching and inserting modified kernel drivers. Some OEM/Vendors choose to lock the kernel for modifications. Unlocking this capability may require modification of BIOS settings
 
   **Make Ubuntu Up-to-date:**  
   * Update Ubuntu distribution, including getting the latest stable kernel:
     * `sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade`  <br />  
 
-**Note:** On stock Ubuntu 14 LTS systems and Kernel prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.  
+**Note:** On stock Ubuntu 14 LTS systems and kernels prior to 4.4.0-04 the standard `apt-get upgrade` command is not sufficient to bring the distribution to the latest recommended baseline.  
   It is recommended to upgrade the distribution with:   
   * `sudo apt-get install --install-recommends linux-generic-lts-xenial xserver-xorg-core-lts-xenial xserver-xorg-lts-xenial xserver-xorg-video-all-lts-xenial xserver-xorg-input-all-lts-xenial libwayland-egl1-mesa-lts-xenial `<br />    
 
@@ -39,8 +39,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
     `sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev`  <br /><br />
     Distribution-specific packages:  <br />
-     * Ubuntu 14 or when running of Ubuntu 16.04 live-disk:<br />
-      `sudo apt-get install`<br />
+     * Ubuntu 14 or when running Ubuntu 16.04 live-disk:<br />
       `./scripts/install_glfw3.sh`  <br />
 
      * Ubuntu 16:<br />
@@ -53,17 +52,14 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
     Go to the [official CMake site](https://cmake.org/download/) to download and install the application  
 
   **Note** on graphic sub-system utilization:<br />
-     *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGl-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
+     *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGL-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
 
-  3. Run Intel Realsense permissions script located from librealsense root directory:<br />
+  3. Run Intel Realsense permissions script from librealsense root directory:<br />
     `./scripts/setup_udev_rules.sh`  
     <br />
 
   4. Build and apply patched kernel modules for: <br />
     * **Ubuntu 14/16/18 with LTS kernel**
-      script will download, patch and build realsense-affected kernel modules (drivers).<br />
-      Then it will attempt to insert the patched module instead of the active one. If failed
-      the original uvc modules will be restored.  
 
       `./scripts/patch-realsense-ubuntu-lts.sh`<br />
     * **Ubuntu with Kernel 4.16**
@@ -73,7 +69,10 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
       Based on the custom kernel provided by Canonical Ltd.  
 
       `./scripts/patch-realsense-ubuntu-xenial-joule.sh`<br />
-
+      
+      The script above will download, patch and build realsense-affected kernel modules (drivers).<br />
+      Then it will attempt to insert the patched module instead of the active one. If failed
+      the original uvc modules will be restored.  
   * **Arch-based distributions**
     * Install the [base-devel](https://www.archlinux.org/groups/x86_64/base-devel/) package group.
     * Install the matching linux-headers as well (i.e.: linux-lts-headers for the linux-lts kernel).<br />
@@ -95,9 +94,9 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   5. TM1-specific:
      * Tracking Module requires *hid_sensor_custom* kernel module to operate properly.
-      Due to TM1's power-up sequence constrains, this driver is required to be loaded during boot for the HW to be properly initialized.
+      Due to TM1's power-up sequence constraints, this driver is required to be loaded during boot for the HW to be properly initialized.
 
-      In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
+      In order to accomplish this, add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
       ```sh
       echo 'hid_sensor_custom' | sudo tee -a /etc/modules
       ```
@@ -128,12 +127,11 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   `sudo make uninstall && make clean && make **-j8** && sudo make install`<br />
   This enhancement may significantly improve the build time. The side-effect, however, is that it may cause a low-end platform to hang randomly.<br />
   **Note:** Linux build configuration is presently configured to use the V4L2 backend by default.<br />
-  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM increase available RAM to at least 2 GB.<br />
+  **Note:** If you encounter the following error during compilation `gcc: internal compiler error` it might indicate that you do not have enough memory or swap space on your machine. Try closing memory consuming applications, and if you are running inside a VM, increase available RAM to at least 2 GB.<br />
   **Note:** You can find more information about the available configuration options on [this wiki page](https://github.com/IntelRealSense/librealsense/wiki/Build-Configuration).
 
   2. Install IDE (Optional):
-    We use QtCreator as an IDE for Linux development on Ubuntu
-    * Follow the  [link](https://wiki.qt.io/Install_Qt_5_on_Ubuntu) for QtCreator5 installation
+    We use QtCreator as an IDE for Linux development on Ubuntu. Follow the  [link](https://wiki.qt.io/Install_Qt_5_on_Ubuntu) for QtCreator5 installation
 
 
 ## <a name="Troubleshooting"></a>Troubleshooting Installation and Patch-related Issues
