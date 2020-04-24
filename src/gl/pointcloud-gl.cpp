@@ -490,7 +490,7 @@ void pointcloud_gl::get_texture_map(
         fbo1.unbind();
 
         // fbo2 - occlusion with glsl
-        if (_occlusion_filter->active())
+        if (_occlusion_filter->active() && !_occlusion_filter->is_same_sensor(extr))
         {
             auto oviz = _occu_renderer;
 
@@ -575,7 +575,7 @@ rs2::points pointcloud_gl::allocate_points(
     return res.as<rs2::points>();
 }
 
-bool pointcloud_gl::run__occlusion_filter()
+bool pointcloud_gl::run__occlusion_filter(const rs2_extrinsics& extr)
 {
     return false;
 }

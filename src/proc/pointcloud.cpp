@@ -199,7 +199,7 @@ namespace librealsense
 
             get_texture_map(res, points, width, height, mapped_intr, extr, pixels_ptr);
 
-            if (run__occlusion_filter())
+            if (run__occlusion_filter(extr))
             {
                 if (_occlusion_filter->find_scanning_direction(extr) == vertical)
                 {
@@ -322,8 +322,8 @@ namespace librealsense
         #endif
     }
 
-    bool pointcloud::run__occlusion_filter()
+    bool pointcloud::run__occlusion_filter(const rs2_extrinsics& extr)
     {
-        return _occlusion_filter->active();
+        return (_occlusion_filter->active() && !_occlusion_filter->is_same_sensor(extr));
     }
 }

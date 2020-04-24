@@ -43,9 +43,15 @@ namespace librealsense
         occlusion_scanning_type find_scanning_direction(const rs2_extrinsics& extr)
         {
             // in L500 X-axis translation in extrinsic matrix is close to 0 and Y-axis is > 0 because RGB and depth sensors are vertically aligned
-            float extrensic_low_threshold = 0.0002f; //meters
-            float extrensic_high_threshold = 0.01f; //meters
+            float extrensic_low_threshold  = 0.001f; //meters
+            float extrensic_high_threshold = 0.01f;  //meters
             return ((extr.translation[0] < extrensic_low_threshold) && (extr.translation[1] > extrensic_high_threshold) ? vertical : horizontal);
+        }
+
+        bool is_same_sensor(const rs2_extrinsics& extr)
+        {
+            // extriniscs identity matrix indicates the same sensor, skip occlusion later
+            return (extr == identity_matrix());
         }
     private:
 

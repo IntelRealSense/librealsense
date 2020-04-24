@@ -36,7 +36,7 @@ namespace librealsense
                 const rs2::frame_source& source, 
                 const rs2::frame& f) override;
 
-            bool run__occlusion_filter() override;
+            bool run__occlusion_filter(const rs2_extrinsics& extr) override;
 
             std::shared_ptr<rs2::visualizer_2d> _projection_renderer;
             std::shared_ptr<rs2::visualizer_2d> _occu_renderer;
