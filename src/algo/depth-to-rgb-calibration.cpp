@@ -1614,6 +1614,7 @@ std::vector<double> biliniar_interp(std::vector<double> const & vals, size_t wid
         res[i] = interp_y_x;
     }
 
+#if 0
     std::ofstream f;
     f.open("interp_y_x");
     f.precision(16);
@@ -1622,6 +1623,7 @@ std::vector<double> biliniar_interp(std::vector<double> const & vals, size_t wid
         f << res[i] << std::endl;
     }
     f.close();
+#endif
     return res;
 }
 
