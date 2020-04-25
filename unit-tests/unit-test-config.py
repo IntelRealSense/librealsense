@@ -51,11 +51,14 @@ def find( dir, mask ):
         if pattern.search( leaf ):
             debug(leaf)
             yield leaf
+
+
 def remove_newlines (lines):
     for line in lines:
         if line[-1] == '\n':
             line = line[:-1]    # excluding the endline
         yield line
+
 def grep_( pattern, lines, context ):
     index = 0
     matches = 0
@@ -73,6 +76,7 @@ def grep_( pattern, lines, context ):
         del context['line']
         del context['match']
     # UnicodeDecodeError can be thrown in binary files
+
 def grep( expr, *args ):
     #debug( f"grep {expr} {args}" )
     pattern = re.compile( expr )
@@ -106,6 +110,28 @@ set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + 
 
 ''' )
     handle.close()
+
+# Recursively searches a .cpp file for #include directives and returns
+# a set of all of them.
+#
+# Only directives that are relative to the current path (#include "<path>")
+# are looked for!
+#
+def find_includes( filepath ):
+    filelist = set()
+    filedir = os.path.dirname(filepath)
+    for context in grep( '^\s*#\s*include\s+"(.*)"\s*$', filepath ):
+        m = context['match']
+        index = context['index']
+        include = m.group(1)
+        if not os.path.isabs( include ):
+            include = os.path.normpath( filedir + '/' + include )
+        include = include.replace( '\\', '/' )
+        if os.path.exists( include ):
+            filelist.add( include )
+            filelist |= find_includes( include )
+    return filelist
+
 def process_cpp( dir, builddir ):
     found = []
     shareds = []
@@ -120,6 +146,8 @@ def process_cpp( dir, builddir ):
         # Build the list of files we want in the project:
         # At a minimum, we have the original file, plus any common files
         filelist = [ dir + '/' + f, '${ELPP_FILES}', '${CATCH_FILES}' ]
+        # Add any "" includes specified in the .cpp that we can find
+        includes = find_includes( dir + '/' + f )
         # Add any files explicitly listed in the .cpp itself, like this:
         #         //#cmake:add-file <filename>
         # Any files listed are relative to $dir
@@ -140,6 +168,9 @@ def process_cpp( dir, builddir ):
                     else:
                         debug( '   add file:', abs_file )
                         filelist.append( abs_file )
+                        if( os.path.splitext( abs_file )[0] == 'cpp' ):
+                            # Add any "" includes specified in the .cpp that we can find
+                            includes |= find_includes( abs_file )
             elif cmd == 'static!':
                 if len(rest):
                     error( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
@@ -156,6 +187,8 @@ def process_cpp( dir, builddir ):
                     shared = True
             else:
                 error( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+        for include in includes:
+            filelist.append( include )
         generate_cmake( builddir, testdir, testname, filelist )
         if static:
             statics.append( testdir )
