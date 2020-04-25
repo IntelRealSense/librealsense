@@ -3,6 +3,7 @@
 
 #include "calibration-types.h"
 #include <cmath>
+#include <cstdlib>
 
 
 namespace librealsense {
