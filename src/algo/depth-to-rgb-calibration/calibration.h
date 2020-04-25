@@ -85,10 +85,10 @@ namespace depth_to_rgb_calibration {
     struct calib
     {
         rotation_in_angles rot_angles = { 0 };
-        rotation rot = { 0 };
+        rotation rot = { { 0 } };
         translation trans = { 0 };
         k_matrix k_mat = { 0 };
-        p_matrix p_mat = { 0 };
+        p_matrix p_mat = { { 0 } };
         int           width = 0;
         int           height = 0;
         rs2_distortion model;
