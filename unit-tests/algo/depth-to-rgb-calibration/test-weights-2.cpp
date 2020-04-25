@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/optimizer.cpp
+//#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/*.cpp
 
 #include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
 #include "../algo-common.h"
@@ -366,11 +366,11 @@ void init_algo(algo::optimizer & cal,
 }
 
 
-std::string generet_file_name(std::string prefix, int num, std::string saffix)
+std::string generate_file_name( std::string const & prefix, size_t num, std::string const & suffix)
 {
-    std::stringstream s;
+    std::ostringstream s;
     s << num;
-    return prefix + std::string(s.str()) + saffix;
+    return prefix + std::string(s.str()) + suffix;
 }
 
 TEST_CASE("Weights calc", "[d2rgb]")
@@ -414,6 +414,7 @@ TEST_CASE("Weights calc", "[d2rgb]")
 
 
         // ---
+        TRACE( "\nChecking scene validity:" );
         CHECK( !cal.is_scene_valid() );
 
         // edge distribution
@@ -434,25 +435,31 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK( compare_to_bin_file< double >( yuy_data.yuy_diff, dir, "2", "diffIm_01_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
         CHECK( compare_to_bin_file< double >( yuy_data.gaussian_filtered_image, dir, "2", "diffIm_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
 
+        // 3. movemont
+        CHECK( compare_to_bin_file< double >( yuy_data.gaussian_diff_masked, dir, "2", "IDiffMasked_1080x1920_double_00", 1080, 1920, compare_same_vectors ) );
+        CHECK( compare_to_bin_file< uint8_t >( yuy_data.move_suspect, dir, "2", "ixMoveSuspect_1080x1920_uint8_00", 1080, 1920, compare_same_vectors ) );
 
+
+        //--
+        TRACE( "\nOptimizing:" );
         auto cb = [&]( algo::iteration_data_collect const & data )
         {
-            auto file = generet_file_name("calib_iteration_", data.iteration + 1, "_1x32_double_00");
+            auto file = generate_file_name("calib_iteration_", data.iteration + 1, "_1x32_double_00");
             CHECK(compare_calib_to_bin_file(data.params.curr_calib, data.params.cost, dir, "2", file.c_str()));
 
-            file = generet_file_name("uvmap_iteration_", data.iteration + 1, "_5089x2_double_00");
+            file = generate_file_name("uvmap_iteration_", data.iteration + 1, "_5089x2_double_00");
             CHECK(compare_to_bin_file< algo::double2 >(data.uvmap, dir, "2", file.c_str(), 5089, 1, compare_same_vectors));
 
-            file = generet_file_name("DVals_iteration_", data.iteration + 1, "_5089x1_double_00");
+            file = generate_file_name("DVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("DxVals_iteration_", data.iteration + 1, "_5089x1_double_00");
+            file = generate_file_name("DxVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_x, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("DyVals_iteration_", data.iteration + 1, "_5089x1_double_00");
+            file = generate_file_name("DyVals_iteration_", data.iteration + 1, "_5089x1_double_00");
             CHECK(compare_to_bin_file< double >(data.d_vals_y, dir, "2", file.c_str(), 5089, 1, compare_same_vectors, sort_vectors));
 
-            file = generet_file_name("grad_iteration_", data.iteration + 1, "_1x32_double_00");
+            file = generate_file_name("grad_iteration_", data.iteration + 1, "_1x32_double_00");
             CHECK(compare_calib_to_bin_file(data.params.calib_gradients, 0, dir, "2", file.c_str(), true));
         };
 
@@ -464,10 +471,8 @@ TEST_CASE("Weights calc", "[d2rgb]")
         CHECK(compare_calib_to_bin_file(new_calibration, cost, dir, "2", "new_calib_1x32_double_00"));
 
 
-        // 3. movemont
-        CHECK(compare_to_bin_file< double >(yuy_data.gaussian_diff_masked, dir, "2", "IDiffMasked_1080x1920_double_00", 1080, 1920, compare_same_vectors));
-        CHECK(compare_to_bin_file< uint8_t >(yuy_data.move_suspect, dir, "2", "ixMoveSuspect_1080x1920_uint8_00", 1080, 1920, compare_same_vectors));
         //--
+        TRACE( "\nChecking output validity:" );
         CHECK( ! cal.is_valid_results() );
         // pixel movement is OK, but some sections have negative cost
         CHECK( cal.calc_correction_in_pixels() == approx( 2.9144 ) );

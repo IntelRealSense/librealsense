@@ -8,234 +8,14 @@
 #include <map>
 #include <types.h>
 
+#include "calibration.h"
+#include "frame-data.h"
+
 
 namespace librealsense {
 namespace algo {
 namespace depth_to_rgb_calibration {
 
-    struct double3 {
-        double x, y, z;
-        double & operator [] (int i) { return (&x)[i]; }
-        bool operator == (const double3 d) { return x == d.x && y == d.y && z == d.z; }
-        bool operator != (const double3 d) { return !(*this == d); }
-    };
-
-    struct double2 {
-        double x, y;
-        double & operator [] (int i) { return (&x)[i]; };
-        bool operator == (const double2 d) { return x == d.x && y == d.y; }
-        bool operator != (const double2 d) { return !(*this == d); }
-    };
-
-    enum direction :uint8_t
-    {
-        deg_0, //0, 1
-        deg_45, //1, 1
-        deg_90, //1, 0
-        deg_135, //1, -1
-        deg_none
-    };
-
-    struct translation
-    {
-        double t1;
-        double t2;
-        double t3;
-    };
-
-    struct rotation_in_angles
-    {
-        double alpha;
-        double beta;
-        double gamma;
-    };
-
-    struct rotation
-    {
-        double rot[9];
-    };
-
-    struct p_matrix
-    {
-        double vals[12];
-    };
-
-    struct k_matrix
-    {
-        double fx;
-        double fy;
-        double ppx;
-        double ppy;
-    };
-
-    /** \brief Video stream intrinsics. */
-    struct rs2_intrinsics_double
-    {
-        rs2_intrinsics_double() = default;
-        rs2_intrinsics_double( const int width, const int height,
-            const k_matrix& k_mat, const rs2_distortion model, const double coeffs[5] )
-            :width( width ), height( height ),
-            ppx( k_mat.ppx ), ppy( k_mat.ppy ),
-            fx( k_mat.fx ), fy( k_mat.fy ),
-            model( model ),
-            coeffs{ coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4] }
-        {}
-
-        rs2_intrinsics_double( const rs2_intrinsics& obj )
-            :width( obj.width ), height( obj.height ),
-            ppx( obj.ppx ), ppy( obj.ppy ),
-            fx( obj.fx ), fy( obj.fy ),
-            model( obj.model ),
-            coeffs{ obj.coeffs[0], obj.coeffs[1], obj.coeffs[2], obj.coeffs[3], obj.coeffs[4] }
-        {}
-
-        operator rs2_intrinsics()
-        {
-            return
-            { width, height,
-                float( ppx ), float( ppy ),
-                float( fx ), float( fy ),
-                model,
-            {float( coeffs[0] ), float( coeffs[1] ), float( coeffs[2] ), float( coeffs[3] ), float( coeffs[4] )} };
-        }
-
-        int           width;     /**< Width of the image in pixels */
-        int           height;    /**< Height of the image in pixels */
-        double         ppx;       /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-        double         ppy;       /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-        double         fx;        /**< Focal length of the image plane, as a multiple of pixel width */
-        double         fy;        /**< Focal length of the image plane, as a multiple of pixel height */
-        rs2_distortion model;    /**< Distortion model of the image */
-        double         coeffs[5]; /**< Distortion coefficients */
-    };
-
-    /** \brief Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */
-    struct rs2_extrinsics_double
-    {
-        rs2_extrinsics_double( const rotation& rot, const translation& trans )
-            :rotation{ rot.rot[0], rot.rot[1],rot.rot[2],
-                  rot.rot[3], rot.rot[4], rot.rot[5],
-                  rot.rot[6], rot.rot[7], rot.rot[8] },
-            translation{ trans.t1, trans.t2 , trans.t3 }
-        {}
-
-        rs2_extrinsics_double( const rs2_extrinsics& other )
-            :rotation{ other.rotation[0], other.rotation[1], other.rotation[2],
-                  other.rotation[3], other.rotation[4], other.rotation[5],
-                  other.rotation[6], other.rotation[7], other.rotation[8] },
-            translation{ other.translation[0], other.translation[1] , other.translation[2] }
-        {}
-
-        operator rs2_extrinsics()
-        {
-            return { {float( rotation[0] ), float( rotation[1] ), float( rotation[2] ),
-            float( rotation[3] ), float( rotation[4] ), float( rotation[5] ),
-            float( rotation[6] ), float( rotation[7] ), float( rotation[8] )} ,
-            {float( translation[0] ), float( translation[1] ), float( translation[2] )} };
-        }
-
-        double rotation[9];    /**< Column-major 3x3 rotation matrix */
-        double translation[3]; /**< Three-element translation vector, in meters */
-    };
-
-    struct frame_data
-    {
-        size_t width;
-        size_t height;
-    };
-
-    struct ir_frame_data : frame_data
-    {
-        std::vector<uint8_t> ir_frame;
-        std::vector<double> ir_edges;
-    };
-
-    struct z_frame_data : frame_data
-    {
-        rs2_intrinsics_double intrinsics;
-        float depth_units;
-
-        std::vector<uint16_t> frame;
-        std::vector<double> gradient_x;
-        std::vector<double> gradient_y;
-        std::vector<double> edges;
-        std::vector<double> supressed_edges;
-        size_t n_strong_edges;
-        std::vector<direction> directions;
-        std::vector<double> subpixels_x;
-        std::vector<double> subpixels_y;
-        std::vector< uint16_t> closest;
-        std::vector<double> weights;
-        std::vector<double> direction_deg;
-        std::vector<double3> vertices;
-
-        // input validation
-        std::vector<unsigned char> section_map;
-        bool is_edge_distributed;
-        std::vector<double>sum_weights_per_section;
-        std::vector<double> sum_weights_per_direction;
-        double min_max_ratio;
-
-        // output validation
-        std::vector< double > cost_diff_per_section;
-    };
-
-    // TODO why "yuy2"?
-    struct yuy2_frame_data : frame_data
-    {
-        std::vector<uint8_t> yuy2_frame;
-        std::vector<uint8_t> yuy2_prev_frame;
-        std::vector<double> yuy_diff;
-        std::vector<uint8_t> dilated_image;
-        std::vector<double> gaussian_filtered_image;
-        std::vector<double> gaussian_diff_masked;
-        std::vector<uint8_t> move_suspect;
-        std::vector<double> edges;
-        std::vector<double> prev_edges;
-        std::vector<uint8_t> logic_edges;
-        std::vector<uint8_t> prev_logic_edges;
-        std::vector<double> edges_IDT;
-        std::vector<double> edges_IDTx;
-        std::vector<double> edges_IDTy;
-        std::vector<unsigned char> section_map;
-        bool is_edge_distributed;
-        std::vector<double>sum_weights_per_section;
-        double min_max_ratio;
-    };
-
-    struct calib
-    {
-        rotation_in_angles rot_angles = { 0 };
-        rotation rot = { 0 };
-        translation trans = { 0 };
-        k_matrix k_mat = { 0 };
-        p_matrix p_mat = { 0 };
-        int           width = 0;
-        int           height = 0;
-        rs2_distortion model;
-        double         coeffs[5];
-
-        calib() = default;
-        calib(calib const &) = default;
-        explicit calib(rs2_intrinsics_double const & rgb_intrinsics, rs2_extrinsics_double const & depth_to_rgb_extrinsics);
-        explicit calib(rs2_intrinsics const & rgb_intrinsics, rs2_extrinsics const & depth_to_rgb_extrinsics);
-
-        rs2_intrinsics_double get_intrinsics() const;
-        rs2_extrinsics_double get_extrinsics() const;
-        p_matrix const & get_p_matrix() const;
-
-        p_matrix const & calc_p_mat();
-
-        void copy_coefs(calib & obj) const;
-        calib operator*(double step_size) const;
-        calib operator/(double factor) const;
-        calib operator+(const calib& c) const;
-        calib operator-(const calib& c) const;
-        calib operator/(const calib& c) const;
-        double get_norma();
-        double sum();
-        calib normalize();
-    };
 
     struct optimaization_params
     {
@@ -243,13 +23,6 @@ namespace depth_to_rgb_calibration {
         calib calib_gradients;
         double cost;
         double step_size = 0;
-    };
-
-    template <class T>
-    struct coeffs
-    {
-        std::vector<T> x_coeffs;
-        std::vector<T> y_coeffs;
     };
 
     struct params
@@ -297,7 +70,7 @@ namespace depth_to_rgb_calibration {
     // Data that's passed to a callback at each optimization iteration
     struct iteration_data_collect
     {
-        uint32_t iteration;
+        size_t iteration;
         optimaization_params params;
         std::vector< double2 > uvmap;
         std::vector< double > d_vals;
@@ -368,27 +141,8 @@ namespace depth_to_rgb_calibration {
         optimaization_params back_tracking_line_search( const z_frame_data & z_data, const yuy2_frame_data& yuy_data, optimaization_params opt_params );
         double calc_step_size( optimaization_params opt_params );
         double calc_t( optimaization_params opt_params );
-        std::pair<calib, double> calc_cost_and_grad(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib, iteration_data_collect& data = iteration_data_collect());
-        calib intrinsics_extrinsics_to_calib(rs2_intrinsics_double intrin, rs2_extrinsics_double extrin);
-        double calc_cost(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, iteration_data_collect& data = iteration_data_collect());
         calib calc_gradients(const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const std::vector<double2>& uv, const calib& curr_calib, iteration_data_collect& data = iteration_data_collect());
-        translation calc_translation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
         rotation_in_angles calc_rotation_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-        k_matrix calc_k_gradients( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, std::vector<double> interp_IDT_x, std::vector<double> interp_IDT_y, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-        std::pair< std::vector<double2>, std::vector<double>> calc_rc( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib& curr_calib );
-        coeffs<translation> calc_translation_coefs( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-        coeffs<rotation_in_angles> calc_rotation_coefs( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-        coeffs<k_matrix> calc_k_gradients_coefs( const z_frame_data& z_data, const yuy2_frame_data& yuy_data, const calib & yuy_intrin_extrin, const std::vector<double>& rc, const std::vector<double2>& xy );
-        k_matrix calculate_k_gradients_y_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        k_matrix calculate_k_gradients_x_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        translation calculate_translation_y_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        translation calculate_translation_x_coeff( double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_x_alpha_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_x_beta_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_x_gamma_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_y_alpha_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_y_beta_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
-        double calculate_rotation_y_gamma_coeff( rotation_in_angles rot_angles, double3 v, double rc, double2 xy, const calib & yuy_intrin_extrin );
 
         // input validation
         bool is_edge_distributed( z_frame_data & z_data, yuy2_frame_data & yuy_data );
