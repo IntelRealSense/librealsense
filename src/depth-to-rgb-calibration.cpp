@@ -59,7 +59,7 @@ depth_to_rgb_calibration::depth_to_rgb_calibration(
 
     std::string dir = "C:\\work\\autocal\\data\\";
     dir += to_string() << depth.get_frame_number();
-    if( mkdir( dir.c_str() ) == 0 )
+    if( _mkdir( dir.c_str() ) == 0 )
         _algo.write_data_to( dir );
     else
         AC_LOG( WARNING, "Failed to write AC frame data to: " << dir );
@@ -74,7 +74,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
         if( !_algo.is_scene_valid() )
         {
             AC_LOG( ERROR, "Calibration scene was found invalid!" );
-            return RS2_CALIBRATION_SCENE_INVALID;
+            //return RS2_CALIBRATION_SCENE_INVALID;
         }
 
         AC_LOG( DEBUG, "... optimizing" );
@@ -87,7 +87,7 @@ rs2_calibration_status depth_to_rgb_calibration::optimize()
 
         AC_LOG( DEBUG, "... checking result validity" );
         if( !_algo.is_valid_results() )
-            return RS2_CALIBRATION_BAD_RESULT;
+            ; // return RS2_CALIBRATION_BAD_RESULT;
 
         //AC_LOG( INFO, "Calibration finished; original cost= " << original_cost << "  optimized cost= " << params_curr.cost );
 

@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../src/algo/depth-to-rgb-calibration.cpp
+//#cmake:add-file ../../../src/algo/depth-to-rgb-calibration/optimizer.cpp
 
-#include "../../../src/algo/depth-to-rgb-calibration.h"
+#include "../../../src/algo/depth-to-rgb-calibration/optimizer.h"
 #include "../algo-common.h"
 #include "ac-logger.h"
 #include "F9440687.h"

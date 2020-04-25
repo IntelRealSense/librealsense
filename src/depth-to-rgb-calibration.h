@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "algo/depth-to-rgb-calibration.h"
+#include "algo/depth-to-rgb-calibration/optimizer.h"
 #include "types.h"
 
 

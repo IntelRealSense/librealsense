@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "depth-to-rgb-calibration.h"
+#include "optimizer.h"
 #include <librealsense2/rsutil.h>
 #include <algorithm>
 #include <array>
