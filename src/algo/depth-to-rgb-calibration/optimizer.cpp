@@ -621,11 +621,14 @@ void optimizer::set_yuy_data(
     _yuy.height = calibration.height;
     _params.set_rgb_resolution( _yuy.width, _yuy.height );
 
-    _yuy.yuy2_frame = get_luminance_from_yuy2( yuy_data );
-    _yuy.yuy2_prev_frame = get_luminance_from_yuy2( prev_yuy_data );
+    _yuy.orig_frame = std::move( yuy_data );
+    _yuy.prev_frame = std::move( prev_yuy_data );
 
-    _yuy.edges = calc_edges( _yuy.yuy2_frame, _yuy.width, _yuy.height );
-    _yuy.prev_edges = calc_edges(_yuy.yuy2_prev_frame, _yuy.width, _yuy.height);
+    _yuy.lum_frame = get_luminance_from_yuy2( _yuy.orig_frame );
+    _yuy.prev_lum_frame = get_luminance_from_yuy2( _yuy.prev_frame );
+
+    _yuy.edges = calc_edges( _yuy.lum_frame, _yuy.width, _yuy.height );
+    _yuy.prev_edges = calc_edges(_yuy.prev_lum_frame, _yuy.width, _yuy.height);
 
     _yuy.edges_IDT = blur_edges( _yuy.edges, _yuy.width, _yuy.height );
 
@@ -1223,8 +1226,8 @@ diffIm = imgaussfilt(im1-im2,params.moveGaussSigma);*/
         0.0029690167439504968, 0.013306209891013651, 0.021938231279714643, 0.013306209891013651, 0.0029690167439504968
     };
 
-    std::vector<uint8_t>::iterator yuy_iter = yuy.yuy2_frame.begin();
-    std::vector<uint8_t>::iterator yuy_prev_iter = yuy.yuy2_prev_frame.begin();
+    std::vector<uint8_t>::iterator yuy_iter = yuy.lum_frame.begin();
+    std::vector<uint8_t>::iterator yuy_prev_iter = yuy.prev_lum_frame.begin();
     for (auto i = 0; i < area; i++, yuy_iter++, yuy_prev_iter++)
     {
         yuy.yuy_diff.push_back((double)(*yuy_prev_iter) - (double)(*yuy_iter)); // used for testing only
@@ -2064,8 +2067,8 @@ void optimizer::write_data_to( std::string const & dir )
     
     try
     {
-        write_vector_to_file( _yuy.yuy2_frame, dir, "rgb.raw" );
-        write_vector_to_file( _yuy.yuy2_prev_frame, dir, "rgb_prev.raw" );
+        write_vector_to_file( _yuy.orig_frame, dir, "rgb.raw" );
+        write_vector_to_file( _yuy.prev_frame, dir, "rgb_prev.raw" );
         write_vector_to_file( _ir.ir_frame, dir, "ir.raw" );
         write_vector_to_file( _z.frame, dir, "depth.raw" );
 

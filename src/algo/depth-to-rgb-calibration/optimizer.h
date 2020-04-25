@@ -78,10 +78,6 @@ namespace depth_to_rgb_calibration {
         std::vector< double > d_vals_y;
     };
 
-    typedef uint16_t yuy_t;
-    typedef uint8_t ir_t;
-    typedef uint16_t z_t;
-
     class optimizer
     {
     public:

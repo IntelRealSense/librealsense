@@ -7,6 +7,7 @@
 #include "core/video.h"
 #include "depth-to-rgb-calibration.h"
 #include "log.h"
+#include <chrono>
 
 using namespace std;
 
@@ -267,8 +268,21 @@ namespace librealsense
             // TODO remove this -- but for now, it's an easy way of seeing the AC stuff
             class ac_logger : public rs2_log_callback
             {
+                std::ofstream _f;
+
             public:
-                explicit ac_logger() {}
+                explicit ac_logger()
+                {
+                    using namespace std::chrono;
+                    std::string filename = to_string()
+                        << "C:\\work\\autocal\\data\\"
+                        << system_clock::now().time_since_epoch().count() * system_clock::period::num / system_clock::period::den
+                        << ".ac_log";
+                   
+                    _f.open( filename );
+                    if( _f )
+                        std::cout << "-D- AC log is being written to: " << filename << std::endl;
+                }
 
                 void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
                 {
@@ -276,8 +290,13 @@ namespace librealsense
                     char const * raw = wrapper.el_msg.message().c_str();
                     if( strncmp( "AC1: ", raw, 5 ) )
                         return;
-                    std::cout << "-" << "DIWE"[severity] << "- ";
-                    std::cout << (raw + 5) << std::endl;
+                    std::ostringstream ss;
+                    ss << "-" << "DIWE"[severity] << "- ";
+                    ss << (raw + 5);
+                    std::string text = ss.str();
+                    std::cout << text << std::endl;
+                    if( _f )
+                        _f << text << std::endl;
                 }
 
                 void release() override { delete this; }

@@ -21,10 +21,14 @@ namespace depth_to_rgb_calibration {
         size_t height;
     };
 
+    typedef uint16_t yuy_t;
+    typedef uint8_t ir_t;
+    typedef uint16_t z_t;
+
     struct ir_frame_data : frame_data
     {
-        std::vector<uint8_t> ir_frame;
-        std::vector<double> ir_edges;
+        std::vector< ir_t > ir_frame;
+        std::vector< double > ir_edges;
     };
 
     struct z_frame_data : frame_data
@@ -32,7 +36,7 @@ namespace depth_to_rgb_calibration {
         rs2_intrinsics_double intrinsics;
         float depth_units;
 
-        std::vector<uint16_t> frame;
+        std::vector< z_t > frame;
         std::vector<double> gradient_x;
         std::vector<double> gradient_y;
         std::vector<double> edges;
@@ -47,7 +51,7 @@ namespace depth_to_rgb_calibration {
         std::vector<double3> vertices;
 
         // input validation
-        std::vector<unsigned char> section_map;
+        std::vector<byte> section_map;
         bool is_edge_distributed;
         std::vector<double>sum_weights_per_section;
         std::vector<double> sum_weights_per_direction;
@@ -59,8 +63,10 @@ namespace depth_to_rgb_calibration {
 
     struct yuy2_frame_data : frame_data
     {
-        std::vector<uint8_t> yuy2_frame;
-        std::vector<uint8_t> yuy2_prev_frame;
+        std::vector< yuy_t > orig_frame;
+        std::vector< yuy_t > prev_frame;
+        std::vector<uint8_t> lum_frame;
+        std::vector<uint8_t> prev_lum_frame;
         std::vector<double> yuy_diff;
         std::vector<uint8_t> dilated_image;
         std::vector<double> gaussian_filtered_image;
